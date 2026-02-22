@@ -1,0 +1,171 @@
+  /* ── Only custom styles that Tailwind can't express ── */
+
+  /* FIX #14 CSS: font-family set once here, inherited everywhere */
+  body { font-family: 'Plus Jakarta Sans', sans-serif; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 5px }
+  ::-webkit-scrollbar-track { background: transparent }
+  ::-webkit-scrollbar-thumb { background: #5b21b6; border-radius: 3px }
+
+  /* Dark/light CSS variables - Tailwind handles classes but vars needed for JS-driven colors */
+  [data-theme="dark"] {
+    --bg:#06040f; --bg2:#0d0920; --bg3:#120c28;
+    --sf:rgba(18,12,40,.7); --sf2:rgba(30,18,60,.6);
+    --bd:rgba(139,92,246,.2); --bd2:rgba(139,92,246,.1);
+    --tx:#f0eaff; --tx2:#a89dc0; --tx3:#6b5f88;
+    --p4:#8b5cf6; --p5:#a78bfa; --ac:#f0abfc;
+    --gold:#fbbf24; --grn:#34d399; --red:#f87171;
+    --glow:rgba(139,92,246,.35);
+    --nb:rgba(6,4,15,.85); --cb:rgba(15,9,35,.82);
+    --cu:rgba(91,33,182,.25); --ca:rgba(18,12,40,.9);
+    --mg:#22c55e; --my:#eab308; --mr:#ef4444;
+  }
+  [data-theme="light"] {
+    --bg:#faf8ff; --bg2:#f3efff; --bg3:#ebe5ff;
+    --sf:rgba(255,255,255,.85); --sf2:rgba(243,239,255,.9);
+    --bd:rgba(109,40,217,.18); --bd2:rgba(109,40,217,.1);
+    --tx:#1a0a3c; --tx2:#5a4a7a; --tx3:#9080aa;
+    --p4:#8b5cf6; --p5:#7c3aed; --ac:#a21caf;
+    --gold:#d97706; --grn:#059669; --red:#dc2626;
+    --glow:rgba(109,40,217,.15);
+    --nb:rgba(250,248,255,.9); --cb:rgba(255,255,255,.92);
+    --cu:rgba(109,40,217,.12); --ca:rgba(243,239,255,.95);
+    --mg:#16a34a; --my:#ca8a04; --mr:#dc2626;
+  }
+
+  /* Semantic color helpers - used throughout */
+  .bg-base  { background: var(--bg) }
+  .bg-base2 { background: var(--bg2) }
+  .bg-base3 { background: var(--bg3) }
+  .bg-sf    { background: var(--sf) }
+  .bg-sf2   { background: var(--sf2) }
+  .bg-card  { background: var(--cb) }
+  .bd       { border-color: var(--bd) }
+  .bd2      { border-color: var(--bd2) }
+  .tx       { color: var(--tx) }
+  .tx2      { color: var(--tx2) }
+  .tx3      { color: var(--tx3) }
+  .tx-p4    { color: var(--p4) }
+  .tx-p5    { color: var(--p5) }
+  .tx-grn   { color: var(--grn) }
+  .tx-gold  { color: var(--gold) }
+
+  /* Gradient text (can't be done in Tailwind config cleanly) */
+  .grad-text {
+    background: linear-gradient(135deg, var(--p4), var(--ac));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    filter: drop-shadow(0 0 24px var(--glow));
+  }
+  .grad-bg { background: linear-gradient(135deg, #5b21b6, var(--p4)) }
+  .grad-bg-intro { background: linear-gradient(135deg, var(--p4), var(--ac)) }
+
+  /* FIX #4 PERF: will-change only on elements that actually animate */
+  .will-anim { will-change: transform }
+  #bg-canvas { will-change: transform }
+
+  /* FIX #2 PERF: specific transitions instead of transition:all */
+  .t-theme { transition: background-color .4s, border-color .4s, color .4s }
+  .t-hover  { transition: transform .3s cubic-bezier(.23,1,.32,1), box-shadow .3s, border-color .3s }
+  .t-btn    { transition: transform .2s, box-shadow .2s, filter .2s, background-color .2s }
+
+  /* Backdrop blur (FIX #3 PERF: reduced usage, only critical elements) */
+  .glass    { backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px) }
+  .glass-sm { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px) }
+
+  /* Glow box shadows */
+  .shadow-glow    { box-shadow: 0 0 20px var(--glow) }
+  .shadow-glow-lg { box-shadow: 0 0 36px var(--glow) }
+  .shadow-card    { box-shadow: 0 25px 60px rgba(0,0,0,.5) }
+
+  /* Nav scroll state */
+  #navbar { transition: background .4s, box-shadow .4s }
+  #navbar.scrolled { background: var(--nb); box-shadow: 0 2px 40px rgba(0,0,0,.18) }
+  #navbar.scrolled::after { opacity: 1 }
+  #navbar::after { content:''; position:absolute; bottom:0; left:0; right:0; height:1px;
+    background:linear-gradient(90deg,transparent,var(--p4),transparent); opacity:0; transition:opacity .4s }
+
+  /* Mascot bubble */
+  #mascot-bubble { transition: opacity .35s cubic-bezier(.23,1,.32,1), transform .35s cubic-bezier(.23,1,.32,1) }
+  #mascot-bubble.hidden { opacity:0; transform: translateY(10px) scale(.95); pointer-events:none }
+  #mascot-bubble.shown  { opacity:1; transform: translateY(0) scale(1); pointer-events:all }
+
+  /* FIX #9 CSS: removed .card-face.back duplicate — single declaration now */
+  .card-face { backface-visibility: hidden }
+  .card-face.back { position:absolute; inset:0; transform: rotateY(180deg) }
+
+  /* Flashcard 3D */
+  .fc-inner { transform-style: preserve-3d; transition: transform .6s cubic-bezier(.23,1,.32,1); will-change: transform }
+  .fc-card.flipped .fc-inner { transform: rotateY(180deg) }
+  .fc-back { position:absolute; inset:0; transform: rotateY(180deg); backface-visibility:hidden }
+  .fc-front { backface-visibility: hidden }
+
+  /* Bento tilt glow */
+  .tilt-card::after { content:''; position:absolute; inset:0; border-radius:inherit;
+    background:radial-gradient(circle at var(--mx,50%) var(--my,50%), var(--glow), transparent 65%);
+    opacity:0; transition:opacity .3s; pointer-events:none }
+  .tilt-card:hover::after { opacity:1 }
+
+  /* Scroll reveal */
+  .reveal { opacity:0; transform:translateY(32px); transition: opacity .8s cubic-bezier(.23,1,.32,1), transform .8s cubic-bezier(.23,1,.32,1) }
+  .reveal.visible { opacity:1; transform:none }
+  .rd1 { transition-delay:.1s } .rd2 { transition-delay:.2s } .rd3 { transition-delay:.3s } .rd4 { transition-delay:.4s }
+
+  /* Timer digits */
+  .timer-display { font-family: 'Playfair Display', serif; letter-spacing: 2px }
+
+  /* FIX #17 CSS: removed dead .timer-ring rule entirely */
+
+  /* Theme toggle pill */
+  .theme-toggle::after {
+    content:'☀️'; position:absolute; top:50%; left:4px;
+    transform:translateY(-50%); font-size:14px; line-height:1; transition:transform .3s
+  }
+  [data-theme="light"] .theme-toggle::after {
+    content:'🌙'; transform:translateY(-50%) translateX(18px)
+  }
+
+  /* Scroll hint line */
+  .scroll-line { animation: sgrow 2s ease-in-out infinite }
+  @keyframes sgrow { 0%,100%{opacity:.3;transform:scaleY(.6)} 50%{opacity:1;transform:scaleY(1)} }
+
+  /* Float cards on hero */
+  .float-card { animation: floatanim 5s ease-in-out infinite; will-change:transform }
+  .float-card:nth-child(2) { animation-delay:1.2s }
+  .float-card:nth-child(3) { animation-delay:2.4s }
+
+  /* Pulse ring on mascot */ 50%{box-shadow:0 0 0 8px rgba(52,211,153,0)} }
+
+  /* Mood btn active bg (can't do rgba in Tailwind JIT without safelist) */
+  .mood-btn.gm.active { background: rgba(34,197,94,.12) }
+  .mood-btn.ym.active { background: rgba(234,179,8,.12) }
+  .mood-btn.rm.active { background: rgba(239,68,68,.12) }
+
+  /* Task overdue border */
+  .overdue { background:rgba(239,68,68,.25)!important; border-color:rgba(239,68,68,.3)!important }
+
+  /* Active nav pill */
+  .nav-link.active { background: #5b21b6; color: #fff !important; box-shadow: 0 0 14px var(--glow) }
+
+  /* Hero mockup window dots */
+  .mdot:nth-child(1){background:#ff5f57} .mdot:nth-child(2){background:#febc2e} .mdot:nth-child(3){background:#28c840}
+
+  /* Intro overlay */
+  #intro-overlay { transition: opacity .8s cubic-bezier(.23,1,.32,1) }
+  #intro-overlay.fade-out { opacity:0; pointer-events:none }
+
+  /* Chat body scroll */
+  .chat-body { scrollbar-width: thin }
+  .chat-body::-webkit-scrollbar { width:4px }
+  .chat-body::-webkit-scrollbar-thumb { background:var(--bd); border-radius:2px }
+
+  /* Intro speech bubble tail */
+  #intro-speech::after { content:''; position:absolute; bottom:-10px; left:20px; width:0; height:0;
+    border-left:10px solid transparent; border-right:10px solid transparent;
+    border-top:10px solid var(--bd) }
+
+  /* ── CINEMATIC INTRO ── */
+  #intro-overlay { background: transparent }
+  #intro-overlay.done { pointer-events:none }
+  @keyframes intro-particle { 0%{opacity:0;transform:scale(0)} 50%{opacity:1} 100%{opacity:0;transform:scale(1.5) translateY(-60px)} }
+  @keyframes intro-sweep-up { from{clip-path:inset(0 0 0% 0)} to{clip-path:inset(0 0 100% 0)} }
