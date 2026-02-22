@@ -201,7 +201,7 @@ function moodWidget() {
     get moodMsg() {
       return { gm:"✅ You're in the zone! Korah recommends your 2 hard tasks today.", ym:"🟡 Moderate energy. Korah suggests 1 medium task and a 25-min focus session.", rm:"🔴 Low energy today — Korah picked your 1 easy task. Rest is studying too." }[this.active];
     },
-    get moodColor() { return { gm:'var(--mg)', ym:'var(--my)', rm:'var(--mr)' }[this.active]; },
+    get moodClass() { return { gm:'tx-mg', ym:'tx-my', rm:'tx-mr' }[this.active]; },
     select(v) { this.active = v; }
   };
 }
