@@ -19,5 +19,5 @@
   <li> Add spacing betwee smart task manager and focus sessions. (And seperate them possibly)</li>
   <li> Fix landing page AI chat to be more accurate and true</li>
   <li> Use OpenNotebook repo to implement NoteBookLM features </li>
-  <li> Implement LaTex and Markdown rendering w/ JavaScript libraries</li>
+  <li> Implement LaTex and Markdown rendering for text streaming w/ JavaScript libraries</li>
 </ul>
