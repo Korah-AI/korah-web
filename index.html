@@ -191,21 +191,21 @@
       <div class="bg-sf2 border bd2 rounded-2xl p-4 t-theme">
         <div class="text-xs tx3 mb-2.5">How are you feeling today?</div>
         <div class="flex gap-2.5" x-data="moodWidget()">
-          <button @click="select('gm')" :class="active==='gm' && 'active'" class="mood-btn gm flex-1 p-3 rounded-xl border-2 cursor-pointer text-[13px] font-semibold bg-sf2 flex flex-col items-center gap-1 t-btn hover:-translate-y-0.5">
+          <button @click="select('gm')" :class="active==='gm' && 'active'" class="mood-btn gm flex-1 p-3 rounded-xl border-2 cursor-pointer text-[13px] font-semibold bg-sf2 flex flex-col items-center gap-1 t-btn hover:-translate-y-0.5" style="border-color:var(--mg);color:var(--mg)">
             <span class="text-xl">🟢</span><span>Full Focus</span>
           </button>
-          <button @click="select('ym')" :class="active==='ym' && 'active'" class="mood-btn ym flex-1 p-3 rounded-xl border-2 cursor-pointer text-[13px] font-semibold bg-sf2 flex flex-col items-center gap-1 t-btn hover:-translate-y-0.5">
+          <button @click="select('ym')" :class="active==='ym' && 'active'" class="mood-btn ym flex-1 p-3 rounded-xl border-2 cursor-pointer text-[13px] font-semibold bg-sf2 flex flex-col items-center gap-1 t-btn hover:-translate-y-0.5" style="border-color:var(--my);color:var(--my)">
             <span class="text-xl">🟡</span><span>Moderate</span>
           </button>
-          <button @click="select('rm')" :class="active==='rm' && 'active'" class="mood-btn rm flex-1 p-3 rounded-xl border-2 cursor-pointer text-[13px] font-semibold bg-sf2 flex flex-col items-center gap-1 t-btn hover:-translate-y-0.5">
+          <button @click="select('rm')" :class="active==='rm' && 'active'" class="mood-btn rm flex-1 p-3 rounded-xl border-2 cursor-pointer text-[13px] font-semibold bg-sf2 flex flex-col items-center gap-1 t-btn hover:-translate-y-0.5" style="border-color:var(--mr);color:var(--mr)">
             <span class="text-xl">🔴</span><span>Low Energy</span>
           </button>
         </div>
-        <div class="mt-3.5 text-[13px] font-semibold" :class="moodClass" x-text="moodMsg"></div>
+        <div class="mt-3.5 text-[13px] font-semibold" :style="{color: moodColor}" x-text="moodMsg"></div>
       </div>
     </div>
 
-    <!-- Streaks — tall -->
+    <!-- Streaks -->
     <div class="tilt-card col-span-12 md:col-span-4 bg-card border bd2 rounded-3xl p-8 overflow-hidden relative t-hover t-theme reveal rd1">
       <div class="w-13 h-13 rounded-2xl grad-bg grid place-items-center text-2xl mb-5 shadow-glow">🔥</div>
       <h3 class="text-[19px] font-bold mb-2.5 tx">Daily Streaks</h3>
@@ -217,31 +217,35 @@
       </div>
     </div>
 
-    <!-- Tasks -->
-    <div class="tilt-card col-span-12 md:col-span-8 bg-card border bd2 rounded-3xl p-8 overflow-hidden relative t-hover t-theme reveal rd2">
-      <div class="w-13 h-13 rounded-2xl grad-bg grid place-items-center text-2xl mb-5 shadow-glow">📋</div>
-      <h3 class="text-[19px] font-bold mb-2.5 tx">Smart Task Manager</h3>
-      <p class="text-sm tx2 leading-[1.7] mb-4">Create tasks, pick difficulty, set a due date, and let Korah handle the rest — prioritization, overdue alerts, and daily suggestions included.</p>
-      <div class="bg-sf2 border bd2 rounded-2xl p-4 t-theme">
-        <div class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl mb-2 bg-sf border bd2 t-theme">
-          <div class="task-dot task-dot-gm w-2.5 h-2.5 rounded-full flex-shrink-0"></div>
-          <span class="flex-1 text-[13px] tx">Review Chapter 3 notes</span>
-          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-[1px] bg-[rgba(34,197,94,.18)] text-[#22c55e]">Easy</span>
-        </div>
-        <div class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl mb-2 bg-sf border bd2 t-theme">
-          <div class="task-dot task-dot-ym w-2.5 h-2.5 rounded-full flex-shrink-0"></div>
-          <span class="flex-1 text-[13px] tx">Write essay outline — History</span>
-          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-[1px] bg-[rgba(234,179,8,.18)] text-[#eab308]">Medium</span>
-        </div>
-        <div class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl mb-2 overdue border t-theme">
-          <div class="task-dot task-dot-rm w-2.5 h-2.5 rounded-full flex-shrink-0"></div>
-          <span class="flex-1 text-[13px] tx">Submit Biology lab report</span>
-          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-[1px] bg-[rgba(239,68,68,.18)] text-[#ef4444]">Overdue ⚠️</span>
-        </div>
-        <div class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-sf border bd2 t-theme">
-          <div class="task-dot task-dot-rm w-2.5 h-2.5 rounded-full flex-shrink-0"></div>
-          <span class="flex-1 text-[13px] tx">Calculus problem set — Unit 5</span>
-          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-[1px] bg-[rgba(239,68,68,.18)] text-[#ef4444]">Hard</span>
+    <!-- Left column: Tasks + Timer stacked, Image on right -->
+    <div class="col-span-12 md:col-span-8 flex flex-col gap-4">
+
+      <!-- Tasks -->
+      <div class="tilt-card bg-card border bd2 rounded-3xl p-8 overflow-hidden relative t-hover t-theme reveal rd2">
+        <div class="w-13 h-13 rounded-2xl grad-bg grid place-items-center text-2xl mb-5 shadow-glow">📋</div>
+        <h3 class="text-[19px] font-bold mb-2.5 tx">Smart Task Manager</h3>
+        <p class="text-sm tx2 leading-[1.7] mb-4">Create tasks, pick difficulty, set a due date, and let Korah handle the rest — prioritization, overdue alerts, and daily suggestions included.</p>
+        <div class="bg-sf2 border bd2 rounded-2xl p-4 t-theme">
+          <div class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl mb-2 bg-sf border bd2 t-theme">
+            <div class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background:var(--mg)"></div>
+            <span class="flex-1 text-[13px] tx">Review Chapter 3 notes</span>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-[1px] bg-[rgba(34,197,94,.18)] text-[#22c55e]">Easy</span>
+          </div>
+          <div class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl mb-2 bg-sf border bd2 t-theme">
+            <div class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background:var(--my)"></div>
+            <span class="flex-1 text-[13px] tx">Write essay outline — History</span>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-[1px] bg-[rgba(234,179,8,.18)] text-[#eab308]">Medium</span>
+          </div>
+          <div class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl mb-2 overdue border t-theme">
+            <div class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background:var(--mr)"></div>
+            <span class="flex-1 text-[13px] tx">Submit Biology lab report</span>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-[1px] bg-[rgba(239,68,68,.18)] text-[#ef4444]">Overdue ⚠️</span>
+          </div>
+          <div class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-sf border bd2 t-theme">
+            <div class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background:var(--mr)"></div>
+            <span class="flex-1 text-[13px] tx">Calculus problem set — Unit 5</span>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-[1px] bg-[rgba(239,68,68,.18)] text-[#ef4444]">Hard</span>
+          </div>
         </div>
       </div>
 
@@ -270,41 +274,9 @@
     <!-- Right column: Image -->
     <div class="tilt-card col-span-12 md:col-span-4 bg-card border bd2 rounded-3xl overflow-hidden relative t-hover t-theme reveal rd1 flex items-center justify-center" style="min-height:500px;">
       <div class="absolute inset-0 pointer-events-none" style="background:radial-gradient(ellipse at 50% 50%,var(--glow),transparent 70%)"></div>
-      <!-- swap src with your file -->
-      <img src="assests/korah_phone_page.avif" alt="" class="relative z-10 w-[75%] h-auto object-contain rounded-2xl animate-float" style="box-shadow:0 20px 60px rgba(0,0,0,.5),0 0 30px var(--glow);" style="filter:drop-shadow(0 0 8px var(--glow));mix-blend-mode:multiply;"/>
-    </div>
-    
-    
-        <!-- Korah AI -->
-    <div class="tilt-card col-span-12 md:col-span-8 bg-card border bd2 rounded-3xl p-8 overflow-hidden relative t-hover t-theme reveal">
-      <div class="w-13 h-13 rounded-2xl grad-bg grid place-items-center text-2xl mb-5 shadow-glow">🤖</div>
-      <h3 class="text-[19px] font-bold mb-2.5 tx">Korah AI Chat</h3>
-      <p class="text-sm tx2 leading-[1.7] mb-4">Ask anything, any time. Korah explains topics at your level, adapts to your mood, warns you about overdue tasks, and never judges.</p>
-      <div class="bg-sf2 border bd2 rounded-2xl p-4 t-theme">
-        <div class="text-[13px] tx mb-2">"I'm really tired today. What should I study right now?"</div>
-        <div class="text-xs tx-p5 mt-2">→ 🟡 Low energy mode — Korah picks your 2 easiest tasks and skips the hard ones until tomorrow.</div>
-      </div>
+      <img src="assests/korah_phone_page.avif" alt="" class="relative z-10 w-[75%] h-auto object-contain rounded-2xl animate-float" style="box-shadow:0 20px 60px rgba(0,0,0,.5),0 0 30px var(--glow);"/>
     </div>
 
-    <!-- Flashcard preview -->
-    <div class="tilt-card col-span-12 md:col-span-4 bg-card border bd2 rounded-3xl p-8 overflow-hidden relative t-hover t-theme reveal rd1">
-      <div class="w-13 h-13 rounded-2xl grad-bg grid place-items-center text-2xl mb-5 shadow-glow">🃏</div>
-      <h3 class="text-[19px] font-bold mb-2.5 tx">Flashcards</h3>
-      <p class="text-sm tx2 leading-[1.7] mb-4">Manual or AI-generated. Click to flip.</p>
-      <div class="perspective-[800px] cursor-pointer js-flip-card-trigger">
-        <div class="flashcard flashcard-shell relative">
-          <div class="card-face front bg-sf2 border bd rounded-2xl p-5 flex flex-col justify-center">
-            <div class="text-[10px] font-bold tracking-[2px] tx-p4 uppercase mb-2">Question</div>
-            <div class="text-sm tx leading-relaxed">What is the powerhouse of the cell?</div>
-          </div>
-          <div class="card-face back bg-sf2 border bd rounded-2xl p-5 flex flex-col justify-center">
-            <div class="text-[10px] font-bold tracking-[2px] tx-p4 uppercase mb-2">Answer</div>
-            <div class="text-sm tx leading-relaxed">The <strong>mitochondria</strong> — produces ATP through cellular respiration.</div>
-          </div>
-        </div>
-        <div class="text-[11px] tx3 text-center mt-2">👆 Click to flip</div>
-      </div>
-    </div>
   </div>
 </section>
 
