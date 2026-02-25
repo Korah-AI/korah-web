@@ -10,7 +10,7 @@
   <li> updata data models to fit Firestone structure (tasks, flashcards, eg.) </li>              
 </ul>
 
-# Web/Landing Page Design Goals/To Do
+# Web/Landing Page To Do
 <ul>
   <li> Get rid of Daily Streaks In Features And Flashcards. *Maybe Replace With Another Feature </li>
   <li> Improve flashcards section under study tools section.  </li>
@@ -18,4 +18,6 @@
   <li> Get rid of background for image under features section. </li>
   <li> Add spacing betwee smart task manager and focus sessions. (And seperate them possibly)</li>
   <li> Fix landing page AI chat to be more accurate and true</li>
+  <li> Use OpenNotebook repo to implement NoteBookLM features </li>
+  <li> Implement LaTex and Markdown rendering w/ JavaScript libraries</li>
 </ul>
