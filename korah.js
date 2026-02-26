@@ -287,14 +287,46 @@ function studyTools() {
     /* Study Guide */
     sgMode: 'manual', guideTopic: '', guideDepth: 'detailed', loadingSG: false, sgStatus: '', guideHTML: '',
     async genGuide() {
-      if (!this.guideTopic.trim()) { this.sgStatus = '⚠️ Enter a topic first.'; return; }
-      this.loadingSG = true; this.sgStatus = ''; this.guideHTML = '';
+      const topic = (this.guideTopic || '').trim();
+      if (!topic) {
+        this.sgStatus = '⚠️ Enter a topic first.';
+        return;
+      }
+      this.loadingSG = true;
+      this.sgStatus = '';
+      this.guideHTML = '';
       try {
-        const html = await korahAPI(`Create a ${this.guideDepth} study guide. Use <h4> headers, <p>, <ul><li>. Include Key Takeaways and Common Mistakes. No code blocks.`, [{ role:'user', content:'Study guide for: '+this.guideTopic }]);
-        this.guideHTML = html.replace(/###\s*/g,'').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+        let html = await korahAPI(
+          `You are an expert study guide creator.
+Return ONLY valid HTML, no markdown, no backticks, no JSON.
+Create a ${this.guideDepth} study guide with:
+- A short <h4> title
+- Section headings using <h4>
+- Explanations in <p>
+- Bullet lists with <ul><li>
+- A "Key Takeaways" section
+- A "Common Mistakes" section.`,
+          [{ role:'user', content:`Create a study guide for: ${topic}` }],
+          1500
+        );
+
+        if (typeof html !== 'string') html = String(html ?? '');
+
+        // Defensive cleanup in case the model still returns markdown-style syntax.
+        html = html
+          .replace(/```html|```/gi, '')
+          .replace(/###\s*/g, '')
+          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+          .trim();
+
+        this.guideHTML = html;
         this.sgStatus = '✅ Generated!';
-      } catch { this.sgStatus = 'Error. Try again.'; }
-      this.loadingSG = false;
+      } catch (err) {
+        console.error('genGuide error', err);
+        this.sgStatus = 'Error generating guide. Please try again.';
+      } finally {
+        this.loadingSG = false;
+      }
     },
     /* Practice Test */
     ptMode: 'sample', testTopic: '', testCount: '5', testDiff: 'mixed', loadingPT: false, ptStatus: '', aiQuestions: [],
