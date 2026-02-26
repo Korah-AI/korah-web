@@ -48,14 +48,51 @@ const SYSTEM = `You are Korah, a friendly AI study assistant. Be warm, encouragi
 When tired/burnt out: suggest a color 🟢🟡🔴 and recommend tasks. Use simple language and analogies.
 For quizzes: numbered questions with A/B/C/D. Keep ~150 words. Use emojis naturally.`;
 
+const KORAH_API_ENDPOINT = 'https://korah-beta.vercel.app/api/proxy';
+const KORAH_MODEL = 'gpt-4o-mini';
+
 async function korahAPI(systemMsg, messages, maxTokens = 1000) {
-  const r = await fetch('https://api.anthropic.com/v1/messages', {
+  const allMessages = [];
+
+  if (systemMsg && typeof systemMsg === 'string') {
+    allMessages.push({ role: 'system', content: systemMsg });
+  }
+
+  if (Array.isArray(messages)) {
+    allMessages.push(...messages);
+  }
+
+  const response = await fetch(KORAH_API_ENDPOINT, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: maxTokens, system: systemMsg, messages })
+    body: JSON.stringify({
+      model: KORAH_MODEL,
+      temperature: 0.7,
+      max_tokens: maxTokens,
+      messages: allMessages
+    })
   });
-  const d = await r.json();
-  return d.content?.map(b => b.text || '').join('') || '';
+
+  let payload = null;
+  try {
+    payload = await response.json();
+  } catch (_error) {}
+
+  if (!response.ok) {
+    const errText =
+      payload?.message ||
+      payload?.error ||
+      `Request failed with status ${response.status}`;
+    throw new Error(errText);
+  }
+
+  const reply =
+    payload?.choices?.[0]?.message?.content ||
+    payload?.output_text ||
+    '';
+
+  if (!reply) throw new Error('API returned an empty response.');
+  return reply;
 }
 
 /* ════════════════════════════════════════════════════════
