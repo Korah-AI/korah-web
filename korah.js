@@ -340,8 +340,11 @@ function chatWidget() {
       this.history.push({ role:'user', content:msg });
       if (this.history.length > 20) this.history.splice(0, 2);
       this.$nextTick(() => { if(this.$refs.chatBody) this.$refs.chatBody.scrollTop = this.$refs.chatBody.scrollHeight; });
-      const typing = { role:'ai', text:'', typing:true };
+      const typing = { role:'ai', text:'', typing:true, phase:'thinking' };
       this.messages.push(typing);
+      setTimeout(() => {
+        if (this.messages.includes(typing)) typing.phase = 'responding';
+      }, 1200);
       try {
         const reply = await korahAPI(SYSTEM, [...this.history]);
         this.history.push({ role:'assistant', content:reply });
