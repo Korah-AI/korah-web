@@ -55,7 +55,26 @@
   </div>
 
   <div class="ml-auto flex items-center gap-2.5 z-10">
-    <button @click="theme = theme==='dark' ? 'light' : 'dark'" class="theme-toggle w-11 h-[26px] rounded-full bg-sf2 border bd cursor-pointer relative t-theme" aria-label="Toggle theme"></button>
+    <button @click="theme = theme==='dark' ? 'light' : 'dark'"
+        class="flex items-center justify-center w-9 h-9 rounded-xl bg-sf2 border bd cursor-pointer t-btn hover:border-p4 hover:bg-[var(--bd2)] t-theme"
+        aria-label="Toggle theme">
+  <!-- Moon (dark mode) -->
+  <svg x-show="theme==='light'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" style="color:var(--p5)">
+    <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/>
+  </svg>
+  <!-- Sun (light mode) -->
+  <svg x-show="theme==='dark'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--p4)">
+    <circle cx="12" cy="12" r="5"/>
+    <line x1="12" y1="1" x2="12" y2="3"/>
+    <line x1="12" y1="21" x2="12" y2="23"/>
+    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+    <line x1="1" y1="12" x2="3" y2="12"/>
+    <line x1="21" y1="12" x2="23" y2="12"/>
+    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+  </svg>
+</button>
     <button class="hidden md:block text-[13px] font-semibold px-5 py-2.5 rounded-full cursor-pointer border bd tx2 bg-transparent t-btn hover:tx-p4 hover:border-p4 hover:bg-[var(--bd2)]">Log in</button>
     <button onclick="window.open('https://testflight.apple.com/join/kkxUsBqe','_blank')" class="text-[13px] font-semibold px-5 py-2.5 rounded-full cursor-pointer border-none text-white grad-bg shadow-glow t-btn hover:-translate-y-px hover:shadow-glow-lg">Get Beta Access</button>
     <!-- FIX #6 MAINT: Alpine x-bind:class and @click replace manual JS hamburger -->
@@ -86,7 +105,7 @@
 <!-- ── HERO ── -->
 <section id="home" class="min-h-screen flex flex-col items-center justify-center pt-[calc(70px+60px)] pb-24 px-5 md:px-[clamp(20px,6vw,80px)] relative overflow-hidden">
   <!-- Mascot background — large, centered, behind all content -->
-  <img src="" alt="" aria-hidden="true" class="hero-mascot-bg absolute left-1/2 top-1/2 pointer-events-none select-none"/>
+  <img src="logo.png" alt="" aria-hidden="true" class="hero-mascot-bg absolute left-1/2 pointer-events-none select-none opacity-10" style="width:clamp(300px,50vw,600px); z-index:5; filter:blur(1px); top:140px; left:50%; transform:translateX(-50%);"/>
   <div class="relative z-10 inline-flex items-center gap-2 bg-sf2 border bd px-4 py-2 rounded-full mb-7 text-[12.5px] font-semibold tx-p5 animate-fade-up t-theme">
     <span class="w-2 h-2 rounded-full bg-[var(--grn)] shadow-[0_0_8px_var(--grn)] animate-pulse-dot"></span>
     Now in Early Beta — Free to Try
@@ -129,13 +148,10 @@
       <div class="float-card float-card-2 absolute bg-card border bd rounded-2xl px-4 py-3.5 glass shadow-card flex items-center gap-3 text-[13px] font-medium tx whitespace-nowrap t-theme">
         <span class="text-2xl">⚠️</span><div><div class="text-[11px] tx3">Overdue Tasks</div><div class="tx-mr text-base font-bold">2 tasks</div></div>
       </div>
-      <div class="float-card float-card-3 absolute bg-card border bd rounded-2xl px-4 py-3.5 glass shadow-card flex items-center gap-3 text-[13px] font-medium tx whitespace-nowrap t-theme">
-        <span class="text-2xl">🎯</span><div><div class="text-[11px] tx3">Focus Sessions</div><div class="text-base font-bold tx-p5">47 total</div></div>
-      </div>
     </div>
   </div>
   <div class="anim-delay-800-fill absolute bottom-9 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5 text-[11px] tracking-[2px] tx3 uppercase animate-fade-up opacity-0">
-    <div class="w-px h-10 bg-gradient-to-b from-p4 to-transparent scroll-line"></div>Scroll
+    <div class="w-px h-10 bg-gradient-to-b from-p4 to-transparent scroll-line"></div>
   </div>
 </section>
 
@@ -143,7 +159,7 @@
 <section id="how" class="flex flex-col items-center py-24 px-5 md:px-[clamp(20px,6vw,80px)] bg-base2 t-theme">
   <div class="inline-flex items-center gap-2 bg-sf2 border bd px-4 py-1.5 rounded-full text-[11px] font-bold tracking-[2.5px] uppercase tx-p4 mb-5 reveal t-theme"><span class="dot w-1.5 h-1.5 rounded-full bg-p4"></span>Simple Process</div>
   <h2 class="font-display text-[clamp(2rem,5vw,3.6rem)] font-bold text-center tx leading-tight mb-3.5 reveal">Why Should I Use Korah?</h2>
-  <p class="text-base leading-relaxed tx2 text-center max-w-lg mx-auto mb-14 reveal">From scattered to sorted in four steps. No chaos, no confusion.</p>
+  <p class="text-base leading-relaxed tx2 text-center max-w-lg mx-auto mb-14 reveal">Stop using A.I. apps that don't help you learn. Korah's got you covered.</p>
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full max-w-[1020px]">
     <div class="tilt-card step-card bg-card border bd2 rounded-3xl p-9 relative overflow-hidden t-hover t-theme reveal rd1">
       <div class="step-num font-display text-6xl font-black leading-none mb-5">01</div>
@@ -273,9 +289,18 @@
 
     <!-- Right column: Image -->
     <div class="tilt-card col-span-12 md:col-span-4 bg-card border bd2 rounded-3xl overflow-hidden relative t-hover t-theme reveal rd1 flex items-center justify-center" style="min-height:500px;">
-      <div class="absolute inset-0 pointer-events-none" style="background:radial-gradient(ellipse at 50% 50%,var(--glow),transparent 70%)"></div>
-      <img src="assests/korah_phone_page.avif" alt="" class="relative z-10 w-[75%] h-auto object-contain rounded-2xl animate-float" style="box-shadow:0 20px 60px rgba(0,0,0,.5),0 0 30px var(--glow);"/>
+    <div class="absolute inset-0 pointer-events-none" style="background:radial-gradient(ellipse at 50% 50%,var(--glow),transparent 70%)"></div>
+    <div class="relative z-10 w-[75%]"
+        style="transition:transform 0.4s cubic-bezier(.23,1,.32,1);"
+        @mousemove="
+          let r=$el.getBoundingClientRect(),x=($event.clientX-r.left)/r.width,y=($event.clientY-r.top)/r.height;
+          $el.style.transform='perspective(700px) rotateX('+(-(y-0.5)*10)+'deg) rotateY('+((x-0.5)*10)+'deg) translateY(-6px)';
+        "
+        @mouseleave="$el.style.transform='perspective(700px) rotateX(0deg) rotateY(0deg) translateY(0)';">
+      <div class="rounded-2xl pointer-events-none" style="opacity:0;transition:opacity 0.3s ease;z-index:1;mix-blend-mode:normal;"></div>
+      <img src="assests/korah_phone_page.avif" alt="" class="w-full h-auto max-h-full object-contain rounded-2xl animate-float" style="box-shadow:0 20px 60px rgba(0,0,0,.5),0 0 30px var(--glow);"/>
     </div>
+  </div>
 
   </div>
 </section>
@@ -284,9 +309,8 @@
 <section id="study-tools" class="flex flex-col items-center py-24 px-5 md:px-[clamp(20px,6vw,80px)] bg-base3 t-theme" x-data="studyTools()">
   <div class="inline-flex items-center gap-2 bg-sf2 border bd px-4 py-1.5 rounded-full text-[11px] font-bold tracking-[2.5px] uppercase tx-p4 mb-5 reveal t-theme"><span class="dot w-1.5 h-1.5 rounded-full bg-p4"></span>Study Tools</div>
   <h2 class="font-display text-[clamp(2rem,5vw,3.6rem)] font-bold text-center tx leading-tight mb-3.5 reveal">Flashcards, Study Guides &amp; Practice Tests</h2>
-  <p class="text-base leading-relaxed tx2 text-center max-w-lg mx-auto mb-9 reveal">Create them manually, or let Korah AI generate them in seconds.</p>
+  <p class="text-base leading-relaxed tx2 text-center max-w-lg mx-auto mb-9 reveal">Create them manually, or let Korah AI generate them in seconds (Manual or AI generated are only available if signed up in our website or in the beta app).</p>
 
-  <!-- FIX #22 FRAMEWORK: Alpine handles tab switching with zero JS boilerplate -->
   <div class="flex gap-1.5 bg-sf2 border bd2 rounded-full p-1.5 mb-9 flex-wrap justify-center reveal">
     <template x-for="tab in tabs" :key="tab.id">
       <button @click="activeTab=tab.id" :class="activeTab===tab.id ? 'grad-bg text-white shadow-glow' : 'bg-transparent tx2 hover:bg-[var(--bd)] hover:tx-p4'"
@@ -295,140 +319,209 @@
   </div>
 
   <!-- FLASHCARDS TAB -->
-  <div class="w-full max-w-[860px]" x-show="activeTab==='flashcards'" x-transition:enter="animate-fade-up">
+  <div class="w-full max-w-[1060px]" x-show="activeTab==='flashcards'" x-transition:enter="animate-fade-up">
     <div class="bg-card border bd rounded-3xl p-7 t-theme">
-      <div class="flex items-center justify-between mb-5">
-        <h3 class="text-lg font-bold tx">Flashcard Deck — Photosynthesis</h3>
-        <div class="flex gap-1.5">
-          <button @click="fcMode='manual'" :class="fcMode==='manual' ? 'bg-p4 text-white border-p4' : 'bg-transparent tx2'" class="text-xs font-semibold px-3.5 py-1.5 rounded-full border bd cursor-pointer t-btn">My Deck</button>
-          <button @click="fcMode='ai'" :class="fcMode==='ai' ? 'bg-p4 text-white border-p4' : 'bg-transparent tx2'" class="text-xs font-semibold px-3.5 py-1.5 rounded-full border bd cursor-pointer t-btn">✨ AI Generate</button>
-        </div>
-      </div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5" id="fcGrid" x-show="fcMode==='manual'">
+      <h3 class="text-lg font-bold tx mb-6">Flashcard Deck — Photosynthesis</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
         <template x-for="(card,i) in sampleCards" :key="i">
-          <div class="bg-sf2 border bd2 rounded-2xl p-4.5 cursor-pointer t-btn hover:-translate-y-1 hover:border-p4 perspective-[600px]" @click="card.flipped=!card.flipped">
-            <div class="fc-inner fc-inner-min relative" :class="card.flipped && 'is-flipped'">
-              <div class="fc-front"><div class="text-[10px] tx3 mb-1.5">tap to flip</div><div class="text-[13px] font-semibold tx" x-text="card.q"></div></div>
-              <div class="fc-back p-0"><div class="text-[13px] tx-p5" x-html="card.a"></div></div>
+          <div style="height:200px; border:1.5px solid rgba(139,92,246,0.5); border-radius:16px; position:relative; transition:transform 0.6s cubic-bezier(.23,1,.32,1);"
+              @mousemove="
+                let r = $el.getBoundingClientRect();
+                let x = (($event.clientX - r.left) / r.width);
+                let y = (($event.clientY - r.top) / r.height);
+                let rx = (y - 0.5) * -7;
+                let ry = (x - 0.5) * 7;
+                $el.style.transform = 'perspective(700px) rotateX(' + rx + 'deg) rotateY(' + ry + 'deg) translateY(-5px)';
+                $el.querySelector('.card-glow').style.background = 'radial-gradient(circle at ' + (x*100) + '% ' + (y*100) + '%, rgba(139,92,246,0.35) 0%, transparent 65%)';
+                $el.querySelector('.card-glow').style.opacity = '1';
+              "
+              @mouseleave="
+                $el.style.transform = 'perspective(700px) rotateX(0deg) rotateY(0deg) translateY(0)';
+                $el.querySelector('.card-glow').style.opacity = '0';
+              ">
+
+            <div class="card-glow absolute inset-0 rounded-2xl pointer-events-none" style="opacity:0; transition:opacity 0.3s ease; z-index:10; mix-blend-mode:normal;"></div>
+
+            <div @click="
+                  let inner = $el.querySelector('.flip-inner');
+                  let isFlipped = inner.dataset.flipped === 'true';
+                  let front = inner.querySelector('.flip-front');
+                  let back = inner.querySelector('.flip-back');
+
+                  if (!isFlipped) {
+                    // Phase 1: rotate front to 90deg (half flip)
+                    front.style.transition = 'transform 0.15s cubic-bezier(.4,0,1,1)';
+                    front.style.transform = 'perspective(700px) rotateY(90deg)';
+                    setTimeout(() => {
+                      front.style.display = 'none';
+                      back.style.display = 'flex';
+                      // Phase 2: start back from -90deg, rotate to 0
+                      back.style.transition = 'none';
+                      back.style.transform = 'perspective(700px) rotateY(-90deg)';
+                      requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                          back.style.transition = 'transform 0.15s cubic-bezier(0,0,.6,1)';
+                          back.style.transform = 'perspective(700px) rotateY(0deg)';
+                        });
+                      });
+                    }, 150);
+                  } else {
+                    // Phase 1: rotate back to 90deg
+                    back.style.transition = 'transform 0.3s cubic-bezier(.4,0,1,1)';
+                    back.style.transform = 'perspective(700px) rotateY(90deg)';
+                    setTimeout(() => {
+                      back.style.display = 'none';
+                      front.style.display = 'flex';
+                      front.style.transition = 'none';
+                      front.style.transform = 'perspective(700px) rotateY(-90deg)';
+                      requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                          front.style.transition = 'transform 0.3s cubic-bezier(0,0,.6,1)';
+                          front.style.transform = 'perspective(700px) rotateY(0deg)';
+                        });
+                      });
+                    }, 150);
+                  }
+
+                  inner.dataset.flipped = (!isFlipped).toString();
+                  sampleCards.splice(i,1,{...card,flipped:!card.flipped});
+                "
+                class="cursor-pointer relative w-full h-full rounded-2xl overflow-hidden">
+
+              <div class="flip-inner w-full h-full" data-flipped="false">
+
+                <!-- Front -->
+                <div class="flip-front absolute inset-0 px-8 py-7 flex flex-col justify-between"
+                    style="transform:perspective(700px) rotateY(0deg); background:linear-gradient(145deg,var(--bg2),var(--bg3));">
+                  <span class="text-[10px] font-bold tracking-[2px] uppercase tx-p4 flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-p4"></span>Flashcard
+                  </span>
+                  <p class="text-[17px] font-bold tx text-center leading-snug" x-text="card.q"></p>
+                  <span class="text-[10px] tx3 text-center">Click to reveal answer</span>
+                </div>
+
+                <!-- Back (hidden initially) -->
+                <div class="flip-back absolute inset-0 px-8 py-7 flex-col justify-between t-theme"
+                    style="display:none; transform:perspective(700px) rotateY(-90deg); background:var(--bg2);">
+                  <span class="text-[10px] font-bold tracking-[2px] uppercase tx-p4 flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-p4"></span>Answer
+                  </span>
+                  <p class="text-[15px] font-medium tx text-center leading-relaxed" x-html="card.a"></p>
+                  <span class="text-[10px] tx3 text-center">Click to flip back</span>
+                </div>
+              </div>
             </div>
           </div>
         </template>
-      </div>
-      <div class="bg-sf2 border bd2 rounded-2xl p-5 mt-4" x-show="fcMode==='ai'">
-        <div class="text-[13px] font-semibold tx mb-2.5">✨ AI Flashcard Generator</div>
-        <textarea x-model="flashTopic" class="w-full bg-sf border bd rounded-xl px-4 py-3 font-sans text-sm tx resize-y outline-none min-h-[80px] focus:border-p4 t-btn placeholder:tx3" placeholder="Type a topic or paste notes (e.g. 'Newton's Laws of Motion')..."></textarea>
-        <div class="flex gap-2.5 mt-2.5 items-center flex-wrap">
-          <select x-model="flashCount" class="bg-sf border bd rounded-xl px-3.5 py-2 font-sans text-[13px] tx outline-none cursor-pointer t-btn">
-            <option value="4">4 cards</option><option value="6">6 cards</option><option value="8">8 cards</option><option value="10">10 cards</option>
-          </select>
-          <button @click="genFlashcards()" :disabled="loadingFC" class="text-[13px] font-semibold px-5 py-2 rounded-full border-none text-white grad-bg cursor-pointer shadow-glow t-btn disabled:opacity-50">
-            <span x-text="loadingFC ? 'Generating…' : 'Generate Flashcards'"></span>
-          </button>
-          <span class="text-[13px] tx3" x-text="fcStatus"></span>
-        </div>
       </div>
     </div>
   </div>
 
-  <!-- STUDY GUIDE TAB -->
-  <div class="w-full max-w-[860px]" x-show="activeTab==='studyguide'" x-transition:enter="animate-fade-up">
-    <div class="bg-card border bd rounded-3xl p-7 t-theme">
-      <div class="flex items-center justify-between mb-5">
-        <h3 class="text-lg font-bold tx">Study Guide</h3>
-        <div class="flex gap-1.5">
-          <button @click="sgMode='manual'" :class="sgMode==='manual' ? 'bg-p4 text-white border-p4' : 'bg-transparent tx2'" class="text-xs font-semibold px-3.5 py-1.5 rounded-full border bd cursor-pointer t-btn">Manual</button>
-          <button @click="sgMode='ai'" :class="sgMode==='ai' ? 'bg-p4 text-white border-p4' : 'bg-transparent tx2'" class="text-xs font-semibold px-3.5 py-1.5 rounded-full border bd cursor-pointer t-btn">✨ AI Generate</button>
-        </div>
-      </div>
-      <div x-show="sgMode==='manual'" class="bg-sf2 border bd2 rounded-2xl p-6 leading-[1.8]">
-        <div class="mb-4"><h4 class="text-[15px] font-bold tx-p5 mb-2">📌 Topic: Cell Biology — Mitosis</h4><p class="text-sm tx2">Mitosis is cell division producing two genetically identical daughter cells for growth, repair and asexual reproduction.</p></div>
-        <div class="mb-4"><h4 class="text-[15px] font-bold tx-p5 mb-2">🔑 Key Stages (PMAT)</h4><ul class="pl-4 text-sm tx2 list-disc"><li class="mb-1"><strong>Prophase</strong> — Chromosomes condense, spindle forms</li><li class="mb-1"><strong>Metaphase</strong> — Chromosomes align at cell equator</li><li class="mb-1"><strong>Anaphase</strong> — Chromatids pulled to opposite poles</li><li><strong>Telophase</strong> — Nuclear envelopes reform, cell divides</li></ul></div>
-        <div class="mb-4"><h4 class="text-[15px] font-bold tx-p5 mb-2">💡 Remember</h4><p class="text-sm tx2">Mnemonic: <strong>PMAT</strong> — "People Meet And Talk"</p></div>
-        <div><h4 class="text-[15px] font-bold tx-p5 mb-2">⚠️ Common Mistakes</h4><ul class="pl-4 text-sm tx2 list-disc"><li class="mb-1">Confusing mitosis (growth) with meiosis (reproduction)</li><li>Forgetting cytokinesis follows telophase</li></ul></div>
-      </div>
-      <div x-show="sgMode==='ai'">
-        <div class="bg-sf2 border bd2 rounded-2xl p-5 t-theme">
-          <div class="text-[13px] font-semibold tx mb-2.5">✨ AI Study Guide Generator</div>
-          <textarea x-model="guideTopic" class="w-full bg-sf border bd rounded-xl px-4 py-3 font-sans text-sm tx resize-y outline-none min-h-[80px] focus:border-p4 t-btn placeholder:tx3" placeholder="Enter a topic (e.g. 'World War I causes and effects')..."></textarea>
-          <div class="flex gap-2.5 mt-2.5 items-center flex-wrap">
-            <select x-model="guideDepth" class="bg-sf border bd rounded-xl px-3.5 py-2 font-sans text-[13px] tx outline-none cursor-pointer">
-              <option value="brief">Brief overview</option><option value="detailed" selected>Detailed guide</option><option value="exam">Exam-focused</option>
-            </select>
-            <button @click="genGuide()" :disabled="loadingSG" class="text-[13px] font-semibold px-5 py-2 rounded-full border-none text-white grad-bg cursor-pointer shadow-glow t-btn disabled:opacity-50">
-              <span x-text="loadingSG ? 'Generating…' : 'Generate Guide'"></span>
-            </button>
-            <span class="text-[13px] tx3" x-text="sgStatus"></span>
-          </div>
-        </div>
-        <div x-show="guideHTML" class="bg-sf2 border bd2 rounded-2xl p-6 mt-4 leading-[1.8] text-sm tx2" x-html="guideHTML"></div>
-      </div>
-    </div>
-  </div>
+<!-- STUDY GUIDE TAB -->
+<div class="w-full max-w-[860px]" x-show="activeTab==='studyguide'" x-transition:enter="animate-fade-up">
+  <div class="bg-card border bd rounded-3xl p-7 t-theme">
+    <h3 class="text-lg font-bold tx mb-5">Study Guide</h3>
+    <div class="flex flex-col gap-4">
 
-  <!-- PRACTICE TEST TAB -->
-  <div class="w-full max-w-[860px]" x-show="activeTab==='practicetest'" x-transition:enter="animate-fade-up">
-    <div class="bg-card border bd rounded-3xl p-7 t-theme">
-      <div class="flex items-center justify-between mb-5">
-        <h3 class="text-lg font-bold tx">Practice Test</h3>
-        <div class="flex gap-1.5">
-          <button @click="ptMode='sample'" :class="ptMode==='sample' ? 'bg-p4 text-white border-p4' : 'bg-transparent tx2'" class="text-xs font-semibold px-3.5 py-1.5 rounded-full border bd cursor-pointer t-btn">Sample Test</button>
-          <button @click="ptMode='ai'" :class="ptMode==='ai' ? 'bg-p4 text-white border-p4' : 'bg-transparent tx2'" class="text-xs font-semibold px-3.5 py-1.5 rounded-full border bd cursor-pointer t-btn">✨ AI Generate</button>
+      <div class="relative rounded-2xl p-6 overflow-hidden cursor-default t-theme"
+           style="border:1.5px solid rgba(139,92,246,0.4); box-shadow:0 0 20px rgba(139,92,246,0.15); transition:transform 0.4s cubic-bezier(.23,1,.32,1); background:var(--bg2);"
+           @mousemove="
+             let r=$el.getBoundingClientRect(),x=($event.clientX-r.left)/r.width,y=($event.clientY-r.top)/r.height;
+             $el.style.transform='perspective(700px) rotateX('+(-(y-0.5)*6)+'deg) rotateY('+((x-0.5)*6)+'deg) translateY(-4px)';
+             $el.querySelector('.sg-glow').style.background='radial-gradient(circle at '+(x*100)+'% '+(y*100)+'%, rgba(139,92,246,0.35) 0%, transparent 65%)';
+             $el.querySelector('.sg-glow').style.opacity='1';
+           "
+           @mouseleave="$el.style.transform='perspective(700px) rotateX(0deg) rotateY(0deg)';$el.querySelector('.sg-glow').style.opacity='0';">
+        <div class="sg-glow absolute inset-0 rounded-2xl pointer-events-none" style="opacity:0;transition:opacity 0.3s ease;z-index:0;mix-blend-mode:normal;"></div>
+        <div class="relative z-10">
+          <h4 class="text-[15px] font-bold tx-p4 mb-2">📌 Topic: Cell Biology — Mitosis</h4>
+          <p class="text-sm tx2 leading-relaxed">Mitosis is cell division producing two genetically identical daughter cells for growth, repair and asexual reproduction.</p>
         </div>
       </div>
-      <div x-show="ptMode==='sample'">
-        <div class="text-[13px] tx2 mb-4">Topic: <strong>Photosynthesis</strong> · Click an answer to check it.</div>
-        <template x-for="(q,qi) in sampleTest" :key="qi">
-          <div class="bg-sf2 border bd2 rounded-2xl p-4.5 mb-3">
-            <div class="text-sm font-semibold tx mb-3" x-text="(qi+1)+'. '+q.q"></div>
-            <div class="flex flex-col gap-2">
-              <template x-for="(opt,oi) in q.opts" :key="oi">
-                <div @click="answerQ(q,oi)"
-                     :class="q.answered!=null ? (oi===q.c ? 'border-[var(--grn)] bg-[rgba(34,197,94,.1)] text-[var(--grn)]' : (oi===q.answered ? 'border-[var(--red)] bg-[rgba(239,68,68,.1)] text-[var(--red)]' : 'opacity-50')) : 'hover:border-p4 hover:tx-p4 hover:bg-[var(--bd2)]'"
-                     class="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-sf border bd2 cursor-pointer tx2 text-[13.5px] t-btn">
-                  <span class="w-6 h-6 rounded-full bg-[var(--bd)] grid place-items-center text-xs font-bold flex-shrink-0" x-text="'ABCD'[oi]"></span>
-                  <span x-text="opt"></span>
-                </div>
-              </template>
-            </div>
-          </div>
-        </template>
-      </div>
-      <div x-show="ptMode==='ai'">
-        <div class="bg-sf2 border bd2 rounded-2xl p-5 t-theme">
-          <div class="text-[13px] font-semibold tx mb-2.5">✨ AI Practice Test Generator</div>
-          <textarea x-model="testTopic" class="w-full bg-sf border bd rounded-xl px-4 py-3 font-sans text-sm tx resize-y outline-none min-h-[80px] focus:border-p4 t-btn placeholder:tx3" placeholder="Enter a topic (e.g. 'Algebra — quadratic equations')..."></textarea>
-          <div class="flex gap-2.5 mt-2.5 items-center flex-wrap">
-            <select x-model="testCount" class="bg-sf border bd rounded-xl px-3.5 py-2 font-sans text-[13px] tx outline-none cursor-pointer">
-              <option value="3">3 questions</option><option value="5" selected>5 questions</option><option value="8">8 questions</option><option value="10">10 questions</option>
-            </select>
-            <select x-model="testDiff" class="bg-sf border bd rounded-xl px-3.5 py-2 font-sans text-[13px] tx outline-none cursor-pointer">
-              <option value="easy">Easy</option><option value="mixed" selected>Mixed</option><option value="hard">Hard</option>
-            </select>
-            <button @click="genTest()" :disabled="loadingPT" class="text-[13px] font-semibold px-5 py-2 rounded-full border-none text-white grad-bg cursor-pointer shadow-glow t-btn disabled:opacity-50">
-              <span x-text="loadingPT ? 'Generating…' : 'Generate Test'"></span>
-            </button>
-            <span class="text-[13px] tx3" x-text="ptStatus"></span>
-          </div>
+
+      <div class="relative rounded-2xl p-6 overflow-hidden cursor-default t-theme"
+           style="border:1.5px solid rgba(139,92,246,0.4); box-shadow:0 0 20px rgba(139,92,246,0.15); transition:transform 0.4s cubic-bezier(.23,1,.32,1); background:var(--bg2);"
+           @mousemove="
+             let r=$el.getBoundingClientRect(),x=($event.clientX-r.left)/r.width,y=($event.clientY-r.top)/r.height;
+             $el.style.transform='perspective(700px) rotateX('+(-(y-0.5)*6)+'deg) rotateY('+((x-0.5)*6)+'deg) translateY(-4px)';
+             $el.querySelector('.sg-glow').style.background='radial-gradient(circle at '+(x*100)+'% '+(y*100)+'%, rgba(139,92,246,0.35) 0%, transparent 65%)';
+             $el.querySelector('.sg-glow').style.opacity='1';
+           "
+           @mouseleave="$el.style.transform='perspective(700px) rotateX(0deg) rotateY(0deg)';$el.querySelector('.sg-glow').style.opacity='0';">
+        <div class="sg-glow absolute inset-0 rounded-2xl pointer-events-none" style="opacity:0;transition:opacity 0.3s ease;z-index:0;mix-blend-mode:normal;"></div>
+        <div class="relative z-10">
+          <h4 class="text-[15px] font-bold tx-p4 mb-2">🔑 Key Stages (PMAT)</h4>
+          <ul class="pl-4 text-sm tx2 list-disc space-y-1">
+            <li><strong class="tx">Prophase</strong> — Chromosomes condense, spindle forms</li>
+            <li><strong class="tx">Metaphase</strong> — Chromosomes align at cell equator</li>
+            <li><strong class="tx">Anaphase</strong> — Chromatids pulled to opposite poles</li>
+            <li><strong class="tx">Telophase</strong> — Nuclear envelopes reform, cell divides</li>
+          </ul>
         </div>
-        <!-- FIX #22 FRAMEWORK: Alpine x-for renders AI-generated questions reactively -->
-        <template x-for="(q,qi) in aiQuestions" :key="qi">
-          <div class="bg-sf2 border bd2 rounded-2xl p-4.5 mt-3">
-            <div class="text-sm font-semibold tx mb-3" x-text="(qi+1)+'. '+q.q"></div>
-            <div class="flex flex-col gap-2">
-              <template x-for="(opt,oi) in q.opts" :key="oi">
-                <div @click="answerAI(q,oi)"
-                     :class="q.answered!=null ? (oi===q.correct ? 'border-[var(--grn)] bg-[rgba(34,197,94,.1)] text-[var(--grn)]' : (oi===q.answered ? 'border-[var(--red)] bg-[rgba(239,68,68,.1)] text-[var(--red)]' : 'opacity-50')) : 'hover:border-p4 hover:tx-p4 hover:bg-[var(--bd2)]'"
-                     class="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-sf border bd2 cursor-pointer tx2 text-[13.5px] t-btn">
-                  <span class="w-6 h-6 rounded-full bg-[var(--bd)] grid place-items-center text-xs font-bold flex-shrink-0" x-text="'ABCD'[oi]"></span>
-                  <span x-text="opt"></span>
-                </div>
-              </template>
-            </div>
-          </div>
-        </template>
       </div>
+
+      <div class="relative rounded-2xl p-6 overflow-hidden cursor-default t-theme"
+           style="border:1.5px solid rgba(139,92,246,0.4); box-shadow:0 0 20px rgba(139,92,246,0.15); transition:transform 0.4s cubic-bezier(.23,1,.32,1); background:var(--bg2);"
+           @mousemove="
+             let r=$el.getBoundingClientRect(),x=($event.clientX-r.left)/r.width,y=($event.clientY-r.top)/r.height;
+             $el.style.transform='perspective(700px) rotateX('+(-(y-0.5)*6)+'deg) rotateY('+((x-0.5)*6)+'deg) translateY(-4px)';
+             $el.querySelector('.sg-glow').style.background='radial-gradient(circle at '+(x*100)+'% '+(y*100)+'%, rgba(139,92,246,0.35) 0%, transparent 65%)';
+             $el.querySelector('.sg-glow').style.opacity='1';
+           "
+           @mouseleave="$el.style.transform='perspective(700px) rotateX(0deg) rotateY(0deg)';$el.querySelector('.sg-glow').style.opacity='0';">
+        <div class="sg-glow absolute inset-0 rounded-2xl pointer-events-none" style="opacity:0;transition:opacity 0.3s ease;z-index:0;mix-blend-mode:normal;"></div>
+        <div class="relative z-10">
+          <h4 class="text-[15px] font-bold tx-p4 mb-2">💡 Remember</h4>
+          <p class="text-sm tx2">Mnemonic: <strong class="tx">PMAT</strong> — "People Meet And Talk"</p>
+        </div>
+      </div>
+
+      <div class="relative rounded-2xl p-6 overflow-hidden cursor-default t-theme"
+           style="border:1.5px solid rgba(139,92,246,0.4); box-shadow:0 0 20px rgba(139,92,246,0.15); transition:transform 0.4s cubic-bezier(.23,1,.32,1); background:var(--bg2);"
+           @mousemove="
+             let r=$el.getBoundingClientRect(),x=($event.clientX-r.left)/r.width,y=($event.clientY-r.top)/r.height;
+             $el.style.transform='perspective(700px) rotateX('+(-(y-0.5)*6)+'deg) rotateY('+((x-0.5)*6)+'deg) translateY(-4px)';
+             $el.querySelector('.sg-glow').style.background='radial-gradient(circle at '+(x*100)+'% '+(y*100)+'%, rgba(139,92,246,0.35) 0%, transparent 65%)';
+             $el.querySelector('.sg-glow').style.opacity='1';
+           "
+           @mouseleave="$el.style.transform='perspective(700px) rotateX(0deg) rotateY(0deg)';$el.querySelector('.sg-glow').style.opacity='0';">
+        <div class="sg-glow absolute inset-0 rounded-2xl pointer-events-none" style="opacity:0;transition:opacity 0.3s ease;z-index:0;mix-blend-mode:normal;"></div>
+        <div class="relative z-10">
+          <h4 class="text-[15px] font-bold tx-p4 mb-2">⚠️ Common Mistakes</h4>
+          <ul class="pl-4 text-sm tx2 list-disc space-y-1">
+            <li>Confusing <strong class="tx">mitosis</strong> (growth) with <strong class="tx">meiosis</strong> (reproduction)</li>
+            <li>Forgetting cytokinesis follows telophase</li>
+          </ul>
+        </div>
+      </div>
+
     </div>
   </div>
+</div>
+
+<!-- PRACTICE TEST TAB -->
+<div class="w-full max-w-[860px]" x-show="activeTab==='practicetest'" x-transition:enter="animate-fade-up">
+  <div class="bg-card border bd rounded-3xl p-7 t-theme">
+    <h3 class="text-lg font-bold tx mb-2">Practice Test</h3>
+    <div class="text-[13px] tx2 mb-5">Topic: <strong class="tx">Photosynthesis</strong> · Click an answer to check it.</div>
+    <template x-for="(q,qi) in sampleTest" :key="qi">
+      <div class="relative rounded-2xl p-5 mb-4 t-theme"
+           style="border:1.5px solid rgba(139,92,246,0.4); box-shadow:0 0 20px rgba(139,92,246,0.15); background:var(--bg2);">
+        <div class="text-sm font-semibold tx mb-3" x-text="(qi+1)+'. '+q.q"></div>
+        <div class="flex flex-col gap-2">
+          <template x-for="(opt,oi) in q.opts" :key="oi">
+            <div @click="answerQ(q,oi)"
+                 :class="q.answered!=null ? (oi===q.c ? 'border-green-500 bg-green-500/10 text-green-500' : (oi===q.answered ? 'border-red-500 bg-red-500/10 text-red-400' : 'opacity-40')) : 'hover:border-p4 hover:tx-p4 hover:bg-[var(--bd2)]'"
+                 class="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border bd2 cursor-pointer tx2 text-[13.5px] t-btn transition-all duration-200">
+              <span class="w-6 h-6 rounded-full bg-[var(--bd)] grid place-items-center text-xs font-bold flex-shrink-0 tx" x-text="'ABCD'[oi]"></span>
+              <span x-text="opt"></span>
+            </div>
+          </template>
+        </div>
+      </div>
+    </template>
+  </div>
+</div>
 </section>
 
 <!-- ── CHAT ── -->
@@ -442,15 +535,38 @@
 
       <!-- Phone mockup — swap src with your file -->
       <div class="w-full lg:w-[280px] flex-shrink-0 flex justify-center relative">
-        <div class="absolute inset-0 rounded-3xl pointer-events-none" style="background:radial-gradient(ellipse at center,var(--glow) 0%,transparent 70%);filter:blur(20px);transform:scale(1.1)"></div>
-        <img src="assests/korah_img_features.avif" alt="Korah app" class="relative z-10 w-full max-w-[260px] lg:max-w-full rounded-3xl object-cover animate-float" style="box-shadow:0 30px 80px rgba(0,0,0,.5),0 0 40px var(--glow);"/>
+      <div class="absolute inset-0 rounded-3xl pointer-events-none" style="background:radial-gradient(ellipse at center,var(--glow) 0%,transparent 70%);filter:blur(20px);transform:scale(1.1)"></div>
+      <div class="relative z-10 w-full max-w-[260px] lg:max-w-full"
+          style="transition:transform 0.4s cubic-bezier(.23,1,.32,1);"
+          @mousemove="
+          let r=$el.getBoundingClientRect(),x=($event.clientX-r.left)/r.width,y=($event.clientY-r.top)/r.height;
+          $el.style.transform='perspective(700px) rotateX('+(-(y-0.5)*10)+'deg) rotateY('+((x-0.5)*10)+'deg) translateY(-6px)';
+        "
+        @mouseleave="$el.style.transform='perspective(700px) rotateX(0deg) rotateY(0deg) translateY(0)';">
+        <div class="rounded-3xl pointer-events-none" style="opacity:0;transition:opacity 0.3s ease;z-index:1;mix-blend-mode:normal;"></div>
+        <img src="assests/korah_img_features.avif" alt="Korah app" class="w-full rounded-3xl object-cover animate-float" style="box-shadow:0 30px 80px rgba(0,0,0,.5),0 0 40px var(--glow);"/>
       </div>
+    </div>
 
       <div class="flex-1 min-w-0">
-    <div class="bg-card border bd rounded-3xl overflow-hidden shadow-card t-theme">
-      <div class="px-6 py-4.5 border-b bd2 flex items-center gap-3 bg-sf2 t-theme">
-        <div class="w-10 h-10 rounded-xl grad-bg grid place-items-center text-lg shadow-glow" img src = "logo.png"></div>
-        <div>
+    <div class="bg-card border bd rounded-3xl overflow-hidden t-theme"
+     style="border:1.5px solid rgba(139,92,246,0.5); box-shadow:0 0 20px rgba(139,92,246,0.2); transition:transform 0.4s cubic-bezier(.23,1,.32,1); position:relative;"
+     @mousemove="
+       let r=$el.getBoundingClientRect(),x=($event.clientX-r.left)/r.width,y=($event.clientY-r.top)/r.height;
+       $el.style.transform='perspective(900px) rotateX('+(-(y-0.5)*4)+'deg) rotateY('+((x-0.5)*4)+'deg) translateY(-4px)';
+       $el.querySelector('.chat-glow').style.background='radial-gradient(circle at '+(x*100)+'% '+(y*100)+'%, rgba(139,92,246,0.3) 0%, transparent 60%)';
+       $el.querySelector('.chat-glow').style.opacity='1';
+     "
+     @mouseleave="
+       $el.style.transform='perspective(900px) rotateX(0deg) rotateY(0deg) translateY(0)';
+       $el.querySelector('.chat-glow').style.opacity='0';
+     ">
+  <div class="chat-glow absolute inset-0 pointer-events-none" style="opacity:0;transition:opacity 0.3s ease;z-index:1;mix-blend-mode:normal;border-radius:inherit;"></div>
+      <div class="px-6 py-5 border-b bd2 flex items-center gap-3 bg-sf2 t-theme relative z-[2]">
+        <div class="w-10 h-10 rounded-xl grad-bg flex items-center justify-center shadow-glow overflow-hidden flex-shrink-0">
+          <img src="logo.png" class="w-full h-full object-cover"/>
+        </div>
+          <div>
           <!--Todo-->
           <!--Need to add Korah image here-->
           <div class="font-bold tx text-[15px]">Korah AI</div>
@@ -477,7 +593,7 @@
           </div>
         </template>
       </div>
-      <div class="px-5 py-4 border-t bd2 flex gap-2.5 items-end bg-sf2 t-theme">
+      <div class="px-5 py-4 border-t bd2 flex gap-2.5 items-end bg-sf2 t-theme relative z-[2]">
         <textarea x-model="input" @keydown.enter.prevent="!$event.shiftKey && send()" @input="$el.style.height='auto';$el.style.height=$el.scrollHeight+'px'" class="flex-1 bg-sf border bd rounded-xl px-4 py-3 font-sans text-sm tx resize-none outline-none min-h-[44px] max-h-[100px] focus:border-p4 t-btn placeholder:tx3" placeholder="Ask anything — 'Explain osmosis', 'Quiz me on WW2'..." rows="1"></textarea>
         <button @click="send()" class="w-11 h-11 rounded-xl grad-bg border-none cursor-pointer grid place-items-center text-lg shadow-glow t-btn hover:scale-[1.08]">➤</button>
       </div>
@@ -496,18 +612,30 @@
   <h2 class="font-display text-[clamp(2rem,5vw,3.6rem)] font-bold text-center tx leading-tight mb-3.5 reveal relative z-10">Download Korah Beta</h2>
   <div class="mb-10 reveal relative z-10 flex justify-center">
     <div class="relative flex justify-center">
-      <div class="absolute inset-0 pointer-events-none" style="background:radial-gradient(ellipse at 50% 60%,var(--glow),transparent 70%);filter:blur(24px);transform:scale(1.1)"></div>
-      <!-- swap src with your file -->
-      <img src="assests/korah_page.avif" alt="Korah app preview" class="relative z-10 rounded-3xl object-contain border bd2 animate-float" style="height:380px;width:auto;box-shadow:0 30px 80px rgba(0,0,0,.5),0 0 40px var(--glow);"/>
+    <div class="absolute inset-0 pointer-events-none" style="background:radial-gradient(ellipse at 50% 60%,var(--glow),transparent 70%);filter:blur(24px);transform:scale(1.1)"></div>
+    <div class="relative z-10"
+        style="transition:transform 0.4s cubic-bezier(.23,1,.32,1);"
+        @mousemove="
+          let r=$el.getBoundingClientRect(),x=($event.clientX-r.left)/r.width,y=($event.clientY-r.top)/r.height;
+          $el.style.transform='perspective(700px) rotateX('+(-(y-0.5)*10)+'deg) rotateY('+((x-0.5)*10)+'deg) translateY(-6px)';
+        "
+        @mouseleave="$el.style.transform='perspective(700px) rotateX(0deg) rotateY(0deg) translateY(0)';">
+      <div class="rounded-3xl pointer-events-none" style="opacity:0;transition:opacity 0.3s ease;z-index:1;mix-blend-mode:normal;"></div>
+      <img src="assests/korah_page.avif" alt="Korah app preview" class="rounded-3xl object-contain border bd2 animate-float" style="height:380px;width:auto;box-shadow:0 30px 80px rgba(0,0,0,.5),0 0 40px var(--glow);"/>
     </div>
+  </div>
   </div>
   <!-- TestFlight badge — swap link and icon -->
   <div class="mt-1 reveal relative z-10 flex justify-center">
     <a href="https://testflight.apple.com/join/kkxUsBqe" target="_blank"
-       class="inline-flex items-center gap-4 bg-card border bd2 rounded-2xl px-6 py-4 t-theme"
-       style="min-width:260px;box-shadow:0 8px 30px rgba(0,0,0,.4),0 0 20px var(--glow);transition:transform .25s cubic-bezier(.23,1,.32,1),box-shadow .25s;"
-       onmouseover="this.style.transform='translateY(-4px) scale(1.02)';this.style.boxShadow='0 20px 50px rgba(0,0,0,.5),0 0 35px var(--glow)'"
-       onmouseout="this.style.transform='';this.style.boxShadow='0 8px 30px rgba(0,0,0,.4),0 0 20px var(--glow)'">
+    class="inline-flex items-center gap-4 bg-card border bd2 rounded-2xl px-6 py-4 t-theme relative overflow-hidden"
+    style="min-width:260px; box-shadow:0 0 20px rgba(139,92,246,0.2); border:1.5px solid rgba(139,92,246,0.5); transition:transform 0.4s cubic-bezier(.23,1,.32,1);"
+    @mousemove="
+        let r=$el.getBoundingClientRect(),x=($event.clientX-r.left)/r.width,y=($event.clientY-r.top)/r.height;
+        $el.style.transform='perspective(700px) rotateX('+(-(y-0.5)*6)+'deg) rotateY('+((x-0.5)*6)+'deg) translateY(-4px)';
+      "
+      @mouseleave="$el.style.transform='perspective(700px) rotateX(0deg) rotateY(0deg) translateY(0)';">
+    <div class="pointer-events-none rounded-2xl" style="opacity:0;transition:opacity 0.3s ease;z-index:0;mix-blend-mode:normal;"></div>
       <!-- swap src with your TestFlight icon -->
       <img src="assests/test_flight.jpg" alt="" class="w-14 h-14 rounded-2xl object-cover flex-shrink-0" style="box-shadow:0 0 14px var(--glow)"/>
       <div class="flex flex-col leading-tight">
