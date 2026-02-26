@@ -1,16 +1,22 @@
-# Directions
-<h2>Jayden is currently developing the new landing page. I'll be working on the actual web application.</h2>
-<ol>
-  <li>Go to [Korah Website](https://korah.app)</li>
-  <li>Fix all the content on the current HTML file</li>
-  <li>Download the iPhone images from the website and implement them into the HTML page. Feel free to use Claude to help with implementing them, 
-  but make sure you're creating separate image files for them, and linking them (img src = "image.png")</li>
-  <li>Make commits as you work and push to main after you review</li>
-  <li>Let me know anything you need me to do.</li>
-</ol>
-
 # Goals
-<ol>
-  <li>Build Korah chatbot for SAT or AP studying.</li>
-  <li>Migrate mobile app from local to cloud</li>
-</ol>
+<ul>
+  <li>Continue development of "Korah-bot"</li>
+  <li>Link "Korah-Bot" page on landing page</li>
+  <li>Fix JavaScript files for landing page A.I. live demo to work</li>
+  <li>Migrate locally stored app data on Korah Beta repo to cloud so that app and web share same backend</li>
+  <li> Create a Firebase project inlcuding Firebase SDK </li>
+  <li> Create login/signup system </li>
+  <li> Create Firestore Manager and switch user defaults to use the manager </li>
+  <li> updata data models to fit Firestone structure (tasks, flashcards, eg.) </li>              
+</ul>
+
+# Web/Landing Page To Do 
+<ul>
+  <li> Fix Web AI to work like the app's Korah AI </li>
+  <li> Make The Korah-AI (thats free use on the page) be rate limited to 3, and when user finished their 3 tries say AI says something like "To get the full experience, make an account or something". Also filter AI responses. </li>
+  <li> Get rid of background for image under features section (If Possible) </li>
+  <li> Make a log in page for the website </li>
+  <li> Use OpenNotebook repo to implement NoteBookLM features </li>
+  <li> Fix the "Company" Part at the very bottom of the page </li>
+  <li> Implement LaTex and Markdown rendering for text streaming w/ JavaScript libraries</li>
+</ul>

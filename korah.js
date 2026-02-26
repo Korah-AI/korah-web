@@ -263,10 +263,8 @@ function studyTools() {
   return {
     activeTab: 'flashcards',
     tabs: [{ id:'flashcards', label:'🃏 Flashcards' }, { id:'studyguide', label:'📖 Study Guide' }, { id:'practicetest', label:'✏️ Practice Test' }],
-    /* Flashcards */
-    fcMode: 'manual', flashTopic: '', flashCount: '4', loadingFC: false, fcStatus: '',
     sampleCards: [
-      { q:'What is photosynthesis?', a:'Converting sunlight, CO₂ and water into glucose and oxygen.', flipped:false },
+      { q:'What is photosynthesis?', a:'Converting sunlight, CO₂ and water into <strong>glucose</strong> and oxygen.', flipped:false },
       { q:'Where does it occur?', a:'In the <strong>chloroplasts</strong>, in thylakoid membranes and stroma.', flipped:false },
       { q:'What is the light-dependent reaction?', a:'Uses light to produce ATP, NADPH and O₂ from water — in the thylakoids.', flipped:false },
       { q:'What is the Calvin Cycle?', a:'Light-independent reactions in the stroma where CO₂ produces G3P → glucose.', flipped:false },
@@ -287,46 +285,14 @@ function studyTools() {
     /* Study Guide */
     sgMode: 'manual', guideTopic: '', guideDepth: 'detailed', loadingSG: false, sgStatus: '', guideHTML: '',
     async genGuide() {
-      const topic = (this.guideTopic || '').trim();
-      if (!topic) {
-        this.sgStatus = '⚠️ Enter a topic first.';
-        return;
-      }
-      this.loadingSG = true;
-      this.sgStatus = '';
-      this.guideHTML = '';
+      if (!this.guideTopic.trim()) { this.sgStatus = '⚠️ Enter a topic first.'; return; }
+      this.loadingSG = true; this.sgStatus = ''; this.guideHTML = '';
       try {
-        let html = await korahAPI(
-          `You are an expert study guide creator.
-Return ONLY valid HTML, no markdown, no backticks, no JSON.
-Create a ${this.guideDepth} study guide with:
-- A short <h4> title
-- Section headings using <h4>
-- Explanations in <p>
-- Bullet lists with <ul><li>
-- A "Key Takeaways" section
-- A "Common Mistakes" section.`,
-          [{ role:'user', content:`Create a study guide for: ${topic}` }],
-          1500
-        );
-
-        if (typeof html !== 'string') html = String(html ?? '');
-
-        // Defensive cleanup in case the model still returns markdown-style syntax.
-        html = html
-          .replace(/```html|```/gi, '')
-          .replace(/###\s*/g, '')
-          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-          .trim();
-
-        this.guideHTML = html;
+        const html = await korahAPI(`Create a ${this.guideDepth} study guide. Use <h4> headers, <p>, <ul><li>. Include Key Takeaways and Common Mistakes. No code blocks.`, [{ role:'user', content:'Study guide for: '+this.guideTopic }]);
+        this.guideHTML = html.replace(/###\s*/g,'').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
         this.sgStatus = '✅ Generated!';
-      } catch (err) {
-        console.error('genGuide error', err);
-        this.sgStatus = 'Error generating guide. Please try again.';
-      } finally {
-        this.loadingSG = false;
-      }
+      } catch { this.sgStatus = 'Error. Try again.'; }
+      this.loadingSG = false;
     },
     /* Practice Test */
     ptMode: 'sample', testTopic: '', testCount: '5', testDiff: 'mixed', loadingPT: false, ptStatus: '', aiQuestions: [],
@@ -337,21 +303,11 @@ Create a ${this.guideDepth} study guide with:
       { q:'Which stage occurs in the stroma?', opts:['Light reactions','Calvin Cycle','Glycolysis','Krebs Cycle'], c:1, answered:null },
     ],
     answerQ(q, oi) { if (q.answered == null) q.answered = oi; },
-    answerAI(q, oi) { if (q.answered == null) q.answered = oi; },
-    async genTest() {
-      if (!this.testTopic.trim()) { this.ptStatus = '⚠️ Enter a topic first.'; return; }
-      this.loadingPT = true; this.ptStatus = ''; this.aiQuestions = [];
-      try {
-        let raw = await korahAPI(`Generate exactly ${this.testCount} MCQ at ${this.testDiff} difficulty. Return ONLY JSON: [{"q":"...","opts":["A","B","C","D"],"correct":0}]. No markdown.`, [{ role:'user', content:this.testTopic }], 1500);
-        raw = raw.replace(/```json|```/g, '').trim();
-        this.aiQuestions = JSON.parse(raw).map(q => ({ ...q, answered:null }));
-        this.ptStatus = `✅ ${this.aiQuestions.length} questions!`;
-        this.ptMode = 'ai';
-      } catch { this.ptStatus = 'Error. Try again.'; }
-      this.loadingPT = false;
-    }
+    
   };
 }
+
+
 
 function chatWidget() {
   return {
