@@ -10,14 +10,13 @@
   <li> updata data models to fit Firestone structure (tasks, flashcards, eg.) </li>              
 </ul>
 
-# Web/Landing Page To Do
+# Web/Landing Page To Do 
 <ul>
-  <li> Get rid of Daily Streaks In Features And Flashcards. *Maybe Replace With Another Feature </li>
-  <li> Improve flashcards section under study tools section.  </li>
-  <li> Make The Korah-AI (thats free use on the page) be rate limited to 3 and also a bit more interactive and 3d. Also filtered in responses. </li>
-  <li> Get rid of background for image under features section. </li>
-  <li> Add spacing betwee smart task manager and focus sessions. (And seperate them possibly)</li>
-  <li> Fix landing page AI chat to be more accurate and true</li>
+  <li> Fix Web AI to work like the app's Korah AI </li>
+  <li> Make The Korah-AI (thats free use on the page) be rate limited to 3, and when user finished their 3 tries say AI says something like "To get the full experience, make an account or something". Also filter AI responses. </li>
+  <li> Get rid of background for image under features section (If Possible) </li>
+  <li> Make a log in page for the website </li>
   <li> Use OpenNotebook repo to implement NoteBookLM features </li>
+  <li> Fix the "Company" Part at the very bottom of the page </li>
   <li> Implement LaTex and Markdown rendering for text streaming w/ JavaScript libraries</li>
 </ul>

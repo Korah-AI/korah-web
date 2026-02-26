@@ -226,41 +226,14 @@ function studyTools() {
   return {
     activeTab: 'flashcards',
     tabs: [{ id:'flashcards', label:'🃏 Flashcards' }, { id:'studyguide', label:'📖 Study Guide' }, { id:'practicetest', label:'✏️ Practice Test' }],
-    /* Flashcards */
-    fcMode: 'manual', flashTopic: '', flashCount: '4', loadingFC: false, fcStatus: '',
     sampleCards: [
-      { q:'What is photosynthesis?', a:'Converting sunlight, CO₂ and water into glucose and oxygen.', flipped:false },
+      { q:'What is photosynthesis?', a:'Converting sunlight, CO₂ and water into <strong>glucose</strong> and oxygen.', flipped:false },
       { q:'Where does it occur?', a:'In the <strong>chloroplasts</strong>, in thylakoid membranes and stroma.', flipped:false },
-      { q:'What is the light-dependent reaction?', a:'Uses light to produce ATP, NADPH and O₂ from water — in the thylakoids.', flipped:false },
-      { q:'What is the Calvin Cycle?', a:'Light-independent reactions in the stroma where CO₂ produces G3P → glucose.', flipped:false },
+      { q:'What is the light-dependent reaction?', a:'Uses light to produce <strong>ATP</strong>, NADPH and O₂ — occurs in the thylakoids.', flipped:false },
+      { q:'What is the Calvin Cycle?', a:'Light-independent reactions in the stroma — CO₂ converted into <strong>glucose</strong> via G3P.', flipped:false },
+      { q:'What is the overall equation?', a:'6CO₂ + 6H₂O + light → <strong>C₆H₁₂O₆ + 6O₂</strong>', flipped:false },
+      { q:'What is chlorophyll?', a:'The green pigment that <strong>absorbs light energy</strong> to power photosynthesis.', flipped:false },
     ],
-    async genFlashcards() {
-      if (!this.flashTopic.trim()) { this.fcStatus = '⚠️ Enter a topic first.'; return; }
-      this.loadingFC = true; this.fcStatus = '';
-      try {
-        let raw = await korahAPI(`Generate exactly ${this.flashCount} flashcard Q&A pairs. Return ONLY JSON array: [{"q":"...","a":"..."}]. No markdown.`, [{ role:'user', content:this.flashTopic }]);
-        raw = raw.replace(/```json|```/g, '').trim();
-        const cards = JSON.parse(raw);
-        this.sampleCards = cards.map(c => ({ q:c.q, a:c.a, flipped:false }));
-        this.fcStatus = `✅ ${cards.length} cards generated!`;
-        this.fcMode = 'manual';
-      } catch { this.fcStatus = 'Error. Try again.'; }
-      this.loadingFC = false;
-    },
-    /* Study Guide */
-    sgMode: 'manual', guideTopic: '', guideDepth: 'detailed', loadingSG: false, sgStatus: '', guideHTML: '',
-    async genGuide() {
-      if (!this.guideTopic.trim()) { this.sgStatus = '⚠️ Enter a topic first.'; return; }
-      this.loadingSG = true; this.sgStatus = ''; this.guideHTML = '';
-      try {
-        const html = await korahAPI(`Create a ${this.guideDepth} study guide. Use <h4> headers, <p>, <ul><li>. Include Key Takeaways and Common Mistakes. No code blocks.`, [{ role:'user', content:'Study guide for: '+this.guideTopic }]);
-        this.guideHTML = html.replace(/###\s*/g,'').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
-        this.sgStatus = '✅ Generated!';
-      } catch { this.sgStatus = 'Error. Try again.'; }
-      this.loadingSG = false;
-    },
-    /* Practice Test */
-    ptMode: 'sample', testTopic: '', testCount: '5', testDiff: 'mixed', loadingPT: false, ptStatus: '', aiQuestions: [],
     sampleTest: [
       { q:'What is the primary product of photosynthesis?', opts:['Oxygen','Glucose','Carbon Dioxide','Water'], c:1, answered:null },
       { q:'In which organelle does photosynthesis take place?', opts:['Mitochondria','Nucleus','Chloroplast','Ribosome'], c:2, answered:null },
@@ -268,21 +241,11 @@ function studyTools() {
       { q:'Which stage occurs in the stroma?', opts:['Light reactions','Calvin Cycle','Glycolysis','Krebs Cycle'], c:1, answered:null },
     ],
     answerQ(q, oi) { if (q.answered == null) q.answered = oi; },
-    answerAI(q, oi) { if (q.answered == null) q.answered = oi; },
-    async genTest() {
-      if (!this.testTopic.trim()) { this.ptStatus = '⚠️ Enter a topic first.'; return; }
-      this.loadingPT = true; this.ptStatus = ''; this.aiQuestions = [];
-      try {
-        let raw = await korahAPI(`Generate exactly ${this.testCount} MCQ at ${this.testDiff} difficulty. Return ONLY JSON: [{"q":"...","opts":["A","B","C","D"],"correct":0}]. No markdown.`, [{ role:'user', content:this.testTopic }], 1500);
-        raw = raw.replace(/```json|```/g, '').trim();
-        this.aiQuestions = JSON.parse(raw).map(q => ({ ...q, answered:null }));
-        this.ptStatus = `✅ ${this.aiQuestions.length} questions!`;
-        this.ptMode = 'ai';
-      } catch { this.ptStatus = 'Error. Try again.'; }
-      this.loadingPT = false;
-    }
+    
   };
 }
+
+
 
 function chatWidget() {
   return {
