@@ -14,7 +14,6 @@
 <ul>
   <li> Fix Web AI to work like the app's Korah AI </li>
   <li> Make The Korah-AI (thats free use on the page) be rate limited to 3, and when user finished their 3 tries say AI says something like "To get the full experience, make an account or something". Also filter AI responses. </li>
-  <li> Get rid of background for image under features section (If Possible) </li>
   <li> Make a log in page for the website </li>
   <li> Use OpenNotebook repo to implement NoteBookLM features </li>
   <li> Fix the "Company" Part at the very bottom of the page </li>
