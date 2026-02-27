@@ -14,10 +14,90 @@
   const newChatBtn = document.getElementById("new-chat-btn");
   const suggestionChips = document.querySelectorAll(".suggestion-chip");
   const quickPromptButtons = document.querySelectorAll("#tool-flashcard, #tool-guide");
+  const chatHistoryContainer = document.getElementById("chat-history");
+  const chatTitleEl = document.getElementById("chat-title");
 
   if (!input || !sendBtn || !messagesList) return;
 
-  const history = [];
+  // ═══ Storage Utilities ═══
+  const Storage = {
+    SESSIONS_KEY: "korah_sessions",
+    CURRENT_SESSION_KEY: "korah_current_session",
+    SETTINGS_KEY: "korah_settings",
+
+    getSessions() {
+      const data = localStorage.getItem(this.SESSIONS_KEY);
+      return data ? JSON.parse(data) : {};
+    },
+
+    saveSessions(sessions) {
+      localStorage.setItem(this.SESSIONS_KEY, JSON.stringify(sessions));
+    },
+
+    getCurrentSessionId() {
+      return localStorage.getItem(this.CURRENT_SESSION_KEY) || "default";
+    },
+
+    setCurrentSessionId(id) {
+      localStorage.setItem(this.CURRENT_SESSION_KEY, id);
+    },
+
+    getSession(id) {
+      const sessions = this.getSessions();
+      return sessions[id] || null;
+    },
+
+    saveSession(id, session) {
+      const sessions = this.getSessions();
+      sessions[id] = session;
+      this.saveSessions(sessions);
+    },
+
+    deleteSession(id) {
+      const sessions = this.getSessions();
+      delete sessions[id];
+      this.saveSessions(sessions);
+    },
+
+    createSession(title = "New Chat", mode = "physics") {
+      const id = `session_${Date.now()}`;
+      const session = {
+        id,
+        title,
+        mode,
+        messages: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      this.saveSession(id, session);
+      return id;
+    },
+
+    getSettings() {
+      const data = localStorage.getItem(this.SETTINGS_KEY);
+      return data ? JSON.parse(data) : {
+        defaultMode: "physics",
+        detailLevel: "detailed",
+        autoFollowUp: true,
+        focusTimerDefault: 25,
+      };
+    },
+
+    saveSettings(settings) {
+      localStorage.setItem(this.SETTINGS_KEY, JSON.stringify(settings));
+    },
+  };
+
+  // ═══ Session State ═══
+  let currentSessionId = Storage.getCurrentSessionId();
+  let currentSession = Storage.getSession(currentSessionId);
+  if (!currentSession) {
+    currentSessionId = Storage.createSession("Photosynthesis Study Guide", "physics");
+    currentSession = Storage.getSession(currentSessionId);
+    Storage.setCurrentSessionId(currentSessionId);
+  }
+
+  const history = currentSession.messages || [];
   let isSending = false;
 
   function scrollToBottom() {
@@ -119,6 +199,170 @@
     return reply;
   }
 
+  function saveCurrentSession() {
+    currentSession.messages = history;
+    currentSession.updatedAt = new Date().toISOString();
+    Storage.saveSession(currentSessionId, currentSession);
+  }
+
+  function loadSessionMessages() {
+    messagesList.innerHTML = "";
+    if (history.length === 0) {
+      setWelcomeVisibility(true);
+    } else {
+      setWelcomeVisibility(false);
+      history.forEach((msg) => {
+        appendMessage(msg.role, msg.content);
+      });
+    }
+    if (chatTitleEl) chatTitleEl.textContent = currentSession.title;
+  }
+
+  function switchToSession(sessionId) {
+    if (sessionId === currentSessionId) return;
+    
+    const session = Storage.getSession(sessionId);
+    if (!session) return;
+
+    currentSessionId = sessionId;
+    currentSession = session;
+    Storage.setCurrentSessionId(sessionId);
+    
+    history.length = 0;
+    history.push(...currentSession.messages);
+    
+    loadSessionMessages();
+    renderChatHistory();
+  }
+
+  function deleteSessionById(sessionId) {
+    if (sessionId === currentSessionId) {
+      // If deleting current session, switch to another or create new
+      const sessions = Storage.getSessions();
+      const sessionIds = Object.keys(sessions).filter(id => id !== sessionId);
+      
+      if (sessionIds.length > 0) {
+        switchToSession(sessionIds[0]);
+      } else {
+        const newId = Storage.createSession("New Chat", "physics");
+        switchToSession(newId);
+      }
+    }
+    
+    Storage.deleteSession(sessionId);
+    renderChatHistory();
+  }
+
+  function renameSession(sessionId, newTitle) {
+    const session = Storage.getSession(sessionId);
+    if (!session) return;
+    
+    session.title = newTitle;
+    session.updatedAt = new Date().toISOString();
+    Storage.saveSession(sessionId, session);
+    
+    if (sessionId === currentSessionId) {
+      currentSession.title = newTitle;
+      if (chatTitleEl) chatTitleEl.textContent = newTitle;
+    }
+    
+    renderChatHistory();
+  }
+
+  function getModeEmoji(mode) {
+    const emojiMap = {
+      math: "🧮",
+      physics: "⚛️",
+      chemistry: "⚗️",
+      biology: "🧬",
+      history: "📜",
+      literature: "📚",
+    };
+    return emojiMap[mode] || "📝";
+  }
+
+  function renderChatHistory() {
+    if (!chatHistoryContainer) return;
+    
+    const sessions = Storage.getSessions();
+    const sessionIds = Object.keys(sessions).sort((a, b) => {
+      return new Date(sessions[b].updatedAt) - new Date(sessions[a].updatedAt);
+    });
+
+    chatHistoryContainer.innerHTML = "";
+
+    sessionIds.forEach((sessionId) => {
+      const session = sessions[sessionId];
+      const btn = document.createElement("button");
+      btn.className = `history-item t-btn ${sessionId === currentSessionId ? "active" : ""}`;
+      btn.setAttribute("data-session", sessionId);
+      
+      const icon = document.createElement("span");
+      icon.className = "history-icon";
+      icon.textContent = getModeEmoji(session.mode);
+      
+      const text = document.createElement("span");
+      text.className = "history-text";
+      text.textContent = session.title;
+      
+      const actions = document.createElement("div");
+      actions.className = "history-actions";
+      actions.innerHTML = `
+        <button class="history-action-btn rename-btn" title="Rename" data-id="${sessionId}">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+        </button>
+        <button class="history-action-btn delete-btn" title="Delete" data-id="${sessionId}">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+          </svg>
+        </button>
+      `;
+      
+      btn.appendChild(icon);
+      btn.appendChild(text);
+      btn.appendChild(actions);
+      chatHistoryContainer.appendChild(btn);
+      
+      // Click on item to switch session
+      btn.addEventListener("click", (e) => {
+        if (e.target.closest(".history-action-btn")) return;
+        switchToSession(sessionId);
+      });
+    });
+
+    // Attach event listeners for rename and delete
+    chatHistoryContainer.querySelectorAll(".rename-btn").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const sessionId = btn.getAttribute("data-id");
+        const session = Storage.getSession(sessionId);
+        if (!session) return;
+        
+        const newTitle = prompt("Rename chat:", session.title);
+        if (newTitle && newTitle.trim()) {
+          renameSession(sessionId, newTitle.trim());
+        }
+      });
+    });
+
+    chatHistoryContainer.querySelectorAll(".delete-btn").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const sessionId = btn.getAttribute("data-id");
+        const session = Storage.getSession(sessionId);
+        if (!session) return;
+        
+        if (confirm(`Delete "${session.title}"?`)) {
+          deleteSessionById(sessionId);
+        }
+      });
+    });
+  }
+
   async function sendMessage(prefillText) {
     if (isSending) return;
     const raw = typeof prefillText === "string" ? prefillText : input.value;
@@ -132,6 +376,7 @@
 
     appendMessage("user", text);
     history.push({ role: "user", content: text });
+    saveCurrentSession();
 
     input.value = "";
     resizeInput();
@@ -143,6 +388,7 @@
       const reply = await callChatApi(history);
       history.push({ role: "assistant", content: reply });
       appendMessage("assistant", reply);
+      saveCurrentSession();
     } catch (error) {
       console.error("Chat request failed:", error);
       appendMessage(
@@ -165,6 +411,7 @@
     updateCharCount();
     setWelcomeVisibility(true);
     setTyping(false);
+    saveCurrentSession();
   }
 
   sendBtn.addEventListener("click", () => sendMessage());
@@ -203,8 +450,31 @@
   });
 
   if (clearChatBtn) clearChatBtn.addEventListener("click", resetChat);
-  if (newChatBtn) newChatBtn.addEventListener("click", resetChat);
+  if (newChatBtn) {
+    newChatBtn.addEventListener("click", () => {
+      const newId = Storage.createSession("New Chat", currentSession.mode);
+      currentSessionId = newId;
+      currentSession = Storage.getSession(newId);
+      Storage.setCurrentSessionId(newId);
+      history.length = 0;
+      history.push(...currentSession.messages);
+      loadSessionMessages();
+      renderChatHistory();
+    });
+  }
 
+  // Sidebar toggle functionality
+  const sidebar = document.getElementById("sidebar");
+  const sidebarToggle = document.getElementById("sidebar-toggle");
+  if (sidebarToggle && sidebar) {
+    sidebarToggle.addEventListener("click", () => {
+      sidebar.classList.toggle("collapsed");
+    });
+  }
+
+  // Load saved messages and render history on startup
+  renderChatHistory();
+  loadSessionMessages();
   resizeInput();
   updateCharCount();
 })();

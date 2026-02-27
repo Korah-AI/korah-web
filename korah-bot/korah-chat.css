@@ -165,11 +165,37 @@ body { display: flex; background: var(--bg) }
     width: 100%;
     white-space: nowrap;
     overflow: hidden;
+    position: relative;
 }
 .history-item:hover { background: var(--bd2); color: var(--tx) }
+.history-item:hover .history-actions { opacity: 1; pointer-events: all }
 .history-item.active { background: var(--cu); color: var(--p5); border: 1px solid var(--bd) }
 .history-icon { font-size: 14px; flex-shrink: 0 }
-.history-text { overflow: hidden; text-overflow: ellipsis }
+.history-text { overflow: hidden; text-overflow: ellipsis; flex: 1 }
+.history-actions {
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s;
+    flex-shrink: 0;
+}
+.history-action-btn {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--tx3);
+    padding: 0;
+    transition: background .2s, color .2s;
+}
+.history-action-btn:hover { background: var(--cu); color: var(--p4) }
+.history-action-btn.delete-btn:hover { color: var(--red); background: rgba(239,68,68,.08) }
 
 .quick-tools {
     display: grid;
