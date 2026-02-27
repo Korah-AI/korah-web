@@ -133,7 +133,7 @@
     input.disabled = sending;
   }
 
-  function buildMessageRow(role, text, isError = false) {
+  function buildMessageRow(role, text, isError = false, suggestions = []) {
     const row = document.createElement("div");
     row.className = `msg-row ${role === "user" ? "user" : "assistant"}`;
 
@@ -154,26 +154,189 @@
 
     bubble.appendChild(label);
     bubble.appendChild(content);
+
+    // Add AI-generated suggestions for assistant messages
+    if (role === "assistant" && !isError && suggestions.length > 0) {
+      const suggestionsDiv = document.createElement("div");
+      suggestionsDiv.className = "inline-suggestions";
+      
+      suggestions.forEach((suggestion) => {
+        const btn = document.createElement("button");
+        btn.className = "inline-suggestion-btn t-btn";
+        btn.textContent = suggestion;
+        btn.addEventListener("click", () => {
+          sendMessage(suggestion);
+        });
+        suggestionsDiv.appendChild(btn);
+      });
+      
+      bubble.appendChild(suggestionsDiv);
+    }
+
     row.appendChild(avatar);
     row.appendChild(bubble);
     return row;
   }
 
-  function appendMessage(role, text, isError = false) {
-    const row = buildMessageRow(role, text, isError);
+  function getFollowUpActionsForMode(mode) {
+    const commonActions = [
+      { icon: "🃏", label: "Make flashcards", prompt: "Create flashcards based on what you just explained" },
+      { icon: "🎯", label: "Quiz me", prompt: "Give me a quick quiz on this topic" },
+      { icon: "🔄", label: "Explain simpler", prompt: "Can you explain that in simpler terms?" },
+    ];
+
+    const modeSpecific = {
+      math: [
+        { icon: "📝", label: "Practice problems", prompt: "Give me similar practice problems to solve" },
+        { icon: "✅", label: "Show examples", prompt: "Show me more step-by-step examples" },
+      ],
+      physics: [
+        { icon: "🌍", label: "Real-world example", prompt: "Give me a real-world example of this concept" },
+        { icon: "🔬", label: "Show experiment", prompt: "Describe an experiment that demonstrates this" },
+      ],
+      chemistry: [
+        { icon: "⚗️", label: "Show reaction", prompt: "Show me the balanced chemical equation" },
+        { icon: "🧪", label: "Related reactions", prompt: "What are similar chemical reactions?" },
+      ],
+      biology: [
+        { icon: "🔬", label: "Show diagram", prompt: "Describe a diagram of this process" },
+        { icon: "🧬", label: "Related concepts", prompt: "What other biological concepts relate to this?" },
+      ],
+      history: [
+        { icon: "📅", label: "Timeline", prompt: "Create a timeline of these events" },
+        { icon: "🌍", label: "Broader context", prompt: "What was happening globally during this time?" },
+      ],
+      literature: [
+        { icon: "📖", label: "Find themes", prompt: "What are the main themes in this text?" },
+        { icon: "💭", label: "Analyze symbols", prompt: "What symbols or motifs appear in this work?" },
+      ],
+    };
+
+    return [...commonActions, ...(modeSpecific[mode] || [])];
+  }
+
+  function appendMessage(role, text, isError = false, suggestions = []) {
+    const row = buildMessageRow(role, text, isError, suggestions);
     messagesList.appendChild(row);
     setWelcomeVisibility(false);
     scrollToBottom();
   }
 
+  function generateContextualSuggestions(aiResponse) {
+    // Generate 2-3 contextual follow-up questions based on AI response content
+    const suggestions = [];
+    const response = aiResponse.toLowerCase();
+    const mode = currentSession.mode || "physics";
+
+    // Mode-specific keyword-based suggestions
+    if (mode === "math") {
+      if (response.includes("quadratic") || response.includes("x²")) {
+        suggestions.push("What is the discriminant?", "How do I complete the square?");
+      } else if (response.includes("derivative") || response.includes("calculus")) {
+        suggestions.push("Show me the chain rule", "What about integration?");
+      } else if (response.includes("equation") || response.includes("solve")) {
+        suggestions.push("Show me another example", "What if the numbers were different?");
+      } else {
+        suggestions.push("Can you show me a practice problem?", "Explain the next step");
+      }
+    } else if (mode === "physics") {
+      if (response.includes("force") || response.includes("newton")) {
+        suggestions.push("What about friction?", "Show me an example calculation");
+      } else if (response.includes("energy") || response.includes("kinetic")) {
+        suggestions.push("What is potential energy?", "How is energy conserved?");
+      } else if (response.includes("motion") || response.includes("velocity")) {
+        suggestions.push("What about acceleration?", "Show me a real-world example");
+      } else {
+        suggestions.push("Can you explain the formula?", "What's a practical application?");
+      }
+    } else if (mode === "chemistry") {
+      if (response.includes("reaction") || response.includes("chemical")) {
+        suggestions.push("What are the products?", "Is this exothermic?");
+      } else if (response.includes("atom") || response.includes("electron")) {
+        suggestions.push("What about ionic bonds?", "Show me the Lewis structure");
+      } else if (response.includes("acid") || response.includes("base")) {
+        suggestions.push("What is pH?", "Show me a neutralization reaction");
+      } else {
+        suggestions.push("Can you show the balanced equation?", "What are similar reactions?");
+      }
+    } else if (mode === "biology") {
+      if (response.includes("cell") || response.includes("mitochondria")) {
+        suggestions.push("What about the nucleus?", "How does cellular respiration work?");
+      } else if (response.includes("dna") || response.includes("gene")) {
+        suggestions.push("What is transcription?", "How does mutation occur?");
+      } else if (response.includes("evolution") || response.includes("natural selection")) {
+        suggestions.push("What is adaptation?", "Can you give an example?");
+      } else {
+        suggestions.push("What's the biological significance?", "Are there related processes?");
+      }
+    } else if (mode === "history") {
+      if (response.includes("war") || response.includes("battle")) {
+        suggestions.push("What caused this conflict?", "What were the consequences?");
+      } else if (response.includes("revolution") || response.includes("independence")) {
+        suggestions.push("Who were the key figures?", "What happened afterwards?");
+      } else if (response.includes("century") || response.includes("era")) {
+        suggestions.push("What else was happening then?", "How did this shape history?");
+      } else {
+        suggestions.push("What's the historical context?", "What were the long-term effects?");
+      }
+    } else if (mode === "literature") {
+      if (response.includes("character") || response.includes("protagonist")) {
+        suggestions.push("What motivates this character?", "How do they develop?");
+      } else if (response.includes("theme") || response.includes("symbol")) {
+        suggestions.push("What other themes appear?", "Can you analyze the imagery?");
+      } else if (response.includes("author") || response.includes("writer")) {
+        suggestions.push("What influenced the author?", "What's their writing style?");
+      } else {
+        suggestions.push("What's the deeper meaning?", "How does this relate to the text?");
+      }
+    }
+
+    // Limit to 2-3 suggestions
+    return suggestions.slice(0, 3);
+  }
+
+  function showSuggestionBar() {
+    const suggestionBar = document.getElementById("suggestion-bar");
+    if (!suggestionBar) return;
+
+    const mode = currentSession.mode || "physics";
+    const suggestions = getFollowUpActionsForMode(mode);
+
+    suggestionBar.innerHTML = "";
+    suggestions.forEach((suggestion) => {
+      const btn = document.createElement("button");
+      btn.className = "suggestion-prompt-btn t-btn";
+      btn.innerHTML = `<span>${suggestion.icon}</span><span>${suggestion.label}</span>`;
+      btn.addEventListener("click", () => {
+        sendMessage(suggestion.prompt);
+      });
+      suggestionBar.appendChild(btn);
+    });
+
+    suggestionBar.classList.add("show");
+  }
+
+  function hideSuggestionBar() {
+    const suggestionBar = document.getElementById("suggestion-bar");
+    if (suggestionBar) {
+      suggestionBar.classList.remove("show");
+    }
+  }
+
   async function callChatApi(messages) {
+    const systemPrompt = getSystemPrompt(currentSession.mode || "physics");
+    const messagesWithSystem = [
+      { role: "system", content: systemPrompt },
+      ...messages
+    ];
+
     const response = await fetch(API_ENDPOINT, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         model: MODEL,
         temperature: 0.7,
-        messages
+        messages: messagesWithSystem
       })
     });
 
@@ -207,6 +370,7 @@
 
   function loadSessionMessages() {
     messagesList.innerHTML = "";
+    hideSuggestionBar();
     if (history.length === 0) {
       setWelcomeVisibility(true);
     } else {
@@ -214,8 +378,13 @@
       history.forEach((msg) => {
         appendMessage(msg.role, msg.content);
       });
+      // Show suggestion bar if last message was from assistant
+      if (history.length > 0 && history[history.length - 1].role === "assistant") {
+        showSuggestionBar();
+      }
     }
     if (chatTitleEl) chatTitleEl.textContent = currentSession.title;
+    updateModeButtonState();
   }
 
   function switchToSession(sessionId) {
@@ -271,6 +440,56 @@
   }
 
   // ═══ Mode Functions ═══
+  const MODE_SYSTEM_PROMPTS = {
+    math: `You are Korah, an expert math tutor. Your teaching style:
+- Break down problems into clear, step-by-step solutions
+- Show your work at each stage and explain why each step is necessary
+- Use examples and visual representations when helpful
+- Help students understand concepts, not just memorize formulas
+- Encourage problem-solving strategies and mental math techniques
+- When showing equations, explain each variable and operation clearly`,
+
+    physics: `You are Korah, an engaging physics tutor. Your teaching style:
+- Explain concepts through real-world applications and examples
+- Connect abstract theories to tangible phenomena students can observe
+- Show how formulas are derived and what each variable represents
+- Use analogies to make complex ideas accessible
+- Emphasize conceptual understanding before mathematical complexity
+- Help visualize forces, motion, energy, and other physical concepts`,
+
+    chemistry: `You are Korah, an enthusiastic chemistry tutor. Your teaching style:
+- Explain chemical reactions with clear mechanisms and electron movement
+- Help visualize molecular structures and bonding
+- Connect microscopic (atomic) behavior to macroscopic observations
+- Use everyday examples to illustrate chemical principles
+- Emphasize patterns in the periodic table and chemical families
+- Show balanced equations and explain stoichiometry clearly`,
+
+    biology: `You are Korah, a knowledgeable biology tutor. Your teaching style:
+- Explain life processes from molecular to organism level
+- Use clear terminology while defining scientific terms as you go
+- Connect structure to function in biological systems
+- Help students understand relationships between different biological concepts
+- Use diagrams and flow charts mentally when describing processes
+- Emphasize the interconnectedness of living systems`,
+
+    history: `You are Korah, a insightful history tutor. Your teaching style:
+- Provide context and background for historical events
+- Explain cause-and-effect relationships between events
+- Present multiple perspectives when discussing historical topics
+- Connect past events to present-day implications
+- Help students analyze primary sources and evaluate evidence
+- Create timelines and show how events relate chronologically`,
+
+    literature: `You are Korah, a thoughtful literature tutor. Your teaching style:
+- Guide analysis of themes, symbols, and literary devices
+- Discuss character development and motivations
+- Explore how context (historical, cultural, biographical) influences texts
+- Help identify and interpret figurative language
+- Encourage close reading and textual evidence
+- Make connections between different literary works and ideas`,
+  };
+
   function getModeConfig(mode) {
     const modes = {
       math: { name: "Math", emoji: "🧮" },
@@ -281,6 +500,10 @@
       literature: { name: "Literature", emoji: "📚" },
     };
     return modes[mode] || modes.physics;
+  }
+
+  function getSystemPrompt(mode) {
+    return MODE_SYSTEM_PROMPTS[mode] || MODE_SYSTEM_PROMPTS.physics;
   }
 
   function getModeEmoji(mode) {
@@ -315,11 +538,32 @@
   }
 
   function changeMode(newMode) {
+    // Don't allow mode change if conversation has started
+    if (history.length > 0) {
+      alert("Cannot change mode once conversation has started. Create a new chat to use a different mode.");
+      return;
+    }
+    
     currentSession.mode = newMode;
     currentSession.updatedAt = new Date().toISOString();
     Storage.saveSession(currentSessionId, currentSession);
     applyModeTheme(newMode);
     renderChatHistory();
+  }
+
+  function updateModeButtonState() {
+    const modeSelectorBtn = document.getElementById("mode-selector-btn");
+    if (!modeSelectorBtn) return;
+    
+    if (history.length > 0) {
+      modeSelectorBtn.style.opacity = "0.6";
+      modeSelectorBtn.style.cursor = "not-allowed";
+      modeSelectorBtn.title = "Mode locked for this conversation";
+    } else {
+      modeSelectorBtn.style.opacity = "1";
+      modeSelectorBtn.style.cursor = "pointer";
+      modeSelectorBtn.title = "Change subject mode";
+    }
   }
 
   function renderChatHistory() {
@@ -418,6 +662,7 @@
     appendMessage("user", text);
     history.push({ role: "user", content: text });
     saveCurrentSession();
+    hideSuggestionBar();
 
     input.value = "";
     resizeInput();
@@ -428,8 +673,14 @@
     try {
       const reply = await callChatApi(history);
       history.push({ role: "assistant", content: reply });
-      appendMessage("assistant", reply);
+      
+      // Generate contextual suggestions based on AI response
+      const contextualSuggestions = generateContextualSuggestions(reply);
+      appendMessage("assistant", reply, false, contextualSuggestions);
+      
       saveCurrentSession();
+      updateModeButtonState();
+      showSuggestionBar();
     } catch (error) {
       console.error("Chat request failed:", error);
       appendMessage(
@@ -452,6 +703,7 @@
     updateCharCount();
     setWelcomeVisibility(true);
     setTyping(false);
+    hideSuggestionBar();
     saveCurrentSession();
   }
 
