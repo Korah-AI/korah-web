@@ -231,6 +231,7 @@
     history.length = 0;
     history.push(...currentSession.messages);
     
+    applyModeTheme(session.mode || "physics");
     loadSessionMessages();
     renderChatHistory();
   }
@@ -269,16 +270,56 @@
     renderChatHistory();
   }
 
-  function getModeEmoji(mode) {
-    const emojiMap = {
-      math: "🧮",
-      physics: "⚛️",
-      chemistry: "⚗️",
-      biology: "🧬",
-      history: "📜",
-      literature: "📚",
+  // ═══ Mode Functions ═══
+  function getModeConfig(mode) {
+    const modes = {
+      math: { name: "Math", emoji: "🧮" },
+      physics: { name: "Physics", emoji: "⚛️" },
+      chemistry: { name: "Chemistry", emoji: "⚗️" },
+      biology: { name: "Biology", emoji: "🧬" },
+      history: { name: "History", emoji: "📜" },
+      literature: { name: "Literature", emoji: "📚" },
     };
-    return emojiMap[mode] || "📝";
+    return modes[mode] || modes.physics;
+  }
+
+  function getModeEmoji(mode) {
+    return getModeConfig(mode).emoji;
+  }
+
+  function applyModeTheme(mode) {
+    const themeVars = {
+      math: { "--p4": "#3b82f6", "--p5": "#60a5fa", "--ac": "#0ea5e9", "--glow": "rgba(59, 130, 246, 0.35)" },
+      physics: { "--p4": "#8b5cf6", "--p5": "#a78bfa", "--ac": "#c084fc", "--glow": "rgba(139, 92, 246, 0.35)" },
+      chemistry: { "--p4": "#10b981", "--p5": "#34d399", "--ac": "#14b8a6", "--glow": "rgba(16, 185, 129, 0.35)" },
+      biology: { "--p4": "#22c55e", "--p5": "#4ade80", "--ac": "#84cc16", "--glow": "rgba(34, 197, 94, 0.35)" },
+      history: { "--p4": "#f59e0b", "--p5": "#fbbf24", "--ac": "#fb923c", "--glow": "rgba(245, 158, 11, 0.35)" },
+      literature: { "--p4": "#ec4899", "--p5": "#f472b6", "--ac": "#f9a8d4", "--glow": "rgba(236, 72, 153, 0.35)" },
+    };
+
+    const vars = themeVars[mode] || themeVars.physics;
+    const root = document.documentElement;
+    Object.entries(vars).forEach(([key, value]) => {
+      root.style.setProperty(key, value);
+    });
+
+    updateModeUI(mode);
+  }
+
+  function updateModeUI(mode) {
+    const config = getModeConfig(mode);
+    const modeIcon = document.getElementById("mode-icon");
+    const modeName = document.getElementById("mode-name");
+    if (modeIcon) modeIcon.textContent = config.emoji;
+    if (modeName) modeName.textContent = config.name;
+  }
+
+  function changeMode(newMode) {
+    currentSession.mode = newMode;
+    currentSession.updatedAt = new Date().toISOString();
+    Storage.saveSession(currentSessionId, currentSession);
+    applyModeTheme(newMode);
+    renderChatHistory();
   }
 
   function renderChatHistory() {
@@ -472,7 +513,34 @@
     });
   }
 
-  // Load saved messages and render history on startup
+  // Mode selector functionality
+  const modeSelectorBtn = document.getElementById("mode-selector-btn");
+  const modeDropdown = document.getElementById("mode-dropdown");
+  
+  if (modeSelectorBtn && modeDropdown) {
+    modeSelectorBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      modeDropdown.classList.toggle("show");
+    });
+
+    document.addEventListener("click", () => {
+      modeDropdown.classList.remove("show");
+    });
+
+    modeDropdown.querySelectorAll(".mode-option").forEach((option) => {
+      option.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const mode = option.getAttribute("data-mode");
+        if (mode) {
+          changeMode(mode);
+          modeDropdown.classList.remove("show");
+        }
+      });
+    });
+  }
+
+  // Load saved messages, apply theme, and render history on startup
+  applyModeTheme(currentSession.mode || "physics");
   renderChatHistory();
   loadSessionMessages();
   resizeInput();
