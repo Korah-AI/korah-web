@@ -424,42 +424,59 @@ if (document.readyState === 'loading') {
   initInlineHandlers();
 }
 
+// Shooting stars background and twinkling stars
+
 document.addEventListener('DOMContentLoaded', function() {
   const field = document.getElementById('starField');
   if (!field) return;
-  for (let i = 0; i < 150; i++) {
+
+  // Static background stars
+  for (let i = 0; i < 120; i++) {
     const star = document.createElement('div');
-    star.classList.add('star');
-    const size = 0.5 + Math.random() * 2;
+    star.classList.add('static-star');
+    const size = 0.5 + Math.random() * 1.5;
     star.style.cssText = `
+      position:absolute;
       width:${size}px;
       height:${size}px;
       top:${Math.random()*100}%;
       left:${Math.random()*100}%;
-      --dur:${2+Math.random()*4}s;
-      --op:${0.7+Math.random()*0.3};
-      animation-delay:${Math.random()*5}s;
+      border-radius:50%;
+      background:var(--star-color, #fff);
+      animation: twinkle ${2+Math.random()*4}s ease-in-out ${Math.random()*5}s infinite;
+      opacity:0;
     `;
     field.appendChild(star);
   }
-});
 
-// (function initStars() {
-//   const field = document.getElementById('starField');
-//   if (!field) return;
-//   for (let i = 0; i < 150; i++) {
-//     const star = document.createElement('div');
-//     star.classList.add('star');
-//     const size = 0.5 + Math.random() * 2;
-//     star.style.cssText = `
-//       width:${size}px;
-//       height:${size}px;
-//       top:${Math.random()*100}%;
-//       left:${Math.random()*100}%;
-//       --dur:${2+Math.random()*4}s;
-//       --op:${0.3+Math.random()*0.7};
-//       animation-delay:${Math.random()*5}s;
-//     `;
-//     field.appendChild(star);
-//   }
-// })();
+  function spawnShootingStar() {
+    const star = document.createElement('div');
+    star.classList.add('shooting-star');
+    const angle = 25 + Math.random() * 20;
+    const dur = 1.5 + Math.random() * 1.5;
+    star.style.cssText = `
+      position: absolute;
+      top: ${5 + Math.random() * 60}%;
+      left: ${5 + Math.random() * 50}%;
+      width: ${120 + Math.random() * 100}px;
+      height: 1.5px;
+      border-radius: 999px;
+      opacity: 0;
+      transform-origin: left center;
+      transform: rotate(${angle}deg);
+      background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(167,139,250,0.8) 40%, rgba(255,255,255,1) 100%);
+      animation: shootOnce ${dur}s ease-in forwards;
+    `;
+    field.appendChild(star);
+    // remove after animation and schedule next one
+    setTimeout(() => {
+      star.remove();
+      setTimeout(spawnShootingStar, 6000 + Math.random() * 10000);
+    }, dur * 1000);
+  }
+
+  // stagger initial spawns
+  for (let i = 0; i < 3; i++) {
+    setTimeout(spawnShootingStar, i * 3000 + Math.random() * 2000);
+  }
+});

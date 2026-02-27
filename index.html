@@ -28,8 +28,9 @@
 
 <!-- FIX #22 FRAMEWORK: Alpine.js x-data replaces manual theme/state JS -->
 <body class="bg-base tx" x-cloak>
-<!-- Stars background -->
-<!-- <div class="stars-container" id="starField"></div> -->
+
+<!-- Shooting Star background and twinkling stars -->
+<div class="stars-container" id="starField"></div>
 
 <canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none opacity-55"></canvas>
 
@@ -121,7 +122,19 @@
   </div>
 
   <div class="anim-delay-400-fill relative z-10 mt-[70px] w-full max-w-[780px] animate-fade-up opacity-0">
-    <div class="bg-card border bd rounded-3xl p-7 shadow-card glass relative overflow-hidden t-theme">
+    <div class="bg-card border bd rounded-3xl p-7 shadow-card glass relative overflow-hidden t-theme"
+         style="border:1.5px solid rgba(139,92,246,0.5); box-shadow:0 0 30px rgba(139,92,246,0.2); transition:transform 0.4s cubic-bezier(.23,1,.32,1);"
+         @mousemove="
+           let r=$el.getBoundingClientRect(),x=($event.clientX-r.left)/r.width,y=($event.clientY-r.top)/r.height;
+           $el.style.transform='perspective(900px) rotateX('+(-(y-0.5)*5)+'deg) rotateY('+((x-0.5)*5)+'deg) translateY(-5px)';
+           $el.querySelector('.hero-chat-glow').style.background='radial-gradient(circle at '+(x*100)+'% '+(y*100)+'%, rgba(139,92,246,0.3) 0%, transparent 60%)';
+           $el.querySelector('.hero-chat-glow').style.opacity='1';
+         "
+         @mouseleave="
+           $el.style.transform='';
+           $el.querySelector('.hero-chat-glow').style.opacity='0';
+         ">
+      <div class="hero-chat-glow absolute inset-0 pointer-events-none rounded-3xl" style="opacity:0;transition:opacity 0.3s ease;z-index:1;"></div>
       <div class="radial-glow-bg absolute -top-[60px] -right-[60px] w-[200px] h-[200px] rounded-full bg-radial-glow pointer-events-none"></div>
       <div class="flex items-center gap-2 mb-5">
         <div class="mdot w-2.5 h-2.5 rounded-full"></div><div class="mdot w-2.5 h-2.5 rounded-full"></div><div class="mdot w-2.5 h-2.5 rounded-full"></div>
@@ -142,11 +155,26 @@
       </div>
     </div>
     <div class="hero-floats absolute inset-0 pointer-events-none hidden lg:block">
-      <div class="float-card float-card-1 absolute bg-card border bd rounded-2xl px-4 py-3.5 glass shadow-card flex items-center gap-3 text-[13px] font-medium tx whitespace-nowrap t-theme">
-        <span class="text-2xl">🔥</span><div><div class="text-[11px] tx3">Study Streak</div><div class="text-base font-bold tx-p5">14 days</div></div>
+      <div class="float-card float-card-1 absolute bg-card border bd rounded-2xl px-4 py-3.5 glass shadow-card flex items-center gap-3 text-[13px] font-medium tx whitespace-nowrap t-theme"
+           style="border:1.5px solid rgba(139,92,246,0.5);box-shadow:0 0 20px rgba(139,92,246,0.25);transition:transform 0.3s cubic-bezier(.23,1,.32,1);"
+           @mousemove="
+             let r=$el.getBoundingClientRect(),x=($event.clientX-r.left)/r.width,y=($event.clientY-r.top)/r.height;
+             $el.style.transform='perspective(500px) rotateX('+(-(y-0.5)*8)+'deg) rotateY('+((x-0.5)*8)+'deg) translateY(-4px) scale(1.04)';
+           "
+           @mouseleave="$el.style.transform='';">
+        <span class="text-2xl">🔥</span>
+        <div><div class="text-[11px] tx3">Study Streak</div><div class="text-base font-bold tx-p5">14 days</div></div>
       </div>
-      <div class="float-card float-card-2 absolute bg-card border bd rounded-2xl px-4 py-3.5 glass shadow-card flex items-center gap-3 text-[13px] font-medium tx whitespace-nowrap t-theme">
-        <span class="text-2xl">⚠️</span><div><div class="text-[11px] tx3">Overdue Tasks</div><div class="tx-mr text-base font-bold">2 tasks</div></div>
+
+      <div class="float-card float-card-2 absolute bg-card border bd rounded-2xl px-4 py-3.5 glass shadow-card flex items-center gap-3 text-[13px] font-medium tx whitespace-nowrap t-theme"
+           style="border:1.5px solid rgba(139,92,246,0.5);box-shadow:0 0 20px rgba(139,92,246,0.25);transition:transform 0.3s cubic-bezier(.23,1,.32,1);"
+           @mousemove="
+             let r=$el.getBoundingClientRect(),x=($event.clientX-r.left)/r.width,y=($event.clientY-r.top)/r.height;
+             $el.style.transform='perspective(500px) rotateX('+(-(y-0.5)*8)+'deg) rotateY('+((x-0.5)*8)+'deg) translateY(-4px) scale(1.04)';
+           "
+           @mouseleave="$el.style.transform='';">
+        <span class="text-2xl">⚠️</span>
+        <div><div class="text-[11px] tx3">Overdue Tasks</div><div class="tx-mr text-base font-bold">2 tasks</div></div>
       </div>
     </div>
   </div>
@@ -554,14 +582,11 @@
      @mousemove="
        let r=$el.getBoundingClientRect(),x=($event.clientX-r.left)/r.width,y=($event.clientY-r.top)/r.height;
        $el.style.transform='perspective(900px) rotateX('+(-(y-0.5)*4)+'deg) rotateY('+((x-0.5)*4)+'deg) translateY(-4px)';
-       $el.querySelector('.chat-glow').style.background='radial-gradient(circle at '+(x*100)+'% '+(y*100)+'%, rgba(139,92,246,0.3) 0%, transparent 60%)';
-       $el.querySelector('.chat-glow').style.opacity='1';
      "
      @mouseleave="
        $el.style.transform='perspective(900px) rotateX(0deg) rotateY(0deg) translateY(0)';
        $el.querySelector('.chat-glow').style.opacity='0';
      ">
-  <div class="chat-glow absolute inset-0 pointer-events-none" style="opacity:0;transition:opacity 0.3s ease;z-index:1;mix-blend-mode:normal;border-radius:inherit;"></div>
       <div class="px-6 py-5 border-b bd2 flex items-center gap-3 bg-sf2 t-theme relative z-[2]">
         <div class="w-10 h-10 rounded-xl grad-bg flex items-center justify-center shadow-glow overflow-hidden flex-shrink-0">
           <img src="logo.png" class="w-full h-full object-cover"/>
