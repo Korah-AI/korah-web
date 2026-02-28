@@ -1,5 +1,5 @@
 (() => {
-  const MAX_CHARS = 2000;
+  const MAX_CHARS = 10000;
   const API_ENDPOINT = "https://korah-beta.vercel.app/api/proxy";
   const MODEL = "gpt-4o-mini";
 
@@ -133,7 +133,7 @@
     input.disabled = sending;
   }
 
-  function buildMessageRow(role, text, isError = false, suggestions = []) {
+  function buildMessageRow(role, text, isError = false, suggestions = [], contentId = null) {
     const row = document.createElement("div");
     row.className = `msg-row ${role === "user" ? "user" : "assistant"}`;
 
@@ -151,6 +151,7 @@
     const content = document.createElement("div");
     content.style.whiteSpace = "pre-wrap";
     content.textContent = text;
+    if (contentId) content.id = contentId;
 
     bubble.appendChild(label);
     bubble.appendChild(content);
@@ -215,11 +216,144 @@
     return [...commonActions, ...(modeSpecific[mode] || [])];
   }
 
-  function appendMessage(role, text, isError = false, suggestions = []) {
-    const row = buildMessageRow(role, text, isError, suggestions);
+  function appendMessage(role, text, isError = false, suggestions = [], contentId = null) {
+    const row = buildMessageRow(role, text, isError, suggestions, contentId);
     messagesList.appendChild(row);
     setWelcomeVisibility(false);
     scrollToBottom();
+    return row;
+  }
+
+  // === Quick Tools Handlers ===
+  function handleQuickTool(action) {
+    const mode = currentSession.mode || "physics";
+    let prompt = "";
+
+    switch (action) {
+      case "flashcards":
+        prompt = `Create a set of flashcards for studying ${getModeConfig(mode).name.toLowerCase()}. Include 5-7 key concepts with questions on the front and answers on the back.`;
+        break;
+      case "studyguide":
+        prompt = `Create a comprehensive study guide. Include key topics, important definitions, formulas or concepts, and practice questions.`;
+        break;
+      case "practice":
+        prompt = `Generate a practice test with 5 questions. Include a mix of multiple choice, short answer, and problem-solving questions. Show the answers at the end.`;
+        break;
+      case "timer":
+        startFocusTimer();
+        return;
+      default:
+        return;
+    }
+
+    if (prompt) {
+      sendMessage(prompt);
+    }
+  }
+
+  function startFocusTimer() {
+    const minutes = 25; // Default Pomodoro timer
+    alert(`Focus Timer: ${minutes} minutes started!\n\nThis is a placeholder. A full timer would run in the background.`);
+  }
+
+  function renderFlashcards(content) {
+    // Parse flashcard content and render with flip animation
+    const container = document.createElement("div");
+    container.className = "flashcard-container";
+
+    const cards = content.split(/\n\n+/).filter(card => card.trim());
+    cards.forEach((card, idx) => {
+      const [question, answer] = card.split(/\n/).filter(line => line.trim());
+      if (!question || !answer) return;
+
+      const cardEl = document.createElement("div");
+      cardEl.className = "flashcard";
+      cardEl.innerHTML = `
+        <div class="flashcard-inner">
+          <div class="flashcard-front">
+            <div class="flashcard-label">Question ${idx + 1}</div>
+            <div class="flashcard-text">${question.replace(/^Q:|^\d+\.\s*/, "").trim()}</div>
+          </div>
+          <div class="flashcard-back">
+            <div class="flashcard-label">Answer</div>
+            <div class="flashcard-text">${answer.replace(/^A:/, "").trim()}</div>
+          </div>
+        </div>
+      `;
+
+      cardEl.addEventListener("click", () => {
+        cardEl.classList.toggle("flipped");
+      });
+
+      container.appendChild(cardEl);
+    });
+
+    return container;
+  }
+
+  function renderStudyGuide(content) {
+    // Render study guide with collapsible sections
+    const container = document.createElement("div");
+    container.className = "study-guide";
+
+    const sections = content.split(/\n(?=##|###|\*\*)/g);
+    sections.forEach((section) => {
+      const sectionEl = document.createElement("div");
+      sectionEl.className = "study-guide-section";
+
+      const lines = section.split("\n");
+      const title = lines[0].replace(/^#+\s*|\*\*/g, "").trim();
+      const body = lines.slice(1).join("\n").trim();
+
+      sectionEl.innerHTML = `
+        <div class="study-guide-title">
+          <span>${title}</span>
+          <span class="toggle-icon">▼</span>
+        </div>
+        <div class="study-guide-content">${body}</div>
+      `;
+
+      const titleEl = sectionEl.querySelector(".study-guide-title");
+      const contentEl = sectionEl.querySelector(".study-guide-content");
+      
+      titleEl.addEventListener("click", () => {
+        sectionEl.classList.toggle("collapsed");
+      });
+
+      container.appendChild(sectionEl);
+    });
+
+    return container;
+  }
+
+  function renderPracticeTest(content) {
+    // Render interactive practice test
+    const container = document.createElement("div");
+    container.className = "practice-test";
+
+    const questions = content.split(/\n(?=\d+\.\s)/g).filter(q => q.trim());
+    questions.forEach((question, idx) => {
+      const questionEl = document.createElement("div");
+      questionEl.className = "practice-question";
+
+      questionEl.innerHTML = `
+        <div class="practice-q-number">Question ${idx + 1}</div>
+        <div class="practice-q-text">${question.trim()}</div>
+        <textarea class="practice-answer" placeholder="Type your answer here..."></textarea>
+      `;
+
+      container.appendChild(questionEl);
+    });
+
+    const submitBtn = document.createElement("button");
+    submitBtn.className = "practice-submit-btn t-btn";
+    submitBtn.textContent = "Check Answers";
+    submitBtn.addEventListener("click", () => {
+      alert("Answer checking would be implemented here! For now, scroll down to see the correct answers in the AI response.");
+    });
+    container.appendChild(submitBtn);
+
+    return container;
   }
 
   function generateContextualSuggestions(aiResponse) {
@@ -323,7 +457,7 @@
     }
   }
 
-  async function callChatApi(messages) {
+  async function callChatApi(messages, onChunk = null) {
     const systemPrompt = getSystemPrompt(currentSession.mode || "physics");
     const messagesWithSystem = [
       { role: "system", content: systemPrompt },
@@ -336,30 +470,87 @@
       body: JSON.stringify({
         model: MODEL,
         temperature: 0.7,
-        messages: messagesWithSystem
+        messages: messagesWithSystem,
+        stream: true
       })
     });
 
-    let payload = null;
-    try {
-      payload = await response.json();
-    } catch (_error) {}
-
     if (!response.ok) {
-      const errText =
-        payload?.message ||
-        payload?.error ||
-        `Request failed with status ${response.status}`;
-      throw new Error(errText);
+      let errorMessage = `Request failed with status ${response.status}`;
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData?.message || errorData?.error || errorMessage;
+      } catch (_error) {}
+      throw new Error(errorMessage);
     }
 
-    const reply =
-      payload?.choices?.[0]?.message?.content ||
-      payload?.output_text ||
-      "";
+    if (!response.body) {
+      throw new Error("No response body received");
+    }
 
-    if (!reply) throw new Error("API returned an empty response.");
-    return reply;
+    // Handle streaming response
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let fullReply = "";
+    let buffer = ""; // Buffer for incomplete chunks
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        
+        if (done) {
+          console.log("Stream completed. Total length:", fullReply.length);
+          // Process any remaining data in buffer
+          if (buffer.trim()) {
+            console.warn("Remaining buffer at end:", buffer);
+          }
+          break;
+        }
+
+        // Append to buffer and decode
+        buffer += decoder.decode(value, { stream: true });
+        
+        // Split by newlines but keep the last incomplete line in buffer
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || ""; // Keep incomplete line in buffer
+
+        for (const line of lines) {
+          const trimmedLine = line.trim();
+          if (!trimmedLine) continue;
+          
+          if (trimmedLine.startsWith("data: ")) {
+            const data = trimmedLine.slice(6);
+            if (data === "[DONE]") {
+              console.log("Received [DONE] signal");
+              continue;
+            }
+
+            try {
+              const parsed = JSON.parse(data);
+              const content = parsed?.choices?.[0]?.delta?.content;
+              if (content) {
+                fullReply += content;
+                if (onChunk) onChunk(content, fullReply);
+              }
+              
+              // Check if stream finished
+              const finishReason = parsed?.choices?.[0]?.finish_reason;
+              if (finishReason) {
+                console.log("Stream finish reason:", finishReason);
+              }
+            } catch (parseError) {
+              console.error("Failed to parse SSE data:", parseError, "Data:", data);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Stream reading error:", error);
+      throw error;
+    }
+
+    if (!fullReply) throw new Error("API returned an empty response.");
+    return fullReply;
   }
 
   function saveCurrentSession() {
@@ -670,26 +861,61 @@
     setSendingState(true);
     setTyping(true);
 
+    // Create streaming message container
+    const streamingContentId = `streaming-content-${Date.now()}`;
+    const streamingRow = appendMessage("assistant", "", false, [], streamingContentId);
+    const contentElement = document.getElementById(streamingContentId);
+    setTyping(false);
+
     try {
-      const reply = await callChatApi(history);
+      const reply = await callChatApi(history, (chunk, fullText) => {
+        if (contentElement) {
+          contentElement.textContent = fullText;
+          scrollToBottom();
+        }
+      });
+      
       history.push({ role: "assistant", content: reply });
       
-      // Generate contextual suggestions based on AI response
+      // Generate contextual suggestions and add them to the existing message
       const contextualSuggestions = generateContextualSuggestions(reply);
-      appendMessage("assistant", reply, false, contextualSuggestions);
+      if (contextualSuggestions.length > 0 && streamingRow) {
+        const bubble = streamingRow.querySelector(".msg-bubble");
+        if (bubble) {
+          const suggestionsDiv = document.createElement("div");
+          suggestionsDiv.className = "inline-suggestions";
+          
+          contextualSuggestions.forEach((suggestion) => {
+            const btn = document.createElement("button");
+            btn.className = "inline-suggestion-btn t-btn";
+            btn.textContent = suggestion;
+            btn.addEventListener("click", () => {
+              sendMessage(suggestion);
+            });
+            suggestionsDiv.appendChild(btn);
+          });
+          
+          bubble.appendChild(suggestionsDiv);
+        }
+      }
       
       saveCurrentSession();
       updateModeButtonState();
       showSuggestionBar();
     } catch (error) {
       console.error("Chat request failed:", error);
+      
+      // Remove streaming message and show error
+      if (streamingRow) {
+        streamingRow.remove();
+      }
+      
       appendMessage(
         "assistant",
         `I couldn't reach the chat API. ${error.message}`,
         true
       );
     } finally {
-      setTyping(false);
       setSendingState(false);
       input.focus();
     }
@@ -742,6 +968,15 @@
     });
   });
 
+  // Wire up quick tool buttons in sidebar
+  const quickToolButtons = document.querySelectorAll(".quick-tool-btn");
+  quickToolButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const action = btn.getAttribute("data-action");
+      handleQuickTool(action);
+    });
+  });
+
   if (clearChatBtn) clearChatBtn.addEventListener("click", resetChat);
   if (newChatBtn) {
     newChatBtn.addEventListener("click", () => {
@@ -762,6 +997,77 @@
   if (sidebarToggle && sidebar) {
     sidebarToggle.addEventListener("click", () => {
       sidebar.classList.toggle("collapsed");
+    });
+  }
+
+  // Settings modal functionality
+  const settingsBtn = document.getElementById("settings-btn");
+  const settingsModal = document.getElementById("settings-modal");
+  const settingsClose = document.getElementById("settings-close");
+  const settingsSaveBtn = document.getElementById("settings-save-btn");
+  const exportChatsBtn = document.getElementById("export-chats-btn");
+  const clearAllBtn = document.getElementById("clear-all-btn");
+
+  function openSettings() {
+    const settings = Storage.getSettings();
+    document.getElementById("setting-default-mode").value = settings.defaultMode;
+    document.getElementById("setting-detail-level").value = settings.detailLevel;
+    document.getElementById("setting-auto-followup").checked = settings.autoFollowUp;
+    document.getElementById("setting-timer-default").value = settings.focusTimerDefault;
+    settingsModal.classList.add("show");
+  }
+
+  function closeSettings() {
+    settingsModal.classList.remove("show");
+  }
+
+  function saveSettings() {
+    const settings = {
+      defaultMode: document.getElementById("setting-default-mode").value,
+      detailLevel: document.getElementById("setting-detail-level").value,
+      autoFollowUp: document.getElementById("setting-auto-followup").checked,
+      focusTimerDefault: parseInt(document.getElementById("setting-timer-default").value),
+    };
+    Storage.saveSettings(settings);
+    alert("Settings saved successfully!");
+    closeSettings();
+  }
+
+  function exportChats() {
+    const sessions = Storage.getSessions();
+    const dataStr = JSON.stringify(sessions, null, 2);
+    const dataBlob = new Blob([dataStr], { type: "application/json" });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `korah-chats-${new Date().toISOString().split("T")[0]}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    alert("Chats exported successfully!");
+  }
+
+  function clearAllData() {
+    if (confirm("Are you sure you want to clear ALL data? This cannot be undone!")) {
+      if (confirm("This will delete all your chat history and settings. Are you ABSOLUTELY sure?")) {
+        localStorage.clear();
+        alert("All data cleared. The page will now reload.");
+        window.location.reload();
+      }
+    }
+  }
+
+  if (settingsBtn) settingsBtn.addEventListener("click", openSettings);
+  if (settingsClose) settingsClose.addEventListener("click", closeSettings);
+  if (settingsSaveBtn) settingsSaveBtn.addEventListener("click", saveSettings);
+  if (exportChatsBtn) exportChatsBtn.addEventListener("click", exportChats);
+  if (clearAllBtn) clearAllBtn.addEventListener("click", clearAllData);
+
+  // Close modal when clicking outside
+  if (settingsModal) {
+    settingsModal.addEventListener("click", (e) => {
+      if (e.target === settingsModal) {
+        closeSettings();
+      }
     });
   }
 
