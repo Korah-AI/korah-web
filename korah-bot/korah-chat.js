@@ -68,6 +68,8 @@
         messages: [],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        autoTitleGenerated: false,
+        userRenamed: false,
       };
       this.saveSession(id, session);
       return id;
@@ -506,8 +508,9 @@
     }
   }
 
-  async function callChatApi(messages, onChunk = null) {
-    const systemPrompt = getSystemPrompt(currentSession.mode || "physics");
+  async function callChatApi(messages, onChunk = null, options = {}) {
+    const { systemPromptOverride } = options || {};
+    const systemPrompt = systemPromptOverride || getSystemPrompt(currentSession.mode || "physics");
     const messagesWithSystem = [
       { role: "system", content: systemPrompt },
       ...messages
@@ -668,6 +671,7 @@
     if (!session) return;
     
     session.title = newTitle;
+    session.userRenamed = true;
     session.updatedAt = new Date().toISOString();
     Storage.saveSession(sessionId, session);
     
@@ -677,6 +681,72 @@
     }
     
     renderChatHistory();
+  }
+
+  function isPlaceholderTitle(title) {
+    if (!title) return true;
+    const trimmed = title.trim();
+    return trimmed === "New Chat" || trimmed === "Photosynthesis Study Guide";
+  }
+
+  async function generateAutoTitleIfNeeded() {
+    try {
+      const session = currentSession;
+      if (!session) return;
+
+      const hasMessages = Array.isArray(history) && history.length > 0;
+      if (!hasMessages) return;
+
+      if (session.autoTitleGenerated || session.userRenamed) return;
+      if (!isPlaceholderTitle(session.title)) return;
+
+      const firstUserMessage = history.find((m) => m.role === "user");
+      const lastAssistantMessage = [...history].reverse().find((m) => m.role === "assistant");
+
+      if (!firstUserMessage) return;
+
+      const parts = [];
+      parts.push("You are an assistant that generates short, clear titles for study chats.");
+      parts.push("Write a 3–6 word title that a student would use to recognize this conversation later.");
+      parts.push("Do not include quotation marks or punctuation at the end. Respond with the title only.");
+      parts.push("");
+      parts.push("First student message:");
+      parts.push(firstUserMessage.content.slice(0, 600));
+
+      if (lastAssistantMessage) {
+        parts.push("");
+        parts.push("Latest AI reply (optional context):");
+        parts.push(lastAssistantMessage.content.slice(0, 600));
+      }
+
+      const promptText = parts.join("\n");
+
+      const titleReply = await callChatApi(
+        [{ role: "user", content: promptText }],
+        null,
+        {
+          systemPromptOverride:
+            "You generate concise, descriptive titles for study conversations in a student homework app.",
+        }
+      );
+
+      if (!titleReply) return;
+
+      let newTitle = titleReply.split("\n")[0].trim();
+      newTitle = newTitle.replace(/^["']+|["']+$/g, "");
+      if (!newTitle) return;
+
+      session.title = newTitle;
+      session.autoTitleGenerated = true;
+      session.updatedAt = new Date().toISOString();
+      Storage.saveSession(currentSessionId, session);
+
+      currentSession = session;
+      if (chatTitleEl) chatTitleEl.textContent = newTitle;
+      renderChatHistory();
+    } catch (error) {
+      console.error("Failed to auto-generate chat title:", error);
+    }
   }
 
   // ═══ Mode Functions ═══
@@ -959,6 +1029,7 @@ ${FORMAT_INSTRUCTIONS}`.trim();
       }
       
       saveCurrentSession();
+      await generateAutoTitleIfNeeded();
       updateModeButtonState();
       showSuggestionBar();
     } catch (error) {
