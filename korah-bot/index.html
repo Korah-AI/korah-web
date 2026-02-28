@@ -21,10 +21,10 @@
 <!-- ═══ SIDEBAR ═══ -->
 <aside id="sidebar" class="sidebar bg-sf glass t-theme">
   <div class="sidebar-header">
-    <a href="#" class="flex items-center gap-2.5 no-underline">
+    <a href="index.html" class="flex items-center gap-2.5 no-underline">
       <div class="w-10 h-10 rounded-xl grad-bg flex items-center justify-center font-display text-xl font-black text-white shadow-glow logo-btn">
         <span class="logo-letter">
-          <img src = "logo.png">
+          <img src="logo.png" alt="Korah"/>
         </span>
       </div>
       <div class="flex flex-col leading-tight">
@@ -36,6 +36,11 @@
       + New Chat
     </button>
   </div>
+
+  <nav class="sidebar-nav">
+    <a href="index.html" class="sidebar-nav-link active t-btn">💬 Chat</a>
+    <a href="study/feed.html" class="sidebar-nav-link t-btn">📚 Study Feed</a>
+  </nav>
 
   <div class="sidebar-section-label">Recent Chats</div>
   <div id="chat-history" class="chat-history">
@@ -61,20 +66,9 @@
     </button>
   </div>
 
-  <div class="sidebar-section-label mt-4">Quick Tools</div>
-  <div class="quick-tools">
-    <button class="quick-tool-btn t-btn" data-action="flashcards">
-      <span>🃏</span> Flashcards
-    </button>
-    <button class="quick-tool-btn t-btn" data-action="studyguide">
-      <span>📖</span> Study Guide
-    </button>
-    <button class="quick-tool-btn t-btn" data-action="practice">
-      <span>🎯</span> Practice Test
-    </button>
-    <button class="quick-tool-btn t-btn" data-action="timer">
-      <span>⏱️</span> Focus Timer
-    </button>
+  <div class="sidebar-section-label mt-4">Recent Study Items</div>
+  <div id="study-items-history" class="chat-history study-items-history">
+    <!-- Populated by JS from localStorage -->
   </div>
 
   <div class="sidebar-footer">
@@ -121,6 +115,13 @@
         </svg>
       </button>
       <div class="mode-dropdown" id="mode-dropdown">
+        <div class="mode-option" data-mode="general">
+          <span class="mode-option-icon">✨</span>
+          <div class="mode-option-info">
+            <div class="mode-option-name">General Mode</div>
+            <div class="mode-option-desc">Versatile AI study companion</div>
+          </div>
+        </div>
         <div class="mode-option" data-mode="math">
           <span class="mode-option-icon">🧮</span>
           <div class="mode-option-info">
@@ -189,15 +190,25 @@
         <div class="welcome-mascot">
           <div class="mascot-ring"></div>
           <div class="mascot-avatar grad-bg shadow-glow-lg">
-            <span class="mascot-letter" img src = "logo.png">
-              <img src = "logo.png">
+            <span class="mascot-letter">
+              <img src="logo.png" alt="K" class="w-90 h-90 object-contain"/>
             </span>
           </div>
         </div>
-        <h2 class="font-display text-3xl font-black tx mb-2">Hey, I'm Korah ✨</h2>
-        <p class="tx2 text-sm leading-relaxed text-center max-w-sm">Your AI study companion. Tell me what you're working on, how you're feeling, or ask me to generate study materials.</p>
+        
+        <div class="welcome-mode-badge">
+          <span class="welcome-mode-dot"></span>
+          <span class="welcome-mode-text" id="welcome-mode-name">General Mode</span>
+        </div>
 
-        <div class="suggestion-grid">
+        <h2 class="font-display text-3xl font-black tx mb-1">Hey, I'm Korah ✨</h2>
+        <p class="tx2 text-sm leading-relaxed text-center max-w-sm mb-4">Your AI study companion. Choose a mode below or tell me what you're working on.</p>
+
+        <div class="mode-pills" id="mode-pills-container">
+          <!-- Populated by JS -->
+        </div>
+
+        <div class="suggestion-grid mt-6">
           <button class="suggestion-chip t-btn" data-prompt="Generate flashcards for photosynthesis">
             🃏 Make flashcards for photosynthesis
           </button>
@@ -210,15 +221,6 @@
           <button class="suggestion-chip t-btn" data-prompt="Give me a 10-question practice test on World War II">
             🎯 Practice test on World War II
           </button>
-        </div>
-
-        <div class="mood-picker-mini">
-          <span class="text-xs tx3 mb-2 block text-center">How are you feeling today?</span>
-          <div class="mood-row">
-            <button class="mood-mini gm active" data-mood="gm" data-dot="🟢" data-label="Full Focus Mode">🟢 Full Focus</button>
-            <button class="mood-mini ym" data-mood="ym" data-dot="🟡" data-label="Moderate Mode">🟡 Moderate</button>
-            <button class="mood-mini rm" data-mood="rm" data-dot="🔴" data-label="Low Energy Mode">🔴 Low Energy</button>
-          </div>
         </div>
       </div>
 
@@ -264,7 +266,8 @@
         id="chat-input"
         class="chat-textarea tx bg-transparent"
         placeholder="Ask Korah anything… or tell me how you're feeling 🧠"
-        rows="1"
+        rows="2"
+        style="min-height: 50px;"
       ></textarea>
       <button id="send-btn" class="send-btn grad-bg t-btn" aria-label="Send message">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">

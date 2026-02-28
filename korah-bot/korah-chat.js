@@ -24,6 +24,7 @@
     SESSIONS_KEY: "korah_sessions",
     CURRENT_SESSION_KEY: "korah_current_session",
     SETTINGS_KEY: "korah_settings",
+    STUDY_ITEMS_KEY: "korah_study_items",
 
     getSessions() {
       const data = localStorage.getItem(this.SESSIONS_KEY);
@@ -78,7 +79,7 @@
     getSettings() {
       const data = localStorage.getItem(this.SETTINGS_KEY);
       return data ? JSON.parse(data) : {
-        defaultMode: "physics",
+        defaultMode: "general",
         detailLevel: "detailed",
         autoFollowUp: true,
         focusTimerDefault: 25,
@@ -88,13 +89,24 @@
     saveSettings(settings) {
       localStorage.setItem(this.SETTINGS_KEY, JSON.stringify(settings));
     },
+
+    getStudyItems() {
+      const data = localStorage.getItem(this.STUDY_ITEMS_KEY);
+      return data ? JSON.parse(data) : {};
+    },
+
+    saveStudyItem(id, item) {
+      const items = this.getStudyItems();
+      items[id] = item;
+      localStorage.setItem(this.STUDY_ITEMS_KEY, JSON.stringify(items));
+    },
   };
 
   // ═══ Session State ═══
   let currentSessionId = Storage.getCurrentSessionId();
   let currentSession = Storage.getSession(currentSessionId);
   if (!currentSession) {
-    currentSessionId = Storage.createSession("Photosynthesis Study Guide", "physics");
+    currentSessionId = Storage.createSession("New Chat", "general");
     currentSession = Storage.getSession(currentSessionId);
     Storage.setCurrentSessionId(currentSessionId);
   }
@@ -275,36 +287,29 @@
     return row;
   }
 
-  // === Quick Tools Handlers ===
-  function handleQuickTool(action) {
-    const mode = currentSession.mode || "physics";
-    let prompt = "";
-
-    switch (action) {
-      case "flashcards":
-        prompt = `Create a set of flashcards for studying ${getModeConfig(mode).name.toLowerCase()}. Include 5-7 key concepts with questions on the front and answers on the back.`;
-        break;
-      case "studyguide":
-        prompt = `Create a comprehensive study guide. Include key topics, important definitions, formulas or concepts, and practice questions.`;
-        break;
-      case "practice":
-        prompt = `Generate a practice test with 5 questions. Include a mix of multiple choice, short answer, and problem-solving questions. Show the answers at the end.`;
-        break;
-      case "timer":
-        startFocusTimer();
-        return;
-      default:
-        return;
-    }
-
-    if (prompt) {
-      sendMessage(prompt);
-    }
+  function getStudyItemIcon(type) {
+    const icons = { flashcards: "🃏", studyGuide: "📖", practiceTest: "🎯" };
+    return icons[type] || "📄";
   }
 
-  function startFocusTimer() {
-    const minutes = 25; // Default Pomodoro timer
-    alert(`Focus Timer: ${minutes} minutes started!\n\nThis is a placeholder. A full timer would run in the background.`);
+  function renderStudyItemsHistory() {
+    const container = document.getElementById("study-items-history");
+    if (!container) return;
+    const items = Storage.getStudyItems();
+    const list = Object.keys(items)
+      .map((id) => ({ id, ...items[id] }))
+      .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt))
+      .slice(0, 8);
+    container.innerHTML = "";
+    list.forEach((item) => {
+      const a = document.createElement("a");
+      a.href = `study/item.html?id=${encodeURIComponent(item.id)}`;
+      a.className = "history-item t-btn";
+      a.style.textDecoration = "none";
+      a.style.color = "inherit";
+      a.innerHTML = `<span class="history-icon">${getStudyItemIcon(item.type)}</span><span class="history-text">${(item.title || "Untitled").slice(0, 28)}${(item.title || "").length > 28 ? "…" : ""}</span>`;
+      container.appendChild(a);
+    });
   }
 
   function renderFlashcards(content) {
@@ -619,7 +624,10 @@
     } else {
       setWelcomeVisibility(false);
       history.forEach((msg) => {
-        appendMessage(msg.role, msg.content);
+        // Skip system messages for display
+        if (msg.role !== "system") {
+          appendMessage(msg.role, msg.content);
+        }
       });
       // Show suggestion bar if last message was from assistant
       if (history.length > 0 && history[history.length - 1].role === "assistant") {
@@ -679,9 +687,13 @@
       currentSession.title = newTitle;
       if (chatTitleEl) chatTitleEl.textContent = newTitle;
     }
-    
     renderChatHistory();
   }
+
+  // Expose for study pages that may load this script
+  window.KorahStorage = Storage;
+  window.getStudyItemIcon = getStudyItemIcon;
+  window.renderStudyItemsHistory = renderStudyItemsHistory;
 
   function isPlaceholderTitle(title) {
     if (!title) return true;
@@ -751,6 +763,13 @@
 
   // ═══ Mode Functions ═══
   const MODE_SYSTEM_PROMPTS = {
+    general: `You are Korah, an all-around AI study companion. Your teaching style:
+- Provide clear, helpful, and concise explanations on any subject
+- Use analogies and examples to simplify complex topics
+- Encourage critical thinking and active learning
+- Adapt your tone to be supportive and encouraging
+- Help with study strategies, time management, and motivation`,
+
     math: `You are Korah, an expert math tutor. Your teaching style:
 - Break down problems into clear, step-by-step solutions
 - Show your work at each stage and explain why each step is necessary
@@ -809,6 +828,7 @@ When you include math, write it using LaTeX syntax with inline $...$ and display
 
   function getModeConfig(mode) {
     const modes = {
+      general: { name: "General", emoji: "✨" },
       math: { name: "Math", emoji: "🧮" },
       physics: { name: "Physics", emoji: "⚛️" },
       chemistry: { name: "Chemistry", emoji: "⚗️" },
@@ -816,11 +836,11 @@ When you include math, write it using LaTeX syntax with inline $...$ and display
       history: { name: "History", emoji: "📜" },
       literature: { name: "Literature", emoji: "📚" },
     };
-    return modes[mode] || modes.physics;
+    return modes[mode] || modes.general;
   }
 
   function getSystemPrompt(mode) {
-    const base = MODE_SYSTEM_PROMPTS[mode] || MODE_SYSTEM_PROMPTS.physics;
+    const base = MODE_SYSTEM_PROMPTS[mode] || MODE_SYSTEM_PROMPTS.general;
     return `${base}
 
 ${FORMAT_INSTRUCTIONS}`.trim();
@@ -832,6 +852,7 @@ ${FORMAT_INSTRUCTIONS}`.trim();
 
   function applyModeTheme(mode) {
     const themeVars = {
+      general: { "--p4": "var(--p-gen)", "--p5": "var(--p-gen)", "--ac": "#c084fc", "--glow": "var(--p-gen-glow)" },
       math: { "--p4": "#3b82f6", "--p5": "#60a5fa", "--ac": "#0ea5e9", "--glow": "rgba(59, 130, 246, 0.35)" },
       physics: { "--p4": "#8b5cf6", "--p5": "#a78bfa", "--ac": "#c084fc", "--glow": "rgba(139, 92, 246, 0.35)" },
       chemistry: { "--p4": "#10b981", "--p5": "#34d399", "--ac": "#14b8a6", "--glow": "rgba(16, 185, 129, 0.35)" },
@@ -840,13 +861,46 @@ ${FORMAT_INSTRUCTIONS}`.trim();
       literature: { "--p4": "#ec4899", "--p5": "#f472b6", "--ac": "#f9a8d4", "--glow": "rgba(236, 72, 153, 0.35)" },
     };
 
-    const vars = themeVars[mode] || themeVars.physics;
+    const vars = themeVars[mode] || themeVars.general;
     const root = document.documentElement;
     Object.entries(vars).forEach(([key, value]) => {
       root.style.setProperty(key, value);
     });
 
     updateModeUI(mode);
+    renderModePills();
+  }
+
+  function renderModePills() {
+    const container = document.getElementById("mode-pills-container");
+    if (!container) return;
+    
+    const modes = ["general", "math", "physics", "chemistry", "biology", "history", "literature"];
+    container.innerHTML = "";
+    
+    modes.forEach(mode => {
+      const config = getModeConfig(mode);
+      const pill = document.createElement("button");
+      pill.className = `mode-pill t-btn ${currentSession.mode === mode ? "active" : ""}`;
+      pill.innerHTML = `<span>${config.emoji}</span><span>${config.name}</span>`;
+      
+      if (history.length > 0) {
+        pill.classList.add("locked");
+        pill.title = "Mode locked for this conversation";
+      } else {
+        pill.addEventListener("click", () => {
+          changeMode(mode);
+        });
+      }
+      
+      container.appendChild(pill);
+    });
+    
+    // Update the large mode text in welcome screen
+    const modeNameLarge = document.getElementById("welcome-mode-name");
+    if (modeNameLarge) {
+      modeNameLarge.textContent = getModeConfig(currentSession.mode).name;
+    }
   }
 
   function updateModeUI(mode) {
@@ -1098,15 +1152,6 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     });
   });
 
-  // Wire up quick tool buttons in sidebar
-  const quickToolButtons = document.querySelectorAll(".quick-tool-btn");
-  quickToolButtons.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const action = btn.getAttribute("data-action");
-      handleQuickTool(action);
-    });
-  });
-
   if (clearChatBtn) clearChatBtn.addEventListener("click", resetChat);
   if (newChatBtn) {
     newChatBtn.addEventListener("click", () => {
@@ -1228,9 +1273,88 @@ ${FORMAT_INSTRUCTIONS}`.trim();
   }
 
   // Load saved messages, apply theme, and render history on startup
-  applyModeTheme(currentSession.mode || "physics");
+  applyModeTheme(currentSession.mode || "general");
   renderChatHistory();
+  renderStudyItemsHistory();
   loadSessionMessages();
   resizeInput();
   updateCharCount();
+
+  // Deep link: open specific session from hash (e.g. index.html#session_123)
+  const hash = window.location.hash.slice(1);
+  if (hash && hash.startsWith("session_")) {
+    const session = Storage.getSession(hash);
+    if (session) switchToSession(hash);
+  }
+
+  function stringifyStudyItem(item) {
+    if (!item || !item.content) return "";
+    let text = `STUDY ITEM CONTEXT:\nType: ${item.type}\nTitle: ${item.title || "Untitled"}\nDescription: ${item.description || ""}\n\nCONTENT:\n`;
+    const content = item.content;
+
+    if (item.type === "flashcards" && Array.isArray(content.cards)) {
+      content.cards.forEach((c, i) => {
+        text += `Card ${i + 1}:\nQ: ${c.front}\nA: ${c.back}\n\n`;
+      });
+    } else if (item.type === "studyGuide") {
+      text += content.markdown || "";
+      if (!content.markdown && Array.isArray(content.sections)) {
+        content.sections.forEach(s => {
+          text += `## ${s.title}\n${s.body}\n\n`;
+        });
+      }
+    } else if (item.type === "practiceTest" && Array.isArray(content.questions)) {
+      content.questions.forEach((q, i) => {
+        text += `Question ${i + 1}: ${q.text}\nAnswer: ${q.answer}\n\n`;
+      });
+    }
+    return text;
+  }
+
+  // Study Link: open from ?study=ID
+  const params = new URLSearchParams(window.location.search);
+  const studyId = params.get("study");
+  if (studyId) {
+    const items = Storage.getStudyItems();
+    const item = items[studyId];
+    if (item) {
+      const sessions = Storage.getSessions();
+      let existingSessionId = Object.keys(sessions).find(id => sessions[id].studyId === studyId);
+      
+      if (existingSessionId) {
+        switchToSession(existingSessionId);
+      } else {
+        const title = (item.title || "Study Item") + " Discussion";
+        const newSessionId = Storage.createSession(title, item.subject || "general");
+        const newSession = Storage.getSession(newSessionId);
+        newSession.studyId = studyId;
+        
+        // Add the study item content as context in the history
+        // We use a "system" role message in history if the API supports it, 
+        // or a formatted user message that we mark as 'context'.
+        newSession.messages.push({
+          role: "system",
+          content: stringifyStudyItem(item)
+        });
+
+        let initialMessage = `I've loaded your **${item.type}** on "**${item.title}**" and have full context of the content. 
+
+How would you like to continue? I can:
+- **Quiz you** on specific sections
+- **Explain complex concepts** in more detail
+- **Summarize key points** for quick review
+- **Add more content** to this topic
+
+What's on your mind?`;
+        
+        newSession.messages.push({
+          role: "assistant",
+          content: initialMessage
+        });
+        
+        Storage.saveSession(newSessionId, newSession);
+        switchToSession(newSessionId);
+      }
+    }
+  }
 })();

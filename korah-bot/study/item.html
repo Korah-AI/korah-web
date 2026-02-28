@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Korah AI — Study Item</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../korah-chat.css"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css"/>
+</head>
+<body class="bg-base tx">
+
+<canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none opacity-40"></canvas>
+
+<aside id="sidebar" class="sidebar bg-sf glass t-theme">
+  <div class="sidebar-header">
+    <a href="../index.html" class="flex items-center gap-2.5 no-underline">
+      <div class="w-10 h-10 rounded-xl grad-bg flex items-center justify-center font-display text-xl font-black text-white shadow-glow logo-btn">
+        <img src="../logo.png" alt="Korah" class="w-8 h-8 object-contain"/>
+      </div>
+      <div class="flex flex-col leading-tight">
+        <span class="font-display text-[19px] font-bold tx">Korah</span>
+        <span class="text-[9px] font-semibold tracking-[2.5px] uppercase tx-p4">Beta · Study AI</span>
+      </div>
+    </a>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="../index.html" class="sidebar-nav-link t-btn">💬 Chat</a>
+    <a href="feed.html" class="sidebar-nav-link active t-btn">📚 Study Feed</a>
+  </nav>
+  <div class="sidebar-section-label">Recent Chats</div>
+  <div id="chat-history" class="chat-history"></div>
+  <div class="sidebar-section-label mt-4">Recent Study Items</div>
+  <div id="study-items-history" class="chat-history study-items-history"></div>
+  <div class="sidebar-footer">
+    <div class="mood-indicator">
+      <span class="mood-dot">🟢</span>
+      <span class="text-xs tx2 font-medium">Study Item</span>
+    </div>
+    <div class="sidebar-footer-actions">
+      <button id="theme-toggle-btn" class="theme-toggle-small t-btn" title="Toggle theme">
+        <span id="theme-icon">☀️</span>
+      </button>
+    </div>
+  </div>
+</aside>
+
+<main id="main-content" class="main-content">
+  <header class="chat-topbar bg-sf glass-sm t-theme bd">
+    <button id="sidebar-toggle" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+    <div class="chat-title-area">
+      <span class="font-semibold tx text-sm" id="item-page-title">Study Item</span>
+    </div>
+    <div class="topbar-actions">
+      <a href="feed.html" class="feed-card-btn t-btn" style="padding: 8px 14px;">Back to Feed</a>
+    </div>
+  </header>
+
+  <div id="item-content-area" class="study-feed-body">
+    <div id="item-not-found" class="feed-empty hidden">
+      <p class="tx2">Study item not found. It may have been deleted.</p>
+      <a href="feed.html" class="feed-card-btn t-btn" style="margin-top: 12px; display: inline-block;">Back to Study Feed</a>
+    </div>
+    <div id="item-detail" class="item-detail hidden">
+      <div class="item-meta-bar">
+        <span id="item-type-badge" class="feed-card-type"></span>
+        <span id="item-source-badge" class="feed-card-source"></span>
+        <span id="item-updated" class="tx3 text-xs"></span>
+      </div>
+      <h1 id="item-title" class="item-detail-title"></h1>
+      <p id="item-description" class="item-detail-desc tx2"></p>
+      <div class="item-actions">
+        <a id="item-action-open" href="#" class="feed-card-btn t-btn">Open / Continue</a>
+        <a id="item-action-chat" href="#" class="feed-card-btn t-btn">Send to Chat</a>
+        <button id="item-action-duplicate" class="feed-card-btn t-btn" style="border: 1px solid var(--bd); background: var(--sf2); cursor: pointer;">Duplicate</button>
+      </div>
+      <div id="item-body" class="item-body">
+        <!-- Type-specific content rendered here -->
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
+<script src="js/sidebar.js"></script>
+<script>
+(function () {
+  KorahSidebar.initSidebar({ chatBaseUrl: "../index.html", itemPageUrl: "item.html" });
+
+  var STUDY_ITEMS_KEY = "korah_study_items";
+  function getStudyItems() {
+    try {
+      var data = localStorage.getItem(STUDY_ITEMS_KEY);
+      return data ? JSON.parse(data) : {};
+    } catch (_) { return {}; }
+  }
+  function saveStudyItems(items) {
+    localStorage.setItem(STUDY_ITEMS_KEY, JSON.stringify(items));
+  }
+
+  var TYPE_LABELS = { flashcards: "Flashcards", studyGuide: "Study Guide", practiceTest: "Practice Test" };
+  var SOURCE_LABELS = { manual: "Manual", "ai-prompt": "AI from prompt", "ai-doc": "AI from Docs", "chatbot-request": "From Chatbot" };
+
+  var params = new URLSearchParams(window.location.search);
+  var id = params.get("id");
+  var duplicate = params.get("duplicate") === "1";
+
+  if (duplicate && id) {
+    var items = getStudyItems();
+    var original = items[id];
+    if (original) {
+      var newId = "study_" + Date.now();
+      var copy = JSON.parse(JSON.stringify(original));
+      copy.id = newId;
+      copy.title = (copy.title || "Untitled") + " (Copy)";
+      copy.createdAt = copy.updatedAt = new Date().toISOString();
+      items[newId] = copy;
+      saveStudyItems(items);
+      window.location.replace("item.html?id=" + encodeURIComponent(newId));
+      throw new Error("redirect");
+    }
+  }
+
+  var item = id ? getStudyItems()[id] : null;
+  var notFoundEl = document.getElementById("item-not-found");
+  var detailEl = document.getElementById("item-detail");
+
+  if (!item) {
+    notFoundEl.classList.remove("hidden");
+    detailEl.classList.add("hidden");
+  } else {
+    notFoundEl.classList.add("hidden");
+    detailEl.classList.remove("hidden");
+    document.getElementById("item-page-title").textContent = item.title || "Untitled";
+    document.getElementById("item-type-badge").textContent = (KorahSidebar.getTypeEmoji(item.type) + " " + (TYPE_LABELS[item.type] || item.type));
+    document.getElementById("item-source-badge").textContent = SOURCE_LABELS[item.source || "manual"] || item.source;
+    var updated = item.updatedAt || item.createdAt;
+    document.getElementById("item-updated").textContent = updated ? "Updated " + new Date(updated).toLocaleString() : "";
+    document.getElementById("item-title").textContent = item.title || "Untitled";
+    document.getElementById("item-description").textContent = item.description || "";
+    document.getElementById("item-action-open").href = "../index.html?study=" + encodeURIComponent(item.id);
+    document.getElementById("item-action-chat").href = "../index.html?study=" + encodeURIComponent(item.id);
+    document.getElementById("item-action-duplicate").onclick = function () {
+      window.location.href = "item.html?id=" + encodeURIComponent(item.id) + "&duplicate=1";
+    };
+
+    var bodyEl = document.getElementById("item-body");
+    var content = item.content || {};
+
+    function renderMath(el) {
+      if (window.renderMathInElement) {
+        window.renderMathInElement(el, {
+          delimiters: [
+            { left: "$$", right: "$$", display: true },
+            { left: "\\[", right: "\\]", display: true },
+            { left: "\\(", right: "\\)", display: false },
+            { left: "$", right: "$", display: false },
+          ],
+          throwOnError: false,
+        });
+      }
+    }
+
+    if (item.type === "flashcards" && content.cards && content.cards.length) {
+      bodyEl.innerHTML = '<div class="flashcard-container"></div>';
+      var container = bodyEl.querySelector(".flashcard-container");
+      content.cards.forEach(function (c, i) {
+        var card = document.createElement("div");
+        card.className = "flashcard";
+        card.innerHTML = '<div class="flashcard-inner"><div class="flashcard-front"><div class="flashcard-label">Card ' + (i + 1) + '</div><div class="flashcard-text"></div></div><div class="flashcard-back"><div class="flashcard-label">Answer</div><div class="flashcard-text"></div></div></div>';
+        card.querySelector(".flashcard-front .flashcard-text").textContent = c.front || "";
+        card.querySelector(".flashcard-back .flashcard-text").textContent = c.back || "";
+        card.addEventListener("click", function () { card.classList.toggle("flipped"); });
+        container.appendChild(card);
+        renderMath(card);
+      });
+    } else if (item.type === "studyGuide") {
+      bodyEl.innerHTML = '<div class="study-guide-markdown assistant-content"></div>';
+      var mdEl = bodyEl.querySelector(".study-guide-markdown");
+      var mdContent = content.markdown || "";
+      if (!mdContent && content.sections) {
+        mdContent = content.sections.map(s => "## " + s.title + "\n\n" + s.body).join("\n\n");
+      }
+      if (window.marked && typeof window.marked.parse === "function") {
+        mdEl.innerHTML = window.marked.parse(mdContent);
+      } else {
+        mdEl.textContent = mdContent;
+      }
+      renderMath(mdEl);
+    } else if (item.type === "practiceTest" && content.questions && content.questions.length) {
+      bodyEl.innerHTML = '<div class="practice-test"></div>';
+      var test = bodyEl.querySelector(".practice-test");
+      content.questions.forEach(function (q, i) {
+        var div = document.createElement("div");
+        div.className = "practice-question";
+        div.innerHTML = '<div class="practice-q-number">Question ' + (i + 1) + '</div><div class="practice-q-text"></div>' + (q.answer ? '<div class="practice-answer-area tx2 text-sm mt-2"><strong>Answer:</strong> <span class="answer-text"></span></div>' : '');
+        div.querySelector(".practice-q-text").textContent = q.text || "";
+        if (q.answer) div.querySelector(".answer-text").textContent = q.answer || "";
+        test.appendChild(div);
+        renderMath(div);
+      });
+    } else {
+      bodyEl.innerHTML = '<p class="tx2">No content yet. Edit this item to add content.</p>';
+    }
+  }
+
+  var sidebar = document.getElementById("sidebar");
+  var toggle = document.getElementById("sidebar-toggle");
+  if (toggle && sidebar) toggle.addEventListener("click", function () { sidebar.classList.toggle("collapsed"); });
+
+  var themeBtn = document.getElementById("theme-toggle-btn");
+  var themeIcon = document.getElementById("theme-icon");
+  var root = document.documentElement;
+  function applyTheme(dark) {
+    root.setAttribute("data-theme", dark ? "dark" : "light");
+    if (themeIcon) themeIcon.textContent = dark ? "☀️" : "🌙";
+    try { localStorage.setItem("korah_theme", dark ? "dark" : "light"); } catch (_) {}
+  }
+  if (themeBtn) themeBtn.addEventListener("click", function () { applyTheme(root.getAttribute("data-theme") !== "dark"); });
+  if (localStorage.getItem("korah_theme") === "light") applyTheme(false);
+})();
+</script>
+</body>
+</html>
