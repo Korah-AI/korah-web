@@ -133,6 +133,49 @@
     input.disabled = sending;
   }
 
+  function renderMarkdownAndMath(targetEl, markdownText) {
+    if (!targetEl) return;
+
+    let html = markdownText || "";
+
+    try {
+      if (window.marked && typeof window.marked.parse === "function") {
+        html = window.marked.parse(markdownText || "");
+      } else {
+        html = (markdownText || "")
+          .replace(/```([\s\S]*?)```/g, "<pre><code>$1</code></pre>")
+          .replace(/^### (.*)$/gim, "<h3>$1</h3>")
+          .replace(/^## (.*)$/gim, "<h2>$1</h2>")
+          .replace(/^# (.*)$/gim, "<h1>$1</h1>")
+          .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+          .replace(/\*(.*?)\*/g, "<em>$1</em>")
+          .replace(/`([^`]+)`/g, "<code>$1</code>")
+          .replace(/\n/g, "<br/>");
+      }
+    } catch (e) {
+      console.error("Markdown render error:", e);
+      html = (markdownText || "").replace(/\n/g, "<br/>");
+    }
+
+    targetEl.innerHTML = html;
+
+    if (window.renderMathInElement && typeof window.renderMathInElement === "function") {
+      try {
+        window.renderMathInElement(targetEl, {
+          delimiters: [
+            { left: "$$", right: "$$", display: true },
+            { left: "\\[", right: "\\]", display: true },
+            { left: "\\(", right: "\\)", display: false },
+            { left: "$", right: "$", display: false },
+          ],
+          throwOnError: false,
+        });
+      } catch (e) {
+        console.error("KaTeX render error:", e);
+      }
+    }
+  }
+
   function buildMessageRow(role, text, isError = false, suggestions = [], contentId = null) {
     const row = document.createElement("div");
     row.className = `msg-row ${role === "user" ? "user" : "assistant"}`;
@@ -149,9 +192,15 @@
     label.innerHTML = '<span class="msg-label-dot"></span>' + (role === "user" ? "You" : "Korah AI");
 
     const content = document.createElement("div");
-    content.style.whiteSpace = "pre-wrap";
-    content.textContent = text;
     if (contentId) content.id = contentId;
+
+    if (role === "assistant" && !isError) {
+      content.className = "assistant-content";
+      renderMarkdownAndMath(content, text || "");
+    } else {
+      content.style.whiteSpace = "pre-wrap";
+      content.textContent = text;
+    }
 
     bubble.appendChild(label);
     bubble.appendChild(content);
@@ -681,6 +730,13 @@
 - Make connections between different literary works and ideas`,
   };
 
+  const FORMAT_INSTRUCTIONS = `
+Always format your responses using GitHub-flavored Markdown. Use:
+- Markdown headings (##, ###) to structure sections
+- Bulleted and numbered lists for steps and key points
+- \`code\` and fenced code blocks for formulas or code when helpful
+When you include math, write it using LaTeX syntax with inline $...$ and display $$...$$ blocks so it can be rendered with KaTeX.`;
+
   function getModeConfig(mode) {
     const modes = {
       math: { name: "Math", emoji: "🧮" },
@@ -694,7 +750,10 @@
   }
 
   function getSystemPrompt(mode) {
-    return MODE_SYSTEM_PROMPTS[mode] || MODE_SYSTEM_PROMPTS.physics;
+    const base = MODE_SYSTEM_PROMPTS[mode] || MODE_SYSTEM_PROMPTS.physics;
+    return `${base}
+
+${FORMAT_INSTRUCTIONS}`.trim();
   }
 
   function getModeEmoji(mode) {
@@ -870,7 +929,7 @@
     try {
       const reply = await callChatApi(history, (chunk, fullText) => {
         if (contentElement) {
-          contentElement.textContent = fullText;
+          renderMarkdownAndMath(contentElement, fullText);
           scrollToBottom();
         }
       });
