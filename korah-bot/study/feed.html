@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Korah AI — Study Feed</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../korah-chat.css"/>
+</head>
+<body class="bg-base tx">
+
+<canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none opacity-40"></canvas>
+
+<!-- Loading Overlay -->
+<div id="loading-overlay" class="loading-overlay hidden">
+  <div class="loading-spinner">
+    <div class="spinner-ring"></div>
+    <div class="spinner-core"></div>
+  </div>
+  <div class="loading-text">Generating with AI...</div>
+  <div class="loading-subtext">Korah is crafting your personalized study materials. This usually takes 5-10 seconds.</div>
+</div>
+
+<aside id="sidebar" class="sidebar bg-sf glass t-theme">
+  <div class="sidebar-header">
+    <a href="../index.html" class="flex items-center gap-2.5 no-underline">
+      <div class="w-10 h-10 rounded-xl grad-bg flex items-center justify-center font-display text-xl font-black text-white shadow-glow logo-btn">
+        <img src="../logo.png" alt="Korah" class="w-8 h-8 object-contain"/>
+      </div>
+      <div class="flex flex-col leading-tight">
+        <span class="font-display text-[19px] font-bold tx">Korah</span>
+        <span class="text-[9px] font-semibold tracking-[2.5px] uppercase tx-p4">Beta · Study AI</span>
+      </div>
+    </a>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="../index.html" class="sidebar-nav-link t-btn">💬 Chat</a>
+    <a href="feed.html" class="sidebar-nav-link active t-btn">📚 Study Feed</a>
+  </nav>
+  <div class="sidebar-section-label">Recent Chats</div>
+  <div id="chat-history" class="chat-history"></div>
+  <div class="sidebar-section-label mt-4">Recent Study Items</div>
+  <div id="study-items-history" class="chat-history study-items-history"></div>
+  <div class="sidebar-footer">
+    <div class="mood-indicator">
+      <span class="mood-dot">🟢</span>
+      <span class="text-xs tx2 font-medium">Study Feed</span>
+    </div>
+    <div class="sidebar-footer-actions">
+      <button id="theme-toggle-btn" class="theme-toggle-small t-btn" title="Toggle theme">
+        <span id="theme-icon">☀️</span>
+      </button>
+    </div>
+  </div>
+</aside>
+
+<main id="main-content" class="main-content">
+  <header class="chat-topbar bg-sf glass-sm t-theme bd">
+    <button id="sidebar-toggle" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+    <div class="chat-title-area">
+      <span class="font-semibold tx text-sm">Study Feed</span>
+    </div>
+    <div class="topbar-actions">
+      <a href="new.html" class="new-chat-btn grad-bg text-white text-xs font-bold px-4 py-2 rounded-full no-underline border-none cursor-pointer shadow-glow t-btn inline-flex items-center">
+        + Create Study Item
+      </a>
+    </div>
+  </header>
+
+  <div class="study-feed-body">
+    <div class="study-feed-toolbar">
+      <input type="search" id="feed-search" class="feed-search tx bg-sf2 bd" placeholder="Search by title or description…" />
+      <div class="feed-filters">
+        <select id="filter-type" class="feed-filter-select tx bg-sf2 bd">
+          <option value="">All types</option>
+          <option value="flashcards">🃏 Flashcards</option>
+          <option value="studyGuide">📖 Study Guide</option>
+          <option value="practiceTest">🎯 Practice Test</option>
+        </select>
+        <select id="filter-source" class="feed-filter-select tx bg-sf2 bd">
+          <option value="">All sources</option>
+          <option value="manual">Manual</option>
+          <option value="ai-prompt">AI from prompt</option>
+          <option value="ai-doc">AI from docs</option>
+          <option value="chatbot-request">From Chatbot</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="feed-cards" class="feed-cards">
+      <!-- Cards rendered by JS -->
+    </div>
+    
+    <div id="feed-empty" class="feed-empty hidden">
+      <div class="empty-icon">📚</div>
+      <h2 class="empty-title">Your Study Feed is Empty</h2>
+      <p class="empty-sub">Korah can help you create flashcards, study guides, or practice tests in seconds. Try creating your first item!</p>
+      <a href="new.html" class="new-chat-btn grad-bg text-white text-sm font-bold px-6 py-3 rounded-full no-underline shadow-glow t-btn mt-2">
+        + Create Study Item
+      </a>
+    </div>
+  </div>
+</main>
+
+<script src="js/sidebar.js"></script>
+<script>
+(function () {
+  KorahSidebar.initSidebar({ chatBaseUrl: "../index.html", itemPageUrl: "item.html" });
+
+  const STUDY_ITEMS_KEY = "korah_study_items";
+  function getStudyItems() {
+    try {
+      const data = localStorage.getItem(STUDY_ITEMS_KEY);
+      return data ? JSON.parse(data) : {};
+    } catch (_) { return {}; }
+  }
+
+  const TYPE_LABELS = { flashcards: "Flashcards", studyGuide: "Study Guide", practiceTest: "Practice Test" };
+  const SOURCE_LABELS = { manual: "Manual", "ai-prompt": "AI from prompt", "ai-doc": "AI from Docs", "chatbot-request": "From Chatbot" };
+
+  function renderCards() {
+    const items = getStudyItems();
+    const list = Object.keys(items).map(function (id) { return { id: id, ...items[id] }; });
+    const typeFilter = document.getElementById("filter-type").value;
+    const sourceFilter = document.getElementById("filter-source").value;
+    const search = (document.getElementById("feed-search").value || "").toLowerCase().trim();
+
+    let filtered = list;
+    if (typeFilter) filtered = filtered.filter(function (i) { return i.type === typeFilter; });
+    if (sourceFilter) filtered = filtered.filter(function (i) { return (i.source || "manual") === sourceFilter; });
+    if (search) {
+      filtered = filtered.filter(function (i) {
+        return ((i.title || "") + " " + (i.description || "")).toLowerCase().indexOf(search) >= 0;
+      });
+    }
+    filtered.sort(function (a, b) {
+      return new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0);
+    });
+
+    const container = document.getElementById("feed-cards");
+    const emptyEl = document.getElementById("feed-empty");
+    container.innerHTML = "";
+    if (filtered.length === 0) {
+      emptyEl.classList.remove("hidden");
+      return;
+    }
+    emptyEl.classList.add("hidden");
+    filtered.forEach(function (item) {
+      const card = document.createElement("div");
+      card.className = "feed-card bg-card bd t-theme";
+      const updated = item.updatedAt || item.createdAt;
+      const dateStr = updated ? new Date(updated).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "";
+      const source = item.source || "manual";
+      const emoji = KorahSidebar.getTypeEmoji(item.type);
+      const label = TYPE_LABELS[item.type] || item.type;
+      
+      card.innerHTML =
+        '<div class="feed-card-header">' +
+          '<span class="feed-card-type">' + emoji + ' ' + label + '</span>' +
+          '<span class="feed-card-source">' + (SOURCE_LABELS[source] || source) + '</span>' +
+        '</div>' +
+        '<h3 class="feed-card-title">' + (item.title || "Untitled") + '</h3>' +
+        (item.description ? '<p class="feed-card-desc tx2">' + (item.description.length > 110 ? item.description.slice(0, 110) + "..." : item.description) + '</p>' : '<p class="feed-card-desc tx3">No description provided.</p>') +
+        '<div class="feed-card-meta tx3 mb-4">Modified ' + dateStr + '</div>' +
+        '<div class="feed-card-actions">' +
+          '<a href="item.html?id=' + encodeURIComponent(item.id) + '" class="feed-card-btn primary t-btn">Open Item</a>' +
+          '<a href="item.html?id=' + encodeURIComponent(item.id) + '&duplicate=1" class="feed-card-btn t-btn" title="Duplicate">Duplicate</a>' +
+        '</div>';
+      container.appendChild(card);
+    });
+  }
+
+  document.getElementById("feed-search").addEventListener("input", renderCards);
+  document.getElementById("filter-type").addEventListener("change", renderCards);
+  document.getElementById("filter-source").addEventListener("change", renderCards);
+  renderCards();
+
+  var sidebar = document.getElementById("sidebar");
+  var toggle = document.getElementById("sidebar-toggle");
+  if (toggle && sidebar) toggle.addEventListener("click", function () { sidebar.classList.toggle("collapsed"); });
+
+  var themeBtn = document.getElementById("theme-toggle-btn");
+  var themeIcon = document.getElementById("theme-icon");
+  var root = document.documentElement;
+  function applyTheme(dark) {
+    root.setAttribute("data-theme", dark ? "dark" : "light");
+    if (themeIcon) themeIcon.textContent = dark ? "☀️" : "🌙";
+    try { localStorage.setItem("korah_theme", dark ? "dark" : "light"); } catch (_) {}
+  }
+  if (themeBtn) {
+    themeBtn.addEventListener("click", function () {
+      var isDark = root.getAttribute("data-theme") === "dark";
+      applyTheme(!isDark);
+    });
+  }
+  var saved = localStorage.getItem("korah_theme");
+  if (saved === "light") applyTheme(false);
+})();
+</script>
+</body>
+</html>

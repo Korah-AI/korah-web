@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Korah AI — Create Study Item</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../korah-chat.css"/>
+</head>
+<body class="bg-base tx">
+
+<canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none opacity-40"></canvas>
+
+<!-- Loading Overlay -->
+<div id="loading-overlay" class="loading-overlay hidden">
+  <div class="loading-spinner">
+    <div class="spinner-ring"></div>
+    <div class="spinner-core"></div>
+  </div>
+  <div class="loading-text" id="loading-text">Generating with AI...</div>
+  <div class="loading-subtext">Korah is crafting your personalized study materials. This usually takes 5-10 seconds.</div>
+</div>
+
+<aside id="sidebar" class="sidebar bg-sf glass t-theme">
+  <div class="sidebar-header">
+    <a href="../index.html" class="flex items-center gap-2.5 no-underline">
+      <div class="w-10 h-10 rounded-xl grad-bg flex items-center justify-center font-display text-xl font-black text-white shadow-glow logo-btn">
+        <img src="../logo.png" alt="Korah" class="w-8 h-8 object-contain"/>
+      </div>
+      <div class="flex flex-col leading-tight">
+        <span class="font-display text-[19px] font-bold tx">Korah</span>
+        <span class="text-[9px] font-semibold tracking-[2.5px] uppercase tx-p4">Beta · Study AI</span>
+      </div>
+    </a>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="../index.html" class="sidebar-nav-link t-btn">💬 Chat</a>
+    <a href="feed.html" class="sidebar-nav-link active t-btn">📚 Study Feed</a>
+  </nav>
+  <div class="sidebar-section-label">Recent Chats</div>
+  <div id="chat-history" class="chat-history"></div>
+  <div class="sidebar-section-label mt-4">Recent Study Items</div>
+  <div id="study-items-history" class="chat-history study-items-history"></div>
+  <div class="sidebar-footer">
+    <div class="mood-indicator">
+      <span class="mood-dot">🟢</span>
+      <span class="text-xs tx2 font-medium">Create</span>
+    </div>
+    <div class="sidebar-footer-actions">
+      <button id="theme-toggle-btn" class="theme-toggle-small t-btn" title="Toggle theme">
+        <span id="theme-icon">☀️</span>
+      </button>
+    </div>
+  </div>
+</aside>
+
+<main id="main-content" class="main-content">
+  <header class="chat-topbar bg-sf glass-sm t-theme bd">
+    <button id="sidebar-toggle" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+    <div class="chat-title-area">
+      <span class="font-semibold tx text-sm">Create Study Item</span>
+    </div>
+    <div class="topbar-actions">
+      <a href="feed.html" class="feed-card-btn t-btn" style="padding: 8px 14px;">Cancel</a>
+    </div>
+  </header>
+
+  <div class="create-flow-body">
+    <div class="create-steps">
+      <div class="create-step" data-step="1">
+        <span class="create-step-num">1</span>
+        <span>Type</span>
+      </div>
+      <div class="create-step" data-step="2">
+        <span class="create-step-num">2</span>
+        <span>Method</span>
+      </div>
+      <div class="create-step" data-step="3">
+        <span class="create-step-num">3</span>
+        <span>Configure</span>
+      </div>
+      <div class="create-step" data-step="4">
+        <span class="create-step-num">4</span>
+        <span>Review</span>
+      </div>
+    </div>
+
+    <!-- Step 1: Choose type -->
+    <div id="step-1" class="create-step-panel">
+      <h2 class="create-panel-title">Choose type</h2>
+      <div class="create-type-grid">
+        <button type="button" class="create-type-card t-btn" data-type="flashcards">
+          <span class="create-type-emoji">🃏</span>
+          <span class="create-type-name">Flashcard Set</span>
+          <span class="create-type-desc tx2">Front/back cards with rich text and math</span>
+        </button>
+        <button type="button" class="create-type-card t-btn" data-type="studyGuide">
+          <span class="create-type-emoji">📖</span>
+          <span class="create-type-name">Study Guide</span>
+          <span class="create-type-desc tx2">Structured outline with sections and summaries</span>
+        </button>
+        <button type="button" class="create-type-card t-btn" data-type="practiceTest">
+          <span class="create-type-emoji">🎯</span>
+          <span class="create-type-name">Practice Test</span>
+          <span class="create-type-desc tx2">Questions with answer keys and rationales</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 2: Choose method -->
+    <div id="step-2" class="create-step-panel hidden">
+      <h2 class="create-panel-title">How do you want to create it?</h2>
+      <div class="create-method-list">
+        <button type="button" class="create-method-btn t-btn" data-method="manual">
+          <span>✏️</span>
+          <div>
+            <strong>Manual</strong>
+            <span class="tx2 block text-xs mt-0.5">Build it yourself in the editor</span>
+          </div>
+        </button>
+        <button type="button" class="create-method-btn t-btn" data-method="ai-prompt">
+          <span>💬</span>
+          <div>
+            <strong>AI from prompt</strong>
+            <span class="tx2 block text-xs mt-0.5">Describe what you need and Korah generates it</span>
+          </div>
+        </button>
+        <button type="button" class="create-method-btn t-btn" data-method="ai-doc">
+          <span>📄</span>
+          <div>
+            <strong>AI from documents</strong>
+            <span class="tx2 block text-xs mt-0.5">Upload PDFs or notes and generate from them</span>
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 3: Configure -->
+    <div id="step-3" class="create-step-panel hidden">
+      <h2 class="create-panel-title">Details</h2>
+      <div class="create-form">
+        <label class="create-label">Title</label>
+        <input type="text" id="create-title" class="create-input tx bg-sf2 bd" placeholder="e.g. Chapter 5 Key Terms"/>
+        <label class="create-label">Description (optional)</label>
+        <textarea id="create-description" class="create-input create-textarea tx bg-sf2 bd" rows="2" placeholder="Brief description of this study item"></textarea>
+        <label class="create-label">Subject</label>
+        <input type="text" id="create-subject" class="create-input tx bg-sf2 bd" placeholder="e.g. Biology"/>
+        <label class="create-label">Tags (comma-separated)</label>
+        <input type="text" id="create-tags" class="create-input tx bg-sf2 bd" placeholder="e.g. exam, midterm, chapter5"/>
+        <div id="create-ai-prompt-wrap" class="hidden">
+          <label class="create-label">Prompt for AI</label>
+          <textarea id="create-ai-prompt" class="create-input create-textarea tx bg-sf2 bd" rows="3" placeholder="e.g. Create 10 flashcards covering photosynthesis and cellular respiration"></textarea>
+        </div>
+        <div class="create-form-actions">
+          <button type="button" id="create-back-3" class="feed-card-btn t-btn">Back</button>
+          <button type="button" id="create-next-3" class="new-chat-btn grad-bg text-white text-xs font-bold px-4 py-2 rounded-full border-none cursor-pointer shadow-glow t-btn">Continue</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 4: Review / Generate -->
+    <div id="step-4" class="create-step-panel hidden">
+      <h2 class="create-panel-title">Review & save</h2>
+      <div id="create-review-summary" class="create-review-summary tx2 text-sm"></div>
+      <div id="create-manual-editor" class="hidden">
+        <p class="tx2 text-sm mb-2">Create a manual study item to build from scratch. You'll be taken to the editor to add your content.</p>
+      </div>
+      <div id="create-ai-generate" class="hidden">
+        <p class="tx2 text-sm mb-2">Everything looks good! Click generate to have Korah build your study item with AI.</p>
+      </div>
+      <div class="create-form-actions mt-4">
+        <button type="button" id="create-back-4" class="feed-card-btn t-btn">Back</button>
+        <button type="button" id="create-save" class="new-chat-btn grad-bg text-white text-sm font-bold px-6 py-2.5 rounded-full border-none cursor-pointer shadow-glow t-btn">Generate</button>
+      </div>
+      <p id="create-save-error" class="tx-mr text-sm mt-2 hidden"></p>
+    </div>
+  </div>
+</main>
+
+<script src="js/sidebar.js"></script>
+<script src="js/study-api.js"></script>
+<script>
+(function () {
+  KorahSidebar.initSidebar({ chatBaseUrl: "../index.html", itemPageUrl: "item.html" });
+
+  var STUDY_ITEMS_KEY = "korah_study_items";
+  function getStudyItems() {
+    try {
+      var data = localStorage.getItem(STUDY_ITEMS_KEY);
+      return data ? JSON.parse(data) : {};
+    } catch (_) { return {}; }
+  }
+  function saveStudyItems(items) {
+    localStorage.setItem(STUDY_ITEMS_KEY, JSON.stringify(items));
+  }
+
+  var state = { step: 1, type: null, method: "manual" };
+
+  var typeParam = new URLSearchParams(window.location.search).get("type");
+  if (typeParam && ["flashcards", "studyGuide", "practiceTest"].indexOf(typeParam) >= 0) {
+    state.type = typeParam;
+  }
+
+  function showStep(n) {
+    state.step = n;
+    document.querySelectorAll(".create-step-panel").forEach(function (el) { el.classList.add("hidden"); });
+    document.getElementById("step-" + n).classList.remove("hidden");
+    document.querySelectorAll(".create-step").forEach(function (el) {
+      el.classList.toggle("active", parseInt(el.getAttribute("data-step"), 10) <= n);
+    });
+    if (n === 3) {
+      document.getElementById("create-ai-prompt-wrap").classList.toggle("hidden", state.method === "manual");
+    }
+    if (n === 4) {
+      var typeLabel = { flashcards: "Flashcard Set", studyGuide: "Study Guide", practiceTest: "Practice Test" }[state.type];
+      var methodLabel = { manual: "Manual", "ai-prompt": "AI from prompt", "ai-doc": "AI from documents" }[state.method];
+      document.getElementById("create-review-summary").textContent =
+        "Type: " + typeLabel + " · Method: " + methodLabel + " · Title: " + (document.getElementById("create-title").value || "Untitled");
+      document.getElementById("create-manual-editor").classList.toggle("hidden", state.method !== "manual");
+      document.getElementById("create-ai-generate").classList.toggle("hidden", state.method === "manual");
+    }
+  }
+
+  document.querySelectorAll(".create-type-card").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      state.type = btn.getAttribute("data-type");
+      showStep(2);
+    });
+  });
+
+  document.querySelectorAll(".create-method-btn").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      state.method = btn.getAttribute("data-method");
+      showStep(3);
+    });
+  });
+
+  document.getElementById("create-next-3").addEventListener("click", function () { showStep(4); });
+  document.getElementById("create-back-3").addEventListener("click", function () { showStep(2); });
+  document.getElementById("create-back-4").addEventListener("click", function () { showStep(3); });
+
+  function saveItem(content) {
+    var title = document.getElementById("create-title").value.trim() || "Untitled";
+    var description = document.getElementById("create-description").value.trim();
+    var subject = document.getElementById("create-subject").value.trim();
+    var tags = (document.getElementById("create-tags").value || "").split(",").map(function (t) { return t.trim(); }).filter(Boolean);
+    var id = "study_" + Date.now();
+    var item = {
+      id: id,
+      type: state.type,
+      title: title,
+      description: description,
+      subject: subject,
+      tags: tags,
+      content: content || (state.type === "flashcards" ? { cards: [] } : state.type === "studyGuide" ? { sections: [] } : { questions: [] }),
+      source: state.method,
+      createdBy: "local",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    var items = getStudyItems();
+    items[id] = item;
+    saveStudyItems(items);
+    window.location.href = "item.html?id=" + encodeURIComponent(id);
+  }
+
+  document.getElementById("create-save").addEventListener("click", function () {
+    var btn = document.getElementById("create-save");
+    var errEl = document.getElementById("create-save-error");
+    var overlay = document.getElementById("loading-overlay");
+    var loadingText = document.getElementById("loading-text");
+    
+    errEl.classList.add("hidden");
+    errEl.textContent = "";
+
+    var isAi = state.method === "ai-prompt" || state.method === "ai-doc";
+    if (!isAi) {
+      saveItem(null);
+      return;
+    }
+
+    var title = document.getElementById("create-title").value.trim() || "Untitled";
+    var subject = document.getElementById("create-subject").value.trim();
+    var prompt = (document.getElementById("create-ai-prompt") && document.getElementById("create-ai-prompt").value) || title;
+
+    btn.disabled = true;
+    overlay.classList.remove("hidden");
+    if (loadingText) loadingText.textContent = "Korah is Generating...";
+
+    KorahStudyAPI.generateStudyContent({
+      type: state.type,
+      prompt: prompt,
+      title: title,
+      subject: subject
+    }).then(function (result) {
+      saveItem(result.content);
+    }).catch(function (err) {
+      btn.disabled = false;
+      overlay.classList.add("hidden");
+      errEl.textContent = "AI generation failed: " + (err && err.message ? err.message : "please try again");
+      errEl.classList.remove("hidden");
+    });
+  });
+
+  var sidebar = document.getElementById("sidebar");
+  var toggle = document.getElementById("sidebar-toggle");
+  if (toggle && sidebar) toggle.addEventListener("click", function () { sidebar.classList.toggle("collapsed"); });
+
+  var themeBtn = document.getElementById("theme-toggle-btn");
+  var themeIcon = document.getElementById("theme-icon");
+  var root = document.documentElement;
+  function applyTheme(dark) {
+    root.setAttribute("data-theme", dark ? "dark" : "light");
+    if (themeIcon) themeIcon.textContent = dark ? "☀️" : "🌙";
+    try { localStorage.setItem("korah_theme", dark ? "dark" : "light"); } catch (_) {}
+  }
+  if (themeBtn) themeBtn.addEventListener("click", function () { applyTheme(root.getAttribute("data-theme") !== "dark"); });
+  if (localStorage.getItem("korah_theme") === "light") applyTheme(false);
+
+  if (state.type) showStep(2);
+})();
+</script>
+</body>
+</html>
