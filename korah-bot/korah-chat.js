@@ -16,6 +16,8 @@
   const quickPromptButtons = document.querySelectorAll("#tool-flashcard, #tool-guide");
   const chatHistoryContainer = document.getElementById("chat-history");
   const chatTitleEl = document.getElementById("chat-title");
+  const toolsTrigger = document.getElementById("tools-trigger");
+  const toolsMenu = document.getElementById("tools-menu");
 
   if (!input || !sendBtn || !messagesList) return;
 
@@ -1141,16 +1143,30 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     });
   });
 
+  // 3-dot menu toggle
+  if (toolsTrigger && toolsMenu) {
+    toolsTrigger.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toolsMenu.classList.toggle("show");
+    });
+    document.addEventListener("click", () => {
+      toolsMenu.classList.remove("show");
+    });
+    toolsMenu.addEventListener("click", (e) => e.stopPropagation());
+  }
+
   quickPromptButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
       const prompt = btn.getAttribute("data-prompt");
       if (!prompt) return;
+      if (toolsMenu) toolsMenu.classList.remove("show");
       input.value = prompt;
       resizeInput();
       updateCharCount();
       input.focus();
     });
   });
+
 
   if (clearChatBtn) clearChatBtn.addEventListener("click", resetChat);
   if (newChatBtn) {
