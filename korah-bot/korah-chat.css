@@ -37,6 +37,90 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; overflow: hidden
     --p-gen:#7c3aed; --p-gen-glow:rgba(124,58,237,0.15);
 }
 
+/* ── Animations ── */
+@keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px) }
+    to   { opacity: 1; transform: none }
+}
+@keyframes pulse-glow {
+    0%, 100% { filter: drop-shadow(0 0 15px var(--glow)) }
+    50% { filter: drop-shadow(0 0 25px var(--p4)) }
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0) rotate(0deg) }
+    50% { transform: translateY(-10px) rotate(2deg) }
+}
+@keyframes soft-pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.05); opacity: 0.9; }
+}
+
+/* ── Typing Animation ── */
+.typing-text {
+    overflow: hidden;
+    border-right: 2px solid var(--p4);
+    white-space: nowrap;
+    margin: 0 auto;
+    letter-spacing: .05em;
+    animation: 
+        typing 3.5s steps(40, end),
+        blink-caret .75s step-end infinite;
+}
+
+@keyframes typing {
+    from { width: 0 }
+    to { width: 100% }
+}
+
+@keyframes blink-caret {
+    from, to { border-color: transparent }
+    50% { border-color: var(--p4) }
+}
+
+/* ── Star and Background enhancements ── */
+#bg-canvas { 
+    background: radial-gradient(circle at center, var(--bg2) 0%, var(--bg) 100%);
+    filter: blur(1px);
+    opacity: 0.8;
+}
+
+.shooting-star {
+    position: absolute;
+    height: 2px;
+    background: linear-gradient(90deg, rgba(255,255,255,1), rgba(255,255,255,0));
+    border-radius: 999px;
+    filter: drop-shadow(0 0 6px white);
+    animation: shoot 3s ease-out infinite;
+    z-index: 1;
+}
+
+@keyframes shoot {
+    0% { transform: translateX(0) translateY(0) rotate(-45deg) scale(0); opacity: 1; }
+    70% { opacity: 1; }
+    100% { transform: translateX(-1000px) translateY(1000px) rotate(-45deg) scale(1); opacity: 0; }
+}
+
+.mascot-avatar {
+    width: 72px;
+    height: 72px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 1;
+    animation: float 6s ease-in-out infinite;
+}
+
+.logo-btn {
+    transition: transform .3s cubic-bezier(.23,1,.32,1), box-shadow .3s;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    animation: soft-pulse 4s ease-in-out infinite;
+}
+
 /* ── Semantic helpers ── */
 .bg-base  { background: var(--bg) }
 .bg-base2 { background: var(--bg2) }
@@ -63,16 +147,16 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; overflow: hidden
 }
 .grad-bg { background: linear-gradient(135deg, #5b21b6, var(--p4)) }
 
-.glass    { backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px) }
-.glass-sm { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px) }
+.glass    { backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); background: var(--sf) }
+.glass-sm { backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); background: var(--sf) }
 
-.shadow-glow    { box-shadow: 0 0 20px var(--glow) }
-.shadow-glow-lg { box-shadow: 0 0 36px var(--glow) }
+.shadow-glow    { box-shadow: 0 0 25px var(--glow) }
+.shadow-glow-lg { box-shadow: 0 0 45px var(--glow) }
 
 .t-theme { transition: background-color .4s, border-color .4s, color .4s }
-.t-btn   { transition: transform .2s, box-shadow .2s, filter .2s, background-color .2s, opacity .2s }
-.t-btn:hover { transform: translateY(-1px) }
-.t-btn:active { transform: translateY(0) scale(.97) }
+.t-btn   { transition: transform .3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow .3s, filter .3s, background-color .3s, opacity .3s }
+.t-btn:hover { transform: translateY(-3px) scale(1.02); }
+.t-btn:active { transform: translateY(0) scale(.95) }
 
 /* ── Layout ── */
 body { display: flex; background: var(--bg) }
@@ -112,6 +196,7 @@ body { display: flex; background: var(--bg) }
     cursor: pointer;
     position: relative;
     overflow: hidden;
+    animation: soft-pulse 4s ease-in-out infinite;
 }
 .logo-btn::before {
     content: '';

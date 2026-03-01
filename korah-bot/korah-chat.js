@@ -12,7 +12,6 @@
   const charCount = document.getElementById("char-count");
   const clearChatBtn = document.getElementById("clear-chat-btn");
   const newChatBtn = document.getElementById("new-chat-btn");
-  const suggestionChips = document.querySelectorAll(".suggestion-chip");
   const quickPromptButtons = document.querySelectorAll("#tool-flashcard, #tool-guide");
   const chatHistoryContainer = document.getElementById("chat-history");
   const chatTitleEl = document.getElementById("chat-title");
@@ -196,7 +195,11 @@
 
     const avatar = document.createElement("div");
     avatar.className = `msg-avatar ${role === "user" ? "user-av" : "korah-av"}`;
-    avatar.textContent = role === "user" ? "You" : "K";
+    if (role === "user") {
+      avatar.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
+    } else {
+      avatar.innerHTML = `<img src="logo.png" alt="K" class="w-10 h-10 object-contain" />`;
+    }
 
     const bubble = document.createElement("div");
     bubble.className = `msg-bubble ${role === "user" ? "user" : "korah"}${isError ? " error" : ""}`;
@@ -869,6 +872,72 @@ ${FORMAT_INSTRUCTIONS}`.trim();
 
     updateModeUI(mode);
     renderModePills();
+    renderWelcomeSuggestions();
+  }
+
+  const MODE_SUGGESTIONS = {
+    general: [
+      { emoji: "🃏", text: "Make flashcards for photosynthesis", prompt: "Generate flashcards for photosynthesis" },
+      { emoji: "😰", text: "I have a test tomorrow, help me prioritize", prompt: "I have a test tomorrow and I'm stressed. What should I study first?" },
+      { emoji: "📖", text: "Study guide for cellular respiration", prompt: "Create a study guide for Chapter 5 on cellular respiration" },
+      { emoji: "🎯", text: "Practice test on World War II", prompt: "Give me a 10-question practice test on World War II" }
+    ],
+    math: [
+      { emoji: "📐", text: "Explain the Quadratic Formula", prompt: "Explain the Quadratic Formula step-by-step and show examples" },
+      { emoji: "🧮", text: "Practice Calculus derivatives", prompt: "Give me some practice problems for Calculus derivatives with solutions" },
+      { emoji: "🔢", text: "Solve systems of linear equations", prompt: "How do I solve systems of linear equations using substitution?" },
+      { emoji: "📝", text: "Trigonometry identities cheat sheet", prompt: "Create a cheat sheet for essential trigonometry identities" }
+    ],
+    physics: [
+      { emoji: "🍎", text: "Newton's Third Law examples", prompt: "Explain Newton's Third Law with real-world examples" },
+      { emoji: "⚡", text: "How to calculate kinetic energy?", prompt: "How do I calculate kinetic energy? Show the formula and an example." },
+      { emoji: "🔌", text: "Series vs Parallel circuits", prompt: "Explain the difference between series and parallel circuits" },
+      { emoji: "🔊", text: "Understand the Doppler effect", prompt: "Help me understand the Doppler effect with a simple analogy" }
+    ],
+    chemistry: [
+      { emoji: "🧪", text: "Electronegativity periodic trends", prompt: "Explain the periodic trends in electronegativity" },
+      { emoji: "⚖️", text: "Help me balance an equation", prompt: "Help me balance a chemical equation: show me the steps" },
+      { emoji: "⚛️", text: "Ionic vs Covalent bonds", prompt: "What is the difference between ionic and covalent bonds?" },
+      { emoji: "🧪", text: "Explain moles in chemistry", prompt: "Explain the concept of moles and Avogadro's number" }
+    ],
+    biology: [
+      { emoji: "🧬", text: "How DNA replication works", prompt: "How does DNA replication work? Break it down into steps." },
+      { emoji: "🔬", text: "Explain stages of Mitosis", prompt: "Explain the stages of Mitosis with key features of each" },
+      { emoji: "🔋", text: "Role of mitochondria in cells", prompt: "What is the role of mitochondria in a cell? Why is it the powerhouse?" },
+      { emoji: "🔄", text: "Summary of the Krebs cycle", prompt: "Create a clear summary of the Krebs cycle steps" }
+    ],
+    history: [
+      { emoji: "🇫🇷", text: "Causes of French Revolution", prompt: "What were the main causes of the French Revolution?" },
+      { emoji: "📅", text: "Timeline of the Cold War", prompt: "Give me a timeline of the major events in the Cold War" },
+      { emoji: "📜", text: "Significance of Magna Carta", prompt: "Explain the historical significance of the Magna Carta" },
+      { emoji: "🎨", text: "Key figures in the Renaissance", prompt: "Who were the most influential figures in the Renaissance and why?" }
+    ],
+    literature: [
+      { emoji: "🍸", text: "Themes in 'The Great Gatsby'", prompt: "What are the main themes in 'The Great Gatsby'?" },
+      { emoji: "👁️", text: "Irony in '1984'", prompt: "Explain the use of irony in George Orwell's '1984'" },
+      { emoji: "🎭", text: "Analyze Hamlet's character", prompt: "Analyze the character of Hamlet and his internal conflict" },
+      { emoji: "✍️", text: "What is a sonnet?", prompt: "What is a sonnet? Explain the structure and give examples." }
+    ]
+  };
+
+  function renderWelcomeSuggestions() {
+    const container = document.getElementById("welcome-suggestions");
+    if (!container) return;
+    
+    const mode = currentSession.mode || "general";
+    const suggestions = MODE_SUGGESTIONS[mode] || MODE_SUGGESTIONS.general;
+    
+    container.innerHTML = "";
+    suggestions.forEach(s => {
+      const btn = document.createElement("button");
+      btn.className = "suggestion-chip t-btn";
+      btn.setAttribute("data-prompt", s.prompt);
+      btn.innerHTML = `${s.emoji} ${s.text}`;
+      btn.addEventListener("click", () => {
+        sendMessage(s.prompt);
+      });
+      container.appendChild(btn);
+    });
   }
 
   function renderModePills() {
@@ -1134,13 +1203,6 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     updateCharCount();
   });
 
-  suggestionChips.forEach((chip) => {
-    chip.addEventListener("click", () => {
-      const prompt = chip.getAttribute("data-prompt") || chip.textContent || "";
-      sendMessage(prompt);
-    });
-  });
-
   quickPromptButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
       const prompt = btn.getAttribute("data-prompt");
@@ -1161,6 +1223,7 @@ ${FORMAT_INSTRUCTIONS}`.trim();
       Storage.setCurrentSessionId(newId);
       history.length = 0;
       history.push(...currentSession.messages);
+      applyModeTheme(currentSession.mode);
       loadSessionMessages();
       renderChatHistory();
     });
@@ -1357,4 +1420,157 @@ What's on your mind?`;
       }
     }
   }
+
+  // ── Starfield Animation ──
+  function initBackground() {
+    const canvas = document.getElementById("bg-canvas");
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    let w, h, stars = [], shootingStars = [];
+
+    function resize() {
+      w = canvas.width = window.innerWidth;
+      h = canvas.height = window.innerHeight;
+      initStars();
+    }
+
+    class Star {
+      constructor() {
+        this.reset();
+      }
+      reset() {
+        this.x = Math.random() * w;
+        this.y = Math.random() * h;
+        this.size = Math.random() * 1.5;
+        this.opacity = Math.random() * 0.7 + 0.1;
+        this.twinkleSpeed = Math.random() * 0.015 + 0.005;
+        this.twinkleDir = Math.random() > 0.5 ? 1 : -1;
+        
+        // Random star colors: white, slight blue, slight yellow
+        const colors = ["#ffffff", "#eef2ff", "#fffdf2"];
+        this.color = colors[Math.floor(Math.random() * colors.length)];
+      }
+      update() {
+        this.opacity += this.twinkleSpeed * this.twinkleDir;
+        if (this.opacity > 0.9 || this.opacity < 0.1) {
+          this.twinkleDir *= -1;
+        }
+      }
+      draw() {
+        ctx.fillStyle = this.color;
+        ctx.globalAlpha = this.opacity;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        
+        if (this.size > 1.1) {
+          ctx.shadowBlur = 5;
+          ctx.shadowColor = this.color;
+        } else {
+          ctx.shadowBlur = 0;
+        }
+      }
+    }
+
+    class ShootingStar {
+      constructor() {
+        this.reset();
+      }
+      reset() {
+        this.x = Math.random() * w;
+        this.y = Math.random() * h * 0.4;
+        this.len = Math.random() * 80 + 40;
+        this.speedX = -(Math.random() * 15 + 10);
+        this.speedY = Math.random() * 10 + 5;
+        this.opacity = 1;
+        this.active = false;
+        this.waitTime = Math.random() * 600 + 300;
+      }
+      update() {
+        if (!this.active) {
+          this.waitTime--;
+          if (this.waitTime <= 0) this.active = true;
+          return;
+        }
+        this.x += this.speedX;
+        this.y += this.speedY;
+        this.opacity -= 0.02;
+        if (this.opacity <= 0 || this.y > h || this.x < 0) {
+          this.reset();
+        }
+      }
+      draw() {
+        if (!this.active) return;
+        ctx.globalAlpha = this.opacity;
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(this.x, this.y);
+        ctx.lineTo(this.x - this.speedX * 5, this.y - this.speedY * 5);
+        ctx.stroke();
+      }
+    }
+
+    function initStars() {
+      stars = [];
+      const starCount = Math.floor((w * h) / 3000); // Dynamic density
+      for (let i = 0; i < starCount; i++) stars.push(new Star());
+    }
+
+    shootingStars = [];
+    for (let i = 0; i < 2; i++) shootingStars.push(new ShootingStar());
+
+    function animate() {
+      ctx.clearRect(0, 0, w, h);
+      
+      stars.forEach(s => { s.update(); s.draw(); });
+      shootingStars.forEach(s => { s.update(); s.draw(); });
+      requestAnimationFrame(animate);
+    }
+
+    window.addEventListener("resize", resize);
+    resize();
+    animate();
+  }
+
+  // ── Typing Effect ──
+  function initWelcomeTyping() {
+    const title = document.querySelector("#welcome-screen h2");
+    const desc = document.querySelector("#welcome-screen p");
+    if (!title || !desc) return;
+
+    const titleText = title.textContent;
+    const descText = desc.textContent;
+    
+    title.textContent = "";
+    desc.textContent = "";
+    desc.style.opacity = "0";
+
+    let i = 0;
+    function typeTitle() {
+      if (i < titleText.length) {
+        title.textContent += titleText.charAt(i);
+        i++;
+        setTimeout(typeTitle, 50);
+      } else {
+        setTimeout(typeDesc, 500);
+      }
+    }
+
+    let j = 0;
+    function typeDesc() {
+      desc.style.opacity = "1";
+      if (j < descText.length) {
+        desc.textContent += descText.charAt(j);
+        j++;
+        setTimeout(typeDesc, 30);
+      }
+    }
+
+    // Start typing after a short delay
+    setTimeout(typeTitle, 600);
+  }
+
+  initBackground();
+  initWelcomeTyping();
 })();
