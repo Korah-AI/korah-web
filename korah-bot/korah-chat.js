@@ -15,6 +15,8 @@
   const quickPromptButtons = document.querySelectorAll("#tool-flashcard, #tool-guide");
   const chatHistoryContainer = document.getElementById("chat-history");
   const chatTitleEl = document.getElementById("chat-title");
+  const toolsTrigger = document.getElementById("tools-trigger");
+  const toolsMenu = document.getElementById("tools-menu");
 
   if (!input || !sendBtn || !messagesList) return;
 
@@ -1207,12 +1209,14 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     btn.addEventListener("click", () => {
       const prompt = btn.getAttribute("data-prompt");
       if (!prompt) return;
+      if (toolsMenu) toolsMenu.classList.remove("show");
       input.value = prompt;
       resizeInput();
       updateCharCount();
       input.focus();
     });
   });
+
 
   if (clearChatBtn) clearChatBtn.addEventListener("click", resetChat);
   if (newChatBtn) {
