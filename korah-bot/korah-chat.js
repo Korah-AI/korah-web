@@ -1086,9 +1086,7 @@ ${FORMAT_INSTRUCTIONS}`.trim();
         const session = Storage.getSession(sessionId);
         if (!session) return;
         
-        if (confirm(`Delete "${session.title}"?`)) {
-          deleteSessionById(sessionId);
-        }
+        showDeleteModal(session.title, () => deleteSessionById(sessionId));
       });
     });
   }
@@ -1349,6 +1347,33 @@ ${FORMAT_INSTRUCTIONS}`.trim();
       });
     });
   }
+
+  // Delete modal
+  const deleteModal = document.getElementById("delete-modal");
+  const deleteModalName = document.getElementById("delete-modal-name");
+  const deleteModalCancel = document.getElementById("delete-modal-cancel");
+  const deleteModalConfirm = document.getElementById("delete-modal-confirm");
+  let deleteModalCallback = null;
+
+  function showDeleteModal(name, onConfirm) {
+    deleteModalName.textContent = name;
+    deleteModalCallback = onConfirm;
+    deleteModal.classList.add("show");
+  }
+
+  function hideDeleteModal() {
+    deleteModal.classList.remove("show");
+    deleteModalCallback = null;
+  }
+
+  deleteModalCancel.addEventListener("click", hideDeleteModal);
+  deleteModalConfirm.addEventListener("click", () => {
+    if (deleteModalCallback) deleteModalCallback();
+    hideDeleteModal();
+  });
+  deleteModal.addEventListener("click", (e) => {
+    if (e.target === deleteModal) hideDeleteModal();
+  });
 
   // Load saved messages, apply theme, and render history on startup
   applyModeTheme(currentSession.mode || "general");
