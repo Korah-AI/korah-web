@@ -1205,6 +1205,17 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     updateCharCount();
   });
 
+  if (toolsTrigger && toolsMenu) {
+    toolsTrigger.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toolsMenu.classList.toggle("show");
+    });
+    document.addEventListener("click", () => {
+      toolsMenu.classList.remove("show");
+    });
+    toolsMenu.addEventListener("click", (e) => e.stopPropagation());
+  }
+
   quickPromptButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
       const prompt = btn.getAttribute("data-prompt");
