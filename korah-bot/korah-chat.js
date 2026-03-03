@@ -297,6 +297,58 @@
     return icons[type] || "📄";
   }
 
+  const selectedStudy = new Set();
+
+  function updateStudySelectBar() {
+    const bar = document.getElementById("study-select-bar");
+    const count = document.getElementById("study-select-count");
+    const deleteBtn = document.getElementById("study-delete-selected");
+    if (!bar) return;
+    if (selectedStudy.size > 0) {
+      bar.classList.add("show");
+      count.textContent = `${selectedStudy.size} selected`;
+      deleteBtn.textContent = `Delete (${selectedStudy.size})`;
+    } else {
+      bar.classList.remove("show");
+    }
+  }
+
+  function clearStudySelection() {
+    selectedStudy.clear();
+    const container = document.getElementById("study-items-history");
+    if (container) container.querySelectorAll(".history-item.selected").forEach(el => el.classList.remove("selected"));
+    updateStudySelectBar();
+  }
+
+  document.getElementById("study-select-all")?.addEventListener("click", () => {
+    const container = document.getElementById("study-items-history");
+    if (!container) return;
+    const items = container.querySelectorAll(".history-item");
+    const allSelected = selectedStudy.size === items.length;
+    clearStudySelection();
+    if (!allSelected) {
+      items.forEach(item => {
+        const id = item.getAttribute("data-study-id");
+        if (id) { selectedStudy.add(id); item.classList.add("selected"); }
+      });
+      updateStudySelectBar();
+    }
+  });
+
+  document.getElementById("study-delete-selected")?.addEventListener("click", () => {
+    if (selectedStudy.size === 0) return;
+    showDeleteModal(
+      `${selectedStudy.size} study item${selectedStudy.size > 1 ? "s" : ""}`,
+      () => {
+        const allItems = Storage.getStudyItems();
+        selectedStudy.forEach(id => delete allItems[id]);
+        localStorage.setItem(Storage.STUDY_ITEMS_KEY, JSON.stringify(allItems));
+        clearStudySelection();
+        renderStudyItemsHistory();
+      }
+    );
+  });
+
   function renderStudyItemsHistory() {
     const container = document.getElementById("study-items-history");
     if (!container) return;
@@ -310,10 +362,90 @@
       const a = document.createElement("a");
       a.href = `study/item.html?id=${encodeURIComponent(item.id)}`;
       a.className = "history-item t-btn";
+      a.setAttribute("data-study-id", item.id);
       a.style.textDecoration = "none";
       a.style.color = "inherit";
-      a.innerHTML = `<span class="history-icon">${getStudyItemIcon(item.type)}</span><span class="history-text">${(item.title || "Untitled").slice(0, 28)}${(item.title || "").length > 28 ? "…" : ""}</span>`;
+
+      const checkbox = document.createElement("span");
+      checkbox.className = "item-checkbox";
+
+      const icon = document.createElement("span");
+      icon.className = "history-icon";
+      icon.textContent = getStudyItemIcon(item.type);
+
+      const text = document.createElement("span");
+      text.className = "history-text";
+      text.textContent = (item.title || "Untitled").slice(0, 28) + ((item.title || "").length > 28 ? "…" : "");
+
+      const actions = document.createElement("div");
+      actions.className = "history-actions";
+      actions.innerHTML = `
+        <button class="history-action-btn rename-study-btn" title="Rename" data-id="${item.id}">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+        </button>
+        <button class="history-action-btn delete-study-btn" title="Delete" data-id="${item.id}">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+          </svg>
+        </button>
+      `;
+
+      a.appendChild(checkbox);
+      a.appendChild(icon);
+      a.appendChild(text);
+      a.appendChild(actions);
       container.appendChild(a);
+
+      // Checkbox / select click
+      a.addEventListener("click", (e) => {
+        const clickedCheckbox = e.target.closest(".item-checkbox");
+        const clickedAction = e.target.closest(".history-action-btn");
+        if (clickedAction) return;
+
+        if (selectedStudy.size === 0 && !clickedCheckbox) return; // let link navigate normally
+
+        e.preventDefault();
+        if (selectedStudy.has(item.id)) {
+          selectedStudy.delete(item.id);
+          a.classList.remove("selected");
+        } else {
+          selectedStudy.add(item.id);
+          a.classList.add("selected");
+        }
+        updateStudySelectBar();
+      });
+
+      // Rename
+      actions.querySelector(".rename-study-btn").addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const allItems = Storage.getStudyItems();
+        const studyItem = allItems[item.id];
+        if (!studyItem) return;
+        const newTitle = prompt("Rename study item:", studyItem.title || "");
+        if (newTitle && newTitle.trim()) {
+          studyItem.title = newTitle.trim();
+          studyItem.updatedAt = new Date().toISOString();
+          Storage.saveStudyItem(item.id, studyItem);
+          renderStudyItemsHistory();
+        }
+      });
+
+      // Delete
+      actions.querySelector(".delete-study-btn").addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        showDeleteModal(item.title || "this item", () => {
+          const allItems = Storage.getStudyItems();
+          delete allItems[item.id];
+          localStorage.setItem(Storage.STUDY_ITEMS_KEY, JSON.stringify(allItems));
+          renderStudyItemsHistory();
+        });
+      });
     });
   }
 
@@ -1011,6 +1143,52 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     }
   }
 
+  const selectedChats = new Set();
+
+  function updateChatSelectBar() {
+    const bar = document.getElementById("chat-select-bar");
+    const count = document.getElementById("chat-select-count");
+    const deleteBtn = document.getElementById("chat-delete-selected");
+    if (!bar) return;
+    if (selectedChats.size > 0) {
+      bar.classList.add("show");
+      count.textContent = `${selectedChats.size} selected`;
+      deleteBtn.textContent = `Delete (${selectedChats.size})`;
+    } else {
+      bar.classList.remove("show");
+    }
+  }
+
+  function clearChatSelection() {
+    selectedChats.clear();
+    chatHistoryContainer.querySelectorAll(".history-item.selected").forEach(el => el.classList.remove("selected"));
+    updateChatSelectBar();
+  }
+
+  document.getElementById("chat-select-all")?.addEventListener("click", () => {
+    const items = chatHistoryContainer.querySelectorAll(".history-item");
+    const allSelected = selectedChats.size === items.length;
+    clearChatSelection();
+    if (!allSelected) {
+      items.forEach(item => {
+        const id = item.getAttribute("data-session");
+        if (id) { selectedChats.add(id); item.classList.add("selected"); }
+      });
+      updateChatSelectBar();
+    }
+  });
+
+  document.getElementById("chat-delete-selected")?.addEventListener("click", () => {
+    if (selectedChats.size === 0) return;
+    showDeleteModal(
+      `${selectedChats.size} chat${selectedChats.size > 1 ? "s" : ""}`,
+      () => {
+        selectedChats.forEach(id => deleteSessionById(id));
+        clearChatSelection();
+      }
+    );
+  });
+
   function renderChatHistory() {
     if (!chatHistoryContainer) return;
     
@@ -1052,15 +1230,29 @@ ${FORMAT_INSTRUCTIONS}`.trim();
         </button>
       `;
       
+      const checkbox = document.createElement("span");
+      checkbox.className = "item-checkbox";
+      btn.appendChild(checkbox);
       btn.appendChild(icon);
       btn.appendChild(text);
       btn.appendChild(actions);
       chatHistoryContainer.appendChild(btn);
-      
-      // Click on item to switch session
+
       btn.addEventListener("click", (e) => {
         if (e.target.closest(".history-action-btn")) return;
-        switchToSession(sessionId);
+        const clickedCheckbox = e.target.closest(".item-checkbox");
+        if (selectedChats.size === 0 && !clickedCheckbox) {
+          switchToSession(sessionId);
+          return;
+        }
+        if (selectedChats.has(sessionId)) {
+          selectedChats.delete(sessionId);
+          btn.classList.remove("selected");
+        } else {
+          selectedChats.add(sessionId);
+          btn.classList.add("selected");
+        }
+        updateChatSelectBar();
       });
     });
 
@@ -1614,3 +1806,4 @@ What's on your mind?`;
   initBackground();
   initWelcomeTyping();
 })();
+

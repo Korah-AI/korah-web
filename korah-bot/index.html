@@ -42,31 +42,51 @@
     <a href="study/feed.html" class="sidebar-nav-link t-btn">📚 Study Feed</a>
   </nav>
 
-  <div class="sidebar-section-label">Recent Chats</div>
-  <div id="chat-history" class="chat-history">
-    <button class="history-item active t-btn" data-session="current">
-      <span class="history-icon">📚</span>
-      <span class="history-text">Photosynthesis Study Guide</span>
-    </button>
-    <button class="history-item t-btn" data-session="1">
-      <span class="history-icon">🧮</span>
-      <span class="history-text">Calculus Flashcards</span>
-    </button>
-    <button class="history-item t-btn" data-session="2">
-      <span class="history-icon">⚗️</span>
-      <span class="history-text">Chemistry Practice Test</span>
-    </button>
-    <button class="history-item t-btn" data-session="3">
-      <span class="history-icon">📝</span>
-      <span class="history-text">Essay Outline — WWII</span>
-    </button>
-    <button class="history-item t-btn" data-session="4">
-      <span class="history-icon">🔢</span>
-      <span class="history-text">Statistics Review</span>
-    </button>
+  <div class="sidebar-middle">
+    <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 12px 0 4px;">
+    <span class="sidebar-section-label" style="margin:0">Recent Chats</span>
+    </div>
+    <div id="chat-select-bar" class="select-bar">
+      <span class="select-bar-count" id="chat-select-count">0 selected</span>
+      <div class="select-bar-actions">
+        <button class="select-bar-btn" id="chat-select-all">Select all</button>
+        <button class="select-bar-btn danger" id="chat-delete-selected">Delete</button>
+      </div>
+    </div>
+    <div id="chat-history" class="chat-history">
+      <button class="history-item active t-btn" data-session="current">
+        <span class="history-icon">📚</span>
+        <span class="history-text">Photosynthesis Study Guide</span>
+      </button>
+      <button class="history-item t-btn" data-session="1">
+        <span class="history-icon">🧮</span>
+        <span class="history-text">Calculus Flashcards</span>
+      </button>
+      <button class="history-item t-btn" data-session="2">
+        <span class="history-icon">⚗️</span>
+        <span class="history-text">Chemistry Practice Test</span>
+      </button>
+      <button class="history-item t-btn" data-session="3">
+        <span class="history-icon">📝</span>
+        <span class="history-text">Essay Outline — WWII</span>
+      </button>
+      <button class="history-item t-btn" data-session="4">
+        <span class="history-icon">🔢</span>
+        <span class="history-text">Statistics Review</span>
+      </button>
+    </div>
   </div>
 
-  <div class="sidebar-section-label mt-4">Recent Study Items</div>
+  <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 12px 0 4px;">
+    <span class="sidebar-section-label" style="margin:0">Recent Study Items</span>
+  </div>
+  <div id="study-select-bar" class="select-bar">
+    <span class="select-bar-count" id="study-select-count">0 selected</span>
+    <div class="select-bar-actions">
+      <button class="select-bar-btn" id="study-select-all">Select all</button>
+      <button class="select-bar-btn danger" id="study-delete-selected">Delete</button>
+    </div>
+  </div>
   <div id="study-items-history" class="chat-history study-items-history">
     <!-- Populated by JS from localStorage -->
   </div>
@@ -388,13 +408,16 @@
   <div class="delete-modal-content">
     <div class="delete-modal-icon">🗑️</div>
     <h3 class="delete-modal-title">Delete Chat?</h3>
-    <p class="delete-modal-desc">This will permanently delete "<span id="delete-modal-name"></span>". This cannot be undone.</p>
+    <p class="delete-modal-desc">This will permanently delete <span id="delete-modal-name"></span>. This cannot be undone.</p>
     <div class="delete-modal-actions">
       <button id="delete-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
       <button id="delete-modal-confirm" class="delete-modal-btn confirm t-btn">Delete</button>
     </div>
   </div>
 </div>
+
+
+
 
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
