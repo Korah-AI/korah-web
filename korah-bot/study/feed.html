@@ -249,6 +249,19 @@
   </div>
 </div>
 
+<!-- Delete Card Modal -->
+<div id="feed-delete-modal" class="delete-modal">
+  <div class="delete-modal-content">
+    <div class="delete-modal-icon">🗑️</div>
+    <h3 class="delete-modal-title">Delete Study Item?</h3>
+    <p class="delete-modal-desc">This will permanently delete "<span id="feed-delete-modal-name"></span>". This cannot be undone.</p>
+    <div class="delete-modal-actions">
+      <button id="feed-delete-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
+      <button id="feed-delete-confirm" class="delete-modal-btn confirm t-btn">Delete</button>
+    </div>
+  </div>
+</div>
+
 <script src="js/sidebar.js"></script>
 <script>
 (function () {
@@ -300,11 +313,16 @@
       const source = item.source || "manual";
       const emoji = KorahSidebar.getTypeEmoji(item.type);
       const label = TYPE_LABELS[item.type] || item.type;
-      
+
       card.innerHTML =
         '<div class="feed-card-header">' +
           '<span class="feed-card-type">' + emoji + ' ' + label + '</span>' +
-          '<span class="feed-card-source">' + (SOURCE_LABELS[source] || source) + '</span>' +
+          '<div style="display:flex; align-items:center; gap:6px;">' +
+            '<span class="feed-card-source">' + (SOURCE_LABELS[source] || source) + '</span>' +
+            '<button class="feed-card-delete-btn" title="Delete">' +
+              '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>' +
+            '</button>' +
+          '</div>' +
         '</div>' +
         '<h3 class="feed-card-title">' + (item.title || "Untitled") + '</h3>' +
         (item.description ? '<p class="feed-card-desc tx2">' + (item.description.length > 110 ? item.description.slice(0, 110) + "..." : item.description) + '</p>' : '<p class="feed-card-desc tx3">No description provided.</p>') +
@@ -313,6 +331,17 @@
           '<a href="item.html?id=' + encodeURIComponent(item.id) + '" class="feed-card-btn primary t-btn">Open Item</a>' +
           '<a href="item.html?id=' + encodeURIComponent(item.id) + '&duplicate=1" class="feed-card-btn t-btn" title="Duplicate">Duplicate</a>' +
         '</div>';
+
+      card.querySelector(".feed-card-delete-btn").addEventListener("click", function (e) {
+        e.stopPropagation();
+        showFeedDeleteModal(item.title || "this item", function () {
+          const all = getStudyItems();
+          delete all[item.id];
+          localStorage.setItem("korah_study_items", JSON.stringify(all));
+          renderCards();
+        });
+      });
+
       container.appendChild(card);
     });
   }
@@ -321,6 +350,33 @@
   document.getElementById("filter-type").addEventListener("change", renderCards);
   document.getElementById("filter-source").addEventListener("change", renderCards);
   renderCards();
+
+  var feedDeleteModal = document.getElementById("feed-delete-modal");
+  var feedDeleteModalName = document.getElementById("feed-delete-modal-name");
+  var feedDeleteConfirm = document.getElementById("feed-delete-confirm");
+  var feedDeleteCancel = document.getElementById("feed-delete-cancel");
+  var feedDeleteCallback = null;
+
+  function showFeedDeleteModal(name, onConfirm) {
+    feedDeleteModalName.textContent = name;
+    feedDeleteCallback = onConfirm;
+    feedDeleteModal.classList.add("show");
+  }
+  feedDeleteConfirm.addEventListener("click", function () {
+    if (feedDeleteCallback) feedDeleteCallback();
+    feedDeleteModal.classList.remove("show");
+    feedDeleteCallback = null;
+  });
+  feedDeleteCancel.addEventListener("click", function () {
+    feedDeleteModal.classList.remove("show");
+    feedDeleteCallback = null;
+  });
+  feedDeleteModal.addEventListener("click", function (e) {
+    if (e.target === feedDeleteModal) {
+      feedDeleteModal.classList.remove("show");
+      feedDeleteCallback = null;
+    }
+  });
 
   var sidebar = document.getElementById("sidebar");
   var toggle = document.getElementById("sidebar-toggle");
