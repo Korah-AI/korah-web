@@ -426,13 +426,12 @@
         const allItems = Storage.getStudyItems();
         const studyItem = allItems[item.id];
         if (!studyItem) return;
-        const newTitle = prompt("Rename study item:", studyItem.title || "");
-        if (newTitle && newTitle.trim()) {
-          studyItem.title = newTitle.trim();
+        showRenameModal(studyItem.title || "", "Enter a new name for this study item:", (newTitle) => {
+          studyItem.title = newTitle;
           studyItem.updatedAt = new Date().toISOString();
           Storage.saveStudyItem(item.id, studyItem);
           renderStudyItemsHistory();
-        }
+        });
       });
 
       // Delete
@@ -1264,10 +1263,9 @@ ${FORMAT_INSTRUCTIONS}`.trim();
         const session = Storage.getSession(sessionId);
         if (!session) return;
         
-        const newTitle = prompt("Rename chat:", session.title);
-        if (newTitle && newTitle.trim()) {
-          renameSession(sessionId, newTitle.trim());
-        }
+        showRenameModal(session.title || "", "Enter a new name for this chat:", (newTitle) => {
+          renameSession(sessionId, newTitle);
+        });
       });
     });
 
@@ -1437,11 +1435,37 @@ ${FORMAT_INSTRUCTIONS}`.trim();
   // Sidebar toggle functionality
   const sidebar = document.getElementById("sidebar");
   const sidebarToggle = document.getElementById("sidebar-toggle");
+
+  // Create overlay for mobile
+  const overlay = document.createElement("div");
+  overlay.className = "sidebar-overlay";
+  document.body.appendChild(overlay);
+
+  function isMobile() { return window.innerWidth <= 768; }
+
   if (sidebarToggle && sidebar) {
     sidebarToggle.addEventListener("click", () => {
-      sidebar.classList.toggle("collapsed");
+      if (isMobile()) {
+        sidebar.classList.toggle("mobile-open");
+        overlay.classList.toggle("show");
+      } else {
+        sidebar.classList.toggle("collapsed");
+      }
     });
   }
+
+  overlay.addEventListener("click", () => {
+    sidebar.classList.remove("mobile-open");
+    overlay.classList.remove("show");
+  });
+
+  // Auto-collapse on resize
+  window.addEventListener("resize", () => {
+    if (!isMobile()) {
+      sidebar.classList.remove("mobile-open");
+      overlay.classList.remove("show");
+    }
+  });
 
   // Settings modal functionality
   const settingsBtn = document.getElementById("settings-btn");
@@ -1546,6 +1570,38 @@ ${FORMAT_INSTRUCTIONS}`.trim();
   const deleteModalCancel = document.getElementById("delete-modal-cancel");
   const deleteModalConfirm = document.getElementById("delete-modal-confirm");
   let deleteModalCallback = null;
+
+  function showRenameModal(currentName, desc, onConfirm) {
+    const modal = document.getElementById("rename-modal");
+    const input = document.getElementById("rename-modal-input");
+    const descEl = document.getElementById("rename-modal-desc");
+    const confirmBtn = document.getElementById("rename-modal-confirm");
+    const cancelBtn = document.getElementById("rename-modal-cancel");
+    if (!modal) {
+      const n = prompt(desc || "New name:", currentName);
+      if (n && n.trim() && onConfirm) onConfirm(n.trim());
+      return;
+    }
+    input.value = currentName || "";
+    if (descEl) descEl.textContent = desc || "Enter a new name";
+    modal.classList.add("show");
+    setTimeout(() => { input.focus(); input.select(); }, 50);
+    function cleanup() {
+      modal.classList.remove("show");
+      confirmBtn.removeEventListener("click", onYes);
+      cancelBtn.removeEventListener("click", onNo);
+      modal.removeEventListener("click", onOutside);
+      input.removeEventListener("keydown", onEnter);
+    }
+    function onYes() { const v = input.value.trim(); if (v) { cleanup(); if (onConfirm) onConfirm(v); } }
+    function onNo() { cleanup(); }
+    function onOutside(e) { if (e.target === modal) cleanup(); }
+    function onEnter(e) { if (e.key === "Enter") onYes(); if (e.key === "Escape") onNo(); }
+    confirmBtn.addEventListener("click", onYes);
+    cancelBtn.addEventListener("click", onNo);
+    modal.addEventListener("click", onOutside);
+    input.addEventListener("keydown", onEnter);
+  }
 
   function showDeleteModal(name, onConfirm) {
     deleteModalName.textContent = name;

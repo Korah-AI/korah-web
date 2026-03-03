@@ -1,12 +1,13 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
-<head>
+<html lang="en" x-data="{ theme: localStorage.getItem('korah_theme') || 'dark' }" :data-theme="theme" x-cloak>
+  <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>Korah AI — Study Item</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="../korah-chat.css"/>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css"/>
@@ -31,18 +32,59 @@
     <a href="../index.html" class="sidebar-nav-link t-btn">💬 Chat</a>
     <a href="feed.html" class="sidebar-nav-link active t-btn">📚 Study Feed</a>
   </nav>
-  <div class="sidebar-section-label">Recent Chats</div>
-  <div id="chat-history" class="chat-history"></div>
-  <div class="sidebar-section-label mt-4">Recent Study Items</div>
+   <div class="sidebar-middle">
+    <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 12px 0 4px;">
+      <span class="sidebar-section-label" style="margin:0">Recent Chats</span>
+    </div>
+    <div id="chat-select-bar" class="select-bar">
+      <span class="select-bar-count" id="chat-select-count">0 selected</span>
+      <div class="select-bar-actions">
+        <button class="select-bar-btn" id="chat-select-all">Select all</button>
+        <button class="select-bar-btn danger" id="chat-delete-selected">Delete</button>
+      </div>
+    </div>
+    <div id="chat-history" class="chat-history"></div>
+  </div>
+
+  <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 12px 0 4px;">
+    <span class="sidebar-section-label" style="margin:0">Recent Study Items</span>
+  </div>
+  <div id="study-select-bar" class="select-bar">
+    <span class="select-bar-count" id="study-select-count">0 selected</span>
+    <div class="select-bar-actions">
+      <button class="select-bar-btn" id="study-select-all">Select all</button>
+      <button class="select-bar-btn danger" id="study-delete-selected">Delete</button>
+    </div>
+  </div>
   <div id="study-items-history" class="chat-history study-items-history"></div>
+
   <div class="sidebar-footer">
     <div class="mood-indicator">
       <span class="mood-dot">🟢</span>
-      <span class="text-xs tx2 font-medium">Study Item</span>
+      <span class="text-xs tx2 font-medium">Study Feed</span>
     </div>
     <div class="sidebar-footer-actions">
-      <button id="theme-toggle-btn" class="theme-toggle-small t-btn" title="Toggle theme">
-        <span id="theme-icon">☀️</span>
+      <button id="settings-btn" class="theme-toggle-small t-btn" title="Settings">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+      <button @click="theme = theme === 'dark' ? 'light' : 'dark'; localStorage.setItem('korah_theme', theme)" class="theme-toggle-small t-btn" title="Toggle theme">
+        <svg x-show="theme==='light'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" style="color:var(--p5)">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/>
+        </svg>
+        <svg x-show="theme==='dark'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--p4)">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
       </button>
     </div>
   </div>
@@ -91,6 +133,103 @@
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
+<!-- Settings Modal -->
+<div id="settings-modal" class="settings-modal">
+  <div class="settings-modal-content">
+    <div class="settings-header">
+      <h2 class="settings-title">Settings</h2>
+      <button class="settings-close" id="settings-close">&times;</button>
+    </div>
+    <div class="settings-body">
+      <div class="settings-section">
+        <h3 class="settings-section-title">Study Preferences</h3>
+        <div class="setting-item">
+          <label class="setting-label">Default Subject Mode</label>
+          <select class="setting-select" id="setting-default-mode">
+            <option value="math">Math Mode</option>
+            <option value="physics" selected>Physics Mode</option>
+            <option value="chemistry">Chemistry Mode</option>
+            <option value="biology">Biology Mode</option>
+            <option value="history">History Mode</option>
+            <option value="literature">Literature Mode</option>
+          </select>
+        </div>
+        <div class="setting-item">
+          <label class="setting-label">Response Detail Level</label>
+          <select class="setting-select" id="setting-detail-level">
+            <option value="concise">Concise</option>
+            <option value="detailed" selected>Detailed</option>
+            <option value="comprehensive">Comprehensive</option>
+          </select>
+        </div>
+        <div class="setting-item">
+          <label class="setting-label">Auto Follow-up Suggestions</label>
+          <div class="setting-toggle">
+            <input type="checkbox" id="setting-auto-followup" checked>
+            <label for="setting-auto-followup" class="toggle-label"></label>
+          </div>
+        </div>
+        <div class="setting-item">
+          <label class="setting-label">Focus Timer Default (minutes)</label>
+          <input type="number" class="setting-input" id="setting-timer-default" value="25" min="5" max="60">
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3 class="settings-section-title">Data Management</h3>
+        <div class="setting-item">
+          <button class="setting-action-btn export-btn" id="export-chats-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Export All Chats
+          </button>
+        </div>
+        <div class="setting-item">
+          <button class="setting-action-btn clear-btn" id="clear-all-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>
+            Clear All Data
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="settings-footer">
+      <button class="settings-save-btn" id="settings-save-btn">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Rename Modal -->
+<div id="rename-modal" class="delete-modal">
+  <div class="delete-modal-content">
+    <div class="delete-modal-icon">✏️</div>
+    <h3 class="delete-modal-title">Rename</h3>
+    <p class="delete-modal-desc" id="rename-modal-desc">Enter a new name</p>
+    <input id="rename-modal-input" type="text" class="create-input" style="width:100%; margin-top:4px;" placeholder="New name…"/>
+    <div class="delete-modal-actis">
+      <button id="rename-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
+      <button id="rename-modal-confirm" class="delete-modal-btn confirm t-btn" style="background:rgba(139,92,246,.12); color:var(--p5); border-color:rgba(139,92,246,.3);">Rename</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div id="delete-modal" class="delete-modal">
+  <div class="delete-modal-content">
+    <div class="delete-modal-icon">🗑️</div>
+    <h3 class="delete-modal-title">Delete?</h3>
+    <p class="delete-modal-desc">This will permanently delete "<span id="delete-modal-name"></span>". This cannot be undone.</p>
+    <div class="delete-modal-actions">
+      <button id="delete-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
+      <button id="delete-modal-confirm" class="delete-modal-btn confirm t-btn">Delete</button>
+    </div>
+  </div>
+</div>
+
 <script src="js/sidebar.js"></script>
 <script>
 (function () {
@@ -215,18 +354,100 @@
 
   var sidebar = document.getElementById("sidebar");
   var toggle = document.getElementById("sidebar-toggle");
-  if (toggle && sidebar) toggle.addEventListener("click", function () { sidebar.classList.toggle("collapsed"); });
 
-  var themeBtn = document.getElementById("theme-toggle-btn");
-  var themeIcon = document.getElementById("theme-icon");
-  var root = document.documentElement;
-  function applyTheme(dark) {
-    root.setAttribute("data-theme", dark ? "dark" : "light");
-    if (themeIcon) themeIcon.textContent = dark ? "☀️" : "🌙";
-    try { localStorage.setItem("korah_theme", dark ? "dark" : "light"); } catch (_) {}
+  var overlay = document.createElement("div");
+  overlay.className = "sidebar-overlay";
+  document.body.appendChild(overlay);
+
+  function isMobile() { return window.innerWidth <= 768; }
+
+  if (toggle && sidebar) {
+    toggle.addEventListener("click", function () {
+      if (isMobile()) {
+        sidebar.classList.toggle("mobile-open");
+        overlay.classList.toggle("show");
+      } else {
+        sidebar.classList.toggle("collapsed");
+      }
+    });
   }
-  if (themeBtn) themeBtn.addEventListener("click", function () { applyTheme(root.getAttribute("data-theme") !== "dark"); });
-  if (localStorage.getItem("korah_theme") === "light") applyTheme(false);
+
+  overlay.addEventListener("click", function () {
+    sidebar.classList.remove("mobile-open");
+    overlay.classList.remove("show");
+  });
+
+  window.addEventListener("resize", function () {
+    if (!isMobile()) {
+      sidebar.classList.remove("mobile-open");
+      overlay.classList.remove("show");
+    }
+  });
+
+  // Settings modal
+  const settingsBtn = document.getElementById("settings-btn");
+  const settingsModal = document.getElementById("settings-modal");
+  const settingsClose = document.getElementById("settings-close");
+  const settingsSaveBtn = document.getElementById("settings-save-btn");
+  const exportChatsBtn = document.getElementById("export-chats-btn");
+  const clearAllBtn = document.getElementById("clear-all-btn");
+  const SETTINGS_KEY = "korah_settings";
+
+  function openSettings() {
+    try {
+      const s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}");
+      if (s.defaultMode) document.getElementById("setting-default-mode").value = s.defaultMode;
+      if (s.detailLevel) document.getElementById("setting-detail-level").value = s.detailLevel;
+      if (s.autoFollowUp !== undefined) document.getElementById("setting-auto-followup").checked = s.autoFollowUp;
+      if (s.focusTimerDefault) document.getElementById("setting-timer-default").value = s.focusTimerDefault;
+    } catch (_) {}
+    settingsModal.classList.add("show");
+  }
+
+  function closeSettings() { settingsModal.classList.remove("show"); }
+
+  if (settingsBtn) settingsBtn.addEventListener("click", openSettings);
+  if (settingsClose) settingsClose.addEventListener("click", closeSettings);
+  if (settingsModal) settingsModal.addEventListener("click", (e) => { if (e.target === settingsModal) closeSettings(); });
+
+  if (settingsSaveBtn) {
+    settingsSaveBtn.addEventListener("click", () => {
+      const s = {
+        defaultMode: document.getElementById("setting-default-mode").value,
+        detailLevel: document.getElementById("setting-detail-level").value,
+        autoFollowUp: document.getElementById("setting-auto-followup").checked,
+        focusTimerDefault: parseInt(document.getElementById("setting-timer-default").value),
+      };
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+      alert("Settings saved!");
+      closeSettings();
+    });
+  }
+
+  if (exportChatsBtn) {
+    exportChatsBtn.addEventListener("click", () => {
+      const sessions = JSON.parse(localStorage.getItem("korah_sessions") || "{}");
+      const blob = new Blob([JSON.stringify(sessions, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "korah-chats-" + new Date().toISOString().split("T")[0] + ".json";
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+  }
+
+  if (clearAllBtn) {
+    clearAllBtn.addEventListener("click", () => {
+      if (confirm("Clear ALL data? This cannot be undone!")) {
+        if (confirm("Are you ABSOLUTELY sure?")) {
+          localStorage.clear();
+          alert("All data cleared. Reloading...");
+          window.location.reload();
+        }
+      }
+    });
+  }
 })();
 </script>
 </body>
