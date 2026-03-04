@@ -297,6 +297,58 @@
     return icons[type] || "📄";
   }
 
+  const selectedStudy = new Set();
+
+  function updateStudySelectBar() {
+    const bar = document.getElementById("study-select-bar");
+    const count = document.getElementById("study-select-count");
+    const deleteBtn = document.getElementById("study-delete-selected");
+    if (!bar) return;
+    if (selectedStudy.size > 0) {
+      bar.classList.add("show");
+      count.textContent = `${selectedStudy.size} selected`;
+      deleteBtn.textContent = `Delete (${selectedStudy.size})`;
+    } else {
+      bar.classList.remove("show");
+    }
+  }
+
+  function clearStudySelection() {
+    selectedStudy.clear();
+    const container = document.getElementById("study-items-history");
+    if (container) container.querySelectorAll(".history-item.selected").forEach(el => el.classList.remove("selected"));
+    updateStudySelectBar();
+  }
+
+  document.getElementById("study-select-all")?.addEventListener("click", () => {
+    const container = document.getElementById("study-items-history");
+    if (!container) return;
+    const items = container.querySelectorAll(".history-item");
+    const allSelected = selectedStudy.size === items.length;
+    clearStudySelection();
+    if (!allSelected) {
+      items.forEach(item => {
+        const id = item.getAttribute("data-study-id");
+        if (id) { selectedStudy.add(id); item.classList.add("selected"); }
+      });
+      updateStudySelectBar();
+    }
+  });
+
+  document.getElementById("study-delete-selected")?.addEventListener("click", () => {
+    if (selectedStudy.size === 0) return;
+    showDeleteModal(
+      `${selectedStudy.size} study item${selectedStudy.size > 1 ? "s" : ""}`,
+      () => {
+        const allItems = Storage.getStudyItems();
+        selectedStudy.forEach(id => delete allItems[id]);
+        localStorage.setItem(Storage.STUDY_ITEMS_KEY, JSON.stringify(allItems));
+        clearStudySelection();
+        renderStudyItemsHistory();
+      }
+    );
+  });
+
   function renderStudyItemsHistory() {
     const container = document.getElementById("study-items-history");
     if (!container) return;
@@ -310,10 +362,89 @@
       const a = document.createElement("a");
       a.href = `study/item.html?id=${encodeURIComponent(item.id)}`;
       a.className = "history-item t-btn";
+      a.setAttribute("data-study-id", item.id);
       a.style.textDecoration = "none";
       a.style.color = "inherit";
-      a.innerHTML = `<span class="history-icon">${getStudyItemIcon(item.type)}</span><span class="history-text">${(item.title || "Untitled").slice(0, 28)}${(item.title || "").length > 28 ? "…" : ""}</span>`;
+
+      const checkbox = document.createElement("span");
+      checkbox.className = "item-checkbox";
+
+      const icon = document.createElement("span");
+      icon.className = "history-icon";
+      icon.textContent = getStudyItemIcon(item.type);
+
+      const text = document.createElement("span");
+      text.className = "history-text";
+      text.textContent = (item.title || "Untitled").slice(0, 28) + ((item.title || "").length > 28 ? "…" : "");
+
+      const actions = document.createElement("div");
+      actions.className = "history-actions";
+      actions.innerHTML = `
+        <button class="history-action-btn rename-study-btn" title="Rename" data-id="${item.id}">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+        </button>
+        <button class="history-action-btn delete-study-btn" title="Delete" data-id="${item.id}">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+          </svg>
+        </button>
+      `;
+
+      a.appendChild(checkbox);
+      a.appendChild(icon);
+      a.appendChild(text);
+      a.appendChild(actions);
       container.appendChild(a);
+
+      // Checkbox / select click
+      a.addEventListener("click", (e) => {
+        const clickedCheckbox = e.target.closest(".item-checkbox");
+        const clickedAction = e.target.closest(".history-action-btn");
+        if (clickedAction) return;
+
+        if (selectedStudy.size === 0 && !clickedCheckbox) return; // let link navigate normally
+
+        e.preventDefault();
+        if (selectedStudy.has(item.id)) {
+          selectedStudy.delete(item.id);
+          a.classList.remove("selected");
+        } else {
+          selectedStudy.add(item.id);
+          a.classList.add("selected");
+        }
+        updateStudySelectBar();
+      });
+
+      // Rename
+      actions.querySelector(".rename-study-btn").addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const allItems = Storage.getStudyItems();
+        const studyItem = allItems[item.id];
+        if (!studyItem) return;
+        showRenameModal(studyItem.title || "", "Enter a new name for this study item:", (newTitle) => {
+          studyItem.title = newTitle;
+          studyItem.updatedAt = new Date().toISOString();
+          Storage.saveStudyItem(item.id, studyItem);
+          renderStudyItemsHistory();
+        });
+      });
+
+      // Delete
+      actions.querySelector(".delete-study-btn").addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        showDeleteModal(item.title || "this item", () => {
+          const allItems = Storage.getStudyItems();
+          delete allItems[item.id];
+          localStorage.setItem(Storage.STUDY_ITEMS_KEY, JSON.stringify(allItems));
+          renderStudyItemsHistory();
+        });
+      });
     });
   }
 
@@ -1011,6 +1142,52 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     }
   }
 
+  const selectedChats = new Set();
+
+  function updateChatSelectBar() {
+    const bar = document.getElementById("chat-select-bar");
+    const count = document.getElementById("chat-select-count");
+    const deleteBtn = document.getElementById("chat-delete-selected");
+    if (!bar) return;
+    if (selectedChats.size > 0) {
+      bar.classList.add("show");
+      count.textContent = `${selectedChats.size} selected`;
+      deleteBtn.textContent = `Delete (${selectedChats.size})`;
+    } else {
+      bar.classList.remove("show");
+    }
+  }
+
+  function clearChatSelection() {
+    selectedChats.clear();
+    chatHistoryContainer.querySelectorAll(".history-item.selected").forEach(el => el.classList.remove("selected"));
+    updateChatSelectBar();
+  }
+
+  document.getElementById("chat-select-all")?.addEventListener("click", () => {
+    const items = chatHistoryContainer.querySelectorAll(".history-item");
+    const allSelected = selectedChats.size === items.length;
+    clearChatSelection();
+    if (!allSelected) {
+      items.forEach(item => {
+        const id = item.getAttribute("data-session");
+        if (id) { selectedChats.add(id); item.classList.add("selected"); }
+      });
+      updateChatSelectBar();
+    }
+  });
+
+  document.getElementById("chat-delete-selected")?.addEventListener("click", () => {
+    if (selectedChats.size === 0) return;
+    showDeleteModal(
+      `${selectedChats.size} chat${selectedChats.size > 1 ? "s" : ""}`,
+      () => {
+        selectedChats.forEach(id => deleteSessionById(id));
+        clearChatSelection();
+      }
+    );
+  });
+
   function renderChatHistory() {
     if (!chatHistoryContainer) return;
     
@@ -1052,15 +1229,29 @@ ${FORMAT_INSTRUCTIONS}`.trim();
         </button>
       `;
       
+      const checkbox = document.createElement("span");
+      checkbox.className = "item-checkbox";
+      btn.appendChild(checkbox);
       btn.appendChild(icon);
       btn.appendChild(text);
       btn.appendChild(actions);
       chatHistoryContainer.appendChild(btn);
-      
-      // Click on item to switch session
+
       btn.addEventListener("click", (e) => {
         if (e.target.closest(".history-action-btn")) return;
-        switchToSession(sessionId);
+        const clickedCheckbox = e.target.closest(".item-checkbox");
+        if (selectedChats.size === 0 && !clickedCheckbox) {
+          switchToSession(sessionId);
+          return;
+        }
+        if (selectedChats.has(sessionId)) {
+          selectedChats.delete(sessionId);
+          btn.classList.remove("selected");
+        } else {
+          selectedChats.add(sessionId);
+          btn.classList.add("selected");
+        }
+        updateChatSelectBar();
       });
     });
 
@@ -1072,10 +1263,9 @@ ${FORMAT_INSTRUCTIONS}`.trim();
         const session = Storage.getSession(sessionId);
         if (!session) return;
         
-        const newTitle = prompt("Rename chat:", session.title);
-        if (newTitle && newTitle.trim()) {
-          renameSession(sessionId, newTitle.trim());
-        }
+        showRenameModal(session.title || "", "Enter a new name for this chat:", (newTitle) => {
+          renameSession(sessionId, newTitle);
+        });
       });
     });
 
@@ -1086,9 +1276,7 @@ ${FORMAT_INSTRUCTIONS}`.trim();
         const session = Storage.getSession(sessionId);
         if (!session) return;
         
-        if (confirm(`Delete "${session.title}"?`)) {
-          deleteSessionById(sessionId);
-        }
+        showDeleteModal(session.title, () => deleteSessionById(sessionId));
       });
     });
   }
@@ -1205,6 +1393,17 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     updateCharCount();
   });
 
+  if (toolsTrigger && toolsMenu) {
+    toolsTrigger.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toolsMenu.classList.toggle("show");
+    });
+    document.addEventListener("click", () => {
+      toolsMenu.classList.remove("show");
+    });
+    toolsMenu.addEventListener("click", (e) => e.stopPropagation());
+  }
+
   quickPromptButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
       const prompt = btn.getAttribute("data-prompt");
@@ -1236,11 +1435,37 @@ ${FORMAT_INSTRUCTIONS}`.trim();
   // Sidebar toggle functionality
   const sidebar = document.getElementById("sidebar");
   const sidebarToggle = document.getElementById("sidebar-toggle");
+
+  // Create overlay for mobile
+  const overlay = document.createElement("div");
+  overlay.className = "sidebar-overlay";
+  document.body.appendChild(overlay);
+
+  function isMobile() { return window.innerWidth <= 768; }
+
   if (sidebarToggle && sidebar) {
     sidebarToggle.addEventListener("click", () => {
-      sidebar.classList.toggle("collapsed");
+      if (isMobile()) {
+        sidebar.classList.toggle("mobile-open");
+        overlay.classList.toggle("show");
+      } else {
+        sidebar.classList.toggle("collapsed");
+      }
     });
   }
+
+  overlay.addEventListener("click", () => {
+    sidebar.classList.remove("mobile-open");
+    overlay.classList.remove("show");
+  });
+
+  // Auto-collapse on resize
+  window.addEventListener("resize", () => {
+    if (!isMobile()) {
+      sidebar.classList.remove("mobile-open");
+      overlay.classList.remove("show");
+    }
+  });
 
   // Settings modal functionality
   const settingsBtn = document.getElementById("settings-btn");
@@ -1338,6 +1563,65 @@ ${FORMAT_INSTRUCTIONS}`.trim();
       });
     });
   }
+
+  // Delete modal
+  const deleteModal = document.getElementById("delete-modal");
+  const deleteModalName = document.getElementById("delete-modal-name");
+  const deleteModalCancel = document.getElementById("delete-modal-cancel");
+  const deleteModalConfirm = document.getElementById("delete-modal-confirm");
+  let deleteModalCallback = null;
+
+  function showRenameModal(currentName, desc, onConfirm) {
+    const modal = document.getElementById("rename-modal");
+    const input = document.getElementById("rename-modal-input");
+    const descEl = document.getElementById("rename-modal-desc");
+    const confirmBtn = document.getElementById("rename-modal-confirm");
+    const cancelBtn = document.getElementById("rename-modal-cancel");
+    if (!modal) {
+      const n = prompt(desc || "New name:", currentName);
+      if (n && n.trim() && onConfirm) onConfirm(n.trim());
+      return;
+    }
+    input.value = currentName || "";
+    if (descEl) descEl.textContent = desc || "Enter a new name";
+    modal.classList.add("show");
+    setTimeout(() => { input.focus(); input.select(); }, 50);
+    function cleanup() {
+      modal.classList.remove("show");
+      confirmBtn.removeEventListener("click", onYes);
+      cancelBtn.removeEventListener("click", onNo);
+      modal.removeEventListener("click", onOutside);
+      input.removeEventListener("keydown", onEnter);
+    }
+    function onYes() { const v = input.value.trim(); if (v) { cleanup(); if (onConfirm) onConfirm(v); } }
+    function onNo() { cleanup(); }
+    function onOutside(e) { if (e.target === modal) cleanup(); }
+    function onEnter(e) { if (e.key === "Enter") onYes(); if (e.key === "Escape") onNo(); }
+    confirmBtn.addEventListener("click", onYes);
+    cancelBtn.addEventListener("click", onNo);
+    modal.addEventListener("click", onOutside);
+    input.addEventListener("keydown", onEnter);
+  }
+
+  function showDeleteModal(name, onConfirm) {
+    deleteModalName.textContent = name;
+    deleteModalCallback = onConfirm;
+    deleteModal.classList.add("show");
+  }
+
+  function hideDeleteModal() {
+    deleteModal.classList.remove("show");
+    deleteModalCallback = null;
+  }
+
+  deleteModalCancel.addEventListener("click", hideDeleteModal);
+  deleteModalConfirm.addEventListener("click", () => {
+    if (deleteModalCallback) deleteModalCallback();
+    hideDeleteModal();
+  });
+  deleteModal.addEventListener("click", (e) => {
+    if (e.target === deleteModal) hideDeleteModal();
+  });
 
   // Load saved messages, apply theme, and render history on startup
   applyModeTheme(currentSession.mode || "general");
@@ -1577,4 +1861,41 @@ What's on your mind?`;
 
   initBackground();
   initWelcomeTyping();
+
+  
 })();
+
+function initConstellationField() {
+  const field = document.getElementById('constellation-field');
+  if (!field) return;
+  const DOT_COUNT = 60;
+  for (let i = 0; i < DOT_COUNT; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'c-dot';
+    const size = 2 + Math.random() * 3;
+    const x = Math.random() * 100;
+    const y = Math.random() * 100;
+    const dur = 8 + Math.random() * 16;
+    const dx1 = (Math.random() - 0.5) * 80;
+    const dy1 = (Math.random() - 0.5) * 80;
+    const dx2 = (Math.random() - 0.5) * 80;
+    const dy2 = (Math.random() - 0.5) * 80;
+    dot.style.cssText = `
+      width:${size}px; height:${size}px;
+      left:${x}vw; top:${y}vh;
+      animation-duration:${dur}s;
+      animation-delay:-${Math.random()*dur}s;
+      --dx1:${dx1}px; --dy1:${dy1}px;
+      --dx2:${dx2}px; --dy2:${dy2}px;
+      opacity:${0.3 + Math.random() * 0.5};
+    `;
+    field.appendChild(dot);
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initConstellationField);
+} else {
+  initConstellationField();
+}
+

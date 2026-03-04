@@ -13,6 +13,7 @@
 # Web/Landing Page To Do 
 <ul>
   <li> Make The Korah-AI (thats free use on the page) be rate limited to 3, and when user finished their 3 tries say AI says something like "To get the full experience, make an account or something". Also filter AI responses. </li>
+  <li> Make shooting stars faster and get rid of the korah in the main background. Also think of ideas for something else to be in the light mode background that stands out well.</li>
   <li> Make a log in page for the website </li>
   <li> Use OpenNotebook repo to implement NoteBookLM features </li>
   <li> Fix the "Company" Part at the very bottom of the page </li>
