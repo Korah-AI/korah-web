@@ -8,4 +8,3 @@
 # UI Deisgn To Do
 
 * Make the chat box with korah bigger in all aspects.
-* Add a delete box for study tools.

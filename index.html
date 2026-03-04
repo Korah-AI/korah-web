@@ -27,12 +27,15 @@
 </head>
 
 <!-- FIX #22 FRAMEWORK: Alpine.js x-data replaces manual theme/state JS -->
-<body class="bg-base tx" x-cloak>
+<body class="bg-base tx" x-cloak style="overflow-x:hidden;">
 
 <!-- Shooting Star background and twinkling stars -->
-<div class="stars-container" id="starField"></div>
+<div class="stars-container" id="starField" :style="theme === 'light' ? 'opacity:0;pointer-events:none' : 'opacity:1'" style="transition:opacity 0.4s"></div>
 
-<canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none opacity-55"></canvas>
+<div id="constellation-field" 
+  x-bind:style="theme==='light' ? 'opacity:1' : 'opacity:0'"
+  style="position:fixed; top:0; left:0; width:100vw; height:100vh; pointer-events:none; z-index:1; transition:opacity 0.4s;">
+</div>
 
 <!-- ═══ NAVBAR ═══ -->
 <nav id="navbar" class="fixed top-0 left-0 right-0 h-[70px] z-[1000] flex items-center px-4 md:px-[clamp(16px,4vw,52px)]">
@@ -100,13 +103,9 @@
     <button class="flex-1 py-3 text-[13px] font-semibold rounded-full border-none text-white grad-bg cursor-pointer">Get Access</button>
   </div>
 </div>
-
-<div class="relative z-10">
-
+  
 <!-- ── HERO ── -->
-<section id="home" class="min-h-screen flex flex-col items-center justify-center pt-[calc(70px+60px)] pb-24 px-5 md:px-[clamp(20px,6vw,80px)] relative overflow-hidden">
-  <!-- Mascot background — large, centered, behind all content -->
-  <img src="logo.png" alt="" aria-hidden="true" class="hero-mascot-bg absolute left-1/2 pointer-events-none select-none opacity-30" style="width:clamp(300px,50vw,600px); z-index:3; filter:blur(1px); top:140px; left:50%; transform:translateX(-50%);"/>
+<section id="home" class="min-h-screen flex flex-col items-center justify-center pt-[calc(70px+60px)] pb-24 px-5 md:px-[clamp(20px,6vw,80px)]" style="position:relative;">
   <div class="relative z-10 inline-flex items-center gap-2 bg-sf2 border bd px-4 py-2 rounded-full mb-7 text-[12.5px] font-semibold tx-p5 animate-fade-up t-theme">
     <span class="w-2 h-2 rounded-full bg-[var(--grn)] shadow-[0_0_8px_var(--grn)] animate-pulse-dot"></span>
     Now in Early Beta — Free to Try
@@ -710,5 +709,67 @@
   </div>
 </footer>
 
+<script>
+(function() {
+  function initHeroConstellation() {
+    const canvas = document.getElementById('hero-constellation');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let dots = [];
+
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      dots = Array.from({ length: 80 }, () => ({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        vx: (Math.random() - 0.5) * 0.4,
+        vy: (Math.random() - 0.5) * 0.4,
+        r: 2 + Math.random() * 2,
+      }));
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (let i = 0; i < dots.length; i++) {
+        for (let j = i + 1; j < dots.length; j++) {
+          const dx = dots[i].x - dots[j].x;
+          const dy = dots[i].y - dots[j].y;
+          const dist = Math.sqrt(dx*dx + dy*dy);
+          if (dist < 160) {
+            ctx.beginPath();
+            ctx.moveTo(dots[i].x, dots[i].y);
+            ctx.lineTo(dots[j].x, dots[j].y);
+            ctx.strokeStyle = `rgba(139,92,246,${(1 - dist/160) * 0.25})`;
+            ctx.lineWidth = 1;
+            ctx.stroke();
+          }
+        }
+      }
+      dots.forEach(d => {
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(139,92,246,0.4)';
+        ctx.fill();
+        d.x += d.vx;
+        d.y += d.vy;
+        if (d.x < 0 || d.x > canvas.width) d.vx *= -1;
+        if (d.y < 0 || d.y > canvas.height) d.vy *= -1;
+      });
+      requestAnimationFrame(draw);
+    }
+
+    window.addEventListener('resize', resize);
+    resize();
+    draw();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initHeroConstellation);
+  } else {
+    initHeroConstellation();
+  }
+})();
+</script>
 </body>
 </html>
