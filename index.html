@@ -32,11 +32,6 @@
 <!-- Shooting Star background and twinkling stars -->
 <div class="stars-container" id="starField" :style="theme === 'light' ? 'opacity:0;pointer-events:none' : 'opacity:1'" style="transition:opacity 0.4s"></div>
 
-<div id="constellation-field" 
-  x-bind:style="theme==='light' ? 'opacity:1' : 'opacity:0'"
-  style="position:fixed; top:0; left:0; width:100vw; height:100vh; pointer-events:none; z-index:1; transition:opacity 0.4s;">
-</div>
-
 <!-- ═══ NAVBAR ═══ -->
 <nav id="navbar" class="fixed top-0 left-0 right-0 h-[70px] z-[1000] flex items-center px-4 md:px-[clamp(16px,4vw,52px)]">
   <a href="#home" class="flex items-center gap-2.5 no-underline shrink-0 z-10">
@@ -106,6 +101,7 @@
   
 <!-- ── HERO ── -->
 <section id="home" class="min-h-screen flex flex-col items-center justify-center pt-[calc(70px+60px)] pb-24 px-5 md:px-[clamp(20px,6vw,80px)]" style="position:relative;">
+  <canvas id="constellation-canvas" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; opacity:0; transition:opacity 0.5s; z-index:1;"></canvas>
   <div class="relative z-10 inline-flex items-center gap-2 bg-sf2 border bd px-4 py-2 rounded-full mb-7 text-[12.5px] font-semibold tx-p5 animate-fade-up t-theme">
     <span class="w-2 h-2 rounded-full bg-[var(--grn)] shadow-[0_0_8px_var(--grn)] animate-pulse-dot"></span>
     Now in Early Beta — Free to Try
@@ -710,66 +706,67 @@
 </footer>
 
 <script>
-(function() {
-  function initHeroConstellation() {
-    const canvas = document.getElementById('hero-constellation');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    let dots = [];
+window.addEventListener('load', function() {
+  const canvas = document.getElementById('constellation-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const section = canvas.parentElement;
 
-    function resize() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      dots = Array.from({ length: 80 }, () => ({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        vx: (Math.random() - 0.5) * 0.4,
-        vy: (Math.random() - 0.5) * 0.4,
-        r: 2 + Math.random() * 2,
-      }));
-    }
+  function resize() {
+    canvas.width = section.offsetWidth || window.innerWidth;
+    canvas.height = section.offsetHeight || window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
 
-    function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      for (let i = 0; i < dots.length; i++) {
-        for (let j = i + 1; j < dots.length; j++) {
-          const dx = dots[i].x - dots[j].x;
-          const dy = dots[i].y - dots[j].y;
-          const dist = Math.sqrt(dx*dx + dy*dy);
-          if (dist < 160) {
-            ctx.beginPath();
-            ctx.moveTo(dots[i].x, dots[i].y);
-            ctx.lineTo(dots[j].x, dots[j].y);
-            ctx.strokeStyle = `rgba(139,92,246,${(1 - dist/160) * 0.25})`;
-            ctx.lineWidth = 1;
-            ctx.stroke();
-          }
+  const dots = Array.from({ length: 80 }, () => ({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    vx: (Math.random() - 0.5) * 0.4,
+    vy: (Math.random() - 0.5) * 0.4,
+    r: 2 + Math.random() * 2,
+  }));
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (let i = 0; i < dots.length; i++) {
+      for (let j = i + 1; j < dots.length; j++) {
+        const dx = dots[i].x - dots[j].x;
+        const dy = dots[i].y - dots[j].y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist < 160) {
+          ctx.beginPath();
+          ctx.moveTo(dots[i].x, dots[i].y);
+          ctx.lineTo(dots[j].x, dots[j].y);
+          ctx.strokeStyle = `rgba(139,92,246,${(1 - dist/160) * 0.3})`;
+          ctx.lineWidth = 1;
+          ctx.stroke();
         }
       }
-      dots.forEach(d => {
-        ctx.beginPath();
-        ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(139,92,246,0.4)';
-        ctx.fill();
-        d.x += d.vx;
-        d.y += d.vy;
-        if (d.x < 0 || d.x > canvas.width) d.vx *= -1;
-        if (d.y < 0 || d.y > canvas.height) d.vy *= -1;
-      });
-      requestAnimationFrame(draw);
     }
-
-    window.addEventListener('resize', resize);
-    resize();
-    draw();
+    dots.forEach(d => {
+      ctx.beginPath();
+      ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(139,92,246,0.5)';
+      ctx.fill();
+      d.x += d.vx; d.y += d.vy;
+      if (d.x < 0 || d.x > canvas.width) d.vx *= -1;
+      if (d.y < 0 || d.y > canvas.height) d.vy *= -1;
+    });
+    requestAnimationFrame(draw);
   }
+  draw();
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initHeroConstellation);
-  } else {
-    initHeroConstellation();
+  function applyTheme() {
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    canvas.style.opacity = isLight ? '1' : '0';
   }
-})();
+  applyTheme();
+
+  new MutationObserver(applyTheme).observe(document.documentElement, {
+    attributes: true, attributeFilter: ['data-theme']
+  });
+});
 </script>
 </body>
 </html>
