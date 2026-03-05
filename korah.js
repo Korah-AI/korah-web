@@ -397,20 +397,6 @@ function playIntro() {
 
 
 function initInlineHandlers() {
-  const chatBtn = document.getElementById('hero-chat-btn');
-  if (chatBtn) {
-    chatBtn.addEventListener('click', () => {
-      document.getElementById('chat')?.scrollIntoView({ behavior: 'smooth' });
-    });
-  }
-
-  const downloadBtn = document.getElementById('hero-download-btn');
-  if (downloadBtn) {
-    downloadBtn.addEventListener('click', () => {
-      document.getElementById('download')?.scrollIntoView({ behavior: 'smooth' });
-    });
-  }
-
   document.querySelectorAll('.js-flip-card-trigger').forEach((trigger) => {
     trigger.addEventListener('click', () => {
       trigger.querySelector('.flashcard')?.classList.toggle('flipped');

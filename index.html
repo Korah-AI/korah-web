@@ -106,12 +106,12 @@
 
 <!-- ── DESIGN SHOWCASE ── -->
 <section id="design-showcase" style="position:relative;min-height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;padding-top:70px;">
-  <canvas id="design-shader-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;display:block;"></canvas>
+  <canvas id="design-shader-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;display:block;-webkit-mask-image:linear-gradient(to bottom,transparent 0%,black 14%,black 86%,transparent 100%);mask-image:linear-gradient(to bottom,transparent 0%,black 14%,black 86%,transparent 100%);"></canvas>
 
   <div style="position:relative;z-index:10;border:1px solid #27272a;padding:8px;width:100%;max-width:768px;margin:0 auto;">
     <main style="position:relative;border:1px solid #27272a;padding:40px 20px;overflow:hidden;text-align:center;">
       <h1 style="margin-bottom:12px;color:#ffffff;font-size:clamp(2rem,8vw,7rem);font-weight:900;letter-spacing:-0.01em;line-height:1;">
-        <span id="design-typed-korah" style="color:#a855f7;"></span><span id="design-typed-text"></span><span class="design-typing-cursor" aria-hidden="true">|</span>
+        <span id="design-typed-korah" style="color:#a855f7;text-shadow:0 0 20px rgba(168,85,247,0.75),0 0 22px rgba(168,85,247,0.55);"></span><span id="design-typed-text"></span><span class="design-typing-cursor" aria-hidden="true">|</span>
       </h1>
       <p style="color:rgba(255,255,255,0.6);padding:0 24px;font-size:clamp(12px,1.5vw,18px);margin:0;">Everything you've ever wanted in a study app, always 100% free.</p>
 
@@ -185,7 +185,8 @@
     '  float r = 0.05 / abs(p.y + sin((rx + time) * xScale) * yScale);',
     '  float g = 0.05 / abs(p.y + sin((gx + time) * xScale) * yScale);',
     '  float b = 0.05 / abs(p.y + sin((bx + time) * xScale) * yScale);',
-    '  gl_FragColor = vec4(r, g, b, 1.0);',
+    '  float a = clamp(max(max(r, g), b) * 1.8, 0.0, 1.0);',
+    '  gl_FragColor = vec4(r, g, b, a);',
     '}'
   ].join('\n');
 
@@ -197,9 +198,9 @@
     var w = section.offsetWidth, h = section.offsetHeight;
 
     var scene    = new THREE.Scene();
-    var renderer = new THREE.WebGLRenderer({ canvas: canvas });
+    var renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true });
     renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.setClearColor(0x000000);
+    renderer.setClearColor(0x000000, 0);
     renderer.setSize(w, h, false);
 
     var camera   = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, -1);
@@ -266,11 +267,6 @@
   </h1>
   <p class="anim-delay-200-fill relative z-10 text-[clamp(15px,2vw,18px)] leading-relaxed tx2 max-w-xl text-center mt-6 mb-11 animate-fade-up opacity-0">
     Korah is your personal AI study companion. Our app is everything you need to lock in, all in one place.
-  <div class="anim-delay-300-fill relative z-10 flex flex-wrap gap-3.5 justify-center animate-fade-up opacity-0">
-    <button id="hero-chat-btn" class="grad-bg text-white font-bold text-base px-8 py-3.5 rounded-full border-none cursor-pointer shadow-glow t-btn hover:-translate-y-0.5 hover:brightness-110">✨ Try Web Version</button>
-    <button id="hero-download-btn" class="bg-transparent tx border-[1.5px] bd font-bold text-base px-8 py-3.5 rounded-full cursor-pointer t-btn hover:tx-p4 hover:border-p4 hover:bg-[var(--bd2)]" a href = "https://korah.app">⬇ Download iOS Beta</button>
-  </div>
-
   <div class="anim-delay-400-fill relative z-10 mt-[70px] w-full max-w-[780px] animate-fade-up opacity-0">
     <div class="bg-card border bd rounded-3xl p-7 shadow-card glass relative overflow-hidden t-theme"
          style="border:1.5px solid rgba(139,92,246,0.5); box-shadow:0 0 30px rgba(139,92,246,0.2); transition:transform 0.4s cubic-bezier(.23,1,.32,1);"
