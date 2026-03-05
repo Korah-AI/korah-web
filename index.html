@@ -8,25 +8,30 @@
 <meta property="og:description" content="Study smarter with mood-based recommendations, focus sessions, and AI-powered study tools."/>
 <title>Korah — Your AI Study Companion</title>
 
-<!-- FIX #5 PERF: preconnect reduces font load latency -->
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<!-- FIX #5 PERF: display=swap prevents invisible text during load -->
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 
-<!-- FIX #21 FRAMEWORK: Tailwind CDN Play - replaces ~400 lines of custom CSS -->
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="korah.js"></script>
 
-<!-- FIX #22 FRAMEWORK: Alpine.js replaces ~120 lines of manual querySelector/classList DOM manipulation -->
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-<!-- FIX #8 PERF: Three.js with defer so it doesn't block HTML parsing -->
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
 <link rel="stylesheet" href="korah.css"/>
+<style>
+  .design-typing-cursor {
+    display: inline-block;
+    animation: design-cursor-blink 1s steps(1, end) infinite;
+  }
+
+  @keyframes design-cursor-blink {
+    0%, 49% { opacity: 1; }
+    50%, 100% { opacity: 0; }
+  }
+</style>
 </head>
 
-<!-- FIX #22 FRAMEWORK: Alpine.js x-data replaces manual theme/state JS -->
 <body class="bg-base tx" x-cloak style="overflow-x:hidden;">
 
 <!-- Shooting Star background and twinkling stars -->
@@ -75,7 +80,7 @@
   </svg>
 </button>
     <button class="hidden md:block text-[13px] font-semibold px-5 py-2.5 rounded-full cursor-pointer border bd tx2 bg-transparent t-btn hover:tx-p4 hover:border-p4 hover:bg-[var(--bd2)]">Log in</button>
-    <button onclick="window.open('https://testflight.apple.com/join/kkxUsBqe','_blank')" class="text-[13px] font-semibold px-5 py-2.5 rounded-full cursor-pointer border-none text-white grad-bg shadow-glow t-btn hover:-translate-y-px hover:shadow-glow-lg">Get Beta Access</button>
+    <button onclick="window.open('https://testflight.apple.com/join/kkxUsBqe','_blank')" class="text-[13px] font-semibold px-5 py-2.5 rounded-full cursor-pointer border-none text-white grad-bg shadow-glow t-btn hover:-translate-y-px hover:shadow-glow-lg">Download Now</button>
     <!-- FIX #6 MAINT: Alpine x-bind:class and @click replace manual JS hamburger -->
     <button @click="menuOpen=!menuOpen" :class="menuOpen && 'open'" class="hamburger md:hidden flex flex-col gap-1.5 bg-transparent border-none cursor-pointer p-1.5" aria-label="Menu">
       <span class="block w-5.5 h-0.5 bg-p4 rounded transition-transform duration-300"></span>
@@ -95,10 +100,160 @@
   </template>
   <div class="flex gap-2.5 mt-5">
     <button class="flex-1 py-3 text-[13px] font-semibold rounded-full border bd tx2 bg-transparent cursor-pointer">Log in</button>
-    <button class="flex-1 py-3 text-[13px] font-semibold rounded-full border-none text-white grad-bg cursor-pointer">Get Access</button>
+    <button class="flex-1 py-3 text-[13px] font-semibold rounded-full border-none text-white grad-bg cursor-pointer">iOS Version</button>
   </div>
 </div>
-  
+
+<!-- ── DESIGN SHOWCASE ── -->
+<section id="design-showcase" style="position:relative;min-height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;padding-top:70px;">
+  <canvas id="design-shader-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;display:block;"></canvas>
+
+  <div style="position:relative;z-index:10;border:1px solid #27272a;padding:8px;width:100%;max-width:768px;margin:0 auto;">
+    <main style="position:relative;border:1px solid #27272a;padding:40px 20px;overflow:hidden;text-align:center;">
+      <h1 style="margin-bottom:12px;color:#ffffff;font-size:clamp(2rem,8vw,7rem);font-weight:900;letter-spacing:-0.01em;line-height:1;">
+        <span id="design-typed-korah" style="color:#a855f7;"></span><span id="design-typed-text"></span><span class="design-typing-cursor" aria-hidden="true">|</span>
+      </h1>
+      <p style="color:rgba(255,255,255,0.6);padding:0 24px;font-size:clamp(12px,1.5vw,18px);margin:0;">Everything you've ever wanted in a study app, always 100% free.</p>
+
+      <div style="margin:32px 0;display:flex;align-items:center;justify-content:center;gap:4px;">
+        <span style="position:relative;display:flex;height:12px;width:12px;align-items:center;justify-content:center;">
+          <span class="animate-ping" style="position:absolute;display:inline-flex;height:100%;width:100%;border-radius:50%;background:#22c55e;opacity:0.75;"></span>
+          <span style="position:relative;display:inline-flex;height:8px;width:8px;border-radius:50%;background:#22c55e;"></span>
+        </span>
+        <p style="font-size:12px;color:#22c55e;margin:0;">Available for iOS and Web</p>
+      </div>
+
+      <div style="display:flex;justify-content:center; gap: 12px">
+        <button
+          style="position:relative;height:48px;padding:0 32px;border-radius:9999px;border:1px solid rgba(255,255,255,0.2);background:transparent;color:#fff;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;justify-content:center;transition:transform 0.3s;"
+          onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+          <!-- glass shadow overlay -->
+          <div style="position:absolute;top:0;left:0;z-index:0;height:100%;width:100%;border-radius:9999px;box-shadow:0 0 8px rgba(0,0,0,.03),0 2px 6px rgba(0,0,0,.08),inset 3px 3px .5px -3.5px rgba(255,255,255,.09),inset -3px -3px .5px -3.5px rgba(255,255,255,.85),inset 1px 1px 1px -.5px rgba(255,255,255,.6),inset -1px -1px 1px -.5px rgba(255,255,255,.6),inset 0 0 6px 6px rgba(255,255,255,.12),inset 0 0 2px 2px rgba(255,255,255,.06),0 0 12px rgba(0,0,0,.15);transition:all 0.3s;"></div>
+          <!-- backdrop distortion using SVG filter -->
+          <div style="position:absolute;top:0;left:0;height:100%;width:100%;overflow:hidden;border-radius:20px;backdrop-filter:url('#design-glass-filter');"></div>
+          <span style="pointer-events:none;position:relative;z-index:10;">Web Version</span>
+        </button>
+
+        <button
+          style="position:relative;height:48px;padding:0 32px;border-radius:9999px;border:1px solid rgba(255,255,255,0.2);background:transparent;color:#fff;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;justify-content:center;transition:transform 0.3s;"
+          onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+          <!-- glass shadow overlay -->
+          <div style="position:absolute;top:0;left:0;z-index:0;height:100%;width:100%;border-radius:9999px;box-shadow:0 0 8px rgba(0,0,0,.03),0 2px 6px rgba(0,0,0,.08),inset 3px 3px .5px -3.5px rgba(255,255,255,.09),inset -3px -3px .5px -3.5px rgba(255,255,255,.85),inset 1px 1px 1px -.5px rgba(255,255,255,.6),inset -1px -1px 1px -.5px rgba(255,255,255,.6),inset 0 0 6px 6px rgba(255,255,255,.12),inset 0 0 2px 2px rgba(255,255,255,.06),0 0 12px rgba(0,0,0,.15);transition:all 0.3s;"></div>
+          <!-- backdrop distortion using SVG filter -->
+          <div style="position:absolute;top:0;left:0;height:100%;width:100%;overflow:hidden;border-radius:20px;backdrop-filter:url('#design-glass-filter');"></div>
+          <span style="pointer-events:none;position:relative;z-index:10;">Download for iOS</span>
+        </button>
+        
+      </div>
+    </main>
+  </div>
+
+  <!-- SVG glass filter definition -->
+  <svg style="display:none;" aria-hidden="true">
+    <defs>
+      <filter id="design-glass-filter" x="0%" y="0%" width="100%" height="100%" color-interpolation-filters="sRGB">
+        <feTurbulence type="fractalNoise" baseFrequency="0.05 0.05" numOctaves="1" seed="1" result="turbulence"/>
+        <feGaussianBlur in="turbulence" stdDeviation="2" result="blurredNoise"/>
+        <feDisplacementMap in="SourceGraphic" in2="blurredNoise" scale="70" xChannelSelector="R" yChannelSelector="B" result="displaced"/>
+        <feGaussianBlur in="displaced" stdDeviation="4" result="finalBlur"/>
+        <feComposite in="finalBlur" in2="finalBlur" operator="over"/>
+      </filter>
+    </defs>
+  </svg>
+</section>
+
+<script>
+(function () {
+  var vertSrc = [
+    'attribute vec3 position;',
+    'void main() { gl_Position = vec4(position, 1.0); }'
+  ].join('\n');
+
+  var fragSrc = [
+    'precision highp float;',
+    'uniform vec2 resolution;',
+    'uniform float time;',
+    'uniform float xScale;',
+    'uniform float yScale;',
+    'uniform float distortion;',
+    'void main() {',
+    '  vec2 p = (gl_FragCoord.xy * 2.0 - resolution) / min(resolution.x, resolution.y);',
+    '  float d = length(p) * distortion;',
+    '  float rx = p.x * (1.0 + d);',
+    '  float gx = p.x;',
+    '  float bx = p.x * (1.0 - d);',
+    '  float r = 0.05 / abs(p.y + sin((rx + time) * xScale) * yScale);',
+    '  float g = 0.05 / abs(p.y + sin((gx + time) * xScale) * yScale);',
+    '  float b = 0.05 / abs(p.y + sin((bx + time) * xScale) * yScale);',
+    '  gl_FragColor = vec4(r, g, b, 1.0);',
+    '}'
+  ].join('\n');
+
+  function initDesignShader() {
+    var canvas = document.getElementById('design-shader-canvas');
+    if (!canvas || typeof THREE === 'undefined') return;
+
+    var section = document.getElementById('design-showcase');
+    var w = section.offsetWidth, h = section.offsetHeight;
+
+    var scene    = new THREE.Scene();
+    var renderer = new THREE.WebGLRenderer({ canvas: canvas });
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setClearColor(0x000000);
+    renderer.setSize(w, h, false);
+
+    var camera   = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, -1);
+    var uniforms = {
+      resolution: { value: [w, h] },
+      time:       { value: 0.0 },
+      xScale:     { value: 1.0 },
+      yScale:     { value: 0.5 },
+      distortion: { value: 0.05 }
+    };
+
+    var geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(
+      new Float32Array([-1,-1,0, 1,-1,0, -1,1,0, 1,-1,0, -1,1,0, 1,1,0]), 3
+    ));
+
+    var mat = new THREE.RawShaderMaterial({
+      vertexShader:   vertSrc,
+      fragmentShader: fragSrc,
+      uniforms:       uniforms,
+      side:           THREE.DoubleSide
+    });
+
+    scene.add(new THREE.Mesh(geo, mat));
+
+    function loop() {
+      uniforms.time.value += 0.01;
+      renderer.render(scene, camera);
+      requestAnimationFrame(loop);
+    }
+
+    function onResize() {
+      var nw = section.offsetWidth, nh = section.offsetHeight;
+      renderer.setSize(nw, nh, false);
+      uniforms.resolution.value = [nw, nh];
+    }
+
+    loop();
+    window.addEventListener('resize', onResize);
+  }
+
+  function waitForThree() {
+    if (typeof THREE !== 'undefined') { initDesignShader(); }
+    else { setTimeout(waitForThree, 50); }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', waitForThree);
+  } else {
+    waitForThree();
+  }
+}());
+</script>
+
 <!-- ── HERO ── -->
 <section id="home" class="min-h-screen flex flex-col items-center justify-center pt-[calc(70px+60px)] pb-24 px-5 md:px-[clamp(20px,6vw,80px)]" style="position:relative;">
   <canvas id="constellation-canvas" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; opacity:0; transition:opacity 0.5s; z-index:1;"></canvas>
@@ -704,6 +859,45 @@
     <span>Beta v0.9.1</span>
   </div>
 </footer>
+
+<script>
+(function() {
+  function initDesignTyping() {
+    const typedKorah = document.getElementById('design-typed-korah');
+    const typedText = document.getElementById('design-typed-text');
+    if (!typedKorah || !typedText) return;
+
+    const korahText = 'Korah';
+    const suffixText = ' A.I';
+    const typingDelayMs = 75;
+    let korahIndex = 0;
+    let suffixIndex = 0;
+
+    function typeNext() {
+      if (korahIndex < korahText.length) {
+        korahIndex += 1;
+        typedKorah.textContent = korahText.slice(0, korahIndex);
+        setTimeout(typeNext, typingDelayMs);
+        return;
+      }
+
+      if (suffixIndex < suffixText.length) {
+        suffixIndex += 1;
+        typedText.textContent = suffixText.slice(0, suffixIndex);
+        setTimeout(typeNext, typingDelayMs);
+      }
+    }
+
+    typeNext();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initDesignTyping);
+  } else {
+    initDesignTyping();
+  }
+})();
+</script>
 
 <script>
 window.addEventListener('load', function() {
