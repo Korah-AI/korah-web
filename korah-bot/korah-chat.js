@@ -17,6 +17,8 @@
   const chatTitleEl = document.getElementById("chat-title");
   const toolsTrigger = document.getElementById("tools-trigger");
   const toolsMenu = document.getElementById("tools-menu");
+  const studyEmptyBanner = document.getElementById("study-empty-banner");
+  const studyItemsEmpty = document.getElementById("study-items-empty");
 
   if (!input || !sendBtn || !messagesList) return;
 
@@ -358,6 +360,16 @@
       .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt))
       .slice(0, 8);
     container.innerHTML = "";
+    if (list.length === 0) {
+      if (studyItemsEmpty) {
+        studyItemsEmpty.classList.remove("hidden");
+        container.classList.add("is-empty");
+        container.appendChild(studyItemsEmpty);
+      }
+    } else {
+      if (studyItemsEmpty) studyItemsEmpty.classList.add("hidden");
+      container.classList.remove("is-empty");
+    }
     list.forEach((item) => {
       const a = document.createElement("a");
       a.href = `study/item.html?id=${encodeURIComponent(item.id)}`;
@@ -446,6 +458,10 @@
         });
       });
     });
+    const hasItems = Object.keys(items).length > 0;
+    if (studyEmptyBanner) {
+      studyEmptyBanner.classList.toggle("hidden", hasItems);
+    }
   }
 
   function renderFlashcards(content) {
@@ -1898,4 +1914,3 @@ if (document.readyState === 'loading') {
 } else {
   initConstellationField();
 }
-

@@ -167,11 +167,22 @@ function showSidebarDeleteModal(name, onConfirm) {
   function renderStudyItemsHistory(container, itemPageUrl) {
     if (!container) return;
     const items = getStudyItems();
+    const emptyEl = document.getElementById("study-items-empty");
     const list = Object.keys(items)
       .map((id) => ({ id, ...items[id] }))
       .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt))
       .slice(0, 8);
     container.innerHTML = "";
+    if (list.length === 0) {
+      if (emptyEl) {
+        emptyEl.classList.remove("hidden");
+        container.classList.add("is-empty");
+        container.appendChild(emptyEl);
+      }
+    } else {
+      if (emptyEl) emptyEl.classList.add("hidden");
+      container.classList.remove("is-empty");
+    }
     list.forEach((item) => {
       const a = document.createElement("a");
       a.href = itemPageUrl + "?id=" + encodeURIComponent(item.id);
@@ -239,6 +250,9 @@ function showSidebarDeleteModal(name, onConfirm) {
         });
       });
     });
+    if (emptyEl) {
+      emptyEl.classList.toggle("hidden", Object.keys(items).length > 0);
+    }
   }
 
   function initSidebar(options) {
