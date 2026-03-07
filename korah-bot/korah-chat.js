@@ -353,9 +353,25 @@
 
   function renderStudyItemsHistory() {
     const container = document.getElementById("study-items-history");
-    if (!container) return;
     const items = Storage.getStudyItems();
-    const list = Object.keys(items)
+    const itemIds = Object.keys(items);
+
+    // Update Nav Link text if empty
+    const navLinks = document.querySelectorAll(".sidebar-nav-link");
+    navLinks.forEach(link => {
+      if (link.getAttribute("href").indexOf("feed.html") !== -1) {
+        if (itemIds.length === 0) {
+          link.innerHTML = "📚 Study";
+          link.classList.add("nav-empty");
+        } else {
+          link.innerHTML = "📚 Study";
+          link.classList.remove("nav-empty");
+        }
+      }
+    });
+
+    if (!container) return;
+    const list = itemIds
       .map((id) => ({ id, ...items[id] }))
       .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt))
       .slice(0, 8);

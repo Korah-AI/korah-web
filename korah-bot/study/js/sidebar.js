@@ -165,10 +165,26 @@ function showSidebarDeleteModal(name, onConfirm) {
 
   // ── Render Study Items History ──
   function renderStudyItemsHistory(container, itemPageUrl) {
-    if (!container) return;
     const items = getStudyItems();
+    const itemIds = Object.keys(items);
+
+    // Update Nav Link text if empty
+    const navLinks = document.querySelectorAll(".sidebar-nav-link");
+    navLinks.forEach(link => {
+      if (link.getAttribute("href").indexOf("feed.html") !== -1) {
+        if (itemIds.length === 0) {
+          link.innerHTML = "📚 Study";
+          link.classList.add("nav-empty");
+        } else {
+          link.innerHTML = "📚 Study";
+          link.classList.remove("nav-empty");
+        }
+      }
+    });
+
+    if (!container) return;
     const emptyEl = document.getElementById("study-items-empty");
-    const list = Object.keys(items)
+    const list = itemIds
       .map((id) => ({ id, ...items[id] }))
       .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt))
       .slice(0, 8);
@@ -255,6 +271,116 @@ function showSidebarDeleteModal(name, onConfirm) {
     }
   }
 
+  // ── Starfield Animation (matches index.html) ──
+  function initBackground() {
+    const canvas = document.getElementById("bg-canvas");
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    let w, h, stars = [], shootingStars = [];
+
+    function resize() {
+      w = canvas.width = window.innerWidth;
+      h = canvas.height = window.innerHeight;
+      initStars();
+    }
+
+    class Star {
+      constructor() {
+        this.reset();
+      }
+      reset() {
+        this.x = Math.random() * w;
+        this.y = Math.random() * h;
+        this.size = Math.random() * 1.5;
+        this.opacity = Math.random() * 0.7 + 0.1;
+        this.twinkleSpeed = Math.random() * 0.015 + 0.005;
+        this.twinkleDir = Math.random() > 0.5 ? 1 : -1;
+
+        const colors = ["#ffffff", "#eef2ff", "#fffdf2"];
+        this.color = colors[Math.floor(Math.random() * colors.length)];
+      }
+      update() {
+        this.opacity += this.twinkleSpeed * this.twinkleDir;
+        if (this.opacity > 0.9 || this.opacity < 0.1) {
+          this.twinkleDir *= -1;
+        }
+      }
+      draw() {
+        ctx.fillStyle = this.color;
+        ctx.globalAlpha = this.opacity;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (this.size > 1.1) {
+          ctx.shadowBlur = 5;
+          ctx.shadowColor = this.color;
+        } else {
+          ctx.shadowBlur = 0;
+        }
+      }
+    }
+
+    class ShootingStar {
+      constructor() {
+        this.reset();
+      }
+      reset() {
+        this.x = Math.random() * w;
+        this.y = Math.random() * h * 0.4;
+        this.len = Math.random() * 80 + 40;
+        this.speedX = -(Math.random() * 15 + 10);
+        this.speedY = Math.random() * 10 + 5;
+        this.opacity = 1;
+        this.active = false;
+        this.waitTime = Math.random() * 600 + 300;
+      }
+      update() {
+        if (!this.active) {
+          this.waitTime--;
+          if (this.waitTime <= 0) this.active = true;
+          return;
+        }
+        this.x += this.speedX;
+        this.y += this.speedY;
+        this.opacity -= 0.02;
+        if (this.opacity <= 0 || this.y > h || this.x < 0) {
+          this.reset();
+        }
+      }
+      draw() {
+        if (!this.active) return;
+        ctx.globalAlpha = this.opacity;
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(this.x, this.y);
+        ctx.lineTo(this.x - this.speedX * 5, this.y - this.speedY * 5);
+        ctx.stroke();
+      }
+    }
+
+    function initStars() {
+      stars = [];
+      const starCount = Math.floor((w * h) / 3000);
+      for (let i = 0; i < starCount; i++) stars.push(new Star());
+    }
+
+    shootingStars = [];
+    for (let i = 0; i < 2; i++) shootingStars.push(new ShootingStar());
+
+    function animate() {
+      ctx.clearRect(0, 0, w, h);
+      stars.forEach(s => { s.update(); s.draw(); });
+      shootingStars.forEach(s => { s.update(); s.draw(); });
+      requestAnimationFrame(animate);
+    }
+
+    window.addEventListener("resize", resize);
+    resize();
+    animate();
+  }
+
   function initSidebar(options) {
     const { chatHistoryId, studyItemsId, chatBaseUrl, itemPageUrl } = options || {};
     const chatEl = document.getElementById(chatHistoryId || "chat-history");
@@ -265,6 +391,7 @@ function showSidebarDeleteModal(name, onConfirm) {
     renderStudyItemsHistory(studyEl, resolvedItemUrl);
     initChatMultiSelect(chatEl, resolvedBaseUrl);
     initStudyMultiSelect(studyEl, resolvedItemUrl);
+    initBackground();
   }
 
   // ── Multi-select: Chats ──

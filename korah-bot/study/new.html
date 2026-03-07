@@ -8,11 +8,104 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>  <link rel="stylesheet" href="../korah-chat.css"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../korah-chat.css"/>
+  <style>
+    .study-modern .chat-topbar,
+    .study-modern .create-hero,
+    .study-modern .create-steps,
+    .study-modern .create-step-panel {
+      border-radius: 18px;
+    }
+    .study-modern .create-flow-body {
+      max-width: 860px;
+      padding: 28px 22px 34px;
+    }
+    .study-modern .create-hero {
+      padding: 24px;
+      border: 1px solid var(--bd);
+      margin-bottom: 16px;
+    }
+    .study-modern .create-hero-title { font-size: 30px; line-height: 1.2; font-weight: 700; margin-bottom: 6px; color: var(--p5); }
+    .study-modern .create-hero-sub { font-size: 15px; color: var(--tx2); line-height: 1.6; }
+    .study-modern .create-steps {
+      margin: 0 0 16px;
+      padding: 10px;
+      background: var(--bg2);
+      border: 1px solid var(--bd);
+      gap: 10px;
+    }
+    .study-modern .create-step {
+      border-radius: 12px;
+      min-height: 48px;
+      font-size: 14px;
+      padding: 8px 14px;
+    }
+    .study-modern .create-step-num { width: 28px; height: 28px; font-size: 13px; z-index: 0;}
+    .study-modern .create-step-panel {
+      border: 1px solid var(--bd);
+      background: var(--bg2);
+      padding: 24px;
+      z-index: 0;
+    }
+    .study-modern .create-panel-title { font-size: 28px; margin-bottom: 16px; z-index: 0;}
+    .study-modern .create-type-grid { gap: 14px; }
+    .study-modern .create-type-card {z-index: 0;}
+    .study-modern .create-method-btn {
+      min-height: 92px;
+      border-radius: 14px;
+      padding: 16px;
+    }
+    .study-modern .create-type-name { font-size: 18px; z-index: 0;}
+    .study-modern .create-type-desc { font-size: 14px; line-height: 1.55; }
+    .study-modern .create-label { font-size: 14px; font-weight: 700; margin-bottom: 7px; }
+    .study-modern .create-input {
+      min-height: 50px;
+      font-size: 15px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      margin-bottom: 14px;
+    }
+    .study-modern .create-textarea { min-height: 96px; }
+    .study-modern #create-ai-prompt { min-height: 160px; min-width: 770px;}
+    .study-modern .create-form-actions { margin-top: 10px; gap: 10px; justify-content: center; }
+    .study-modern .feed-card-btn,
+    .study-modern .new-chat-btn {
+      min-height: 45px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      padding: 0 18px;
+    }
+    .study-modern .sidebar,
+    .study-modern .main-content,
+    .study-modern .chat-topbar,
+    .study-modern .create-flow-body,
+    .study-modern .create-hero,
+    .study-modern .create-steps,
+    .study-modern .create-step-panel,
+    .study-modern .create-type-card,
+    .study-modern .create-method-btn,
+    .study-modern .create-input,
+    .study-modern .create-form-actions,
+    .study-modern .feed-card-btn,
+    .study-modern .new-chat-btn {
+      position: relative;
+      z-index: 0;
+    }
+    @media (max-width: 768px) {
+      .study-modern .create-flow-body { padding: 18px 14px 24px; }
+      .study-modern .create-hero { padding: 18px; margin-bottom: 12px; }
+      .study-modern .create-hero-title { font-size: 24px; }
+      .study-modern .create-panel-title { font-size: 22px; }
+      .study-modern .create-step-panel { padding: 16px; }
+      .study-modern .create-step { min-height: 42px; font-size: 13px; }
+    }
+  </style>
 </head>
-<body class="bg-base tx">
+<body class="bg-base tx study-modern">
 
-<canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none opacity-40"></canvas>
+<canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
 
 <!-- Loading Overlay -->
 <div id="loading-overlay" class="loading-overlay hidden">
@@ -28,21 +121,28 @@
   <div class="sidebar-header">
     <a href="../index.html" class="flex items-center gap-2.5 no-underline">
       <div class="w-10 h-10 rounded-xl grad-bg flex items-center justify-center font-display text-xl font-black text-white shadow-glow logo-btn">
-        <img src="../logo.png" alt="Korah" class="w-8 h-8 object-contain"/>
+        <span class="logo-letter">
+          <img src="../logo.png" alt="Korah"/>
+        </span>
       </div>
       <div class="flex flex-col leading-tight">
         <span class="font-display text-[19px] font-bold tx">Korah</span>
         <span class="text-[9px] font-semibold tracking-[2.5px] uppercase tx-p4">Beta · Study AI</span>
       </div>
     </a>
+    <button id="new-chat-btn" class="new-chat-btn grad-bg text-white text-xs font-bold px-4 py-2 rounded-full border-none cursor-pointer shadow-glow t-btn">
+      + New Chat
+    </button>
   </div>
+
   <nav class="sidebar-nav">
-    <a href="../index.html" class="sidebar-nav-link t-btn">💬 Chat</a>
-    <a href="feed.html" class="sidebar-nav-link active t-btn">📚 Study Feed</a>
+    <a href="../index.html" class="sidebar-nav-link active t-btn">💬 Chat</a>
+    <a href="feed.html" class="sidebar-nav-link t-btn">📚 Study</a>
   </nav>
+
   <div class="sidebar-middle">
     <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 12px 0 4px;">
-      <span class="sidebar-section-label" style="margin:0">Recent Chats</span>
+    <span class="sidebar-section-label" style="margin:0">Recent Chats</span>
     </div>
     <div id="chat-select-bar" class="select-bar">
       <span class="select-bar-count" id="chat-select-count">0 selected</span>
@@ -51,7 +151,28 @@
         <button class="select-bar-btn danger" id="chat-delete-selected">Delete</button>
       </div>
     </div>
-    <div id="chat-history" class="chat-history"></div>
+    <div id="chat-history" class="chat-history">
+      <button class="history-item active t-btn" data-session="current">
+        <span class="history-icon">📚</span>
+        <span class="history-text">Photosynthesis Study Guide</span>
+      </button>
+      <button class="history-item t-btn" data-session="1">
+        <span class="history-icon">🧮</span>
+        <span class="history-text">Calculus Flashcards</span>
+      </button>
+      <button class="history-item t-btn" data-session="2">
+        <span class="history-icon">⚗️</span>
+        <span class="history-text">Chemistry Practice Test</span>
+      </button>
+      <button class="history-item t-btn" data-session="3">
+        <span class="history-icon">📝</span>
+        <span class="history-text">Essay Outline — WWII</span>
+      </button>
+      <button class="history-item t-btn" data-session="4">
+        <span class="history-icon">🔢</span>
+        <span class="history-text">Statistics Review</span>
+      </button>
+    </div>
   </div>
 
   <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 12px 0 4px;">
@@ -64,12 +185,19 @@
       <button class="select-bar-btn danger" id="study-delete-selected">Delete</button>
     </div>
   </div>
-  <div id="study-items-history" class="chat-history study-items-history"></div>
+  <div id="study-items-history" class="chat-history study-items-history">
+    <!-- Populated by JS from localStorage -->
+  </div>
+  <div id="study-items-empty" class="study-items-empty hidden">
+    <span class="study-items-empty-icon" aria-hidden="true">📚</span>
+    <div class="study-items-empty-title">No study items yet</div>
+    <div class="study-items-empty-sub">Create one to see it here.</div>
+  </div>
 
   <div class="sidebar-footer">
-    <div class="mood-indicator">
-      <span class="mood-dot">🟢</span>
-      <span class="text-xs tx2 font-medium">Study Feed</span>
+    <div class="mood-indicator" id="sidebar-mood">
+      <span class="mood-dot" id="mood-dot">🟢</span>
+      <span class="text-xs tx2 font-medium">Full Focus Mode</span>
     </div>
     <div class="sidebar-footer-actions">
       <button id="settings-btn" class="theme-toggle-small t-btn" title="Settings">
@@ -114,6 +242,11 @@
   </header>
 
   <div class="create-flow-body">
+    <section class="create-hero bg-sf glass-sm t-theme">
+      <h1 class="create-hero-title">Create a New Study Item</h1>
+      <p class="create-hero-sub">Use the guided flow below to build flashcards, study guides, or practice tests with larger, easier-to-scan controls.</p>
+    </section>
+
     <div class="create-steps">
       <div class="create-step" data-step="1">
         <span class="create-step-num">1</span>
@@ -196,7 +329,7 @@
         <label class="create-label">Tags (comma-separated)</label>
         <input type="text" id="create-tags" class="create-input tx bg-sf2 bd" placeholder="e.g. exam, midterm, chapter5"/>
         <div id="create-ai-prompt-wrap" class="hidden">
-          <label class="create-label">Prompt for AI</label>
+          <label class="create-label">Prompt</label>
           <textarea id="create-ai-prompt" class="create-input create-textarea tx bg-sf2 bd" rows="3" placeholder="e.g. Create 10 flashcards covering photosynthesis and cellular respiration"></textarea>
         </div>
         <div class="create-form-actions">

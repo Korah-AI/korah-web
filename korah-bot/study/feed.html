@@ -10,10 +10,85 @@
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="../korah-chat.css"/>
+  <style>
+    .study-modern .chat-topbar,
+    .study-modern .study-feed-toolbar,
+    .study-modern .feed-card,
+    .study-modern .feed-empty {
+      border-radius: 18px;
+    }
+    .study-modern .study-feed-body {
+      padding: 30px 26px 36px;
+      gap: 18px;
+    }
+    .study-modern .feed-hero {
+      padding: 22px 24px;
+      border: 1px solid var(--bd);      
+    }
+    .study-modern .feed-hero-title {
+      font-size: 29px;
+      line-height: 1.2;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .study-modern .feed-hero-sub {
+      font-size: 15px;
+      line-height: 1.6;
+      color: var(--tx2);
+    }
+    .study-modern .study-feed-toolbar {
+      padding: 18px;
+      border: 1px solid var(--bd);
+      background: var(--bg2);
+      gap: 12px;
+    }
+    .study-modern .feed-search,
+    .study-modern .feed-filter-select {
+      min-height: 50px;
+      border-radius: 14px;
+      font-size: 15px;
+      padding: 0 15px;
+    }
+    .study-modern .feed-cards {
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 16px;
+    }
+    .study-modern .feed-card {
+      min-height: 246px;
+      padding: 22px;
+      border: 1px solid var(--bd);
+      background: linear-gradient(180deg, rgba(255,255,255,.05) 0%, rgba(255,255,255,.02) 100%);
+    }
+    .study-modern .feed-card-title { font-size: 22px; line-height: 1.25; }
+    .study-modern .feed-card-desc { font-size: 14px; }
+    .study-modern .feed-card-meta { font-size: 13px; }
+    .study-modern .feed-card-actions { gap: 10px; padding-top: 18px; }
+    .study-modern .feed-card-btn {
+      min-height: 42px;
+      padding: 0 14px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .study-modern .feed-empty {
+      border: 1px solid var(--bd);
+      padding: 42px 24px;
+      background: var(--bg2);
+    }
+    @media (max-width: 768px) {
+      .study-modern .study-feed-body { padding: 20px 14px 24px; }
+      .study-modern .feed-hero { padding: 18px; }
+      .study-modern .feed-hero-title { font-size: 24px; }
+      .study-modern .study-feed-toolbar { padding: 14px; }
+      .study-modern .feed-search,
+      .study-modern .feed-filter-select { min-height: 46px; font-size: 14px; }
+      .study-modern .feed-cards { grid-template-columns: 1fr; }
+    }
+  </style>
 </head>
-<body class="bg-base tx">
+<body class="bg-base tx study-modern">
 
-<canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none opacity-40"></canvas>
+<canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
 
 <!-- Loading Overlay -->
 <div id="loading-overlay" class="loading-overlay hidden">
@@ -27,7 +102,7 @@
 
 <aside id="sidebar" class="sidebar bg-sf glass t-theme">
   <div class="sidebar-header">
-    <a href="index.html" class="flex items-center gap-2.5 no-underline">
+    <a href="../index.html" class="flex items-center gap-2.5 no-underline">
       <div class="w-10 h-10 rounded-xl grad-bg flex items-center justify-center font-display text-xl font-black text-white shadow-glow logo-btn">
         <span class="logo-letter">
           <img src="../logo.png" alt="Korah"/>
@@ -45,7 +120,7 @@
 
   <nav class="sidebar-nav">
     <a href="../index.html" class="sidebar-nav-link active t-btn">💬 Chat</a>
-    <a href="feed.html" class="sidebar-nav-link t-btn">📚 Study Feed</a>
+    <a href="feed.html" class="sidebar-nav-link t-btn">📚 Study</a>
   </nav>
 
   <div class="sidebar-middle">
@@ -152,6 +227,11 @@
   </header>
 
   <div class="study-feed-body">
+    <section class="feed-hero bg-sf glass-sm t-theme">
+      <h1 class="feed-hero-title tx">Your Study Library</h1>
+      <p class="feed-hero-sub">Search, filter, and jump into your materials quickly. Everything is optimized for fast review sessions.</p>
+    </section>
+
     <div class="study-feed-toolbar">
       <input type="search" id="feed-search" class="feed-search tx bg-sf2 bd" placeholder="Search by title or description…" />
       <div class="feed-filters">
