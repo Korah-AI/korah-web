@@ -339,27 +339,30 @@
         grid-template-columns: 1fr;
       }
     }
+    #flashcard-wrapper,
     .flashcard-wrapper {
       --border-radius: 16px;
       --back-bg: rgba(58, 23, 108, 0.85);
       --front-bg: rgba(43, 24, 78, 0.9);
       --box-shadow: 0 0 2.5rem 0 rgba(0, 0, 0, 0.4);
-      perspective: 1000px;
+      perspective: 1400px;
       transform: none !important;
-      width: 100%;
-      height: 100%;
+      width: min(100%, 760px);
+      aspect-ratio: 3 / 2;
+      max-height: 100%;
+      min-height: 280px;
       border-radius: var(--border-radius);
       position: relative;
+      margin: 0 auto;
     }
+    #flashcard,
     .flashcard {
-      top: 0;
-      left: 0;
       width: 100%;
       height: 100%;
-      position: absolute;
+      position: relative;
       border-radius: inherit;
       transform-style: preserve-3d;
-      transition: transform .45s ease;
+      transition: transform .62s cubic-bezier(.22, .61, .36, 1);
       background: transparent;
     }
     .flashcard__front,
@@ -387,30 +390,10 @@
     .flashcard__back {
       background-color: var(--back-bg);
       color: var(--tx2);
+      transform: rotateY(180deg);
     }
-    .flashcard[data-flip='true'][data-dir='rtl'] {
-      transform: rotateY(-180deg) !important;
-    }
-    .flashcard[data-flip='true'][data-dir='ltr'] {
-      transform: rotateY(180deg) !important;
-    }
-    .flashcard[data-flip='true'][data-dir='tb'] {
-      transform: rotateX(-180deg) !important;
-    }
-    .flashcard[data-flip='true'][data-dir='bt'] {
-      transform: rotateX(180deg) !important;
-    }
-    .flashcard[data-dir='rtl'] .flashcard__back {
-      transform: rotateY(-180deg) !important;
-    }
-    .flashcard[data-dir='ltr'] .flashcard__back {
-      transform: rotateY(180deg) !important;
-    }
-    .flashcard[data-dir='tb'] .flashcard__back {
-      transform: rotateX(-180deg) !important;
-    }
-    .flashcard[data-dir='bt'] .flashcard__back {
-      transform: rotateX(180deg) !important;
+    .flashcard[data-flip='true'] {
+      transform: rotateY(180deg);
     }
   </style>
 </head>
@@ -853,6 +836,15 @@
     });
   }
 
+  function syncFlashcardFlipUi() {
+    var cardEl = document.getElementById("flashcard");
+    if (!cardEl) return false;
+    cardEl.setAttribute("data-flip", viewState.reveal ? "true" : "false");
+    cardEl.setAttribute("aria-label", "Flashcard, currently showing " + (viewState.reveal ? "back" : "front") + " side");
+    toggleBtn.textContent = viewState.reveal ? "Hide Answer" : (viewState.mode === "flashcards" ? "Flip Card" : "Reveal Answer");
+    return true;
+  }
+
   function renderFlashcards(itemData, bodyEl) {
     var cards = (itemData.content && itemData.content.cards) || [];
     if (!cards.length) {
@@ -891,12 +883,13 @@
     var realIndex = viewState.order[viewState.index];
     var currentCard = cards[realIndex] || {};
     var wrapper = document.createElement("div");
+    wrapper.id = "flashcard-wrapper";
     wrapper.className = "flashcard-wrapper";
 
     var card = document.createElement("div");
+    card.id = "flashcard";
     card.className = "flashcard";
     card.setAttribute("data-flip", viewState.reveal ? "true" : "false");
-    card.setAttribute("data-dir", "bt");
     card.setAttribute("role", "region");
     card.setAttribute("aria-label", "Flashcard, currently showing " + (viewState.reveal ? "back" : "front") + " side");
     card.setAttribute("aria-live", "polite");
@@ -919,7 +912,13 @@
     if (viewState.mode === "flashcards") {
       card.addEventListener("click", function () {
         viewState.reveal = !viewState.reveal;
-        renderItem(currentItem);
+        syncFlashcardFlipUi();
+      });
+      card.addEventListener("keydown", function (event) {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        viewState.reveal = !viewState.reveal;
+        syncFlashcardFlipUi();
       });
     }
 
@@ -1145,7 +1144,11 @@
   });
 
   toggleBtn.addEventListener("click", function () {
+    if (!currentItem) return;
     viewState.reveal = !viewState.reveal;
+    if (currentItem.type === "flashcards" && (viewState.mode === "flashcards" || viewState.mode === "learn") && syncFlashcardFlipUi()) {
+      return;
+    }
     renderItem(currentItem);
   });
 
