@@ -62,7 +62,33 @@
     .study-modern .feed-card-title { font-size: 22px; line-height: 1.25; }
     .study-modern .feed-card-desc { font-size: 14px; }
     .study-modern .feed-card-meta { font-size: 13px; }
-    .study-modern .feed-card-actions { gap: 10px; padding-top: 18px; }
+    .study-modern .feed-card.is-clickable {
+      cursor: pointer;
+      transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease, background .2s ease;
+      position: relative;
+    }
+    .study-modern .feed-card.is-clickable:hover,
+    .study-modern .feed-card.is-clickable:focus-visible {
+      transform: translateY(-3px);
+      border-color: var(--p4);
+      box-shadow: 0 18px 30px rgba(0, 0, 0, 0.18);
+      background: linear-gradient(180deg, rgba(255,255,255,.08) 0%, rgba(255,255,255,.03) 100%);
+      outline: none;
+    }
+    .study-modern .feed-card-open-hint {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--p5);
+      margin-top: auto;
+      padding-top: 10px;
+      opacity: .78;
+      transition: opacity .2s ease, transform .2s ease;
+    }
+    .study-modern .feed-card.is-clickable:hover .feed-card-open-hint,
+    .study-modern .feed-card.is-clickable:focus-visible .feed-card-open-hint {
+      opacity: 1;
+      transform: translateX(2px);
+    }
     .study-modern .feed-card-btn {
       min-height: 42px;
       padding: 0 14px;
@@ -422,7 +448,10 @@
     emptyEl.classList.add("hidden");
     filtered.forEach(function (item) {
       const card = document.createElement("div");
-      card.className = "feed-card bg-card bd t-theme";
+      card.className = "feed-card bg-card bd t-theme is-clickable";
+      card.setAttribute("role", "link");
+      card.setAttribute("tabindex", "0");
+      card.setAttribute("aria-label", "Open " + (item.title || "study item"));
       const updated = item.updatedAt || item.createdAt;
       const dateStr = updated ? new Date(updated).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "";
       const source = item.source || "manual";
@@ -442,10 +471,7 @@
         '<h3 class="feed-card-title">' + (item.title || "Untitled") + '</h3>' +
         (item.description ? '<p class="feed-card-desc tx2">' + (item.description.length > 110 ? item.description.slice(0, 110) + "..." : item.description) + '</p>' : '<p class="feed-card-desc tx3">No description provided.</p>') +
         '<div class="feed-card-meta tx3 mb-4">Modified ' + dateStr + '</div>' +
-        '<div class="feed-card-actions">' +
-          '<a href="item.html?id=' + encodeURIComponent(item.id) + '" class="feed-card-btn primary t-btn">Open Item</a>' +
-          '<a href="item.html?id=' + encodeURIComponent(item.id) + '&duplicate=1" class="feed-card-btn t-btn" title="Duplicate">Duplicate</a>' +
-        '</div>';
+        '<div class="feed-card-open-hint">Click anywhere to open →</div>';
 
       card.querySelector(".feed-card-delete-btn").addEventListener("click", function (e) {
         e.stopPropagation();
@@ -455,6 +481,16 @@
           localStorage.setItem("korah_study_items", JSON.stringify(all));
           renderCards();
         });
+      });
+
+      card.addEventListener("click", function () {
+        window.location.href = "item.html?id=" + encodeURIComponent(item.id);
+      });
+      card.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          window.location.href = "item.html?id=" + encodeURIComponent(item.id);
+        }
       });
 
       container.appendChild(card);
