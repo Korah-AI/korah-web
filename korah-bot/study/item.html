@@ -339,6 +339,79 @@
         grid-template-columns: 1fr;
       }
     }
+    .flashcard-wrapper {
+      --border-radius: 16px;
+      --back-bg: rgba(58, 23, 108, 0.85);
+      --front-bg: rgba(43, 24, 78, 0.9);
+      --box-shadow: 0 0 2.5rem 0 rgba(0, 0, 0, 0.4);
+      perspective: 1000px;
+      transform: none !important;
+      width: 100%;
+      height: 100%;
+      border-radius: var(--border-radius);
+      position: relative;
+    }
+    .flashcard {
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      border-radius: inherit;
+      transform-style: preserve-3d;
+      transition: transform .45s ease;
+      background: transparent;
+    }
+    .flashcard__front,
+    .flashcard__back {
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      border-radius: inherit;
+      backface-visibility: hidden;
+      box-shadow: var(--box-shadow);
+      border: 1px solid rgba(168, 115, 255, 0.24);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      justify-content: center;
+      overflow: auto;
+    }
+    .flashcard__front {
+      background-color: var(--front-bg);
+      color: var(--tx);
+    }
+    .flashcard__back {
+      background-color: var(--back-bg);
+      color: var(--tx2);
+    }
+    .flashcard[data-flip='true'][data-dir='rtl'] {
+      transform: rotateY(-180deg) !important;
+    }
+    .flashcard[data-flip='true'][data-dir='ltr'] {
+      transform: rotateY(180deg) !important;
+    }
+    .flashcard[data-flip='true'][data-dir='tb'] {
+      transform: rotateX(-180deg) !important;
+    }
+    .flashcard[data-flip='true'][data-dir='bt'] {
+      transform: rotateX(180deg) !important;
+    }
+    .flashcard[data-dir='rtl'] .flashcard__back {
+      transform: rotateY(-180deg) !important;
+    }
+    .flashcard[data-dir='ltr'] .flashcard__back {
+      transform: rotateY(180deg) !important;
+    }
+    .flashcard[data-dir='tb'] .flashcard__back {
+      transform: rotateX(-180deg) !important;
+    }
+    .flashcard[data-dir='bt'] .flashcard__back {
+      transform: rotateX(180deg) !important;
+    }
   </style>
 </head>
 <body class="bg-base tx study-modern">
@@ -818,23 +891,41 @@
     var realIndex = viewState.order[viewState.index];
     var currentCard = cards[realIndex] || {};
     var wrapper = document.createElement("div");
-    wrapper.className = "player-content-card";
-    wrapper.innerHTML = '<div class="player-content-eyebrow">Prompt</div><div class="player-content-text"></div>';
-    wrapper.querySelector(".player-content-text").textContent = currentCard.front || "";
-    if (viewState.reveal) {
-      var answer = document.createElement("div");
-      answer.className = "player-content-answer";
-      answer.textContent = currentCard.back || "";
-      wrapper.appendChild(answer);
-    }
+    wrapper.className = "flashcard-wrapper";
+
+    var card = document.createElement("div");
+    card.className = "flashcard";
+    card.setAttribute("data-flip", viewState.reveal ? "true" : "false");
+    card.setAttribute("data-dir", "bt");
+    card.setAttribute("role", "region");
+    card.setAttribute("aria-label", "Flashcard, currently showing " + (viewState.reveal ? "back" : "front") + " side");
+    card.setAttribute("aria-live", "polite");
+    card.tabIndex = 0;
+
+    var front = document.createElement("div");
+    front.className = "flashcard__front";
+    front.innerHTML = '<div class="player-content-eyebrow">Prompt</div><div class="player-content-text"></div>';
+    front.querySelector(".player-content-text").textContent = currentCard.front || "";
+
+    var back = document.createElement("div");
+    back.className = "flashcard__back";
+    back.innerHTML = '<div class="player-content-eyebrow">Answer</div><div class="player-content-text"></div>';
+    back.querySelector(".player-content-text").textContent = currentCard.back || "";
+
+    card.appendChild(front);
+    card.appendChild(back);
+    wrapper.appendChild(card);
+
     if (viewState.mode === "flashcards") {
-      wrapper.addEventListener("click", function () {
+      card.addEventListener("click", function () {
         viewState.reveal = !viewState.reveal;
         renderItem(currentItem);
       });
     }
+
     bodyEl.appendChild(wrapper);
-    renderMath(wrapper);
+    renderMath(front);
+    renderMath(back);
     stageLabelEl.textContent = viewState.mode === "learn" ? "Learn mode" : "Flashcard mode";
     stageContextEl.textContent = "Card " + (viewState.index + 1) + " of " + cards.length;
     setProgress(viewState.index + 1, cards.length);
