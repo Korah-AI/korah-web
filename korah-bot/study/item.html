@@ -171,15 +171,26 @@
       margin-top: 2px;
     }
     .player-nav-btn {
-      min-width: 54px;
-      height: 42px;
+      min-width: 72px;
+      height: 52px;
+      padding: 0 18px;
       border-radius: 999px;
       border: 1px solid var(--bd);
       background: var(--sf2);
       color: var(--tx);
       cursor: pointer;
-      font-size: 18px;
+      font-size: 24px;
       font-weight: 700;
+      transition: transform .2s ease, border-color .2s ease, background .2s ease, box-shadow .2s ease;
+    }
+    .player-nav-btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      border-color: var(--p4);
+      background: var(--cu);
+      box-shadow: 0 8px 24px rgba(91, 33, 182, 0.24);
+    }
+    .player-nav-btn:active:not(:disabled) {
+      transform: translateY(0);
     }
     .player-nav-btn:disabled {
       opacity: .45;
@@ -394,6 +405,33 @@
     }
     .flashcard[data-flip='true'] {
       transform: rotateY(180deg);
+    }
+    .stage-slide-out-next {
+      pointer-events: none;
+      animation: stage-slide-out-next .22s cubic-bezier(.4, 0, .2, 1) forwards;
+    }
+    .stage-slide-in-next {
+      animation: stage-slide-in-next .28s cubic-bezier(.22, .61, .36, 1) both;
+    }
+    @keyframes stage-slide-out-next {
+      from {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+      }
+      to {
+        opacity: 0;
+        transform: translateX(-34px) scale(.985);
+      }
+    }
+    @keyframes stage-slide-in-next {
+      from {
+        opacity: 0;
+        transform: translateX(34px) scale(.985);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+      }
     }
   </style>
 </head>
@@ -741,6 +779,7 @@
   var progressTextEl = document.getElementById("item-progress-text");
   var progressBarEl = document.getElementById("item-progress-bar");
   var viewState = { itemId: null, mode: "", index: 0, reveal: false, order: [] };
+  var stageTransitionState = { nextEnter: false, animating: false };
 
   function clone(obj) {
     return JSON.parse(JSON.stringify(obj || {}));
@@ -1119,6 +1158,32 @@
       stageLabelEl.textContent = "Content";
       stageContextEl.textContent = "";
     }
+    if (stageTransitionState.nextEnter && bodyEl.firstElementChild) {
+      bodyEl.firstElementChild.classList.add("stage-slide-in-next");
+    }
+    stageTransitionState.nextEnter = false;
+  }
+
+  function goToNextWithAnimation(itemData, total) {
+    var bodyEl = document.getElementById("item-body");
+    var stageEl = bodyEl ? bodyEl.firstElementChild : null;
+    if (!stageEl) {
+      viewState.index = (viewState.index + 1) % total;
+      viewState.reveal = false;
+      renderItem(itemData);
+      return;
+    }
+    stageTransitionState.animating = true;
+    nextBtn.disabled = true;
+    stageEl.classList.add("stage-slide-out-next");
+    window.setTimeout(function () {
+      viewState.index = (viewState.index + 1) % total;
+      viewState.reveal = false;
+      stageTransitionState.nextEnter = true;
+      renderItem(itemData);
+      stageTransitionState.animating = false;
+      nextBtn.disabled = total <= 1;
+    }, 220);
   }
 
   prevBtn.addEventListener("click", function () {
@@ -1134,13 +1199,12 @@
 
   nextBtn.addEventListener("click", function () {
     if (!currentItem) return;
+    if (stageTransitionState.animating) return;
     var total = 1;
     if (currentItem.type === "flashcards") total = ((currentItem.content || {}).cards || []).length || 1;
     if (currentItem.type === "studyGuide") total = parseGuideSections(currentItem.content || {}).length || 1;
     if (currentItem.type === "practiceTest") total = ((currentItem.content || {}).questions || []).length || 1;
-    viewState.index = (viewState.index + 1) % total;
-    viewState.reveal = false;
-    renderItem(currentItem);
+    goToNextWithAnimation(currentItem, total);
   });
 
   toggleBtn.addEventListener("click", function () {
