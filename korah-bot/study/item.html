@@ -798,138 +798,6 @@
    <div class="sidebar-middle">
     <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 12px 0 4px;">
       <span class="sidebar-section-label" style="margin:0">Recent Chats</span>
-    </div>
-    <div id="chat-select-bar" class="select-bar">
-      <span class="select-bar-count" id="chat-select-count">0 selected</span>
-      <div class="select-bar-actions">
-        <button class="select-bar-btn" id="chat-select-all">Select all</button>
-        <button class="select-bar-btn danger" id="chat-delete-selected">Delete</button>
-      </div>
-    </div>
-    <div id="chat-history" class="chat-history"></div>
-  </div>
-
-  <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 12px 0 4px;">
-    <span class="sidebar-section-label" style="margin:0">Recent Study Items</span>
-  </div>
-  <div id="study-select-bar" class="select-bar">
-    <span class="select-bar-count" id="study-select-count">0 selected</span>
-    <div class="select-bar-actions">
-      <button class="select-bar-btn" id="study-select-all">Select all</button>
-      <button class="select-bar-btn danger" id="study-delete-selected">Delete</button>
-    </div>
-  </div>
-    <div id="study-items-history" class="chat-history study-items-history"></div>
-    <div id="study-items-empty" class="study-items-empty hidden">
-      <span class="study-items-empty-icon" aria-hidden="true">📚</span>
-      <div class="study-items-empty-title">No study items yet</div>
-      <div class="study-items-empty-sub">Create one to see it here.</div>
-    </div>
-
-  <div class="sidebar-footer">
-    <div class="mood-indicator">
-      <span class="mood-dot">🟢</span>
-      <span class="text-xs tx2 font-medium">Full Focus Mode</span>
-    </div>
-    <div class="sidebar-footer-actions">
-      <button id="settings-btn" class="theme-toggle-small t-btn" title="Settings">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-        </svg>
-      </button>
-      <button @click="theme = theme === 'dark' ? 'light' : 'dark'; localStorage.setItem('korah_theme', theme)" class="theme-toggle-small t-btn" title="Toggle theme">
-        <svg x-show="theme==='light'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" style="color:var(--p5)">
-          <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/>
-        </svg>
-        <svg x-show="theme==='dark'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--p4)">
-          <circle cx="12" cy="12" r="5"/>
-          <line x1="12" y1="1" x2="12" y2="3"/>
-          <line x1="12" y1="21" x2="12" y2="23"/>
-          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-          <line x1="1" y1="12" x2="3" y2="12"/>
-          <line x1="21" y1="12" x2="23" y2="12"/>
-          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-        </svg>
-      </button>
-    </div>
-  </div>
-</aside>
-
-<main id="main-content" class="main-content">
-  <header class="chat-topbar bg-sf glass-sm t-theme bd">
-    <button id="sidebar-toggle" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
-      </svg>
-    </button>
-    <div class="chat-title-area">
-      <div class="korah-status-dot"></div>
-      <span class="font-semibold tx text-sm" id="item-page-title">Study Item</span>
-    </div>
-    <div class="topbar-actions">
-      <a href="feed.html" class="feed-card-btn t-btn" style="padding: 8px 14px;">Back to Feed</a>
-    </div>
-  </header>
-
-  <div id="item-content-area" class="study-feed-body">
-    <div id="item-not-found" class="feed-empty hidden">
-      <p class="tx2">Study item not found. It may have been deleted.</p>
-      <a href="feed.html" class="feed-card-btn t-btn" style="margin-top: 12px; display: inline-block;">Back to Study Feed</a>
-    </div>
-    <div id="item-detail" class="study-player hidden">
-      <section class="player-hero">
-        <div class="player-hero-head">
-          <div>
-            <div class="item-meta-bar">
-              <span id="item-type-badge" class="feed-card-type"></span>
-              <span id="item-source-badge" class="feed-card-source"></span>
-              <span id="item-updated" class="tx3 text-xs"></span>
-            </div>
-            <h1 id="item-title" class="player-title"></h1>
-          </div>
-          <div class="item-actions">
-            <a id="item-action-chat" href="#" class="feed-card-btn t-btn" style="text-align:center; display:inline-flex; align-items:center; justify-content:center;">Send to Chat</a>
-            <button id="item-action-edit" class="feed-card-btn t-btn" style="border: 1px solid var(--p4); color: var(--p5); background: var(--cu); cursor: pointer;">Edit Item</button>
-            <button id="item-action-duplicate" class="feed-card-btn t-btn" style="border: 1px solid var(--bd); background: var(--sf2); cursor: pointer;">Duplicate</button>
-          </div>
-        </div>
-        <p id="item-description" class="player-sub"></p>
-      </section>
-      <div id="item-mode-tabs" class="player-modes"></div>
-      <section class="player-stage">
-        <div class="player-stage-top">
-          <span id="item-stage-label"></span>
-          <span id="item-stage-context"></span>
-        </div>
-        <div id="item-body" class="item-body player-body">
-          <!-- Type-specific content rendered here -->
-        </div>
-      </section>
-      <div class="player-controls">
-        <button id="item-prev-btn" class="player-nav-btn" type="button" aria-label="Previous item">←</button>
-        <div id="item-progress-text" class="player-progress-text">0 / 0</div>
-        <button id="item-next-btn" class="player-nav-btn" type="button" aria-label="Next item">→</button>
-        <button id="item-toggle-btn" class="player-util-btn" type="button">Reveal</button>
-        <button id="item-shuffle-btn" class="player-util-btn" type="button">Shuffle</button>
-      </div>
-      <div class="player-progress-track">
-        <span id="item-progress-bar" class="player-progress-fill"></span>
-      </div>
-    </div>
-  </div>
-</main>
-
-<div id="guide-reader-modal" class="guide-reader-modal">
-  <div class="guide-reader-dialog">
-    <div class="guide-reader-head">
-      <strong id="guide-reader-title" class="tx">Study Guide</strong>
-      <button id="guide-reader-close" class="guide-reader-close" type="button" aria-label="Close reader">&times;</button>
-    </div>
-    <div id="guide-reader-body" class="guide-reader-body study-guide-markdown assistant-content"></div>
-  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -1124,10 +992,6 @@
   var shuffleBtn = document.getElementById("item-shuffle-btn");
   var progressTextEl = document.getElementById("item-progress-text");
   var progressBarEl = document.getElementById("item-progress-bar");
-  var guideReaderModal = document.getElementById("guide-reader-modal");
-  var guideReaderTitle = document.getElementById("guide-reader-title");
-  var guideReaderBody = document.getElementById("guide-reader-body");
-  var guideReaderClose = document.getElementById("guide-reader-close");
   var viewState = {
     itemId: null,
     mode: "",
@@ -1155,57 +1019,12 @@
     }
   }
 
-  function getStudyGuideMarkdown(content) {
-    var mdContent = (content && content.markdown) || "";
-    if (!mdContent && content && content.sections) {
-      mdContent = content.sections.map(function (s) { return "## " + s.title + "\n\n" + s.body; }).join("\n\n");
-    }
-    return mdContent;
-  }
-
   function getModesForType(type) {
     if (type === "flashcards") return [{ id: "flashcards", label: "Flashcards" }, { id: "learn", label: "Learn" }, { id: "review", label: "Review" }];
-    if (type === "studyGuide") return [{ id: "guide", label: "Study Guide" }];
-    if (type === "practiceTest") return [];
-    return [{ id: "default", label: "Content" }];
+    return [];
   }
 
-  function clampInt(value, fallback, min, max) {
-    var parsed = parseInt(value, 10);
-    if (Number.isNaN(parsed)) return fallback;
-    return Math.min(max, Math.max(min, parsed));
-  }
-
-  function getPracticeDefaults(content) {
-    var existing = content && content.testConfig ? content.testConfig : {};
-    var total = clampInt(existing.totalQuestions, ((content && content.questions) || []).length || 10, 1, 50);
-    var mcq = clampInt(existing.mcqCount, Math.round(total * 0.6), 0, total);
-    var open = clampInt(existing.openEndedCount, total - mcq, 0, total - mcq);
-    if (mcq + open !== total) open = total - mcq;
-    return { totalQuestions: total, mcqCount: mcq, openEndedCount: open };
-  }
-
-  function normalizePracticeQuestions(content) {
-    return ((content && content.questions) || []).filter(function (q) {
-      return q && (q.text || "").trim();
-    }).map(function (q) {
-      var rawType = String((q.type || q.questionType || "")).toLowerCase();
-      var hasOptions = Array.isArray(q.options) && q.options.filter(Boolean).length > 1;
-      var isMcq = rawType === "mcq" || rawType === "multiple_choice" || rawType === "multiplechoice" || hasOptions;
-      var options = hasOptions ? q.options.map(function (opt) {
-        return String(opt || "").trim();
-      }).filter(Boolean).slice(0, 4) : [];
-      return {
-        type: isMcq ? "mcq" : "openEnded",
-        text: (q.text || "").trim(),
-        options: isMcq ? options : [],
-        answer: (q.answer || "").trim(),
-        explanation: (q.explanation || "").trim()
-      };
-    });
-  }
-
-  function shuffledCopy(list) {
+  function shuffleArray(list) {
     var arr = list.slice();
     for (var i = arr.length - 1; i > 0; i -= 1) {
       var j = Math.floor(Math.random() * (i + 1));
@@ -1214,41 +1033,6 @@
       arr[j] = tmp;
     }
     return arr;
-  }
-
-  function openGuideReader(itemData, markdown) {
-    if (!guideReaderModal || !guideReaderBody) return;
-    guideReaderTitle.textContent = itemData.title || "Study Guide";
-    guideReaderBody.innerHTML = "";
-    if (window.marked && typeof window.marked.parse === "function") {
-      guideReaderBody.innerHTML = window.marked.parse(markdown || "");
-    } else {
-      guideReaderBody.textContent = markdown || "";
-    }
-    renderMath(guideReaderBody);
-    guideReaderModal.classList.add("show");
-  }
-
-  function closeGuideReader() {
-    if (guideReaderModal) guideReaderModal.classList.remove("show");
-  }
-
-  function parseGuideSections(content) {
-    if (content && content.sections && content.sections.length) {
-      return content.sections.map(function (s) {
-        return { title: s.title || "Untitled Section", body: s.body || "" };
-      });
-    }
-    var markdown = getStudyGuideMarkdown(content || {});
-    if (!markdown.trim()) return [];
-    var chunks = markdown.split(/\n(?=##\s+)/g).filter(Boolean);
-    return chunks.map(function (chunk, idx) {
-      var lines = chunk.split("\n");
-      var heading = lines[0].match(/^##\s+(.*)$/);
-      var title = heading ? heading[1].trim() : "Section " + (idx + 1);
-      var body = heading ? lines.slice(1).join("\n").trim() : chunk.trim();
-      return { title: title, body: body };
-    });
   }
 
   function setProgress(current, total) {
@@ -1402,159 +1186,6 @@
     });
   }
 
-  function renderStudyGuide(itemData, bodyEl) {
-    var content = itemData.content || {};
-    var markdown = getStudyGuideMarkdown(content);
-    var sections = parseGuideSections(content);
-    if (!markdown.trim() && !sections.length) {
-      bodyEl.innerHTML = '<p class="tx2">No study guide content yet. Edit this item to add markdown.</p>';
-      setControls({ showNav: false, showToggle: false, showShuffle: false });
-      setProgress(0, 0);
-      stageLabelEl.textContent = "Study guide";
-      stageContextEl.textContent = "";
-      return;
-    }
-    var card = document.createElement("div");
-    card.className = "guide-open-card";
-    card.innerHTML =
-      '<div class="player-content-eyebrow">Read-through view</div>' +
-      '<div class="player-content-text" style="font-size:18px;">Open this study guide in a distraction-free reader.</div>' +
-      '<button type="button" class="guide-open-btn">Open Study Guide</button>';
-    var readerMarkdown = markdown || sections.map(function (s) { return "## " + s.title + "\n\n" + s.body; }).join("\n\n");
-    card.querySelector(".guide-open-btn").addEventListener("click", function () {
-      openGuideReader(itemData, readerMarkdown);
-    });
-    bodyEl.appendChild(card);
-    setControls({ showNav: false, showToggle: false, showShuffle: false });
-    setProgress(1, 1);
-    stageLabelEl.textContent = "Study guide";
-    stageContextEl.textContent = sections.length ? sections.length + " sections" : "Reader view";
-  }
-
-  function renderPracticeTest(itemData, bodyEl) {
-    var allQuestions = normalizePracticeQuestions(itemData.content || {});
-    var defaults = getPracticeDefaults(itemData.content || {});
-    
-    var container = document.createElement("div");
-    container.style.width = "100%";
-    
-    // Simple Launch Form
-    var launchBox = document.createElement("div");
-    launchBox.className = "test-action-card mb-8";
-    launchBox.innerHTML = `
-      <div class="flex items-center justify-between mb-6">
-        <div>
-          <div class="player-content-eyebrow">Practice Session</div>
-          <h2 class="text-2xl font-bold tx mt-1">Start New Test</h2>
-        </div>
-        <button type="button" class="test-btn-primary px-10 py-4 text-base" id="pt-start-btn">Start Now</button>
-      </div>
-      <div class="test-config-row">
-        <div class="test-config-field">
-          <label>Total Questions</label>
-          <input type="number" min="1" max="50" value="${defaults.totalQuestions}" id="pt-total">
-        </div>
-        <div class="test-config-field">
-          <label>Multiple Choice Questions</label>
-          <input type="number" min="0" max="50" value="${defaults.mcqCount}" id="pt-mcq">
-        </div>
-        <div class="test-config-field">
-          <label>Open-Ended Questions</label>
-          <input type="number" min="0" max="50" value="${defaults.openEndedCount}" id="pt-open">
-        </div>
-      </div>
-      <div class="test-ai-box mt-6 pt-6 border-t bd2">
-        <div class="player-content-eyebrow mb-3">Expand Pool with AI</div>
-        <div class="flex gap-2">
-          <input type="text" id="pt-ai-prompt" class="create-input tx bg-sf2 bd flex-1 mb-0" placeholder="e.g. 'Add 5 harder questions on biology topics'">
-          <button type="button" class="test-btn-outline whitespace-nowrap" id="pt-ai-btn">Update Test</button>
-        </div>
-      </div>
-    `;
-
-    launchBox.querySelector("#pt-start-btn").addEventListener("click", function() {
-      var total = clampInt(document.getElementById("pt-total").value, defaults.totalQuestions, 1, 50);
-      var mcq = clampInt(document.getElementById("pt-mcq").value, defaults.mcqCount, 0, total);
-      var open = clampInt(document.getElementById("pt-open").value, total - mcq, 0, total - mcq);
-      if (mcq + open !== total) open = total - mcq;
-      window.location.href = `test.html?id=${encodeURIComponent(itemData.id)}&total=${total}&mcq=${mcq}&open=${open}`;
-    });
-
-    launchBox.querySelector("#pt-ai-btn").addEventListener("click", function() {
-      var prompt = document.getElementById("pt-ai-prompt").value.trim();
-      var overlay = document.getElementById("loading-overlay");
-      if (!prompt) return alert("Please enter instructions for the AI.");
-      
-      overlay.classList.remove("hidden");
-      KorahStudyAPI.generateStudyContent({
-        type: "practiceTest",
-        prompt: prompt,
-        title: itemData.title,
-        subject: itemData.subject,
-        testConfig: getPracticeDefaults(itemData.content)
-      }).then(function(res) {
-        if (res && res.content && res.content.questions) {
-          var items = getStudyItems();
-          var itm = items[itemData.id];
-          if (itm) {
-            itm.content.questions = (itm.content.questions || []).concat(res.content.questions);
-            itm.updatedAt = new Date().toISOString();
-            saveStudyItems(items);
-            location.reload();
-          }
-        }
-      }).catch(err => alert("AI Error: " + err.message)).finally(() => overlay.classList.add("hidden"));
-    });
-
-    container.appendChild(launchBox);
-
-    // Question Pool Preview (The "Background" preview)
-    var poolHeader = document.createElement("div");
-    poolHeader.className = "test-pool-header";
-    poolHeader.innerHTML = `
-      <span class="test-pool-title">Pool Preview (${allQuestions.length} Questions)</span>
-      <button type="button" class="test-btn-outline py-1 text-xs" id="reveal-toggle-btn">Reveal All Answers</button>
-    `;
-    container.appendChild(poolHeader);
-
-    var previewList = document.createElement("div");
-    previewList.className = "test-preview-list";
-    
-    allQuestions.forEach((q, idx) => {
-      var qEl = document.createElement("div");
-      qEl.className = "test-preview-item cursor-pointer";
-      qEl.innerHTML = `
-        <div class="test-preview-meta">
-          <span class="test-preview-badge" style="background:${q.type==='mcq'?'rgba(139,92,246,0.8)':'rgba(168,115,255,0.6)'}">${q.type==='mcq'?'MCQ':'Open'}</span>
-          <span class="tx3 text-xs">#${idx + 1}</span>
-        </div>
-        <div class="test-preview-q">${q.text}</div>
-        <div class="test-preview-a"><strong>Key:</strong> ${q.answer}</div>
-      `;
-      qEl.addEventListener("click", () => qEl.classList.toggle("revealed"));
-      previewList.appendChild(qEl);
-      renderMath(qEl);
-    });
-
-    poolHeader.querySelector("#reveal-toggle-btn").addEventListener("click", function() {
-      var items = previewList.querySelectorAll(".test-preview-item");
-      var isRevealing = this.textContent.includes("Reveal");
-      items.forEach(el => el.classList.toggle("revealed", isRevealing));
-      this.textContent = isRevealing ? "Hide All Answers" : "Reveal All Answers";
-    });
-
-    container.appendChild(previewList);
-    bodyEl.appendChild(container);
-
-    setControls({ showNav: false, showToggle: false, showShuffle: false });
-    setProgress(allQuestions.length, allQuestions.length);
-    stageLabelEl.textContent = "Practice Setup";
-    stageLabelEl.style.fontSize = "1.65rem";
-    stageLabelEl.style.fontWeight = "bold";
-    stageContextEl.textContent = allQuestions.length + " pool items";
-    stageContextEl.style.fontSize = "1.25rem"
-  }
-
   function renderItem(itemData) {
     if (!itemData) {
       notFoundEl.classList.remove("hidden");
@@ -1563,6 +1194,10 @@
     }
     if (itemData.type === "studyGuide") {
       window.location.replace("guide.html?id=" + encodeURIComponent(itemData.id));
+      return;
+    }
+    if (itemData.type === "practiceTest") {
+      window.location.replace("test.html?id=" + encodeURIComponent(itemData.id));
       return;
     }
 
@@ -1582,7 +1217,6 @@
 
     var bodyEl = document.getElementById("item-body");
     if (viewState.itemId !== itemData.id) {
-      closeGuideReader();
       viewState.itemId = itemData.id;
       viewState.mode = "";
       viewState.index = 0;
@@ -1594,10 +1228,6 @@
     bodyEl.innerHTML = "";
     if (itemData.type === "flashcards") {
       renderFlashcards(itemData, bodyEl);
-    } else if (itemData.type === "studyGuide") {
-      renderStudyGuide(itemData, bodyEl);
-    } else if (itemData.type === "practiceTest") {
-      renderPracticeTest(itemData, bodyEl);
     } else {
       bodyEl.innerHTML = '<p class="tx2">No content yet. Edit this item to add content.</p>';
       setControls({ showNav: false, showToggle: false, showShuffle: false });
@@ -1682,17 +1312,6 @@
   });
 
   renderItem(currentItem);
-  if (guideReaderClose) {
-    guideReaderClose.addEventListener("click", closeGuideReader);
-  }
-  if (guideReaderModal) {
-    guideReaderModal.addEventListener("click", function (e) {
-      if (e.target === guideReaderModal) closeGuideReader();
-    });
-  }
-  document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape") closeGuideReader();
-  });
 
   var sidebar = document.getElementById("sidebar");
   var toggle = document.getElementById("sidebar-toggle");
