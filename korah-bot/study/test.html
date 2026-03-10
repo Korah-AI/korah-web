@@ -386,10 +386,60 @@
     .test-option {
       display: flex;
       align-items: flex-start;
-      gap: 8px;
+      gap: 10px;
       font-size: 14px;
       color: var(--tx);
       line-height: 1.45;
+      cursor: pointer;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(168, 115, 255, 0.2);
+      background: rgba(41, 23, 74, 0.4);
+      transition: border-color 0.2s ease, background 0.2s ease;
+    }
+    .test-option:hover {
+      border-color: rgba(168, 115, 255, 0.5);
+      background: rgba(41, 23, 74, 0.6);
+    }
+    .test-option input[type="radio"] {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      min-width: 20px;
+      border: 2px solid rgba(168, 115, 255, 0.5);
+      border-radius: 50%;
+      background: transparent;
+      cursor: pointer;
+      position: relative;
+      margin: 0;
+      transition: border-color 0.2s ease, background 0.2s ease;
+    }
+    .test-option input[type="radio"]:hover {
+      border-color: var(--p4);
+    }
+    .test-option input[type="radio"]:checked {
+      border-color: var(--p4);
+      background: var(--p4);
+    }
+    .test-option input[type="radio"]:checked::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #fff;
+    }
+    .test-option input[type="radio"]:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.3);
+    }
+    .test-option-text {
+      flex: 1;
+      padding-top: 1px;
     }
     .test-textarea {
       width: 100%;
@@ -912,7 +962,7 @@
       <span class="font-semibold tx text-sm" id="item-page-title">Practice Test</span>
     </div>
     <div class="topbar-actions">
-      <a id="back-to-customize" href="item.html" class="feed-card-btn t-btn" style="padding: 8px 14px;">Back to Item</a>
+      <button id="back-to-customize" type="button" class="feed-card-btn t-btn" style="padding: 8px 14px;">Back to Item</button>
     </div>
   </header>
 
@@ -1425,7 +1475,13 @@
     if (editBtn) editBtn.style.display = "none";
 
     var backLink = document.getElementById("back-to-customize");
-    if (backLink) backLink.href = "item.html?id=" + encodeURIComponent(itemData.id);
+    if (backLink) {
+      backLink.onclick = function () {
+        var detailEl = document.getElementById("item-detail");
+        if (detailEl) detailEl.classList.add("hidden");
+        showTestSetupModal(itemData);
+      };
+    }
 
     document.getElementById("item-page-title").textContent = itemData.title || "Practice Test";
     document.getElementById("item-type-badge").textContent = (KorahSidebar.getTypeEmoji(itemData.type) + " " + (TYPE_LABELS[itemData.type] || itemData.type));
@@ -1487,6 +1543,7 @@
           radio.value = opt;
           radio.id = optId;
           var textSpan = document.createElement("span");
+          textSpan.className = "test-option-text";
           textSpan.textContent = opt;
           label.appendChild(radio);
           label.appendChild(textSpan);
@@ -1543,6 +1600,10 @@
   var overlay = document.createElement("div");
   overlay.className = "sidebar-overlay";
   document.body.appendChild(overlay);
+
+  if (sidebar) {
+    sidebar.classList.add("collapsed");
+  }
 
   function isMobile() { return window.innerWidth <= 768; }
 
