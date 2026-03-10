@@ -968,7 +968,6 @@
   <div class="test-setup-dialog">
     <div class="test-setup-header">
       <span id="test-setup-title" class="test-setup-title"></span>
-      <button id="test-setup-close" class="test-setup-close" type="button">&times;</button>
     </div>
     <div class="test-setup-body">
       <div class="test-setup-icon">
@@ -1206,7 +1205,6 @@
   var editBtn = document.getElementById("item-action-edit");
   var testSetupModal = document.getElementById("test-setup-modal");
   var testSetupTitle = document.getElementById("test-setup-title");
-  var testSetupClose = document.getElementById("test-setup-close");
   var testSetupStart = document.getElementById("test-setup-start");
   var testSetupQuestions = document.getElementById("test-setup-questions");
   var testSetupAnswerType = document.getElementById("test-setup-answer-type");
@@ -1249,7 +1247,7 @@
   }
 
   function hideTestSetupModal() {
-    if (testSetupModal) testSetupModal.classList.remove("show");
+    window.location.href = "feed.html";
   }
 
   function startTest() {
@@ -1279,7 +1277,7 @@
       openEndedCount: openCount
     };
     testState.config = cfg;
-    hideTestSetupModal();
+    if (testSetupModal) testSetupModal.classList.remove("show");
     renderTest(currentTestItem, cfg);
   }
 
@@ -1290,22 +1288,9 @@
       });
     });
   }
-  if (testSetupClose) {
-    testSetupClose.addEventListener("click", hideTestSetupModal);
-  }
-  if (testSetupModal) {
-    testSetupModal.addEventListener("click", function(e) {
-      if (e.target === testSetupModal) hideTestSetupModal();
-    });
-  }
   if (testSetupStart) {
     testSetupStart.addEventListener("click", startTest);
   }
-  document.addEventListener("keydown", function(e) {
-    if (e.key === "Escape" && testSetupModal && testSetupModal.classList.contains("show")) {
-      hideTestSetupModal();
-    }
-  });
 
   function clone(obj) {
     return JSON.parse(JSON.stringify(obj || {}));
