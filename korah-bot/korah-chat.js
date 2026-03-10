@@ -251,35 +251,29 @@
 
   function getFollowUpActionsForMode(mode) {
     const commonActions = [
-      { icon: "🃏", label: "Make flashcards", prompt: "Create flashcards based on what you just explained" },
-      { icon: "🎯", label: "Quiz me", prompt: "Give me a quick quiz on this topic" },
-      { icon: "🔄", label: "Explain simpler", prompt: "Can you explain that in simpler terms?" },
+      { icon: "🃏", label: "Generate Flashcards", prompt: "Create flashcards based on what you just explained" },
+      { icon: "🎯", label: "Generate Practice Test", prompt: "Create a practice test based on what you just explained" },
+      { icon: "📄", label: "Generate Study Guide", prompt: "Create a study guide based on what you just explained" },
     ];
 
     const modeSpecific = {
       math: [
-        { icon: "📝", label: "Practice problems", prompt: "Give me similar practice problems to solve" },
         { icon: "✅", label: "Show examples", prompt: "Show me more step-by-step examples" },
       ],
       physics: [
-        { icon: "🌍", label: "Real-world example", prompt: "Give me a real-world example of this concept" },
-        { icon: "🔬", label: "Show experiment", prompt: "Describe an experiment that demonstrates this" },
+        { icon: "🌍", label: "Real-world Example", prompt: "Give me a real-world example of this concept" },
       ],
       chemistry: [
-        { icon: "⚗️", label: "Show reaction", prompt: "Show me the balanced chemical equation" },
-        { icon: "🧪", label: "Related reactions", prompt: "What are similar chemical reactions?" },
+        { icon: "🧪", label: "Related Reactions", prompt: "What are similar chemical reactions?" },
       ],
       biology: [
-        { icon: "🔬", label: "Show diagram", prompt: "Describe a diagram of this process" },
         { icon: "🧬", label: "Related concepts", prompt: "What other biological concepts relate to this?" },
       ],
       history: [
-        { icon: "📅", label: "Timeline", prompt: "Create a timeline of these events" },
-        { icon: "🌍", label: "Broader context", prompt: "What was happening globally during this time?" },
+        { icon: "📅", label: "Create Timeline", prompt: "Create a timeline of these events" },
       ],
       literature: [
         { icon: "📖", label: "Find themes", prompt: "What are the main themes in this text?" },
-        { icon: "💭", label: "Analyze symbols", prompt: "What symbols or motifs appear in this work?" },
       ],
     };
 
@@ -701,7 +695,7 @@
     });
 
     if (!response.ok) {
-      let errorMessage = `Request failed with status ${response.status}`;
+      let errorMessage = `Oops! There was an error. Please try again. ${response.status}`;
       try {
         const errorData = await response.json();
         errorMessage = errorData?.message || errorData?.error || errorMessage;
@@ -764,7 +758,7 @@
                 console.log("Stream finish reason:", finishReason);
               }
             } catch (parseError) {
-              console.error("Failed to parse SSE data:", parseError, "Data:", data);
+              console.error("Oops, there was an error. Please try again:", parseError, "Data:", data);
             }
           }
         }
@@ -925,7 +919,7 @@
       if (chatTitleEl) chatTitleEl.textContent = newTitle;
       renderChatHistory();
     } catch (error) {
-      console.error("Failed to auto-generate chat title:", error);
+      console.error("Oops! There was an error. Please try again.:", error);
     }
   }
 
@@ -1313,6 +1307,216 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     });
   }
 
+  function clampInt(value, fallback, min, max) {
+    const parsed = parseInt(value, 10);
+    if (Number.isNaN(parsed)) return fallback;
+    return Math.min(max, Math.max(min, parsed));
+  }
+
+  function inferPracticeConfigFromText(text) {
+    const lower = (text || "").toLowerCase();
+    const totalMatch = lower.match(/(\d+)\s*(?:question|questions|q)\b/);
+    const mcqMatch = lower.match(/(\d+)\s*(?:mcq|multiple[-\s]?choice)\b/);
+    const openMatch = lower.match(/(\d+)\s*(?:open[-\s]?ended|short\s*answer|free\s*response)\b/);
+
+    let total = totalMatch ? clampInt(totalMatch[1], 10, 1, 50) : null;
+    let mcq = mcqMatch ? clampInt(mcqMatch[1], 0, 0, 50) : null;
+    let openEnded = openMatch ? clampInt(openMatch[1], 0, 0, 50) : null;
+
+    if (total === null && mcq !== null && openEnded !== null) {
+      total = mcq + openEnded;
+    }
+    if (total === null) total = 10;
+    if (mcq === null && openEnded === null) {
+      mcq = Math.round(total * 0.6);
+      openEnded = total - mcq;
+    } else if (mcq === null) {
+      mcq = total - openEnded;
+    } else if (openEnded === null) {
+      openEnded = total - mcq;
+    }
+
+    mcq = clampInt(mcq, Math.round(total * 0.6), 0, total);
+    openEnded = clampInt(openEnded, total - mcq, 0, total - mcq);
+    if (mcq + openEnded !== total) openEnded = total - mcq;
+
+    return { totalQuestions: total, mcqCount: mcq, openEndedCount: openEnded };
+  }
+
+  async function handleStudyItemGeneration(type, topic, practiceConfig) {
+    const typeLabels = {
+      flashcards: "Flashcards",
+      studyGuide: "Study Guide",
+      practiceTest: "Practice Test"
+    };
+    const typeEmojis = {
+      flashcards: "🃏",
+      studyGuide: "📖",
+      practiceTest: "🎯"
+    };
+    const typeLabel = typeLabels[type] || "Study Item";
+    const typeEmoji = typeEmojis[type] || "✨";
+
+    // Create message with loading bar
+    const msgId = `study-gen-${Date.now()}`;
+    const row = appendMessage("assistant", "", false, [], msgId);
+    const content = document.getElementById(msgId);
+    if (!content) return;
+
+    content.innerHTML = `
+      <div class="study-gen-bubble">
+        <div class="study-gen-status">
+          <span class="animate-pulse">${typeEmoji}</span>
+          <span>Generating ${typeLabel}...</span>
+        </div>
+        <div class="study-gen-progress-container">
+          <div class="study-gen-progress-bar loading"></div>
+        </div>
+        <div class="study-gen-success" id="${msgId}-success">
+          <p>Success! Your ${typeLabel.toLowerCase()} are ready.</p>
+          <a href="#" class="study-gen-btn" id="${msgId}-link">
+            <span>View ${typeLabel}</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+    `;
+
+    try {
+      // Use existing context if topic is "this"
+      let prompt = topic;
+      if (topic.toLowerCase() === "this" || topic.toLowerCase() === "the above") {
+        const lastMsgs = history.slice(-5).filter(m => m.role !== "system").map(m => m.content).join("\n\n");
+        prompt = `Based on our conversation:\n\n${lastMsgs}`;
+      }
+
+      // Call the Study API
+      const result = await KorahStudyAPI.generateStudyContent({
+        type: type,
+        prompt: prompt,
+        title: topic === "this" ? currentSession.title : topic,
+        subject: currentSession.mode,
+        testConfig: type === "practiceTest" ? practiceConfig : undefined
+      });
+
+      // Save to localStorage
+      const id = `si_${Date.now()}`;
+      const rawContent = result && result.content ? result.content : {};
+      let normalizedContent = rawContent;
+      if (type === "studyGuide") {
+        const markdown = (rawContent.markdown || "").trim();
+        normalizedContent = { markdown: markdown };
+      }
+      if (type === "practiceTest") {
+        const questions = (rawContent.questions || []).filter((q) => q && (q.text || "").trim()).map((q) => {
+          const isMcq = String(q.type || "").toLowerCase() === "mcq" || (Array.isArray(q.options) && q.options.length > 1);
+          return {
+            type: isMcq ? "mcq" : "openEnded",
+            text: (q.text || "").trim(),
+            options: isMcq ? (q.options || []).map((opt) => String(opt || "").trim()).filter(Boolean).slice(0, 4) : [],
+            answer: (q.answer || "").trim(),
+            explanation: (q.explanation || "").trim()
+          };
+        });
+        normalizedContent = {
+          questions,
+          testConfig: {
+            totalQuestions: questions.length,
+            mcqCount: questions.filter((q) => q.type === "mcq").length,
+            openEndedCount: questions.filter((q) => q.type !== "mcq").length
+          }
+        };
+      }
+
+      const aiGeneratedTitle = rawContent.title;
+      const finalTitle = aiGeneratedTitle || (topic === "this" ? currentSession.title : topic) || "Untitled";
+
+      const newItem = {
+        id: id,
+        type: type,
+        title: finalTitle,
+        description: `Generated from chat on ${new Date().toLocaleDateString()}`,
+        content: normalizedContent,
+        source: "chatbot-request",
+        subject: currentSession.mode,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      Storage.saveStudyItem(id, newItem);
+      renderStudyItemsHistory();
+
+      // Update UI to success state
+      const progressBar = content.querySelector(".study-gen-progress-bar");
+      const statusText = content.querySelector(".study-gen-status span:last-child");
+      
+      if (statusText) statusText.textContent = `Generated ${typeLabel} on "${finalTitle}"`;
+      if (progressBar) {
+        progressBar.classList.remove("loading");
+        progressBar.style.width = "100%";
+      }
+      
+      setTimeout(() => {
+        const successDiv = document.getElementById(`${msgId}-success`);
+        const link = document.getElementById(`${msgId}-link`);
+        if (successDiv) successDiv.classList.add("show");
+        if (link) {
+          link.href = `study/item.html?id=${id}`;
+          link.innerHTML = `<span>View ${finalTitle} ${typeLabel}</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+            </svg>`;
+        }
+        
+        // Add to history
+        history.push({ 
+          role: "assistant", 
+          content: `I've generated **${typeLabel}** on "**${finalTitle}**" for you. You can find them in your Study Library.` 
+        });
+        saveCurrentSession();
+      }, 500);
+
+    } catch (error) {
+      console.error("Study generation failed:", error);
+      content.innerHTML = `<div class="tx-mr">Oops! There was an error. Please try again: ${error.message}</div>`;
+    }
+  }
+
+  function detectStudyRequest(text) {
+    const t = text.toLowerCase();
+    
+    // Types
+    let type = null;
+    if (t.includes("flashcard")) type = "flashcards";
+    else if (t.includes("study guide")) type = "studyGuide";
+    else if (t.includes("practice test") || t.includes("quiz")) type = "practiceTest";
+
+    if (!type) return null;
+
+    // Intents
+    const intents = ["make", "generate", "create", "give me", "build"];
+    const hasIntent = intents.some(i => t.includes(i));
+    
+    if (!hasIntent && !t.includes("flashcard") && !t.includes("study guide") && !t.includes("practice test")) return null;
+
+    // Extract topic
+    let topic = "this";
+    const markers = ["on ", "about ", "for ", "regarding "];
+    for (const marker of markers) {
+      const idx = t.indexOf(marker);
+      if (idx !== -1) {
+        topic = text.slice(idx + marker.length).trim();
+        // Clean up punctuation at end
+        topic = topic.replace(/[?\.!]+$/, "");
+        break;
+      }
+    }
+
+    const practiceConfig = type === "practiceTest" ? inferPracticeConfigFromText(text) : null;
+    return { type, topic, practiceConfig };
+  }
+
   async function sendMessage(prefillText) {
     if (isSending) return;
     const raw = typeof prefillText === "string" ? prefillText : input.value;
@@ -1324,6 +1528,9 @@ ${FORMAT_INSTRUCTIONS}`.trim();
       return;
     }
 
+    // NEW: Detect study item request
+    const studyReq = detectStudyRequest(text);
+
     appendMessage("user", text);
     history.push({ role: "user", content: text });
     saveCurrentSession();
@@ -1333,6 +1540,15 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     resizeInput();
     updateCharCount();
     setSendingState(true);
+
+    if (studyReq) {
+      await handleStudyItemGeneration(studyReq.type, studyReq.topic, studyReq.practiceConfig);
+      setSendingState(false);
+      updateModeButtonState();
+      showSuggestionBar();
+      return;
+    }
+
     setTyping(true);
 
     // Create streaming message container

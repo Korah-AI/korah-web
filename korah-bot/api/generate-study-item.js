@@ -9,7 +9,22 @@
 const OPENAI_URL = "https://korah-beta.vercel.app/api/proxy";
 const MODEL = "gpt-4o-mini";
 
-function getSystemPrompt(type) {
+function clampInt(value, fallback, min, max) {
+  const parsed = parseInt(value, 10);
+  if (Number.isNaN(parsed)) return fallback;
+  return Math.min(max, Math.max(min, parsed));
+}
+
+function getTestConfig(config) {
+  const total = clampInt(config?.totalQuestions, 10, 1, 50);
+  const mcq = clampInt(config?.mcqCount, Math.round(total * 0.6), 0, total);
+  let open = clampInt(config?.openEndedCount, total - mcq, 0, total - mcq);
+  if (mcq + open !== total) open = total - mcq;
+  return { totalQuestions: total, mcqCount: mcq, openEndedCount: open };
+}
+
+function getSystemPrompt(type, testConfig) {
+  const cfg = getTestConfig(testConfig);
   const prompts = {
     flashcards: `You are a study assistant. Generate comprehensive flashcard content. Respond with ONLY a single valid JSON object, no markdown or explanation:
 { "cards": [ { "front": "question or term", "back": "answer or definition" }, ... ] }
@@ -23,14 +38,29 @@ Respond with ONLY a single valid JSON object:
 { "markdown": "Full markdown content here..." }`,
 
     practiceTest: `You are a study assistant. Generate a comprehensive practice test. Respond with ONLY a single valid JSON object, no markdown or explanation:
-{ "questions": [ { "text": "Question text (multiple choice or short answer)", "answer": "Correct answer with brief explanation" }, ... ] }
-Create 10-15 questions based on the user's prompt. Mix question types. Ensure high quality and relevant questions.`,
+{ "questions": [ { "type": "mcq" | "openEnded", "text": "Question text", "options": ["A", "B", "C", "D"], "answer": "Correct answer", "explanation": "Brief rationale" } ] }
+Generate exactly ${cfg.totalQuestions} questions with exactly ${cfg.mcqCount} mcq and exactly ${cfg.openEndedCount} openEnded questions.
+For openEnded questions, options must be an empty array.
+For mcq questions, include exactly 4 options and make one correct.`,
   };
   return prompts[type] || prompts.flashcards;
 }
 
+function stripCodeFences(text) {
+  let trimmed = (text || "").trim();
+  if (!trimmed) return "";
+  if (trimmed.includes("```")) {
+    trimmed = trimmed.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+  }
+  return trimmed.trim();
+}
+
 function parseJsonFromResponse(text) {
-  const trimmed = text.trim();
+  const trimmed = stripCodeFences(text);
+  if (!trimmed) return null;
+  try {
+    return JSON.parse(trimmed);
+  } catch (_) {}
   const jsonStart = trimmed.indexOf("{");
   const jsonEnd = trimmed.lastIndexOf("}") + 1;
   if (jsonStart === -1 || jsonEnd <= jsonStart) return null;
@@ -56,11 +86,33 @@ function normalizeContent(type, parsed) {
     return { markdown: md };
   }
   if (type === "practiceTest" && Array.isArray(parsed.questions)) {
+    const questions = parsed.questions.slice(0, 50).map((q) => {
+      const rawType = String((q?.type || q?.questionType || "")).toLowerCase();
+      const inferredMcq = Array.isArray(q?.options) && q.options.filter(Boolean).length > 1;
+      const type = rawType === "mcq" || rawType === "multiple_choice" || rawType === "multiplechoice"
+        ? "mcq"
+        : rawType === "openended" || rawType === "open-ended" || rawType === "open_ended" || rawType === "short_answer"
+          ? "openEnded"
+          : inferredMcq ? "mcq" : "openEnded";
+      let options = Array.isArray(q?.options)
+        ? q.options.map((opt) => (typeof opt === "string" ? opt.trim() : String(opt || "").trim())).filter(Boolean)
+        : [];
+      if (type === "mcq") options = options.slice(0, 4);
+      return {
+        type,
+        text: typeof q?.text === "string" ? q.text : String(q?.question || q?.q || ""),
+        options: type === "mcq" ? options : [],
+        answer: typeof q?.answer === "string" ? q.answer : String(q?.answer || q?.a || q?.correctOption || q?.correct_answer || ""),
+        explanation: typeof q?.explanation === "string" ? q.explanation : String(q?.rationale || q?.reasoning || ""),
+      };
+    });
     return {
-      questions: parsed.questions.slice(0, 50).map((q) => ({
-        text: typeof q.text === "string" ? q.text : String(q.question || q.q || ""),
-        answer: typeof q.answer === "string" ? q.answer : String(q.answer || q.a || ""),
-      })),
+      questions,
+      testConfig: {
+        totalQuestions: questions.length,
+        mcqCount: questions.filter((q) => q.type === "mcq").length,
+        openEndedCount: questions.filter((q) => q.type !== "mcq").length,
+      },
     };
   }
   return null;
@@ -87,7 +139,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Invalid JSON body" });
   }
 
-  const { type, prompt, title, subject } = body;
+  const { type, prompt, title, subject, testConfig } = body;
   const allowedTypes = ["flashcards", "studyGuide", "practiceTest"];
   if (!type || !allowedTypes.includes(type)) {
     return res.status(400).json({ error: "Missing or invalid type (use: flashcards, studyGuide, practiceTest)" });
@@ -96,8 +148,12 @@ export default async function handler(req, res) {
   const context = [userPrompt];
   if (title) context.push(`Title: ${title}`);
   if (subject) context.push(`Subject: ${subject}`);
+  if (type === "practiceTest") {
+    const cfg = getTestConfig(testConfig || {});
+    context.push(`Practice test settings: ${cfg.totalQuestions} total questions, ${cfg.mcqCount} MCQ, ${cfg.openEndedCount} open-ended.`);
+  }
 
-  const systemPrompt = getSystemPrompt(type);
+  const systemPrompt = getSystemPrompt(type, testConfig);
   const messages = [
     { role: "system", content: systemPrompt },
     { role: "user", content: context.join("\n") },

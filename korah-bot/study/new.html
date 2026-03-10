@@ -339,6 +339,24 @@
           <label class="create-label">Prompt</label>
           <textarea id="create-ai-prompt" class="create-input create-textarea tx bg-sf2 bd" rows="3" placeholder="e.g. Create 10 flashcards covering photosynthesis and cellular respiration"></textarea>
         </div>
+        <div id="create-practice-config-wrap" class="hidden">
+          <label class="create-label">Practice Test Settings</label>
+          <div class="grid gap-2 md:grid-cols-3">
+            <div>
+              <label class="create-label text-xs mb-1">Total Questions</label>
+              <input id="practice-total-questions" type="number" class="create-input tx bg-sf2 bd" min="1" max="50" value="10"/>
+            </div>
+            <div>
+              <label class="create-label text-xs mb-1">MCQ Questions</label>
+              <input id="practice-mcq-count" type="number" class="create-input tx bg-sf2 bd" min="0" max="50" value="6"/>
+            </div>
+            <div>
+              <label class="create-label text-xs mb-1">Open-Ended Questions</label>
+              <input id="practice-open-count" type="number" class="create-input tx bg-sf2 bd" min="0" max="50" value="4"/>
+            </div>
+          </div>
+          <p id="practice-config-help" class="tx3 text-xs mt-2 mb-0"></p>
+        </div>
         <div id="create-manual-content-wrap" class="hidden">
           <label id="create-manual-content-label" class="create-label">Content</label>
           <textarea id="create-manual-content" class="create-input create-textarea tx bg-sf2 bd" rows="6"></textarea>
@@ -499,6 +517,35 @@
 
   var state = { step: 1, type: null, method: "manual" };
 
+  function clampInt(value, fallback, min, max) {
+    var parsed = parseInt(value, 10);
+    if (Number.isNaN(parsed)) return fallback;
+    return Math.min(max, Math.max(min, parsed));
+  }
+
+  function getPracticeConfig() {
+    var totalInput = document.getElementById("practice-total-questions");
+    var mcqInput = document.getElementById("practice-mcq-count");
+    var openInput = document.getElementById("practice-open-count");
+    var total = clampInt(totalInput ? totalInput.value : 10, 10, 1, 50);
+    var mcq = clampInt(mcqInput ? mcqInput.value : 6, Math.round(total * 0.6), 0, total);
+    var open = clampInt(openInput ? openInput.value : (total - mcq), total - mcq, 0, total - mcq);
+    if (mcq + open !== total) open = total - mcq;
+    if (totalInput) totalInput.value = String(total);
+    if (mcqInput) mcqInput.value = String(mcq);
+    if (openInput) openInput.value = String(open);
+    var help = document.getElementById("practice-config-help");
+    if (help) help.textContent = "Korah will generate " + total + " questions (" + mcq + " MCQ, " + open + " open-ended).";
+    return { totalQuestions: total, mcqCount: mcq, openEndedCount: open };
+  }
+
+  function updatePracticeConfigUI() {
+    var wrap = document.getElementById("create-practice-config-wrap");
+    var show = state.type === "practiceTest" && state.method !== "manual";
+    wrap.classList.toggle("hidden", !show);
+    if (show) getPracticeConfig();
+  }
+
   var typeParam = new URLSearchParams(window.location.search).get("type");
   if (typeParam && ["flashcards", "studyGuide", "practiceTest"].indexOf(typeParam) >= 0) {
     state.type = typeParam;
@@ -514,12 +561,17 @@
     if (n === 3) {
       document.getElementById("create-ai-prompt-wrap").classList.toggle("hidden", state.method === "manual");
       updateManualContentUI();
+      updatePracticeConfigUI();
     }
     if (n === 4) {
       var typeLabel = { flashcards: "Flashcard Set", studyGuide: "Study Guide", practiceTest: "Practice Test" }[state.type];
       var methodLabel = { manual: "Manual", "ai-prompt": "AI from prompt", "ai-doc": "AI from documents" }[state.method];
-      document.getElementById("create-review-summary").textContent =
-        "Type: " + typeLabel + " · Method: " + methodLabel + " · Title: " + (document.getElementById("create-title").value || "Untitled");
+      var summary = "Type: " + typeLabel + " · Method: " + methodLabel + " · Title: " + (document.getElementById("create-title").value || "Untitled");
+      if (state.type === "practiceTest" && state.method !== "manual") {
+        var cfg = getPracticeConfig();
+        summary += " · " + cfg.totalQuestions + " total (" + cfg.mcqCount + " MCQ, " + cfg.openEndedCount + " open-ended)";
+      }
+      document.getElementById("create-review-summary").textContent = summary;
       document.getElementById("create-manual-editor").classList.toggle("hidden", state.method !== "manual");
       document.getElementById("create-ai-generate").classList.toggle("hidden", state.method === "manual");
     }
@@ -542,6 +594,13 @@
   document.getElementById("create-next-3").addEventListener("click", function () { showStep(4); });
   document.getElementById("create-back-3").addEventListener("click", function () { showStep(2); });
   document.getElementById("create-back-4").addEventListener("click", function () { showStep(3); });
+  ["practice-total-questions", "practice-mcq-count", "practice-open-count"].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener("input", function () {
+      getPracticeConfig();
+    });
+  });
 
   function normalizeStudyContent(type, content) {
     if (type === "flashcards") {
@@ -567,10 +626,28 @@
       var questions = ((content && content.questions) || []).filter(function (q) {
         return q && (q.text || "").trim();
       }).map(function (q) {
-        return { text: (q.text || "").trim(), answer: (q.answer || "").trim() };
+        var normalizedType = String((q.type || q.questionType || "")).toLowerCase();
+        var isMcq = normalizedType === "mcq" || normalizedType === "multiple_choice" || (Array.isArray(q.options) && q.options.length > 1);
+        return {
+          type: isMcq ? "mcq" : "openEnded",
+          text: (q.text || "").trim(),
+          options: isMcq ? (q.options || []).map(function (opt) { return String(opt || "").trim(); }).filter(Boolean).slice(0, 4) : [],
+          answer: (q.answer || "").trim(),
+          explanation: (q.explanation || "").trim()
+        };
       });
       if (!questions.length) return { ok: false, message: "Practice tests need at least 1 question with text." };
-      return { ok: true, content: { questions: questions } };
+      return {
+        ok: true,
+        content: {
+          questions: questions,
+          testConfig: {
+            totalQuestions: questions.length,
+            mcqCount: questions.filter(function (q) { return q.type === "mcq"; }).length,
+            openEndedCount: questions.filter(function (q) { return q.type !== "mcq"; }).length
+          }
+        }
+      };
     }
     return { ok: false, message: "Invalid item type." };
   }
@@ -590,7 +667,7 @@
     if (type === "practiceTest") {
       var questions = raw.split("\n").map(function (line) { return line.trim(); }).filter(Boolean).map(function (line) {
         var parts = line.split("::");
-        return { text: (parts[0] || "").trim(), answer: (parts.slice(1).join("::") || "").trim() };
+        return { type: "openEnded", text: (parts[0] || "").trim(), answer: (parts.slice(1).join("::") || "").trim(), options: [] };
       });
       return normalizeStudyContent(type, { questions: questions });
     }
@@ -681,7 +758,8 @@
       type: state.type,
       prompt: prompt,
       title: title,
-      subject: subject
+      subject: subject,
+      testConfig: state.type === "practiceTest" ? getPracticeConfig() : undefined
     }).then(function (result) {
       var validated = normalizeStudyContent(state.type, result && result.content);
       if (!validated.ok) {
