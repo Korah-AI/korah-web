@@ -419,6 +419,11 @@
   const TYPE_LABELS = { flashcards: "Flashcards", studyGuide: "Study Guide", practiceTest: "Practice Test" };
   const SOURCE_LABELS = { manual: "Manual", "ai-prompt": "AI from prompt", "ai-doc": "AI from Docs", "chatbot-request": "From Chatbot" };
 
+  function getItemUrl(item) {
+    if (item.type === "studyGuide") return "guide.html?id=" + encodeURIComponent(item.id);
+    return "item.html?id=" + encodeURIComponent(item.id);
+  }
+
   function renderCards() {
     const items = getStudyItems();
     const list = Object.keys(items).map(function (id) { return { id: id, ...items[id] }; });
@@ -484,12 +489,12 @@
       });
 
       card.addEventListener("click", function () {
-        window.location.href = "item.html?id=" + encodeURIComponent(item.id);
+        window.location.href = getItemUrl(item);
       });
       card.addEventListener("keydown", function (e) {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
-          window.location.href = "item.html?id=" + encodeURIComponent(item.id);
+          window.location.href = getItemUrl(item);
         }
       });
 

@@ -261,7 +261,7 @@
         { icon: "✅", label: "Show examples", prompt: "Show me more step-by-step examples" },
       ],
       physics: [
-        { icon: "🌍", label: "Real-world Example", prompt: "Give me a real-world example of this concept" },
+        { icon: "🌍", label: "Example", prompt: "Give me a real-world example of this concept" },
       ],
       chemistry: [
         { icon: "🧪", label: "Related Reactions", prompt: "What are similar chemical reactions?" },
