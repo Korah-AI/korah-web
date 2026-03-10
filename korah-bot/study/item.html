@@ -762,6 +762,10 @@
 </head>
 <body class="bg-base tx study-modern">
 
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
+
 <canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
 
 <!-- Loading Overlay -->
@@ -795,14 +799,156 @@
     <a href="../index.html" class="sidebar-nav-link t-btn">💬 Chat</a>
     <a href="feed.html" class="sidebar-nav-link active t-btn">📚 Study</a>
   </nav>
-   <div class="sidebar-middle">
-    <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 12px 0 4px;">
-      <span class="sidebar-section-label" style="margin:0">Recent Chats</span>
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
+  <div class="sidebar-middle">
+    <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 12px 0 4px;">
+    <span class="sidebar-section-label" style="margin:0">Recent Chats</span>
+    </div>
+    <div id="chat-select-bar" class="select-bar">
+      <span class="select-bar-count" id="chat-select-count">0 selected</span>
+      <div class="select-bar-actions">
+        <button class="select-bar-btn" id="chat-select-all">Select all</button>
+        <button class="select-bar-btn danger" id="chat-delete-selected">Delete</button>
+      </div>
+    </div>
+    <div id="chat-history" class="chat-history">
+      <button class="history-item active t-btn" data-session="current">
+        <span class="history-icon">📚</span>
+        <span class="history-text">Photosynthesis Study Guide</span>
+      </button>
+      <button class="history-item t-btn" data-session="1">
+        <span class="history-icon">🧮</span>
+        <span class="history-text">Calculus Flashcards</span>
+      </button>
+      <button class="history-item t-btn" data-session="2">
+        <span class="history-icon">⚗️</span>
+        <span class="history-text">Chemistry Practice Test</span>
+      </button>
+      <button class="history-item t-btn" data-session="3">
+        <span class="history-icon">📝</span>
+        <span class="history-text">Essay Outline — WWII</span>
+      </button>
+      <button class="history-item t-btn" data-session="4">
+        <span class="history-icon">🔢</span>
+        <span class="history-text">Statistics Review</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 12px 0 4px;">
+    <span class="sidebar-section-label" style="margin:0">Recent Study Items</span>
+  </div>
+  <div id="study-select-bar" class="select-bar">
+    <span class="select-bar-count" id="study-select-count">0 selected</span>
+    <div class="select-bar-actions">
+      <button class="select-bar-btn" id="study-select-all">Select all</button>
+      <button class="select-bar-btn danger" id="study-delete-selected">Delete</button>
+    </div>
+  </div>
+  <div id="study-items-history" class="chat-history study-items-history">
+    <!-- Populated by JS from localStorage -->
+  </div>
+  <div id="study-items-empty" class="study-items-empty hidden">
+    <span class="study-items-empty-icon" aria-hidden="true">📚</span>
+    <div class="study-items-empty-title">No study items yet</div>
+    <div class="study-items-empty-sub">Create one to see it here.</div>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="mood-indicator" id="sidebar-mood">
+      <span class="mood-dot" id="mood-dot">🟢</span>
+      <span class="text-xs tx2 font-medium">Full Focus Mode</span>
+    </div>
+    <div class="sidebar-footer-actions">
+      <button id="settings-btn" class="theme-toggle-small t-btn" title="Settings">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+      <button @click="theme = theme === 'dark' ? 'light' : 'dark'; localStorage.setItem('korah_theme', theme)" class="theme-toggle-small t-btn" title="Toggle theme">
+        <svg x-show="theme==='light'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" style="color:var(--p5)">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/>
+        </svg>
+        <svg x-show="theme==='dark'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--p4)">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</aside>
+
+<main id="main-content" class="main-content">
+  <header class="chat-topbar bg-sf glass-sm t-theme bd">
+    <button id="sidebar-toggle" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+    <div class="chat-title-area">
+      <div class="korah-status-dot"></div>
+      <span class="font-semibold tx text-sm" id="item-page-title">Flashcards</span>
+    </div>
+    <div class="topbar-actions">
+      <a href="feed.html" class="feed-card-btn t-btn" style="padding: 8px 14px;">Back to Feed</a>
+    </div>
+  </header>
+
+  <div id="item-content-area" class="study-feed-body">
+    <div id="item-not-found" class="feed-empty hidden">
+      <p class="tx2">Study item not found. It may have been deleted.</p>
+      <a href="feed.html" class="feed-card-btn t-btn" style="margin-top: 12px; display: inline-block;">Back to Study Feed</a>
+    </div>
+    <div id="item-detail" class="study-player hidden">
+      <section class="player-hero">
+        <div class="player-hero-head">
+          <div>
+            <div class="item-meta-bar">
+              <span id="item-type-badge" class="feed-card-type"></span>
+              <span id="item-source-badge" class="feed-card-source"></span>
+              <span id="item-updated" class="tx3 text-xs"></span>
+            </div>
+            <h1 id="item-title" class="player-title"></h1>
+          </div>
+          <div class="item-actions">
+            <a id="item-action-chat" href="#" class="feed-card-btn t-btn" style="text-align:center; display:inline-flex; align-items:center; justify-content:center;">Send to Chat</a>
+            <button id="item-action-edit" class="feed-card-btn t-btn" style="border: 1px solid var(--p4); color: var(--p5); background: var(--cu); cursor: pointer;">Edit Item</button>
+            <button id="item-action-duplicate" class="feed-card-btn t-btn" style="border: 1px solid var(--bd); background: var(--sf2); cursor: pointer;">Duplicate</button>
+          </div>
+        </div>
+        <p id="item-description" class="player-sub"></p>
+      </section>
+      <div id="item-mode-tabs" class="player-modes"></div>
+      <section class="player-stage">
+        <div class="player-stage-top">
+          <span id="item-stage-label"></span>
+          <span id="item-stage-context"></span>
+        </div>
+        <div id="item-body" class="item-body player-body">
+        </div>
+      </section>
+      <div class="player-controls">
+        <button id="item-prev-btn" class="player-nav-btn" type="button" aria-label="Previous item">←</button>
+        <div id="item-progress-text" class="player-progress-text">0 / 0</div>
+        <button id="item-next-btn" class="player-nav-btn" type="button" aria-label="Next item">→</button>
+        <button id="item-toggle-btn" class="player-util-btn" type="button">Reveal</button>
+        <button id="item-shuffle-btn" class="player-util-btn" type="button">Shuffle</button>
+      </div>
+      <div class="player-progress-track">
+        <span id="item-progress-bar" class="player-progress-fill"></span>
+      </div>
+    </div>
+  </div>
+</main>
+
 <!-- Settings Modal -->
 <div id="settings-modal" class="settings-modal">
   <div class="settings-modal-content">
