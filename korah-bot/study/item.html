@@ -424,6 +424,147 @@
       font-size: 13px;
       background: rgba(139, 92, 246, 0.1);
     }
+    /* Practice Test UI Enhancements */
+    .test-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .test-summary-card {
+      background: rgba(139, 92, 246, 0.08);
+      border: 1px solid rgba(168, 115, 255, 0.2);
+      border-radius: 16px;
+      padding: 18px;
+      text-align: center;
+      transition: border-color 0.2s ease;
+    }
+    .test-summary-card:hover {
+      border-color: var(--p4);
+    }
+    .test-summary-val {
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--tx);
+      display: block;
+      margin-bottom: 4px;
+      line-height: 1;
+    }
+    .test-summary-lbl {
+      font-size: 12px;
+      color: var(--tx2);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .test-action-card {
+      border: 1px solid rgba(168, 115, 255, 0.24);
+      border-radius: 16px;
+      background: rgba(43, 24, 78, 0.6);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .test-config-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 16px;
+    }
+    .test-ai-box {
+      margin-top: 16px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(168, 115, 255, 0.15);
+    }
+    .test-btn-primary {
+      background: var(--p4);
+      color: #fff;
+      border: none;
+      border-radius: 999px;
+      padding: 12px 24px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 15px;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .test-btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+    }
+    .test-btn-outline {
+      background: transparent;
+      border: 1px solid var(--p4);
+      color: var(--p4);
+      border-radius: 999px;
+      padding: 10px 20px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .test-btn-outline:hover {
+      background: rgba(139, 92, 246, 0.1);
+    }
+    /* Pool Preview Styles */
+    .test-pool-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 32px 0 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--bd);
+    }
+    .test-pool-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--tx);
+    }
+    .test-preview-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .test-preview-item {
+      padding: 16px;
+      border-radius: 14px;
+      background: rgba(139, 92, 246, 0.04);
+      border: 1px solid var(--bd2);
+      transition: background 0.2s ease;
+    }
+    .test-preview-item:hover {
+      background: rgba(139, 92, 246, 0.08);
+    }
+    .test-preview-q {
+      font-weight: 600;
+      color: var(--tx);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .test-preview-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .test-preview-badge {
+      font-size: 9px;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: var(--p4);
+      color: #fff;
+    }
+    .test-preview-a {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(168, 115, 255, 0.1);
+      font-size: 13px;
+      color: var(--tx2);
+      display: none;
+    }
+    .test-preview-item.revealed .test-preview-a {
+      display: block;
+    }
     .item-edit-modal-content {
       max-width: 760px;
       max-height: calc(100vh - 40px);
@@ -622,6 +763,16 @@
 <body class="bg-base tx study-modern">
 
 <canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
+
+<!-- Loading Overlay -->
+<div id="loading-overlay" class="loading-overlay hidden">
+  <div class="loading-spinner">
+    <div class="spinner-ring"></div>
+    <div class="spinner-core"></div>
+  </div>
+  <div class="loading-text" id="loading-text">Generating with AI...</div>
+  <div class="loading-subtext">Korah is crafting your personalized study materials. This usually takes 5-10 seconds.</div>
+</div>
 
 <aside id="sidebar" class="sidebar bg-sf glass t-theme">
   <div class="sidebar-header">
@@ -920,6 +1071,7 @@
 </div>
 
 <script src="js/sidebar.js"></script>
+<script src="js/study-api.js"></script>
 <script>
 (function () {
   KorahSidebar.initSidebar({ chatBaseUrl: "../index.html", itemPageUrl: "item.html" });
@@ -1280,46 +1432,127 @@
   }
 
   function renderPracticeTest(itemData, bodyEl) {
-    var questions = normalizePracticeQuestions(itemData.content || {});
-    if (!questions.length) {
-      bodyEl.innerHTML = '<p class="tx2">No practice test questions yet. Edit this item to add questions.</p>';
-      setControls({ showNav: false, showToggle: false, showShuffle: false });
-      setProgress(0, 0);
-      stageLabelEl.textContent = "Practice test";
-      stageContextEl.textContent = "";
-      return;
-    }
-
+    var allQuestions = normalizePracticeQuestions(itemData.content || {});
     var defaults = getPracticeDefaults(itemData.content || {});
-    var formWrap = document.createElement("div");
-    formWrap.className = "test-form";
+    
+    var container = document.createElement("div");
+    container.style.width = "100%";
+    
+    // Simple Launch Form
+    var launchBox = document.createElement("div");
+    launchBox.className = "test-action-card mb-8";
+    launchBox.innerHTML = `
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <div class="player-content-eyebrow">Practice Session</div>
+          <h2 class="text-2xl font-bold tx mt-1">Start New Test</h2>
+        </div>
+        <button type="button" class="test-btn-primary px-10 py-4 text-base" id="pt-start-btn">Start Now</button>
+      </div>
+      <div class="test-config-row">
+        <div class="test-config-field">
+          <label>Total Questions</label>
+          <input type="number" min="1" max="50" value="${defaults.totalQuestions}" id="pt-total">
+        </div>
+        <div class="test-config-field">
+          <label>Multiple Choice Questions</label>
+          <input type="number" min="0" max="50" value="${defaults.mcqCount}" id="pt-mcq">
+        </div>
+        <div class="test-config-field">
+          <label>Open-Ended Questions</label>
+          <input type="number" min="0" max="50" value="${defaults.openEndedCount}" id="pt-open">
+        </div>
+      </div>
+      <div class="test-ai-box mt-6 pt-6 border-t bd2">
+        <div class="player-content-eyebrow mb-3">Expand Pool with AI</div>
+        <div class="flex gap-2">
+          <input type="text" id="pt-ai-prompt" class="create-input tx bg-sf2 bd flex-1 mb-0" placeholder="e.g. 'Add 5 harder questions on biology topics'">
+          <button type="button" class="test-btn-outline whitespace-nowrap" id="pt-ai-btn">Update Test</button>
+        </div>
+      </div>
+    `;
 
-    var config = document.createElement("div");
-    config.className = "test-config";
-    config.innerHTML =
-      '<div class="test-config-field"><label>Total Questions</label><input type="number" min="1" max="50" value="' + defaults.totalQuestions + '" data-field="total"></div>' +
-      '<div class="test-config-field"><label>MCQ Questions</label><input type="number" min="0" max="50" value="' + defaults.mcqCount + '" data-field="mcq"></div>' +
-      '<div class="test-config-field"><label>Open-Ended</label><input type="number" min="0" max="50" value="' + defaults.openEndedCount + '" data-field="open"></div>' +
-      '<div class="test-config-actions"><button type="button" class="test-start-btn">Start Test</button></div>';
-
-    config.querySelector(".test-start-btn").addEventListener("click", function () {
-      var total = clampInt(config.querySelector('[data-field="total"]').value, defaults.totalQuestions, 1, 50);
-      var mcq = clampInt(config.querySelector('[data-field="mcq"]').value, defaults.mcqCount, 0, total);
-      var open = clampInt(config.querySelector('[data-field="open"]').value, total - mcq, 0, total - mcq);
+    launchBox.querySelector("#pt-start-btn").addEventListener("click", function() {
+      var total = clampInt(document.getElementById("pt-total").value, defaults.totalQuestions, 1, 50);
+      var mcq = clampInt(document.getElementById("pt-mcq").value, defaults.mcqCount, 0, total);
+      var open = clampInt(document.getElementById("pt-open").value, total - mcq, 0, total - mcq);
       if (mcq + open !== total) open = total - mcq;
-      var target = "test.html?id=" + encodeURIComponent(itemData.id) +
-        "&total=" + encodeURIComponent(total) +
-        "&mcq=" + encodeURIComponent(mcq) +
-        "&open=" + encodeURIComponent(open);
-      window.location.href = target;
+      window.location.href = `test.html?id=${encodeURIComponent(itemData.id)}&total=${total}&mcq=${mcq}&open=${open}`;
     });
-    formWrap.appendChild(config);
 
-    bodyEl.appendChild(formWrap);
+    launchBox.querySelector("#pt-ai-btn").addEventListener("click", function() {
+      var prompt = document.getElementById("pt-ai-prompt").value.trim();
+      var overlay = document.getElementById("loading-overlay");
+      if (!prompt) return alert("Please enter instructions for the AI.");
+      
+      overlay.classList.remove("hidden");
+      KorahStudyAPI.generateStudyContent({
+        type: "practiceTest",
+        prompt: prompt,
+        title: itemData.title,
+        subject: itemData.subject,
+        testConfig: getPracticeDefaults(itemData.content)
+      }).then(function(res) {
+        if (res && res.content && res.content.questions) {
+          var items = getStudyItems();
+          var itm = items[itemData.id];
+          if (itm) {
+            itm.content.questions = (itm.content.questions || []).concat(res.content.questions);
+            itm.updatedAt = new Date().toISOString();
+            saveStudyItems(items);
+            location.reload();
+          }
+        }
+      }).catch(err => alert("AI Error: " + err.message)).finally(() => overlay.classList.add("hidden"));
+    });
+
+    container.appendChild(launchBox);
+
+    // Question Pool Preview (The "Background" preview)
+    var poolHeader = document.createElement("div");
+    poolHeader.className = "test-pool-header";
+    poolHeader.innerHTML = `
+      <span class="test-pool-title">Pool Preview (${allQuestions.length} Questions)</span>
+      <button type="button" class="test-btn-outline py-1 text-xs" id="reveal-toggle-btn">Reveal All Answers</button>
+    `;
+    container.appendChild(poolHeader);
+
+    var previewList = document.createElement("div");
+    previewList.className = "test-preview-list";
+    
+    allQuestions.forEach((q, idx) => {
+      var qEl = document.createElement("div");
+      qEl.className = "test-preview-item cursor-pointer";
+      qEl.innerHTML = `
+        <div class="test-preview-meta">
+          <span class="test-preview-badge" style="background:${q.type==='mcq'?'rgba(139,92,246,0.8)':'rgba(168,115,255,0.6)'}">${q.type==='mcq'?'MCQ':'Open'}</span>
+          <span class="tx3 text-xs">#${idx + 1}</span>
+        </div>
+        <div class="test-preview-q">${q.text}</div>
+        <div class="test-preview-a"><strong>Key:</strong> ${q.answer}</div>
+      `;
+      qEl.addEventListener("click", () => qEl.classList.toggle("revealed"));
+      previewList.appendChild(qEl);
+      renderMath(qEl);
+    });
+
+    poolHeader.querySelector("#reveal-toggle-btn").addEventListener("click", function() {
+      var items = previewList.querySelectorAll(".test-preview-item");
+      var isRevealing = this.textContent.includes("Reveal");
+      items.forEach(el => el.classList.toggle("revealed", isRevealing));
+      this.textContent = isRevealing ? "Hide All Answers" : "Reveal All Answers";
+    });
+
+    container.appendChild(previewList);
+    bodyEl.appendChild(container);
+
     setControls({ showNav: false, showToggle: false, showShuffle: false });
-    setProgress(1, 1);
-    stageLabelEl.textContent = "Customize test";
-    stageContextEl.textContent = questions.length + " available questions";
+    setProgress(allQuestions.length, allQuestions.length);
+    stageLabelEl.textContent = "Practice Setup";
+    stageLabelEl.style.fontSize = "1.65rem";
+    stageLabelEl.style.fontWeight = "bold";
+    stageContextEl.textContent = allQuestions.length + " pool items";
+    stageContextEl.style.fontSize = "1.25rem"
   }
 
   function renderItem(itemData) {
