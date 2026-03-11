@@ -30,12 +30,11 @@ function getSystemPrompt(type, testConfig) {
 { "cards": [ { "front": "question or term", "back": "answer or definition" }, ... ] }
 Create 15-20 cards based on the user's prompt. Use clear, concise language. Include key terms, concepts, and important details.`,
 
-    studyGuide: `You are a study assistant. Generate a lengthy, comprehensive study guide. 
+    studyGuide: `You are a study assistant. Generate a comprehensive study guide. 
 Use Markdown for structure (headings, bullet points, bold text). 
 Use LaTeX for any mathematical formulas (inline $...$ and display $$...$$).
 The guide should be detailed, covering all aspects of the topic provided.
-Respond with ONLY a single valid JSON object:
-{ "markdown": "Full markdown content here..." }`,
+Respond with ONLY plain text - the study guide content in markdown format. Start directly with the content, no JSON or code fences. Include a title at the top as an H1 (e.g., # Topic Name), followed by the study guide sections.`,
 
     practiceTest: `You are a study assistant. Generate a comprehensive practice test. Respond with ONLY a single valid JSON object, no markdown or explanation:
 { "questions": [ { "type": "mcq" | "openEnded", "text": "Question text", "options": ["A", "B", "C", "D"], "answer": "Correct answer", "explanation": "Brief rationale" } ] }
@@ -69,6 +68,30 @@ function parseJsonFromResponse(text) {
   } catch (_) {
     return null;
   }
+}
+
+function extractStudyGuideContent(text) {
+  if (!text || typeof text !== "string") return null;
+  const trimmed = text.trim();
+  let title = "";
+  let markdown = trimmed;
+  const h1Match = trimmed.match(/^#\s+(.+)$/m);
+  if (h1Match) {
+    title = h1Match[1].trim();
+    markdown = trimmed.replace(/^#\s+.+$/m, "").trim();
+  }
+  if (!title) {
+    const lines = trimmed.split("\n");
+    for (let i = 0; i < Math.min(3, lines.length); i++) {
+      const line = lines[i].trim();
+      if (line.length > 3 && line.length < 100 && !line.match(/^[-*#]/)) {
+        title = line.replace(/^[=-]+/, "").trim();
+        break;
+      }
+    }
+  }
+  if (!title) title = "Study Guide";
+  return { title, markdown };
 }
 
 function normalizeContent(type, parsed) {
@@ -170,7 +193,7 @@ export default async function handler(req, res) {
         model: MODEL,
         temperature: 0.6,
         messages,
-        response_format: { type: "json_object" },
+        ...(type !== "studyGuide" ? { response_format: { type: "json_object" } } : {}),
       }),
     });
 
@@ -191,6 +214,17 @@ export default async function handler(req, res) {
     const rawContent = data?.choices?.[0]?.message?.content;
     if (!rawContent) {
       return res.status(502).json({ error: "Empty response from model" });
+    }
+
+    if (type === "studyGuide") {
+      const content = extractStudyGuideContent(rawContent);
+      if (!content) {
+        return res.status(502).json({
+          error: "Could not parse valid study guide content from model response",
+          raw: rawContent.slice(0, 500),
+        });
+      }
+      return res.status(200).json({ content });
     }
 
     const parsed = parseJsonFromResponse(rawContent);

@@ -141,7 +141,6 @@
   function setTyping(show) {
     if (!typingIndicator) return;
     typingIndicator.classList.toggle("hidden", !show);
-    if (show) scrollToBottom();
   }
 
   function setSendingState(sending) {
@@ -284,7 +283,6 @@
     const row = buildMessageRow(role, text, isError, suggestions, contentId);
     messagesList.appendChild(row);
     setWelcomeVisibility(false);
-    scrollToBottom();
     return row;
   }
 
@@ -1561,7 +1559,6 @@ ${FORMAT_INSTRUCTIONS}`.trim();
       const reply = await callChatApi(history, (chunk, fullText) => {
         if (contentElement) {
           renderMarkdownAndMath(contentElement, fullText);
-          scrollToBottom();
         }
       });
       

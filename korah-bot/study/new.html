@@ -620,7 +620,8 @@
         }).join("\n\n").trim();
       }
       if (!markdown) return { ok: false, message: "Study guides must include some guide text." };
-      return { ok: true, content: { markdown: markdown } };
+      var finalTitle = (content && content.title) || "Study Guide";
+      return { ok: true, content: { title: finalTitle, markdown: markdown } };
     }
     if (type === "practiceTest") {
       var questions = ((content && content.questions) || []).filter(function (q) {
@@ -722,7 +723,8 @@
     var items = getStudyItems();
     items[id] = item;
     saveStudyItems(items);
-    window.location.href = "item.html?id=" + encodeURIComponent(id);
+    var redirectPage = state.type === "studyGuide" ? "guide.html" : "item.html";
+    window.location.href = redirectPage + "?id=" + encodeURIComponent(id);
   }
 
   document.getElementById("create-save").addEventListener("click", function () {

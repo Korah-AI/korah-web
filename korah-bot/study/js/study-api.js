@@ -26,7 +26,7 @@
     var practiceConfig = getTestConfig(opts && opts.testConfig);
     var prompts = {
       flashcards: 'You are a study assistant. Generate comprehensive flashcard content and a descriptive title (just the topic). Respond with ONLY a single valid JSON object, no markdown or explanation. Use this exact shape: { "title": "Overall Topic", "cards": [ { "front": "question or term", "back": "answer or definition" }, ... ] }. Create 15-20 cards.',
-      studyGuide: 'You are a study assistant. Generate a lengthy, comprehensive study guide using Markdown and LaTeX, and a descriptive title (just the topic). Respond with ONLY a single valid JSON object, no markdown or explanation. Use this exact shape: { "title": "Overall Topic", "markdown": "Full markdown content here..." }.',
+      studyGuide: 'You are a study assistant. Generate a comprehensive study guide using Markdown and LaTeX. Respond with ONLY plain text - the study guide content in markdown format. Start directly with the content, no JSON or code fences. Include a title at the top as an H1 (e.g., # Topic Name), followed by the study guide sections.',
       practiceTest:
         'You are a study assistant. Generate a comprehensive practice test and a descriptive title (just the topic). ' +
         'Respond with ONLY a single valid JSON object, no markdown or explanation. ' +
@@ -60,6 +60,30 @@
     } catch (_) {
       return null;
     }
+  }
+
+  function extractStudyGuideContent(text) {
+    if (!text || typeof text !== "string") return null;
+    var trimmed = text.trim();
+    var title = "";
+    var markdown = trimmed;
+    var h1Match = trimmed.match(/^#\s+(.+)$/m);
+    if (h1Match) {
+      title = h1Match[1].trim();
+      markdown = trimmed.replace(/^#\s+.+$/m, "").trim();
+    }
+    if (!title) {
+      var lines = trimmed.split("\n");
+      for (var i = 0; i < Math.min(3, lines.length); i++) {
+        var line = lines[i].trim();
+        if (line.length > 3 && line.length < 100 && !line.match(/^[-*#]/)) {
+          title = line.replace(/^[=-]+/, "").trim();
+          break;
+        }
+      }
+    }
+    if (!title) title = "Study Guide";
+    return { title: title, markdown: markdown };
   }
 
   function normalizeContent(type, parsed) {
@@ -169,6 +193,13 @@
       }).then(function (data) {
         var raw = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
         if (!raw) throw new Error("Oops! There was an error. Please try again.");
+        
+        if (type === "studyGuide") {
+          var content = extractStudyGuideContent(raw);
+          if (!content) throw new Error("Oops! There was an error. Please try again.");
+          return { content: content };
+        }
+        
         var parsed = parseJsonFromResponse(raw);
         var content = normalizeContent(type, parsed);
         if (!content) throw new Error("Oops! There was an error. Please try again.");
