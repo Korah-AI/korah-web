@@ -441,22 +441,12 @@
   </div>
 </div>
 
+<script type="module" src="js/study-firebase-init.js"></script>
 <script src="js/sidebar.js"></script>
 <script src="js/study-api.js"></script>
 <script>
 (function () {
   KorahSidebar.initSidebar({ chatBaseUrl: "../app/index.html", itemPageUrl: "item.html" });
-
-  var STUDY_ITEMS_KEY = "korah_study_items";
-  function getStudyItems() {
-    try {
-      var data = localStorage.getItem(STUDY_ITEMS_KEY);
-      return data ? JSON.parse(data) : {};
-    } catch (_) { return {}; }
-  }
-  function saveStudyItems(items) {
-    localStorage.setItem(STUDY_ITEMS_KEY, JSON.stringify(items));
-  }
 
   var state = { step: 1, type: null, method: "manual" };
 
@@ -659,14 +649,12 @@
       tags: tags,
       content: content || (state.type === "flashcards" ? { cards: [] } : state.type === "studyGuide" ? { markdown: "" } : { questions: [] }),
       source: state.method,
-      createdBy: "local",
+      createdBy: "cloud",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-    var items = getStudyItems();
-    items[id] = item;
-    saveStudyItems(items);
-    var redirectPage = state.type === "studyGuide" ? "guide.html" : "item.html";
+    if (window.KorahDB) window.KorahDB.setStudyItem(id, item);
+    var redirectPage = state.type === "studyGuide" ? "guide.html" : state.type === "practiceTest" ? "test.html" : "item.html";
     window.location.href = redirectPage + "?id=" + encodeURIComponent(id);
   }
 

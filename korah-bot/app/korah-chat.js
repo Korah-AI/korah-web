@@ -22,47 +22,47 @@
 
   if (!input || !sendBtn || !messagesList) return;
 
-  // ═══ Storage Utilities ═══
+  // ═══ In-Memory State ═══
+  // These are kept in sync by Firestore realtime listeners set up in initApp().
+  let sessionsCache   = {}; // { [id]: conversationDoc }
+  let studyItemsCache = {}; // { [id]: studyItemDoc }
+
+  // ═══ Storage Shim ═══
+  // Synchronous reads from in-memory cache; async fire-and-forget writes via KorahDB.
+  // Maintains the same interface as the old localStorage Storage object so
+  // existing call-sites need minimal changes.
   const Storage = {
     SESSIONS_KEY: "korah_sessions",
     CURRENT_SESSION_KEY: "korah_current_session",
     STUDY_ITEMS_KEY: "korah_study_items",
 
-    getSessions() {
-      const data = localStorage.getItem(this.SESSIONS_KEY);
-      return data ? JSON.parse(data) : {};
-    },
-
-    saveSessions(sessions) {
-      localStorage.setItem(this.SESSIONS_KEY, JSON.stringify(sessions));
-    },
+    getSessions() { return sessionsCache; },
 
     getCurrentSessionId() {
-      return localStorage.getItem(this.CURRENT_SESSION_KEY) || "default";
+      return localStorage.getItem(this.CURRENT_SESSION_KEY) || null;
     },
 
     setCurrentSessionId(id) {
       localStorage.setItem(this.CURRENT_SESSION_KEY, id);
     },
 
-    getSession(id) {
-      const sessions = this.getSessions();
-      return sessions[id] || null;
-    },
+    getSession(id) { return sessionsCache[id] || null; },
 
     saveSession(id, session) {
-      const sessions = this.getSessions();
-      sessions[id] = session;
-      this.saveSessions(sessions);
+      sessionsCache[id] = session;
+      window.KorahDB.setConversation(id, session).catch((e) =>
+        console.error("[Korah] setConversation failed:", e)
+      );
     },
 
     deleteSession(id) {
-      const sessions = this.getSessions();
-      delete sessions[id];
-      this.saveSessions(sessions);
+      delete sessionsCache[id];
+      window.KorahDB.deleteConversation(id).catch((e) =>
+        console.error("[Korah] deleteConversation failed:", e)
+      );
     },
 
-    createSession(title = "New Chat", mode = "physics") {
+    createSession(title = "New Chat", mode = "general") {
       const id = `session_${Date.now()}`;
       const session = {
         id,
@@ -78,29 +78,21 @@
       return id;
     },
 
-    getStudyItems() {
-      const data = localStorage.getItem(this.STUDY_ITEMS_KEY);
-      return data ? JSON.parse(data) : {};
-    },
+    getStudyItems() { return studyItemsCache; },
 
     saveStudyItem(id, item) {
-      const items = this.getStudyItems();
-      items[id] = item;
-      localStorage.setItem(this.STUDY_ITEMS_KEY, JSON.stringify(items));
+      studyItemsCache[id] = item;
+      window.KorahDB.setStudyItem(id, item).catch((e) =>
+        console.error("[Korah] setStudyItem failed:", e)
+      );
     },
   };
 
-  // ═══ Session State ═══
-  let currentSessionId = Storage.getCurrentSessionId();
-  let currentSession = Storage.getSession(currentSessionId);
-  if (!currentSession) {
-    currentSessionId = Storage.createSession("New Chat", "general");
-    currentSession = Storage.getSession(currentSessionId);
-    Storage.setCurrentSessionId(currentSessionId);
-  }
-
-  const history = currentSession.messages || [];
-  let isSending = false;
+  // ═══ Session State (populated asynchronously in initApp) ═══
+  let currentSessionId = null;
+  let currentSession   = null;
+  let history          = [];
+  let isSending        = false;
 
   // ═══ Tutoring Mode State ═══
   const TUTORING_PROMPT = `\n\nTUTORING MODE ACTIVE: You are now in tutoring mode. Instead of giving direct answers:\n- Guide students through questions using Socratic questioning\n- Break concepts into smaller, manageable steps\n- Check understanding before proceeding to the next concept\n- Encourage critical thinking by asking follow-up questions\n- Provide hints and scaffolding rather than complete solutions\n- Celebrate progress and provide positive reinforcement\n- If a student asks for the answer, guide them to discover it themselves`;
@@ -278,7 +270,7 @@
     renderDesmosGraphs(container);
   }
 
-  function buildMessageRow(role, text, isError = false, suggestions = [], contentId = null) {
+  function buildMessageRow(role, text, isError = false, suggestions = [], contentId = null, studyItem = null) {
     const row = document.createElement("div");
     row.className = `msg-row ${role === "user" ? "user" : "assistant"}`;
 
@@ -310,6 +302,28 @@
 
     bubble.appendChild(label);
     bubble.appendChild(content);
+
+    // Add study item button if present
+    if (role === "assistant" && studyItem && studyItem.id) {
+      const typeLabels = {
+        flashcards: "Flashcards",
+        studyGuide: "Study Guide",
+        practiceTest: "Practice Test"
+      };
+      const typeLabel = typeLabels[studyItem.type] || "Study Item";
+      const studyBtn = document.createElement("div");
+      studyBtn.className = "study-gen-success show";
+      studyBtn.innerHTML = `
+        <p>Success! Your ${typeLabel.toLowerCase()} are ready.</p>
+        <a href="../study/item.html?id=${encodeURIComponent(studyItem.id)}" class="study-gen-btn">
+          <span>View ${studyItem.title} ${typeLabel}</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+          </svg>
+        </a>
+      `;
+      bubble.appendChild(studyBtn);
+    }
 
     // Add AI-generated suggestions for assistant messages
     if (role === "assistant" && !isError && suggestions.length > 0) {
@@ -365,8 +379,8 @@
     return [...commonActions, ...(modeSpecific[mode] || [])];
   }
 
-  function appendMessage(role, text, isError = false, suggestions = [], contentId = null) {
-    const row = buildMessageRow(role, text, isError, suggestions, contentId);
+  function appendMessage(role, text, isError = false, suggestions = [], contentId = null, studyItem = null) {
+    const row = buildMessageRow(role, text, isError, suggestions, contentId, studyItem);
     messagesList.appendChild(row);
     setWelcomeVisibility(false);
     return row;
@@ -420,11 +434,13 @@
     showDeleteModal(
       `${selectedStudy.size} study item${selectedStudy.size > 1 ? "s" : ""}`,
       () => {
-        const allItems = Storage.getStudyItems();
-        selectedStudy.forEach(id => delete allItems[id]);
-        localStorage.setItem(Storage.STUDY_ITEMS_KEY, JSON.stringify(allItems));
+        const ids = [...selectedStudy];
+        ids.forEach((id) => delete studyItemsCache[id]);
         clearStudySelection();
         renderStudyItemsHistory();
+        window.KorahDB.deleteStudyItems(ids).catch((e) =>
+          console.error("[Korah] bulk deleteStudyItems failed:", e)
+        );
       }
     );
   });
@@ -545,10 +561,11 @@
         e.preventDefault();
         e.stopPropagation();
         showDeleteModal(item.title || "this item", () => {
-          const allItems = Storage.getStudyItems();
-          delete allItems[item.id];
-          localStorage.setItem(Storage.STUDY_ITEMS_KEY, JSON.stringify(allItems));
+          delete studyItemsCache[item.id];
           renderStudyItemsHistory();
+          window.KorahDB.deleteStudyItem(item.id).catch((e) =>
+            console.error("[Korah] deleteStudyItem failed:", e)
+          );
         });
       });
     });
@@ -872,7 +889,7 @@
       history.forEach((msg) => {
         // Skip system messages for display
         if (msg.role !== "system") {
-          const msgRow = appendMessage(msg.role, msg.content);
+          const msgRow = appendMessage(msg.role, msg.content, false, [], null, msg.studyItem || null);
           const contentEl = msgRow.querySelector('.assistant-content');
           if (contentEl) {
             renderSpecialContent(contentEl);
@@ -1611,10 +1628,15 @@ ${FORMAT_INSTRUCTIONS}`.trim();
             </svg>`;
         }
         
-        // Add to history
+        // Add to history with study item metadata
         history.push({ 
           role: "assistant", 
-          content: `I've generated **${typeLabel}** on "**${finalTitle}**" for you. You can find them in your Study Library.` 
+          content: `I've generated **${typeLabel}** on "**${finalTitle}**" for you. You can find them in your Study Library.`,
+          studyItem: {
+            id: id,
+            type: type,
+            title: finalTitle
+          }
         });
         saveCurrentSession();
       }, 500);
@@ -1971,20 +1993,7 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     if (e.target === deleteModal) hideDeleteModal();
   });
 
-  // Load saved messages, apply theme, and render history on startup
-  applyModeTheme(currentSession.mode || "general");
-  renderChatHistory();
-  renderStudyItemsHistory();
-  loadSessionMessages();
-  resizeInput();
-  updateCharCount();
-
-  // Deep link: open specific session from hash (e.g. index.html#session_123)
-  const hash = window.location.hash.slice(1);
-  if (hash && hash.startsWith("session_")) {
-    const session = Storage.getSession(hash);
-    if (session) switchToSession(hash);
-  }
+  // ── Helpers ──────────────────────────────────────────────────────────────
 
   function stringifyStudyItem(item) {
     if (!item || !item.content) return "";
@@ -1998,7 +2007,7 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     } else if (item.type === "studyGuide") {
       text += content.markdown || "";
       if (!content.markdown && Array.isArray(content.sections)) {
-        content.sections.forEach(s => {
+        content.sections.forEach((s) => {
           text += `## ${s.title}\n${s.body}\n\n`;
         });
       }
@@ -2010,51 +2019,99 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     return text;
   }
 
-  // Study Link: open from ?study=ID
-  const params = new URLSearchParams(window.location.search);
-  const studyId = params.get("study");
-  if (studyId) {
-    const items = Storage.getStudyItems();
-    const item = items[studyId];
-    if (item) {
-      const sessions = Storage.getSessions();
-      let existingSessionId = Object.keys(sessions).find(id => sessions[id].studyId === studyId);
-      
-      if (existingSessionId) {
-        switchToSession(existingSessionId);
-      } else {
-        const title = (item.title || "Study Item") + " Discussion";
-        const newSessionId = Storage.createSession(title, item.subject || "general");
-        const newSession = Storage.getSession(newSessionId);
-        newSession.studyId = studyId;
-        
-        // Add the study item content as context in the history
-        // We use a "system" role message in history if the API supports it, 
-        // or a formatted user message that we mark as 'context'.
-        newSession.messages.push({
-          role: "system",
-          content: stringifyStudyItem(item)
-        });
+  // ── App Initialisation ────────────────────────────────────────────────────
+  // Called once window.KorahDB is ready (after Firebase Auth resolves).
 
-        let initialMessage = `I've loaded your **${item.type}** on "**${item.title}**" and have full context of the content. 
+  async function initApp() {
+    // 1. One-time localStorage → Firestore migration
+    try {
+      await window.KorahDB.migrateFromLocalStorage();
+    } catch (e) {
+      console.warn("[Korah] Migration error (non-fatal):", e);
+    }
 
-How would you like to continue? I can:
-- **Quiz you** on specific sections
-- **Explain complex concepts** in more detail
-- **Summarize key points** for quick review
-- **Add more content** to this topic
+    // 2. Attach realtime listeners and wait for the first snapshot of each
+    //    collection before touching the UI.
+    let convsReady = false;
+    let studyReady = false;
+    let resolveConvs, resolveStudy;
+    const waitConvs  = new Promise((r) => { resolveConvs  = r; });
+    const waitStudy  = new Promise((r) => { resolveStudy  = r; });
 
-What's on your mind?`;
-        
-        newSession.messages.push({
-          role: "assistant",
-          content: initialMessage
-        });
-        
-        Storage.saveSession(newSessionId, newSession);
-        switchToSession(newSessionId);
+    window.KorahDB.onConversationsChange((docsMap) => {
+      sessionsCache = docsMap;
+      if (!convsReady) { convsReady = true; resolveConvs(); }
+      else renderChatHistory(); // live update sidebar on subsequent snapshots
+    });
+
+    window.KorahDB.onStudyItemsChange((docsMap) => {
+      studyItemsCache = docsMap;
+      if (!studyReady) { studyReady = true; resolveStudy(); }
+      else renderStudyItemsHistory(); // live update sidebar on subsequent snapshots
+    });
+
+    await Promise.all([waitConvs, waitStudy]);
+
+    // 3. Resolve current session
+    currentSessionId = Storage.getCurrentSessionId();
+    currentSession   = currentSessionId ? sessionsCache[currentSessionId] : null;
+
+    if (!currentSession) {
+      currentSessionId = Storage.createSession("New Chat", "general");
+      currentSession   = sessionsCache[currentSessionId];
+      Storage.setCurrentSessionId(currentSessionId);
+    }
+
+    history.length = 0;
+    history.push(...(currentSession.messages || []));
+
+    // 4. Deep link: open specific session from hash (e.g. index.html#session_123)
+    const hash = window.location.hash.slice(1);
+    if (hash && hash.startsWith("session_") && sessionsCache[hash]) {
+      switchToSession(hash);
+    }
+
+    // 5. Study Link: open from ?study=ID
+    const params  = new URLSearchParams(window.location.search);
+    const studyId = params.get("study");
+    if (studyId) {
+      const item = studyItemsCache[studyId];
+      if (item) {
+        const existingId = Object.keys(sessionsCache).find(
+          (id) => sessionsCache[id].studyId === studyId
+        );
+        if (existingId) {
+          switchToSession(existingId);
+        } else {
+          const title        = (item.title || "Study Item") + " Discussion";
+          const newSessionId = Storage.createSession(title, item.subject || "general");
+          const newSession   = sessionsCache[newSessionId];
+          newSession.studyId = studyId;
+          newSession.messages.push({ role: "system", content: stringifyStudyItem(item) });
+          newSession.messages.push({
+            role: "assistant",
+            content: `I've loaded your **${item.type}** on "**${item.title}**" and have full context of the content. \n\nHow would you like to continue? I can:\n- **Quiz you** on specific sections\n- **Explain complex concepts** in more detail\n- **Summarize key points** for quick review\n- **Add more content** to this topic\n\nWhat's on your mind?`,
+          });
+          Storage.saveSession(newSessionId, newSession);
+          switchToSession(newSessionId);
+        }
       }
     }
+
+    // 6. Render UI
+    applyModeTheme(currentSession.mode || "general");
+    renderChatHistory();
+    renderStudyItemsHistory();
+    loadSessionMessages();
+    resizeInput();
+    updateCharCount();
+  }
+
+  // Guard against edge-case where korahReady already fired before this script ran.
+  if (window._korahReadyFired) {
+    initApp();
+  } else {
+    window.addEventListener("korahReady", initApp, { once: true });
   }
 
   // ── Starfield Animation ──

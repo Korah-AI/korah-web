@@ -197,7 +197,7 @@
     </div>
   </div>
   <div id="study-items-history" class="chat-history study-items-history">
-    <!-- Populated by JS from localStorage -->
+    <!-- Populated by JS from Firestore -->
   </div>
   <div id="study-items-empty" class="study-items-empty hidden">
     <span class="study-items-empty-icon" aria-hidden="true">📚</span>
@@ -348,18 +348,14 @@
   </div>
 </div>
 
+<script type="module" src="js/study-firebase-init.js"></script>
 <script src="js/sidebar.js"></script>
 <script>
 (function () {
-  KorahSidebar.initSidebar({ chatBaseUrl: "../app/index.html", itemPageUrl: "item.html" });
+  // ─── Feed-local in-memory cache, populated by Firestore listener ─────────────
+  let _feedStudyItems = {};
 
-  const STUDY_ITEMS_KEY = "korah_study_items";
-  function getStudyItems() {
-    try {
-      const data = localStorage.getItem(STUDY_ITEMS_KEY);
-      return data ? JSON.parse(data) : {};
-    } catch (_) { return {}; }
-  }
+  KorahSidebar.initSidebar({ chatBaseUrl: "../app/index.html", itemPageUrl: "item.html" });
 
   const TYPE_LABELS = { flashcards: "Flashcards", studyGuide: "Study Guide", practiceTest: "Practice Test" };
   const SOURCE_LABELS = { manual: "Manual", "ai-prompt": "AI from prompt", "ai-doc": "AI from Docs", "chatbot-request": "From Chatbot" };
@@ -371,7 +367,7 @@
   }
 
   function renderCards() {
-    const items = getStudyItems();
+    const items = _feedStudyItems;
     const list = Object.keys(items).map(function (id) { return { id: id, ...items[id] }; });
     const typeFilter = document.getElementById("filter-type").value;
     const sourceFilter = document.getElementById("filter-source").value;
@@ -427,9 +423,8 @@
       card.querySelector(".feed-card-delete-btn").addEventListener("click", function (e) {
         e.stopPropagation();
         showFeedDeleteModal(item.title || "this item", function () {
-          const all = getStudyItems();
-          delete all[item.id];
-          localStorage.setItem("korah_study_items", JSON.stringify(all));
+          delete _feedStudyItems[item.id];
+          if (window.KorahDB) window.KorahDB.deleteStudyItem(item.id);
           renderCards();
         });
       });
@@ -451,7 +446,23 @@
   document.getElementById("feed-search").addEventListener("input", renderCards);
   document.getElementById("filter-type").addEventListener("change", renderCards);
   document.getElementById("filter-source").addEventListener("change", renderCards);
-  renderCards();
+
+  // Defer initial render until Firestore data is loaded.
+  function onReady() {
+    if (window.KorahDB) {
+      window.KorahDB.onStudyItemsChange(function (snapshot) {
+        _feedStudyItems = snapshot;
+        renderCards();
+      });
+    } else {
+      renderCards(); // fallback (empty)
+    }
+  }
+  if (window._korahReadyFired) {
+    onReady();
+  } else {
+    window.addEventListener("korahReady", onReady, { once: true });
+  }
 
   var feedDeleteModal = document.getElementById("feed-delete-modal");
   var feedDeleteModalName = document.getElementById("feed-delete-modal-name");

@@ -852,29 +852,18 @@
   </div>
 </div>
 
+<script type="module" src="js/study-firebase-init.js"></script>
 <script src="js/sidebar.js"></script>
 <script>
 (function () {
   KorahSidebar.initSidebar({ chatBaseUrl: "../app/index.html", itemPageUrl: "item.html" });
-
-  var STUDY_ITEMS_KEY = "korah_study_items";
-  function getStudyItems() {
-    try {
-      var data = localStorage.getItem(STUDY_ITEMS_KEY);
-      return data ? JSON.parse(data) : {};
-    } catch (_) { return {}; }
-  }
-  function saveStudyItems(items) {
-    localStorage.setItem(STUDY_ITEMS_KEY, JSON.stringify(items));
-  }
 
   var TYPE_LABELS = { flashcards: "Flashcards", studyGuide: "Study Guide", practiceTest: "Practice Test" };
   var SOURCE_LABELS = { manual: "Manual", "ai-prompt": "AI from prompt", "ai-doc": "AI from Docs", "chatbot-request": "From Chatbot" };
 
   var params = new URLSearchParams(window.location.search);
   var id = params.get("id");
-  var item = id ? getStudyItems()[id] : null;
-  var currentItem = item;
+  var currentItem = null;
   var editDraft = null;
 
   var notFoundEl = document.getElementById("item-not-found");
@@ -973,16 +962,12 @@
     document.getElementById("item-description").textContent = itemData.description || "";
     document.getElementById("item-action-chat").href = "../index.html?study=" + encodeURIComponent(itemData.id);
     document.getElementById("item-action-duplicate").onclick = function () {
-      var items = getStudyItems();
-      var original = items[itemData.id];
-      if (!original) return;
       var newId = "study_" + Date.now();
-      var copy = JSON.parse(JSON.stringify(original));
+      var copy = JSON.parse(JSON.stringify(itemData));
       copy.id = newId;
       copy.title = (copy.title || "Untitled") + " (Copy)";
       copy.createdAt = copy.updatedAt = new Date().toISOString();
-      items[newId] = copy;
-      saveStudyItems(items);
+      if (window.KorahDB) window.KorahDB.setStudyItem(newId, copy);
       window.location.href = "guide.html?id=" + encodeURIComponent(newId);
     };
 
@@ -1012,8 +997,6 @@
     stageLabelEl.textContent = "Study guide";
     stageContextEl.textContent = sections.length ? sections.length + " sections" : "Reader view";
   }
-
-  renderGuide(currentItem);
 
   var sidebar = document.getElementById("sidebar");
   var toggle = document.getElementById("sidebar-toggle");
@@ -1134,10 +1117,7 @@
       e.preventDefault();
       if (!currentItem || !id) return;
 
-      var allItems = getStudyItems();
-      if (!allItems[id]) return;
-
-      var updatedItem = clone(allItems[id]);
+      var updatedItem = clone(currentItem);
       updatedItem.title = (document.getElementById("item-edit-title").value || "").trim() || "Untitled";
       updatedItem.description = (document.getElementById("item-edit-description").value || "").trim();
       updatedItem.subject = (document.getElementById("item-edit-subject").value || "").trim();
@@ -1151,12 +1131,25 @@
       updatedItem.content.markdown = markdown;
 
       updatedItem.updatedAt = new Date().toISOString();
-      allItems[id] = updatedItem;
-      saveStudyItems(allItems);
+      if (window.KorahDB) window.KorahDB.setStudyItem(id, updatedItem);
       currentItem = updatedItem;
       renderGuide(currentItem);
       closeEditModal();
     });
+  }
+
+  // ── Firestore load ────────────────────────────────────────────────────────
+  function loadAndRender() {
+    if (!id) { renderGuide(null); return; }
+    window.KorahDB.getStudyItem(id).then(function (item) {
+      currentItem = item;
+      renderGuide(currentItem);
+    });
+  }
+  if (window._korahReadyFired) {
+    loadAndRender();
+  } else {
+    window.addEventListener("korahReady", loadAndRender, { once: true });
   }
 
   // Settings modal (placeholder - todo update settings)

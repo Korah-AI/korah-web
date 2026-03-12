@@ -811,28 +811,7 @@
         <button class="select-bar-btn danger" id="chat-delete-selected">Delete</button>
       </div>
     </div>
-    <div id="chat-history" class="chat-history">
-      <button class="history-item active t-btn" data-session="current">
-        <span class="history-icon">📚</span>
-        <span class="history-text">Photosynthesis Study Guide</span>
-      </button>
-      <button class="history-item t-btn" data-session="1">
-        <span class="history-icon">🧮</span>
-        <span class="history-text">Calculus Flashcards</span>
-      </button>
-      <button class="history-item t-btn" data-session="2">
-        <span class="history-icon">⚗️</span>
-        <span class="history-text">Chemistry Practice Test</span>
-      </button>
-      <button class="history-item t-btn" data-session="3">
-        <span class="history-icon">📝</span>
-        <span class="history-text">Essay Outline — WWII</span>
-      </button>
-      <button class="history-item t-btn" data-session="4">
-        <span class="history-icon">🔢</span>
-        <span class="history-text">Statistics Review</span>
-      </button>
-    </div>
+    <div id="chat-history" class="chat-history"></div>
   </div>
 
   <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 12px 0 4px;">
@@ -1027,22 +1006,12 @@
   </div>
 </div>
 
+<script type="module" src="js/study-firebase-init.js"></script>
 <script src="js/sidebar.js"></script>
 <script src="js/study-api.js"></script>
 <script>
 (function () {
   KorahSidebar.initSidebar({ chatBaseUrl: "../app/index.html", itemPageUrl: "item.html" });
-
-  var STUDY_ITEMS_KEY = "korah_study_items";
-  function getStudyItems() {
-    try {
-      var data = localStorage.getItem(STUDY_ITEMS_KEY);
-      return data ? JSON.parse(data) : {};
-    } catch (_) { return {}; }
-  }
-  function saveStudyItems(items) {
-    localStorage.setItem(STUDY_ITEMS_KEY, JSON.stringify(items));
-  }
 
   var TYPE_LABELS = { flashcards: "Flashcards", studyGuide: "Study Guide", practiceTest: "Practice Test" };
   var SOURCE_LABELS = { manual: "Manual", "ai-prompt": "AI from prompt", "ai-doc": "AI from Docs", "chatbot-request": "From Chatbot" };
@@ -1051,24 +1020,7 @@
   var id = params.get("id");
   var duplicate = params.get("duplicate") === "1";
 
-  if (duplicate && id) {
-    var items = getStudyItems();
-    var original = items[id];
-    if (original) {
-      var newId = "study_" + Date.now();
-      var copy = JSON.parse(JSON.stringify(original));
-      copy.id = newId;
-      copy.title = (copy.title || "Untitled") + " (Copy)";
-      copy.createdAt = copy.updatedAt = new Date().toISOString();
-      items[newId] = copy;
-      saveStudyItems(items);
-      window.location.replace("item.html?id=" + encodeURIComponent(newId));
-      throw new Error("redirect");
-    }
-  }
-
-  var item = id ? getStudyItems()[id] : null;
-  var currentItem = item;
+  var currentItem = null;
   var editDraft = null;
   var notFoundEl = document.getElementById("item-not-found");
   var detailEl = document.getElementById("item-detail");
@@ -1403,8 +1355,6 @@
     renderItem(currentItem);
   });
 
-  renderItem(currentItem);
-
   var sidebar = document.getElementById("sidebar");
   var toggle = document.getElementById("sidebar-toggle");
 
@@ -1593,10 +1543,7 @@
       e.preventDefault();
       if (!currentItem || !id) return;
 
-      var allItems = getStudyItems();
-      if (!allItems[id]) return;
-
-      var updatedItem = clone(allItems[id]);
+      var updatedItem = clone(currentItem);
       updatedItem.title = (document.getElementById("item-edit-title").value || "").trim() || "Untitled";
       updatedItem.description = (document.getElementById("item-edit-description").value || "").trim();
       updatedItem.subject = (document.getElementById("item-edit-subject").value || "").trim();
@@ -1626,12 +1573,38 @@
       }
 
       updatedItem.updatedAt = new Date().toISOString();
-      allItems[id] = updatedItem;
-      saveStudyItems(allItems);
+      if (window.KorahDB) window.KorahDB.setStudyItem(id, updatedItem);
       currentItem = updatedItem;
       renderItem(currentItem);
       closeEditModal();
     });
+  }
+
+  // ── Firestore load ────────────────────────────────────────────────────────
+  function loadAndRender() {
+    if (!id) { renderItem(null); return; }
+    if (duplicate) {
+      window.KorahDB.getStudyItem(id).then(function (original) {
+        if (!original) { renderItem(null); return; }
+        var newId = "study_" + Date.now();
+        var copy = JSON.parse(JSON.stringify(original));
+        copy.id = newId;
+        copy.title = (copy.title || "Untitled") + " (Copy)";
+        copy.createdAt = copy.updatedAt = new Date().toISOString();
+        window.KorahDB.setStudyItem(newId, copy);
+        window.location.replace("item.html?id=" + encodeURIComponent(newId));
+      });
+      return;
+    }
+    window.KorahDB.getStudyItem(id).then(function (item) {
+      currentItem = item;
+      renderItem(currentItem);
+    });
+  }
+  if (window._korahReadyFired) {
+    loadAndRender();
+  } else {
+    window.addEventListener("korahReady", loadAndRender, { once: true });
   }
 
   // Settings modal (placeholder - todo update settings)

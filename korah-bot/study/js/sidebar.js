@@ -1,6 +1,7 @@
 /**
  * Shared sidebar logic for study pages: Recent Chats + Recent Study Items
- * Uses same localStorage keys as korah-chat.js (korah_sessions, korah_study_items).
+ * Reads from Firestore via window.KorahDB (set up by study-firebase-init.js);
+ * falls back to empty caches if KorahDB is unavailable.
  */
 
 function showSidebarRenameModal(currentName, desc, onConfirm) {
@@ -58,22 +59,14 @@ function showSidebarDeleteModal(name, onConfirm) {
 }
 
 (function () {
-  const SESSIONS_KEY = "korah_sessions";
-  const STUDY_ITEMS_KEY = "korah_study_items";
+  // ─── In-memory caches (populated by Firestore listeners once korahReady fires) ─
+  // Exposed on window so sidebar re-renders triggered externally (e.g. from
+  // korah-chat.js) also see the latest data.
+  let _sessionsCache   = {};
+  let _studyItemsCache = {};
 
-  function getSessions() {
-    try {
-      const data = localStorage.getItem(SESSIONS_KEY);
-      return data ? JSON.parse(data) : {};
-    } catch (_) { return {}; }
-  }
-
-  function getStudyItems() {
-    try {
-      const data = localStorage.getItem(STUDY_ITEMS_KEY);
-      return data ? JSON.parse(data) : {};
-    } catch (_) { return {}; }
-  }
+  function getSessions()   { return _sessionsCache; }
+  function getStudyItems() { return _studyItemsCache; }
 
   const MODE_EMOJI = {
     general: "✨", math: "🧮", physics: "⚛️",
@@ -144,7 +137,8 @@ function showSidebarDeleteModal(name, onConfirm) {
         showSidebarRenameModal(session.title || "", "Enter a new name for this chat:", (newTitle) => {
           session.title = newTitle;
           session.updatedAt = new Date().toISOString();
-          localStorage.setItem(SESSIONS_KEY, JSON.stringify(all));
+          _sessionsCache[id] = session;
+          if (window.KorahDB) window.KorahDB.setConversation(id, session);
           renderChatHistory(container, baseUrl);
         });
       });
@@ -154,9 +148,8 @@ function showSidebarDeleteModal(name, onConfirm) {
         e.preventDefault();
         e.stopPropagation();
         showSidebarDeleteModal(s.title || "this chat", () => {
-          const all = getSessions();
-          delete all[id];
-          localStorage.setItem(SESSIONS_KEY, JSON.stringify(all));
+          delete _sessionsCache[id];
+          if (window.KorahDB) window.KorahDB.deleteConversation(id);
           renderChatHistory(container, baseUrl);
         });
       });
@@ -251,7 +244,8 @@ function showSidebarDeleteModal(name, onConfirm) {
         showSidebarRenameModal(si.title || "", "Enter a new name for this study item:", (newTitle) => {
           si.title = newTitle;
           si.updatedAt = new Date().toISOString();
-          localStorage.setItem(STUDY_ITEMS_KEY, JSON.stringify(all));
+          _studyItemsCache[item.id] = si;
+          if (window.KorahDB) window.KorahDB.setStudyItem(item.id, si);
           renderStudyItemsHistory(container, itemPageUrl);
         });
       });
@@ -260,9 +254,8 @@ function showSidebarDeleteModal(name, onConfirm) {
         e.preventDefault();
         e.stopPropagation();
         showSidebarDeleteModal(item.title || "this item", () => {
-          const all = getStudyItems();
-          delete all[item.id];
-          localStorage.setItem(STUDY_ITEMS_KEY, JSON.stringify(all));
+          delete _studyItemsCache[item.id];
+          if (window.KorahDB) window.KorahDB.deleteStudyItem(item.id);
           renderStudyItemsHistory(container, itemPageUrl);
         });
       });
@@ -388,11 +381,33 @@ function showSidebarDeleteModal(name, onConfirm) {
     const studyEl = document.getElementById(studyItemsId || "study-items-history");
     const resolvedBaseUrl = chatBaseUrl || "../index.html";
     const resolvedItemUrl = itemPageUrl || "item.html";
-    renderChatHistory(chatEl, resolvedBaseUrl);
-    renderStudyItemsHistory(studyEl, resolvedItemUrl);
-    initChatMultiSelect(chatEl, resolvedBaseUrl);
-    initStudyMultiSelect(studyEl, resolvedItemUrl);
-    initBackground();
+
+    function startWithDB() {
+      if (window.KorahDB) {
+        // Real-time listeners: populate caches and re-render on every Firestore change.
+        window.KorahDB.onConversationsChange((snapshot) => {
+          _sessionsCache = snapshot;
+          renderChatHistory(chatEl, resolvedBaseUrl);
+        });
+        window.KorahDB.onStudyItemsChange((snapshot) => {
+          _studyItemsCache = snapshot;
+          renderStudyItemsHistory(studyEl, resolvedItemUrl);
+        });
+      } else {
+        // Fallback: render from whatever is already in the caches.
+        renderChatHistory(chatEl, resolvedBaseUrl);
+        renderStudyItemsHistory(studyEl, resolvedItemUrl);
+      }
+      initChatMultiSelect(chatEl, resolvedBaseUrl);
+      initStudyMultiSelect(studyEl, resolvedItemUrl);
+      initBackground();
+    }
+
+    if (window._korahReadyFired) {
+      startWithDB();
+    } else {
+      window.addEventListener("korahReady", () => startWithDB(), { once: true });
+    }
   }
 
   // ── Multi-select: Chats ──
@@ -456,9 +471,9 @@ function showSidebarDeleteModal(name, onConfirm) {
     deleteBtn?.addEventListener("click", () => {
       if (selected.size === 0) return;
       showSidebarDeleteModal(`${selected.size} chat${selected.size > 1 ? "s" : ""}`, () => {
-        const all = getSessions();
-        selected.forEach(id => delete all[id]);
-        localStorage.setItem(SESSIONS_KEY, JSON.stringify(all));
+        const ids = [...selected];
+        ids.forEach(id => delete _sessionsCache[id]);
+        if (window.KorahDB) window.KorahDB.deleteConversations(ids);
         clearSelection();
         renderChatHistory(container, baseUrl);
       });
@@ -534,9 +549,9 @@ function showSidebarDeleteModal(name, onConfirm) {
     deleteBtn?.addEventListener("click", () => {
       if (selected.size === 0) return;
       showSidebarDeleteModal(`${selected.size} study item${selected.size > 1 ? "s" : ""}`, () => {
-        const all = getStudyItems();
-        selected.forEach(id => delete all[id]);
-        localStorage.setItem(STUDY_ITEMS_KEY, JSON.stringify(all));
+        const ids = [...selected];
+        ids.forEach(id => delete _studyItemsCache[id]);
+        if (window.KorahDB) window.KorahDB.deleteStudyItems(ids);
         clearSelection();
         renderStudyItemsHistory(container, itemPageUrl);
       });

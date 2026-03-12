@@ -1182,28 +1182,17 @@
   </div>
 </div>
 
+<script type="module" src="js/study-firebase-init.js"></script>
 <script src="js/sidebar.js"></script>
 <script>
 (function () {
   KorahSidebar.initSidebar({ chatBaseUrl: "../app/index.html", itemPageUrl: "item.html" });
-
-  var STUDY_ITEMS_KEY = "korah_study_items";
-  function getStudyItems() {
-    try {
-      var data = localStorage.getItem(STUDY_ITEMS_KEY);
-      return data ? JSON.parse(data) : {};
-    } catch (_) { return {}; }
-  }
-  function saveStudyItems(items) {
-    localStorage.setItem(STUDY_ITEMS_KEY, JSON.stringify(items));
-  }
 
   var TYPE_LABELS = { flashcards: "Flashcards", studyGuide: "Study Guide", practiceTest: "Practice Test" };
   var SOURCE_LABELS = { manual: "Manual", "ai-prompt": "AI from prompt", "ai-doc": "AI from Docs", "chatbot-request": "From Chatbot" };
 
   var params = new URLSearchParams(window.location.search);
   var id = params.get("id");
-  var item = id ? getStudyItems()[id] : null;
 
   var notFoundEl = document.getElementById("item-not-found");
   var detailEl = document.getElementById("item-detail");
@@ -1454,17 +1443,13 @@
     document.getElementById("item-description").textContent = itemData.description || "";
     document.getElementById("item-action-chat").href = "../index.html?study=" + encodeURIComponent(itemData.id);
     document.getElementById("item-action-duplicate").onclick = function () {
-      var items = getStudyItems();
-      var original = items[itemData.id];
-      if (!original) return;
       var newId = "study_" + Date.now();
-      var copy = JSON.parse(JSON.stringify(original));
+      var copy = JSON.parse(JSON.stringify(itemData));
       copy.id = newId;
       copy.title = (copy.title || "Untitled") + " (Copy)";
       copy.createdAt = copy.updatedAt = new Date().toISOString();
-      items[newId] = copy;
-      saveStudyItems(items);
-      window.location.href = "item.html?id=" + encodeURIComponent(newId);
+      if (window.KorahDB) window.KorahDB.setStudyItem(newId, copy);
+      window.location.href = "test.html?id=" + encodeURIComponent(newId);
     };
 
     var bodyEl = document.getElementById("item-body");
@@ -1554,8 +1539,6 @@
     stageContextEl.textContent = formState.config.totalQuestions + " questions (" + formState.config.mcqCount + " MCQ, " + formState.config.openEndedCount + " open-ended)";
   }
 
-  showTestSetupModal(item);
-
   var sidebar = document.getElementById("sidebar");
   var toggle = document.getElementById("sidebar-toggle");
 
@@ -1591,6 +1574,19 @@
       overlay.classList.remove("show");
     }
   });
+
+  // ── Firestore load ────────────────────────────────────────────────────────
+  function loadAndRender() {
+    if (!id) { showTestSetupModal(null); return; }
+    window.KorahDB.getStudyItem(id).then(function (item) {
+      showTestSetupModal(item);
+    });
+  }
+  if (window._korahReadyFired) {
+    loadAndRender();
+  } else {
+    window.addEventListener("korahReady", loadAndRender, { once: true });
+  }
 
   // Settings modal (placeholder - todo update settings)
   const settingsBtn = document.getElementById("settings-btn");
