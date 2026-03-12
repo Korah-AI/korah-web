@@ -16,6 +16,29 @@
 
 <body class="bg-base tx">
 
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
+    authDomain: "korah-app.firebaseapp.com",
+    projectId: "korah-app",
+    storageBucket: "korah-app.firebasestorage.app",
+    messagingSenderId: "226169460321",
+    appId: "1:226169460321:web:b166fc8260107c55dafc20"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  onAuthStateChanged(auth, (user) => {
+    if (!user) {
+      window.location.href = '../login.html';
+    }
+  });
+</script>
+
 <canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
 
 <!-- ═══ SIDEBAR ═══ -->
@@ -39,7 +62,7 @@
 
   <nav class="sidebar-nav">
     <a href="index.html" class="sidebar-nav-link active t-btn">💬 Chat</a>
-    <a href="study/feed.html" class="sidebar-nav-link t-btn">📚 Study</a>
+    <a href="../study/feed.html" class="sidebar-nav-link t-btn">📚 Study</a>
   </nav>
 
   <div class="sidebar-middle">
@@ -441,7 +464,7 @@
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
-<script src="study/js/study-api.js"></script>
+<script src="../study/js/study-api.js"></script>
 <script src="korah-chat.js"></script>
 </body>
 </html>
