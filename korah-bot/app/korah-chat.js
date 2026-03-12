@@ -35,6 +35,8 @@
     SESSIONS_KEY: "korah_sessions",
     CURRENT_SESSION_KEY: "korah_current_session",
     STUDY_ITEMS_KEY: "korah_study_items",
+    CACHE_SESSIONS_KEY: "korah_sessions_cache",
+    CACHE_STUDY_ITEMS_KEY: "korah_study_items_cache",
 
     getSessions() { return sessionsCache; },
 
@@ -50,6 +52,7 @@
 
     saveSession(id, session) {
       sessionsCache[id] = session;
+      localStorage.setItem(this.CACHE_SESSIONS_KEY, JSON.stringify(sessionsCache));
       window.KorahDB.setConversation(id, session).catch((e) =>
         console.error("[Korah] setConversation failed:", e)
       );
@@ -57,6 +60,7 @@
 
     deleteSession(id) {
       delete sessionsCache[id];
+      localStorage.setItem(this.CACHE_SESSIONS_KEY, JSON.stringify(sessionsCache));
       window.KorahDB.deleteConversation(id).catch((e) =>
         console.error("[Korah] deleteConversation failed:", e)
       );
@@ -82,9 +86,20 @@
 
     saveStudyItem(id, item) {
       studyItemsCache[id] = item;
+      localStorage.setItem(this.CACHE_STUDY_ITEMS_KEY, JSON.stringify(studyItemsCache));
       window.KorahDB.setStudyItem(id, item).catch((e) =>
         console.error("[Korah] setStudyItem failed:", e)
       );
+    },
+
+    getCachedSessions() {
+      const data = localStorage.getItem(this.CACHE_SESSIONS_KEY);
+      return data ? JSON.parse(data) : {};
+    },
+
+    getCachedStudyItems() {
+      const data = localStorage.getItem(this.CACHE_STUDY_ITEMS_KEY);
+      return data ? JSON.parse(data) : {};
     },
   };
 
@@ -2019,40 +2034,37 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     return text;
   }
 
+  // ── Cache Sync Functions ────────────────────────────────────────────────────
+  // Compare new data from Firestore with cached data, update cache + re-render only if different
+  function compareAndUpdate(type, newData) {
+    const oldData = type === 'sessions' ? sessionsCache : studyItemsCache;
+    const isDifferent = JSON.stringify(oldData) !== JSON.stringify(newData);
+    
+    if (isDifferent) {
+      if (type === 'sessions') {
+        sessionsCache = newData;
+        localStorage.setItem(Storage.CACHE_SESSIONS_KEY, JSON.stringify(newData));
+        renderChatHistory();
+      } else {
+        studyItemsCache = newData;
+        localStorage.setItem(Storage.CACHE_STUDY_ITEMS_KEY, JSON.stringify(newData));
+        renderStudyItemsHistory();
+      }
+    }
+  }
+
   // ── App Initialisation ────────────────────────────────────────────────────
   // Called once window.KorahDB is ready (after Firebase Auth resolves).
 
   async function initApp() {
-    // 1. One-time localStorage → Firestore migration
-    try {
-      await window.KorahDB.migrateFromLocalStorage();
-    } catch (e) {
-      console.warn("[Korah] Migration error (non-fatal):", e);
-    }
+    // 1. Load from cache immediately (synchronous, no await)
+    const cachedSessions = Storage.getCachedSessions();
+    const cachedStudyItems = Storage.getCachedStudyItems();
+    
+    sessionsCache = Object.keys(cachedSessions).length > 0 ? cachedSessions : {};
+    studyItemsCache = Object.keys(cachedStudyItems).length > 0 ? cachedStudyItems : {};
 
-    // 2. Attach realtime listeners and wait for the first snapshot of each
-    //    collection before touching the UI.
-    let convsReady = false;
-    let studyReady = false;
-    let resolveConvs, resolveStudy;
-    const waitConvs  = new Promise((r) => { resolveConvs  = r; });
-    const waitStudy  = new Promise((r) => { resolveStudy  = r; });
-
-    window.KorahDB.onConversationsChange((docsMap) => {
-      sessionsCache = docsMap;
-      if (!convsReady) { convsReady = true; resolveConvs(); }
-      else renderChatHistory(); // live update sidebar on subsequent snapshots
-    });
-
-    window.KorahDB.onStudyItemsChange((docsMap) => {
-      studyItemsCache = docsMap;
-      if (!studyReady) { studyReady = true; resolveStudy(); }
-      else renderStudyItemsHistory(); // live update sidebar on subsequent snapshots
-    });
-
-    await Promise.all([waitConvs, waitStudy]);
-
-    // 3. Resolve current session
+    // 2. Resolve current session
     currentSessionId = Storage.getCurrentSessionId();
     currentSession   = currentSessionId ? sessionsCache[currentSessionId] : null;
 
@@ -2064,6 +2076,14 @@ ${FORMAT_INSTRUCTIONS}`.trim();
 
     history.length = 0;
     history.push(...(currentSession.messages || []));
+
+    // 3. Render UI immediately with cached data
+    applyModeTheme(currentSession.mode || "general");
+    renderChatHistory();
+    renderStudyItemsHistory();
+    loadSessionMessages();
+    resizeInput();
+    updateCharCount();
 
     // 4. Deep link: open specific session from hash (e.g. index.html#session_123)
     const hash = window.location.hash.slice(1);
@@ -2098,13 +2118,14 @@ ${FORMAT_INSTRUCTIONS}`.trim();
       }
     }
 
-    // 6. Render UI
-    applyModeTheme(currentSession.mode || "general");
-    renderChatHistory();
-    renderStudyItemsHistory();
-    loadSessionMessages();
-    resizeInput();
-    updateCharCount();
+    // 6. Attach Firestore listeners for background sync (errors won't affect UI)
+    window.KorahDB.onConversationsChange((docsMap) => {
+      compareAndUpdate('sessions', docsMap);
+    });
+
+    window.KorahDB.onStudyItemsChange((docsMap) => {
+      compareAndUpdate('studyItems', docsMap);
+    });
   }
 
   // Guard against edge-case where korahReady already fired before this script ran.

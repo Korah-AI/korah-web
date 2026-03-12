@@ -105,7 +105,6 @@ export async function setupKorahDB(app, uid) {
       },
       (err) => {
         console.error("[KorahDB] conversations listener:", err);
-        callback({}); // unblock initApp so the app doesn't hang silently
       }
     );
   }
@@ -177,8 +176,6 @@ export async function setupKorahDB(app, uid) {
         },
         (err) => {
           console.error(`[KorahDB] ${col} listener:`, err);
-          readyCount++;
-          if (readyCount >= ALL_STUDY_COLS.length) merge();
         }
       );
     });
