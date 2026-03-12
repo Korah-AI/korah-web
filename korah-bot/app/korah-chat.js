@@ -117,6 +117,25 @@
   const history = currentSession.messages || [];
   let isSending = false;
 
+  // ═══ Tutoring Mode State ═══
+  const TUTORING_PROMPT = `\n\nTUTORING MODE ACTIVE: You are now in tutoring mode. Instead of giving direct answers:\n- Guide students through questions using Socratic questioning\n- Break concepts into smaller, manageable steps\n- Check understanding before proceeding to the next concept\n- Encourage critical thinking by asking follow-up questions\n- Provide hints and scaffolding rather than complete solutions\n- Celebrate progress and provide positive reinforcement\n- If a student asks for the answer, guide them to discover it themselves`;
+
+  let tutoringMode = localStorage.getItem('korah_tutoring_mode') === 'true';
+
+  function updateTutoringModeUI() {
+    const toggle = document.getElementById('tutoring-mode-toggle');
+    if (toggle) {
+      toggle.checked = tutoringMode;
+    }
+  }
+
+  document.getElementById('tutoring-mode-toggle')?.addEventListener('change', (e) => {
+    tutoringMode = e.target.checked;
+    localStorage.setItem('korah_tutoring_mode', tutoringMode);
+  });
+
+  updateTutoringModeUI();
+
   function scrollToBottom() {
     if (!chatBody) return;
     chatBody.scrollTop = chatBody.scrollHeight;
@@ -462,7 +481,7 @@
     }
     list.forEach((item) => {
       const a = document.createElement("a");
-      a.href = `study/item.html?id=${encodeURIComponent(item.id)}`;
+      a.href = `../study/item.html?id=${encodeURIComponent(item.id)}`;
       a.className = "history-item t-btn";
       a.setAttribute("data-study-id", item.id);
       a.style.textDecoration = "none";
@@ -1100,7 +1119,11 @@ Always format your responses using GitHub-flavored Markdown. Use:
 - Markdown headings (##, ###) to structure sections
 - Bulleted and numbered lists for steps and key points
 - \`code\` and fenced code blocks for formulas or code when helpful
-When you include math, write it using LaTeX syntax with inline $...$ and display $$...$$ blocks so it can be rendered with KaTeX.
+When you include math, write it using LaTeX syntax on its own line (not mixed with markdown text):
+- Inline math: $...$ (e.g., $x^2$) - only for short expressions within sentences
+- Display math: $$...$$ or \\[...\\] (e.g., $$\\frac{1}{2}mv^2$$) - use for equations on their own line
+- NEVER use [ ... ] as delimiters - KaTeX cannot render them
+- Always put LaTeX on separate lines, never inline with regular text on the same line
 
 VISUAL DIAGRAMS: When you need to show flowcharts, sequences, or relationships, use mermaid syntax in a fenced code block:
 \`\`\`mermaid
@@ -1135,7 +1158,9 @@ INTERACTIVE GRAPHS: When showing mathematical functions or graphs, use the Desmo
 
   function getSystemPrompt(mode) {
     const base = MODE_SYSTEM_PROMPTS[mode] || MODE_SYSTEM_PROMPTS.general;
+    const tutoringInstructions = tutoringMode ? TUTORING_PROMPT : '';
     return `${base}
+${tutoringInstructions}
 
 ${FORMAT_INSTRUCTIONS}`.trim();
   }
@@ -2277,15 +2302,33 @@ function initConstellationField() {
   }
 }
 
-function initWelcomeMessage() {
+function streamText(element, text, speed = 20) {
+  if (!element) return Promise.resolve();
+  return new Promise((resolve) => {
+    element.textContent = '';
+    let idx = 0;
+    function type() {
+      if (idx < text.length) {
+        element.textContent += text.charAt(idx);
+        idx++;
+        setTimeout(type, speed);
+      } else {
+        resolve();
+      }
+    }
+    type();
+  });
+}
+
+async function initWelcomeMessage() {
   const firstName = localStorage.getItem('korah_first_name') || 'there';
   const welcomeHeading = document.getElementById('welcome-heading');
   const welcomeSubtext = document.getElementById('welcome-subtext');
   
   const greetings = [
     `Hey ${firstName}, I'm Korah ✨`,
-    `Hi ${firstName}! Ready to study? 🚀`,
-    `Welcome back, ${firstName}! Let's learn something new 📚`,
+    `Hi ${firstName}! Ready to lock in? 🚀`,
+    `Welcome back, ${firstName}! Let's get started 📚`,
     `Hey ${firstName} — what shall we work on today? 🎯`,
     `Good to see you, ${firstName}! Let's get studying 💡`
   ];
@@ -2301,7 +2344,7 @@ function initWelcomeMessage() {
   const randomIdx = Math.floor(Math.random() * greetings.length);
   
   if (welcomeHeading) welcomeHeading.textContent = greetings[randomIdx];
-  if (welcomeSubtext) welcomeSubtext.textContent = subtexts[randomIdx];
+  if (welcomeSubtext) await streamText(welcomeSubtext, subtexts[randomIdx], 15);
 }
 
 if (document.readyState === 'loading') {

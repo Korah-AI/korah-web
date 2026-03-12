@@ -1,6 +1,6 @@
 /* ── Korah Chat Interface — korah-chat.css ── */
 
-body { font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; overflow: hidden; height: 100vh; }
+body { font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; overflow: hidden; height: 100dvh; }
 
 html {
   scroll-padding-top: 0;
@@ -436,7 +436,7 @@ body { display: flex; background: var(--bg) }
     flex: 1;
     display: flex;
     flex-direction: column;
-    height: 100vh;
+    height: 100dvh;
     overflow: hidden;
     min-width: 0;
 }
@@ -445,9 +445,9 @@ body { display: flex; background: var(--bg) }
 .chat-topbar {
     display: flex;
     align-items: center;
-    gap: 14px;
-    padding: 0 20px;
-    height: 80px;
+    gap: 12px;
+    padding: 0 16px;
+    height: 64px;
     border-bottom: 1px solid var(--bd);
     flex-shrink: 0;
     z-index: 50;
@@ -509,6 +509,81 @@ body { display: flex; background: var(--bg) }
     justify-content: center;
 }
 .topbar-btn:hover { border-color: var(--p4); color: var(--p4); background: var(--cu) }
+
+.tutoring-mode-btn {
+    width: auto;
+    padding: 0 10px;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 600;
+}
+.tutoring-mode-btn .tutoring-mode-label {
+    display: none;
+}
+@media (min-width: 768px) {
+    .tutoring-mode-btn .tutoring-mode-label {
+        display: inline;
+    }
+}
+.tutoring-mode-btn.active {
+    background: rgba(139, 92, 246, 0.15);
+    border-color: var(--p4);
+    color: var(--p4);
+}
+
+.tutoring-toggle-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    background: rgba(139, 92, 246, 0.15);
+    border-radius: 8px;
+}
+.tutoring-toggle-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: white;
+    white-space: nowrap;
+}
+.tutoring-switch {
+    position: relative;
+    width: 40px;
+    height: 22px;
+    display: inline-block;
+}
+.tutoring-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.tutoring-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--bd2);
+    transition: 0.3s;
+    border-radius: 22px;
+}
+.tutoring-slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 3px;
+    bottom: 3px;
+    background-color: var(--tx);
+    transition: 0.3s;
+    border-radius: 50%;
+}
+.tutoring-switch input:checked + .tutoring-slider {
+    background-color: var(--p4);
+}
+.tutoring-switch input:checked + .tutoring-slider:before {
+    transform: translateX(18px);
+}
 
 /* ── Mode Selector ── */
 .mode-selector-wrapper {
@@ -586,6 +661,7 @@ body { display: flex; background: var(--bg) }
     display: flex;
     flex-direction: column;
     scrollbar-width: thin;
+    min-height: 0;
 }
 .chat-body::-webkit-scrollbar { width: 4px }
 .chat-body::-webkit-scrollbar-thumb { background: var(--bd); border-radius: 2px }
@@ -597,6 +673,7 @@ body { display: flex; background: var(--bg) }
     flex: 1;
     display: flex;
     flex-direction: column;
+    min-height: 0;
 }
 
 /* ── Welcome screen ── */
@@ -606,6 +683,7 @@ body { display: flex; background: var(--bg) }
     align-items: center;
     justify-content: center;
     flex: 1;
+    min-height: 0;
     padding: 40px 20px;
     gap: 16px;
     animation: fadeUp .6s ease both;
@@ -618,13 +696,13 @@ body { display: flex; background: var(--bg) }
 
 .welcome-mascot {
     position: relative;
-    margin-bottom: 8px;
+    margin-bottom: 4px;
 }
 
 .mascot-avatar {
-    width: 72px;
-    height: 72px;
-    border-radius: 20px;
+    width: 64px;
+    height: 64px;
+    border-radius: 18px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -667,7 +745,7 @@ body { display: flex; background: var(--bg) }
     border: 1px solid var(--bd);
     background: var(--sf2);
     cursor: pointer;
-    color: var(--tx2);
+    color: white;
     font-size: 12px;
     font-weight: 500;
     font-family: 'Plus Jakarta Sans', sans-serif;
@@ -953,18 +1031,18 @@ body { display: flex; background: var(--bg) }
 /* ── Input area ── */
 .chat-input-area {
     border-top: 1px solid var(--bd);
-    padding: 14px 20px 10px;
+    padding: 10px 20px 8px;
     flex-shrink: 0;
 }
 
 .input-wrapper {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     background: var(--sf2);
     border: 1.5px solid var(--bd);
-    border-radius: 22px;
-    padding: 12px 16px;
+    border-radius: 18px;
+    padding: 8px 14px;
     transition: border-color .2s, box-shadow .2s;
     box-shadow: 0 4px 20px rgba(0,0,0,.1);
 }
@@ -1384,7 +1462,7 @@ body { display: flex; background: var(--bg) }
     cursor: pointer;
     font-size: 12px;
     font-weight: 600;
-    color: var(--tx2);
+    color: white;
     transition: all .2s;
     display: flex;
     align-items: center;
@@ -1486,6 +1564,49 @@ body { display: flex; background: var(--bg) }
     .sidebar.collapsed { transform: translateX(-100%); width: var(--sidebar-w); min-width: var(--sidebar-w); opacity: 0 }
     .suggestion-grid { grid-template-columns: 1fr }
     .mood-row { flex-wrap: wrap }
+    
+    .main-content { height: 100dvh; }
+    .chat-topbar { height: 56px; padding: 0 10px; }
+    .chat-body { padding: 12px 10px; }
+    .chat-input-area { padding: 8px 10px 6px; }
+    .welcome-screen { padding: 16px 12px; }
+    .welcome-screen .mascot-avatar { width: 48px; height: 48px; border-radius: 14px; }
+    .welcome-screen h2 { font-size: 1.35rem !important; }
+    .welcome-screen p { max-width: 100% !important; font-size: 12px; }
+    .welcome-mode-badge { padding: 4px 10px; font-size: 11px; }
+    .tutoring-toggle-wrapper { margin: 4px 0; }
+    .suggestion-chip { padding: 10px 12px; font-size: 12px; }
+}
+
+@media (max-height: 500px) {
+    .chat-topbar { height: 48px; }
+    .chat-body { padding: 8px 12px; }
+    .chat-input-area { padding: 6px 12px 4px; }
+    .welcome-screen { padding: 8px; gap: 6px; }
+    .welcome-mascot { margin-bottom: 2px; }
+    .welcome-mascot .mascot-avatar { width: 40px; height: 40px; border-radius: 12px; }
+    .welcome-screen h2 { font-size: 1.1rem !important; margin-bottom: 0 !important; }
+    .welcome-screen p { display: none; }
+    .welcome-mode-badge { display: none; }
+    .tutoring-toggle-wrapper { display: none; }
+    .mode-pills { display: none; }
+    .suggestion-grid { margin-top: 4px; gap: 4px; }
+    .suggestion-chip { padding: 6px 10px; font-size: 11px; }
+}
+
+@media (max-height: 500px) {
+    .chat-topbar { height: 50px; }
+    .chat-body { padding: 12px 16px; }
+    .chat-input-area { padding: 8px 16px 6px; }
+    .welcome-screen { padding: 16px; gap: 8px; }
+    .welcome-mascot { margin-bottom: 4px; }
+    .welcome-mascot .mascot-avatar { width: 48px; height: 48px; }
+    .welcome-screen h2 { font-size: 1.25rem !important; margin-bottom: 0 !important; }
+    .welcome-screen p { display: none; }
+    .mode-pills { display: none; }
+    .suggestion-grid { margin-top: 8px; }
+    .suggestion-grid { gap: 6px; }
+    .suggestion-chip { padding: 8px 12px; font-size: 11px; }
 }
 
 /* ── Streaming cursor ── */
@@ -2158,7 +2279,7 @@ body { display: flex; background: var(--bg) }
     position: fixed;
     left: 0;
     top: 0;
-    height: 100vh;
+    height: 100dvh;
     z-index: 200;
     transform: translateX(-100%);
     transition: transform .35s cubic-bezier(.23,1,.32,1);
@@ -2173,6 +2294,7 @@ body { display: flex; background: var(--bg) }
   .main-content {
     margin-left: 0 !important;
     width: 100% !important;
+    height: 100dvh;
   }
 
   .sidebar-toggle-btn {
