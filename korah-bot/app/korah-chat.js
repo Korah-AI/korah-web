@@ -117,6 +117,25 @@
   const history = currentSession.messages || [];
   let isSending = false;
 
+  // ═══ Tutoring Mode State ═══
+  const TUTORING_PROMPT = `\n\nTUTORING MODE ACTIVE: You are now in tutoring mode. Instead of giving direct answers:\n- Guide students through questions using Socratic questioning\n- Break concepts into smaller, manageable steps\n- Check understanding before proceeding to the next concept\n- Encourage critical thinking by asking follow-up questions\n- Provide hints and scaffolding rather than complete solutions\n- Celebrate progress and provide positive reinforcement\n- If a student asks for the answer, guide them to discover it themselves`;
+
+  let tutoringMode = localStorage.getItem('korah_tutoring_mode') === 'true';
+
+  function updateTutoringModeUI() {
+    const toggle = document.getElementById('tutoring-mode-toggle');
+    if (toggle) {
+      toggle.checked = tutoringMode;
+    }
+  }
+
+  document.getElementById('tutoring-mode-toggle')?.addEventListener('change', (e) => {
+    tutoringMode = e.target.checked;
+    localStorage.setItem('korah_tutoring_mode', tutoringMode);
+  });
+
+  updateTutoringModeUI();
+
   function scrollToBottom() {
     if (!chatBody) return;
     chatBody.scrollTop = chatBody.scrollHeight;
@@ -141,7 +160,6 @@
   function setTyping(show) {
     if (!typingIndicator) return;
     typingIndicator.classList.toggle("hidden", !show);
-    if (show) scrollToBottom();
   }
 
   function setSendingState(sending) {
@@ -191,6 +209,88 @@
         console.error("KaTeX render error:", e);
       }
     }
+  }
+
+  async function renderMermaidDiagrams(container) {
+    const codeBlocks = container.querySelectorAll('pre code.language-mermaid, pre code.lang-mermaid');
+    for (const block of codeBlocks) {
+      const code = block.textContent.trim();
+      const pre = block.parentElement;
+      try {
+        const id = 'mermaid-' + Math.random().toString(36).substr(2, 9);
+        const { svg } = await mermaid.render(id, code);
+        const wrapper = document.createElement('div');
+        wrapper.className = 'mermaid-diagram';
+        wrapper.innerHTML = svg;
+        pre.replaceWith(wrapper);
+      } catch (e) {
+        console.error("Mermaid render error:", e);
+        pre.classList.add('mermaid-error');
+      }
+    }
+  }
+
+  function renderDesmosGraphs(container) {
+    const codeBlocks = container.querySelectorAll('pre code.language-desmos, pre code.lang-desmos');
+    for (const block of codeBlocks) {
+      const code = block.textContent.trim();
+      const pre = block.parentElement;
+      try {
+        const data = JSON.parse(code);
+        const wrapper = document.createElement('div');
+        wrapper.className = 'desmos-graph';
+        const graphDiv = document.createElement('div');
+        graphDiv.style.width = '100%';
+        graphDiv.style.height = data.height || '400px';
+        graphDiv.style.borderRadius = '8px';
+        graphDiv.style.overflow = 'hidden';
+        wrapper.appendChild(graphDiv);
+        pre.replaceWith(wrapper);
+        
+        if (window.Desmos) {
+          const calculator = Desmos.GraphingCalculator(graphDiv, {
+            keypad: false,
+            graphpaper: true,
+            autosize: true,
+            expressions: true,
+            settingsMenu: false,
+            zoomButtons: true,
+            border: false,
+            keyboard: false
+          });
+          
+          if (data.expressions && Array.isArray(data.expressions)) {
+            data.expressions.forEach((expr, idx) => {
+              calculator.setExpression({
+                id: expr.id || 'expr_' + idx,
+                latex: expr.latex || '',
+                color: expr.color,
+                lineStyle: expr.lineStyle || 'SOLID',
+                pointStyle: expr.pointStyle || 'POINT',
+                showLabel: expr.showLabel || false,
+                label: expr.label || ''
+              });
+            });
+          }
+          
+          if (data.viewState) {
+            calculator.setState(data.viewState);
+          }
+          
+          if (data.zoom) {
+            calculator.setViewport(data.zoom);
+          }
+        }
+      } catch (e) {
+        console.error("Desmos render error:", e);
+        pre.classList.add('desmos-error');
+      }
+    }
+  }
+
+  async function renderSpecialContent(container) {
+    await renderMermaidDiagrams(container);
+    renderDesmosGraphs(container);
   }
 
   function buildMessageRow(role, text, isError = false, suggestions = [], contentId = null) {
@@ -251,35 +351,29 @@
 
   function getFollowUpActionsForMode(mode) {
     const commonActions = [
-      { icon: "🃏", label: "Make flashcards", prompt: "Create flashcards based on what you just explained" },
-      { icon: "🎯", label: "Quiz me", prompt: "Give me a quick quiz on this topic" },
-      { icon: "🔄", label: "Explain simpler", prompt: "Can you explain that in simpler terms?" },
+      { icon: "🃏", label: "Generate Flashcards", prompt: "Create flashcards based on what you just explained" },
+      { icon: "🎯", label: "Generate Practice Test", prompt: "Create a practice test based on what you just explained" },
+      { icon: "📄", label: "Generate Study Guide", prompt: "Create a study guide based on what you just explained" },
     ];
 
     const modeSpecific = {
       math: [
-        { icon: "📝", label: "Practice problems", prompt: "Give me similar practice problems to solve" },
         { icon: "✅", label: "Show examples", prompt: "Show me more step-by-step examples" },
       ],
       physics: [
-        { icon: "🌍", label: "Real-world example", prompt: "Give me a real-world example of this concept" },
-        { icon: "🔬", label: "Show experiment", prompt: "Describe an experiment that demonstrates this" },
+        { icon: "🌍", label: "Example", prompt: "Give me a real-world example of this concept" },
       ],
       chemistry: [
-        { icon: "⚗️", label: "Show reaction", prompt: "Show me the balanced chemical equation" },
-        { icon: "🧪", label: "Related reactions", prompt: "What are similar chemical reactions?" },
+        { icon: "🧪", label: "Related Reactions", prompt: "What are similar chemical reactions?" },
       ],
       biology: [
-        { icon: "🔬", label: "Show diagram", prompt: "Describe a diagram of this process" },
         { icon: "🧬", label: "Related concepts", prompt: "What other biological concepts relate to this?" },
       ],
       history: [
-        { icon: "📅", label: "Timeline", prompt: "Create a timeline of these events" },
-        { icon: "🌍", label: "Broader context", prompt: "What was happening globally during this time?" },
+        { icon: "📅", label: "Create Timeline", prompt: "Create a timeline of these events" },
       ],
       literature: [
         { icon: "📖", label: "Find themes", prompt: "What are the main themes in this text?" },
-        { icon: "💭", label: "Analyze symbols", prompt: "What symbols or motifs appear in this work?" },
       ],
     };
 
@@ -290,7 +384,6 @@
     const row = buildMessageRow(role, text, isError, suggestions, contentId);
     messagesList.appendChild(row);
     setWelcomeVisibility(false);
-    scrollToBottom();
     return row;
   }
 
@@ -388,7 +481,7 @@
     }
     list.forEach((item) => {
       const a = document.createElement("a");
-      a.href = `study/item.html?id=${encodeURIComponent(item.id)}`;
+      a.href = `../study/item.html?id=${encodeURIComponent(item.id)}`;
       a.className = "history-item t-btn";
       a.setAttribute("data-study-id", item.id);
       a.style.textDecoration = "none";
@@ -701,7 +794,7 @@
     });
 
     if (!response.ok) {
-      let errorMessage = `Request failed with status ${response.status}`;
+      let errorMessage = `Oops! There was an error. Please try again. ${response.status}`;
       try {
         const errorData = await response.json();
         errorMessage = errorData?.message || errorData?.error || errorMessage;
@@ -764,7 +857,7 @@
                 console.log("Stream finish reason:", finishReason);
               }
             } catch (parseError) {
-              console.error("Failed to parse SSE data:", parseError, "Data:", data);
+              console.error("Oops, there was an error. Please try again:", parseError, "Data:", data);
             }
           }
         }
@@ -794,7 +887,11 @@
       history.forEach((msg) => {
         // Skip system messages for display
         if (msg.role !== "system") {
-          appendMessage(msg.role, msg.content);
+          const msgRow = appendMessage(msg.role, msg.content);
+          const contentEl = msgRow.querySelector('.assistant-content');
+          if (contentEl) {
+            renderSpecialContent(contentEl);
+          }
         }
       });
       // Show suggestion bar if last message was from assistant
@@ -925,7 +1022,7 @@
       if (chatTitleEl) chatTitleEl.textContent = newTitle;
       renderChatHistory();
     } catch (error) {
-      console.error("Failed to auto-generate chat title:", error);
+      console.error("Oops! There was an error. Please try again.:", error);
     }
   }
 
@@ -944,7 +1041,19 @@
 - Use examples and visual representations when helpful
 - Help students understand concepts, not just memorize formulas
 - Encourage problem-solving strategies and mental math techniques
-- When showing equations, explain each variable and operation clearly`,
+- When showing equations, explain each variable and operation clearly
+
+GRAPHING: When teaching functions, graphing, or any visual math concept, ALWAYS include interactive Desmos graphs. Use the following JSON format in a code block:
+'''desmos
+{
+  "expressions": [
+    {"latex": "y=x^2", "color": "#4285F4"},
+    {"latex": "y=2x+1", "color": "#EA4335"}
+  ],
+  "zoom": {"xmin": -10, "xmax": 10, "ymin": -10, "ymax": 10}
+}
+'''
+After showing a graph, ALWAYS encourage the student to interact with it: "Try dragging the points, changing the equation, or adjusting the zoom to see how the graph changes. This will help you build intuition for how the parameters affect the shape!"`,
 
     physics: `You are Korah, an engaging physics tutor. Your teaching style:
 - Explain concepts through real-world applications and examples
@@ -952,7 +1061,16 @@
 - Show how formulas are derived and what each variable represents
 - Use analogies to make complex ideas accessible
 - Emphasize conceptual understanding before mathematical complexity
-- Help visualize forces, motion, energy, and other physical concepts`,
+- Help visualize forces, motion, energy, and other physical concepts
+
+VISUALIZATIONS: Use mermaid diagrams to show processes, cause-effect relationships, and system interactions:
+'''mermaid
+flowchart LR
+  A[Force Applied] --> B[Acceleration]
+  B --> C[Change in Velocity]
+'''
+
+When showing mathematical relationships, use LaTeX and consider including a Desmos graph for functions.`,
 
     chemistry: `You are Korah, an enthusiastic chemistry tutor. Your teaching style:
 - Explain chemical reactions with clear mechanisms and electron movement
@@ -968,9 +1086,18 @@
 - Connect structure to function in biological systems
 - Help students understand relationships between different biological concepts
 - Use diagrams and flow charts mentally when describing processes
-- Emphasize the interconnectedness of living systems`,
+- Emphasize the interconnectedness of living systems
 
-    history: `You are Korah, a insightful history tutor. Your teaching style:
+VISUALIZATIONS: Use mermaid diagrams to show biological pathways, processes, and relationships:
+'''mermaid
+flowchart TD
+  A[Glucose] --> B[Glycolysis]
+  B --> C[Krebs Cycle]
+  C --> D[Electron Transport]
+  D --> E[ATP Production]
+'''`,
+
+    history: `You are Korah, an insightful history tutor. Your teaching style:
 - Provide context and background for historical events
 - Explain cause-and-effect relationships between events
 - Present multiple perspectives when discussing historical topics
@@ -992,7 +1119,29 @@ Always format your responses using GitHub-flavored Markdown. Use:
 - Markdown headings (##, ###) to structure sections
 - Bulleted and numbered lists for steps and key points
 - \`code\` and fenced code blocks for formulas or code when helpful
-When you include math, write it using LaTeX syntax with inline $...$ and display $$...$$ blocks so it can be rendered with KaTeX.`;
+When you include math, write it using LaTeX syntax on its own line (not mixed with markdown text):
+- Inline math: $...$ (e.g., $x^2$) - only for short expressions within sentences
+- Display math: $$...$$ or \\[...\\] (e.g., $$\\frac{1}{2}mv^2$$) - use for equations on their own line
+- NEVER use [ ... ] as delimiters - KaTeX cannot render them
+- Always put LaTeX on separate lines, never inline with regular text on the same line
+
+VISUAL DIAGRAMS: When you need to show flowcharts, sequences, or relationships, use mermaid syntax in a fenced code block:
+\`\`\`mermaid
+graph TD
+  A[Start] --> B[Step 1]
+  B --> C[Step 2]
+\`\`\`
+
+INTERACTIVE GRAPHS: When showing mathematical functions or graphs, use the Desmos format:
+\`\`\`desmos
+{
+  "expressions": [
+    {"latex": "y=x^2", "color": "#4285F4"},
+    {"latex": "y=sin(x)", "color": "#EA4335"}
+  ],
+  "zoom": {"xmin": -5, "xmax": 5, "ymin": -5, "ymax": 5}
+}
+\`\`\``;
 
   function getModeConfig(mode) {
     const modes = {
@@ -1009,7 +1158,9 @@ When you include math, write it using LaTeX syntax with inline $...$ and display
 
   function getSystemPrompt(mode) {
     const base = MODE_SYSTEM_PROMPTS[mode] || MODE_SYSTEM_PROMPTS.general;
+    const tutoringInstructions = tutoringMode ? TUTORING_PROMPT : '';
     return `${base}
+${tutoringInstructions}
 
 ${FORMAT_INSTRUCTIONS}`.trim();
   }
@@ -1313,6 +1464,216 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     });
   }
 
+  function clampInt(value, fallback, min, max) {
+    const parsed = parseInt(value, 10);
+    if (Number.isNaN(parsed)) return fallback;
+    return Math.min(max, Math.max(min, parsed));
+  }
+
+  function inferPracticeConfigFromText(text) {
+    const lower = (text || "").toLowerCase();
+    const totalMatch = lower.match(/(\d+)\s*(?:question|questions|q)\b/);
+    const mcqMatch = lower.match(/(\d+)\s*(?:mcq|multiple[-\s]?choice)\b/);
+    const openMatch = lower.match(/(\d+)\s*(?:open[-\s]?ended|short\s*answer|free\s*response)\b/);
+
+    let total = totalMatch ? clampInt(totalMatch[1], 10, 1, 50) : null;
+    let mcq = mcqMatch ? clampInt(mcqMatch[1], 0, 0, 50) : null;
+    let openEnded = openMatch ? clampInt(openMatch[1], 0, 0, 50) : null;
+
+    if (total === null && mcq !== null && openEnded !== null) {
+      total = mcq + openEnded;
+    }
+    if (total === null) total = 10;
+    if (mcq === null && openEnded === null) {
+      mcq = Math.round(total * 0.6);
+      openEnded = total - mcq;
+    } else if (mcq === null) {
+      mcq = total - openEnded;
+    } else if (openEnded === null) {
+      openEnded = total - mcq;
+    }
+
+    mcq = clampInt(mcq, Math.round(total * 0.6), 0, total);
+    openEnded = clampInt(openEnded, total - mcq, 0, total - mcq);
+    if (mcq + openEnded !== total) openEnded = total - mcq;
+
+    return { totalQuestions: total, mcqCount: mcq, openEndedCount: openEnded };
+  }
+
+  async function handleStudyItemGeneration(type, topic, practiceConfig) {
+    const typeLabels = {
+      flashcards: "Flashcards",
+      studyGuide: "Study Guide",
+      practiceTest: "Practice Test"
+    };
+    const typeEmojis = {
+      flashcards: "🃏",
+      studyGuide: "📖",
+      practiceTest: "🎯"
+    };
+    const typeLabel = typeLabels[type] || "Study Item";
+    const typeEmoji = typeEmojis[type] || "✨";
+
+    // Create message with loading bar
+    const msgId = `study-gen-${Date.now()}`;
+    const row = appendMessage("assistant", "", false, [], msgId);
+    const content = document.getElementById(msgId);
+    if (!content) return;
+
+    content.innerHTML = `
+      <div class="study-gen-bubble">
+        <div class="study-gen-status">
+          <span class="animate-pulse">${typeEmoji}</span>
+          <span>Generating ${typeLabel}...</span>
+        </div>
+        <div class="study-gen-progress-container">
+          <div class="study-gen-progress-bar loading"></div>
+        </div>
+        <div class="study-gen-success" id="${msgId}-success">
+          <p>Success! Your ${typeLabel.toLowerCase()} are ready.</p>
+          <a href="#" class="study-gen-btn" id="${msgId}-link">
+            <span>View ${typeLabel}</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+    `;
+
+    try {
+      // Use existing context if topic is "this"
+      let prompt = topic;
+      if (topic.toLowerCase() === "this" || topic.toLowerCase() === "the above") {
+        const lastMsgs = history.slice(-5).filter(m => m.role !== "system").map(m => m.content).join("\n\n");
+        prompt = `Based on our conversation:\n\n${lastMsgs}`;
+      }
+
+      // Call the Study API
+      const result = await KorahStudyAPI.generateStudyContent({
+        type: type,
+        prompt: prompt,
+        title: topic === "this" ? currentSession.title : topic,
+        subject: currentSession.mode,
+        testConfig: type === "practiceTest" ? practiceConfig : undefined
+      });
+
+      // Save to localStorage
+      const id = `si_${Date.now()}`;
+      const rawContent = result && result.content ? result.content : {};
+      let normalizedContent = rawContent;
+      if (type === "studyGuide") {
+        const markdown = (rawContent.markdown || "").trim();
+        normalizedContent = { markdown: markdown };
+      }
+      if (type === "practiceTest") {
+        const questions = (rawContent.questions || []).filter((q) => q && (q.text || "").trim()).map((q) => {
+          const isMcq = String(q.type || "").toLowerCase() === "mcq" || (Array.isArray(q.options) && q.options.length > 1);
+          return {
+            type: isMcq ? "mcq" : "openEnded",
+            text: (q.text || "").trim(),
+            options: isMcq ? (q.options || []).map((opt) => String(opt || "").trim()).filter(Boolean).slice(0, 4) : [],
+            answer: (q.answer || "").trim(),
+            explanation: (q.explanation || "").trim()
+          };
+        });
+        normalizedContent = {
+          questions,
+          testConfig: {
+            totalQuestions: questions.length,
+            mcqCount: questions.filter((q) => q.type === "mcq").length,
+            openEndedCount: questions.filter((q) => q.type !== "mcq").length
+          }
+        };
+      }
+
+      const aiGeneratedTitle = rawContent.title;
+      const finalTitle = aiGeneratedTitle || (topic === "this" ? currentSession.title : topic) || "Untitled";
+
+      const newItem = {
+        id: id,
+        type: type,
+        title: finalTitle,
+        description: `Generated from chat on ${new Date().toLocaleDateString()}`,
+        content: normalizedContent,
+        source: "chatbot-request",
+        subject: currentSession.mode,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      Storage.saveStudyItem(id, newItem);
+      renderStudyItemsHistory();
+
+      // Update UI to success state
+      const progressBar = content.querySelector(".study-gen-progress-bar");
+      const statusText = content.querySelector(".study-gen-status span:last-child");
+      
+      if (statusText) statusText.textContent = `Generated ${typeLabel} on "${finalTitle}"`;
+      if (progressBar) {
+        progressBar.classList.remove("loading");
+        progressBar.style.width = "100%";
+      }
+      
+      setTimeout(() => {
+        const successDiv = document.getElementById(`${msgId}-success`);
+        const link = document.getElementById(`${msgId}-link`);
+        if (successDiv) successDiv.classList.add("show");
+        if (link) {
+          link.href = `study/item.html?id=${id}`;
+          link.innerHTML = `<span>View ${finalTitle} ${typeLabel}</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+            </svg>`;
+        }
+        
+        // Add to history
+        history.push({ 
+          role: "assistant", 
+          content: `I've generated **${typeLabel}** on "**${finalTitle}**" for you. You can find them in your Study Library.` 
+        });
+        saveCurrentSession();
+      }, 500);
+
+    } catch (error) {
+      console.error("Study generation failed:", error);
+      content.innerHTML = `<div class="tx-mr">Oops! There was an error. Please try again: ${error.message}</div>`;
+    }
+  }
+
+  function detectStudyRequest(text) {
+    const t = text.toLowerCase();
+    
+    // Types
+    let type = null;
+    if (t.includes("flashcard")) type = "flashcards";
+    else if (t.includes("study guide")) type = "studyGuide";
+    else if (t.includes("practice test") || t.includes("quiz")) type = "practiceTest";
+
+    if (!type) return null;
+
+    // Intents
+    const intents = ["make", "generate", "create", "give me", "build"];
+    const hasIntent = intents.some(i => t.includes(i));
+    
+    if (!hasIntent && !t.includes("flashcard") && !t.includes("study guide") && !t.includes("practice test")) return null;
+
+    // Extract topic
+    let topic = "this";
+    const markers = ["on ", "about ", "for ", "regarding "];
+    for (const marker of markers) {
+      const idx = t.indexOf(marker);
+      if (idx !== -1) {
+        topic = text.slice(idx + marker.length).trim();
+        // Clean up punctuation at end
+        topic = topic.replace(/[?\.!]+$/, "");
+        break;
+      }
+    }
+
+    const practiceConfig = type === "practiceTest" ? inferPracticeConfigFromText(text) : null;
+    return { type, topic, practiceConfig };
+  }
+
   async function sendMessage(prefillText) {
     if (isSending) return;
     const raw = typeof prefillText === "string" ? prefillText : input.value;
@@ -1324,6 +1685,9 @@ ${FORMAT_INSTRUCTIONS}`.trim();
       return;
     }
 
+    // NEW: Detect study item request
+    const studyReq = detectStudyRequest(text);
+
     appendMessage("user", text);
     history.push({ role: "user", content: text });
     saveCurrentSession();
@@ -1333,6 +1697,15 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     resizeInput();
     updateCharCount();
     setSendingState(true);
+
+    if (studyReq) {
+      await handleStudyItemGeneration(studyReq.type, studyReq.topic, studyReq.practiceConfig);
+      setSendingState(false);
+      updateModeButtonState();
+      showSuggestionBar();
+      return;
+    }
+
     setTyping(true);
 
     // Create streaming message container
@@ -1345,9 +1718,13 @@ ${FORMAT_INSTRUCTIONS}`.trim();
       const reply = await callChatApi(history, (chunk, fullText) => {
         if (contentElement) {
           renderMarkdownAndMath(contentElement, fullText);
-          scrollToBottom();
         }
       });
+      
+      // Render mermaid and desmos after streaming is complete
+      if (contentElement) {
+        await renderSpecialContent(contentElement);
+      }
       
       history.push({ role: "assistant", content: reply });
       
@@ -1925,8 +2302,57 @@ function initConstellationField() {
   }
 }
 
+function streamText(element, text, speed = 20) {
+  if (!element) return Promise.resolve();
+  return new Promise((resolve) => {
+    element.textContent = '';
+    let idx = 0;
+    function type() {
+      if (idx < text.length) {
+        element.textContent += text.charAt(idx);
+        idx++;
+        setTimeout(type, speed);
+      } else {
+        resolve();
+      }
+    }
+    type();
+  });
+}
+
+async function initWelcomeMessage() {
+  const firstName = localStorage.getItem('korah_first_name') || 'there';
+  const welcomeHeading = document.getElementById('welcome-heading');
+  const welcomeSubtext = document.getElementById('welcome-subtext');
+  
+  const greetings = [
+    `Hey ${firstName}, I'm Korah ✨`,
+    `Hi ${firstName}! Ready to lock in? 🚀`,
+    `Welcome back, ${firstName}! Let's get started 📚`,
+    `Hey ${firstName} — what shall we work on today? 🎯`,
+    `Good to see you, ${firstName}! Let's get studying 💡`
+  ];
+  
+  const subtexts = [
+    "Your AI study companion. Choose a mode below or tell me what you're working on.",
+    "I'm here to help you ace your classes. What are we learning today?",
+    "Ready to boost your grades? Let's start with something interesting!",
+    "Pick a subject or just tell me what you need help with.",
+    "Let's make learning fun and effective. What topic should we explore?"
+  ];
+  
+  const randomIdx = Math.floor(Math.random() * greetings.length);
+  
+  if (welcomeHeading) welcomeHeading.textContent = greetings[randomIdx];
+  if (welcomeSubtext) await streamText(welcomeSubtext, subtexts[randomIdx], 15);
+}
+
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initConstellationField);
+  document.addEventListener('DOMContentLoaded', () => {
+    initConstellationField();
+    initWelcomeMessage();
+  });
 } else {
   initConstellationField();
+  initWelcomeMessage();
 }

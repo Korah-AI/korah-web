@@ -3,7 +3,7 @@
   <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>Korah AI — Study Item</title>
+  <title>Korah AI — Practice Test</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
@@ -386,10 +386,60 @@
     .test-option {
       display: flex;
       align-items: flex-start;
-      gap: 8px;
+      gap: 10px;
       font-size: 14px;
       color: var(--tx);
       line-height: 1.45;
+      cursor: pointer;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(168, 115, 255, 0.2);
+      background: rgba(41, 23, 74, 0.4);
+      transition: border-color 0.2s ease, background 0.2s ease;
+    }
+    .test-option:hover {
+      border-color: rgba(168, 115, 255, 0.5);
+      background: rgba(41, 23, 74, 0.6);
+    }
+    .test-option input[type="radio"] {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      min-width: 20px;
+      border: 2px solid rgba(168, 115, 255, 0.5);
+      border-radius: 50%;
+      background: transparent;
+      cursor: pointer;
+      position: relative;
+      margin: 0;
+      transition: border-color 0.2s ease, background 0.2s ease;
+    }
+    .test-option input[type="radio"]:hover {
+      border-color: var(--p4);
+    }
+    .test-option input[type="radio"]:checked {
+      border-color: var(--p4);
+      background: var(--p4);
+    }
+    .test-option input[type="radio"]:checked::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #fff;
+    }
+    .test-option input[type="radio"]:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.3);
+    }
+    .test-option-text {
+      flex: 1;
+      padding-top: 1px;
     }
     .test-textarea {
       width: 100%;
@@ -423,147 +473,6 @@
       color: var(--tx2);
       font-size: 13px;
       background: rgba(139, 92, 246, 0.1);
-    }
-    /* Practice Test UI Enhancements */
-    .test-summary-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 12px;
-      margin-bottom: 24px;
-    }
-    .test-summary-card {
-      background: rgba(139, 92, 246, 0.08);
-      border: 1px solid rgba(168, 115, 255, 0.2);
-      border-radius: 16px;
-      padding: 18px;
-      text-align: center;
-      transition: border-color 0.2s ease;
-    }
-    .test-summary-card:hover {
-      border-color: var(--p4);
-    }
-    .test-summary-val {
-      font-size: 32px;
-      font-weight: 800;
-      color: var(--tx);
-      display: block;
-      margin-bottom: 4px;
-      line-height: 1;
-    }
-    .test-summary-lbl {
-      font-size: 12px;
-      color: var(--tx2);
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-    }
-    .test-action-card {
-      border: 1px solid rgba(168, 115, 255, 0.24);
-      border-radius: 16px;
-      background: rgba(43, 24, 78, 0.6);
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-    .test-config-row {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 16px;
-    }
-    .test-ai-box {
-      margin-top: 16px;
-      padding-top: 20px;
-      border-top: 1px solid rgba(168, 115, 255, 0.15);
-    }
-    .test-btn-primary {
-      background: var(--p4);
-      color: #fff;
-      border: none;
-      border-radius: 999px;
-      padding: 12px 24px;
-      font-weight: 700;
-      cursor: pointer;
-      font-size: 15px;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-    .test-btn-primary:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
-    }
-    .test-btn-outline {
-      background: transparent;
-      border: 1px solid var(--p4);
-      color: var(--p4);
-      border-radius: 999px;
-      padding: 10px 20px;
-      font-weight: 700;
-      cursor: pointer;
-      font-size: 14px;
-    }
-    .test-btn-outline:hover {
-      background: rgba(139, 92, 246, 0.1);
-    }
-    /* Pool Preview Styles */
-    .test-pool-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin: 32px 0 16px;
-      padding-bottom: 8px;
-      border-bottom: 1px solid var(--bd);
-    }
-    .test-pool-title {
-      font-size: 16px;
-      font-weight: 700;
-      color: var(--tx);
-    }
-    .test-preview-list {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .test-preview-item {
-      padding: 16px;
-      border-radius: 14px;
-      background: rgba(139, 92, 246, 0.04);
-      border: 1px solid var(--bd2);
-      transition: background 0.2s ease;
-    }
-    .test-preview-item:hover {
-      background: rgba(139, 92, 246, 0.08);
-    }
-    .test-preview-q {
-      font-weight: 600;
-      color: var(--tx);
-      font-size: 14px;
-      line-height: 1.5;
-    }
-    .test-preview-meta {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 8px;
-    }
-    .test-preview-badge {
-      font-size: 9px;
-      font-weight: 800;
-      text-transform: uppercase;
-      padding: 2px 6px;
-      border-radius: 4px;
-      background: var(--p4);
-      color: #fff;
-    }
-    .test-preview-a {
-      margin-top: 10px;
-      padding-top: 10px;
-      border-top: 1px solid rgba(168, 115, 255, 0.1);
-      font-size: 13px;
-      color: var(--tx2);
-      display: none;
-    }
-    .test-preview-item.revealed .test-preview-a {
-      display: block;
     }
     .item-edit-modal-content {
       max-width: 760px;
@@ -758,25 +667,222 @@
         transform: translateX(0) scale(1);
       }
     }
+    .test-setup-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1200;
+      padding: 18px;
+    }
+    .test-setup-modal.show {
+      display: flex;
+    }
+    .test-setup-dialog {
+      width: min(440px, 100%);
+      border: 1px solid var(--bd);
+      border-radius: 16px;
+      background: var(--bg);
+      overflow: hidden;
+    }
+    .test-setup-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--bd);
+    }
+    .test-setup-return {
+      border: 1px solid var(--bd);
+      border-radius: 999px;
+      background: var(--sf2);
+      color: var(--tx2);
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .test-setup-return:hover {
+      border-color: var(--p4);
+      color: var(--p5);
+    }
+    .test-setup-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--tx);
+    }
+    .test-setup-close {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 1px solid var(--bd);
+      background: var(--sf2);
+      color: var(--tx2);
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .test-setup-close:hover {
+      border-color: var(--p4);
+      color: var(--p5);
+    }
+    .test-setup-body {
+      padding: 20px;
+    }
+    .test-setup-heading {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--tx);
+      margin-bottom: 20px;
+    }
+    .test-setup-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: rgba(139, 92, 246, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+    .test-setup-icon svg {
+      width: 24px;
+      height: 24px;
+      color: var(--p4);
+    }
+    .test-setup-field {
+      margin-bottom: 16px;
+    }
+    .test-setup-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--tx2);
+      margin-bottom: 8px;
+    }
+    .test-setup-input {
+      width: 100%;
+      height: 42px;
+      border-radius: 10px;
+      border: 1px solid var(--bd);
+      background: var(--sf2);
+      color: var(--tx);
+      padding: 0 14px;
+      font-size: 15px;
+    }
+    .test-setup-input:focus {
+      outline: none;
+      border-color: var(--p4);
+    }
+    .test-setup-select {
+      width: 100%;
+      height: 42px;
+      border-radius: 10px;
+      border: 1px solid var(--bd);
+      background: var(--sf2);
+      color: var(--tx);
+      padding: 0 14px;
+      font-size: 15px;
+      cursor: pointer;
+    }
+    .test-setup-select:focus {
+      outline: none;
+      border-color: var(--p4);
+    }
+    .test-setup-divider {
+      height: 1px;
+      background: var(--bd);
+      margin: 20px 0;
+    }
+    .test-setup-toggles {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+    .test-setup-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--bd);
+      background: var(--sf2);
+      cursor: pointer;
+      transition: border-color 0.2s ease, background 0.2s ease;
+    }
+    .test-setup-toggle:hover {
+      border-color: var(--p4);
+    }
+    .test-setup-toggle.active {
+      border-color: var(--p4);
+      background: rgba(139, 92, 246, 0.15);
+    }
+    .test-setup-toggle-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--tx);
+    }
+    .test-setup-toggle-switch {
+      width: 36px;
+      height: 20px;
+      border-radius: 10px;
+      background: var(--bd);
+      position: relative;
+      transition: background 0.2s ease;
+    }
+    .test-setup-toggle.active .test-setup-toggle-switch {
+      background: var(--p4);
+    }
+    .test-setup-toggle-switch::after {
+      content: '';
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #fff;
+      top: 2px;
+      left: 2px;
+      transition: transform 0.2s ease;
+    }
+    .test-setup-toggle.active .test-setup-toggle-switch::after {
+      transform: translateX(16px);
+    }
+    .test-setup-footer {
+      padding: 16px 20px 20px;
+      display: flex;
+      justify-content: flex-end;
+    }
+    .test-setup-start-btn {
+      height: 44px;
+      padding: 0 28px;
+      border-radius: 999px;
+      border: none;
+      background: var(--p4);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .test-setup-start-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+    }
   </style>
 </head>
 <body class="bg-base tx study-modern">
 
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
-
 <canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
-
-<!-- Loading Overlay -->
-<div id="loading-overlay" class="loading-overlay hidden">
-  <div class="loading-spinner">
-    <div class="spinner-ring"></div>
-    <div class="spinner-core"></div>
-  </div>
-  <div class="loading-text" id="loading-text">Generating with AI...</div>
-  <div class="loading-subtext">Korah is crafting your personalized study materials. This usually takes 5-10 seconds.</div>
-</div>
 
 <aside id="sidebar" class="sidebar bg-sf glass t-theme">
   <div class="sidebar-header">
@@ -799,10 +905,9 @@
     <a href="../app/index.html" class="sidebar-nav-link t-btn">💬 Chat</a>
     <a href="feed.html" class="sidebar-nav-link active t-btn">📚 Study</a>
   </nav>
-
-  <div class="sidebar-middle">
+   <div class="sidebar-middle">
     <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 12px 0 4px;">
-    <span class="sidebar-section-label" style="margin:0">Recent Chats</span>
+      <span class="sidebar-section-label" style="margin:0">Recent Chats</span>
     </div>
     <div id="chat-select-bar" class="select-bar">
       <span class="select-bar-count" id="chat-select-count">0 selected</span>
@@ -811,28 +916,7 @@
         <button class="select-bar-btn danger" id="chat-delete-selected">Delete</button>
       </div>
     </div>
-    <div id="chat-history" class="chat-history">
-      <button class="history-item active t-btn" data-session="current">
-        <span class="history-icon">📚</span>
-        <span class="history-text">Photosynthesis Study Guide</span>
-      </button>
-      <button class="history-item t-btn" data-session="1">
-        <span class="history-icon">🧮</span>
-        <span class="history-text">Calculus Flashcards</span>
-      </button>
-      <button class="history-item t-btn" data-session="2">
-        <span class="history-icon">⚗️</span>
-        <span class="history-text">Chemistry Practice Test</span>
-      </button>
-      <button class="history-item t-btn" data-session="3">
-        <span class="history-icon">📝</span>
-        <span class="history-text">Essay Outline — WWII</span>
-      </button>
-      <button class="history-item t-btn" data-session="4">
-        <span class="history-icon">🔢</span>
-        <span class="history-text">Statistics Review</span>
-      </button>
-    </div>
+    <div id="chat-history" class="chat-history"></div>
   </div>
 
   <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 12px 0 4px;">
@@ -845,18 +929,16 @@
       <button class="select-bar-btn danger" id="study-delete-selected">Delete</button>
     </div>
   </div>
-  <div id="study-items-history" class="chat-history study-items-history">
-    <!-- Populated by JS from localStorage -->
-  </div>
-  <div id="study-items-empty" class="study-items-empty hidden">
-    <span class="study-items-empty-icon" aria-hidden="true">📚</span>
-    <div class="study-items-empty-title">No study items yet</div>
-    <div class="study-items-empty-sub">Create one to see it here.</div>
-  </div>
+    <div id="study-items-history" class="chat-history study-items-history"></div>
+    <div id="study-items-empty" class="study-items-empty hidden">
+      <span class="study-items-empty-icon" aria-hidden="true">📚</span>
+      <div class="study-items-empty-title">No study items yet</div>
+      <div class="study-items-empty-sub">Create one to see it here.</div>
+    </div>
 
   <div class="sidebar-footer">
-    <div class="mood-indicator" id="sidebar-mood">
-      <span class="mood-dot" id="mood-dot">🟢</span>
+    <div class="mood-indicator">
+      <span class="mood-dot">🟢</span>
       <span class="text-xs tx2 font-medium">Full Focus Mode</span>
     </div>
     <div class="sidebar-footer-actions">
@@ -895,10 +977,10 @@
     </button>
     <div class="chat-title-area">
       <div class="korah-status-dot"></div>
-      <span class="font-semibold tx text-sm" id="item-page-title">Flashcards</span>
+      <span class="font-semibold tx text-sm" id="item-page-title">Practice Test</span>
     </div>
     <div class="topbar-actions">
-      <a href="feed.html" class="feed-card-btn t-btn" style="padding: 8px 14px;">Back to Feed</a>
+      <button id="back-to-customize" type="button" class="feed-card-btn t-btn" style="padding: 8px 14px;">Back to Item</button>
     </div>
   </header>
 
@@ -933,6 +1015,7 @@
           <span id="item-stage-context"></span>
         </div>
         <div id="item-body" class="item-body player-body">
+          <!-- Type-specific content rendered here -->
         </div>
       </section>
       <div class="player-controls">
@@ -949,6 +1032,78 @@
   </div>
 </main>
 
+<div id="test-setup-modal" class="test-setup-modal">
+  <div class="test-setup-dialog">
+    <div class="test-setup-header">
+      <a href="feed.html" class="test-setup-return" type="button" aria-label="Return to feed">← Return</a>
+      <span id="test-setup-title" class="test-setup-title"></span>
+    </div>
+    <div class="test-setup-body">
+      <div class="test-setup-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+          <polyline points="10 9 9 9 8 9"/>
+        </svg>
+      </div>
+      <h2 class="test-setup-heading">Set up your test</h2>
+      <div class="test-setup-field">
+        <div class="test-setup-label">
+          <span>Questions (max 110)</span>
+        </div>
+        <input type="number" id="test-setup-questions" class="test-setup-input" min="1" max="110" value="20">
+      </div>
+      <div class="test-setup-field">
+        <div class="test-setup-label">
+          <span>Answer with</span>
+        </div>
+        <select id="test-setup-answer-type" class="test-setup-select">
+          <option value="both">Both</option>
+          <option value="mcq">Multiple Choice Only</option>
+          <option value="written">Written Only</option>
+        </select>
+      </div>
+      <div class="test-setup-divider"></div>
+      <div class="test-setup-toggles">
+        <div class="test-setup-toggle" data-type="tf">
+          <span class="test-setup-toggle-label">True/False</span>
+          <div class="test-setup-toggle-switch"></div>
+        </div>
+        <div class="test-setup-toggle active" data-type="mcq">
+          <span class="test-setup-toggle-label">Multiple choice</span>
+          <div class="test-setup-toggle-switch"></div>
+        </div>
+        <div class="test-setup-toggle" data-type="matching">
+          <span class="test-setup-toggle-label">Matching</span>
+          <div class="test-setup-toggle-switch"></div>
+        </div>
+        <div class="test-setup-toggle active" data-type="written">
+          <span class="test-setup-toggle-label">Written</span>
+          <div class="test-setup-toggle-switch"></div>
+        </div>
+      </div>
+    </div>
+    <div class="test-setup-footer">
+      <button id="test-setup-start" class="test-setup-start-btn">Start test</button>
+    </div>
+  </div>
+</div>
+
+<div id="guide-reader-modal" class="guide-reader-modal">
+  <div class="guide-reader-dialog">
+    <div class="guide-reader-head">
+      <strong id="guide-reader-title" class="tx">Study Guide</strong>
+      <button id="guide-reader-close" class="guide-reader-close" type="button" aria-label="Close reader">&times;</button>
+    </div>
+    <div id="guide-reader-body" class="guide-reader-body study-guide-markdown assistant-content"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
 <!-- Settings Modal -->
 <div id="settings-modal" class="settings-modal">
   <div class="settings-modal-content">
@@ -1085,7 +1240,6 @@
 </div>
 
 <script src="js/sidebar.js"></script>
-<script src="js/study-api.js"></script>
 <script>
 (function () {
   KorahSidebar.initSidebar({ chatBaseUrl: "../app/index.html", itemPageUrl: "item.html" });
@@ -1106,49 +1260,106 @@
 
   var params = new URLSearchParams(window.location.search);
   var id = params.get("id");
-  var duplicate = params.get("duplicate") === "1";
-
-  if (duplicate && id) {
-    var items = getStudyItems();
-    var original = items[id];
-    if (original) {
-      var newId = "study_" + Date.now();
-      var copy = JSON.parse(JSON.stringify(original));
-      copy.id = newId;
-      copy.title = (copy.title || "Untitled") + " (Copy)";
-      copy.createdAt = copy.updatedAt = new Date().toISOString();
-      items[newId] = copy;
-      saveStudyItems(items);
-      window.location.replace("item.html?id=" + encodeURIComponent(newId));
-      throw new Error("redirect");
-    }
-  }
-
   var item = id ? getStudyItems()[id] : null;
-  var currentItem = item;
-  var editDraft = null;
+
   var notFoundEl = document.getElementById("item-not-found");
   var detailEl = document.getElementById("item-detail");
   var modeTabsEl = document.getElementById("item-mode-tabs");
   var stageLabelEl = document.getElementById("item-stage-label");
-  // Increase text size for key elements
-  if (stageLabelEl) stageLabelEl.style.fontSize = "1.25em";
-  if (detailEl) detailEl.style.fontSize = "1.15em";
   var stageContextEl = document.getElementById("item-stage-context");
-  var prevBtn = document.getElementById("item-prev-btn");
-  var nextBtn = document.getElementById("item-next-btn");
-  var toggleBtn = document.getElementById("item-toggle-btn");
-  var shuffleBtn = document.getElementById("item-shuffle-btn");
   var progressTextEl = document.getElementById("item-progress-text");
   var progressBarEl = document.getElementById("item-progress-bar");
-  var viewState = {
-    itemId: null,
-    mode: "",
-    index: 0,
-    reveal: false,
-    order: []
+  var controlsEl = document.querySelector(".player-controls");
+  var progressTrackEl = document.querySelector(".player-progress-track");
+  var editBtn = document.getElementById("item-action-edit");
+  var testSetupModal = document.getElementById("test-setup-modal");
+  var testSetupTitle = document.getElementById("test-setup-title");
+  var testSetupStart = document.getElementById("test-setup-start");
+  var testSetupQuestions = document.getElementById("test-setup-questions");
+  var testSetupAnswerType = document.getElementById("test-setup-answer-type");
+  var testSetupToggles = document.querySelectorAll(".test-setup-toggle");
+  var currentTestItem = null;
+  var testState = {
+    config: null,
+    form: null
   };
-  var stageTransitionState = { nextEnter: false, animating: false };
+
+  function getToggleTypes() {
+    var types = { tf: false, mcq: false, matching: false, written: false };
+    testSetupToggles.forEach(function(toggle) {
+      var type = toggle.getAttribute("data-type");
+      if (toggle.classList.contains("active")) {
+        types[type] = true;
+      }
+    });
+    return types;
+  }
+
+  function showTestSetupModal(itemData) {
+    if (!testSetupModal || !itemData) return;
+    currentTestItem = itemData;
+    testSetupTitle.textContent = itemData.title || "Practice Test";
+    var allQuestions = normalizePracticeQuestions(itemData.content || {});
+    var defaultCount = Math.min(allQuestions.length || 20, 20);
+    testSetupQuestions.value = defaultCount;
+    testSetupQuestions.max = Math.max(allQuestions.length, 110);
+    testSetupAnswerType.value = "both";
+    testSetupToggles.forEach(function(toggle) {
+      var type = toggle.getAttribute("data-type");
+      if (type === "mcq" || type === "written") {
+        toggle.classList.add("active");
+      } else {
+        toggle.classList.remove("active");
+      }
+    });
+    testSetupModal.classList.add("show");
+  }
+
+  function hideTestSetupModal() {
+    window.location.href = "feed.html";
+  }
+
+  function startTest() {
+    if (!currentTestItem) return;
+    var questionCount = clampInt(testSetupQuestions.value, 20, 1, 110);
+    var answerType = testSetupAnswerType.value;
+    var toggleTypes = getToggleTypes();
+    var allQuestions = normalizePracticeQuestions(currentTestItem.content || {});
+    var filtered = allQuestions;
+    if (answerType === "mcq") {
+      filtered = allQuestions.filter(function(q) { return q.type === "mcq"; });
+    } else if (answerType === "written") {
+      filtered = allQuestions.filter(function(q) { return q.type !== "mcq"; });
+    }
+    var mcqCount = 0;
+    var openCount = 0;
+    if (toggleTypes.mcq) mcqCount = Math.floor(questionCount * 0.6);
+    if (toggleTypes.written) openCount = questionCount - mcqCount;
+    if (!toggleTypes.mcq) mcqCount = 0;
+    if (!toggleTypes.written) openCount = 0;
+    if (mcqCount + openCount > questionCount) {
+      openCount = questionCount - mcqCount;
+    }
+    var cfg = {
+      totalQuestions: questionCount,
+      mcqCount: mcqCount,
+      openEndedCount: openCount
+    };
+    testState.config = cfg;
+    if (testSetupModal) testSetupModal.classList.remove("show");
+    renderTest(currentTestItem, cfg);
+  }
+
+  if (testSetupToggles) {
+    testSetupToggles.forEach(function(toggle) {
+      toggle.addEventListener("click", function() {
+        toggle.classList.toggle("active");
+      });
+    });
+  }
+  if (testSetupStart) {
+    testSetupStart.addEventListener("click", startTest);
+  }
 
   function clone(obj) {
     return JSON.parse(JSON.stringify(obj || {}));
@@ -1168,12 +1379,42 @@
     }
   }
 
-  function getModesForType(type) {
-    if (type === "flashcards") return [{ id: "flashcards", label: "Flashcards" }, { id: "learn", label: "Learn" }, { id: "review", label: "Review" }];
-    return [];
+  function clampInt(value, fallback, min, max) {
+    var parsed = parseInt(value, 10);
+    if (Number.isNaN(parsed)) return fallback;
+    return Math.min(max, Math.max(min, parsed));
   }
 
-  function shuffleArray(list) {
+  function getPracticeDefaults(content) {
+    var existing = content && content.testConfig ? content.testConfig : {};
+    var total = clampInt(existing.totalQuestions, ((content && content.questions) || []).length || 10, 1, 50);
+    var mcq = clampInt(existing.mcqCount, Math.round(total * 0.6), 0, total);
+    var open = clampInt(existing.openEndedCount, total - mcq, 0, total - mcq);
+    if (mcq + open !== total) open = total - mcq;
+    return { totalQuestions: total, mcqCount: mcq, openEndedCount: open };
+  }
+
+  function normalizePracticeQuestions(content) {
+    return ((content && content.questions) || []).filter(function (q) {
+      return q && (q.text || "").trim();
+    }).map(function (q) {
+      var rawType = String((q.type || q.questionType || "")).toLowerCase();
+      var hasOptions = Array.isArray(q.options) && q.options.filter(Boolean).length > 1;
+      var isMcq = rawType === "mcq" || rawType === "multiple_choice" || rawType === "multiplechoice" || hasOptions;
+      var options = hasOptions ? q.options.map(function (opt) {
+        return String(opt || "").trim();
+      }).filter(Boolean).slice(0, 4) : [];
+      return {
+        type: isMcq ? "mcq" : "openEnded",
+        text: (q.text || "").trim(),
+        options: isMcq ? options : [],
+        answer: (q.answer || "").trim(),
+        explanation: (q.explanation || "").trim()
+      };
+    });
+  }
+
+  function shuffledCopy(list) {
     var arr = list.slice();
     for (var i = arr.length - 1; i > 0; i -= 1) {
       var j = Math.floor(Math.random() * (i + 1));
@@ -1182,6 +1423,31 @@
       arr[j] = tmp;
     }
     return arr;
+  }
+
+  function buildPracticeForm(content, cfg) {
+    var all = normalizePracticeQuestions(content);
+    var mcqPool = all.filter(function (q) { return q.type === "mcq"; });
+    var openPool = all.filter(function (q) { return q.type !== "mcq"; });
+    var desiredMcq = Math.min(cfg.mcqCount, mcqPool.length);
+    var desiredOpen = Math.min(cfg.openEndedCount, openPool.length);
+    var selected = shuffledCopy(mcqPool).slice(0, desiredMcq).concat(shuffledCopy(openPool).slice(0, desiredOpen));
+    selected = shuffledCopy(selected).map(function (q, idx) {
+      var out = clone(q);
+      out.id = "q_" + idx + "_" + Date.now();
+      if (out.type === "mcq") out.options = shuffledCopy(out.options || []);
+      return out;
+    });
+    return {
+      config: {
+        totalQuestions: selected.length,
+        mcqCount: selected.filter(function (q) { return q.type === "mcq"; }).length,
+        openEndedCount: selected.filter(function (q) { return q.type !== "mcq"; }).length
+      },
+      questions: selected,
+      responses: {},
+      submitted: false
+    };
   }
 
   function setProgress(current, total) {
@@ -1194,165 +1460,49 @@
     progressBarEl.style.width = Math.round((current / total) * 100) + "%";
   }
 
-  function setControls(config) {
-    prevBtn.style.display = config.showNav ? "" : "none";
-    nextBtn.style.display = config.showNav ? "" : "none";
-    toggleBtn.style.display = config.showToggle ? "" : "none";
-    shuffleBtn.style.display = config.showShuffle ? "" : "none";
-    prevBtn.disabled = !!config.disablePrev;
-    nextBtn.disabled = !!config.disableNext;
-    toggleBtn.textContent = config.toggleLabel || "Reveal";
+  function getConfigFromQuery(content) {
+    var defaults = getPracticeDefaults(content);
+    var total = clampInt(params.get("total"), defaults.totalQuestions, 1, 50);
+    var mcq = clampInt(params.get("mcq"), defaults.mcqCount, 0, total);
+    var open = clampInt(params.get("open"), total - mcq, 0, total - mcq);
+    if (mcq + open !== total) open = total - mcq;
+    return { totalQuestions: total, mcqCount: mcq, openEndedCount: open };
   }
 
-  function renderModeTabs(itemData) {
-    var modes = getModesForType(itemData.type);
-    if (!modes.length) {
-      modeTabsEl.innerHTML = "";
-      modeTabsEl.style.display = "none";
-      return;
-    }
-    modeTabsEl.style.display = "";
-    if (!modes.some(function (m) { return m.id === viewState.mode; })) {
-      viewState.mode = modes[0].id;
-      viewState.index = 0;
-      viewState.reveal = false;
-    }
-    modeTabsEl.innerHTML = "";
-    modes.forEach(function (mode) {
-      var btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "player-mode-btn" + (mode.id === viewState.mode ? " active" : "");
-      btn.textContent = mode.label;
-      btn.addEventListener("click", function () {
-        viewState.mode = mode.id;
-        viewState.index = 0;
-        viewState.reveal = false;
-        renderItem(currentItem);
-      });
-      modeTabsEl.appendChild(btn);
-    });
-  }
-
-  function syncFlashcardFlipUi() {
-    var cardEl = document.getElementById("flashcard");
-    if (!cardEl) return false;
-    cardEl.setAttribute("data-flip", viewState.reveal ? "true" : "false");
-    cardEl.setAttribute("aria-label", "Flashcard, currently showing " + (viewState.reveal ? "back" : "front") + " side");
-    toggleBtn.textContent = viewState.reveal ? "Hide Answer" : (viewState.mode === "flashcards" ? "Flip Card" : "Reveal Answer");
-    return true;
-  }
-
-  function renderFlashcards(itemData, bodyEl) {
-    var cards = (itemData.content && itemData.content.cards) || [];
-    if (!cards.length) {
-      bodyEl.innerHTML = '<p class="tx2">No flashcards yet. Edit this item to add cards.</p>';
-      setControls({ showNav: false, showToggle: false, showShuffle: false });
-      setProgress(0, 0);
-      stageLabelEl.textContent = "Flashcards";
-      stageContextEl.textContent = "";
-      return;
-    }
-    if (viewState.order.length !== cards.length) {
-      viewState.order = cards.map(function (_, i) { return i; });
-      viewState.index = 0;
-    }
-
-    if (viewState.mode === "review") {
-      var list = document.createElement("div");
-      list.className = "player-list";
-      cards.forEach(function (card, i) {
-        var item = document.createElement("div");
-        item.className = "player-list-item";
-        item.innerHTML = '<div class="player-list-item-title">Card ' + (i + 1) + '</div><div class="player-list-item-body"></div>';
-        item.querySelector(".player-list-item-body").textContent = (card.front || "") + (card.back ? "\n\n" + card.back : "");
-        list.appendChild(item);
-        renderMath(item);
-      });
-      bodyEl.appendChild(list);
-      setControls({ showNav: false, showToggle: false, showShuffle: true });
-      setProgress(cards.length, cards.length);
-      stageLabelEl.textContent = "Review all cards";
-      stageContextEl.textContent = cards.length + " cards";
-      return;
-    }
-
-    if (viewState.index >= cards.length) viewState.index = 0;
-    var realIndex = viewState.order[viewState.index];
-    var currentCard = cards[realIndex] || {};
-    var wrapper = document.createElement("div");
-    wrapper.id = "flashcard-wrapper";
-    wrapper.className = "flashcard-wrapper";
-
-    var card = document.createElement("div");
-    card.id = "flashcard";
-    card.className = "flashcard";
-    card.setAttribute("data-flip", viewState.reveal ? "true" : "false");
-    card.setAttribute("role", "region");
-    card.setAttribute("aria-label", "Flashcard, currently showing " + (viewState.reveal ? "back" : "front") + " side");
-    card.setAttribute("aria-live", "polite");
-    card.tabIndex = 0;
-
-    var front = document.createElement("div");
-    front.className = "flashcard__front";
-    front.innerHTML = '<div class="player-content-eyebrow">Prompt</div><div class="player-content-text"></div>';
-    front.querySelector(".player-content-text").textContent = currentCard.front || "";
-
-    var back = document.createElement("div");
-    back.className = "flashcard__back";
-    back.innerHTML = '<div class="player-content-eyebrow">Answer</div><div class="player-content-text"></div>';
-    back.querySelector(".player-content-text").textContent = currentCard.back || "";
-
-    card.appendChild(front);
-    card.appendChild(back);
-    wrapper.appendChild(card);
-
-    if (viewState.mode === "flashcards") {
-      card.addEventListener("click", function () {
-        viewState.reveal = !viewState.reveal;
-        syncFlashcardFlipUi();
-      });
-      card.addEventListener("keydown", function (event) {
-        if (event.key !== "Enter" && event.key !== " ") return;
-        event.preventDefault();
-        viewState.reveal = !viewState.reveal;
-        syncFlashcardFlipUi();
-      });
-    }
-
-    bodyEl.appendChild(wrapper);
-    renderMath(front);
-    renderMath(back);
-    stageLabelEl.textContent = viewState.mode === "learn" ? "Learn mode" : "Flashcard mode";
-    stageContextEl.textContent = "Card " + (viewState.index + 1) + " of " + cards.length;
-    setProgress(viewState.index + 1, cards.length);
-    setControls({
-      showNav: true,
-      showToggle: true,
-      showShuffle: true,
-      disablePrev: cards.length <= 1,
-      disableNext: cards.length <= 1,
-      toggleLabel: viewState.reveal ? "Hide Answer" : (viewState.mode === "flashcards" ? "Flip Card" : "Reveal Answer"),
-    });
-  }
-
-  function renderItem(itemData) {
+  function renderTest(itemData, overrideConfig) {
     if (!itemData) {
       notFoundEl.classList.remove("hidden");
       detailEl.classList.add("hidden");
       return;
     }
+
     if (itemData.type === "studyGuide") {
       window.location.replace("guide.html?id=" + encodeURIComponent(itemData.id));
       return;
     }
-    if (itemData.type === "practiceTest") {
-      window.location.replace("test.html?id=" + encodeURIComponent(itemData.id));
+    if (itemData.type !== "practiceTest") {
+      window.location.replace("item.html?id=" + encodeURIComponent(itemData.id));
       return;
     }
 
     notFoundEl.classList.add("hidden");
     detailEl.classList.remove("hidden");
-    document.getElementById("item-page-title").textContent = itemData.title || "Untitled";
+
+    if (modeTabsEl) modeTabsEl.style.display = "none";
+    if (controlsEl) controlsEl.style.display = "none";
+    if (progressTrackEl) progressTrackEl.style.display = "";
+    if (editBtn) editBtn.style.display = "none";
+
+    var backLink = document.getElementById("back-to-customize");
+    if (backLink) {
+      backLink.onclick = function () {
+        var detailEl = document.getElementById("item-detail");
+        if (detailEl) detailEl.classList.add("hidden");
+        showTestSetupModal(itemData);
+      };
+    }
+
+    document.getElementById("item-page-title").textContent = itemData.title || "Practice Test";
     document.getElementById("item-type-badge").textContent = (KorahSidebar.getTypeEmoji(itemData.type) + " " + (TYPE_LABELS[itemData.type] || itemData.type));
     document.getElementById("item-source-badge").textContent = SOURCE_LABELS[itemData.source || "manual"] || itemData.source;
     var updated = itemData.updatedAt || itemData.createdAt;
@@ -1361,106 +1511,107 @@
     document.getElementById("item-description").textContent = itemData.description || "";
     document.getElementById("item-action-chat").href = "../index.html?study=" + encodeURIComponent(itemData.id);
     document.getElementById("item-action-duplicate").onclick = function () {
-      window.location.href = "item.html?id=" + encodeURIComponent(itemData.id) + "&duplicate=1";
+      var items = getStudyItems();
+      var original = items[itemData.id];
+      if (!original) return;
+      var newId = "study_" + Date.now();
+      var copy = JSON.parse(JSON.stringify(original));
+      copy.id = newId;
+      copy.title = (copy.title || "Untitled") + " (Copy)";
+      copy.createdAt = copy.updatedAt = new Date().toISOString();
+      items[newId] = copy;
+      saveStudyItems(items);
+      window.location.href = "item.html?id=" + encodeURIComponent(newId);
     };
 
     var bodyEl = document.getElementById("item-body");
-    if (viewState.itemId !== itemData.id) {
-      viewState.itemId = itemData.id;
-      viewState.mode = "";
-      viewState.index = 0;
-      viewState.reveal = false;
-      viewState.order = [];
-    }
-
-    renderModeTabs(itemData);
     bodyEl.innerHTML = "";
-    if (itemData.type === "flashcards") {
-      renderFlashcards(itemData, bodyEl);
-    } else {
-      bodyEl.innerHTML = '<p class="tx2">No content yet. Edit this item to add content.</p>';
-      setControls({ showNav: false, showToggle: false, showShuffle: false });
+
+    var allQuestions = normalizePracticeQuestions(itemData.content || {});
+    if (!allQuestions.length) {
+      bodyEl.innerHTML = '<p class="tx2">No practice test questions yet. Edit this item to add questions.</p>';
       setProgress(0, 0);
-      stageLabelEl.textContent = "Content";
+      stageLabelEl.textContent = "Practice test";
       stageContextEl.textContent = "";
-    }
-    if (stageTransitionState.nextEnter && bodyEl.firstElementChild) {
-      bodyEl.firstElementChild.classList.add("stage-slide-in-next");
-    }
-    stageTransitionState.nextEnter = false;
-  }
-
-  function goToNextWithAnimation(itemData, total) {
-    var bodyEl = document.getElementById("item-body");
-    var stageEl = bodyEl ? bodyEl.firstElementChild : null;
-    if (!stageEl) {
-      viewState.index = (viewState.index + 1) % total;
-      viewState.reveal = false;
-      renderItem(itemData);
       return;
     }
-    stageTransitionState.animating = true;
-    nextBtn.disabled = true;
-    stageEl.classList.add("stage-slide-out-next");
-    window.setTimeout(function () {
-      viewState.index = (viewState.index + 1) % total;
-      viewState.reveal = false;
-      stageTransitionState.nextEnter = true;
-      renderItem(itemData);
-      stageTransitionState.animating = false;
-      nextBtn.disabled = total <= 1;
-    }, 220);
+
+    var config = overrideConfig || getConfigFromQuery(itemData.content || {});
+    var formState = buildPracticeForm(itemData.content || {}, config);
+
+    var formWrap = document.createElement("div");
+    formWrap.className = "test-form";
+
+    (formState.questions || []).forEach(function (q, idx) {
+      var qEl = document.createElement("div");
+      qEl.className = "test-question";
+      var titleEl = document.createElement("div");
+      titleEl.className = "test-question-title";
+      titleEl.textContent = "Question " + (idx + 1) + ": " + (q.text || "");
+      qEl.appendChild(titleEl);
+      if (q.type === "mcq") {
+        var optsWrap = document.createElement("div");
+        optsWrap.className = "test-options";
+        (q.options || []).forEach(function (opt, optIdx) {
+          var optId = q.id + "_opt_" + optIdx;
+          var label = document.createElement("label");
+          label.className = "test-option";
+          var radio = document.createElement("input");
+          radio.type = "radio";
+          radio.name = q.id;
+          radio.value = opt;
+          radio.id = optId;
+          var textSpan = document.createElement("span");
+          textSpan.className = "test-option-text";
+          textSpan.textContent = opt;
+          label.appendChild(radio);
+          label.appendChild(textSpan);
+          if (formState.responses[q.id] === opt) radio.checked = true;
+          radio.addEventListener("change", function () {
+            formState.responses[q.id] = opt;
+          });
+          optsWrap.appendChild(label);
+        });
+        qEl.appendChild(optsWrap);
+      } else {
+        var ta = document.createElement("textarea");
+        ta.className = "test-textarea";
+        ta.placeholder = "Write your answer...";
+        ta.value = formState.responses[q.id] || "";
+        ta.addEventListener("input", function () {
+          formState.responses[q.id] = ta.value;
+        });
+        qEl.appendChild(ta);
+      }
+      formWrap.appendChild(qEl);
+      renderMath(qEl);
+    });
+
+    var submitRow = document.createElement("div");
+    submitRow.className = "test-submit-row";
+    submitRow.innerHTML = '<button type="button" class="test-submit-btn">Submit Test</button>';
+    submitRow.querySelector("button").addEventListener("click", function () {
+      var mcqQuestions = formState.questions.filter(function (q) { return q.type === "mcq"; });
+      var correct = mcqQuestions.filter(function (q) {
+        return (formState.responses[q.id] || "").trim().toLowerCase() === (q.answer || "").trim().toLowerCase();
+      }).length;
+      formState.submitted = true;
+      var score = document.createElement("div");
+      score.className = "test-score";
+      score.textContent = "MCQ score: " + correct + " / " + mcqQuestions.length + ". Open-ended answers are saved for review.";
+      var old = formWrap.querySelector(".test-score");
+      if (old) old.remove();
+      formWrap.appendChild(score);
+    });
+    formWrap.appendChild(submitRow);
+    bodyEl.appendChild(formWrap);
+
+    setProgress(formState.questions.length, formState.questions.length);
+    stageLabelEl.textContent = "Practice test";
+    stageContextEl.textContent = formState.config.totalQuestions + " questions (" + formState.config.mcqCount + " MCQ, " + formState.config.openEndedCount + " open-ended)";
   }
 
-  prevBtn.addEventListener("click", function () {
-    if (!currentItem) return;
-    var total = 1;
-    if (currentItem.type === "flashcards") total = ((currentItem.content || {}).cards || []).length || 1;
-    if (currentItem.type === "studyGuide") total = parseGuideSections(currentItem.content || {}).length || 1;
-    if (currentItem.type === "practiceTest") total = ((currentItem.content || {}).questions || []).length || 1;
-    viewState.index = (viewState.index - 1 + total) % total;
-    viewState.reveal = false;
-    renderItem(currentItem);
-  });
-
-  nextBtn.addEventListener("click", function () {
-    if (!currentItem) return;
-    if (stageTransitionState.animating) return;
-    var total = 1;
-    if (currentItem.type === "flashcards") total = ((currentItem.content || {}).cards || []).length || 1;
-    if (currentItem.type === "studyGuide") total = parseGuideSections(currentItem.content || {}).length || 1;
-    if (currentItem.type === "practiceTest") total = ((currentItem.content || {}).questions || []).length || 1;
-    goToNextWithAnimation(currentItem, total);
-  });
-
-  toggleBtn.addEventListener("click", function () {
-    if (!currentItem) return;
-    viewState.reveal = !viewState.reveal;
-    if (currentItem.type === "flashcards" && (viewState.mode === "flashcards" || viewState.mode === "learn") && syncFlashcardFlipUi()) {
-      return;
-    }
-    renderItem(currentItem);
-  });
-
-  shuffleBtn.addEventListener("click", function () {
-    if (!currentItem) return;
-    var total = 0;
-    if (currentItem.type === "flashcards") total = ((currentItem.content || {}).cards || []).length;
-    if (currentItem.type === "practiceTest") total = ((currentItem.content || {}).questions || []).length;
-    if (!total) return;
-    viewState.order = Array.from({ length: total }, function (_, i) { return i; });
-    for (var i = viewState.order.length - 1; i > 0; i -= 1) {
-      var j = Math.floor(Math.random() * (i + 1));
-      var tmp = viewState.order[i];
-      viewState.order[i] = viewState.order[j];
-      viewState.order[j] = tmp;
-    }
-    viewState.index = 0;
-    viewState.reveal = false;
-    renderItem(currentItem);
-  });
-
-  renderItem(currentItem);
+  showTestSetupModal(item);
 
   var sidebar = document.getElementById("sidebar");
   var toggle = document.getElementById("sidebar-toggle");
@@ -1469,7 +1620,7 @@
   overlay.className = "sidebar-overlay";
   document.body.appendChild(overlay);
 
-  if (currentItem && currentItem.type === "practiceTest" && sidebar) {
+  if (sidebar) {
     sidebar.classList.add("collapsed");
   }
 
@@ -1497,199 +1648,6 @@
       overlay.classList.remove("show");
     }
   });
-
-  var editModal = document.getElementById("item-edit-modal");
-  var editForm = document.getElementById("item-edit-form");
-  var editCancelBtn = document.getElementById("item-edit-cancel");
-  var editActionBtn = document.getElementById("item-action-edit");
-  var editContentLabel = document.getElementById("item-edit-content-label");
-  var editDynamicWrap = document.getElementById("item-edit-dynamic-fields");
-  var editModalContent = editModal ? editModal.querySelector(".item-edit-modal-content") : null;
-
-  function renderEditRows(kind, rows) {
-    editDynamicWrap.innerHTML = "";
-    var list = document.createElement("div");
-    list.className = "item-edit-list";
-    var isFlashcards = kind === "flashcards";
-    var leftLabel = isFlashcards ? "Front" : "Question";
-    var rightLabel = isFlashcards ? "Back" : "Answer (optional)";
-    var addLabel = isFlashcards ? "+ Add Card" : "+ Add Question";
-
-    rows.forEach(function (row, index) {
-      var rowEl = document.createElement("div");
-      rowEl.className = "item-edit-row";
-      rowEl.innerHTML =
-        '<div class="item-edit-row-head"><span>' + (isFlashcards ? "Card " : "Question ") + (index + 1) + '</span><button type="button" class="item-edit-remove" data-remove-index="' + index + '">Remove</button></div>' +
-        '<label class="item-edit-label">' + leftLabel + '</label>' +
-        '<textarea class="create-input create-textarea" rows="2" data-field="' + (isFlashcards ? "front" : "text") + '" data-index="' + index + '"></textarea>' +
-        '<label class="item-edit-label">' + rightLabel + '</label>' +
-        '<textarea class="create-input create-textarea" rows="2" data-field="' + (isFlashcards ? "back" : "answer") + '" data-index="' + index + '"></textarea>';
-      rowEl.querySelectorAll("textarea")[0].value = isFlashcards ? (row.front || "") : (row.text || "");
-      rowEl.querySelectorAll("textarea")[1].value = isFlashcards ? (row.back || "") : (row.answer || "");
-      list.appendChild(rowEl);
-    });
-
-    var addBtn = document.createElement("button");
-    addBtn.type = "button";
-    addBtn.className = "item-edit-add";
-    addBtn.id = "item-edit-add-row";
-    addBtn.textContent = addLabel;
-    editDynamicWrap.appendChild(list);
-    editDynamicWrap.appendChild(addBtn);
-  }
-
-  function renderEditContentFields() {
-    if (!editDraft) return;
-    editDynamicWrap.innerHTML = "";
-    editContentLabel.textContent = editDraft.type === "flashcards" ? "Flashcards" : editDraft.type === "practiceTest" ? "Practice Test" : "Study Guide";
-
-    if (editDraft.type === "studyGuide") {
-      var markdown = getStudyGuideMarkdown(editDraft.content || {});
-      var textarea = document.createElement("textarea");
-      textarea.id = "item-edit-markdown";
-      textarea.className = "create-input create-textarea";
-      textarea.rows = 14;
-      textarea.placeholder = "Write markdown content for this study guide...";
-      textarea.value = markdown;
-      editDynamicWrap.appendChild(textarea);
-      return;
-    }
-
-    if (editDraft.type === "flashcards") {
-      editDraft.content = editDraft.content || {};
-      editDraft.content.cards = editDraft.content.cards && editDraft.content.cards.length ? editDraft.content.cards : [{ front: "", back: "" }];
-      renderEditRows("flashcards", editDraft.content.cards);
-      return;
-    }
-
-    editDraft.content = editDraft.content || {};
-    editDraft.content.questions = editDraft.content.questions && editDraft.content.questions.length ? editDraft.content.questions : [{ text: "", answer: "" }];
-    renderEditRows("practiceTest", editDraft.content.questions);
-  }
-
-  function openEditModal() {
-    if (!currentItem) return;
-    editDraft = clone(currentItem);
-    document.getElementById("item-edit-title").value = editDraft.title || "";
-    document.getElementById("item-edit-description").value = editDraft.description || "";
-    document.getElementById("item-edit-subject").value = editDraft.subject || "";
-    document.getElementById("item-edit-tags").value = (editDraft.tags || []).join(", ");
-    renderEditContentFields();
-    editModal.scrollTop = 0;
-    if (editModalContent) editModalContent.scrollTop = 0;
-    if (editDynamicWrap) editDynamicWrap.scrollTop = 0;
-    editModal.classList.add("show");
-  }
-
-  function closeEditModal() {
-    editModal.classList.remove("show");
-    editDraft = null;
-  }
-
-  if (editActionBtn) {
-    editActionBtn.addEventListener("click", openEditModal);
-  }
-
-  if (editCancelBtn) {
-    editCancelBtn.addEventListener("click", closeEditModal);
-  }
-
-  if (editModal) {
-    editModal.addEventListener("click", function (e) {
-      if (e.target === editModal) closeEditModal();
-    });
-  }
-
-  if (editDynamicWrap) {
-    editDynamicWrap.addEventListener("input", function (e) {
-      if (!editDraft) return;
-      var target = e.target;
-      var index = parseInt(target.getAttribute("data-index"), 10);
-      var field = target.getAttribute("data-field");
-      if (Number.isNaN(index) || !field) return;
-      if (editDraft.type === "flashcards" && editDraft.content && editDraft.content.cards && editDraft.content.cards[index]) {
-        editDraft.content.cards[index][field] = target.value;
-      }
-      if (editDraft.type === "practiceTest" && editDraft.content && editDraft.content.questions && editDraft.content.questions[index]) {
-        editDraft.content.questions[index][field] = target.value;
-      }
-    });
-
-    editDynamicWrap.addEventListener("click", function (e) {
-      if (!editDraft) return;
-      var removeIndex = e.target.getAttribute("data-remove-index");
-      if (removeIndex !== null) {
-        var i = parseInt(removeIndex, 10);
-        if (!Number.isNaN(i)) {
-          if (editDraft.type === "flashcards" && editDraft.content && editDraft.content.cards) {
-            editDraft.content.cards.splice(i, 1);
-            if (!editDraft.content.cards.length) editDraft.content.cards.push({ front: "", back: "" });
-          }
-          if (editDraft.type === "practiceTest" && editDraft.content && editDraft.content.questions) {
-            editDraft.content.questions.splice(i, 1);
-            if (!editDraft.content.questions.length) editDraft.content.questions.push({ text: "", answer: "" });
-          }
-          renderEditContentFields();
-        }
-      }
-
-      if (e.target.id === "item-edit-add-row") {
-        if (editDraft.type === "flashcards") {
-          editDraft.content.cards.push({ front: "", back: "" });
-        }
-        if (editDraft.type === "practiceTest") {
-          editDraft.content.questions.push({ text: "", answer: "" });
-        }
-        renderEditContentFields();
-      }
-    });
-  }
-
-  if (editForm) {
-    editForm.addEventListener("submit", function (e) {
-      e.preventDefault();
-      if (!currentItem || !id) return;
-
-      var allItems = getStudyItems();
-      if (!allItems[id]) return;
-
-      var updatedItem = clone(allItems[id]);
-      updatedItem.title = (document.getElementById("item-edit-title").value || "").trim() || "Untitled";
-      updatedItem.description = (document.getElementById("item-edit-description").value || "").trim();
-      updatedItem.subject = (document.getElementById("item-edit-subject").value || "").trim();
-      updatedItem.tags = (document.getElementById("item-edit-tags").value || "")
-        .split(",")
-        .map(function (t) { return t.trim(); })
-        .filter(Boolean);
-
-      if (updatedItem.type === "studyGuide") {
-        var markdown = (document.getElementById("item-edit-markdown").value || "").trim();
-        updatedItem.content = updatedItem.content || {};
-        updatedItem.content.markdown = markdown;
-      } else if (updatedItem.type === "flashcards") {
-        var cards = (editDraft && editDraft.content && editDraft.content.cards) || [];
-        updatedItem.content = {
-          cards: cards.filter(function (c) {
-            return (c.front || "").trim() || (c.back || "").trim();
-          })
-        };
-      } else if (updatedItem.type === "practiceTest") {
-        var questions = (editDraft && editDraft.content && editDraft.content.questions) || [];
-        updatedItem.content = {
-          questions: questions.filter(function (q) {
-            return (q.text || "").trim() || (q.answer || "").trim();
-          })
-        };
-      }
-
-      updatedItem.updatedAt = new Date().toISOString();
-      allItems[id] = updatedItem;
-      saveStudyItems(allItems);
-      currentItem = updatedItem;
-      renderItem(currentItem);
-      closeEditModal();
-    });
-  }
 
   // Settings modal
   const settingsBtn = document.getElementById("settings-btn");

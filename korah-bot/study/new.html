@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="../korah-chat.css"/>
+  <link rel="stylesheet" href="../app/korah-chat.css"/>
   <style>
     .study-modern .chat-topbar,
     .study-modern .create-hero,
@@ -125,10 +125,10 @@
 
 <aside id="sidebar" class="sidebar bg-sf glass t-theme">
   <div class="sidebar-header">
-    <a href="../index.html" class="flex items-center gap-2.5 no-underline">
+    <a href="../app/index.html" class="flex items-center gap-2.5 no-underline">
       <div class="w-12 h-12 rounded-xl flex items-center justify-center font-display text-xl font-black text-white shadow-glow logo-btn">
         <span class="logo-letter">
-          <img src="../logo.png" alt="Korah"/>
+          <img src="../app/logo.png" alt="Korah"/>
         </span>
       </div>
       <div class="flex flex-col leading-tight">
@@ -142,7 +142,7 @@
   </div>
 
   <nav class="sidebar-nav">
-    <a href="../index.html" class="sidebar-nav-link t-btn">💬 Chat</a>
+    <a href="../app/index.html" class="sidebar-nav-link t-btn">💬 Chat</a>
     <a href="feed.html" class="sidebar-nav-link active t-btn">📚 Study</a>
   </nav>
 
@@ -339,6 +339,29 @@
           <label class="create-label">Prompt</label>
           <textarea id="create-ai-prompt" class="create-input create-textarea tx bg-sf2 bd" rows="3" placeholder="e.g. Create 10 flashcards covering photosynthesis and cellular respiration"></textarea>
         </div>
+        <div id="create-practice-config-wrap" class="hidden">
+          <label class="create-label">Practice Test Settings</label>
+          <div class="grid gap-2 md:grid-cols-3">
+            <div>
+              <label class="create-label text-xs mb-1">Total Questions</label>
+              <input id="practice-total-questions" type="number" class="create-input tx bg-sf2 bd" min="1" max="50" value="10"/>
+            </div>
+            <div>
+              <label class="create-label text-xs mb-1">MCQ Questions</label>
+              <input id="practice-mcq-count" type="number" class="create-input tx bg-sf2 bd" min="0" max="50" value="6"/>
+            </div>
+            <div>
+              <label class="create-label text-xs mb-1">Open-Ended Questions</label>
+              <input id="practice-open-count" type="number" class="create-input tx bg-sf2 bd" min="0" max="50" value="4"/>
+            </div>
+          </div>
+          <p id="practice-config-help" class="tx3 text-xs mt-2 mb-0"></p>
+        </div>
+        <div id="create-manual-content-wrap" class="hidden">
+          <label id="create-manual-content-label" class="create-label">Content</label>
+          <textarea id="create-manual-content" class="create-input create-textarea tx bg-sf2 bd" rows="6"></textarea>
+          <p id="create-manual-content-help" class="tx3 text-xs mb-2"></p>
+        </div>
         <div class="create-form-actions">
           <button type="button" id="create-back-3" class="feed-card-btn t-btn">Back</button>
           <button type="button" id="create-next-3" class="new-chat-btn grad-bg text-white text-xs font-bold px-4 py-2 rounded-full border-none cursor-pointer shadow-glow t-btn">Continue</button>
@@ -479,7 +502,7 @@
 <script src="js/study-api.js"></script>
 <script>
 (function () {
-  KorahSidebar.initSidebar({ chatBaseUrl: "../index.html", itemPageUrl: "item.html" });
+  KorahSidebar.initSidebar({ chatBaseUrl: "../app/index.html", itemPageUrl: "item.html" });
 
   var STUDY_ITEMS_KEY = "korah_study_items";
   function getStudyItems() {
@@ -493,6 +516,35 @@
   }
 
   var state = { step: 1, type: null, method: "manual" };
+
+  function clampInt(value, fallback, min, max) {
+    var parsed = parseInt(value, 10);
+    if (Number.isNaN(parsed)) return fallback;
+    return Math.min(max, Math.max(min, parsed));
+  }
+
+  function getPracticeConfig() {
+    var totalInput = document.getElementById("practice-total-questions");
+    var mcqInput = document.getElementById("practice-mcq-count");
+    var openInput = document.getElementById("practice-open-count");
+    var total = clampInt(totalInput ? totalInput.value : 10, 10, 1, 50);
+    var mcq = clampInt(mcqInput ? mcqInput.value : 6, Math.round(total * 0.6), 0, total);
+    var open = clampInt(openInput ? openInput.value : (total - mcq), total - mcq, 0, total - mcq);
+    if (mcq + open !== total) open = total - mcq;
+    if (totalInput) totalInput.value = String(total);
+    if (mcqInput) mcqInput.value = String(mcq);
+    if (openInput) openInput.value = String(open);
+    var help = document.getElementById("practice-config-help");
+    if (help) help.textContent = "Korah will generate " + total + " questions (" + mcq + " MCQ, " + open + " open-ended).";
+    return { totalQuestions: total, mcqCount: mcq, openEndedCount: open };
+  }
+
+  function updatePracticeConfigUI() {
+    var wrap = document.getElementById("create-practice-config-wrap");
+    var show = state.type === "practiceTest" && state.method !== "manual";
+    wrap.classList.toggle("hidden", !show);
+    if (show) getPracticeConfig();
+  }
 
   var typeParam = new URLSearchParams(window.location.search).get("type");
   if (typeParam && ["flashcards", "studyGuide", "practiceTest"].indexOf(typeParam) >= 0) {
@@ -508,12 +560,18 @@
     });
     if (n === 3) {
       document.getElementById("create-ai-prompt-wrap").classList.toggle("hidden", state.method === "manual");
+      updateManualContentUI();
+      updatePracticeConfigUI();
     }
     if (n === 4) {
       var typeLabel = { flashcards: "Flashcard Set", studyGuide: "Study Guide", practiceTest: "Practice Test" }[state.type];
       var methodLabel = { manual: "Manual", "ai-prompt": "AI from prompt", "ai-doc": "AI from documents" }[state.method];
-      document.getElementById("create-review-summary").textContent =
-        "Type: " + typeLabel + " · Method: " + methodLabel + " · Title: " + (document.getElementById("create-title").value || "Untitled");
+      var summary = "Type: " + typeLabel + " · Method: " + methodLabel + " · Title: " + (document.getElementById("create-title").value || "Untitled");
+      if (state.type === "practiceTest" && state.method !== "manual") {
+        var cfg = getPracticeConfig();
+        summary += " · " + cfg.totalQuestions + " total (" + cfg.mcqCount + " MCQ, " + cfg.openEndedCount + " open-ended)";
+      }
+      document.getElementById("create-review-summary").textContent = summary;
       document.getElementById("create-manual-editor").classList.toggle("hidden", state.method !== "manual");
       document.getElementById("create-ai-generate").classList.toggle("hidden", state.method === "manual");
     }
@@ -536,6 +594,112 @@
   document.getElementById("create-next-3").addEventListener("click", function () { showStep(4); });
   document.getElementById("create-back-3").addEventListener("click", function () { showStep(2); });
   document.getElementById("create-back-4").addEventListener("click", function () { showStep(3); });
+  ["practice-total-questions", "practice-mcq-count", "practice-open-count"].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener("input", function () {
+      getPracticeConfig();
+    });
+  });
+
+  function normalizeStudyContent(type, content) {
+    if (type === "flashcards") {
+      var cards = ((content && content.cards) || []).filter(function (c) {
+        return c && (c.front || "").trim() && (c.back || "").trim();
+      }).map(function (c) {
+        return { front: (c.front || "").trim(), back: (c.back || "").trim() };
+      });
+      if (cards.length < 2) return { ok: false, message: "Flashcards require at least 2 cards with front and back text." };
+      return { ok: true, content: { cards: cards } };
+    }
+    if (type === "studyGuide") {
+      var markdown = ((content && content.markdown) || "").trim();
+      if (!markdown && content && content.sections && content.sections.length) {
+        markdown = content.sections.map(function (s) {
+          return "## " + (s.title || "Section") + "\n\n" + (s.body || "");
+        }).join("\n\n").trim();
+      }
+      if (!markdown) return { ok: false, message: "Study guides must include some guide text." };
+      var finalTitle = (content && content.title) || "Study Guide";
+      return { ok: true, content: { title: finalTitle, markdown: markdown } };
+    }
+    if (type === "practiceTest") {
+      var questions = ((content && content.questions) || []).filter(function (q) {
+        return q && (q.text || "").trim();
+      }).map(function (q) {
+        var normalizedType = String((q.type || q.questionType || "")).toLowerCase();
+        var isMcq = normalizedType === "mcq" || normalizedType === "multiple_choice" || (Array.isArray(q.options) && q.options.length > 1);
+        return {
+          type: isMcq ? "mcq" : "openEnded",
+          text: (q.text || "").trim(),
+          options: isMcq ? (q.options || []).map(function (opt) { return String(opt || "").trim(); }).filter(Boolean).slice(0, 4) : [],
+          answer: (q.answer || "").trim(),
+          explanation: (q.explanation || "").trim()
+        };
+      });
+      if (!questions.length) return { ok: false, message: "Practice tests need at least 1 question with text." };
+      return {
+        ok: true,
+        content: {
+          questions: questions,
+          testConfig: {
+            totalQuestions: questions.length,
+            mcqCount: questions.filter(function (q) { return q.type === "mcq"; }).length,
+            openEndedCount: questions.filter(function (q) { return q.type !== "mcq"; }).length
+          }
+        }
+      };
+    }
+    return { ok: false, message: "Invalid item type." };
+  }
+
+  function parseManualContent(type) {
+    var raw = (document.getElementById("create-manual-content").value || "").trim();
+    if (type === "flashcards") {
+      var cards = raw.split("\n").map(function (line) { return line.trim(); }).filter(Boolean).map(function (line) {
+        var parts = line.split("::");
+        return { front: (parts[0] || "").trim(), back: (parts.slice(1).join("::") || "").trim() };
+      });
+      return normalizeStudyContent(type, { cards: cards });
+    }
+    if (type === "studyGuide") {
+      return normalizeStudyContent(type, { markdown: raw });
+    }
+    if (type === "practiceTest") {
+      var questions = raw.split("\n").map(function (line) { return line.trim(); }).filter(Boolean).map(function (line) {
+        var parts = line.split("::");
+        return { type: "openEnded", text: (parts[0] || "").trim(), answer: (parts.slice(1).join("::") || "").trim(), options: [] };
+      });
+      return normalizeStudyContent(type, { questions: questions });
+    }
+    return { ok: false, message: "Invalid item type." };
+  }
+
+  function updateManualContentUI() {
+    var wrap = document.getElementById("create-manual-content-wrap");
+    var label = document.getElementById("create-manual-content-label");
+    var help = document.getElementById("create-manual-content-help");
+    var textarea = document.getElementById("create-manual-content");
+    var isManual = state.method === "manual";
+    wrap.classList.toggle("hidden", !isManual);
+    if (!isManual) return;
+
+    if (state.type === "flashcards") {
+      label.textContent = "Flashcards";
+      textarea.placeholder = "One card per line: front :: back\nExample:\nMitosis phases :: PMAT\nATP role :: Cell energy currency";
+      help.textContent = "Use one card per line in `front :: back` format. Minimum 2 cards.";
+      return;
+    }
+    if (state.type === "studyGuide") {
+      label.textContent = "Study Guide Content";
+      textarea.placeholder = "Enter your study guide notes or markdown here.";
+      help.textContent = "Add at least some guide text.";
+      return;
+    }
+    label.textContent = "Practice Test Questions";
+    textarea.placeholder = "One question per line: question :: answer (answer optional)\nExample:\nWhat is photosynthesis? :: Process plants use to make glucose";
+    help.textContent = "Use one question per line in `question :: answer` format. Minimum 1 question.";
+  }
 
   function saveItem(content) {
     var title = document.getElementById("create-title").value.trim() || "Untitled";
@@ -550,7 +714,7 @@
       description: description,
       subject: subject,
       tags: tags,
-      content: content || (state.type === "flashcards" ? { cards: [] } : state.type === "studyGuide" ? { sections: [] } : { questions: [] }),
+      content: content || (state.type === "flashcards" ? { cards: [] } : state.type === "studyGuide" ? { markdown: "" } : { questions: [] }),
       source: state.method,
       createdBy: "local",
       createdAt: new Date().toISOString(),
@@ -559,7 +723,8 @@
     var items = getStudyItems();
     items[id] = item;
     saveStudyItems(items);
-    window.location.href = "item.html?id=" + encodeURIComponent(id);
+    var redirectPage = state.type === "studyGuide" ? "guide.html" : "item.html";
+    window.location.href = redirectPage + "?id=" + encodeURIComponent(id);
   }
 
   document.getElementById("create-save").addEventListener("click", function () {
@@ -573,7 +738,13 @@
 
     var isAi = state.method === "ai-prompt" || state.method === "ai-doc";
     if (!isAi) {
-      saveItem(null);
+      var manualValidation = parseManualContent(state.type);
+      if (!manualValidation.ok) {
+        errEl.textContent = manualValidation.message;
+        errEl.classList.remove("hidden");
+        return;
+      }
+      saveItem(manualValidation.content);
       return;
     }
 
@@ -589,9 +760,18 @@
       type: state.type,
       prompt: prompt,
       title: title,
-      subject: subject
+      subject: subject,
+      testConfig: state.type === "practiceTest" ? getPracticeConfig() : undefined
     }).then(function (result) {
-      saveItem(result.content);
+      var validated = normalizeStudyContent(state.type, result && result.content);
+      if (!validated.ok) {
+        btn.disabled = false;
+        overlay.classList.add("hidden");
+        errEl.textContent = validated.message;
+        errEl.classList.remove("hidden");
+        return;
+      }
+      saveItem(validated.content);
     }).catch(function (err) {
       btn.disabled = false;
       overlay.classList.add("hidden");
