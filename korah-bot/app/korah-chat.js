@@ -26,7 +26,6 @@
   const Storage = {
     SESSIONS_KEY: "korah_sessions",
     CURRENT_SESSION_KEY: "korah_current_session",
-    SETTINGS_KEY: "korah_settings",
     STUDY_ITEMS_KEY: "korah_study_items",
 
     getSessions() {
@@ -77,20 +76,6 @@
       };
       this.saveSession(id, session);
       return id;
-    },
-
-    getSettings() {
-      const data = localStorage.getItem(this.SETTINGS_KEY);
-      return data ? JSON.parse(data) : {
-        defaultMode: "general",
-        detailLevel: "detailed",
-        autoFollowUp: true,
-        focusTimerDefault: 25,
-      };
-    },
-
-    saveSettings(settings) {
-      localStorage.setItem(this.SETTINGS_KEY, JSON.stringify(settings));
     },
 
     getStudyItems() {
@@ -1876,20 +1861,12 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     }
   });
 
-  // Settings modal functionality
+  // Settings modal functionality (placeholder - todo update settings)
   const settingsBtn = document.getElementById("settings-btn");
   const settingsModal = document.getElementById("settings-modal");
   const settingsClose = document.getElementById("settings-close");
-  const settingsSaveBtn = document.getElementById("settings-save-btn");
-  const exportChatsBtn = document.getElementById("export-chats-btn");
-  const clearAllBtn = document.getElementById("clear-all-btn");
 
   function openSettings() {
-    const settings = Storage.getSettings();
-    document.getElementById("setting-default-mode").value = settings.defaultMode;
-    document.getElementById("setting-detail-level").value = settings.detailLevel;
-    document.getElementById("setting-auto-followup").checked = settings.autoFollowUp;
-    document.getElementById("setting-timer-default").value = settings.focusTimerDefault;
     settingsModal.classList.add("show");
   }
 
@@ -1897,46 +1874,8 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     settingsModal.classList.remove("show");
   }
 
-  function saveSettings() {
-    const settings = {
-      defaultMode: document.getElementById("setting-default-mode").value,
-      detailLevel: document.getElementById("setting-detail-level").value,
-      autoFollowUp: document.getElementById("setting-auto-followup").checked,
-      focusTimerDefault: parseInt(document.getElementById("setting-timer-default").value),
-    };
-    Storage.saveSettings(settings);
-    alert("Settings saved successfully!");
-    closeSettings();
-  }
-
-  function exportChats() {
-    const sessions = Storage.getSessions();
-    const dataStr = JSON.stringify(sessions, null, 2);
-    const dataBlob = new Blob([dataStr], { type: "application/json" });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `korah-chats-${new Date().toISOString().split("T")[0]}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
-    alert("Chats exported successfully!");
-  }
-
-  function clearAllData() {
-    if (confirm("Are you sure you want to clear ALL data? This cannot be undone!")) {
-      if (confirm("This will delete all your chat history and settings. Are you ABSOLUTELY sure?")) {
-        localStorage.clear();
-        alert("All data cleared. The page will now reload.");
-        window.location.reload();
-      }
-    }
-  }
-
   if (settingsBtn) settingsBtn.addEventListener("click", openSettings);
   if (settingsClose) settingsClose.addEventListener("click", closeSettings);
-  if (settingsSaveBtn) settingsSaveBtn.addEventListener("click", saveSettings);
-  if (exportChatsBtn) exportChatsBtn.addEventListener("click", exportChats);
-  if (clearAllBtn) clearAllBtn.addEventListener("click", clearAllData);
 
   // Close modal when clicking outside
   if (settingsModal) {

@@ -1112,64 +1112,7 @@
       <button class="settings-close" id="settings-close">&times;</button>
     </div>
     <div class="settings-body">
-      <div class="settings-section">
-        <h3 class="settings-section-title">Study Preferences</h3>
-        <div class="setting-item">
-          <label class="setting-label">Default Subject Mode</label>
-          <select class="setting-select" id="setting-default-mode">
-            <option value="math">Math Mode</option>
-            <option value="physics" selected>Physics Mode</option>
-            <option value="chemistry">Chemistry Mode</option>
-            <option value="biology">Biology Mode</option>
-            <option value="history">History Mode</option>
-            <option value="literature">Literature Mode</option>
-          </select>
-        </div>
-        <div class="setting-item">
-          <label class="setting-label">Response Detail Level</label>
-          <select class="setting-select" id="setting-detail-level">
-            <option value="concise">Concise</option>
-            <option value="detailed" selected>Detailed</option>
-            <option value="comprehensive">Comprehensive</option>
-          </select>
-        </div>
-        <div class="setting-item">
-          <label class="setting-label">Auto Follow-up Suggestions</label>
-          <div class="setting-toggle">
-            <input type="checkbox" id="setting-auto-followup" checked>
-            <label for="setting-auto-followup" class="toggle-label"></label>
-          </div>
-        </div>
-        <div class="setting-item">
-          <label class="setting-label">Focus Timer Default (minutes)</label>
-          <input type="number" class="setting-input" id="setting-timer-default" value="25" min="5" max="60">
-        </div>
-      </div>
-      <div class="settings-section">
-        <h3 class="settings-section-title">Data Management</h3>
-        <div class="setting-item">
-          <button class="setting-action-btn export-btn" id="export-chats-btn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="7 10 12 15 17 10"/>
-              <line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-            Export All Chats
-          </button>
-        </div>
-        <div class="setting-item">
-          <button class="setting-action-btn clear-btn" id="clear-all-btn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="3 6 5 6 21 6"/>
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-            </svg>
-            Clear All Data
-          </button>
-        </div>
-      </div>
-    </div>
-    <div class="settings-footer">
-      <button class="settings-save-btn" id="settings-save-btn">Save Changes</button>
+      <p style="text-align: center; color: var(--p4); padding: 2rem;">Todo - Update settings</p>
     </div>
   </div>
 </div>
@@ -1649,23 +1592,12 @@
     }
   });
 
-  // Settings modal
+  // Settings modal (placeholder - todo update settings)
   const settingsBtn = document.getElementById("settings-btn");
   const settingsModal = document.getElementById("settings-modal");
   const settingsClose = document.getElementById("settings-close");
-  const settingsSaveBtn = document.getElementById("settings-save-btn");
-  const exportChatsBtn = document.getElementById("export-chats-btn");
-  const clearAllBtn = document.getElementById("clear-all-btn");
-  const SETTINGS_KEY = "korah_settings";
 
   function openSettings() {
-    try {
-      const s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}");
-      if (s.defaultMode) document.getElementById("setting-default-mode").value = s.defaultMode;
-      if (s.detailLevel) document.getElementById("setting-detail-level").value = s.detailLevel;
-      if (s.autoFollowUp !== undefined) document.getElementById("setting-auto-followup").checked = s.autoFollowUp;
-      if (s.focusTimerDefault) document.getElementById("setting-timer-default").value = s.focusTimerDefault;
-    } catch (_) {}
     settingsModal.classList.add("show");
   }
 
@@ -1674,45 +1606,6 @@
   if (settingsBtn) settingsBtn.addEventListener("click", openSettings);
   if (settingsClose) settingsClose.addEventListener("click", closeSettings);
   if (settingsModal) settingsModal.addEventListener("click", (e) => { if (e.target === settingsModal) closeSettings(); });
-
-  if (settingsSaveBtn) {
-    settingsSaveBtn.addEventListener("click", () => {
-      const s = {
-        defaultMode: document.getElementById("setting-default-mode").value,
-        detailLevel: document.getElementById("setting-detail-level").value,
-        autoFollowUp: document.getElementById("setting-auto-followup").checked,
-        focusTimerDefault: parseInt(document.getElementById("setting-timer-default").value),
-      };
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
-      alert("Settings saved!");
-      closeSettings();
-    });
-  }
-
-  if (exportChatsBtn) {
-    exportChatsBtn.addEventListener("click", () => {
-      const sessions = JSON.parse(localStorage.getItem("korah_sessions") || "{}");
-      const blob = new Blob([JSON.stringify(sessions, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "korah-chats-" + new Date().toISOString().split("T")[0] + ".json";
-      a.click();
-      URL.revokeObjectURL(url);
-    });
-  }
-
-  if (clearAllBtn) {
-    clearAllBtn.addEventListener("click", () => {
-      if (confirm("Clear ALL data? This cannot be undone!")) {
-        if (confirm("Are you ABSOLUTELY sure?")) {
-          localStorage.clear();
-          alert("All data cleared. Reloading...");
-          window.location.reload();
-        }
-      }
-    });
-  }
 })();
 </script>
 </body>
