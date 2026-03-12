@@ -192,6 +192,88 @@
     }
   }
 
+  async function renderMermaidDiagrams(container) {
+    const codeBlocks = container.querySelectorAll('pre code.language-mermaid, pre code.lang-mermaid');
+    for (const block of codeBlocks) {
+      const code = block.textContent.trim();
+      const pre = block.parentElement;
+      try {
+        const id = 'mermaid-' + Math.random().toString(36).substr(2, 9);
+        const { svg } = await mermaid.render(id, code);
+        const wrapper = document.createElement('div');
+        wrapper.className = 'mermaid-diagram';
+        wrapper.innerHTML = svg;
+        pre.replaceWith(wrapper);
+      } catch (e) {
+        console.error("Mermaid render error:", e);
+        pre.classList.add('mermaid-error');
+      }
+    }
+  }
+
+  function renderDesmosGraphs(container) {
+    const codeBlocks = container.querySelectorAll('pre code.language-desmos, pre code.lang-desmos');
+    for (const block of codeBlocks) {
+      const code = block.textContent.trim();
+      const pre = block.parentElement;
+      try {
+        const data = JSON.parse(code);
+        const wrapper = document.createElement('div');
+        wrapper.className = 'desmos-graph';
+        const graphDiv = document.createElement('div');
+        graphDiv.style.width = '100%';
+        graphDiv.style.height = data.height || '400px';
+        graphDiv.style.borderRadius = '8px';
+        graphDiv.style.overflow = 'hidden';
+        wrapper.appendChild(graphDiv);
+        pre.replaceWith(wrapper);
+        
+        if (window.Desmos) {
+          const calculator = Desmos.GraphingCalculator(graphDiv, {
+            keypad: false,
+            graphpaper: true,
+            autosize: true,
+            expressions: true,
+            settingsMenu: false,
+            zoomButtons: true,
+            border: false,
+            keyboard: false
+          });
+          
+          if (data.expressions && Array.isArray(data.expressions)) {
+            data.expressions.forEach((expr, idx) => {
+              calculator.setExpression({
+                id: expr.id || 'expr_' + idx,
+                latex: expr.latex || '',
+                color: expr.color,
+                lineStyle: expr.lineStyle || 'SOLID',
+                pointStyle: expr.pointStyle || 'POINT',
+                showLabel: expr.showLabel || false,
+                label: expr.label || ''
+              });
+            });
+          }
+          
+          if (data.viewState) {
+            calculator.setState(data.viewState);
+          }
+          
+          if (data.zoom) {
+            calculator.setViewport(data.zoom);
+          }
+        }
+      } catch (e) {
+        console.error("Desmos render error:", e);
+        pre.classList.add('desmos-error');
+      }
+    }
+  }
+
+  async function renderSpecialContent(container) {
+    await renderMermaidDiagrams(container);
+    renderDesmosGraphs(container);
+  }
+
   function buildMessageRow(role, text, isError = false, suggestions = [], contentId = null) {
     const row = document.createElement("div");
     row.className = `msg-row ${role === "user" ? "user" : "assistant"}`;
@@ -786,7 +868,11 @@
       history.forEach((msg) => {
         // Skip system messages for display
         if (msg.role !== "system") {
-          appendMessage(msg.role, msg.content);
+          const msgRow = appendMessage(msg.role, msg.content);
+          const contentEl = msgRow.querySelector('.assistant-content');
+          if (contentEl) {
+            renderSpecialContent(contentEl);
+          }
         }
       });
       // Show suggestion bar if last message was from assistant
@@ -936,7 +1022,19 @@
 - Use examples and visual representations when helpful
 - Help students understand concepts, not just memorize formulas
 - Encourage problem-solving strategies and mental math techniques
-- When showing equations, explain each variable and operation clearly`,
+- When showing equations, explain each variable and operation clearly
+
+GRAPHING: When teaching functions, graphing, or any visual math concept, ALWAYS include interactive Desmos graphs. Use the following JSON format in a code block:
+'''desmos
+{
+  "expressions": [
+    {"latex": "y=x^2", "color": "#4285F4"},
+    {"latex": "y=2x+1", "color": "#EA4335"}
+  ],
+  "zoom": {"xmin": -10, "xmax": 10, "ymin": -10, "ymax": 10}
+}
+'''
+After showing a graph, ALWAYS encourage the student to interact with it: "Try dragging the points, changing the equation, or adjusting the zoom to see how the graph changes. This will help you build intuition for how the parameters affect the shape!"`,
 
     physics: `You are Korah, an engaging physics tutor. Your teaching style:
 - Explain concepts through real-world applications and examples
@@ -944,7 +1042,16 @@
 - Show how formulas are derived and what each variable represents
 - Use analogies to make complex ideas accessible
 - Emphasize conceptual understanding before mathematical complexity
-- Help visualize forces, motion, energy, and other physical concepts`,
+- Help visualize forces, motion, energy, and other physical concepts
+
+VISUALIZATIONS: Use mermaid diagrams to show processes, cause-effect relationships, and system interactions:
+'''mermaid
+flowchart LR
+  A[Force Applied] --> B[Acceleration]
+  B --> C[Change in Velocity]
+'''
+
+When showing mathematical relationships, use LaTeX and consider including a Desmos graph for functions.`,
 
     chemistry: `You are Korah, an enthusiastic chemistry tutor. Your teaching style:
 - Explain chemical reactions with clear mechanisms and electron movement
@@ -960,9 +1067,18 @@
 - Connect structure to function in biological systems
 - Help students understand relationships between different biological concepts
 - Use diagrams and flow charts mentally when describing processes
-- Emphasize the interconnectedness of living systems`,
+- Emphasize the interconnectedness of living systems
 
-    history: `You are Korah, a insightful history tutor. Your teaching style:
+VISUALIZATIONS: Use mermaid diagrams to show biological pathways, processes, and relationships:
+'''mermaid
+flowchart TD
+  A[Glucose] --> B[Glycolysis]
+  B --> C[Krebs Cycle]
+  C --> D[Electron Transport]
+  D --> E[ATP Production]
+'''`,
+
+    history: `You are Korah, an insightful history tutor. Your teaching style:
 - Provide context and background for historical events
 - Explain cause-and-effect relationships between events
 - Present multiple perspectives when discussing historical topics
@@ -984,7 +1100,25 @@ Always format your responses using GitHub-flavored Markdown. Use:
 - Markdown headings (##, ###) to structure sections
 - Bulleted and numbered lists for steps and key points
 - \`code\` and fenced code blocks for formulas or code when helpful
-When you include math, write it using LaTeX syntax with inline $...$ and display $$...$$ blocks so it can be rendered with KaTeX.`;
+When you include math, write it using LaTeX syntax with inline $...$ and display $$...$$ blocks so it can be rendered with KaTeX.
+
+VISUAL DIAGRAMS: When you need to show flowcharts, sequences, or relationships, use mermaid syntax in a fenced code block:
+\`\`\`mermaid
+graph TD
+  A[Start] --> B[Step 1]
+  B --> C[Step 2]
+\`\`\`
+
+INTERACTIVE GRAPHS: When showing mathematical functions or graphs, use the Desmos format:
+\`\`\`desmos
+{
+  "expressions": [
+    {"latex": "y=x^2", "color": "#4285F4"},
+    {"latex": "y=sin(x)", "color": "#EA4335"}
+  ],
+  "zoom": {"xmin": -5, "xmax": 5, "ymin": -5, "ymax": 5}
+}
+\`\`\``;
 
   function getModeConfig(mode) {
     const modes = {
@@ -1562,6 +1696,11 @@ ${FORMAT_INSTRUCTIONS}`.trim();
         }
       });
       
+      // Render mermaid and desmos after streaming is complete
+      if (contentElement) {
+        await renderSpecialContent(contentElement);
+      }
+      
       history.push({ role: "assistant", content: reply });
       
       // Generate contextual suggestions and add them to the existing message
@@ -2138,8 +2277,39 @@ function initConstellationField() {
   }
 }
 
+function initWelcomeMessage() {
+  const firstName = localStorage.getItem('korah_first_name') || 'there';
+  const welcomeHeading = document.getElementById('welcome-heading');
+  const welcomeSubtext = document.getElementById('welcome-subtext');
+  
+  const greetings = [
+    `Hey ${firstName}, I'm Korah ✨`,
+    `Hi ${firstName}! Ready to study? 🚀`,
+    `Welcome back, ${firstName}! Let's learn something new 📚`,
+    `Hey ${firstName} — what shall we work on today? 🎯`,
+    `Good to see you, ${firstName}! Let's get studying 💡`
+  ];
+  
+  const subtexts = [
+    "Your AI study companion. Choose a mode below or tell me what you're working on.",
+    "I'm here to help you ace your classes. What are we learning today?",
+    "Ready to boost your grades? Let's start with something interesting!",
+    "Pick a subject or just tell me what you need help with.",
+    "Let's make learning fun and effective. What topic should we explore?"
+  ];
+  
+  const randomIdx = Math.floor(Math.random() * greetings.length);
+  
+  if (welcomeHeading) welcomeHeading.textContent = greetings[randomIdx];
+  if (welcomeSubtext) welcomeSubtext.textContent = subtexts[randomIdx];
+}
+
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initConstellationField);
+  document.addEventListener('DOMContentLoaded', () => {
+    initConstellationField();
+    initWelcomeMessage();
+  });
 } else {
   initConstellationField();
+  initWelcomeMessage();
 }

@@ -18,7 +18,7 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
@@ -36,6 +36,12 @@
     if (!user) {
       window.location.href = '../login.html';
     }
+  });
+
+  document.getElementById('logout-btn').addEventListener('click', async () => {
+    await signOut(auth);
+    localStorage.removeItem('korah_first_name');
+    window.location.href = '../login.html';
   });
 </script>
 
@@ -55,7 +61,7 @@
         <span class="text-[9px] font-semibold tracking-[2.5px] uppercase tx-p4">Study Smarter</span>
       </div>
     </a>
-    <button id="new-chat-btn" class="new-chat-btn grad-bg text-white text-xs font-bold px-4 py-2 rounded-full border-none cursor-pointer shadow-glow t-btn">
+    <button id="new-chat-btn" class="new-chat-btn text-white text-xs font-bold px-4 py-2 rounded-full border-none cursor-pointer shadow-glow t-btn">
       + New Chat
     </button>
   </div>
@@ -119,12 +125,19 @@
     <div class="study-items-empty-sub">Create one to see it here.</div>
   </div>
 
-  <div class="sidebar-footer">
+    <div class="sidebar-footer">
     <div class="mood-indicator" id="sidebar-mood">
       <span class="mood-dot" id="mood-dot">🟢</span>
       <span class="text-xs tx2 font-medium">Full Focus Mode</span>
     </div>
     <div class="sidebar-footer-actions">
+      <button id="logout-btn" class="theme-toggle-small t-btn" title="Log out">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+      </button>
       <button id="settings-btn" class="theme-toggle-small t-btn" title="Settings">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
@@ -234,11 +247,6 @@
           <polyline points="3,6 5,6 21,6"/><path d="M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6"/><path d="M10,11v6M14,11v6"/><path d="M9,6V4a1,1,0,0,1,1-1h4a1,1,0,0,1,1,1v2"/>
         </svg>
       </button>
-      <button class="topbar-btn t-btn tx2" title="Export chat">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21,15v4a2,2,0,0,1-2,2H5a2,2,0,0,1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/>
-        </svg>
-      </button>
     </div>
   </header>
 
@@ -262,8 +270,8 @@
           <span class="welcome-mode-text" id="welcome-mode-name">General Mode</span>
         </div>
 
-        <h2 class="font-display text-3xl font-black tx mb-1">Hey, I'm Korah ✨</h2>
-        <p class="tx2 text-sm leading-relaxed text-center max-w-sm mb-4">Your AI study companion. Choose a mode below or tell me what you're working on.</p>
+        <h2 class="font-display text-3xl font-black tx mb-1" id="welcome-heading"></h2>
+        <p class="tx2 text-sm leading-relaxed text-center max-w-sm mb-4" id="welcome-subtext"></p>
 
         <div class="mode-pills" id="mode-pills-container">
           <!-- Populated by JS -->
@@ -461,6 +469,16 @@
 
 
 
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+  // Initialize mermaid
+  mermaid.initialize({ 
+    startOnLoad: false,
+    theme: 'dark',
+    securityLevel: 'loose'
+  });
+</script>
+<script src="https://www.desmos.com/api/v1.12/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
