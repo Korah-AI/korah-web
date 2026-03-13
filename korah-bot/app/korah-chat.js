@@ -108,6 +108,9 @@
   let currentSession   = null;
   let history          = [];
   let isSending        = false;
+  let streamingContentId = null;
+  let lastSaveTime = 0;
+  const SAVE_DEBOUNCE_MS = 500;
 
   // ═══ Tutoring Mode State ═══
   const TUTORING_PROMPT = `\n\nTUTORING MODE ACTIVE: You are now in tutoring mode. Instead of giving direct answers:\n- Guide students through questions using Socratic questioning\n- Break concepts into smaller, manageable steps\n- Check understanding before proceeding to the next concept\n- Encourage critical thinking by asking follow-up questions\n- Provide hints and scaffolding rather than complete solutions\n- Celebrate progress and provide positive reinforcement\n- If a student asks for the answer, guide them to discover it themselves`;
@@ -217,7 +220,7 @@
         pre.replaceWith(wrapper);
       } catch (e) {
         console.error("Mermaid render error:", e);
-        pre.classList.add('mermaid-error');
+
       }
     }
   }
@@ -894,6 +897,14 @@
     Storage.saveSession(currentSessionId, currentSession);
   }
 
+  function saveCurrentSessionDebounced() {
+    const now = Date.now();
+    if (now - lastSaveTime >= SAVE_DEBOUNCE_MS) {
+      saveCurrentSession();
+      lastSaveTime = now;
+    }
+  }
+
   function loadSessionMessages() {
     messagesList.innerHTML = "";
     hideSuggestionBar();
@@ -1052,25 +1063,14 @@
 - Adapt your tone to be supportive and encouraging
 - Help with study strategies, time management, and motivation`,
 
-    math: `You are Korah, an expert math tutor. Your teaching style:
-- Break down problems into clear, step-by-step solutions
-- Show your work at each stage and explain why each step is necessary
-- Use examples and visual representations when helpful
-- Help students understand concepts, not just memorize formulas
-- Encourage problem-solving strategies and mental math techniques
+    math: `
+- CRITICAL: ALWAYS USE $$...$$ DELIMITERS FOR LATEX EXPRESSIONS. FOR ALL EXPRESSIONS YOU MUST DO THIS.
+- Show your work at each step and explain why each step is necessary in an easy and intuitive way
+- Encourage true understanding and bear with the student
 - When showing equations, explain each variable and operation clearly
+- When showing mathematical relationships, use LaTeX and consider including a Desmos graph for functions. But make sure you don't include LaTeX mixed with markdown, always break into new lines.
 
-GRAPHING: When teaching functions, graphing, or any visual math concept, ALWAYS include interactive Desmos graphs. Use the following JSON format in a code block:
-'''desmos
-{
-  "expressions": [
-    {"latex": "y=x^2", "color": "#4285F4"},
-    {"latex": "y=2x+1", "color": "#EA4335"}
-  ],
-  "zoom": {"xmin": -10, "xmax": 10, "ymin": -10, "ymax": 10}
-}
-'''
-After showing a graph, ALWAYS encourage the student to interact with it: "Try dragging the points, changing the equation, or adjusting the zoom to see how the graph changes. This will help you build intuition for how the parameters affect the shape!"`,
+'''`,
 
     physics: `You are Korah, an engaging physics tutor. Your teaching style:
 - Explain concepts through real-world applications and examples
@@ -1132,15 +1132,9 @@ flowchart TD
   };
 
   const FORMAT_INSTRUCTIONS = `
-Always format your responses using GitHub-flavored Markdown. Use:
-- Markdown headings (##, ###) to structure sections
-- Bulleted and numbered lists for steps and key points
-- \`code\` and fenced code blocks for formulas or code when helpful
-When you include math, write it using LaTeX syntax on its own line (not mixed with markdown text):
-- Inline math: $...$ (e.g., $x^2$) - only for short expressions within sentences
-- Display math: $$...$$ or \\[...\\] (e.g., $$\\frac{1}{2}mv^2$$) - use for equations on their own line
+- ALL mathematical expressions, equations, formulas, and symbols MUST use LaTeX delimiters
+- NEVER write math without delimiters - expressions like "x^2", "2x+1=5", "sin(x)", "∫f(x)dx", "∑", "√" are NOT acceptable
 - NEVER use [ ... ] as delimiters - KaTeX cannot render them
-- Always put LaTeX on separate lines, never inline with regular text on the same line
 
 VISUAL DIAGRAMS: When you need to show flowcharts, sequences, or relationships, use mermaid syntax in a fenced code block:
 \`\`\`mermaid
@@ -1158,7 +1152,12 @@ INTERACTIVE GRAPHS: When showing mathematical functions or graphs, use the Desmo
   ],
   "zoom": {"xmin": -5, "xmax": 5, "ymin": -5, "ymax": 5}
 }
-\`\`\``;
+\`\`\`
+
+Always format your responses using GitHub-flavored Markdown. Use:
+- Markdown headings (##, ###) to structure sections
+- Bulleted and numbered lists for steps and key points
+- \`code\` and fenced code blocks for formulas or code when helpful`;
 
   function getModeConfig(mode) {
     const modes = {
@@ -1731,16 +1730,36 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     setTyping(true);
 
     // Create streaming message container
-    const streamingContentId = `streaming-content-${Date.now()}`;
+    streamingContentId = `streaming-content-${Date.now()}`;
     const streamingRow = appendMessage("assistant", "", false, [], streamingContentId);
     const contentElement = document.getElementById(streamingContentId);
     setTyping(false);
 
+    // Show pulsing "Thinking" indicator while waiting for first content
+    let thinkingIndicator = null;
+    if (contentElement) {
+      thinkingIndicator = document.createElement("div");
+      thinkingIndicator.className = "thinking-indicator";
+      thinkingIndicator.innerHTML = `<span class="thinking-text">Thinking</span><span class="thinking-dots">...</span>`;
+      contentElement.appendChild(thinkingIndicator);
+    }
+
+    // Add placeholder to history BEFORE streaming starts (for persistence)
+    history.push({ role: "assistant", content: "" });
+    const historyIndex = history.length - 1;
+    saveCurrentSession();
+
     try {
       const reply = await callChatApi(history, (chunk, fullText) => {
+        // Remove thinking indicator when first content arrives
+        if (thinkingIndicator && fullText.length > 0) {
+          thinkingIndicator.remove();
+          thinkingIndicator = null;
+        }
         if (contentElement) {
           renderMarkdownAndMath(contentElement, fullText);
         }
+
       });
       
       // Render mermaid and desmos after streaming is complete
@@ -1778,17 +1797,17 @@ ${FORMAT_INSTRUCTIONS}`.trim();
       showSuggestionBar();
     } catch (error) {
       console.error("Chat request failed:", error);
-      
-      // Remove streaming message and show error
-      if (streamingRow) {
-        streamingRow.remove();
-      }
-      
-      appendMessage(
-        "assistant",
-        `I couldn't reach the chat API. ${error.message}`,
-        true
-      );
+
+        // Remove streaming message and show error
+        if (streamingRow) {
+          streamingRow.remove();
+        }
+        
+        appendMessage(
+          "assistant",
+          `I couldn't reach the chat API. ${error.message}`,
+          true
+        );
     } finally {
       setSendingState(false);
       input.focus();
@@ -1847,6 +1866,12 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     });
   });
 
+  // Save session on page unload to preserve any streaming content
+  window.addEventListener("beforeunload", () => {
+    if (isSending && currentSession) {
+      saveCurrentSession();
+    }
+  });
 
   if (clearChatBtn) clearChatBtn.addEventListener("click", resetChat);
   if (newChatBtn) {
