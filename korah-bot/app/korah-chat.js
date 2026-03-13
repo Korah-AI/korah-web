@@ -52,7 +52,6 @@
 
     saveSession(id, session) {
       sessionsCache[id] = session;
-      localStorage.setItem(this.CACHE_SESSIONS_KEY, JSON.stringify(sessionsCache));
       window.KorahDB.setConversation(id, session).catch((e) =>
         console.error("[Korah] setConversation failed:", e)
       );
@@ -60,7 +59,6 @@
 
     deleteSession(id) {
       delete sessionsCache[id];
-      localStorage.setItem(this.CACHE_SESSIONS_KEY, JSON.stringify(sessionsCache));
       window.KorahDB.deleteConversation(id).catch((e) =>
         console.error("[Korah] deleteConversation failed:", e)
       );
@@ -86,7 +84,6 @@
 
     saveStudyItem(id, item) {
       studyItemsCache[id] = item;
-      localStorage.setItem(this.CACHE_STUDY_ITEMS_KEY, JSON.stringify(studyItemsCache));
       window.KorahDB.setStudyItem(id, item).catch((e) =>
         console.error("[Korah] setStudyItem failed:", e)
       );
@@ -1065,6 +1062,7 @@
 
     math: `
 - CRITICAL: ALWAYS USE $$...$$ DELIMITERS FOR LATEX EXPRESSIONS. FOR ALL EXPRESSIONS YOU MUST DO THIS.
+- BE CAREFUL TO ENSURE ALL MARKDOWN / LATEX MATH TEXT USES DELIMITERS
 - Show your work at each step and explain why each step is necessary in an easy and intuitive way
 - Encourage true understanding and bear with the student
 - When showing equations, explain each variable and operation clearly
