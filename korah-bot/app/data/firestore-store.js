@@ -12,6 +12,7 @@ import {
   setDoc,
   deleteDoc,
   getDoc,
+  getDocs,
   onSnapshot,
   query,
   orderBy,
@@ -109,6 +110,15 @@ export async function setupKorahDB(app, uid) {
     );
   }
 
+  // One-time fetch (not realtime)
+  async function fetchConversations() {
+    const q = query(convCol(), orderBy("updatedAt", "desc"));
+    const snap = await getDocs(q);
+    const result = {};
+    snap.docs.forEach((d) => { result[d.id] = d.data(); });
+    return result;
+  }
+
   // ─── Study Items ──────────────────────────────────────────────────────────
 
   async function getStudyItem(id) {
@@ -181,6 +191,21 @@ export async function setupKorahDB(app, uid) {
     });
 
     return () => unsubscribers.forEach((u) => u());
+  }
+
+  // One-time fetch (not realtime)
+  async function fetchStudyItems() {
+    const snaps = await Promise.all(
+      ALL_STUDY_COLS.map((col) => {
+        const q = query(collection(db, `users/${uid}/${col}`), orderBy("updatedAt", "desc"));
+        return getDocs(q);
+      })
+    );
+    const result = {};
+    snaps.forEach((snap) => {
+      snap.docs.forEach((d) => { result[d.id] = d.data(); });
+    });
+    return result;
   }
 
   // ─── One-time localStorage migration ─────────────────────────────────────
@@ -256,12 +281,14 @@ export async function setupKorahDB(app, uid) {
     deleteConversation,
     deleteConversations,
     onConversationsChange,
+    fetchConversations,
     // study items
     getStudyItem,
     setStudyItem,
     deleteStudyItem,
     deleteStudyItems,
     onStudyItemsChange,
+    fetchStudyItems,
     // migration
     migrateFromLocalStorage,
   };
