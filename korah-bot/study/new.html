@@ -17,17 +17,30 @@
     .study-modern .create-step-panel {
       border-radius: 18px;
     }
+    .main-content {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
     .study-modern .create-flow-body {
-      max-width: 860px;
-      padding: 28px 22px 34px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      max-width: none;
+      width: 100%;
+      padding: 20px;
+      overflow-y: auto;
     }
     .study-modern .create-hero {
-      padding: 24px;
+      padding: 28px;
       border: 1px solid var(--bd);
-      margin-bottom: 16px;
+      margin-bottom: 20px;
+      text-align: center;
+      flex-shrink: 0;
     }
-    .study-modern .create-hero-title { font-size: 30px; line-height: 1.2; font-weight: 700; margin-bottom: 6px; color: var(--p5); }
-    .study-modern .create-hero-sub { font-size: 15px; color: var(--tx2); line-height: 1.6; }
+    .study-modern .create-hero-title { font-size: 34px; line-height: 1.2; font-weight: 700; margin-bottom: 8px; color: var(--p5); }
+    .study-modern .create-hero-sub { font-size: 16px; color: var(--tx2); line-height: 1.6; }
     .study-modern .create-steps {
       margin: 0 0 16px;
       padding: 10px;
@@ -45,25 +58,40 @@
     .study-modern .create-step-panel {
       border: 1px solid var(--bd);
       background: var(--bg2);
-      padding: 24px;
+      padding: 40px;
       z-index: 0;
-      justify-content: center;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
     }
-    .study-modern .create-panel-title { font-size: 28px; margin-bottom: 16px; z-index: 0; justify-content: center;}
+    .study-modern .create-panel-title { font-size: 26px; margin-bottom: 30px; z-index: 0; text-align: center; flex-shrink: 0;}
     .study-modern .create-type-grid {
-      gap: 14px;
+      gap: 24px;
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 260px));
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
       justify-content: center;
+      flex: 1;
+      align-content: center;
     }
-    .study-modern .create-type-card {z-index: 0;}
+    .study-modern .create-type-card {
+      padding: 48px 32px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 16px;
+      z-index: 0;
+      transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .study-modern .create-type-card:hover { transform: translateY(-4px); }
+    .study-modern .create-type-emoji { font-size: 56px; margin-bottom: 8px; display: block; }
     .study-modern .create-method-btn {
-      min-height: 92px;
-      border-radius: 14px;
-      padding: 16px;
+      min-height: 110px;
+      border-radius: 16px;
+      padding: 24px;
     }
-    .study-modern .create-type-name { font-size: 18px; z-index: 0;}
-    .study-modern .create-type-desc { font-size: 14px; line-height: 1.55; }
+    .study-modern .create-type-name { font-size: 22px; font-weight: 700; display: block; z-index: 0;}
+    .study-modern .create-type-desc { font-size: 15px; line-height: 1.55; max-width: 260px; }
     .study-modern .create-label { font-size: 14px; font-weight: 700; margin-bottom: 7px; }
     .study-modern .create-input {
       min-height: 50px;
@@ -74,14 +102,14 @@
     }
     .study-modern .create-textarea { min-height: 96px; }
     .study-modern #create-ai-prompt { min-height: 160px; min-width: 770px;}
-    .study-modern .create-form-actions { margin-top: 10px; gap: 10px; justify-content: center; }
+    .study-modern .create-form-actions { margin-top: 10px; gap: 12px; justify-content: center; }
     .study-modern .feed-card-btn,
     .study-modern .new-chat-btn {
-      min-height: 45px;
-      border-radius: 12px;
-      font-size: 14px;
+      min-height: 54px;
+      border-radius: 14px;
+      font-size: 16px;
       font-weight: 700;
-      padding: 0 18px;
+      padding: 0 32px;
     }
     .study-modern .sidebar,
     .study-modern .main-content,
@@ -106,6 +134,204 @@
       .study-modern .create-panel-title { font-size: 22px; }
       .study-modern .create-step-panel { padding: 16px; }
       .study-modern .create-step { min-height: 42px; font-size: 13px; }
+    }
+
+    /* --- REFINED MODAL SYSTEM --- */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.4);
+      backdrop-filter: blur(12px);
+      display: none; align-items: center; justify-content: center;
+      z-index: 2000;
+      padding: 20px;
+    }
+    .modal-overlay.active { display: flex; animation: modalFadeIn 0.3s ease-out; }
+    
+    .settings-modal {
+      background: var(--bg1);
+      border: 1px solid var(--bd);
+      border-radius: 32px;
+      width: 95vw;
+      max-width: 1200px;
+      height: 85vh;
+      display: none;
+      flex-direction: column;
+      box-shadow: 0 40px 80px rgba(0,0,0,0.5);
+      overflow: hidden;
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      z-index: 2001;
+    }
+    .settings-modal.active { display: flex; animation: modalSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+    
+    @keyframes modalFadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes modalSlideUp { from { opacity: 0; transform: translate(-50%, -42%); } to { opacity: 1; transform: translate(-50%, -50%); } }
+
+    .modal-header {
+      padding: 24px 48px;
+      border-bottom: 1px solid var(--bd);
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--bg1);
+      flex-shrink: 0;
+    }
+    .modal-title { font-size: 26px; font-weight: 700; margin: 0; color: var(--tx1); }
+    
+    .modal-body {
+      padding: 24px 48px;
+      overflow-y: auto;
+      flex: 1;
+      background: var(--bg1);
+      display: flex;
+      flex-direction: column;
+    }
+    .modal-footer {
+      padding: 24px 48px;
+      display: flex; align-items: center; justify-content: flex-end;
+      gap: 20px;
+      background: transparent;
+      flex-shrink: 0;
+    }
+    .modal-footer .t-btn {
+      min-height: 52px;
+      padding: 0 32px;
+      font-size: 16px;
+      border-radius: 14px;
+      font-weight: 700;
+    }
+
+    /* --- ENHANCED METHOD CARDS --- */
+    .method-grid { 
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      width: 100%;
+      margin: auto 0;
+      flex-shrink: 0;
+    }
+    .method-card {
+      background: var(--bg2);
+      border: 2px solid var(--bd);
+      border-radius: 24px;
+      padding: 48px 32px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      text-align: center;
+      min-height: 380px;
+      justify-content: center;
+    }
+    .method-card:hover {
+      border-color: var(--p5);
+      background: var(--bg3);
+      transform: translateY(-8px);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    }
+    .method-icon { 
+      font-size: 48px; 
+      flex-shrink: 0; 
+      background: var(--bg1); 
+      width: 96px; 
+      height: 96px; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      border-radius: 24px; 
+      border: 1px solid var(--bd); 
+      margin-bottom: 8px;
+    }
+    .method-info { flex: 0 0 auto; }
+    .method-name { font-size: 22px; font-weight: 700; display: block; margin-bottom: 12px; color: var(--tx1); }
+    .method-desc { font-size: 16px; color: var(--tx2); line-height: 1.6; }
+
+    /* --- MODERN UPLOAD ZONE --- */
+    .upload-zone {
+      border: 2px dashed var(--bd);
+      border-radius: 28px;
+      padding: 100px 40px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: var(--bg2);
+      margin: auto 0;
+    }
+    .upload-zone:hover { border-color: var(--p5); background: var(--bg3); }
+    .upload-icon { font-size: 80px; margin-bottom: 32px; display: block; filter: grayscale(1); }
+    .upload-text { font-size: 24px; font-weight: 700; color: var(--tx1); margin-bottom: 16px; }
+    .upload-hint { font-size: 16px; color: var(--tx2); }
+
+    .modal-step { display: none; }
+    .modal-step.active { display: flex; flex-direction: column; flex: 1; animation: stepFadeIn 0.3s ease-out; }
+    @keyframes stepFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* --- ENHANCED FORM UI --- */
+    .study-modern .create-form {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+      max-width: 1000px;
+      margin: 0 auto;
+      width: 100%;
+      padding: 8px 0 32px;
+    }
+    .study-modern .create-form .form-field {
+      display: flex;
+      flex-direction: column;
+    }
+    .study-modern .create-form .form-full-width { grid-column: 1 / -1; }
+    
+    .study-modern .create-form .create-label { 
+      font-size: 14px; 
+      font-weight: 700; 
+      margin-bottom: 8px; 
+      display: block;
+      color: var(--tx1);
+      letter-spacing: 0.01em;
+      opacity: 0.9;
+    }
+    .study-modern .create-form .create-input {
+      width: 100%;
+      min-height: 52px;
+      font-size: 16px;
+      padding: 12px 18px;
+      border-radius: 14px;
+      background: var(--bg2);
+      border: 2px solid var(--bd);
+      color: var(--tx1);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      margin-bottom: 0; 
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .study-modern .create-form .create-input:focus {
+      border-color: var(--p5);
+      background: var(--bg1);
+      outline: none;
+      box-shadow: 0 0 0 5px rgba(139, 92, 246, 0.15), inset 0 2px 4px rgba(0,0,0,0.02);
+      transform: translateY(-1px);
+    }
+    .study-modern .create-form .create-textarea { 
+      min-height: 100px; 
+      resize: vertical;
+      line-height: 1.5;
+    }
+    .study-modern .create-form #create-ai-prompt { min-height: 140px; }
+    .study-modern .create-form #create-manual-content { min-height: 250px; }
+
+    .study-modern .create-form .config-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      background: var(--bg2);
+      padding: 24px;
+      border-radius: 20px;
+      border: 2px solid var(--bd);
+      margin-top: 8px;
+    }
+    
+    @media (max-width: 1024px) {
+      .study-modern .create-form { gap: 20px; }
+      .study-modern .create-form .create-input { min-height: 64px; font-size: 17px; padding: 16px 20px; }
     }
   </style>
 </head>
@@ -251,29 +477,10 @@
   <div class="create-flow-body">
     <section class="create-hero bg-sf glass-sm t-theme">
       <h1 class="create-hero-title">Create a New Study Item</h1>
-      <p class="create-hero-sub">Use the guided flow below to build flashcards, study guides, or practice tests with larger, easier-to-scan controls.</p>
+      <p class="create-hero-sub">Select a type below to get started with Korah AI.</p>
     </section>
 
-    <div class="create-steps">
-      <div class="create-step" data-step="1">
-        <span class="create-step-num">1</span>
-        <span>Type</span>
-      </div>
-      <div class="create-step" data-step="2">
-        <span class="create-step-num">2</span>
-        <span>Method</span>
-      </div>
-      <div class="create-step" data-step="3">
-        <span class="create-step-num">3</span>
-        <span>Configure</span>
-      </div>
-      <div class="create-step" data-step="4">
-        <span class="create-step-num">4</span>
-        <span>Review</span>
-      </div>
-    </div>
-
-    <!-- Step 1: Choose type -->
+    <!-- Step 1: Choose type (Always visible on main page) -->
     <div id="step-1" class="create-step-panel">
       <h2 class="create-panel-title">Choose type</h2>
       <div class="create-type-grid">
@@ -294,99 +501,139 @@
         </button>
       </div>
     </div>
+  </div>
+</main>
 
-    <!-- Step 2: Choose method -->
-    <div id="step-2" class="create-step-panel hidden">
-      <h2 class="create-panel-title">How do you want to create it?</h2>
-      <div class="create-method-list">
-        <button type="button" class="create-method-btn t-btn" data-method="manual">
-          <span>✏️</span>
-          <div>
-            <strong>Manual</strong>
-            <span class="tx2 block text-xs mt-0.5">Build it yourself in the editor</span>
+<!-- Creation Modal (Method selection & Details) -->
+<div id="modal-backdrop" class="modal-overlay"></div>
+<div id="creation-modal" class="settings-modal">
+  <div class="modal-header">
+    <h2 class="modal-title" id="creation-modal-title">Create Study Item</h2>
+    <button class="modal-close" id="creation-modal-close">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  
+  <div class="modal-body">
+    <!-- Modal Step 1: Choose method -->
+    <div id="modal-step-1" class="modal-step active">
+      <h3 class="font-bold text-xl mb-6 text-center">How do you want to create it?</h3>
+      <div class="method-grid">
+        <button type="button" class="method-card t-btn" data-method="manual">
+          <div class="method-icon">✏️</div>
+          <div class="method-info">
+            <span class="method-name">Manual</span>
+            <span class="method-desc tx2">Type or paste your content directly into the editor</span>
           </div>
         </button>
-        <button type="button" class="create-method-btn t-btn" data-method="ai-prompt">
-          <span>💬</span>
-          <div>
-            <strong>AI from prompt</strong>
-            <span class="tx2 block text-xs mt-0.5">Describe what you need and Korah generates it</span>
+        <button type="button" class="method-card t-btn" data-method="ai-prompt">
+          <div class="method-icon">💬</div>
+          <div class="method-info">
+            <span class="method-name">AI from Prompt</span>
+            <span class="method-desc tx2">Describe what you need and let Korah generate the rest</span>
           </div>
         </button>
-        <button type="button" class="create-method-btn t-btn" data-method="ai-doc">
-          <span>📄</span>
-          <div>
-            <strong>AI from documents</strong>
-            <span class="tx2 block text-xs mt-0.5">Upload PDFs or notes and generate from them</span>
+        <button type="button" class="method-card t-btn" data-method="ai-doc">
+          <div class="method-icon">📄</div>
+          <div class="method-info">
+            <span class="method-name">AI from Documents</span>
+            <span class="method-desc tx2">Upload PDFs or notes to generate focused materials</span>
           </div>
         </button>
       </div>
     </div>
 
-    <!-- Step 3: Configure -->
-    <div id="step-3" class="create-step-panel hidden">
-      <h2 class="create-panel-title">Details</h2>
+    <!-- Modal Step 2: Configure Details -->
+    <div id="modal-step-2" class="modal-step">
       <div class="create-form">
-        <label class="create-label">Title</label>
-        <input type="text" id="create-title" class="create-input tx bg-sf2 bd" placeholder="e.g. Chapter 5 Key Terms"/>
-        <label class="create-label">Description (optional)</label>
-        <textarea id="create-description" class="create-input create-textarea tx bg-sf2 bd" rows="2" placeholder="Brief description of this study item"></textarea>
-        <label class="create-label">Subject</label>
-        <input type="text" id="create-subject" class="create-input tx bg-sf2 bd" placeholder="e.g. Biology"/>
-        <label class="create-label">Tags (comma-separated)</label>
-        <input type="text" id="create-tags" class="create-input tx bg-sf2 bd" placeholder="e.g. exam, midterm, chapter5"/>
-        <div id="create-ai-prompt-wrap" class="hidden">
+        <div class="form-field">
+          <label class="create-label">Title</label>
+          <input type="text" id="create-title" class="create-input tx bg-sf2 bd" placeholder="e.g. Chapter 5 Key Terms"/>
+        </div>
+
+        <div class="form-field">
+          <label class="create-label">Subject</label>
+          <input type="text" id="create-subject" class="create-input tx bg-sf2 bd" placeholder="e.g. Biology"/>
+        </div>
+        
+        <div class="form-field form-full-width">
+          <label class="create-label">Description (optional)</label>
+          <textarea id="create-description" class="create-input create-textarea tx bg-sf2 bd" rows="2" placeholder="Brief description of this study item"></textarea>
+        </div>
+        
+        <div class="form-field form-full-width">
+          <label class="create-label">Tags</label>
+          <input type="text" id="create-tags" class="create-input tx bg-sf2 bd" placeholder="exam, midterm, science"/>
+        </div>
+
+        <div id="create-ai-prompt-wrap" class="hidden form-field form-full-width">
           <label class="create-label">Prompt</label>
           <textarea id="create-ai-prompt" class="create-input create-textarea tx bg-sf2 bd" rows="3" placeholder="e.g. Create 10 flashcards covering photosynthesis and cellular respiration"></textarea>
         </div>
-        <div id="create-practice-config-wrap" class="hidden">
+
+        <div id="create-practice-config-wrap" class="hidden form-field form-full-width">
           <label class="create-label">Practice Test Settings</label>
-          <div class="grid gap-2 md:grid-cols-3">
-            <div>
-              <label class="create-label text-xs mb-1">Total Questions</label>
+          <div class="config-grid">
+            <div class="form-field">
+              <label class="create-label !text-xs !mb-2 opacity-60 uppercase tracking-wider">Total Questions</label>
               <input id="practice-total-questions" type="number" class="create-input tx bg-sf2 bd" min="1" max="50" value="10"/>
             </div>
-            <div>
-              <label class="create-label text-xs mb-1">MCQ Questions</label>
+            <div class="form-field">
+              <label class="create-label !text-xs !mb-2 opacity-60 uppercase tracking-wider">MCQ Count</label>
               <input id="practice-mcq-count" type="number" class="create-input tx bg-sf2 bd" min="0" max="50" value="6"/>
             </div>
-            <div>
-              <label class="create-label text-xs mb-1">Open-Ended Questions</label>
+            <div class="form-field">
+              <label class="create-label !text-xs !mb-2 opacity-60 uppercase tracking-wider">Open Ended</label>
               <input id="practice-open-count" type="number" class="create-input tx bg-sf2 bd" min="0" max="50" value="4"/>
             </div>
           </div>
-          <p id="practice-config-help" class="tx3 text-xs mt-2 mb-0"></p>
+          <p id="practice-config-help" class="tx3 text-xs mt-3 opacity-60"></p>
         </div>
-        <div id="create-manual-content-wrap" class="hidden">
-          <label id="create-manual-content-label" class="create-label">Content</label>
-          <textarea id="create-manual-content" class="create-input create-textarea tx bg-sf2 bd" rows="6"></textarea>
-          <p id="create-manual-content-help" class="tx3 text-xs mb-2"></p>
-        </div>
-        <div class="create-form-actions">
-          <button type="button" id="create-back-3" class="feed-card-btn t-btn">Back</button>
-          <button type="button" id="create-next-3" class="new-chat-btn grad-bg text-white text-xs font-bold px-4 py-2 rounded-full border-none cursor-pointer shadow-glow t-btn">Continue</button>
-        </div>
-      </div>
-    </div>
 
-    <!-- Step 4: Review / Generate -->
-    <div id="step-4" class="create-step-panel hidden">
-      <h2 class="create-panel-title">Review & save</h2>
-      <div id="create-review-summary" class="create-review-summary tx2 text-sm"></div>
-      <div id="create-manual-editor" class="hidden">
-        <p class="tx2 text-sm mb-2">Create a manual study item to build from scratch. You'll be taken to the editor to add your content.</p>
+        <div id="create-manual-content-wrap" class="hidden form-field form-full-width">
+          <label id="create-manual-content-label" class="create-label">Content</label>
+          <textarea id="create-manual-content" class="create-input create-textarea tx bg-sf2 bd" rows="8"></textarea>
+          <p id="create-manual-content-help" class="tx3 text-xs mt-3 opacity-60"></p>
+        </div>
       </div>
-      <div id="create-ai-generate" class="hidden">
-        <p class="tx2 text-sm mb-2">Everything looks good! Click generate to have Korah build your study item with AI.</p>
-      </div>
-      <div class="create-form-actions mt-4">
-        <button type="button" id="create-back-4" class="feed-card-btn t-btn">Back</button>
-        <button type="button" id="create-save" class="new-chat-btn grad-bg text-white text-sm font-bold px-6 py-2.5 rounded-full border-none cursor-pointer shadow-glow t-btn">Generate</button>
-      </div>
-      <p id="create-save-error" class="tx-mr text-sm mt-2 hidden"></p>
+      
+      <div id="create-save-error" class="hidden mt-6 p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-2xl text-center text-sm"></div>
     </div>
   </div>
-</main>
+
+  <div class="modal-footer" id="creation-modal-footer">
+    <!-- Buttons dynamically updated by JS if needed, but defaults below -->
+    <button type="button" id="create-back-to-method" class="feed-card-btn t-btn hidden">Back</button>
+    <button type="button" id="create-save" class="new-chat-btn grad-bg text-white font-bold border-none cursor-pointer shadow-glow t-btn hidden">Generate</button>
+  </div>
+</div>
+
+<!-- Upload Documents Modal -->
+<div id="upload-docs-modal" class="settings-modal" style="max-width: 560px;">
+  <div class="modal-header">
+    <h2 class="modal-title">Upload Documents</h2>
+    <button class="modal-close" id="upload-docs-close">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  
+  <div class="modal-body">
+    <div class="upload-zone" id="document-drop-zone">
+      <span class="upload-icon">📄</span>
+      <h3 class="upload-text">Upload Documents</h3>
+      <p class="upload-hint">Drag and drop PDFs or images here,<br/>or click to select files.</p>
+    </div>
+    
+    <div id="uploaded-files-list" class="flex flex-col gap-3">
+      <!-- File items appear here -->
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button id="upload-docs-cancel" class="feed-card-btn t-btn">Cancel</button>
+    <button id="upload-docs-confirm" class="new-chat-btn grad-bg text-white text-sm font-bold px-8 py-2.5 rounded-full border-none cursor-pointer shadow-glow t-btn">Continue</button>
+  </div>
+</div>
 
 <!-- Rename Modal -->
 <div id="rename-modal" class="delete-modal">
@@ -428,19 +675,6 @@
   </div>
 </div>
 
-<!-- Delete Confirm Modal -->
-<div id="delete-modal" class="delete-modal">
-  <div class="delete-modal-content">
-    <div class="delete-modal-icon">🗑️</div>
-    <h3 class="delete-modal-title">Delete?</h3>
-    <p class="delete-modal-desc">This will permanently delete "<span id="delete-modal-name"></span>". This cannot be undone.</p>
-    <div class="delete-modal-actions">
-      <button id="delete-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
-      <button id="delete-modal-confirm" class="delete-modal-btn confirm t-btn">Delete</button>
-    </div>
-  </div>
-</div>
-
 <script type="module" src="js/study-firebase-init.js"></script>
 <script src="js/sidebar.js"></script>
 <script src="js/study-api.js"></script>
@@ -450,83 +684,86 @@
 
   var state = { step: 1, type: null, method: "manual" };
 
-  function clampInt(value, fallback, min, max) {
-    var parsed = parseInt(value, 10);
-    if (Number.isNaN(parsed)) return fallback;
-    return Math.min(max, Math.max(min, parsed));
-  }
+  const creationModal = document.getElementById("creation-modal");
+  const creationModalTitle = document.getElementById("creation-modal-title");
+  const creationModalClose = document.getElementById("creation-modal-close");
+  const uploadDocsModal = document.getElementById("upload-docs-modal");
+  const uploadDocsClose = document.getElementById("upload-docs-close");
+  const uploadDocsCancel = document.getElementById("upload-docs-cancel");
+  const uploadDocsConfirm = document.getElementById("upload-docs-confirm");
+  const backdrop = document.getElementById("modal-backdrop");
 
-  function getPracticeConfig() {
-    var totalInput = document.getElementById("practice-total-questions");
-    var mcqInput = document.getElementById("practice-mcq-count");
-    var openInput = document.getElementById("practice-open-count");
-    var total = clampInt(totalInput ? totalInput.value : 10, 10, 1, 50);
-    var mcq = clampInt(mcqInput ? mcqInput.value : 6, Math.round(total * 0.6), 0, total);
-    var open = clampInt(openInput ? openInput.value : (total - mcq), total - mcq, 0, total - mcq);
-    if (mcq + open !== total) open = total - mcq;
-    if (totalInput) totalInput.value = String(total);
-    if (mcqInput) mcqInput.value = String(mcq);
-    if (openInput) openInput.value = String(open);
-    var help = document.getElementById("practice-config-help");
-    if (help) help.textContent = "Korah will generate " + total + " questions (" + mcq + " MCQ, " + open + " open-ended).";
-    return { totalQuestions: total, mcqCount: mcq, openEndedCount: open };
-  }
+  function showModalStep(n) {
+    state.modalStep = n;
+    const step1 = document.getElementById("modal-step-1");
+    const step2 = document.getElementById("modal-step-2");
+    const backBtn = document.getElementById("create-back-to-method");
+    const saveBtn = document.getElementById("create-save");
 
-  function updatePracticeConfigUI() {
-    var wrap = document.getElementById("create-practice-config-wrap");
-    var show = state.type === "practiceTest" && state.method !== "manual";
-    wrap.classList.toggle("hidden", !show);
-    if (show) getPracticeConfig();
-  }
-
-  var typeParam = new URLSearchParams(window.location.search).get("type");
-  if (typeParam && ["flashcards", "studyGuide", "practiceTest"].indexOf(typeParam) >= 0) {
-    state.type = typeParam;
-  }
-
-  function showStep(n) {
-    state.step = n;
-    document.querySelectorAll(".create-step-panel").forEach(function (el) { el.classList.add("hidden"); });
-    document.getElementById("step-" + n).classList.remove("hidden");
-    document.querySelectorAll(".create-step").forEach(function (el) {
-      el.classList.toggle("active", parseInt(el.getAttribute("data-step"), 10) <= n);
-    });
-    if (n === 3) {
+    if (step1) step1.classList.toggle("active", n === 1);
+    if (step2) step2.classList.toggle("active", n === 2);
+    
+    if (backBtn) backBtn.classList.toggle("hidden", n === 1);
+    if (saveBtn) saveBtn.classList.toggle("hidden", n === 1);
+    
+    if (n === 2) {
       document.getElementById("create-ai-prompt-wrap").classList.toggle("hidden", state.method === "manual");
       updateManualContentUI();
       updatePracticeConfigUI();
+      if (saveBtn) saveBtn.textContent = state.method === "manual" ? "Create Item" : "Generate";
     }
-    if (n === 4) {
-      var typeLabel = { flashcards: "Flashcard Set", studyGuide: "Study Guide", practiceTest: "Practice Test" }[state.type];
-      var methodLabel = { manual: "Manual", "ai-prompt": "AI from prompt", "ai-doc": "AI from documents" }[state.method];
-      var summary = "Type: " + typeLabel + " · Method: " + methodLabel + " · Title: " + (document.getElementById("create-title").value || "Untitled");
-      if (state.type === "practiceTest" && state.method !== "manual") {
-        var cfg = getPracticeConfig();
-        summary += " · " + cfg.totalQuestions + " total (" + cfg.mcqCount + " MCQ, " + cfg.openEndedCount + " open-ended)";
-      }
-      document.getElementById("create-review-summary").textContent = summary;
-      document.getElementById("create-manual-editor").classList.toggle("hidden", state.method !== "manual");
-      document.getElementById("create-ai-generate").classList.toggle("hidden", state.method === "manual");
-    }
+  }
+
+  function openCreationModal(type) {
+    state.type = type;
+    var labels = { flashcards: "Flashcard Set", studyGuide: "Study Guide", practiceTest: "Practice Test" };
+    if (creationModalTitle) creationModalTitle.textContent = "Create " + labels[type];
+    showModalStep(1);
+    if (backdrop) backdrop.classList.add("active");
+    if (creationModal) creationModal.classList.add("active");
+  }
+
+  function closeCreationModal() {
+    if (backdrop) backdrop.classList.remove("active");
+    if (creationModal) creationModal.classList.remove("active");
   }
 
   document.querySelectorAll(".create-type-card").forEach(function (btn) {
     btn.addEventListener("click", function () {
-      state.type = btn.getAttribute("data-type");
-      showStep(2);
+      openCreationModal(btn.getAttribute("data-type"));
     });
   });
 
-  document.querySelectorAll(".create-method-btn").forEach(function (btn) {
+  document.querySelectorAll(".method-card").forEach(function (btn) {
     btn.addEventListener("click", function () {
       state.method = btn.getAttribute("data-method");
-      showStep(3);
+      if (state.method === "ai-doc") {
+        if (uploadDocsModal) uploadDocsModal.classList.add("active");
+      } else {
+        showModalStep(2);
+      }
     });
   });
 
-  document.getElementById("create-next-3").addEventListener("click", function () { showStep(4); });
-  document.getElementById("create-back-3").addEventListener("click", function () { showStep(2); });
-  document.getElementById("create-back-4").addEventListener("click", function () { showStep(3); });
+  if (creationModalClose) creationModalClose.addEventListener("click", closeCreationModal);
+  if (backdrop) backdrop.addEventListener("click", () => {
+    closeCreationModal();
+    if (uploadDocsModal) uploadDocsModal.classList.remove("active");
+  });
+
+  document.getElementById("create-back-to-method").addEventListener("click", function() {
+    showModalStep(1);
+  });
+
+  if (uploadDocsClose) uploadDocsClose.addEventListener("click", () => uploadDocsModal.classList.remove("active"));
+  if (uploadDocsCancel) uploadDocsCancel.addEventListener("click", () => uploadDocsModal.classList.remove("active"));
+
+  uploadDocsConfirm.addEventListener("click", function() {
+    // For now, just proceed to details
+    if (uploadDocsModal) uploadDocsModal.classList.remove("active");
+    showModalStep(2);
+  });
+
   ["practice-total-questions", "practice-mcq-count", "practice-open-count"].forEach(function (id) {
     var el = document.getElementById(id);
     if (!el) return;
@@ -713,10 +950,9 @@
 
   var sidebar = document.getElementById("sidebar");
   var toggle = document.getElementById("sidebar-toggle");
-
-  var overlay = document.createElement("div");
-  overlay.className = "sidebar-overlay";
-  document.body.appendChild(overlay);
+  var sideOverlay = document.createElement("div");
+  sideOverlay.className = "sidebar-overlay";
+  document.body.appendChild(sideOverlay);
 
   function isMobile() { return window.innerWidth <= 768; }
 
@@ -724,41 +960,31 @@
     toggle.addEventListener("click", function () {
       if (isMobile()) {
         sidebar.classList.toggle("mobile-open");
-        overlay.classList.toggle("show");
+        sideOverlay.classList.toggle("show");
       } else {
         sidebar.classList.toggle("collapsed");
       }
     });
   }
 
-  overlay.addEventListener("click", function () {
+  sideOverlay.addEventListener("click", function () {
     sidebar.classList.remove("mobile-open");
-    overlay.classList.remove("show");
+    sideOverlay.classList.remove("show");
   });
 
-  window.addEventListener("resize", function () {
-    if (!isMobile()) {
-      sidebar.classList.remove("mobile-open");
-      overlay.classList.remove("show");
-    }
-  });
-
-  // Settings modal (placeholder - todo update settings)
+  // Settings modal
   const settingsBtn = document.getElementById("settings-btn");
   const settingsModal = document.getElementById("settings-modal");
   const settingsClose = document.getElementById("settings-close");
+  if (settingsBtn) settingsBtn.addEventListener("click", () => settingsModal.classList.add("show"));
+  if (settingsClose) settingsClose.addEventListener("click", () => settingsModal.classList.remove("show"));
+  if (settingsModal) settingsModal.addEventListener("click", (e) => { if (e.target === settingsModal) settingsModal.classList.remove("show"); });
 
-  function openSettings() {
-    settingsModal.classList.add("show");
+  // Handle URL params
+  var typeParam = new URLSearchParams(window.location.search).get("type");
+  if (typeParam && ["flashcards", "studyGuide", "practiceTest"].indexOf(typeParam) >= 0) {
+    openCreationModal(typeParam);
   }
-
-  function closeSettings() { settingsModal.classList.remove("show"); }
-
-  if (settingsBtn) settingsBtn.addEventListener("click", openSettings);
-  if (settingsClose) settingsClose.addEventListener("click", closeSettings);
-  if (settingsModal) settingsModal.addEventListener("click", (e) => { if (e.target === settingsModal) closeSettings(); });
-
-  if (state.type) showStep(2);
 })();
 </script>
 </body>
