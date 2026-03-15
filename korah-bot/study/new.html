@@ -595,6 +595,20 @@
           <textarea id="create-manual-content" class="create-input create-textarea tx bg-sf2 bd" rows="8"></textarea>
           <p id="create-manual-content-help" class="tx3 text-xs mt-3 opacity-60"></p>
         </div>
+
+        <!-- AI from Documents Upload Zone -->
+        <div id="create-ai-doc-wrap" class="hidden form-field form-full-width">
+          <label class="create-label">Upload Documents</label>
+          <div class="upload-zone !py-12 !px-6" id="document-drop-zone">
+            <input type="file" id="document-input" class="hidden" multiple accept=".pdf,.txt,.png,.jpg,.jpeg"/>
+            <span class="upload-icon !text-5xl !mb-4">📄</span>
+            <h3 class="upload-text !text-lg">Drag & drop or click to upload</h3>
+            <p class="upload-hint !text-sm">Support for PDF, TXT, and Images</p>
+          </div>
+          <div id="uploaded-files-list" class="mt-4 flex flex-col gap-2">
+            <!-- File items will be injected here -->
+          </div>
+        </div>
       </div>
       
       <div id="create-save-error" class="hidden mt-6 p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-2xl text-center text-sm"></div>
@@ -605,33 +619,6 @@
     <!-- Buttons dynamically updated by JS if needed, but defaults below -->
     <button type="button" id="create-back-to-method" class="feed-card-btn t-btn hidden">Back</button>
     <button type="button" id="create-save" class="new-chat-btn grad-bg text-white font-bold border-none cursor-pointer shadow-glow t-btn hidden">Generate</button>
-  </div>
-</div>
-
-<!-- Upload Documents Modal -->
-<div id="upload-docs-modal" class="settings-modal" style="max-width: 560px;">
-  <div class="modal-header">
-    <h2 class="modal-title">Upload Documents</h2>
-    <button class="modal-close" id="upload-docs-close">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-    </button>
-  </div>
-  
-  <div class="modal-body">
-    <div class="upload-zone" id="document-drop-zone">
-      <span class="upload-icon">📄</span>
-      <h3 class="upload-text">Upload Documents</h3>
-      <p class="upload-hint">Drag and drop PDFs or images here,<br/>or click to select files.</p>
-    </div>
-    
-    <div id="uploaded-files-list" class="flex flex-col gap-3">
-      <!-- File items appear here -->
-    </div>
-  </div>
-
-  <div class="modal-footer">
-    <button id="upload-docs-cancel" class="feed-card-btn t-btn">Cancel</button>
-    <button id="upload-docs-confirm" class="new-chat-btn grad-bg text-white text-sm font-bold px-8 py-2.5 rounded-full border-none cursor-pointer shadow-glow t-btn">Continue</button>
   </div>
 </div>
 
@@ -682,16 +669,15 @@
 (function () {
   KorahSidebar.initSidebar({ chatBaseUrl: "../app/index.html", itemPageUrl: "item.html" });
 
-  var state = { step: 1, type: null, method: "manual" };
+  var state = { step: 1, type: null, method: "manual", uploadedFiles: [] };
 
   const creationModal = document.getElementById("creation-modal");
   const creationModalTitle = document.getElementById("creation-modal-title");
   const creationModalClose = document.getElementById("creation-modal-close");
-  const uploadDocsModal = document.getElementById("upload-docs-modal");
-  const uploadDocsClose = document.getElementById("upload-docs-close");
-  const uploadDocsCancel = document.getElementById("upload-docs-cancel");
-  const uploadDocsConfirm = document.getElementById("upload-docs-confirm");
   const backdrop = document.getElementById("modal-backdrop");
+  const documentInput = document.getElementById("document-input");
+  const dropZone = document.getElementById("document-drop-zone");
+  const filesList = document.getElementById("uploaded-files-list");
 
   function showModalStep(n) {
     state.modalStep = n;
@@ -708,9 +694,10 @@
     
     if (n === 2) {
       document.getElementById("create-ai-prompt-wrap").classList.toggle("hidden", state.method === "manual");
+      document.getElementById("create-ai-doc-wrap").classList.toggle("hidden", state.method !== "ai-doc");
       updateManualContentUI();
       updatePracticeConfigUI();
-      if (saveBtn) saveBtn.textContent = state.method === "manual" ? "Create Item" : "Generate";
+      if (saveBtn) saveBtn.textContent = (state.method === "manual") ? "Create Item" : "Generate";
     }
   }
 
@@ -737,32 +724,69 @@
   document.querySelectorAll(".method-card").forEach(function (btn) {
     btn.addEventListener("click", function () {
       state.method = btn.getAttribute("data-method");
-      if (state.method === "ai-doc") {
-        if (uploadDocsModal) uploadDocsModal.classList.add("active");
-      } else {
-        showModalStep(2);
-      }
+      showModalStep(2);
     });
   });
 
   if (creationModalClose) creationModalClose.addEventListener("click", closeCreationModal);
   if (backdrop) backdrop.addEventListener("click", () => {
     closeCreationModal();
-    if (uploadDocsModal) uploadDocsModal.classList.remove("active");
   });
 
   document.getElementById("create-back-to-method").addEventListener("click", function() {
     showModalStep(1);
   });
 
-  if (uploadDocsClose) uploadDocsClose.addEventListener("click", () => uploadDocsModal.classList.remove("active"));
-  if (uploadDocsCancel) uploadDocsCancel.addEventListener("click", () => uploadDocsModal.classList.remove("active"));
+  // --- FILE UPLOAD LOGIC ---
+  if (dropZone) {
+    dropZone.addEventListener("click", () => documentInput.click());
+    dropZone.addEventListener("dragover", (e) => { e.preventDefault(); dropZone.classList.add("border-p5", "bg-sf2"); });
+    dropZone.addEventListener("dragleave", () => { dropZone.classList.remove("border-p5", "bg-sf2"); });
+    dropZone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropZone.classList.remove("border-p5", "bg-sf2");
+      handleFiles(e.dataTransfer.files);
+    });
+  }
 
-  uploadDocsConfirm.addEventListener("click", function() {
-    // For now, just proceed to details
-    if (uploadDocsModal) uploadDocsModal.classList.remove("active");
-    showModalStep(2);
-  });
+  if (documentInput) {
+    documentInput.addEventListener("change", (e) => handleFiles(e.target.files));
+  }
+
+  function handleFiles(files) {
+    Array.from(files).forEach(file => {
+      if (state.uploadedFiles.length >= 5) return;
+      state.uploadedFiles.push(file);
+    });
+    renderFiles();
+  }
+
+  function renderFiles() {
+    if (!filesList) return;
+    filesList.innerHTML = "";
+    state.uploadedFiles.forEach((file, idx) => {
+      const item = document.createElement("div");
+      item.className = "flex items-center justify-between p-3 bg-sf2 bd rounded-xl animate-in fade-in slide-in-from-bottom-2";
+      item.innerHTML = `
+        <div class="flex items-center gap-3">
+          <span class="text-xl">📄</span>
+          <div class="flex flex-col">
+            <span class="text-sm font-semibold truncate max-w-[200px]">${file.name}</span>
+            <span class="text-[10px] opacity-60 uppercase">${(file.size / 1024).toFixed(1)} KB</span>
+          </div>
+        </div>
+        <button class="p-2 hover:bg-red-500/10 text-red-400 rounded-lg transition-colors" data-idx="${idx}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      `;
+      item.querySelector("button").onclick = (e) => {
+        e.stopPropagation();
+        state.uploadedFiles.splice(idx, 1);
+        renderFiles();
+      };
+      filesList.appendChild(item);
+    });
+  }
 
   ["practice-total-questions", "practice-mcq-count", "practice-open-count"].forEach(function (id) {
     var el = document.getElementById(id);
@@ -929,6 +953,7 @@
       prompt: prompt,
       title: title,
       subject: subject,
+      files: state.uploadedFiles,
       testConfig: state.type === "practiceTest" ? getPracticeConfig() : undefined
     }).then(function (result) {
       var validated = normalizeStudyContent(state.type, result && result.content);

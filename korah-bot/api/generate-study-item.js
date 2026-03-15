@@ -172,7 +172,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Invalid JSON body" });
   }
 
-  const { type, prompt, title, subject, testConfig } = body;
+  const { type, prompt, title, subject, testConfig, fileContents } = body;
   const allowedTypes = ["flashcards", "studyGuide", "practiceTest"];
   if (!type || !allowedTypes.includes(type)) {
     return res.status(400).json({ error: "Missing or invalid type (use: flashcards, studyGuide, practiceTest)" });
@@ -187,9 +187,26 @@ export default async function handler(req, res) {
   }
 
   const systemPrompt = getSystemPrompt(type, testConfig);
+  const userContent = [{ type: "text", text: context.join("\n") }];
+
+  if (Array.isArray(fileContents)) {
+    fileContents.forEach(f => {
+      if (f.type === "image" && f.data) {
+        userContent.push({
+          type: "image_url",
+          image_url: { url: f.data }
+        });
+      } else if (f.type === "text" && f.data) {
+        userContent[0].text += `\n\n--- Content of ${f.name} ---\n${f.data}\n--- End of ${f.name} ---`;
+      } else {
+        userContent[0].text += `\n\n[Attached file: ${f.name}]`;
+      }
+    });
+  }
+
   const messages = [
     { role: "system", content: systemPrompt },
-    { role: "user", content: context.join("\n") },
+    { role: "user", content: userContent },
   ];
 
   try {

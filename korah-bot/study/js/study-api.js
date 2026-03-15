@@ -165,20 +165,59 @@
 
   /**
    * Generate study item content via AI.
-   * @param {Object} opts - { type: string, prompt: string, title?: string, subject?: string, testConfig?: Object }
+   * @param {Object} opts - { type: string, prompt: string, title?: string, subject?: string, testConfig?: Object, files?: Array }
    * @returns {Promise<{ content: Object }>} - content is { cards } | { sections } | { questions }
    */
-  function generateStudyContent(opts) {
+  async function generateStudyContent(opts) {
     var type = opts.type;
     var prompt = (opts.prompt || "").trim() || "Generate relevant study material.";
     var title = opts.title || "";
     var subject = opts.subject || "";
     var testConfig = getTestConfig(opts.testConfig || {});
+    var files = opts.files || [];
     var userMessage = [prompt];
     if (title) userMessage.push("Title: " + title);
     if (subject) userMessage.push("Subject: " + subject);
     if (type === "practiceTest") {
       userMessage.push("Practice test settings: " + testConfig.totalQuestions + " total questions, " + testConfig.mcqCount + " MCQ, " + testConfig.openEndedCount + " open-ended.");
+    }
+
+    // Process files into text or base64
+    var fileContents = [];
+    for (var i = 0; i < files.length; i++) {
+      var file = files[i];
+      if (file.type.startsWith("image/")) {
+        var base64 = await toBase64(file);
+        fileContents.push({ type: "image", name: file.name, data: base64 });
+      } else if (file.type === "text/plain") {
+        var text = await file.text();
+        fileContents.push({ type: "text", name: file.name, data: text });
+      } else {
+        // For PDF etc, we just note the name for now as we don't have a parser here
+        fileContents.push({ type: "other", name: file.name });
+      }
+    }
+
+    if (fileContents.length > 0) {
+      userMessage.push("\nDocuments provided:");
+      fileContents.forEach(f => {
+        if (f.type === "text") {
+          userMessage.push("--- Content of " + f.name + " ---\n" + f.data + "\n--- End of " + f.name + " ---");
+        } else if (f.type === "image") {
+          userMessage.push("[Image: " + f.name + " (sent as vision data)]");
+        } else {
+          userMessage.push("[Attached file: " + f.name + " (parsing not supported in this environment)]");
+        }
+      });
+    }
+
+    function toBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+      });
     }
 
     function tryBackendApi() {
@@ -189,7 +228,14 @@
       return fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: type, prompt: prompt, title: title, subject: subject, testConfig: testConfig })
+        body: JSON.stringify({ 
+          type: type, 
+          prompt: prompt, 
+          title: title, 
+          subject: subject, 
+          testConfig: testConfig,
+          fileContents: fileContents // Send processed contents
+        })
       }).then(function (res) {
         if (!res.ok) throw new Error("API " + res.status);
         return res.json();
@@ -201,10 +247,26 @@
 
     function tryChatProxy() {
       var systemPrompt = getSystemPrompt(type, { testConfig: testConfig });
+      
+      // Construct messages for Chat Proxy
       var messages = [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userMessage.join("\n") }
+        { role: "system", content: systemPrompt }
       ];
+
+      var userContent = [{ type: "text", text: userMessage.join("\n") }];
+      
+      // If we have images, GPT-4o-mini can handle them if the proxy supports it
+      fileContents.forEach(f => {
+        if (f.type === "image") {
+          userContent.push({
+            type: "image_url",
+            image_url: { url: f.data }
+          });
+        }
+      });
+
+      messages.push({ role: "user", content: userContent });
+
       return fetch(CHAT_PROXY, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
