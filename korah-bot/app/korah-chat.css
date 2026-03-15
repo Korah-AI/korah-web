@@ -2514,3 +2514,270 @@ html {
   color: var(--mr);
   font-size: 14px;
 }
+
+/* ── Main Area Wrapper (chat + doc panel) ── */
+.main-area-wrapper {
+    flex: 1;
+    display: flex;
+    height: 100dvh;
+    min-width: 0;
+    overflow: hidden;
+}
+
+/* ── Document Preview Panel ── */
+.doc-panel {
+    width: 0;
+    min-width: 0;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    border-left: 0 solid var(--bd);
+    background: var(--sf);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    overflow: hidden;
+    transition: width .4s cubic-bezier(.23,1,.32,1), min-width .4s cubic-bezier(.23,1,.32,1), border-width .4s;
+    flex-shrink: 0;
+}
+.doc-panel.show {
+    width: 272px;
+    min-width: 272px;
+    border-left-width: 1px;
+}
+.doc-panel-header {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--bd2);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+}
+.doc-panel-title {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--p4);
+}
+.doc-panel-close {
+    width: 26px;
+    height: 26px;
+    border-radius: 7px;
+    border: 1px solid var(--bd2);
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--tx3);
+}
+.doc-panel-close:hover { color: var(--tx); background: var(--cu); border-color: var(--p4); }
+.doc-panel-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.doc-panel-list::-webkit-scrollbar { width: 3px; }
+.doc-panel-list::-webkit-scrollbar-thumb { background: var(--bd); border-radius: 2px; }
+.doc-card {
+    border-radius: 12px;
+    border: 1px solid var(--bd);
+    background: var(--sf2);
+    overflow: hidden;
+    transition: border-color .2s;
+}
+.doc-card:hover { border-color: var(--p4); }
+.doc-card-preview {
+    width: 100%;
+    height: 128px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg2);
+    overflow: hidden;
+    border-bottom: 1px solid var(--bd2);
+}
+.doc-card-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.doc-text-preview {
+    padding: 8px;
+    font-size: 9.5px;
+    color: var(--tx3);
+    line-height: 1.5;
+    font-family: monospace;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 9;
+    -webkit-box-orient: vertical;
+    white-space: pre-wrap;
+    width: 100%;
+    height: 100%;
+    word-break: break-all;
+}
+.doc-icon-preview {
+    font-size: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 6px;
+}
+.doc-icon-preview span {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--tx3);
+}
+.doc-card-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 10px;
+}
+.doc-card-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--tx);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+}
+.doc-card-size {
+    font-size: 9px;
+    color: var(--tx3);
+    flex-shrink: 0;
+}
+.doc-card-remove {
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--tx3);
+    flex-shrink: 0;
+}
+.doc-card-remove:hover { color: var(--red); background: rgba(239,68,68,.1); }
+
+/* ── Drag & Drop Overlay ── */
+.main-content { position: relative; }
+.drag-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(139,92,246,.07);
+    border: 2px dashed var(--p4);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    pointer-events: none;
+}
+.drag-overlay.active {
+    display: flex;
+    animation: fadeIn .15s ease;
+}
+.drag-overlay-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    pointer-events: none;
+    background: var(--sf);
+    border: 1px solid var(--bd);
+    border-radius: 20px;
+    padding: 28px 40px;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow: 0 8px 32px rgba(0,0,0,.2);
+}
+.drag-overlay-icon { font-size: 40px; line-height: 1; }
+.drag-overlay-text {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--p5);
+}
+.drag-overlay-hint {
+    font-size: 12px;
+    color: var(--tx2);
+}
+
+/* ── Attached Files Bar (above input) ── */
+.input-files-bar {
+    display: none;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px 14px 0;
+}
+.input-files-bar.show { display: flex; }
+.input-file-chip {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 6px 3px 9px;
+    border-radius: 20px;
+    background: var(--cu);
+    border: 1px solid var(--bd);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--p5);
+    max-width: 170px;
+}
+.input-file-chip-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+}
+.input-file-chip-remove {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(139,92,246,.2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--p4);
+    flex-shrink: 0;
+    font-size: 11px;
+    line-height: 1;
+    padding: 0;
+    font-family: sans-serif;
+}
+.input-file-chip-remove:hover { background: rgba(239,68,68,.2); color: var(--red); }
+
+/* ── Message Attachments Indicator ── */
+.msg-attachments {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 6px;
+}
+.msg-attachment-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: rgba(139,92,246,.1);
+    border: 1px solid var(--bd2);
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--p5);
+    white-space: nowrap;
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

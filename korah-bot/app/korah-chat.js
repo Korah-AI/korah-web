@@ -27,6 +27,201 @@
   let sessionsCache   = {}; // { [id]: conversationDoc }
   let studyItemsCache = {}; // { [id]: studyItemDoc }
 
+  // ═══ Document Attachment State ═══
+  // Each entry: { file, name, size, type: 'image'|'text'|'other', dataUrl, content }
+  let attachedFiles = [];
+
+  function getFileIcon(fileType, fileName) {
+    if (fileType === 'image') return '🖼️';
+    const ext = (fileName || '').split('.').pop().toLowerCase();
+    if (ext === 'pdf') return '📕';
+    if (['doc','docx'].includes(ext)) return '📝';
+    if (['txt','md'].includes(ext)) return '📄';
+    return '📎';
+  }
+
+  function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / 1048576).toFixed(1) + ' MB';
+  }
+
+  function processFile(file) {
+    return new Promise((resolve) => {
+      const isImage = file.type.startsWith('image/');
+      const isText = file.type === 'text/plain' || ['txt','md','csv'].includes(file.name.split('.').pop().toLowerCase());
+      const reader = new FileReader();
+      if (isImage) {
+        reader.onload = () => resolve({ file, name: file.name, size: file.size, type: 'image', dataUrl: reader.result, content: null });
+        reader.readAsDataURL(file);
+      } else if (isText) {
+        reader.onload = () => resolve({ file, name: file.name, size: file.size, type: 'text', dataUrl: null, content: reader.result });
+        reader.readAsText(file);
+      } else {
+        resolve({ file, name: file.name, size: file.size, type: 'other', dataUrl: null, content: null });
+      }
+    });
+  }
+
+  async function handleNewFiles(fileList) {
+    const MAX_FILES = 5;
+    const remaining = MAX_FILES - attachedFiles.length;
+    const toProcess = Array.from(fileList).slice(0, Math.max(0, remaining));
+    for (const file of toProcess) {
+      const processed = await processFile(file);
+      attachedFiles.push(processed);
+    }
+    renderDocPanel();
+    renderInputFilesBar();
+  }
+
+  function removeAttachedFile(index) {
+    attachedFiles.splice(index, 1);
+    renderDocPanel();
+    renderInputFilesBar();
+    if (attachedFiles.length === 0) {
+      const docPanel = document.getElementById('doc-panel');
+      if (docPanel) docPanel.classList.remove('show');
+    }
+  }
+
+  function clearAttachedFiles() {
+    attachedFiles = [];
+    const docPanel = document.getElementById('doc-panel');
+    if (docPanel) docPanel.classList.remove('show');
+    renderDocPanel();
+    renderInputFilesBar();
+  }
+
+  function renderDocPanel() {
+    const panel = document.getElementById('doc-panel');
+    const list = document.getElementById('doc-panel-list');
+    if (!panel || !list) return;
+    if (attachedFiles.length === 0) {
+      panel.classList.remove('show');
+      return;
+    }
+    panel.classList.add('show');
+    list.innerHTML = '';
+    attachedFiles.forEach((f, i) => {
+      const card = document.createElement('div');
+      card.className = 'doc-card';
+      let previewHtml = '';
+      if (f.type === 'image' && f.dataUrl) {
+        previewHtml = `<div class="doc-card-preview"><img src="${f.dataUrl}" alt="${f.name}"/></div>`;
+      } else if (f.type === 'text' && f.content) {
+        const escaped = f.content.slice(0, 400).replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        previewHtml = `<div class="doc-card-preview"><div class="doc-text-preview">${escaped}</div></div>`;
+      } else {
+        const icon = getFileIcon(f.type, f.name);
+        const ext = f.name.split('.').pop().toUpperCase();
+        previewHtml = `<div class="doc-card-preview"><div class="doc-icon-preview">${icon}<span>${ext}</span></div></div>`;
+      }
+      card.innerHTML = `
+        ${previewHtml}
+        <div class="doc-card-info">
+          <span class="doc-card-name" title="${f.name}">${f.name}</span>
+          <span class="doc-card-size">${formatFileSize(f.size)}</span>
+          <button class="doc-card-remove t-btn" title="Remove">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>`;
+      card.querySelector('.doc-card-remove').addEventListener('click', () => removeAttachedFile(i));
+      list.appendChild(card);
+    });
+  }
+
+  function renderInputFilesBar() {
+    const bar = document.getElementById('input-files-bar');
+    if (!bar) return;
+    if (attachedFiles.length === 0) {
+      bar.classList.remove('show');
+      bar.innerHTML = '';
+      return;
+    }
+    bar.classList.add('show');
+    bar.innerHTML = '';
+    attachedFiles.forEach((f, i) => {
+      const chip = document.createElement('div');
+      chip.className = 'input-file-chip';
+      chip.innerHTML = `
+        <span>${getFileIcon(f.type, f.name)}</span>
+        <span class="input-file-chip-name">${f.name}</span>
+        <button class="input-file-chip-remove" title="Remove">×</button>`;
+      chip.querySelector('.input-file-chip-remove').addEventListener('click', () => removeAttachedFile(i));
+      bar.appendChild(chip);
+    });
+  }
+
+  // Build API messages array, enriching the last user message with file content
+  function buildApiMessages(hist, files) {
+    if (!files || files.length === 0) return hist;
+    const lastMsg = hist[hist.length - 1];
+    if (!lastMsg || lastMsg.role !== 'user') return hist;
+    const textParts = [lastMsg.content];
+    const imageParts = [];
+    files.forEach(f => {
+      if (f.type === 'text' && f.content) {
+        textParts.push(`\n\n--- Content of ${f.name} ---\n${f.content}\n--- End of ${f.name} ---`);
+      } else if (f.type === 'image' && f.dataUrl) {
+        imageParts.push({ type: 'image_url', image_url: { url: f.dataUrl } });
+      } else {
+        textParts.push(`\n[Attached file: ${f.name}]`);
+      }
+    });
+    const fullText = textParts.join('');
+    const content = imageParts.length > 0
+      ? [{ type: 'text', text: fullText }, ...imageParts]
+      : fullText;
+    return [...hist.slice(0, -1), { role: 'user', content }];
+  }
+
+  function setupDocumentAttachment() {
+    const attachBtn  = document.getElementById('attach-file-btn');
+    const fileInput  = document.getElementById('doc-file-input');
+    const panelClose = document.getElementById('doc-panel-close');
+    const mainContent = document.getElementById('main-content');
+    const dragOverlay = document.getElementById('drag-overlay');
+
+    if (attachBtn && fileInput) {
+      attachBtn.addEventListener('click', () => {
+        if (toolsMenu) toolsMenu.classList.remove('show');
+        fileInput.click();
+      });
+      fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length) handleNewFiles(e.target.files);
+        e.target.value = '';
+      });
+    }
+
+    if (panelClose) panelClose.addEventListener('click', clearAttachedFiles);
+
+    // Drag & Drop on main chat area
+    if (mainContent) {
+      let dragCounter = 0;
+      mainContent.addEventListener('dragenter', (e) => {
+        if (!e.dataTransfer.types.includes('Files')) return;
+        e.preventDefault();
+        dragCounter++;
+        if (dragOverlay) dragOverlay.classList.add('active');
+      });
+      mainContent.addEventListener('dragleave', () => {
+        dragCounter--;
+        if (dragCounter <= 0) {
+          dragCounter = 0;
+          if (dragOverlay) dragOverlay.classList.remove('active');
+        }
+      });
+      mainContent.addEventListener('dragover', (e) => e.preventDefault());
+      mainContent.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dragCounter = 0;
+        if (dragOverlay) dragOverlay.classList.remove('active');
+        if (e.dataTransfer.files.length) handleNewFiles(e.dataTransfer.files);
+      });
+    }
+  }
+
   // ═══ Storage Shim ═══
   // Synchronous reads from in-memory cache; async fire-and-forget writes via KorahDB.
   // Maintains the same interface as the old localStorage Storage object so
@@ -283,7 +478,7 @@
     renderDesmosGraphs(container);
   }
 
-  function buildMessageRow(role, text, isError = false, suggestions = [], contentId = null, studyItem = null) {
+  function buildMessageRow(role, text, isError = false, suggestions = [], contentId = null, studyItem = null, fileAttachments = null) {
     const row = document.createElement("div");
     row.className = `msg-row ${role === "user" ? "user" : "assistant"}`;
 
@@ -314,6 +509,20 @@
     }
 
     bubble.appendChild(label);
+
+    // Show file attachment chips for user messages
+    if (role === 'user' && fileAttachments && fileAttachments.length > 0) {
+      const attachDiv = document.createElement('div');
+      attachDiv.className = 'msg-attachments';
+      fileAttachments.forEach(f => {
+        const chip = document.createElement('span');
+        chip.className = 'msg-attachment-chip';
+        chip.textContent = `${getFileIcon(f.type, f.name)} ${f.name}`;
+        attachDiv.appendChild(chip);
+      });
+      bubble.appendChild(attachDiv);
+    }
+
     bubble.appendChild(content);
 
     // Add study item button if present
@@ -393,8 +602,8 @@
     return [...commonActions, ...(modeSpecific[mode] || [])];
   }
 
-  function appendMessage(role, text, isError = false, suggestions = [], contentId = null, studyItem = null) {
-    const row = buildMessageRow(role, text, isError, suggestions, contentId, studyItem);
+  function appendMessage(role, text, isError = false, suggestions = [], contentId = null, studyItem = null, fileAttachments = null) {
+    const row = buildMessageRow(role, text, isError, suggestions, contentId, studyItem, fileAttachments);
     messagesList.appendChild(row);
     setWelcomeVisibility(false);
     return row;
@@ -1708,11 +1917,20 @@ ${FORMAT_INSTRUCTIONS}`.trim();
       return;
     }
 
+    // Capture and clear attached files before state changes
+    const pendingFiles = [...attachedFiles];
+    const hasFiles = pendingFiles.length > 0;
+    clearAttachedFiles();
+
     // NEW: Detect study item request
     const studyReq = detectStudyRequest(text);
 
-    appendMessage("user", text);
-    history.push({ role: "user", content: text });
+    // Display message with file chips; store with file names appended
+    appendMessage("user", text, false, [], null, null, hasFiles ? pendingFiles : null);
+    const historyContent = hasFiles
+      ? `${text}\n\n[Attached files: ${pendingFiles.map(f => f.name).join(', ')}]`
+      : text;
+    history.push({ role: "user", content: historyContent });
     saveCurrentSession();
     hideSuggestionBar();
 
@@ -1751,8 +1969,11 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     const historyIndex = history.length - 1;
     saveCurrentSession();
 
+    // Build API messages: strip the empty assistant placeholder, then enrich last user msg with files
+    const apiMessages = buildApiMessages(history.slice(0, -1), pendingFiles);
+
     try {
-      const reply = await callChatApi(history, (chunk, fullText) => {
+      const reply = await callChatApi(apiMessages, (chunk, fullText) => {
         // Remove thinking indicator when first content arrives
         if (thinkingIndicator && fullText.length > 0) {
           thinkingIndicator.remove();
@@ -1941,6 +2162,9 @@ ${FORMAT_INSTRUCTIONS}`.trim();
 
   if (settingsBtn) settingsBtn.addEventListener("click", openSettings);
   if (settingsClose) settingsClose.addEventListener("click", closeSettings);
+
+  // ═══ Document Attachment Setup ═══
+  setupDocumentAttachment();
 
   // Close modal when clicking outside
   if (settingsModal) {

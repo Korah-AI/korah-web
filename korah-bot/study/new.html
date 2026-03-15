@@ -249,17 +249,89 @@
     .upload-zone {
       border: 2px dashed var(--bd);
       border-radius: 28px;
-      padding: 100px 40px;
+      padding: 80px 40px;
       text-align: center;
       cursor: pointer;
       transition: all 0.2s;
       background: var(--bg2);
       margin: auto 0;
     }
-    .upload-zone:hover { border-color: var(--p5); background: var(--bg3); }
-    .upload-icon { font-size: 80px; margin-bottom: 32px; display: block; filter: grayscale(1); }
-    .upload-text { font-size: 24px; font-weight: 700; color: var(--tx1); margin-bottom: 16px; }
-    .upload-hint { font-size: 16px; color: var(--tx2); }
+    .upload-zone:hover, .upload-zone.drag-active { border-color: var(--p5); background: var(--bg3); transform: scale(1.01); }
+    .upload-icon { font-size: 72px; margin-bottom: 24px; display: block; filter: grayscale(0.5); transition: filter .2s; }
+    .upload-zone:hover .upload-icon, .upload-zone.drag-active .upload-icon { filter: grayscale(0); }
+    .upload-text { font-size: 22px; font-weight: 700; color: var(--tx1); margin-bottom: 12px; }
+    .upload-hint { font-size: 15px; color: var(--tx2); }
+
+    /* --- UPLOADED FILE ITEMS --- */
+    .doc-upload-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      background: var(--bg2);
+      border: 1px solid var(--bd);
+      border-radius: 14px;
+      transition: border-color .2s;
+    }
+    .doc-upload-item:hover { border-color: var(--p5); }
+    .doc-thumb {
+      width: 52px;
+      height: 52px;
+      border-radius: 10px;
+      background: var(--bg1);
+      border: 1px solid var(--bd2);
+      overflow: hidden;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .doc-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .doc-thumb-icon {
+      font-size: 22px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+    .doc-thumb-ext {
+      font-size: 8px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--tx3);
+    }
+    .doc-file-info { flex: 1; overflow: hidden; }
+    .doc-file-name {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--tx);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .doc-file-size {
+      display: block;
+      font-size: 10px;
+      color: var(--tx3);
+      margin-top: 2px;
+    }
+    .doc-file-remove {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      border: 1px solid rgba(239,68,68,.2);
+      background: rgba(239,68,68,.05);
+      color: var(--tx3);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all .2s;
+    }
+    .doc-file-remove:hover { background: rgba(239,68,68,.15); color: #f87171; border-color: rgba(239,68,68,.4); }
 
     .modal-step { display: none; }
     .modal-step.active { display: flex; flex-direction: column; flex: 1; animation: stepFadeIn 0.3s ease-out; }
@@ -740,11 +812,11 @@
   // --- FILE UPLOAD LOGIC ---
   if (dropZone) {
     dropZone.addEventListener("click", () => documentInput.click());
-    dropZone.addEventListener("dragover", (e) => { e.preventDefault(); dropZone.classList.add("border-p5", "bg-sf2"); });
-    dropZone.addEventListener("dragleave", () => { dropZone.classList.remove("border-p5", "bg-sf2"); });
+    dropZone.addEventListener("dragover", (e) => { e.preventDefault(); dropZone.classList.add("drag-active"); });
+    dropZone.addEventListener("dragleave", () => { dropZone.classList.remove("drag-active"); });
     dropZone.addEventListener("drop", (e) => {
       e.preventDefault();
-      dropZone.classList.remove("border-p5", "bg-sf2");
+      dropZone.classList.remove("drag-active");
       handleFiles(e.dataTransfer.files);
     });
   }
@@ -766,20 +838,38 @@
     filesList.innerHTML = "";
     state.uploadedFiles.forEach((file, idx) => {
       const item = document.createElement("div");
-      item.className = "flex items-center justify-between p-3 bg-sf2 bd rounded-xl animate-in fade-in slide-in-from-bottom-2";
+      item.className = "doc-upload-item";
+
+      const isImage = file.type.startsWith("image/");
+      const ext = file.name.split(".").pop().toUpperCase();
+      const icon = file.type === "application/pdf" ? "📕"
+        : (file.type === "text/plain" || ["TXT","MD","CSV"].includes(ext)) ? "📄" : "📎";
+
+      const thumbHtml = isImage
+        ? `<div class="doc-thumb"><img class="doc-preview-img" src="" alt="${file.name}"/></div>`
+        : `<div class="doc-thumb"><div class="doc-thumb-icon">${icon}<span class="doc-thumb-ext">${ext}</span></div></div>`;
+
       item.innerHTML = `
-        <div class="flex items-center gap-3">
-          <span class="text-xl">📄</span>
-          <div class="flex flex-col">
-            <span class="text-sm font-semibold truncate max-w-[200px]">${file.name}</span>
-            <span class="text-[10px] opacity-60 uppercase">${(file.size / 1024).toFixed(1)} KB</span>
-          </div>
+        ${thumbHtml}
+        <div class="doc-file-info">
+          <span class="doc-file-name" title="${file.name}">${file.name}</span>
+          <span class="doc-file-size">${(file.size / 1024).toFixed(1)} KB</span>
         </div>
-        <button class="p-2 hover:bg-red-500/10 text-red-400 rounded-lg transition-colors" data-idx="${idx}">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <button class="doc-file-remove" title="Remove">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       `;
-      item.querySelector("button").onclick = (e) => {
+
+      if (isImage) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = item.querySelector(".doc-preview-img");
+          if (img) img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+
+      item.querySelector(".doc-file-remove").onclick = (e) => {
         e.stopPropagation();
         state.uploadedFiles.splice(idx, 1);
         renderFiles();
