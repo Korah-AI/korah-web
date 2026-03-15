@@ -22,17 +22,44 @@
     return { totalQuestions: total, mcqCount: mcq, openEndedCount: open };
   }
 
+  var FORMAT_INSTRUCTIONS = '\n\n' +
+    'KATEX DELIMITER POLICY (REQUIRED):\n' +
+    '- Inline math: \\(...\\)\n' +
+    '- Display math: $$...$$\n' +
+    '- NEVER use $...$, \\[...\\], [ ... ], or bare math like "x^2" without delimiters\n' +
+    '- Ensure all math delimiters are balanced, and put display math on its own line\n\n' +
+    'VISUAL DIAGRAMS: When you need to show flowcharts, sequences, or relationships, use mermaid syntax in a fenced code block:\n' +
+    '```mermaid\n' +
+    'graph TD\n' +
+    '  A[Start] --> B[Step 1]\n' +
+    '  B --> C[Step 2]\n' +
+    '```\n\n' +
+    'INTERACTIVE GRAPHS: When showing mathematical functions or graphs, use the Desmos format:\n' +
+    '```desmos\n' +
+    '{\n' +
+    '  "expressions": [\n' +
+    '    {"latex": "y=x^2", "color": "#4285F4"},\n' +
+    '    {"latex": "y=sin(x)", "color": "#EA4335"}\n' +
+    '  ],\n' +
+    '  "zoom": {"xmin": -5, "xmax": 5, "ymin": -5, "ymax": 5}\n' +
+    '}\n' +
+    '```\n\n' +
+    'Always format your responses using GitHub-flavored Markdown. Use:\n' +
+    '- Markdown headings (##, ###) to structure sections\n' +
+    '- Bulleted and numbered lists for steps and key points\n' +
+    '- `code` and fenced code blocks for formulas or code when helpful';
+
   function getSystemPrompt(type, opts) {
     var practiceConfig = getTestConfig(opts && opts.testConfig);
     var prompts = {
-      flashcards: 'You are a study assistant. Generate comprehensive flashcard content and a descriptive title (just the topic). Respond with ONLY a single valid JSON object, no markdown or explanation. Use this exact shape: { "title": "Overall Topic", "cards": [ { "front": "question or term", "back": "answer or definition" }, ... ] }. Create 15-20 cards.',
-      studyGuide: 'You are a study assistant. Generate a comprehensive study guide using Markdown and LaTeX. Respond with ONLY plain text - the study guide content in markdown format. Start directly with the content, no JSON or code fences. Include a title at the top as an H1 (e.g., # Topic Name), followed by the study guide sections.',
+      flashcards: 'You are a study assistant. Generate comprehensive flashcard content and a descriptive title (just the topic). Respond with ONLY a single valid JSON object, no markdown or explanation. Use this exact shape: { "title": "Overall Topic", "cards": [ { "front": "question or term", "back": "answer or definition" }, ... ] }. Create 15-20 cards. If a card includes math, follow this policy exactly: inline \\(...\\), display $$...$$, and never use $...$, \\[...\\], [ ... ], or bare math without delimiters.',
+      studyGuide: 'You are a study assistant. Generate a comprehensive study guide using Markdown and LaTeX. Respond with ONLY plain text - the study guide content in markdown format. Start directly with the content, no JSON or code fences. Include a title at the top as an H1 (e.g., # Topic Name), followed by the study guide sections.' + FORMAT_INSTRUCTIONS,
       practiceTest:
         'You are a study assistant. Generate a comprehensive practice test and a descriptive title (just the topic). ' +
         'Respond with ONLY a single valid JSON object, no markdown or explanation. ' +
         'Use this exact shape: { "title": "Overall Topic", "questions": [ { "type": "mcq" | "openEnded", "text": "Question text", "options": ["A", "B", "C", "D"], "answer": "Correct answer", "explanation": "Brief rationale" } ] }. ' +
         'Requirements: generate exactly ' + practiceConfig.totalQuestions + " questions, with exactly " + practiceConfig.mcqCount + " mcq and exactly " + practiceConfig.openEndedCount + " openEnded questions. " +
-        "For openEnded questions, options must be an empty array. For mcq questions, include exactly 4 options and make one correct."
+        "For openEnded questions, options must be an empty array. For mcq questions, include exactly 4 options and make one correct. If any question, option, answer, or explanation includes math, follow this policy exactly: inline \\(...\\), display $$...$$, and never use $...$, \\[...\\], [ ... ], or bare math without delimiters."
     };
     return prompts[type] || prompts.flashcards;
   }

@@ -8,6 +8,11 @@
 
 const OPENAI_URL = "https://korah-beta.vercel.app/api/proxy";
 const MODEL = "gpt-4o-mini";
+const KATEX_FORMAT_RULES = `KaTeX delimiter policy (REQUIRED):
+- Use \\(...\\) for inline math
+- Use $$...$$ for display math on its own line
+- Never use $...$, \\[...\\], [ ... ], or bare math like x^2 without delimiters
+- Ensure every expression has balanced opening and closing delimiters`;
 
 function clampInt(value, fallback, min, max) {
   const parsed = parseInt(value, 10);
@@ -28,11 +33,14 @@ function getSystemPrompt(type, testConfig) {
   const prompts = {
     flashcards: `You are a study assistant. Generate comprehensive flashcard content. Respond with ONLY a single valid JSON object, no markdown or explanation:
 { "cards": [ { "front": "question or term", "back": "answer or definition" }, ... ] }
-Create 15-20 cards based on the user's prompt. Use clear, concise language. Include key terms, concepts, and important details.`,
+Create 15-20 cards based on the user's prompt. Use clear, concise language. Include key terms, concepts, and important details.
+If a card includes math, follow this policy:
+${KATEX_FORMAT_RULES}`,
 
     studyGuide: `You are a study assistant. Generate a comprehensive study guide. 
 Use Markdown for structure (headings, bullet points, bold text). 
-Use LaTeX for any mathematical formulas (inline $...$ and display $$...$$).
+For all mathematical formulas, follow this policy:
+${KATEX_FORMAT_RULES}
 The guide should be detailed, covering all aspects of the topic provided.
 Respond with ONLY plain text - the study guide content in markdown format. Start directly with the content, no JSON or code fences. Include a title at the top as an H1 (e.g., # Topic Name), followed by the study guide sections.`,
 
@@ -40,7 +48,9 @@ Respond with ONLY plain text - the study guide content in markdown format. Start
 { "questions": [ { "type": "mcq" | "openEnded", "text": "Question text", "options": ["A", "B", "C", "D"], "answer": "Correct answer", "explanation": "Brief rationale" } ] }
 Generate exactly ${cfg.totalQuestions} questions with exactly ${cfg.mcqCount} mcq and exactly ${cfg.openEndedCount} openEnded questions.
 For openEnded questions, options must be an empty array.
-For mcq questions, include exactly 4 options and make one correct.`,
+For mcq questions, include exactly 4 options and make one correct.
+If any question, option, answer, or explanation includes math, follow this policy:
+${KATEX_FORMAT_RULES}`,
   };
   return prompts[type] || prompts.flashcards;
 }

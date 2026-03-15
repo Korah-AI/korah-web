@@ -84,7 +84,7 @@
 
     saveStudyItem(id, item) {
       studyItemsCache[id] = item;
-      window.KorahDB.setStudyItem(id, item).catch((e) =>
+      return window.KorahDB.setStudyItem(id, item).catch((e) =>
         console.error("[Korah] setStudyItem failed:", e)
       );
     },
@@ -191,9 +191,7 @@
         window.renderMathInElement(targetEl, {
           delimiters: [
             { left: "$$", right: "$$", display: true },
-            { left: "\\[", right: "\\]", display: true },
             { left: "\\(", right: "\\)", display: false },
-            { left: "$", right: "$", display: false },
           ],
           throwOnError: false,
         });
@@ -326,11 +324,12 @@
         practiceTest: "Practice Test"
       };
       const typeLabel = typeLabels[studyItem.type] || "Study Item";
+      const studyPage = studyItem.type === "studyGuide" ? "guide.html" : "item.html";
       const studyBtn = document.createElement("div");
       studyBtn.className = "study-gen-success show";
       studyBtn.innerHTML = `
         <p>Success! Your ${typeLabel.toLowerCase()} are ready.</p>
-        <a href="../study/item.html?id=${encodeURIComponent(studyItem.id)}" class="study-gen-btn">
+        <a href="../study/${studyPage}?id=${encodeURIComponent(studyItem.id)}" class="study-gen-btn">
           <span>View ${studyItem.title} ${typeLabel}</span>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
@@ -497,7 +496,8 @@
     }
     list.forEach((item) => {
       const a = document.createElement("a");
-      a.href = `../study/item.html?id=${encodeURIComponent(item.id)}`;
+      const studyPage = item.type === "studyGuide" ? "guide.html" : "item.html";
+      a.href = `../study/${studyPage}?id=${encodeURIComponent(item.id)}`;
       a.className = "history-item t-btn";
       a.setAttribute("data-study-id", item.id);
       a.style.textDecoration = "none";
@@ -1061,14 +1061,15 @@
 - Help with study strategies, time management, and motivation`,
 
     math: `
-- CRITICAL: ALWAYS USE $$...$$ DELIMITERS FOR LATEX EXPRESSIONS. FOR ALL EXPRESSIONS YOU MUST DO THIS.
-- BE CAREFUL TO ENSURE ALL MARKDOWN / LATEX MATH TEXT USES DELIMITERS
+- KaTeX delimiter policy (REQUIRED):
+  - Use \\(...\\) for inline math
+  - Use $$...$$ for display math on its own line
+- Never use $...$, \\[...\\], [ ... ], or bare math like x^2 without delimiters
+- Ensure every expression has balanced opening and closing delimiters
 - Show your work at each step and explain why each step is necessary in an easy and intuitive way
 - Encourage true understanding and bear with the student
 - When showing equations, explain each variable and operation clearly
-- When showing mathematical relationships, use LaTeX and consider including a Desmos graph for functions. But make sure you don't include LaTeX mixed with markdown, always break into new lines.
-
-'''`,
+- When showing mathematical relationships, use LaTeX and consider including a Desmos graph for functions.`,
 
     physics: `You are Korah, an engaging physics tutor. Your teaching style:
 - Explain concepts through real-world applications and examples
@@ -1130,9 +1131,11 @@ flowchart TD
   };
 
   const FORMAT_INSTRUCTIONS = `
-- ALL mathematical expressions, equations, formulas, and symbols MUST use LaTeX delimiters
-- NEVER write math without delimiters - expressions like "x^2", "2x+1=5", "sin(x)", "∫f(x)dx", "∑", "√" are NOT acceptable
-- NEVER use [ ... ] as delimiters - KaTeX cannot render them
+- KATEX DELIMITER POLICY (REQUIRED):
+  - Inline math: \\(...\\)
+  - Display math: $$...$$
+- NEVER use $...$, \\[...\\], [ ... ], or bare math without delimiters
+- Ensure all math delimiters are balanced, and put display math on its own line
 
 VISUAL DIAGRAMS: When you need to show flowcharts, sequences, or relationships, use mermaid syntax in a fenced code block:
 \`\`\`mermaid
@@ -1615,7 +1618,7 @@ ${FORMAT_INSTRUCTIONS}`.trim();
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
-      Storage.saveStudyItem(id, newItem);
+      await Storage.saveStudyItem(id, newItem);
       renderStudyItemsHistory();
 
       // Update UI to success state
@@ -1633,7 +1636,8 @@ ${FORMAT_INSTRUCTIONS}`.trim();
         const link = document.getElementById(`${msgId}-link`);
         if (successDiv) successDiv.classList.add("show");
         if (link) {
-          link.href = `study/item.html?id=${id}`;
+          const itemPage = type === "studyGuide" ? "guide.html" : "item.html";
+          link.href = `../study/${itemPage}?id=${encodeURIComponent(id)}`;
           link.innerHTML = `<span>View ${finalTitle} ${typeLabel}</span>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
               <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
@@ -1765,7 +1769,8 @@ ${FORMAT_INSTRUCTIONS}`.trim();
         await renderSpecialContent(contentElement);
       }
       
-      history.push({ role: "assistant", content: reply });
+      // Update the placeholder entry instead of adding a new one
+      history[historyIndex] = { role: "assistant", content: reply };
       
       // Generate contextual suggestions and add them to the existing message
       const contextualSuggestions = generateContextualSuggestions(reply);
