@@ -5,7 +5,7 @@
  */
 
 (function (global) {
-  var CHAT_PROXY = "/api/gem-proxy.js";
+  var CHAT_PROXY = "/api/gem-proxy";
   var MODEL = "gemini-2.0-flash";
 
   function clampInt(value, fallback, min, max) {
@@ -235,7 +235,7 @@
       var apiBase = typeof window !== "undefined" && window.location && window.location.origin
         ? window.location.origin
         : "";
-      var url = apiBase + "/api/generate-study-item.js";
+      var url = "/api/generate-study-item";
       return fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
