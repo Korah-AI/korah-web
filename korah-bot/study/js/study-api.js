@@ -28,12 +28,6 @@
     '- Display math: $$...$$\n' +
     '- NEVER use $...$, \\[...\\], [ ... ], or bare math like "x^2" without delimiters\n' +
     '- Ensure all math delimiters are balanced, and put display math on its own line\n\n' +
-    'VISUAL DIAGRAMS: When you need to show flowcharts, sequences, or relationships, use mermaid syntax in a fenced code block:\n' +
-    '```mermaid\n' +
-    'graph TD\n' +
-    '  A[Start] --> B[Step 1]\n' +
-    '  B --> C[Step 2]\n' +
-    '```\n\n' +
     'INTERACTIVE GRAPHS: When showing mathematical functions or graphs, use the Desmos format:\n' +
     '```desmos\n' +
     '{\n' +

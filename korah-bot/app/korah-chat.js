@@ -404,24 +404,7 @@
     }
   }
 
-  async function renderMermaidDiagrams(container) {
-    const codeBlocks = container.querySelectorAll('pre code.language-mermaid, pre code.lang-mermaid');
-    for (const block of codeBlocks) {
-      const code = block.textContent.trim();
-      const pre = block.parentElement;
-      try {
-        const id = 'mermaid-' + Math.random().toString(36).substr(2, 9);
-        const { svg } = await mermaid.render(id, code);
-        const wrapper = document.createElement('div');
-        wrapper.className = 'mermaid-diagram';
-        wrapper.innerHTML = svg;
-        pre.replaceWith(wrapper);
-      } catch (e) {
-        console.error("Mermaid render error:", e);
 
-      }
-    }
-  }
 
   function renderDesmosGraphs(container) {
     const codeBlocks = container.querySelectorAll('pre code.language-desmos, pre code.lang-desmos');
@@ -481,8 +464,7 @@
     }
   }
 
-  async function renderSpecialContent(container) {
-    await renderMermaidDiagrams(container);
+  function renderSpecialContent(container) {
     renderDesmosGraphs(container);
   }
 
@@ -495,7 +477,7 @@
     if (role === "user") {
       avatar.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
     } else {
-      avatar.innerHTML = `<img src="logo.png" alt="K" class="w-10 h-10 object-contain" />`;
+      avatar.innerHTML = `<img src="app/logo.png" alt="K" class="w-10 h-10 object-contain" />`;
     }
 
     const bubble = document.createElement("div");
@@ -1296,13 +1278,6 @@
 - Emphasize conceptual understanding before mathematical complexity
 - Help visualize forces, motion, energy, and other physical concepts
 
-VISUALIZATIONS: Use mermaid diagrams to show processes, cause-effect relationships, and system interactions:
-'''mermaid
-flowchart LR
-  A[Force Applied] --> B[Acceleration]
-  B --> C[Change in Velocity]
-'''
-
 When showing mathematical relationships, use LaTeX and consider including a Desmos graph for functions.`,
 
     chemistry: `You are Korah, an enthusiastic chemistry tutor. Your teaching style:
@@ -1319,16 +1294,7 @@ When showing mathematical relationships, use LaTeX and consider including a Desm
 - Connect structure to function in biological systems
 - Help students understand relationships between different biological concepts
 - Use diagrams and flow charts mentally when describing processes
-- Emphasize the interconnectedness of living systems
-
-VISUALIZATIONS: Use mermaid diagrams to show biological pathways, processes, and relationships:
-'''mermaid
-flowchart TD
-  A[Glucose] --> B[Glycolysis]
-  B --> C[Krebs Cycle]
-  C --> D[Electron Transport]
-  D --> E[ATP Production]
-'''`,
+- Emphasize the interconnectedness of living systems`,
 
     history: `You are Korah, an insightful history tutor. Your teaching style:
 - Provide context and background for historical events
@@ -1353,13 +1319,6 @@ flowchart TD
   - Display math: $$...$$
 - NEVER use $...$, \\[...\\], [ ... ], or bare math without delimiters
 - Ensure all math delimiters are balanced, and put display math on its own line
-
-VISUAL DIAGRAMS: When you need to show flowcharts, sequences, or relationships, use mermaid syntax in a fenced code block:
-\`\`\`mermaid
-graph TD
-  A[Start] --> B[Step 1]
-  B --> C[Step 2]
-\`\`\`
 
 INTERACTIVE GRAPHS: When showing mathematical functions or graphs, use the Desmos format:
 \`\`\`desmos
@@ -1981,6 +1940,15 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     const apiMessages = buildApiMessages(history.slice(0, -1), pendingFiles);
 
     try {
+      let previousLength = 0;
+      // Add blinking cursor during streaming
+      let cursorElement = null;
+      if (contentElement) {
+        cursorElement = document.createElement('span');
+        cursorElement.className = 'streaming-cursor';
+        contentElement.appendChild(cursorElement);
+      }
+      
       const reply = await callChatApi(apiMessages, (chunk, fullText) => {
         // Remove thinking indicator when first content arrives
         if (thinkingIndicator && fullText.length > 0) {
@@ -1988,14 +1956,37 @@ ${FORMAT_INSTRUCTIONS}`.trim();
           thinkingIndicator = null;
         }
         if (contentElement) {
-          renderMarkdownAndMath(contentElement, fullText);
+          // Calculate delta (new text)
+          const delta = fullText.slice(previousLength);
+          previousLength = fullText.length;
+          
+          // Insert new text before the cursor
+          const tempSpan = document.createElement('span');
+          tempSpan.className = 'streaming-chunk';
+          tempSpan.textContent = delta;
+          
+          if (cursorElement && cursorElement.parentNode === contentElement) {
+            contentElement.insertBefore(tempSpan, cursorElement);
+          } else {
+            contentElement.appendChild(tempSpan);
+          }
+          
+          // Scroll to bottom
+          scrollToBottom();
         }
-
       });
       
-      // Render mermaid and desmos after streaming is complete
+      // Remove cursor after streaming completes
+      if (cursorElement && cursorElement.parentNode) {
+        cursorElement.remove();
+      }
+      
+      // After streaming completes, render full markdown properly
       if (contentElement) {
-        await renderSpecialContent(contentElement);
+        // Clear the temporary chunks and render full markdown
+        contentElement.innerHTML = '';
+        renderMarkdownAndMath(contentElement, reply);
+        renderSpecialContent(contentElement);
       }
       
       // Update the placeholder entry instead of adding a new one
