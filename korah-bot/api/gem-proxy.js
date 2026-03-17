@@ -31,7 +31,7 @@ export default async function handler(req, res) {
 
   // 1. Translate Request (OpenAI -> Gemini)
   // Mapping roles and content to Gemini format
-  const model = requestedModel || "gemini-2.0-flash-001";
+  const model = requestedModel || "gemini-2.5-flash";
   const systemMessage = messages.find(m => m.role === 'system');
   const chatMessages = messages.filter(m => m.role !== 'system');
 

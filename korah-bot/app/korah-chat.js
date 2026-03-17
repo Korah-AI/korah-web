@@ -1,7 +1,7 @@
 (() => {
   const MAX_CHARS = 10000;
   const API_ENDPOINT = "/api/gem-proxy";
-  const MODEL = "gemini-2.0-flash";
+  const MODEL = "gemini-2.5-flash";
 
   const input = document.getElementById("chat-input");
   const sendBtn = document.getElementById("send-btn");

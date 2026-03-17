@@ -6,7 +6,7 @@
  * Requires GEMINI_API_KEY in Vercel env.
  */
 
-const MODEL = "gemini-2.0-flash";
+const MODEL = "gemini-2.5-flash";
 const KATEX_FORMAT_RULES = `KaTeX delimiter policy (REQUIRED):
 - Use \\(...\\) for inline math
 - Use $$...$$ for display math on its own line
