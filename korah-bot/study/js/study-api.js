@@ -5,8 +5,8 @@
  */
 
 (function (global) {
-  var CHAT_PROXY = "https://korah-beta.vercel.app/api/proxy";
-  var MODEL = "gpt-4o-mini";
+  var CHAT_PROXY = "/api/gem-proxy";
+  var MODEL = "gemini-2.5-flash";
 
   function clampInt(value, fallback, min, max) {
     var parsed = parseInt(value, 10);
@@ -28,12 +28,6 @@
     '- Display math: $$...$$\n' +
     '- NEVER use $...$, \\[...\\], [ ... ], or bare math like "x^2" without delimiters\n' +
     '- Ensure all math delimiters are balanced, and put display math on its own line\n\n' +
-    'VISUAL DIAGRAMS: When you need to show flowcharts, sequences, or relationships, use mermaid syntax in a fenced code block:\n' +
-    '```mermaid\n' +
-    'graph TD\n' +
-    '  A[Start] --> B[Step 1]\n' +
-    '  B --> C[Step 2]\n' +
-    '```\n\n' +
     'INTERACTIVE GRAPHS: When showing mathematical functions or graphs, use the Desmos format:\n' +
     '```desmos\n' +
     '{\n' +
@@ -189,12 +183,21 @@
       if (file.type.startsWith("image/")) {
         var base64 = await toBase64(file);
         fileContents.push({ type: "image", name: file.name, data: base64 });
+      } else if (file.type === "application/pdf") {
+        var base64 = await toBase64(file);
+        fileContents.push({ type: "pdf", name: file.name, data: base64 });
       } else if (file.type === "text/plain") {
         var text = await file.text();
         fileContents.push({ type: "text", name: file.name, data: text });
       } else {
-        // For PDF etc, we just note the name for now as we don't have a parser here
-        fileContents.push({ type: "other", name: file.name });
+        // Fallback: try reading as text for common extensions
+        var ext = (file.name || "").split(".").pop().toLowerCase();
+        if (["md", "txt", "csv", "json"].includes(ext)) {
+          var text = await file.text();
+          fileContents.push({ type: "text", name: file.name, data: text });
+        } else {
+          fileContents.push({ type: "other", name: file.name });
+        }
       }
     }
 
@@ -204,7 +207,9 @@
         if (f.type === "text") {
           userMessage.push("--- Content of " + f.name + " ---\n" + f.data + "\n--- End of " + f.name + " ---");
         } else if (f.type === "image") {
-          userMessage.push("[Image: " + f.name + " (sent as vision data)]");
+          userMessage.push("[Image: " + f.name + " (sent as multimodal data)]");
+        } else if (f.type === "pdf") {
+          userMessage.push("[PDF: " + f.name + " (sent as multimodal data)]");
         } else {
           userMessage.push("[Attached file: " + f.name + " (parsing not supported in this environment)]");
         }
@@ -224,7 +229,7 @@
       var apiBase = typeof window !== "undefined" && window.location && window.location.origin
         ? window.location.origin
         : "";
-      var url = apiBase + "/api/generate-study-item";
+      var url = "/api/generate-study-item";
       return fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -255,9 +260,9 @@
 
       var userContent = [{ type: "text", text: userMessage.join("\n") }];
       
-      // If we have images, GPT-4o-mini can handle them if the proxy supports it
+      // If we have images or PDFs, Gemini can handle them if the proxy supports it
       fileContents.forEach(f => {
-        if (f.type === "image") {
+        if (f.type === "image" || f.type === "pdf") {
           userContent.push({
             type: "image_url",
             image_url: { url: f.data }

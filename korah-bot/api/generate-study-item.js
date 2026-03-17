@@ -1,18 +1,21 @@
 /**
- * Vercel serverless API: generate study item content using OpenAI.
- * POST body: { type, prompt, title?, subject? }
+ * Vercel serverless API: generate study item content using Gemini.
+ * POST body: { type, prompt, title?, subject?, testConfig?, fileContents? }
  * Returns: { content } where content matches study item content shape (cards | sections | questions).
  *
- * Requires OPENAI_API_KEY in Vercel env (or uses proxy from same host if configured).
+ * Requires GEMINI_API_KEY in Vercel env.
  */
 
-const OPENAI_URL = "https://korah-beta.vercel.app/api/proxy";
-const MODEL = "gpt-4o-mini";
+const MODEL = "gemini-2.5-flash";
 const KATEX_FORMAT_RULES = `KaTeX delimiter policy (REQUIRED):
 - Use \\(...\\) for inline math
 - Use $$...$$ for display math on its own line
 - Never use $...$, \\[...\\], [ ... ], or bare math like x^2 without delimiters
 - Ensure every expression has balanced opening and closing delimiters`;
+
+export const config = {
+  maxDuration: 300,
+};
 
 function clampInt(value, fallback, min, max) {
   const parsed = parseInt(value, 10);
@@ -152,16 +155,25 @@ function normalizeContent(type, parsed) {
 }
 
 export default async function handler(req, res) {
+  // CORS Headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     return res.status(500).json({
-      error: "OPENAI_API_KEY not configured",
-      message: "Set OPENAI_API_KEY in Vercel environment variables.",
+      error: "GEMINI_API_KEY not configured",
+      message: "Set GEMINI_API_KEY in Vercel environment variables.",
     });
   }
 
@@ -187,58 +199,67 @@ export default async function handler(req, res) {
   }
 
   const systemPrompt = getSystemPrompt(type, testConfig);
-  const userContent = [{ type: "text", text: context.join("\n") }];
+  
+  // Gemini-specific mapping
+  const contents = [
+    {
+      role: "user",
+      parts: [{ text: context.join("\n") }]
+    }
+  ];
 
   if (Array.isArray(fileContents)) {
     fileContents.forEach(f => {
-      if (f.type === "image" && f.data) {
-        userContent.push({
-          type: "image_url",
-          image_url: { url: f.data }
-        });
+      if ((f.type === "image" || f.type === "pdf") && f.data) {
+        if (f.data.startsWith('data:')) {
+          const [header, data] = f.data.split(',');
+          const mimeType = header.match(/:(.*?);/)[1];
+          contents[0].parts.push({
+            inlineData: {
+              mimeType,
+              data
+            }
+          });
+        }
       } else if (f.type === "text" && f.data) {
-        userContent[0].text += `\n\n--- Content of ${f.name} ---\n${f.data}\n--- End of ${f.name} ---`;
+        contents[0].parts[0].text += `\n\n--- Content of ${f.name} ---\n${f.data}\n--- End of ${f.name} ---`;
       } else {
-        userContent[0].text += `\n\n[Attached file: ${f.name}]`;
+        contents[0].parts[0].text += `\n\n[Attached file: ${f.name}]`;
       }
     });
   }
 
-  const messages = [
-    { role: "system", content: systemPrompt },
-    { role: "user", content: userContent },
-  ];
+  const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
   try {
-    const response = await fetch(OPENAI_URL, {
+    const response = await fetch(geminiEndpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
+        "x-goog-api-key": apiKey
       },
       body: JSON.stringify({
-        model: MODEL,
-        temperature: 0.6,
-        messages,
-        ...(type !== "studyGuide" ? { response_format: { type: "json_object" } } : {}),
+        contents,
+        systemInstruction: {
+          parts: [{ text: systemPrompt }]
+        },
+        generationConfig: {
+          temperature: 0.6,
+          responseMimeType: type !== "studyGuide" ? "application/json" : "text/plain",
+        }
       }),
     });
 
     if (!response.ok) {
-      const errText = await response.text();
-      let errJson;
-      try {
-        errJson = JSON.parse(errText);
-      } catch (_) {
-        errJson = { error: errText || response.statusText };
-      }
+      const errData = await response.json();
       return res.status(response.status).json({
-        error: errJson.error?.message || errJson.error || "OpenAI request failed",
+        error: "Gemini API request failed",
+        details: errData,
       });
     }
 
     const data = await response.json();
-    const rawContent = data?.choices?.[0]?.message?.content;
+    const rawContent = data?.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!rawContent) {
       return res.status(502).json({ error: "Empty response from model" });
     }

@@ -1,7 +1,7 @@
 (() => {
   const MAX_CHARS = 10000;
-  const API_ENDPOINT = "https://korah-beta.vercel.app/api/proxy";
-  const MODEL = "gpt-4o-mini";
+  const API_ENDPOINT = "/api/gem-proxy";
+  const MODEL = "gemini-2.5-flash";
 
   const input = document.getElementById("chat-input");
   const sendBtn = document.getElementById("send-btn");
@@ -50,9 +50,17 @@
     return new Promise((resolve) => {
       const isImage = file.type.startsWith('image/');
       const isText = file.type === 'text/plain' || ['txt','md','csv'].includes(file.name.split('.').pop().toLowerCase());
+      const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
       const reader = new FileReader();
-      if (isImage) {
-        reader.onload = () => resolve({ file, name: file.name, size: file.size, type: 'image', dataUrl: reader.result, content: null });
+      if (isImage || isPDF) {
+        reader.onload = () => resolve({ 
+          file, 
+          name: file.name, 
+          size: file.size, 
+          type: isImage ? 'image' : 'pdf', 
+          dataUrl: reader.result, 
+          content: null 
+        });
         reader.readAsDataURL(file);
       } else if (isText) {
         reader.onload = () => resolve({ file, name: file.name, size: file.size, type: 'text', dataUrl: null, content: reader.result });
@@ -159,19 +167,19 @@
     const lastMsg = hist[hist.length - 1];
     if (!lastMsg || lastMsg.role !== 'user') return hist;
     const textParts = [lastMsg.content];
-    const imageParts = [];
+    const multimodalParts = [];
     files.forEach(f => {
       if (f.type === 'text' && f.content) {
         textParts.push(`\n\n--- Content of ${f.name} ---\n${f.content}\n--- End of ${f.name} ---`);
-      } else if (f.type === 'image' && f.dataUrl) {
-        imageParts.push({ type: 'image_url', image_url: { url: f.dataUrl } });
+      } else if ((f.type === 'image' || f.type === 'pdf') && f.dataUrl) {
+        multimodalParts.push({ type: 'image_url', image_url: { url: f.dataUrl } });
       } else {
         textParts.push(`\n[Attached file: ${f.name}]`);
       }
     });
     const fullText = textParts.join('');
-    const content = imageParts.length > 0
-      ? [{ type: 'text', text: fullText }, ...imageParts]
+    const content = multimodalParts.length > 0
+      ? [{ type: 'text', text: fullText }, ...multimodalParts]
       : fullText;
     return [...hist.slice(0, -1), { role: 'user', content }];
   }
@@ -396,24 +404,7 @@
     }
   }
 
-  async function renderMermaidDiagrams(container) {
-    const codeBlocks = container.querySelectorAll('pre code.language-mermaid, pre code.lang-mermaid');
-    for (const block of codeBlocks) {
-      const code = block.textContent.trim();
-      const pre = block.parentElement;
-      try {
-        const id = 'mermaid-' + Math.random().toString(36).substr(2, 9);
-        const { svg } = await mermaid.render(id, code);
-        const wrapper = document.createElement('div');
-        wrapper.className = 'mermaid-diagram';
-        wrapper.innerHTML = svg;
-        pre.replaceWith(wrapper);
-      } catch (e) {
-        console.error("Mermaid render error:", e);
 
-      }
-    }
-  }
 
   function renderDesmosGraphs(container) {
     const codeBlocks = container.querySelectorAll('pre code.language-desmos, pre code.lang-desmos');
@@ -473,8 +464,7 @@
     }
   }
 
-  async function renderSpecialContent(container) {
-    await renderMermaidDiagrams(container);
+  function renderSpecialContent(container) {
     renderDesmosGraphs(container);
   }
 
@@ -487,7 +477,7 @@
     if (role === "user") {
       avatar.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
     } else {
-      avatar.innerHTML = `<img src="logo.png" alt="K" class="w-10 h-10 object-contain" />`;
+      avatar.innerHTML = `<img src="app/logo.png" alt="K" class="w-10 h-10 object-contain" />`;
     }
 
     const bubble = document.createElement("div");
@@ -1288,13 +1278,6 @@
 - Emphasize conceptual understanding before mathematical complexity
 - Help visualize forces, motion, energy, and other physical concepts
 
-VISUALIZATIONS: Use mermaid diagrams to show processes, cause-effect relationships, and system interactions:
-'''mermaid
-flowchart LR
-  A[Force Applied] --> B[Acceleration]
-  B --> C[Change in Velocity]
-'''
-
 When showing mathematical relationships, use LaTeX and consider including a Desmos graph for functions.`,
 
     chemistry: `You are Korah, an enthusiastic chemistry tutor. Your teaching style:
@@ -1311,16 +1294,7 @@ When showing mathematical relationships, use LaTeX and consider including a Desm
 - Connect structure to function in biological systems
 - Help students understand relationships between different biological concepts
 - Use diagrams and flow charts mentally when describing processes
-- Emphasize the interconnectedness of living systems
-
-VISUALIZATIONS: Use mermaid diagrams to show biological pathways, processes, and relationships:
-'''mermaid
-flowchart TD
-  A[Glucose] --> B[Glycolysis]
-  B --> C[Krebs Cycle]
-  C --> D[Electron Transport]
-  D --> E[ATP Production]
-'''`,
+- Emphasize the interconnectedness of living systems`,
 
     history: `You are Korah, an insightful history tutor. Your teaching style:
 - Provide context and background for historical events
@@ -1345,13 +1319,6 @@ flowchart TD
   - Display math: $$...$$
 - NEVER use $...$, \\[...\\], [ ... ], or bare math without delimiters
 - Ensure all math delimiters are balanced, and put display math on its own line
-
-VISUAL DIAGRAMS: When you need to show flowcharts, sequences, or relationships, use mermaid syntax in a fenced code block:
-\`\`\`mermaid
-graph TD
-  A[Start] --> B[Step 1]
-  B --> C[Step 2]
-\`\`\`
 
 INTERACTIVE GRAPHS: When showing mathematical functions or graphs, use the Desmos format:
 \`\`\`desmos
@@ -1960,7 +1927,11 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     if (contentElement) {
       thinkingIndicator = document.createElement("div");
       thinkingIndicator.className = "thinking-indicator";
-      thinkingIndicator.innerHTML = `<span class="thinking-text">Thinking</span><span class="thinking-dots">...</span>`;
+      thinkingIndicator.innerHTML = `
+        <div class="thinking-dot"></div>
+        <div class="thinking-dot"></div>
+        <div class="thinking-dot"></div>
+      `;
       contentElement.appendChild(thinkingIndicator);
     }
 
@@ -1973,21 +1944,92 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     const apiMessages = buildApiMessages(history.slice(0, -1), pendingFiles);
 
     try {
-      const reply = await callChatApi(apiMessages, (chunk, fullText) => {
-        // Remove thinking indicator when first content arrives
+      let previousLength = 0;
+      let cursorElement = null;
+      let charBuffer = [];
+      let typewriterActive = false;
+      let streamFinished = false;
+
+      let currentTypedText = "";
+      const typeNextChar = () => {
+        if (charBuffer.length === 0) {
+          if (streamFinished) {
+            typewriterActive = false;
+            finalizeMessage();
+            return;
+          }
+          typewriterActive = false;
+          return;
+        }
+
+        typewriterActive = true;
+        // Process up to 2 characters at a time if buffer is large for even more speed
+        const charsToType = charBuffer.length > 20 ? 2 : 1;
+        for (let i = 0; i < charsToType; i++) {
+          if (charBuffer.length > 0) {
+            currentTypedText += charBuffer.shift();
+          }
+        }
+
+        if (contentElement) {
+          renderMarkdownAndMath(contentElement, currentTypedText);
+          
+          // Append cursor after the rendered content
+          const cursor = document.createElement('span');
+          cursor.className = 'streaming-cursor';
+          contentElement.appendChild(cursor);
+          
+          scrollToBottom();
+        }
+
+        // adaptive speed: extremely fast catch-up
+        let delay = 5; // Very fast base speed (ms)
+        if (charBuffer.length > 50) delay = 0; 
+        
+        setTimeout(typeNextChar, delay);
+      };
+
+      const finalizeMessage = () => {
+        if (cursorElement && cursorElement.parentNode) {
+          cursorElement.remove();
+        }
+        if (contentElement) {
+          contentElement.innerHTML = '';
+          renderMarkdownAndMath(contentElement, reply);
+          renderSpecialContent(contentElement);
+        }
+      };
+
+      let reply = "";
+      reply = await callChatApi(apiMessages, (chunk, fullText) => {
         if (thinkingIndicator && fullText.length > 0) {
           thinkingIndicator.remove();
           thinkingIndicator = null;
-        }
-        if (contentElement) {
-          renderMarkdownAndMath(contentElement, fullText);
+          if (contentElement) {
+            cursorElement = document.createElement('span');
+            cursorElement.className = 'streaming-cursor';
+            contentElement.appendChild(cursorElement);
+          }
         }
 
+        if (contentElement) {
+          const delta = fullText.slice(previousLength);
+          previousLength = fullText.length;
+          
+          // Add new characters to the buffer
+          charBuffer.push(...delta.split(''));
+          
+          // Start typewriter if not already running
+          if (!typewriterActive) {
+            typeNextChar();
+          }
+        }
       });
       
-      // Render mermaid and desmos after streaming is complete
-      if (contentElement) {
-        await renderSpecialContent(contentElement);
+      streamFinished = true;
+      // If typewriter finished before the stream result was returned, finalize now
+      if (!typewriterActive && charBuffer.length === 0) {
+        finalizeMessage();
       }
       
       // Update the placeholder entry instead of adding a new one
