@@ -1927,7 +1927,11 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     if (contentElement) {
       thinkingIndicator = document.createElement("div");
       thinkingIndicator.className = "thinking-indicator";
-      thinkingIndicator.innerHTML = `<span class="thinking-text">Thinking</span><span class="thinking-dots">...</span>`;
+      thinkingIndicator.innerHTML = `
+        <div class="thinking-dot"></div>
+        <div class="thinking-dot"></div>
+        <div class="thinking-dot"></div>
+      `;
       contentElement.appendChild(thinkingIndicator);
     }
 
@@ -1941,52 +1945,84 @@ ${FORMAT_INSTRUCTIONS}`.trim();
 
     try {
       let previousLength = 0;
-      // Add blinking cursor during streaming
       let cursorElement = null;
-      if (contentElement) {
-        cursorElement = document.createElement('span');
-        cursorElement.className = 'streaming-cursor';
-        contentElement.appendChild(cursorElement);
-      }
-      
-      const reply = await callChatApi(apiMessages, (chunk, fullText) => {
-        // Remove thinking indicator when first content arrives
+      let charBuffer = [];
+      let typewriterActive = false;
+      let streamFinished = false;
+
+      const typeNextChar = () => {
+        if (charBuffer.length === 0) {
+          if (streamFinished) {
+            typewriterActive = false;
+            finalizeMessage();
+            return;
+          }
+          typewriterActive = false;
+          return;
+        }
+
+        typewriterActive = true;
+        const char = charBuffer.shift();
+
+        if (contentElement) {
+          const textNode = document.createTextNode(char);
+          if (cursorElement && cursorElement.parentNode === contentElement) {
+            contentElement.insertBefore(textNode, cursorElement);
+          } else {
+            contentElement.appendChild(textNode);
+          }
+          scrollToBottom();
+        }
+
+        // Adaptive speed: catch up if buffer is large
+        let delay = 25; // Normal speed
+        if (charBuffer.length > 100) delay = 0; // Catch up fast
+        else if (charBuffer.length > 30) delay = 10; // Speed up
+        
+        setTimeout(typeNextChar, delay);
+      };
+
+      const finalizeMessage = () => {
+        if (cursorElement && cursorElement.parentNode) {
+          cursorElement.remove();
+        }
+        if (contentElement) {
+          contentElement.innerHTML = '';
+          renderMarkdownAndMath(contentElement, reply);
+          renderSpecialContent(contentElement);
+        }
+      };
+
+      let reply = "";
+      reply = await callChatApi(apiMessages, (chunk, fullText) => {
         if (thinkingIndicator && fullText.length > 0) {
           thinkingIndicator.remove();
           thinkingIndicator = null;
+          if (contentElement) {
+            cursorElement = document.createElement('span');
+            cursorElement.className = 'streaming-cursor';
+            contentElement.appendChild(cursorElement);
+          }
         }
+
         if (contentElement) {
-          // Calculate delta (new text)
           const delta = fullText.slice(previousLength);
           previousLength = fullText.length;
           
-          // Insert new text before the cursor
-          const tempSpan = document.createElement('span');
-          tempSpan.className = 'streaming-chunk';
-          tempSpan.textContent = delta;
+          // Add new characters to the buffer
+          charBuffer.push(...delta.split(''));
           
-          if (cursorElement && cursorElement.parentNode === contentElement) {
-            contentElement.insertBefore(tempSpan, cursorElement);
-          } else {
-            contentElement.appendChild(tempSpan);
+          // Start typewriter if not already running
+          if (!typewriterActive) {
+            typeNextChar();
           }
-          
-          // Scroll to bottom
-          scrollToBottom();
         }
       });
       
-      // Remove cursor after streaming completes
-      if (cursorElement && cursorElement.parentNode) {
-        cursorElement.remove();
-      }
-      
-      // After streaming completes, render full markdown properly
-      if (contentElement) {
-        // Clear the temporary chunks and render full markdown
-        contentElement.innerHTML = '';
-        renderMarkdownAndMath(contentElement, reply);
-        renderSpecialContent(contentElement);
+      streamFinished = true;
+      // If typewriter finished before the stream result was returned, finalize now
+      if (!typewriterActive && charBuffer.length === 0) {
+        finalizeMessage();
       }
       
       // Update the placeholder entry instead of adding a new one
