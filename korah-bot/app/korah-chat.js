@@ -1,7 +1,7 @@
 (() => {
   const MAX_CHARS = 10000;
-  const API_ENDPOINT = "https://korah-beta.vercel.app/api/proxy";
-  const MODEL = "gpt-4o-mini";
+  const API_ENDPOINT = "/api/gem-proxy";
+  const MODEL = "gemini-2.0-flash";
 
   const input = document.getElementById("chat-input");
   const sendBtn = document.getElementById("send-btn");
@@ -50,9 +50,17 @@
     return new Promise((resolve) => {
       const isImage = file.type.startsWith('image/');
       const isText = file.type === 'text/plain' || ['txt','md','csv'].includes(file.name.split('.').pop().toLowerCase());
+      const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
       const reader = new FileReader();
-      if (isImage) {
-        reader.onload = () => resolve({ file, name: file.name, size: file.size, type: 'image', dataUrl: reader.result, content: null });
+      if (isImage || isPDF) {
+        reader.onload = () => resolve({ 
+          file, 
+          name: file.name, 
+          size: file.size, 
+          type: isImage ? 'image' : 'pdf', 
+          dataUrl: reader.result, 
+          content: null 
+        });
         reader.readAsDataURL(file);
       } else if (isText) {
         reader.onload = () => resolve({ file, name: file.name, size: file.size, type: 'text', dataUrl: null, content: reader.result });
@@ -159,19 +167,19 @@
     const lastMsg = hist[hist.length - 1];
     if (!lastMsg || lastMsg.role !== 'user') return hist;
     const textParts = [lastMsg.content];
-    const imageParts = [];
+    const multimodalParts = [];
     files.forEach(f => {
       if (f.type === 'text' && f.content) {
         textParts.push(`\n\n--- Content of ${f.name} ---\n${f.content}\n--- End of ${f.name} ---`);
-      } else if (f.type === 'image' && f.dataUrl) {
-        imageParts.push({ type: 'image_url', image_url: { url: f.dataUrl } });
+      } else if ((f.type === 'image' || f.type === 'pdf') && f.dataUrl) {
+        multimodalParts.push({ type: 'image_url', image_url: { url: f.dataUrl } });
       } else {
         textParts.push(`\n[Attached file: ${f.name}]`);
       }
     });
     const fullText = textParts.join('');
-    const content = imageParts.length > 0
-      ? [{ type: 'text', text: fullText }, ...imageParts]
+    const content = multimodalParts.length > 0
+      ? [{ type: 'text', text: fullText }, ...multimodalParts]
       : fullText;
     return [...hist.slice(0, -1), { role: 'user', content }];
   }

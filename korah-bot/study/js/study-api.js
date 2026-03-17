@@ -5,8 +5,8 @@
  */
 
 (function (global) {
-  var CHAT_PROXY = "https://korah-beta.vercel.app/api/proxy";
-  var MODEL = "gpt-4o-mini";
+  var CHAT_PROXY = "/api/gem-proxy";
+  var MODEL = "gemini-2.0-flash";
 
   function clampInt(value, fallback, min, max) {
     var parsed = parseInt(value, 10);
@@ -189,12 +189,21 @@
       if (file.type.startsWith("image/")) {
         var base64 = await toBase64(file);
         fileContents.push({ type: "image", name: file.name, data: base64 });
+      } else if (file.type === "application/pdf") {
+        var base64 = await toBase64(file);
+        fileContents.push({ type: "pdf", name: file.name, data: base64 });
       } else if (file.type === "text/plain") {
         var text = await file.text();
         fileContents.push({ type: "text", name: file.name, data: text });
       } else {
-        // For PDF etc, we just note the name for now as we don't have a parser here
-        fileContents.push({ type: "other", name: file.name });
+        // Fallback: try reading as text for common extensions
+        var ext = (file.name || "").split(".").pop().toLowerCase();
+        if (["md", "txt", "csv", "json"].includes(ext)) {
+          var text = await file.text();
+          fileContents.push({ type: "text", name: file.name, data: text });
+        } else {
+          fileContents.push({ type: "other", name: file.name });
+        }
       }
     }
 
@@ -204,7 +213,9 @@
         if (f.type === "text") {
           userMessage.push("--- Content of " + f.name + " ---\n" + f.data + "\n--- End of " + f.name + " ---");
         } else if (f.type === "image") {
-          userMessage.push("[Image: " + f.name + " (sent as vision data)]");
+          userMessage.push("[Image: " + f.name + " (sent as multimodal data)]");
+        } else if (f.type === "pdf") {
+          userMessage.push("[PDF: " + f.name + " (sent as multimodal data)]");
         } else {
           userMessage.push("[Attached file: " + f.name + " (parsing not supported in this environment)]");
         }
@@ -255,9 +266,9 @@
 
       var userContent = [{ type: "text", text: userMessage.join("\n") }];
       
-      // If we have images, GPT-4o-mini can handle them if the proxy supports it
+      // If we have images or PDFs, Gemini can handle them if the proxy supports it
       fileContents.forEach(f => {
-        if (f.type === "image") {
+        if (f.type === "image" || f.type === "pdf") {
           userContent.push({
             type: "image_url",
             image_url: { url: f.data }
