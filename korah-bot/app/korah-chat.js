@@ -1950,6 +1950,7 @@ ${FORMAT_INSTRUCTIONS}`.trim();
       let typewriterActive = false;
       let streamFinished = false;
 
+      let currentTypedText = "";
       const typeNextChar = () => {
         if (charBuffer.length === 0) {
           if (streamFinished) {
@@ -1962,22 +1963,28 @@ ${FORMAT_INSTRUCTIONS}`.trim();
         }
 
         typewriterActive = true;
-        const char = charBuffer.shift();
+        // Process up to 2 characters at a time if buffer is large for even more speed
+        const charsToType = charBuffer.length > 20 ? 2 : 1;
+        for (let i = 0; i < charsToType; i++) {
+          if (charBuffer.length > 0) {
+            currentTypedText += charBuffer.shift();
+          }
+        }
 
         if (contentElement) {
-          const textNode = document.createTextNode(char);
-          if (cursorElement && cursorElement.parentNode === contentElement) {
-            contentElement.insertBefore(textNode, cursorElement);
-          } else {
-            contentElement.appendChild(textNode);
-          }
+          renderMarkdownAndMath(contentElement, currentTypedText);
+          
+          // Append cursor after the rendered content
+          const cursor = document.createElement('span');
+          cursor.className = 'streaming-cursor';
+          contentElement.appendChild(cursor);
+          
           scrollToBottom();
         }
 
-        // Adaptive speed: catch up if buffer is large
-        let delay = 25; // Normal speed
-        if (charBuffer.length > 100) delay = 0; // Catch up fast
-        else if (charBuffer.length > 30) delay = 10; // Speed up
+        // adaptive speed: extremely fast catch-up
+        let delay = 5; // Very fast base speed (ms)
+        if (charBuffer.length > 50) delay = 0; 
         
         setTimeout(typeNextChar, delay);
       };
