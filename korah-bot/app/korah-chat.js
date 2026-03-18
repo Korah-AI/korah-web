@@ -370,9 +370,17 @@
     welcomeInput.placeholder = PLACEHOLDER_PHRASES[0];
 
     placeholderInterval = setInterval(() => {
-      phraseIndex = (phraseIndex + 1) % PLACEHOLDER_PHRASES.length;
-      welcomeInput.placeholder = PLACEHOLDER_PHRASES[phraseIndex];
-    }, 3000);
+      // Trigger animation
+      welcomeInput.classList.remove("rolling");
+      void welcomeInput.offsetWidth; // Force reflow to restart animation
+      welcomeInput.classList.add("rolling");
+
+      // Change text halfway through the roll animation
+      setTimeout(() => {
+        phraseIndex = (phraseIndex + 1) % PLACEHOLDER_PHRASES.length;
+        welcomeInput.placeholder = PLACEHOLDER_PHRASES[phraseIndex];
+      }, 300);
+    }, 4000);
   }
 
   function initWelcomeFeatures() {
@@ -391,6 +399,7 @@
           clearInterval(placeholderInterval);
           placeholderInterval = null;
         }
+        welcomeInput.classList.remove("rolling");
         welcomeInput.removeEventListener("input", stopRotation);
       };
       welcomeInput.addEventListener("input", stopRotation);

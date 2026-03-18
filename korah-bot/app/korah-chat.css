@@ -1512,6 +1512,20 @@ body { display: flex; background: var(--bg) }
     min-height: 24px;
     max-height: 200px;
     padding: 0;
+    transition: transform 0.4s ease, opacity 0.4s ease;
+    perspective: 1000px;
+    backface-visibility: hidden;
+}
+
+@keyframes welcomePlaceholderRoll {
+    0% { transform: translateY(0) rotateX(0deg); opacity: 1; filter: blur(0); }
+    45% { transform: translateY(-15px) rotateX(45deg); opacity: 0; filter: blur(4px); }
+    55% { transform: translateY(15px) rotateX(-45deg); opacity: 0; filter: blur(4px); }
+    100% { transform: translateY(0) rotateX(0deg); opacity: 1; filter: blur(0); }
+}
+
+.welcome-textarea.rolling {
+    animation: welcomePlaceholderRoll 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .welcome-input-actions {
