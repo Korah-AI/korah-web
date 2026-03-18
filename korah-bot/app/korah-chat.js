@@ -1331,6 +1331,13 @@ INTERACTIVE GRAPHS: When showing mathematical functions or graphs, use the Desmo
 }
 \`\`\`
 
+CONCISENESS GUIDELINES:
+- Keep explanations focused and avoid unnecessary verbosity
+- Use bullet points and short paragraphs to maintain readability
+- Break complex concepts into smaller, digestible chunks
+- If a concept needs detail, use collapsible sections or separate messages
+- Prioritize clarity over length
+
 Always format your responses using GitHub-flavored Markdown. Use:
 - Markdown headings (##, ###) to structure sections
 - Bulleted and numbered lists for steps and key points
@@ -1352,8 +1359,10 @@ Always format your responses using GitHub-flavored Markdown. Use:
   function getSystemPrompt(mode) {
     const base = MODE_SYSTEM_PROMPTS[mode] || MODE_SYSTEM_PROMPTS.general;
     const tutoringInstructions = tutoringMode ? TUTORING_PROMPT : '';
+    const concisenessPrompt = `\n\nFOCUS MODE: Keep responses concise and focused. Avoid long, rambling explanations. Use bullet points and short paragraphs to maintain user attention. If a concept requires detailed explanation, break it into digestible chunks rather than a single massive response.`;
     return `${base}
 ${tutoringInstructions}
+${concisenessPrompt}
 
 ${FORMAT_INSTRUCTIONS}`.trim();
   }
