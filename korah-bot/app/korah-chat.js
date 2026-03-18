@@ -371,7 +371,6 @@
 
     placeholderInterval = setInterval(() => {
       // Only trigger animation if the input is empty AND not focused
-      // This way the background rotation keeps happening but is "hidden" when typing/focused
       const isVisible = welcomeInput.value === "" && document.activeElement !== welcomeInput;
       
       if (isVisible) {
@@ -380,12 +379,12 @@
         welcomeInput.classList.add("rolling");
       }
 
-      // Change text halfway through the roll animation
+      // Change text halfway through the 1.2s roll animation (600ms)
       setTimeout(() => {
         phraseIndex = (phraseIndex + 1) % PLACEHOLDER_PHRASES.length;
         welcomeInput.placeholder = PLACEHOLDER_PHRASES[phraseIndex];
-      }, 300);
-    }, 4000);
+      }, 600);
+    }, 5000);
   }
 
   function initWelcomeFeatures() {
