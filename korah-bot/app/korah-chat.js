@@ -2612,3 +2612,37 @@ ${FORMAT_INSTRUCTIONS}`.trim();
 })();
 
 function initConstellationField() {
+  const field = document.getElementById('constellation-field');
+  if (!field) return;
+  const DOT_COUNT = 60;
+  for (let i = 0; i < DOT_COUNT; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'c-dot';
+    const size = 2 + Math.random() * 3;
+    const x = Math.random() * 100;
+    const y = Math.random() * 100;
+    const dur = 8 + Math.random() * 16;
+    const dx1 = (Math.random() - 0.5) * 80;
+    const dy1 = (Math.random() - 0.5) * 80;
+    const dx2 = (Math.random() - 0.5) * 80;
+    const dy2 = (Math.random() - 0.5) * 80;
+    dot.style.cssText = `
+      width:${size}px; height:${size}px;
+      left:${x}vw; top:${y}vh;
+      animation-duration:${dur}s;
+      animation-delay:-${Math.random()*dur}s;
+      --dx1:${dx1}px; --dy1:${dy1}px;
+      --dx2:${dx2}px; --dy2:${dy2}px;
+      opacity:${0.3 + Math.random() * 0.5};
+    `;
+    field.appendChild(dot);
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    initConstellationField();
+  });
+} else {
+  initConstellationField();
+}
