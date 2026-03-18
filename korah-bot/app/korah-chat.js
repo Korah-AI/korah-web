@@ -370,10 +370,15 @@
     welcomeInput.placeholder = PLACEHOLDER_PHRASES[0];
 
     placeholderInterval = setInterval(() => {
-      // Trigger animation
-      welcomeInput.classList.remove("rolling");
-      void welcomeInput.offsetWidth; // Force reflow to restart animation
-      welcomeInput.classList.add("rolling");
+      // Only trigger animation if the input is empty AND not focused
+      // This way the background rotation keeps happening but is "hidden" when typing/focused
+      const isVisible = welcomeInput.value === "" && document.activeElement !== welcomeInput;
+      
+      if (isVisible) {
+        welcomeInput.classList.remove("rolling");
+        void welcomeInput.offsetWidth; // Force reflow
+        welcomeInput.classList.add("rolling");
+      }
 
       // Change text halfway through the roll animation
       setTimeout(() => {
@@ -390,20 +395,6 @@
     
     typeWelcomeTitle(titleText);
     rotatePlaceholder();
-    
-    // Clear rotation when user starts typing
-    const welcomeInput = document.getElementById("welcome-chat-input");
-    if (welcomeInput) {
-      const stopRotation = () => {
-        if (placeholderInterval) {
-          clearInterval(placeholderInterval);
-          placeholderInterval = null;
-        }
-        welcomeInput.classList.remove("rolling");
-        welcomeInput.removeEventListener("input", stopRotation);
-      };
-      welcomeInput.addEventListener("input", stopRotation);
-    }
   }
 
   function updateTutoringModeUI() {
