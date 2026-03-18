@@ -350,6 +350,56 @@
   function setWelcomeVisibility(show) {
     if (!welcomeScreen) return;
     welcomeScreen.style.display = show ? "flex" : "none";
+    
+    // Toggle bottom input area
+    const bottomInput = document.querySelector('.chat-input-area');
+    if (bottomInput) {
+      bottomInput.style.display = show ? "none" : "block";
+    }
+
+    // If showing welcome, clear and focus welcome input
+    if (show) {
+      const welcomeInput = document.getElementById("welcome-chat-input");
+      if (welcomeInput) {
+        welcomeInput.value = "";
+        welcomeInput.focus();
+      }
+    }
+  }
+
+  // Setup welcome screen input
+  function setupWelcomeInput() {
+    const welcomeInput = document.getElementById("welcome-chat-input");
+    const welcomeSendBtn = document.getElementById("welcome-send-btn");
+    const welcomeAttachBtn = document.getElementById("welcome-attach-btn");
+
+    if (welcomeInput) {
+      welcomeInput.addEventListener("input", () => {
+        welcomeInput.style.height = "auto";
+        welcomeInput.style.height = `${welcomeInput.scrollHeight}px`;
+      });
+
+      welcomeInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          const text = welcomeInput.value.trim();
+          if (text) sendMessage(text);
+        }
+      });
+    }
+
+    if (welcomeSendBtn) {
+      welcomeSendBtn.addEventListener("click", () => {
+        const text = welcomeInput.value.trim();
+        if (text) sendMessage(text);
+      });
+    }
+
+    if (welcomeAttachBtn) {
+      welcomeAttachBtn.addEventListener("click", () => {
+        document.getElementById("doc-file-input")?.click();
+      });
+    }
   }
 
   function setTyping(show) {
@@ -1911,6 +1961,11 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     hideSuggestionBar();
 
     input.value = "";
+    const welcomeInput = document.getElementById("welcome-chat-input");
+    if (welcomeInput) {
+      welcomeInput.value = "";
+      welcomeInput.style.height = "auto";
+    }
     resizeInput();
     updateCharCount();
     setSendingState(true);
@@ -2387,6 +2442,7 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     loadSessionMessages();
     resizeInput();
     updateCharCount();
+    setupWelcomeInput();
 
     // 4. Deep link: open specific session from hash (e.g. index.html#session_123)
     const hash = window.location.hash.slice(1);
@@ -2550,129 +2606,9 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     animate();
   }
 
-  // ── Typing Effect ──
-  function initWelcomeTyping() {
-    const title = document.querySelector("#welcome-screen h2");
-    const desc = document.querySelector("#welcome-screen p");
-    if (!title || !desc) return;
-
-    const titleText = title.textContent;
-    const descText = desc.textContent;
-    
-    title.textContent = "";
-    desc.textContent = "";
-    desc.style.opacity = "0";
-
-    let i = 0;
-    function typeTitle() {
-      if (i < titleText.length) {
-        title.textContent += titleText.charAt(i);
-        i++;
-        setTimeout(typeTitle, 50);
-      } else {
-        setTimeout(typeDesc, 500);
-      }
-    }
-
-    let j = 0;
-    function typeDesc() {
-      desc.style.opacity = "1";
-      if (j < descText.length) {
-        desc.textContent += descText.charAt(j);
-        j++;
-        setTimeout(typeDesc, 30);
-      }
-    }
-
-    // Start typing after a short delay
-    setTimeout(typeTitle, 600);
-  }
-
   initBackground();
-  initWelcomeTyping();
+  setupDocumentAttachment();
 
-  
 })();
 
 function initConstellationField() {
-  const field = document.getElementById('constellation-field');
-  if (!field) return;
-  const DOT_COUNT = 60;
-  for (let i = 0; i < DOT_COUNT; i++) {
-    const dot = document.createElement('div');
-    dot.className = 'c-dot';
-    const size = 2 + Math.random() * 3;
-    const x = Math.random() * 100;
-    const y = Math.random() * 100;
-    const dur = 8 + Math.random() * 16;
-    const dx1 = (Math.random() - 0.5) * 80;
-    const dy1 = (Math.random() - 0.5) * 80;
-    const dx2 = (Math.random() - 0.5) * 80;
-    const dy2 = (Math.random() - 0.5) * 80;
-    dot.style.cssText = `
-      width:${size}px; height:${size}px;
-      left:${x}vw; top:${y}vh;
-      animation-duration:${dur}s;
-      animation-delay:-${Math.random()*dur}s;
-      --dx1:${dx1}px; --dy1:${dy1}px;
-      --dx2:${dx2}px; --dy2:${dy2}px;
-      opacity:${0.3 + Math.random() * 0.5};
-    `;
-    field.appendChild(dot);
-  }
-}
-
-function streamText(element, text, speed = 20) {
-  if (!element) return Promise.resolve();
-  return new Promise((resolve) => {
-    element.textContent = '';
-    let idx = 0;
-    function type() {
-      if (idx < text.length) {
-        element.textContent += text.charAt(idx);
-        idx++;
-        setTimeout(type, speed);
-      } else {
-        resolve();
-      }
-    }
-    type();
-  });
-}
-
-async function initWelcomeMessage() {
-  const firstName = localStorage.getItem('korah_first_name') || 'there';
-  const welcomeHeading = document.getElementById('welcome-heading');
-  const welcomeSubtext = document.getElementById('welcome-subtext');
-  
-  const greetings = [
-    `Hey ${firstName}, I'm Korah ✨`,
-    `Hi ${firstName}! Ready to lock in? 🚀`,
-    `Welcome back, ${firstName}! Let's get started 📚`,
-    `Hey ${firstName} — what shall we work on today? 🎯`,
-    `Good to see you, ${firstName}! Let's get studying 💡`
-  ];
-  
-  const subtexts = [
-    "Your AI study companion. Choose a mode below or tell me what you're working on.",
-    "I'm here to help you ace your classes. What are we learning today?",
-    "Ready to boost your grades? Let's start with something interesting!",
-    "Pick a subject or just tell me what you need help with.",
-    "Let's make learning fun and effective. What topic should we explore?"
-  ];
-  
-  const randomIdx = Math.floor(Math.random() * greetings.length);
-  
-  if (welcomeHeading) welcomeHeading.textContent = greetings[randomIdx];
-  if (welcomeSubtext) await streamText(welcomeSubtext, subtexts[randomIdx], 15);
-}
-
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    initConstellationField();
-    initWelcomeMessage();
-  });
-} else {
-  initConstellationField();
-  initWelcomeMessage();
-}
