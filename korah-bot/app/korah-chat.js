@@ -317,6 +317,86 @@
 
   let tutoringMode = localStorage.getItem('korah_tutoring_mode') === 'true';
 
+  // ═══ Welcome Screen Features ═══
+  const GREETING_PHRASES = [
+    "What can I help you study, {name}?",
+    "What's on your mind today, {name}?",
+    "Ready to dive in, {name}?",
+    "Let's crush some studying today, {name}!"
+  ];
+
+  const PLACEHOLDER_PHRASES = [
+    "Ask Korah a study question...",
+    "Explain the quadratic formula step-by-step",
+    "Create a study guide for cellular respiration",
+    "Make flashcards for photosynthesis",
+    "Help me prioritize my study for tomorrow's test",
+    "Give me a 10-question practice test on WWII",
+    "What are the main causes of the French Revolution?",
+    "Analyze the themes in 'The Great Gatsby'",
+    "How does DNA replication work?",
+    "Explain Newton's Third Law with examples"
+  ];
+
+  let placeholderInterval = null;
+  let typingTimer = null;
+
+  function typeWelcomeTitle(text) {
+    const titleEl = document.querySelector(".welcome-title");
+    if (!titleEl) return;
+    
+    titleEl.textContent = "";
+    let i = 0;
+    if (typingTimer) clearInterval(typingTimer);
+    
+    typingTimer = setInterval(() => {
+      if (i < text.length) {
+        titleEl.textContent += text.charAt(i);
+        i++;
+      } else {
+        clearInterval(typingTimer);
+        typingTimer = null;
+      }
+    }, 40);
+  }
+
+  function rotatePlaceholder() {
+    const welcomeInput = document.getElementById("welcome-chat-input");
+    if (!welcomeInput) return;
+
+    let phraseIndex = 0;
+    if (placeholderInterval) clearInterval(placeholderInterval);
+
+    welcomeInput.placeholder = PLACEHOLDER_PHRASES[0];
+
+    placeholderInterval = setInterval(() => {
+      phraseIndex = (phraseIndex + 1) % PLACEHOLDER_PHRASES.length;
+      welcomeInput.placeholder = PLACEHOLDER_PHRASES[phraseIndex];
+    }, 3000);
+  }
+
+  function initWelcomeFeatures() {
+    const name = localStorage.getItem('korah_first_name') || 'there';
+    const randomGreeting = GREETING_PHRASES[Math.floor(Math.random() * GREETING_PHRASES.length)];
+    const titleText = randomGreeting.replace("{name}", name);
+    
+    typeWelcomeTitle(titleText);
+    rotatePlaceholder();
+    
+    // Clear rotation when user starts typing
+    const welcomeInput = document.getElementById("welcome-chat-input");
+    if (welcomeInput) {
+      const stopRotation = () => {
+        if (placeholderInterval) {
+          clearInterval(placeholderInterval);
+          placeholderInterval = null;
+        }
+        welcomeInput.removeEventListener("input", stopRotation);
+      };
+      welcomeInput.addEventListener("input", stopRotation);
+    }
+  }
+
   function updateTutoringModeUI() {
     const toggle = document.getElementById('tutoring-mode-toggle');
     if (toggle) {
@@ -363,6 +443,17 @@
       if (welcomeInput) {
         welcomeInput.value = "";
         welcomeInput.focus();
+      }
+      initWelcomeFeatures();
+    } else {
+      // Clear intervals when welcome screen is hidden
+      if (placeholderInterval) {
+        clearInterval(placeholderInterval);
+        placeholderInterval = null;
+      }
+      if (typingTimer) {
+        clearInterval(typingTimer);
+        typingTimer = null;
       }
     }
   }
@@ -1440,72 +1531,6 @@ ${FORMAT_INSTRUCTIONS}`.trim();
 
     updateModeUI(mode);
     renderModePills();
-    renderWelcomeSuggestions();
-  }
-
-  const MODE_SUGGESTIONS = {
-    general: [
-      { emoji: "🃏", text: "Make flashcards for photosynthesis", prompt: "Generate flashcards for photosynthesis" },
-      { emoji: "😰", text: "I have a test tomorrow, help me prioritize", prompt: "I have a test tomorrow and I'm stressed. What should I study first?" },
-      { emoji: "📖", text: "Study guide for cellular respiration", prompt: "Create a study guide for Chapter 5 on cellular respiration" },
-      { emoji: "🎯", text: "Practice test on World War II", prompt: "Give me a 10-question practice test on World War II" }
-    ],
-    math: [
-      { emoji: "📐", text: "Explain the Quadratic Formula", prompt: "Explain the Quadratic Formula step-by-step and show examples" },
-      { emoji: "🧮", text: "Practice Calculus derivatives", prompt: "Give me some practice problems for Calculus derivatives with solutions" },
-      { emoji: "🔢", text: "Solve systems of linear equations", prompt: "How do I solve systems of linear equations using substitution?" },
-      { emoji: "📝", text: "Trigonometry identities cheat sheet", prompt: "Create a cheat sheet for essential trigonometry identities" }
-    ],
-    physics: [
-      { emoji: "🍎", text: "Newton's Third Law examples", prompt: "Explain Newton's Third Law with real-world examples" },
-      { emoji: "⚡", text: "How to calculate kinetic energy?", prompt: "How do I calculate kinetic energy? Show the formula and an example." },
-      { emoji: "🔌", text: "Series vs Parallel circuits", prompt: "Explain the difference between series and parallel circuits" },
-      { emoji: "🔊", text: "Understand the Doppler effect", prompt: "Help me understand the Doppler effect with a simple analogy" }
-    ],
-    chemistry: [
-      { emoji: "🧪", text: "Electronegativity periodic trends", prompt: "Explain the periodic trends in electronegativity" },
-      { emoji: "⚖️", text: "Help me balance an equation", prompt: "Help me balance a chemical equation: show me the steps" },
-      { emoji: "⚛️", text: "Ionic vs Covalent bonds", prompt: "What is the difference between ionic and covalent bonds?" },
-      { emoji: "🧪", text: "Explain moles in chemistry", prompt: "Explain the concept of moles and Avogadro's number" }
-    ],
-    biology: [
-      { emoji: "🧬", text: "How DNA replication works", prompt: "How does DNA replication work? Break it down into steps." },
-      { emoji: "🔬", text: "Explain stages of Mitosis", prompt: "Explain the stages of Mitosis with key features of each" },
-      { emoji: "🔋", text: "Role of mitochondria in cells", prompt: "What is the role of mitochondria in a cell? Why is it the powerhouse?" },
-      { emoji: "🔄", text: "Summary of the Krebs cycle", prompt: "Create a clear summary of the Krebs cycle steps" }
-    ],
-    history: [
-      { emoji: "🇫🇷", text: "Causes of French Revolution", prompt: "What were the main causes of the French Revolution?" },
-      { emoji: "📅", text: "Timeline of the Cold War", prompt: "Give me a timeline of the major events in the Cold War" },
-      { emoji: "📜", text: "Significance of Magna Carta", prompt: "Explain the historical significance of the Magna Carta" },
-      { emoji: "🎨", text: "Key figures in the Renaissance", prompt: "Who were the most influential figures in the Renaissance and why?" }
-    ],
-    literature: [
-      { emoji: "🍸", text: "Themes in 'The Great Gatsby'", prompt: "What are the main themes in 'The Great Gatsby'?" },
-      { emoji: "👁️", text: "Irony in '1984'", prompt: "Explain the use of irony in George Orwell's '1984'" },
-      { emoji: "🎭", text: "Analyze Hamlet's character", prompt: "Analyze the character of Hamlet and his internal conflict" },
-      { emoji: "✍️", text: "What is a sonnet?", prompt: "What is a sonnet? Explain the structure and give examples." }
-    ]
-  };
-
-  function renderWelcomeSuggestions() {
-    const container = document.getElementById("welcome-suggestions");
-    if (!container) return;
-    
-    const mode = currentSession.mode || "general";
-    const suggestions = MODE_SUGGESTIONS[mode] || MODE_SUGGESTIONS.general;
-    
-    container.innerHTML = "";
-    suggestions.forEach(s => {
-      const btn = document.createElement("button");
-      btn.className = "suggestion-chip t-btn";
-      btn.setAttribute("data-prompt", s.prompt);
-      btn.innerHTML = `${s.emoji} ${s.text}`;
-      btn.addEventListener("click", () => {
-        sendMessage(s.prompt);
-      });
-      container.appendChild(btn);
-    });
   }
 
   function renderModePills() {
