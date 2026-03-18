@@ -17,10 +17,28 @@
   const chatTitleEl = document.getElementById("chat-title");
   const toolsTrigger = document.getElementById("tools-trigger");
   const toolsMenu = document.getElementById("tools-menu");
-  const studyEmptyBanner = document.getElementById("study-empty-banner");
-  const studyItemsEmpty = document.getElementById("study-items-empty");
+  const modeSelectorBtnMini = document.getElementById("mode-selector-btn-mini");
+  const modeNameMini = document.getElementById("mode-name-mini");
 
-  if (!input || !sendBtn || !messagesList) return;
+  // Re-attach event listeners for the new structure
+  if (toolsTrigger && toolsMenu) {
+    toolsTrigger.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toolsMenu.classList.toggle("show");
+    });
+    
+    document.addEventListener("click", (e) => {
+      if (!toolsMenu.contains(e.target) && e.target !== toolsTrigger) {
+        toolsMenu.classList.remove("show");
+      }
+    });
+  }
+
+  if (modeSelectorBtnMini) {
+    modeSelectorBtnMini.addEventListener("click", () => {
+      document.getElementById("mode-selector-btn")?.click();
+    });
+  }
 
   // ═══ In-Memory State ═══
   // These are kept in sync by Firestore realtime listeners set up in initApp().
@@ -1568,8 +1586,10 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     const config = getModeConfig(mode);
     const modeIcon = document.getElementById("mode-icon");
     const modeName = document.getElementById("mode-name");
+    const modeNameMini = document.getElementById("mode-name-mini");
     if (modeIcon) modeIcon.textContent = config.emoji;
     if (modeName) modeName.textContent = config.name;
+    if (modeNameMini) modeNameMini.textContent = config.name + " Mode";
   }
 
   function changeMode(newMode) {
