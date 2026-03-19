@@ -840,19 +840,20 @@
     });
 
     if (!container) return;
+    const emptyEl = document.getElementById("study-items-empty");
     const list = itemIds
       .map((id) => ({ id, ...items[id] }))
       .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt))
       .slice(0, 8);
     container.innerHTML = "";
     if (list.length === 0) {
-      if (studyItemsEmpty) {
-        studyItemsEmpty.classList.remove("hidden");
+      if (emptyEl) {
+        emptyEl.classList.remove("hidden");
         container.classList.add("is-empty");
-        container.appendChild(studyItemsEmpty);
+        container.appendChild(emptyEl);
       }
     } else {
-      if (studyItemsEmpty) studyItemsEmpty.classList.add("hidden");
+      if (emptyEl) emptyEl.classList.add("hidden");
       container.classList.remove("is-empty");
     }
     list.forEach((item) => {
@@ -946,8 +947,8 @@
       });
     });
     const hasItems = Object.keys(items).length > 0;
-    if (studyEmptyBanner) {
-      studyEmptyBanner.classList.toggle("hidden", hasItems);
+    if (emptyEl) {
+      emptyEl.classList.toggle("hidden", hasItems);
     }
   }
 
