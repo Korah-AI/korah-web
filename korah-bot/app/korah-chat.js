@@ -446,12 +446,16 @@
 
   function setWelcomeVisibility(show) {
     if (!welcomeScreen) return;
+    
+    // Toggle welcome screen visibility
+    welcomeScreen.classList.toggle("hidden", !show);
+    // Explicit display flex/none for existing flex-layout compatibility
     welcomeScreen.style.display = show ? "flex" : "none";
     
-    // Toggle bottom input area
+    // Toggle bottom input area - only show if NOT in welcome state
     const bottomInput = document.querySelector('.chat-input-area');
     if (bottomInput) {
-      bottomInput.style.display = show ? "none" : "block";
+      bottomInput.classList.toggle("hidden", show);
     }
 
     // If showing welcome, clear and focus welcome input
