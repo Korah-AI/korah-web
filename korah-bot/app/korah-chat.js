@@ -99,35 +99,86 @@
     }
     renderDocPanel();
     renderInputFilesBar();
+    // Expand panel when files are added
+    if (attachedFiles.length > 0) {
+      expandDocPanel();
+    }
+  }
+
+  // ═══ Document Panel State ═══
+  let isDocPanelExpanded = false;
+
+  function expandDocPanel() {
+    const panel = document.getElementById('doc-panel');
+    if (panel) {
+      panel.classList.remove('collapsed');
+      panel.classList.add('expanded');
+      isDocPanelExpanded = true;
+    }
+  }
+
+  function collapseDocPanel() {
+    const panel = document.getElementById('doc-panel');
+    if (panel) {
+      panel.classList.remove('expanded');
+      panel.classList.add('collapsed');
+      isDocPanelExpanded = false;
+    }
+  }
+
+  function toggleDocPanel() {
+    if (isDocPanelExpanded) {
+      collapseDocPanel();
+    } else {
+      expandDocPanel();
+    }
   }
 
   function removeAttachedFile(index) {
     attachedFiles.splice(index, 1);
     renderDocPanel();
     renderInputFilesBar();
-    if (attachedFiles.length === 0) {
-      const docPanel = document.getElementById('doc-panel');
-      if (docPanel) docPanel.classList.remove('show');
-    }
   }
 
   function clearAttachedFiles() {
     attachedFiles = [];
-    const docPanel = document.getElementById('doc-panel');
-    if (docPanel) docPanel.classList.remove('show');
     renderDocPanel();
     renderInputFilesBar();
+    collapseDocPanel();
+  }
+
+  function updateDocCountBadges() {
+    const count = attachedFiles.length;
+    const topbarBadge = document.getElementById('doc-count-badge');
+    const collapsedBadge = document.getElementById('doc-count-collapsed');
+    
+    if (topbarBadge) {
+      topbarBadge.textContent = count;
+      topbarBadge.classList.toggle('hidden', count === 0);
+    }
+    if (collapsedBadge) {
+      collapsedBadge.textContent = count;
+      collapsedBadge.classList.toggle('hidden', count === 0);
+    }
   }
 
   function renderDocPanel() {
-    const panel = document.getElementById('doc-panel');
     const list = document.getElementById('doc-panel-list');
-    if (!panel || !list) return;
+    if (!list) return;
+    
+    updateDocCountBadges();
+    
     if (attachedFiles.length === 0) {
-      panel.classList.remove('show');
+      list.innerHTML = `
+        <div class="doc-panel-empty">
+          <span class="doc-panel-empty-icon">📄</span>
+          <span class="doc-panel-empty-text">Drop or add documents</span>
+          <span class="doc-panel-empty-hint">PDFs, images, text files</span>
+        </div>
+      `;
       return;
     }
-    panel.classList.add('show');
+    
     list.innerHTML = '';
     attachedFiles.forEach((f, i) => {
       const card = document.createElement('div');
@@ -205,10 +256,17 @@
   function setupDocumentAttachment() {
     const attachBtn  = document.getElementById('attach-file-btn');
     const fileInput  = document.getElementById('doc-file-input');
-    const panelClose = document.getElementById('doc-panel-close');
     const mainContent = document.getElementById('main-content');
     const dragOverlay = document.getElementById('drag-overlay');
+    
+    // Panel toggle buttons
+    const docPanelToggle = document.getElementById('doc-panel-toggle');
+    const docPanelExpandBtn = document.getElementById('doc-panel-expand-btn');
+    const docPanelCollapseBtn = document.getElementById('doc-panel-collapse-btn');
+    const docAddBtn = document.getElementById('doc-add-btn');
+    const docAddBtnCollapsed = document.getElementById('doc-add-btn-collapsed');
 
+    // File input button
     if (attachBtn && fileInput) {
       attachBtn.addEventListener('click', () => {
         if (toolsMenu) toolsMenu.classList.remove('show');
@@ -220,7 +278,24 @@
       });
     }
 
-    if (panelClose) panelClose.addEventListener('click', clearAttachedFiles);
+    // Panel toggle buttons
+    if (docPanelToggle) {
+      docPanelToggle.addEventListener('click', toggleDocPanel);
+    }
+    if (docPanelExpandBtn) {
+      docPanelExpandBtn.addEventListener('click', expandDocPanel);
+    }
+    if (docPanelCollapseBtn) {
+      docPanelCollapseBtn.addEventListener('click', collapseDocPanel);
+    }
+    
+    // Add document buttons
+    if (docAddBtn && fileInput) {
+      docAddBtn.addEventListener('click', () => fileInput.click());
+    }
+    if (docAddBtnCollapsed && fileInput) {
+      docAddBtnCollapsed.addEventListener('click', () => fileInput.click());
+    }
 
     // Drag & Drop on main chat area
     if (mainContent) {
@@ -243,9 +318,54 @@
         e.preventDefault();
         dragCounter = 0;
         if (dragOverlay) dragOverlay.classList.remove('active');
-        if (e.dataTransfer.files.length) handleNewFiles(e.dataTransfer.files);
+        if (e.dataTransfer.files.length) {
+          expandDocPanel();
+          handleNewFiles(e.dataTransfer.files);
+        }
       });
     }
+    
+    // Drag & Drop on document panel
+    const docPanel = document.getElementById('doc-panel');
+    if (docPanel) {
+      let panelDragCounter = 0;
+      
+      docPanel.addEventListener('dragenter', (e) => {
+        if (!e.dataTransfer.types.includes('Files')) return;
+        e.preventDefault();
+        e.stopPropagation();
+        panelDragCounter++;
+        docPanel.classList.add('drag-over');
+      });
+      
+      docPanel.addEventListener('dragleave', (e) => {
+        e.stopPropagation();
+        panelDragCounter--;
+        if (panelDragCounter <= 0) {
+          panelDragCounter = 0;
+          docPanel.classList.remove('drag-over');
+        }
+      });
+      
+      docPanel.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      });
+      
+      docPanel.addEventListener('drop', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        panelDragCounter = 0;
+        docPanel.classList.remove('drag-over');
+        if (e.dataTransfer.files.length) {
+          expandDocPanel();
+          handleNewFiles(e.dataTransfer.files);
+        }
+      });
+    }
+    
+    // Initialize panel state
+    collapseDocPanel();
   }
 
   // ═══ Storage Shim ═══

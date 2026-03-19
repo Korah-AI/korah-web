@@ -630,6 +630,26 @@ body { display: flex; background: var(--bg) }
 }
 .topbar-btn:hover { border-color: var(--p4); color: var(--p4); background: var(--cu) }
 
+#doc-panel-toggle {
+    position: relative;
+}
+.doc-count-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: var(--p4);
+    color: white;
+    font-size: 9px;
+    font-weight: 700;
+    min-width: 16px;
+    height: 16px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+}
+
 .tutoring-mode-btn {
     width: auto;
     padding: 0 10px;
@@ -952,7 +972,7 @@ body { display: flex; background: var(--bg) }
 }
 
 .msg-bubble {
-    max-width: 85%;
+    max-width: 90%;
     padding: 14px 18px;
     border-radius: 20px;
     font-size: 15.5px;
@@ -2813,33 +2833,122 @@ html {
 
 /* ── Document Preview Panel ── */
 .doc-panel {
-    width: 0;
-    min-width: 0;
+    width: 56px;
+    min-width: 56px;
     height: 100dvh;
     display: flex;
     flex-direction: column;
-    border-left: 0 solid var(--bd);
+    border-left: 1px solid var(--bd);
     background: var(--sf);
     backdrop-filter: blur(40px);
     -webkit-backdrop-filter: blur(40px);
     overflow: hidden;
-    transition: width .45s cubic-bezier(.16,1,.3,1), min-width .45s cubic-bezier(.16,1,.3,1), border-width .45s;
+    transition: width .4s cubic-bezier(.23,1,.32,1), min-width .4s cubic-bezier(.23,1,.32,1);
     flex-shrink: 0;
-    box-shadow: -10px 0 30px rgba(0,0,0,.15);
+    box-shadow: -8px 0 24px rgba(0,0,0,.12);
+    z-index: 90;
 }
-.doc-panel.show {
-    width: 300px;
-    min-width: 300px;
-    border-left-width: 1px;
+.doc-panel.expanded {
+    width: 320px;
+    min-width: 320px;
+}
+.doc-panel.collapsed {
+    width: 56px;
+    min-width: 56px;
+}
+.doc-panel.drag-over {
+    background: var(--cu);
+    border-color: var(--p4);
+    box-shadow: -8px 0 24px var(--glow), inset 0 0 20px var(--glow);
+}
+/* ── Document Panel Collapsed State ── */
+.doc-panel-collapsed-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px 0;
+    gap: 12px;
+    height: 100%;
+    justify-content: flex-start;
+}
+.doc-panel.expanded .doc-panel-collapsed-content {
+    display: none;
+}
+.doc-panel.collapsed .doc-panel-expanded-content {
+    display: none;
+}
+.doc-panel-expand-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    border: 1px solid var(--bd2);
+    background: var(--sf2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--p4);
+    transition: all .2s;
+}
+.doc-panel-expand-btn:hover {
+    background: var(--cu);
+    border-color: var(--p4);
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px var(--glow);
+}
+.doc-count-collapsed {
+    background: var(--p4);
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    min-width: 20px;
+    height: 20px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 6px;
+}
+.doc-add-btn-collapsed {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px dashed var(--bd2);
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--tx3);
+    transition: all .2s;
+    margin-top: auto;
+}
+.doc-add-btn-collapsed:hover {
+    color: var(--p4);
+    border-color: var(--p4);
+    background: var(--cu);
+}
+
+/* ── Document Panel Expanded State ── */
+.doc-panel-expanded-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
 }
 .doc-panel-header {
-    padding: 18px 20px;
+    padding: 14px 16px;
     border-bottom: 1px solid var(--bd2);
     display: flex;
     align-items: center;
     justify-content: space-between;
     flex-shrink: 0;
     background: rgba(255,255,255,.02);
+}
+.doc-panel-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 .doc-panel-title {
     font-size: 11px;
@@ -2849,10 +2958,29 @@ html {
     color: var(--p5);
     filter: drop-shadow(0 0 8px var(--glow));
 }
-.doc-panel-close {
+.doc-add-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--bd2);
+    background: var(--sf2);
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--tx2);
+    transition: all .2s;
+}
+.doc-add-btn:hover {
+    background: var(--cu);
+    border-color: var(--p4);
+    color: var(--p4);
+}
+.doc-panel-collapse-btn {
     width: 28px;
     height: 28px;
-    border-radius: 9px;
+    border-radius: 8px;
     border: 1px solid var(--bd2);
     background: var(--sf2);
     cursor: pointer;
@@ -2862,14 +2990,50 @@ html {
     color: var(--tx3);
     transition: all .2s;
 }
-.doc-panel-close:hover { color: var(--tx); background: var(--cu); border-color: var(--p4); transform: rotate(90deg); }
+.doc-panel-collapse-btn:hover {
+    background: var(--cu);
+    border-color: var(--p4);
+    color: var(--tx);
+}
+.doc-panel-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    gap: 12px;
+    color: var(--tx3);
+    padding: 24px;
+    text-align: center;
+}
+.doc-panel-empty-icon {
+    font-size: 48px;
+    opacity: 0.5;
+}
+.doc-panel-empty-text {
+    font-size: 14px;
+    font-weight: 600;
+}
+.doc-panel-empty-hint {
+    font-size: 12px;
+    opacity: 0.7;
+}
+.doc-panel-title {
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 2.5px;
+    color: var(--p5);
+    filter: drop-shadow(0 0 8px var(--glow));
+}
+/* Removed old close button styles */
 .doc-panel-list {
     flex: 1;
     overflow-y: auto;
-    padding: 16px;
+    padding: 12px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
 }
 .doc-panel-list::-webkit-scrollbar { width: 4px; }
 .doc-panel-list::-webkit-scrollbar-thumb { background: var(--bd); border-radius: 2px; }
