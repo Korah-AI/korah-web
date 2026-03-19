@@ -263,6 +263,7 @@
     const docPanelToggle = document.getElementById('doc-panel-toggle');
     const docPanelExpandBtn = document.getElementById('doc-panel-expand-btn');
     const docPanelCollapseBtn = document.getElementById('doc-panel-collapse-btn');
+    const docPanelTab = document.getElementById('doc-panel-tab');
     const docAddBtn = document.getElementById('doc-add-btn');
     const docAddBtnCollapsed = document.getElementById('doc-add-btn-collapsed');
 
@@ -287,6 +288,9 @@
     }
     if (docPanelCollapseBtn) {
       docPanelCollapseBtn.addEventListener('click', collapseDocPanel);
+    }
+    if (docPanelTab) {
+      docPanelTab.addEventListener('click', expandDocPanel);
     }
     
     // Add document buttons
