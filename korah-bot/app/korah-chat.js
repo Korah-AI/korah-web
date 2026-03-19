@@ -1125,6 +1125,26 @@
     return suggestions.slice(0, 3);
   }
 
+  let lastScrollTop = 0;
+  if (chatBody) {
+    chatBody.addEventListener("scroll", () => {
+      const st = chatBody.scrollTop;
+      const suggestionBar = document.getElementById("suggestion-bar");
+      
+      // Only act if the suggestion bar has content (i.e., it's supposed to be active)
+      if (!suggestionBar || suggestionBar.innerHTML === "") return;
+
+      if (st > lastScrollTop) {
+        // Scrolling down
+        suggestionBar.classList.add("show");
+      } else if (st < lastScrollTop) {
+        // Scrolling up - hide to give more space for reading
+        suggestionBar.classList.remove("show");
+      }
+      lastScrollTop = st <= 0 ? 0 : st;
+    }, { passive: true });
+  }
+
   function showSuggestionBar() {
     const suggestionBar = document.getElementById("suggestion-bar");
     if (!suggestionBar) return;
@@ -1143,13 +1163,18 @@
       suggestionBar.appendChild(btn);
     });
 
-    suggestionBar.classList.add("show");
+    // Check if we are at the bottom or near it
+    const isAtBottom = chatBody.scrollHeight - chatBody.scrollTop <= chatBody.clientHeight + 100;
+    if (isAtBottom) {
+      suggestionBar.classList.add("show");
+    }
   }
 
   function hideSuggestionBar() {
     const suggestionBar = document.getElementById("suggestion-bar");
     if (suggestionBar) {
       suggestionBar.classList.remove("show");
+      suggestionBar.innerHTML = ""; // Clear content so scroll listener doesn't re-show it
     }
   }
 
@@ -1568,14 +1593,9 @@ ${FORMAT_INSTRUCTIONS}`.trim();
       pill.className = `mode-pill t-btn ${currentSession.mode === mode ? "active" : ""}`;
       pill.innerHTML = `<span>${config.emoji}</span><span>${config.name}</span>`;
       
-      if (history.length > 0) {
-        pill.classList.add("locked");
-        pill.title = "Mode locked for this conversation";
-      } else {
-        pill.addEventListener("click", () => {
-          changeMode(mode);
-        });
-      }
+      pill.addEventListener("click", () => {
+        changeMode(mode);
+      });
       
       container.appendChild(pill);
     });
@@ -1598,32 +1618,25 @@ ${FORMAT_INSTRUCTIONS}`.trim();
   }
 
   function changeMode(newMode) {
-    // Don't allow mode change if conversation has started
-    if (history.length > 0) {
-      alert("Cannot change mode once conversation has started. Create a new chat to use a different mode.");
-      return;
-    }
-    
     currentSession.mode = newMode;
     currentSession.updatedAt = new Date().toISOString();
     Storage.saveSession(currentSessionId, currentSession);
     applyModeTheme(newMode);
     renderChatHistory();
+    
+    // If we're in an active chat, we might want to refresh the suggestions
+    if (history.length > 0 && history[history.length - 1].role === "assistant") {
+      showSuggestionBar();
+    }
   }
 
   function updateModeButtonState() {
     const modeSelectorBtn = document.getElementById("mode-selector-btn");
     if (!modeSelectorBtn) return;
     
-    if (history.length > 0) {
-      modeSelectorBtn.style.opacity = "0.6";
-      modeSelectorBtn.style.cursor = "not-allowed";
-      modeSelectorBtn.title = "Mode locked for this conversation";
-    } else {
-      modeSelectorBtn.style.opacity = "1";
-      modeSelectorBtn.style.cursor = "pointer";
-      modeSelectorBtn.title = "Change subject mode";
-    }
+    modeSelectorBtn.style.opacity = "1";
+    modeSelectorBtn.style.cursor = "pointer";
+    modeSelectorBtn.title = "Change subject mode";
   }
 
   const selectedChats = new Set();
