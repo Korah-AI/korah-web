@@ -389,6 +389,45 @@
     }
     .study-modern .create-form #create-ai-prompt { min-height: 140px; }
     .study-modern .create-form #create-manual-content { min-height: 250px; }
+    
+    /* --- VALIDATION STYLES --- */
+    .form-field.error .create-input,
+    .form-field.error .create-textarea {
+      border-color: #ef4444 !important;
+      background: rgba(239, 68, 68, 0.05);
+    }
+    .form-field.error .create-input:focus,
+    .form-field.error .create-textarea:focus {
+      box-shadow: 0 0 0 5px rgba(239, 68, 68, 0.15), inset 0 2px 4px rgba(0,0,0,0.02);
+    }
+    .form-field .field-error {
+      display: none;
+      color: #ef4444;
+      font-size: 12px;
+      font-weight: 500;
+      margin-top: 4px;
+      align-items: center;
+      gap: 4px;
+    }
+    .form-field.error .field-error {
+      display: flex;
+    }
+    .upload-zone.error {
+      border-color: #ef4444 !important;
+      background: rgba(239, 68, 68, 0.05);
+    }
+    .upload-error {
+      display: none;
+      color: #ef4444;
+      font-size: 12px;
+      font-weight: 500;
+      margin-top: 8px;
+      text-align: center;
+    }
+    .upload-zone.error + .upload-error,
+    .upload-error.show {
+      display: block;
+    }
 
     .study-modern .create-form .config-grid {
       display: grid;
@@ -625,14 +664,16 @@
     <!-- Modal Step 2: Configure Details -->
     <div id="modal-step-2" class="modal-step">
       <div class="create-form">
-        <div class="form-field">
-          <label class="create-label">Title</label>
+        <div class="form-field" id="create-title-field">
+          <label class="create-label">Title <span class="text-red-400">*</span></label>
           <input type="text" id="create-title" class="create-input tx bg-sf2 bd" placeholder="e.g. Chapter 5 Key Terms"/>
+          <span class="field-error">⚠ Title is required</span>
         </div>
 
-        <div class="form-field">
-          <label class="create-label">Subject</label>
+        <div class="form-field" id="create-subject-field">
+          <label class="create-label">Subject <span class="text-red-400">*</span></label>
           <input type="text" id="create-subject" class="create-input tx bg-sf2 bd" placeholder="e.g. Biology"/>
+          <span class="field-error">⚠ Subject is required</span>
         </div>
         
         <div class="form-field form-full-width">
@@ -646,8 +687,9 @@
         </div>
 
         <div id="create-ai-prompt-wrap" class="hidden form-field form-full-width">
-          <label class="create-label">Prompt</label>
+          <label class="create-label">Prompt <span class="text-red-400">*</span></label>
           <textarea id="create-ai-prompt" class="create-input create-textarea tx bg-sf2 bd" rows="3" placeholder="e.g. Create 10 flashcards covering photosynthesis and cellular respiration"></textarea>
+          <span class="field-error">⚠ Prompt is required for AI generation</span>
         </div>
 
         <div id="create-practice-config-wrap" class="hidden form-field form-full-width">
@@ -670,20 +712,22 @@
         </div>
 
         <div id="create-manual-content-wrap" class="hidden form-field form-full-width">
-          <label id="create-manual-content-label" class="create-label">Content</label>
+          <label id="create-manual-content-label" class="create-label">Content <span class="text-red-400">*</span></label>
           <textarea id="create-manual-content" class="create-input create-textarea tx bg-sf2 bd" rows="8"></textarea>
+          <span class="field-error" id="manual-content-error">⚠ Content is required</span>
           <p id="create-manual-content-help" class="tx3 text-xs mt-3 opacity-60"></p>
         </div>
 
         <!-- AI from Documents Upload Zone -->
         <div id="create-ai-doc-wrap" class="hidden form-field form-full-width">
-          <label class="create-label">Upload Documents</label>
+          <label class="create-label">Upload Documents <span class="text-red-400">*</span></label>
           <div class="upload-zone !py-12 !px-6" id="document-drop-zone">
             <input type="file" id="document-input" class="hidden" multiple accept=".pdf,.txt,.png,.jpg,.jpeg"/>
             <span class="upload-icon !text-5xl !mb-4">📄</span>
             <h3 class="upload-text !text-lg">Drag & drop or click to upload</h3>
             <p class="upload-hint !text-sm">Support for PDF, TXT, and Images</p>
           </div>
+          <p class="upload-error" id="upload-error">⚠ At least one document is required</p>
           <div id="uploaded-files-list" class="mt-4 flex flex-col gap-2">
             <!-- File items will be injected here -->
           </div>
@@ -792,6 +836,7 @@
   function closeCreationModal() {
     if (backdrop) backdrop.classList.remove("active");
     if (creationModal) creationModal.classList.remove("active");
+    clearValidationErrors();
   }
 
   function reopenCreationModal() {
@@ -808,6 +853,7 @@
   document.querySelectorAll(".method-card").forEach(function (btn) {
     btn.addEventListener("click", function () {
       state.method = btn.getAttribute("data-method");
+      clearValidationErrors();
       showModalStep(2);
     });
   });
@@ -818,6 +864,7 @@
   });
 
   document.getElementById("create-back-to-method").addEventListener("click", function() {
+    clearValidationErrors();
     showModalStep(1);
   });
 
@@ -842,6 +889,11 @@
       if (state.uploadedFiles.length >= 5) return;
       state.uploadedFiles.push(file);
     });
+    // Clear document upload error if files are added
+    if (state.uploadedFiles.length > 0) {
+      document.getElementById('document-drop-zone').classList.remove('error');
+      document.getElementById('upload-error').classList.remove('show');
+    }
     renderFiles();
   }
 
@@ -1021,6 +1073,92 @@
     window.location.href = redirectPage + "?id=" + encodeURIComponent(id);
   }
 
+  // --- VALIDATION FUNCTIONS ---
+  function clearValidationErrors() {
+    document.querySelectorAll('.form-field.error').forEach(function(el) {
+      el.classList.remove('error');
+    });
+    document.querySelectorAll('.upload-zone.error').forEach(function(el) {
+      el.classList.remove('error');
+    });
+    document.getElementById('upload-error').classList.remove('show');
+    var errEl = document.getElementById("create-save-error");
+    errEl.classList.add("hidden");
+    errEl.textContent = "";
+  }
+
+  function setFieldError(fieldId) {
+    var field = document.getElementById(fieldId);
+    if (field) {
+      field.classList.add('error');
+    }
+  }
+
+  function validateForm() {
+    clearValidationErrors();
+    var isValid = true;
+
+    // Validate Title
+    var title = document.getElementById("create-title").value.trim();
+    if (!title) {
+      setFieldError('create-title-field');
+      isValid = false;
+    }
+
+    // Validate Subject
+    var subject = document.getElementById("create-subject").value.trim();
+    if (!subject) {
+      setFieldError('create-subject-field');
+      isValid = false;
+    }
+
+    // Method-specific validation
+    if (state.method === "ai-prompt") {
+      var prompt = document.getElementById("create-ai-prompt").value.trim();
+      if (!prompt) {
+        setFieldError('create-ai-prompt-wrap');
+        isValid = false;
+      }
+    }
+
+    if (state.method === "manual") {
+      var content = document.getElementById("create-manual-content").value.trim();
+      if (!content) {
+        setFieldError('create-manual-content-wrap');
+        isValid = false;
+      }
+    }
+
+    if (state.method === "ai-doc") {
+      if (state.uploadedFiles.length === 0) {
+        document.getElementById('document-drop-zone').classList.add('error');
+        document.getElementById('upload-error').classList.add('show');
+        isValid = false;
+      }
+    }
+
+    if (!isValid) {
+      var errEl = document.getElementById("create-save-error");
+      errEl.textContent = "Please fill in all required fields";
+      errEl.classList.remove("hidden");
+    }
+
+    return isValid;
+  }
+
+  // Add real-time validation on input
+  ['create-title', 'create-subject', 'create-ai-prompt', 'create-manual-content'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('input', function() {
+        var field = el.closest('.form-field');
+        if (field && field.classList.contains('error') && el.value.trim()) {
+          field.classList.remove('error');
+        }
+      });
+    }
+  });
+
   document.getElementById("create-save").addEventListener("click", function () {
     var btn = document.getElementById("create-save");
     var errEl = document.getElementById("create-save-error");
@@ -1029,6 +1167,11 @@
     
     errEl.classList.add("hidden");
     errEl.textContent = "";
+
+    // Validate form before proceeding
+    if (!validateForm()) {
+      return;
+    }
 
     var isAi = state.method === "ai-prompt" || state.method === "ai-doc";
     if (!isAi) {
