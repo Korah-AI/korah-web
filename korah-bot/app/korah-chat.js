@@ -204,6 +204,22 @@
           </button>
         </div>`;
       card.querySelector('.doc-card-remove').addEventListener('click', () => removeAttachedFile(i));
+      // Spotlight effect
+      function updateSpotlight(clientX, clientY) {
+        const rect = card.getBoundingClientRect();
+        const x = clientX - rect.left;
+        const y = clientY - rect.top;
+        card.style.setProperty('--mouse-x', `${x}px`);
+        card.style.setProperty('--mouse-y', `${y}px`);
+      }
+      card.addEventListener('mousemove', e => {
+        updateSpotlight(e.clientX, e.clientY);
+      });
+      card.addEventListener('touchmove', e => {
+        if (e.touches.length > 0) {
+          updateSpotlight(e.touches[0].clientX, e.touches[0].clientY);
+        }
+      });
       list.appendChild(card);
     });
   }
@@ -2785,7 +2801,6 @@ ${FORMAT_INSTRUCTIONS}`.trim();
   }
 
   initBackground();
-  setupDocumentAttachment();
 
 })();
 

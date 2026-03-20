@@ -3084,6 +3084,10 @@ html {
     overflow: hidden;
     transition: all .3s cubic-bezier(.23,1,.32,1);
     box-shadow: 0 4px 12px rgba(0,0,0,.1);
+    position: relative;
+    --mouse-x: 50%;
+    --mouse-y: 50%;
+    --spotlight-color: rgba(0, 229, 255, 0.2);
 }
 .doc-card:hover { 
     border-color: var(--p4); 
@@ -3191,6 +3195,28 @@ html {
     transition: all .2s;
 }
 .doc-card-remove:hover { color: var(--red); background: rgba(239,68,68,.15); transform: scale(1.1); }
+
+/* ── Spotlight Effect ── */
+.doc-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at var(--mouse-x) var(--mouse-y), var(--spotlight-color), transparent 80%);
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+  border-radius: inherit;
+}
+.doc-card:hover::before,
+.doc-card:focus-within::before {
+  opacity: 0.6;
+}
+.custom-spotlight-card {
+  --spotlight-color: rgba(0, 229, 255, 0.2);
+}
 
 /* ── Drag & Drop Overlay ── */
 .main-content { position: relative; }
