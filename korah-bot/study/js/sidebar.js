@@ -4,58 +4,17 @@
  * falls back to empty caches if KorahDB is unavailable.
  */
 
+// Simplified rename function using browser prompt() dialog
 function showSidebarRenameModal(currentName, desc, onConfirm) {
-  const modal = document.getElementById("rename-modal");
-  const input = document.getElementById("rename-modal-input");
-  const descEl = document.getElementById("rename-modal-desc");
-  const confirmBtn = document.getElementById("rename-modal-confirm");
-  const cancelBtn = document.getElementById("rename-modal-cancel");
-  if (!modal) {
-    const n = prompt(desc || "New name:", currentName);
-    if (n && n.trim() && onConfirm) onConfirm(n.trim());
-    return;
-  }
-  input.value = currentName || "";
-  if (descEl) descEl.textContent = desc || "Enter a new name";
-  modal.classList.add("show");
-  setTimeout(() => { input.focus(); input.select(); }, 50);
-  function cleanup() {
-    modal.classList.remove("show");
-    confirmBtn.removeEventListener("click", onYes);
-    cancelBtn.removeEventListener("click", onNo);
-    modal.removeEventListener("click", onOutside);
-    input.removeEventListener("keydown", onEnter);
-  }
-  function onYes() { const v = input.value.trim(); if (v) { cleanup(); if (onConfirm) onConfirm(v); } }
-  function onNo() { cleanup(); }
-  function onOutside(e) { if (e.target === modal) cleanup(); }
-  function onEnter(e) { if (e.key === "Enter") onYes(); if (e.key === "Escape") onNo(); }
-  confirmBtn.addEventListener("click", onYes);
-  cancelBtn.addEventListener("click", onNo);
-  modal.addEventListener("click", onOutside);
-  input.addEventListener("keydown", onEnter);
+  const n = prompt(desc || "New name:", currentName);
+  if (n && n.trim() && onConfirm) onConfirm(n.trim());
 }
 
+// Simplified delete function using browser confirm() dialog
 function showSidebarDeleteModal(name, onConfirm) {
-  const modal = document.getElementById("delete-modal");
-  const nameEl = document.getElementById("delete-modal-name");
-  const confirmBtn = document.getElementById("delete-modal-confirm");
-  const cancelBtn = document.getElementById("delete-modal-cancel");
-  if (!modal) { if (onConfirm) onConfirm(); return; }
-  nameEl.textContent = name;
-  modal.classList.add("show");
-  function cleanup() {
-    modal.classList.remove("show");
-    confirmBtn.removeEventListener("click", onYes);
-    cancelBtn.removeEventListener("click", onNo);
-    modal.removeEventListener("click", onOutside);
+  if (confirm(`Delete "${name}"? This cannot be undone.`)) {
+    if (onConfirm) onConfirm();
   }
-  function onYes() { cleanup(); if (onConfirm) onConfirm(); }
-  function onNo() { cleanup(); }
-  function onOutside(e) { if (e.target === modal) cleanup(); }
-  confirmBtn.addEventListener("click", onYes);
-  cancelBtn.addEventListener("click", onNo);
-  modal.addEventListener("click", onOutside);
 }
 
 (function () {

@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="en" x-data="{ theme: localStorage.getItem('korah_theme') || 'dark' }" :data-theme="theme" x-cloak>
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Korah AI — Create Study Guide</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../app/korah-chat.css"/>
+  <style>
+    .study-modern .chat-topbar,
+    .study-modern .create-hero,
+    .study-modern .method-tabs,
+    .study-modern .method-tab-content,
+    .study-modern .create-form {
+      border-radius: 18px;
+    }
+    .main-content {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .study-modern .create-flow-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      max-width: none;
+      width: 100%;
+      padding: 20px;
+      overflow-y: auto;
+    }
+    .study-modern .create-hero {
+      padding: 28px;
+      border: 1px solid var(--bd);
+      margin-bottom: 20px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .study-modern .create-hero-title { font-size: 34px; line-height: 1.2; font-weight: 700; margin-bottom: 8px; color: var(--p5); }
+    .study-modern .create-hero-sub { font-size: 16px; color: var(--tx2); line-height: 1.6; }
+    
+    /* Method Tabs */
+    .method-tabs {
+      display: flex;
+      background: var(--bg2);
+      border: 1px solid var(--bd);
+      padding: 8px;
+      margin-bottom: 20px;
+      gap: 8px;
+      overflow-x: auto;
+      flex-shrink: 0;
+    }
+    .method-tab {
+      flex: 1;
+      min-width: 140px;
+      min-height: 52px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 12px 16px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      background: transparent;
+      color: var(--tx2);
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+    .method-tab:hover {
+      background: var(--bg3);
+      color: var(--tx1);
+    }
+    .method-tab.active {
+      background: var(--bg1);
+      color: var(--p5);
+      border-color: var(--p5);
+    }
+    
+    /* Method Tab Content */
+    .method-tab-content {
+      display: none;
+      flex-direction: column;
+      border: 1px solid var(--bd);
+      background: var(--bg2);
+      padding: 32px;
+      flex: 1;
+      min-height: 500px;
+    }
+    .method-tab-content.active {
+      display: flex;
+      animation: stepFadeIn 0.3s ease-out;
+    }
+    
+    /* Enhanced Form UI */
+    .study-modern .create-form {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      max-width: 1000px;
+      margin: 0 auto;
+      width: 100%;
+    }
+    .study-modern .create-form .form-field {
+      display: flex;
+      flex-direction: column;
+    }
+    .study-modern .create-form .form-full-width { grid-column: 1 / -1; }
+    
+    .study-modern .create-form .create-label { 
+      font-size: 14px; 
+      font-weight: 700; 
+      margin-bottom: 8px; 
+      display: block;
+      color: var(--tx1);
+      letter-spacing: 0.01em;
+      opacity: 0.9;
+    }
+    .study-modern .create-form .create-input {
+      width: 100%;
+      min-height: 52px;
+      font-size: 16px;
+      padding: 12px 18px;
+      border-radius: 14px;
+      background: var(--bg1);
+      border: 2px solid var(--bd);
+      color: var(--tx1);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      margin-bottom: 0; 
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .study-modern .create-form .create-input:focus {
+      border-color: var(--p5);
+      background: var(--bg1);
+      outline: none;
+      box-shadow: 0 0 0 5px rgba(139, 92, 246, 0.15), inset 0 2px 4px rgba(0,0,0,0.02);
+      transform: translateY(-1px);
+    }
+    .study-modern .create-form .create-textarea { 
+      min-height: 300px; 
+      resize: vertical;
+      line-height: 1.5;
+      font-family: inherit;
+    }
+    
+    /* Action Buttons */
+    .form-actions {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      margin-top: 24px;
+      flex-shrink: 0;
+    }
+    .form-actions .btn {
+      min-height: 54px;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      padding: 0 32px;
+    }
+    
+    /* Upload Zone */
+    .upload-zone {
+      border: 2px dashed var(--bd);
+      border-radius: 20px;
+      padding: 40px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: var(--bg1);
+    }
+    .upload-zone:hover, .upload-zone.drag-active { border-color: var(--p5); background: var(--bg3); transform: scale(1.01); }
+    .upload-icon { font-size: 48px; margin-bottom: 16px; display: block; filter: grayscale(0.5); transition: filter .2s; }
+    .upload-zone:hover .upload-icon, .upload-zone.drag-active .upload-icon { filter: grayscale(0); }
+    .upload-text { font-size: 18px; font-weight: 700; color: var(--tx1); margin-bottom: 8px; }
+    .upload-hint { font-size: 14px; color: var(--tx2); }
+    
+    /* Uploaded File Items */
+    .doc-upload-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      background: var(--bg1);
+      border: 1px solid var(--bd);
+      border-radius: 12px;
+      transition: border-color .2s;
+      margin-bottom: 8px;
+    }
+    .doc-upload-item:hover { border-color: var(--p5); }
+    .doc-thumb {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      background: var(--bg2);
+      border: 1px solid var(--bd2);
+      overflow: hidden;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .doc-thumb-icon {
+      font-size: 18px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+    .doc-file-info { flex: 1; overflow: hidden; }
+    .doc-file-name {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--tx);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .doc-file-size {
+      display: block;
+      font-size: 10px;
+      color: var(--tx3);
+      margin-top: 2px;
+    }
+    .doc-file-remove {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      border: 1px solid rgba(239,68,68,.2);
+      background: rgba(239,68,68,.05);
+      color: var(--tx3);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all .2s;
+    }
+    .doc-file-remove:hover { background: rgba(239,68,68,.15); color: #f87171; border-color: rgba(239,68,68,.4); }
+    
+    /* Validation Styles */
+    .form-field.error .create-input,
+    .form-field.error .create-textarea {
+      border-color: #ef4444 !important;
+      background: rgba(239, 68, 68, 0.05);
+    }
+    .form-field.error .create-input:focus,
+    .form-field.error .create-textarea:focus {
+      box-shadow: 0 0 0 5px rgba(239, 68, 68, 0.15), inset 0 2px 4px rgba(0,0,0,0.02);
+    }
+    .form-field .field-error {
+      display: none;
+      color: #ef4444;
+      font-size: 12px;
+      font-weight: 500;
+      margin-top: 4px;
+      align-items: center;
+      gap: 4px;
+    }
+    .form-field.error .field-error {
+      display: flex;
+    }
+    .upload-zone.error {
+      border-color: #ef4444 !important;
+      background: rgba(239, 68, 68, 0.05);
+    }
+    .upload-error {
+      display: none;
+      color: #ef4444;
+      font-size: 12px;
+      font-weight: 500;
+      margin-top: 8px;
+      text-align: center;
+    }
+    .upload-zone.error + .upload-error,
+    .upload-error.show {
+      display: block;
+    }
+    
+    @keyframes stepFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    
+    @media (max-width: 768px) {
+      .study-modern .create-flow-body { padding: 18px 14px 24px; }
+      .study-modern .create-hero { padding: 18px; margin-bottom: 12px; }
+      .study-modern .create-hero-title { font-size: 24px; }
+      .method-tab-content { padding: 20px; }
+      .study-modern .create-form { grid-template-columns: 1fr; gap: 16px; }
+    }
+  </style>
+</head>
+<body class="bg-base tx study-modern">
+
+<canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
+
+<!-- Loading Overlay -->
+<div id="loading-overlay" class="loading-overlay hidden">
+  <div class="loading-spinner">
+    <div class="spinner-ring"></div>
+    <div class="spinner-core"></div>
+  </div>
+  <div class="loading-text" id="loading-text">Generating with AI...</div>
+  <div class="loading-subtext">Korah is crafting your study guide. This usually takes 5-10 seconds.</div>
+</div>
+
+<!-- ═══ SIDEBAR ═══ -->
+<aside id="sidebar" class="sidebar bg-sf glass t-theme">
+  <div class="sidebar-header">
+    <a href="../index.html" class="flex items-center gap-2.5 no-underline">
+      <div class="w-12 h-12 rounded-xl flex items-center justify-center font-display text-xl font-black text-white shadow-glow logo-btn">
+        <span class="logo-letter">
+          <img src="../app/logo.png" alt="Korah"/>
+        </span>
+      </div>
+      <div class="flex flex-col leading-tight">
+        <span class="font-display text-[19px] font-bold tx">Korah</span>
+        <span class="text-[9px] font-semibold tracking-[2.5px] uppercase tx-p4">Study Smarter</span>
+      </div>
+    </a>
+    <button id="new-chat-btn" class="new-chat-btn text-white text-xs font-bold px-4 py-2 rounded-full border-none cursor-pointer shadow-glow t-btn">
+      <span class="new-chat-icon">+</span> <span class="new-chat-text">New Chat</span>
+    </button>
+  </div>
+
+  <nav class="sidebar-nav">
+    <a href="../index.html" class="sidebar-nav-link t-btn"><span class="nav-icon">💬</span> <span class="nav-text">Chat</span></a>
+    <a href="feed.html" class="sidebar-nav-link active t-btn"><span class="nav-icon">📚</span> <span class="nav-text">Study</span></a>
+  </nav>
+
+  <div class="sidebar-middle">
+    <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 12px 0 4px;">
+    <span class="sidebar-section-label" style="margin:0">Recent Chats</span>
+    </div>
+    <div id="chat-select-bar" class="select-bar">
+      <span class="select-bar-count" id="chat-select-count">0 selected</span>
+      <div class="select-bar-actions">
+        <button class="select-bar-btn" id="chat-select-all">Select all</button>
+        <button class="select-bar-btn danger" id="chat-delete-selected">Delete</button>
+      </div>
+    </div>
+    <div id="chat-history" class="chat-history">
+      <div class="skeleton-item">
+        <div class="skeleton-icon"></div>
+        <div class="skeleton-text"></div>
+      </div>
+      <div class="skeleton-item">
+        <div class="skeleton-icon"></div>
+        <div class="skeleton-text"></div>
+      </div>
+      <div class="skeleton-item">
+        <div class="skeleton-icon"></div>
+        <div class="skeleton-text"></div>
+      </div>
+      <div class="skeleton-item">
+        <div class="skeleton-icon"></div>
+        <div class="skeleton-text"></div>
+      </div>
+      <div class="skeleton-item">
+        <div class="skeleton-icon"></div>
+        <div class="skeleton-text"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 12px 0 4px;">
+    <span class="sidebar-section-label" style="margin:0">Recent Study Items</span>
+  </div>
+  <div id="study-select-bar" class="select-bar">
+    <span class="select-bar-count" id="study-select-count">0 selected</span>
+    <div class="select-bar-actions">
+      <button class="select-bar-btn" id="study-select-all">Select all</button>
+      <button class="select-bar-btn danger" id="study-delete-selected">Delete</button>
+    </div>
+  </div>
+  <div id="study-items-history" class="chat-history study-items-history">
+    <!-- Populated by JS from localStorage -->
+  </div>
+  <div id="study-items-empty" class="study-items-empty hidden">
+    <span class="study-items-empty-icon" aria-hidden="true">📚</span>
+    <div class="study-items-empty-title">No study items yet</div>
+    <div class="study-items-empty-sub">Create one to see it here.</div>
+  </div>
+
+    <div class="sidebar-footer">
+    <div class="mood-indicator" id="sidebar-mood">
+      <span class="mood-dot" id="mood-dot">🟢</span>
+      <span class="text-xs tx2 font-medium">Full Focus Mode</span>
+    </div>
+    <div class="sidebar-footer-actions">
+      <button id="logout-btn" class="theme-toggle-small t-btn" title="Log out">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+      </button>
+      <button id="settings-btn" class="theme-toggle-small t-btn" title="Settings">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+      <button @click="theme = theme === 'dark' ? 'light' : 'dark'; localStorage.setItem('korah_theme', theme)" class="theme-toggle-small t-btn" title="Toggle theme">
+        <svg x-show="theme==='light'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" style="color:var(--p5)">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/>
+        </svg>
+        <svg x-show="theme==='dark'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--p4)">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</aside>
+
+
+<main id="main-content" class="main-content">
+  <header class="chat-topbar bg-sf glass-sm t-theme bd">
+    <button id="sidebar-toggle" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+    <div class="chat-title-area">
+      <div class="korah-status-dot"></div>
+      <span class="font-semibold tx text-sm">Create Study Guide</span>
+    </div>
+    <div class="topbar-actions">
+      <a href="feed.html" class="btn feed-card-btn t-btn" style="padding: 8px 14px;">Cancel</a>
+    </div>
+  </header>
+
+  <div class="create-flow-body">
+    <section class="create-hero bg-sf glass-sm t-theme">
+      <h1 class="create-hero-title">📖 Create Study Guide</h1>
+      <p class="create-hero-sub">Create a study guide manually, with AI from a prompt, or from uploaded documents.</p>
+    </section>
+
+    <!-- Method Tabs -->
+    <div class="method-tabs">
+      <button class="method-tab active" data-method="manual">✏️ Manual</button>
+      <button class="method-tab" data-method="ai-prompt">💬 AI from Prompt</button>
+      <button class="method-tab" data-method="ai-doc">📄 AI from Documents</button>
+    </div>
+
+    <!-- Method Tab Contents -->
+    <div id="method-manual" class="method-tab-content active">
+      <h3 class="text-xl font-bold mb-6 text-center">Create Study Guide Manually</h3>
+      
+      <div class="create-form">
+        <div class="form-field" id="create-title-field">
+          <label class="create-label">Title <span class="text-red-400">*</span></label>
+          <input type="text" id="create-title" class="create-input tx bg-sf2 bd" placeholder="e.g. Chapter 5 Study Guide"/>
+          <span class="field-error">⚠ Title is required</span>
+        </div>
+
+        <div class="form-field" id="create-subject-field">
+          <label class="create-label">Subject <span class="text-red-400">*</span></label>
+          <input type="text" id="create-subject" class="create-input tx bg-sf2 bd" placeholder="e.g. Biology"/>
+          <span class="field-error">⚠ Subject is required</span>
+        </div>
+        
+        <div class="form-field form-full-width">
+          <label class="create-label">Description (optional)</label>
+          <textarea id="create-description" class="create-input create-textarea tx bg-sf2 bd" rows="2" placeholder="Brief description of this study guide"></textarea>
+        </div>
+        
+        <div class="form-field form-full-width">
+          <label class="create-label">Tags</label>
+          <input type="text" id="create-tags" class="create-input tx bg-sf2 bd" placeholder="exam, midterm, science"/>
+        </div>
+
+        <div class="form-field form-full-width" id="create-manual-content-wrap">
+          <label class="create-label">Study Guide Content <span class="text-red-400">*</span></label>
+          <textarea id="create-manual-content" class="create-input create-textarea tx bg-sf2 bd" rows="12" placeholder="Write your study guide content here. You can use Markdown formatting.&#10;&#10;# Section Title&#10;&#10;## Subsection&#10;&#10;Content goes here..."></textarea>
+          <span class="field-error">⚠ Content is required</span>
+          <p class="text-xs tx3 mt-2">Add at least some guide text. Markdown formatting is supported.</p>
+        </div>
+      </div>
+      
+      <div id="create-save-error" class="hidden mt-6 p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-2xl text-center text-sm"></div>
+      
+      <div class="form-actions">
+        <button type="button" id="create-save" class="btn grad-bg text-white font-bold border-none cursor-pointer shadow-glow t-btn">Create Study Guide</button>
+      </div>
+    </div>
+
+    <div id="method-ai-prompt" class="method-tab-content">
+      <h3 class="text-xl font-bold mb-6 text-center">Generate Study Guide with AI</h3>
+      
+      <div class="create-form">
+        <div class="form-field" id="create-title-field">
+          <label class="create-label">Title <span class="text-red-400">*</span></label>
+          <input type="text" id="create-title" class="create-input tx bg-sf2 bd" placeholder="e.g. Chapter 5 Study Guide"/>
+          <span class="field-error">⚠ Title is required</span>
+        </div>
+
+        <div class="form-field" id="create-subject-field">
+          <label class="create-label">Subject <span class="text-red-400">*</span></label>
+          <input type="text" id="create-subject" class="create-input tx bg-sf2 bd" placeholder="e.g. Biology"/>
+          <span class="field-error">⚠ Subject is required</span>
+        </div>
+        
+        <div class="form-field form-full-width">
+          <label class="create-label">Description (optional)</label>
+          <textarea id="create-description" class="create-input create-textarea tx bg-sf2 bd" rows="2" placeholder="Brief description of this study guide"></textarea>
+        </div>
+        
+        <div class="form-field form-full-width">
+          <label class="create-label">Tags</label>
+          <input type="text" id="create-tags" class="create-input tx bg-sf2 bd" placeholder="exam, midterm, science"/>
+        </div>
+
+        <div class="form-field form-full-width" id="create-ai-prompt-wrap">
+          <label class="create-label">Prompt <span class="text-red-400">*</span></label>
+          <textarea id="create-ai-prompt" class="create-input create-textarea tx bg-sf2 bd" rows="4" placeholder="e.g. Create a comprehensive study guide for photosynthesis and cellular respiration"></textarea>
+          <span class="field-error">⚠ Prompt is required for AI generation</span>
+        </div>
+      </div>
+      
+      <div id="create-save-error" class="hidden mt-6 p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-2xl text-center text-sm"></div>
+      
+      <div class="form-actions">
+        <button type="button" id="create-save" class="btn grad-bg text-white font-bold border-none cursor-pointer shadow-glow t-btn">Generate Study Guide</button>
+      </div>
+    </div>
+
+    <div id="method-ai-doc" class="method-tab-content">
+      <h3 class="text-xl font-bold mb-6 text-center">Generate Study Guide from Documents</h3>
+      
+      <div class="create-form">
+        <div class="form-field" id="create-title-field">
+          <label class="create-label">Title <span class="text-red-400">*</span></label>
+          <input type="text" id="create-title" class="create-input tx bg-sf2 bd" placeholder="e.g. Chapter 5 Study Guide"/>
+          <span class="field-error">⚠ Title is required</span>
+        </div>
+
+        <div class="form-field" id="create-subject-field">
+          <label class="create-label">Subject <span class="text-red-400">*</span></label>
+          <input type="text" id="create-subject" class="create-input tx bg-sf2 bd" placeholder="e.g. Biology"/>
+          <span class="field-error">⚠ Subject is required</span>
+        </div>
+        
+        <div class="form-field form-full-width">
+          <label class="create-label">Description (optional)</label>
+          <textarea id="create-description" class="create-input create-textarea tx bg-sf2 bd" rows="2" placeholder="Brief description of this study guide"></textarea>
+        </div>
+        
+        <div class="form-field form-full-width">
+          <label class="create-label">Tags</label>
+          <input type="text" id="create-tags" class="create-input tx bg-sf2 bd" placeholder="exam, midterm, science"/>
+        </div>
+
+        <div class="form-field form-full-width" id="create-ai-doc-wrap">
+          <label class="create-label">Upload Documents <span class="text-red-400">*</span></label>
+          <div class="upload-zone" id="document-drop-zone">
+            <input type="file" id="document-input" class="hidden" multiple accept=".pdf,.txt,.png,.jpg,.jpeg"/>
+            <span class="upload-icon">📄</span>
+            <h3 class="upload-text">Drag & drop or click to upload</h3>
+            <p class="upload-hint">Support for PDF, TXT, and Images (max 5 files)</p>
+          </div>
+          <p class="upload-error" id="upload-error">⚠ At least one document is required</p>
+          <div id="uploaded-files-list" class="mt-4">
+            <!-- File items will be injected here -->
+          </div>
+        </div>
+      </div>
+      
+      <div id="create-save-error" class="hidden mt-6 p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-2xl text-center text-sm"></div>
+      
+      <div class="form-actions">
+        <button type="button" id="create-save" class="btn grad-bg text-white font-bold border-none cursor-pointer shadow-glow t-btn">Generate Study Guide</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script type="module" src="js/study-firebase-init.js"></script>
+<script src="js/sidebar.js"></script>
+<script src="js/study-api.js"></script>
+<script>
+(function () {
+  KorahSidebar.initSidebar({ chatBaseUrl: "../index.html", itemPageUrl: "item.html" });
+
+  let currentMethod = "manual";
+  let uploadedFiles = [];
+
+  // Method tabs
+  document.querySelectorAll(".method-tab").forEach(function(tab) {
+    tab.addEventListener("click", function() {
+      const method = tab.getAttribute("data-method");
+      switchMethod(method);
+    });
+  });
+
+  function switchMethod(method) {
+    currentMethod = method;
+    // Update tabs
+    document.querySelectorAll(".method-tab").forEach(function(tab) {
+      tab.classList.toggle("active", tab.getAttribute("data-method") === method);
+    });
+    // Update content
+    document.querySelectorAll(".method-tab-content").forEach(function(content) {
+      content.classList.toggle("active", content.id === "method-" + method);
+    });
+    clearValidationErrors();
+  }
+
+  // Check URL params for initial method
+  const urlParams = new URLSearchParams(window.location.search);
+  const methodParam = urlParams.get("method");
+  if (methodParam && ["manual", "ai-prompt", "ai-doc"].includes(methodParam)) {
+    switchMethod(methodParam);
+  }
+
+  // File upload logic
+  const dropZone = document.getElementById("document-drop-zone");
+  const documentInput = document.getElementById("document-input");
+  const filesList = document.getElementById("uploaded-files-list");
+
+  if (dropZone) {
+    dropZone.addEventListener("click", () => documentInput.click());
+    dropZone.addEventListener("dragover", (e) => { e.preventDefault(); dropZone.classList.add("drag-active"); });
+    dropZone.addEventListener("dragleave", () => { dropZone.classList.remove("drag-active"); });
+    dropZone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropZone.classList.remove("drag-active");
+      handleFiles(e.dataTransfer.files);
+    });
+  }
+
+  if (documentInput) {
+    documentInput.addEventListener("change", (e) => handleFiles(e.target.files));
+  }
+
+  function handleFiles(files) {
+    Array.from(files).forEach(file => {
+      if (uploadedFiles.length >= 5) return;
+      uploadedFiles.push(file);
+    });
+    // Clear document upload error if files are added
+    if (uploadedFiles.length > 0) {
+      document.getElementById('document-drop-zone').classList.remove('error');
+      document.getElementById('upload-error').classList.remove('show');
+    }
+    renderFiles();
+  }
+
+  function renderFiles() {
+    if (!filesList) return;
+    filesList.innerHTML = "";
+    uploadedFiles.forEach((file, idx) => {
+      const item = document.createElement("div");
+      item.className = "doc-upload-item";
+
+      const ext = file.name.split(".").pop().toUpperCase();
+      const icon = file.type === "application/pdf" ? "📕"
+        : (file.type === "text/plain" || ["TXT","MD","CSV"].includes(ext)) ? "📄" : "📎";
+
+      item.innerHTML = `
+        <div class="doc-thumb"><div class="doc-thumb-icon">${icon}<span style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--tx3)">${ext}</span></div></div>
+        <div class="doc-file-info">
+          <span class="doc-file-name" title="${file.name}">${file.name}</span>
+          <span class="doc-file-size">${(file.size / 1024).toFixed(1)} KB</span>
+        </div>
+        <button class="doc-file-remove" title="Remove">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      `;
+
+      item.querySelector(".doc-file-remove").onclick = (e) => {
+        e.stopPropagation();
+        uploadedFiles.splice(idx, 1);
+        renderFiles();
+      };
+      filesList.appendChild(item);
+    });
+  }
+
+  // Validation functions
+  function clearValidationErrors() {
+    document.querySelectorAll('.form-field.error').forEach(function(el) {
+      el.classList.remove('error');
+    });
+    document.querySelectorAll('.upload-zone.error').forEach(function(el) {
+      el.classList.remove('error');
+    });
+    document.getElementById('upload-error').classList.remove('show');
+    var errEl = document.getElementById("create-save-error");
+    if (errEl) {
+      errEl.classList.add("hidden");
+      errEl.textContent = "";
+    }
+  }
+
+  function setFieldError(fieldId) {
+    var field = document.getElementById(fieldId);
+    if (field) {
+      field.closest('.form-field').classList.add('error');
+    }
+  }
+
+  function validateForm() {
+    clearValidationErrors();
+    var isValid = true;
+
+    // Validate Title
+    var title = document.getElementById("create-title").value.trim();
+    if (!title) {
+      setFieldError('create-title');
+      isValid = false;
+    }
+
+    // Validate Subject
+    var subject = document.getElementById("create-subject").value.trim();
+    if (!subject) {
+      setFieldError('create-subject');
+      isValid = false;
+    }
+
+    // Method-specific validation
+    if (currentMethod === "ai-prompt") {
+      var prompt = document.getElementById("create-ai-prompt").value.trim();
+      if (!prompt) {
+        setFieldError('create-ai-prompt');
+        isValid = false;
+      }
+    }
+
+    if (currentMethod === "manual") {
+      var content = document.getElementById("create-manual-content").value.trim();
+      if (!content) {
+        setFieldError('create-manual-content');
+        isValid = false;
+      }
+    }
+
+    if (currentMethod === "ai-doc") {
+      if (uploadedFiles.length === 0) {
+        document.getElementById('document-drop-zone').classList.add('error');
+        document.getElementById('upload-error').classList.add('show');
+        isValid = false;
+      }
+    }
+
+    if (!isValid) {
+      var errEl = document.getElementById("create-save-error");
+      if (errEl) {
+        errEl.textContent = "Please fill in all required fields";
+        errEl.classList.remove("hidden");
+      }
+    }
+
+    return isValid;
+  }
+
+  function parseManualContent() {
+    var raw = (document.getElementById("create-manual-content").value || "").trim();
+    // Extract title from H1 if present
+    var title = "";
+    var markdown = raw;
+    var h1Match = raw.match(/^#\s+(.+)$/m);
+    if (h1Match) {
+      title = h1Match[1].trim();
+      markdown = raw.replace(/^#\s+.+$/m, "").trim();
+    }
+    if (!title) {
+      // Try to find a title from first line
+      var lines = raw.split("\n");
+      for (var i = 0; i < Math.min(3, lines.length); i++) {
+        var line = lines[i].trim();
+        if (line.length > 3 && line.length < 100 && !line.match(/^[-*#]/)) {
+          title = line.replace(/^[=-]+/, "").trim();
+          break;
+        }
+      }
+    }
+    if (!title) title = "Study Guide";
+    return { title, markdown };
+  }
+
+  function saveItem(content) {
+    var title = document.getElementById("create-title").value.trim() || "Untitled";
+    var description = document.getElementById("create-description").value.trim();
+    var subject = document.getElementById("create-subject").value.trim();
+    var tags = (document.getElementById("create-tags").value || "").split(",").map(function (t) { return t.trim(); }).filter(Boolean);
+    var id = "study_" + Date.now();
+    var item = {
+      id: id,
+      type: "studyGuide",
+      title: title,
+      description: description,
+      subject: subject,
+      tags: tags,
+      content: content || { title: title, markdown: "" },
+      source: currentMethod,
+      createdBy: "cloud",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    if (window.KorahDB) window.KorahDB.setStudyItem(id, item);
+    window.location.href = "guide.html?id=" + encodeURIComponent(id);
+  }
+
+  // Save button handlers for each tab
+  document.querySelectorAll("#create-save").forEach(function(btn) {
+    btn.addEventListener("click", function() {
+      var errEl = document.getElementById("create-save-error");
+      var overlay = document.getElementById("loading-overlay");
+      var loadingText = document.getElementById("loading-text");
+      
+      if (errEl) {
+        errEl.classList.add("hidden");
+        errEl.textContent = "";
+      }
+
+      // Validate form before proceeding
+      if (!validateForm()) {
+        return;
+      }
+
+      var isAi = currentMethod === "ai-prompt" || currentMethod === "ai-doc";
+      if (!isAi) {
+        const content = parseManualContent();
+        if (!content.markdown) {
+          errEl.textContent = "Study guides must include some guide text.";
+          errEl.classList.remove("hidden");
+          return;
+        }
+        saveItem(content);
+        return;
+      }
+
+      var title = document.getElementById("create-title").value.trim() || "Untitled";
+      var subject = document.getElementById("create-subject").value.trim();
+      var prompt = (document.getElementById("create-ai-prompt") && document.getElementById("create-ai-prompt").value) || title;
+
+      btn.disabled = true;
+      overlay.classList.remove("hidden");
+      if (loadingText) loadingText.textContent = "Korah is Generating...";
+
+      KorahStudyAPI.generateStudyContent({
+        type: "studyGuide",
+        prompt: prompt,
+        title: title,
+        subject: subject,
+        files: uploadedFiles
+      }).then(function (result) {
+        // Validate and save
+        const content = result && result.content;
+        if (content && (content.markdown || content.sections)) {
+          saveItem(content);
+        } else {
+          btn.disabled = false;
+          overlay.classList.add("hidden");
+          errEl.textContent = "AI generation failed: invalid study guide content";
+          errEl.classList.remove("hidden");
+        }
+      }).catch(function (err) {
+        btn.disabled = false;
+        overlay.classList.add("hidden");
+        errEl.textContent = "AI generation failed: " + (err && err.message ? err.message : "please try again");
+        errEl.classList.remove("hidden");
+      });
+    });
+  });
+
+  // Sidebar toggle
+  var sidebar = document.getElementById("sidebar");
+  var toggle = document.getElementById("sidebar-toggle");
+  var sideOverlay = document.createElement("div");
+  sideOverlay.className = "sidebar-overlay";
+  document.body.appendChild(sideOverlay);
+
+  function isMobile() { return window.innerWidth <= 768; }
+
+  if (toggle && sidebar) {
+    toggle.addEventListener("click", function () {
+      if (isMobile()) {
+        sidebar.classList.toggle("mobile-open");
+        sideOverlay.classList.toggle("show");
+      } else {
+        sidebar.classList.toggle("collapsed");
+      }
+    });
+  }
+
+  sideOverlay.addEventListener("click", function () {
+    sidebar.classList.remove("mobile-open");
+    sideOverlay.classList.remove("show");
+  });
+
+  // Settings modal (if exists)
+  const settingsBtn = document.getElementById("settings-btn");
+  const settingsModal = document.getElementById("settings-modal");
+  const settingsClose = document.getElementById("settings-close");
+  if (settingsBtn && settingsModal) settingsBtn.addEventListener("click", () => settingsModal.classList.add("show"));
+  if (settingsClose && settingsModal) settingsClose.addEventListener("click", () => settingsModal.classList.remove("show"));
+  if (settingsModal) settingsModal.addEventListener("click", (e) => { if (e.target === settingsModal) settingsModal.classList.remove("show"); });
+})();
+</script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+  import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
+    authDomain: "korah-app.firebaseapp.com",
+    projectId: "korah-app",
+    storageBucket: "korah-app.firebasestorage.app",
+    messagingSenderId: "226169460321",
+    appId: "1:226169460321:web:b166fc8260107c55dafc20"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  document.getElementById('logout-btn').addEventListener('click', async () => {
+    await signOut(auth);
+    localStorage.removeItem('korah_first_name');
+    window.location.href = '../login.html';
+  });
+</script>
+</body>
+</html>

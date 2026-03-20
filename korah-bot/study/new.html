@@ -481,7 +481,7 @@
 
   <nav class="sidebar-nav">
     <a href="../index.html" class="sidebar-nav-link t-btn"><span class="nav-icon">💬</span> <span class="nav-text">Chat</span></a>
-    <a href="feed.html" class="sidebar-nav-link active t-btn"><span class="nav-icon">📚</span> <span class="nav-text">Study</span></a>
+    <a href="feed.html" class="sidebar-nav-link active t-btn"><span class="nav-icon">📚</span> <span class="nav-text"></span></a>
   </nav>
 
   <div class="sidebar-middle">
@@ -663,87 +663,6 @@
       </div>
     </div>
 
-    <!-- Modal Step 2: Configure Details -->
-    <div id="modal-step-2" class="modal-step">
-      <div class="create-form">
-        <div class="form-field" id="create-title-field">
-          <label class="create-label">Title <span class="text-red-400">*</span></label>
-          <input type="text" id="create-title" class="create-input tx bg-sf2 bd" placeholder="e.g. Chapter 5 Key Terms"/>
-          <span class="field-error">⚠ Title is required</span>
-        </div>
-
-        <div class="form-field" id="create-subject-field">
-          <label class="create-label">Subject <span class="text-red-400">*</span></label>
-          <input type="text" id="create-subject" class="create-input tx bg-sf2 bd" placeholder="e.g. Biology"/>
-          <span class="field-error">⚠ Subject is required</span>
-        </div>
-        
-        <div class="form-field form-full-width">
-          <label class="create-label">Description (optional)</label>
-          <textarea id="create-description" class="create-input create-textarea tx bg-sf2 bd" rows="2" placeholder="Brief description of this study item"></textarea>
-        </div>
-        
-        <div class="form-field form-full-width">
-          <label class="create-label">Tags</label>
-          <input type="text" id="create-tags" class="create-input tx bg-sf2 bd" placeholder="exam, midterm, science"/>
-        </div>
-
-        <div id="create-ai-prompt-wrap" class="hidden form-field form-full-width">
-          <label class="create-label">Prompt <span class="text-red-400">*</span></label>
-          <textarea id="create-ai-prompt" class="create-input create-textarea tx bg-sf2 bd" rows="3" placeholder="e.g. Create 10 flashcards covering photosynthesis and cellular respiration"></textarea>
-          <span class="field-error">⚠ Prompt is required for AI generation</span>
-        </div>
-
-        <div id="create-practice-config-wrap" class="hidden form-field form-full-width">
-          <label class="create-label">Practice Test Settings</label>
-          <div class="config-grid">
-            <div class="form-field">
-              <label class="create-label !text-xs !mb-2 opacity-60 uppercase tracking-wider">Total Questions</label>
-              <input id="practice-total-questions" type="number" class="create-input tx bg-sf2 bd" min="1" max="50" value="10"/>
-            </div>
-            <div class="form-field">
-              <label class="create-label !text-xs !mb-2 opacity-60 uppercase tracking-wider">MCQ Count</label>
-              <input id="practice-mcq-count" type="number" class="create-input tx bg-sf2 bd" min="0" max="50" value="6"/>
-            </div>
-            <div class="form-field">
-              <label class="create-label !text-xs !mb-2 opacity-60 uppercase tracking-wider">Open Ended</label>
-              <input id="practice-open-count" type="number" class="create-input tx bg-sf2 bd" min="0" max="50" value="4"/>
-            </div>
-          </div>
-          <p id="practice-config-help" class="tx3 text-xs mt-3 opacity-60"></p>
-        </div>
-
-        <div id="create-manual-content-wrap" class="hidden form-field form-full-width">
-          <label id="create-manual-content-label" class="create-label">Content <span class="text-red-400">*</span></label>
-          <textarea id="create-manual-content" class="create-input create-textarea tx bg-sf2 bd" rows="8"></textarea>
-          <span class="field-error" id="manual-content-error">⚠ Content is required</span>
-          <p id="create-manual-content-help" class="tx3 text-xs mt-3 opacity-60"></p>
-        </div>
-
-        <!-- AI from Documents Upload Zone -->
-        <div id="create-ai-doc-wrap" class="hidden form-field form-full-width">
-          <label class="create-label">Upload Documents <span class="text-red-400">*</span></label>
-          <div class="upload-zone !py-12 !px-6" id="document-drop-zone">
-            <input type="file" id="document-input" class="hidden" multiple accept=".pdf,.txt,.png,.jpg,.jpeg"/>
-            <span class="upload-icon !text-5xl !mb-4">📄</span>
-            <h3 class="upload-text !text-lg">Drag & drop or click to upload</h3>
-            <p class="upload-hint !text-sm">Support for PDF, TXT, and Images</p>
-          </div>
-          <p class="upload-error" id="upload-error">⚠ At least one document is required</p>
-          <div id="uploaded-files-list" class="mt-4 flex flex-col gap-2">
-            <!-- File items will be injected here -->
-          </div>
-        </div>
-      </div>
-      
-      <div id="create-save-error" class="hidden mt-6 p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-2xl text-center text-sm"></div>
-    </div>
-  </div>
-
-  <div class="modal-footer" id="creation-modal-footer">
-    <!-- Buttons dynamically updated by JS if needed, but defaults below -->
-    <button type="button" id="create-back-to-method" class="feed-card-btn t-btn hidden">Back</button>
-    <button type="button" id="create-save" class="new-chat-btn grad-bg text-white font-bold border-none cursor-pointer shadow-glow t-btn hidden">Generate</button>
   </div>
 </div>
 
@@ -804,26 +723,11 @@
   const dropZone = document.getElementById("document-drop-zone");
   const filesList = document.getElementById("uploaded-files-list");
 
+  // Simplified showModalStep since we only have step 1 now
   function showModalStep(n) {
     state.modalStep = n;
     const step1 = document.getElementById("modal-step-1");
-    const step2 = document.getElementById("modal-step-2");
-    const backBtn = document.getElementById("create-back-to-method");
-    const saveBtn = document.getElementById("create-save");
-
     if (step1) step1.classList.toggle("active", n === 1);
-    if (step2) step2.classList.toggle("active", n === 2);
-    
-    if (backBtn) backBtn.classList.toggle("hidden", n === 1);
-    if (saveBtn) saveBtn.classList.toggle("hidden", n === 1);
-    
-    if (n === 2) {
-      document.getElementById("create-ai-prompt-wrap").classList.toggle("hidden", state.method === "manual");
-      document.getElementById("create-ai-doc-wrap").classList.toggle("hidden", state.method !== "ai-doc");
-      updateManualContentUI();
-      updatePracticeConfigUI();
-      if (saveBtn) saveBtn.textContent = (state.method === "manual") ? "Create Item" : "Generate";
-    }
   }
 
   function openCreationModal(type) {
@@ -852,11 +756,16 @@
     });
   });
 
+  // Redirect to dedicated creation pages instead of showing step 2
   document.querySelectorAll(".method-card").forEach(function (btn) {
     btn.addEventListener("click", function () {
-      state.method = btn.getAttribute("data-method");
-      clearValidationErrors();
-      showModalStep(2);
+      const method = btn.getAttribute("data-method");
+      const pageMap = {
+        flashcards: 'flashcards.html',
+        studyGuide: 'guide-create.html', 
+        practiceTest: 'test-create.html'
+      };
+      window.location.href = `${pageMap[state.type]}?method=${method}`;
     });
   });
 
@@ -865,10 +774,7 @@
     closeCreationModal();
   });
 
-  document.getElementById("create-back-to-method").addEventListener("click", function() {
-    clearValidationErrors();
-    showModalStep(1);
-  });
+  // Back button removed - no longer needed since we redirect to dedicated pages
 
   // --- FILE UPLOAD LOGIC ---
   if (dropZone) {
@@ -1025,31 +931,7 @@
     return { ok: false, message: "Invalid item type." };
   }
 
-  function updateManualContentUI() {
-    var wrap = document.getElementById("create-manual-content-wrap");
-    var label = document.getElementById("create-manual-content-label");
-    var help = document.getElementById("create-manual-content-help");
-    var textarea = document.getElementById("create-manual-content");
-    var isManual = state.method === "manual";
-    wrap.classList.toggle("hidden", !isManual);
-    if (!isManual) return;
-
-    if (state.type === "flashcards") {
-      label.textContent = "Flashcards";
-      textarea.placeholder = "One card per line: front :: back\nExample:\nMitosis phases :: PMAT\nATP role :: Cell energy currency";
-      help.textContent = "Use one card per line in `front :: back` format. Minimum 2 cards.";
-      return;
-    }
-    if (state.type === "studyGuide") {
-      label.textContent = "Study Guide Content";
-      textarea.placeholder = "Enter your study guide notes or markdown here.";
-      help.textContent = "Add at least some guide text.";
-      return;
-    }
-    label.textContent = "Practice Test Questions";
-    textarea.placeholder = "One question per line: question :: answer (answer optional)\nExample:\nWhat is photosynthesis? :: Process plants use to make glucose";
-    help.textContent = "Use one question per line in `question :: answer` format. Minimum 1 question.";
-  }
+  // updateManualContentUI removed - no longer needed since we redirect to dedicated pages
 
   function saveItem(content) {
     var title = document.getElementById("create-title").value.trim() || "Untitled";
