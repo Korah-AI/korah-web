@@ -383,14 +383,39 @@ function showSidebarDeleteModal(name, onConfirm) {
     const resolvedItemUrl = itemPageUrl || "item.html";
 
     function startWithDB() {
+      // Load from localStorage cache immediately for faster initial render
+      const cachedSessions = localStorage.getItem("korah_sessions_cache");
+      const cachedStudyItems = localStorage.getItem("korah_study_items_cache");
+      
+      if (cachedSessions) {
+        try {
+          const parsed = JSON.parse(cachedSessions);
+          if (Object.keys(parsed).length > 0) {
+            _sessionsCache = parsed;
+            renderChatHistory(chatEl, resolvedBaseUrl);
+          }
+        } catch (e) {}
+      }
+      if (cachedStudyItems) {
+        try {
+          const parsed = JSON.parse(cachedStudyItems);
+          if (Object.keys(parsed).length > 0) {
+            _studyItemsCache = parsed;
+            renderStudyItemsHistory(studyEl, resolvedItemUrl);
+          }
+        } catch (e) {}
+      }
+
       if (window.KorahDB) {
         // Real-time listeners: populate caches and re-render on every Firestore change.
         window.KorahDB.onConversationsChange((snapshot) => {
           _sessionsCache = snapshot;
+          localStorage.setItem("korah_sessions_cache", JSON.stringify(snapshot));
           renderChatHistory(chatEl, resolvedBaseUrl);
         });
         window.KorahDB.onStudyItemsChange((snapshot) => {
           _studyItemsCache = snapshot;
+          localStorage.setItem("korah_study_items_cache", JSON.stringify(snapshot));
           renderStudyItemsHistory(studyEl, resolvedItemUrl);
         });
       } else {

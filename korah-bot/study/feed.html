@@ -139,16 +139,14 @@
         <span class="text-[9px] font-semibold tracking-[2.5px] uppercase tx-p4">Study Smarter</span>
       </div>
     </a>
-    <button id="new-chat-btn" class="new-chat-btn grad-bg text-white text-xs font-bold px-4 py-2 rounded-full border-none cursor-pointer shadow-glow t-btn"></a>
-      <a href="../index.html">
-        + New Chat
-      </a>
+    <button id="new-chat-btn" class="new-chat-btn text-white text-xs font-bold px-4 py-2 rounded-full border-none cursor-pointer shadow-glow t-btn">
+      <span class="new-chat-icon">+</span> <span class="new-chat-text">New Chat</span>
     </button>
   </div>
 
   <nav class="sidebar-nav">
-    <a href="../index.html" class="sidebar-nav-link t-btn">💬 Chat</a>
-    <a href="feed.html" class="sidebar-nav-link active t-btn">📚 Study</a>
+    <a href="../index.html" class="sidebar-nav-link t-btn"><span class="nav-icon">💬</span> <span class="nav-text">Chat</span></a>
+    <a href="feed.html" class="sidebar-nav-link active t-btn"><span class="nav-icon">📚</span> <span class="nav-text">Study</span></a>
   </nav>
 
   <div class="sidebar-middle">
@@ -163,26 +161,26 @@
       </div>
     </div>
     <div id="chat-history" class="chat-history">
-      <button class="history-item active t-btn" data-session="current">
-        <span class="history-icon">📚</span>
-        <span class="history-text">Photosynthesis Study Guide</span>
-      </button>
-      <button class="history-item t-btn" data-session="1">
-        <span class="history-icon">🧮</span>
-        <span class="history-text">Calculus Flashcards</span>
-      </button>
-      <button class="history-item t-btn" data-session="2">
-        <span class="history-icon">⚗️</span>
-        <span class="history-text">Chemistry Practice Test</span>
-      </button>
-      <button class="history-item t-btn" data-session="3">
-        <span class="history-icon">📝</span>
-        <span class="history-text">Essay Outline — WWII</span>
-      </button>
-      <button class="history-item t-btn" data-session="4">
-        <span class="history-icon">🔢</span>
-        <span class="history-text">Statistics Review</span>
-      </button>
+      <div class="skeleton-item">
+        <div class="skeleton-icon"></div>
+        <div class="skeleton-text"></div>
+      </div>
+      <div class="skeleton-item">
+        <div class="skeleton-icon"></div>
+        <div class="skeleton-text"></div>
+      </div>
+      <div class="skeleton-item">
+        <div class="skeleton-icon"></div>
+        <div class="skeleton-text"></div>
+      </div>
+      <div class="skeleton-item">
+        <div class="skeleton-icon"></div>
+        <div class="skeleton-text"></div>
+      </div>
+      <div class="skeleton-item">
+        <div class="skeleton-icon"></div>
+        <div class="skeleton-text"></div>
+      </div>
     </div>
   </div>
 
@@ -197,7 +195,7 @@
     </div>
   </div>
   <div id="study-items-history" class="chat-history study-items-history">
-    <!-- Populated by JS from Firestore -->
+    <!-- Populated by JS from localStorage -->
   </div>
   <div id="study-items-empty" class="study-items-empty hidden">
     <span class="study-items-empty-icon" aria-hidden="true">📚</span>
@@ -205,12 +203,19 @@
     <div class="study-items-empty-sub">Create one to see it here.</div>
   </div>
 
-  <div class="sidebar-footer">
+    <div class="sidebar-footer">
     <div class="mood-indicator" id="sidebar-mood">
       <span class="mood-dot" id="mood-dot">🟢</span>
       <span class="text-xs tx2 font-medium">Full Focus Mode</span>
     </div>
     <div class="sidebar-footer-actions">
+      <button id="logout-btn" class="theme-toggle-small t-btn" title="Log out">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+      </button>
       <button id="settings-btn" class="theme-toggle-small t-btn" title="Settings">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
@@ -355,7 +360,10 @@
   // ─── Feed-local in-memory cache, populated by Firestore listener ─────────────
   let _feedStudyItems = {};
 
-  KorahSidebar.initSidebar({ chatBaseUrl: "../index.html", itemPageUrl: "item.html" });
+  // Initialize sidebar
+  if (typeof KorahSidebar !== 'undefined') {
+    KorahSidebar.initSidebar({ chatBaseUrl: "../index.html", itemPageUrl: "item.html" });
+  }
 
   const TYPE_LABELS = { flashcards: "Flashcards", studyGuide: "Study Guide", practiceTest: "Practice Test" };
   const SOURCE_LABELS = { manual: "Manual", "ai-prompt": "AI from prompt", "ai-doc": "AI from Docs", "chatbot-request": "From Chatbot" };
@@ -538,6 +546,29 @@
   if (settingsClose) settingsClose.addEventListener("click", closeSettings);
   if (settingsModal) settingsModal.addEventListener("click", (e) => { if (e.target === settingsModal) closeSettings(); });
 })();
+</script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+  import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
+    authDomain: "korah-app.firebaseapp.com",
+    projectId: "korah-app",
+    storageBucket: "korah-app.firebasestorage.app",
+    messagingSenderId: "226169460321",
+    appId: "1:226169460321:web:b166fc8260107c55dafc20"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  document.getElementById('logout-btn').addEventListener('click', async () => {
+    await signOut(auth);
+    localStorage.removeItem('korah_first_name');
+    window.location.href = '../login.html';
+  });
 </script>
 </body>
 </html>

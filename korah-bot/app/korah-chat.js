@@ -17,10 +17,28 @@
   const chatTitleEl = document.getElementById("chat-title");
   const toolsTrigger = document.getElementById("tools-trigger");
   const toolsMenu = document.getElementById("tools-menu");
-  const studyEmptyBanner = document.getElementById("study-empty-banner");
-  const studyItemsEmpty = document.getElementById("study-items-empty");
+  const modeSelectorBtnMini = document.getElementById("mode-selector-btn-mini");
+  const modeNameMini = document.getElementById("mode-name-mini");
 
-  if (!input || !sendBtn || !messagesList) return;
+  // Re-attach event listeners for the new structure
+  if (toolsTrigger && toolsMenu) {
+    toolsTrigger.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toolsMenu.classList.toggle("show");
+    });
+    
+    document.addEventListener("click", (e) => {
+      if (!toolsMenu.contains(e.target) && e.target !== toolsTrigger) {
+        toolsMenu.classList.remove("show");
+      }
+    });
+  }
+
+  if (modeSelectorBtnMini) {
+    modeSelectorBtnMini.addEventListener("click", () => {
+      document.getElementById("mode-selector-btn")?.click();
+    });
+  }
 
   // ═══ In-Memory State ═══
   // These are kept in sync by Firestore realtime listeners set up in initApp().
@@ -38,6 +56,23 @@
     if (['doc','docx'].includes(ext)) return '📝';
     if (['txt','md'].includes(ext)) return '📄';
     return '📎';
+  }
+
+  function getFileSvgIcon(fileType, fileName) {
+    const ext = (fileName || '').split('.').pop().toLowerCase();
+    if (fileType === 'image') {
+      return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`;
+    }
+    if (ext === 'pdf') {
+      return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>`;
+    }
+    if (['doc','docx'].includes(ext)) {
+      return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>`;
+    }
+    if (['txt','md'].includes(ext)) {
+      return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`;
+    }
+    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>`;
   }
 
   function formatFileSize(bytes) {
@@ -81,35 +116,86 @@
     }
     renderDocPanel();
     renderInputFilesBar();
+    // Expand panel when files are added
+    if (attachedFiles.length > 0) {
+      expandDocPanel();
+    }
+  }
+
+  // ═══ Document Panel State ═══
+  let isDocPanelExpanded = false;
+
+  function expandDocPanel() {
+    const panel = document.getElementById('doc-panel');
+    if (panel) {
+      panel.classList.remove('collapsed');
+      panel.classList.add('expanded');
+      isDocPanelExpanded = true;
+    }
+  }
+
+  function collapseDocPanel() {
+    const panel = document.getElementById('doc-panel');
+    if (panel) {
+      panel.classList.remove('expanded');
+      panel.classList.add('collapsed');
+      isDocPanelExpanded = false;
+    }
+  }
+
+  function toggleDocPanel() {
+    if (isDocPanelExpanded) {
+      collapseDocPanel();
+    } else {
+      expandDocPanel();
+    }
   }
 
   function removeAttachedFile(index) {
     attachedFiles.splice(index, 1);
     renderDocPanel();
     renderInputFilesBar();
-    if (attachedFiles.length === 0) {
-      const docPanel = document.getElementById('doc-panel');
-      if (docPanel) docPanel.classList.remove('show');
-    }
   }
 
   function clearAttachedFiles() {
     attachedFiles = [];
-    const docPanel = document.getElementById('doc-panel');
-    if (docPanel) docPanel.classList.remove('show');
     renderDocPanel();
     renderInputFilesBar();
+    collapseDocPanel();
+  }
+
+  function updateDocCountBadges() {
+    const count = attachedFiles.length;
+    const topbarBadge = document.getElementById('doc-count-badge');
+    const collapsedBadge = document.getElementById('doc-count-collapsed');
+    
+    if (topbarBadge) {
+      topbarBadge.textContent = count;
+      topbarBadge.classList.toggle('hidden', count === 0);
+    }
+    if (collapsedBadge) {
+      collapsedBadge.textContent = count;
+      collapsedBadge.classList.toggle('hidden', count === 0);
+    }
   }
 
   function renderDocPanel() {
-    const panel = document.getElementById('doc-panel');
     const list = document.getElementById('doc-panel-list');
-    if (!panel || !list) return;
+    if (!list) return;
+    
+    updateDocCountBadges();
+    
     if (attachedFiles.length === 0) {
-      panel.classList.remove('show');
+      list.innerHTML = `
+        <div class="doc-panel-empty">
+          <span class="doc-panel-empty-icon">📄</span>
+          <span class="doc-panel-empty-text">Drop or add documents</span>
+          <span class="doc-panel-empty-hint">PDFs, images, text files</span>
+        </div>
+      `;
       return;
     }
-    panel.classList.add('show');
+    
     list.innerHTML = '';
     attachedFiles.forEach((f, i) => {
       const card = document.createElement('div');
@@ -135,6 +221,22 @@
           </button>
         </div>`;
       card.querySelector('.doc-card-remove').addEventListener('click', () => removeAttachedFile(i));
+      // Spotlight effect
+      function updateSpotlight(clientX, clientY) {
+        const rect = card.getBoundingClientRect();
+        const x = clientX - rect.left;
+        const y = clientY - rect.top;
+        card.style.setProperty('--mouse-x', `${x}px`);
+        card.style.setProperty('--mouse-y', `${y}px`);
+      }
+      card.addEventListener('mousemove', e => {
+        updateSpotlight(e.clientX, e.clientY);
+      });
+      card.addEventListener('touchmove', e => {
+        if (e.touches.length > 0) {
+          updateSpotlight(e.touches[0].clientX, e.touches[0].clientY);
+        }
+      });
       list.appendChild(card);
     });
   }
@@ -187,10 +289,16 @@
   function setupDocumentAttachment() {
     const attachBtn  = document.getElementById('attach-file-btn');
     const fileInput  = document.getElementById('doc-file-input');
-    const panelClose = document.getElementById('doc-panel-close');
     const mainContent = document.getElementById('main-content');
     const dragOverlay = document.getElementById('drag-overlay');
+    
+    // Panel toggle buttons
+    const docPanelToggle = document.getElementById('doc-panel-toggle');
+    const docPanelTab = document.getElementById('doc-panel-tab');
+    const docAddBtn = document.getElementById('doc-add-btn');
+    const docAddBtnCollapsed = document.getElementById('doc-add-btn-collapsed');
 
+    // File input button
     if (attachBtn && fileInput) {
       attachBtn.addEventListener('click', () => {
         if (toolsMenu) toolsMenu.classList.remove('show');
@@ -202,7 +310,21 @@
       });
     }
 
-    if (panelClose) panelClose.addEventListener('click', clearAttachedFiles);
+    // Panel toggle buttons
+    if (docPanelToggle) {
+      docPanelToggle.addEventListener('click', toggleDocPanel);
+    }
+    if (docPanelTab) {
+      docPanelTab.addEventListener('click', toggleDocPanel);
+    }
+    
+    // Add document buttons
+    if (docAddBtn && fileInput) {
+      docAddBtn.addEventListener('click', () => fileInput.click());
+    }
+    if (docAddBtnCollapsed && fileInput) {
+      docAddBtnCollapsed.addEventListener('click', () => fileInput.click());
+    }
 
     // Drag & Drop on main chat area
     if (mainContent) {
@@ -225,9 +347,54 @@
         e.preventDefault();
         dragCounter = 0;
         if (dragOverlay) dragOverlay.classList.remove('active');
-        if (e.dataTransfer.files.length) handleNewFiles(e.dataTransfer.files);
+        if (e.dataTransfer.files.length) {
+          expandDocPanel();
+          handleNewFiles(e.dataTransfer.files);
+        }
       });
     }
+    
+    // Drag & Drop on document panel
+    const docPanel = document.getElementById('doc-panel');
+    if (docPanel) {
+      let panelDragCounter = 0;
+      
+      docPanel.addEventListener('dragenter', (e) => {
+        if (!e.dataTransfer.types.includes('Files')) return;
+        e.preventDefault();
+        e.stopPropagation();
+        panelDragCounter++;
+        docPanel.classList.add('drag-over');
+      });
+      
+      docPanel.addEventListener('dragleave', (e) => {
+        e.stopPropagation();
+        panelDragCounter--;
+        if (panelDragCounter <= 0) {
+          panelDragCounter = 0;
+          docPanel.classList.remove('drag-over');
+        }
+      });
+      
+      docPanel.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      });
+      
+      docPanel.addEventListener('drop', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        panelDragCounter = 0;
+        docPanel.classList.remove('drag-over');
+        if (e.dataTransfer.files.length) {
+          expandDocPanel();
+          handleNewFiles(e.dataTransfer.files);
+        }
+      });
+    }
+    
+    // Initialize panel state
+    collapseDocPanel();
   }
 
   // ═══ Storage Shim ═══
@@ -317,6 +484,85 @@
 
   let tutoringMode = localStorage.getItem('korah_tutoring_mode') === 'true';
 
+  // ═══ Welcome Screen Features ═══
+  const GREETING_PHRASES = [
+    "What can I help you study, {name}?",
+    "What's on your mind today, {name}?",
+    "Ready to dive in, {name}?",
+    "Let's crush some studying today, {name}!"
+  ];
+
+  const PLACEHOLDER_PHRASES = [
+    "Ask Korah a study question...",
+    "Explain the quadratic formula step-by-step",
+    "Create a study guide for cellular respiration",
+    "Make flashcards for photosynthesis",
+    "Help me prioritize my study for tomorrow's test",
+    "Give me a 10-question practice test on WWII",
+    "What are the main causes of the French Revolution?",
+    "Analyze the themes in 'The Great Gatsby'",
+    "How does DNA replication work?",
+    "Explain Newton's Third Law with examples"
+  ];
+
+  let placeholderInterval = null;
+  let typingTimer = null;
+
+  function typeWelcomeTitle(text) {
+    const titleEl = document.querySelector(".welcome-title");
+    if (!titleEl) return;
+    
+    titleEl.textContent = "";
+    let i = 0;
+    if (typingTimer) clearInterval(typingTimer);
+    
+    typingTimer = setInterval(() => {
+      if (i < text.length) {
+        titleEl.textContent += text.charAt(i);
+        i++;
+      } else {
+        clearInterval(typingTimer);
+        typingTimer = null;
+      }
+    }, 40);
+  }
+
+  function rotatePlaceholder() {
+    const welcomeInput = document.getElementById("welcome-chat-input");
+    if (!welcomeInput) return;
+
+    let phraseIndex = 0;
+    if (placeholderInterval) clearInterval(placeholderInterval);
+
+    welcomeInput.placeholder = PLACEHOLDER_PHRASES[0];
+
+    placeholderInterval = setInterval(() => {
+      // Only trigger animation if the input is empty AND not focused
+      const isVisible = welcomeInput.value === "" && document.activeElement !== welcomeInput;
+      
+      if (isVisible) {
+        welcomeInput.classList.remove("rolling");
+        void welcomeInput.offsetWidth; // Force reflow
+        welcomeInput.classList.add("rolling");
+      }
+
+      // Change text halfway through the 1.2s roll animation (600ms)
+      setTimeout(() => {
+        phraseIndex = (phraseIndex + 1) % PLACEHOLDER_PHRASES.length;
+        welcomeInput.placeholder = PLACEHOLDER_PHRASES[phraseIndex];
+      }, 600);
+    }, 5000);
+  }
+
+  function initWelcomeFeatures() {
+    const name = localStorage.getItem('korah_first_name') || 'there';
+    const randomGreeting = GREETING_PHRASES[Math.floor(Math.random() * GREETING_PHRASES.length)];
+    const titleText = randomGreeting.replace("{name}", name);
+    
+    typeWelcomeTitle(titleText);
+    rotatePlaceholder();
+  }
+
   function updateTutoringModeUI() {
     const toggle = document.getElementById('tutoring-mode-toggle');
     if (toggle) {
@@ -336,6 +582,14 @@
     chatBody.scrollTop = chatBody.scrollHeight;
   }
 
+  function scrollToBottomIfNear() {
+    if (!chatBody) return;
+    const isNearBottom = chatBody.scrollHeight - chatBody.scrollTop <= chatBody.clientHeight + 100;
+    if (isNearBottom) {
+      chatBody.scrollTop = chatBody.scrollHeight;
+    }
+  }
+
   function updateCharCount() {
     if (!charCount) return;
     const count = input.value.length;
@@ -349,7 +603,72 @@
 
   function setWelcomeVisibility(show) {
     if (!welcomeScreen) return;
+    
+    // Toggle welcome screen visibility
+    welcomeScreen.classList.toggle("hidden", !show);
+    // Explicit display flex/none for existing flex-layout compatibility
     welcomeScreen.style.display = show ? "flex" : "none";
+    
+    // Toggle bottom input area - only show if NOT in welcome state
+    const bottomInput = document.querySelector('.chat-input-area');
+    if (bottomInput) {
+      bottomInput.classList.toggle("hidden", show);
+    }
+
+    // If showing welcome, clear and focus welcome input
+    if (show) {
+      const welcomeInput = document.getElementById("welcome-chat-input");
+      if (welcomeInput) {
+        welcomeInput.value = "";
+        welcomeInput.focus();
+      }
+      initWelcomeFeatures();
+    } else {
+      // Clear intervals when welcome screen is hidden
+      if (placeholderInterval) {
+        clearInterval(placeholderInterval);
+        placeholderInterval = null;
+      }
+      if (typingTimer) {
+        clearInterval(typingTimer);
+        typingTimer = null;
+      }
+    }
+  }
+
+  // Setup welcome screen input
+  function setupWelcomeInput() {
+    const welcomeInput = document.getElementById("welcome-chat-input");
+    const welcomeSendBtn = document.getElementById("welcome-send-btn");
+    const welcomeAttachBtn = document.getElementById("welcome-attach-btn");
+
+    if (welcomeInput) {
+      welcomeInput.addEventListener("input", () => {
+        welcomeInput.style.height = "auto";
+        welcomeInput.style.height = `${welcomeInput.scrollHeight}px`;
+      });
+
+      welcomeInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          const text = welcomeInput.value.trim();
+          if (text) sendMessage(text);
+        }
+      });
+    }
+
+    if (welcomeSendBtn) {
+      welcomeSendBtn.addEventListener("click", () => {
+        const text = welcomeInput.value.trim();
+        if (text) sendMessage(text);
+      });
+    }
+
+    if (welcomeAttachBtn) {
+      welcomeAttachBtn.addEventListener("click", () => {
+        document.getElementById("doc-file-input")?.click();
+      });
+    }
   }
 
   function setTyping(show) {
@@ -500,15 +819,22 @@
 
     bubble.appendChild(label);
 
-    // Show file attachment chips for user messages
+    // Show file attachment cards for user messages
     if (role === 'user' && fileAttachments && fileAttachments.length > 0) {
       const attachDiv = document.createElement('div');
       attachDiv.className = 'msg-attachments';
       fileAttachments.forEach(f => {
-        const chip = document.createElement('span');
-        chip.className = 'msg-attachment-chip';
-        chip.textContent = `${getFileIcon(f.type, f.name)} ${f.name}`;
-        attachDiv.appendChild(chip);
+        const card = document.createElement('div');
+        card.className = 'msg-attachment-card';
+        const svgIcon = getFileSvgIcon(f.type, f.name);
+        card.innerHTML = `
+          <div class="msg-attachment-card-icon">${svgIcon}</div>
+          <div class="msg-attachment-card-info">
+            <span class="msg-attachment-card-name">${f.name}</span>
+            <span class="msg-attachment-card-size">${formatFileSize(f.size)}</span>
+          </div>
+        `;
+        attachDiv.appendChild(card);
       });
       bubble.appendChild(attachDiv);
     }
@@ -595,6 +921,7 @@
   function appendMessage(role, text, isError = false, suggestions = [], contentId = null, studyItem = null, fileAttachments = null) {
     const row = buildMessageRow(role, text, isError, suggestions, contentId, studyItem, fileAttachments);
     messagesList.appendChild(row);
+    scrollToBottomIfNear();
     setWelcomeVisibility(false);
     return row;
   }
@@ -678,19 +1005,20 @@
     });
 
     if (!container) return;
+    const emptyEl = document.getElementById("study-items-empty");
     const list = itemIds
       .map((id) => ({ id, ...items[id] }))
       .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt))
       .slice(0, 8);
     container.innerHTML = "";
     if (list.length === 0) {
-      if (studyItemsEmpty) {
-        studyItemsEmpty.classList.remove("hidden");
+      if (emptyEl) {
+        emptyEl.classList.remove("hidden");
         container.classList.add("is-empty");
-        container.appendChild(studyItemsEmpty);
+        container.appendChild(emptyEl);
       }
     } else {
-      if (studyItemsEmpty) studyItemsEmpty.classList.add("hidden");
+      if (emptyEl) emptyEl.classList.add("hidden");
       container.classList.remove("is-empty");
     }
     list.forEach((item) => {
@@ -784,8 +1112,8 @@
       });
     });
     const hasItems = Object.keys(items).length > 0;
-    if (studyEmptyBanner) {
-      studyEmptyBanner.classList.toggle("hidden", hasItems);
+    if (emptyEl) {
+      emptyEl.classList.toggle("hidden", hasItems);
     }
   }
 
@@ -962,6 +1290,26 @@
     return suggestions.slice(0, 3);
   }
 
+  let lastScrollTop = 0;
+  if (chatBody) {
+    chatBody.addEventListener("scroll", () => {
+      const st = chatBody.scrollTop;
+      const suggestionBar = document.getElementById("suggestion-bar");
+      
+      // Only act if the suggestion bar has content (i.e., it's supposed to be active)
+      if (!suggestionBar || suggestionBar.innerHTML === "") return;
+
+      if (st > lastScrollTop) {
+        // Scrolling down
+        suggestionBar.classList.add("show");
+      } else if (st < lastScrollTop) {
+        // Scrolling up - hide to give more space for reading
+        suggestionBar.classList.remove("show");
+      }
+      lastScrollTop = st <= 0 ? 0 : st;
+    }, { passive: true });
+  }
+
   function showSuggestionBar() {
     const suggestionBar = document.getElementById("suggestion-bar");
     if (!suggestionBar) return;
@@ -980,13 +1328,18 @@
       suggestionBar.appendChild(btn);
     });
 
-    suggestionBar.classList.add("show");
+    // Check if we are at the bottom or near it
+    const isAtBottom = chatBody.scrollHeight - chatBody.scrollTop <= chatBody.clientHeight + 100;
+    if (isAtBottom) {
+      suggestionBar.classList.add("show");
+    }
   }
 
   function hideSuggestionBar() {
     const suggestionBar = document.getElementById("suggestion-bar");
     if (suggestionBar) {
       suggestionBar.classList.remove("show");
+      suggestionBar.innerHTML = ""; // Clear content so scroll listener doesn't re-show it
     }
   }
 
@@ -1390,72 +1743,6 @@ ${FORMAT_INSTRUCTIONS}`.trim();
 
     updateModeUI(mode);
     renderModePills();
-    renderWelcomeSuggestions();
-  }
-
-  const MODE_SUGGESTIONS = {
-    general: [
-      { emoji: "🃏", text: "Make flashcards for photosynthesis", prompt: "Generate flashcards for photosynthesis" },
-      { emoji: "😰", text: "I have a test tomorrow, help me prioritize", prompt: "I have a test tomorrow and I'm stressed. What should I study first?" },
-      { emoji: "📖", text: "Study guide for cellular respiration", prompt: "Create a study guide for Chapter 5 on cellular respiration" },
-      { emoji: "🎯", text: "Practice test on World War II", prompt: "Give me a 10-question practice test on World War II" }
-    ],
-    math: [
-      { emoji: "📐", text: "Explain the Quadratic Formula", prompt: "Explain the Quadratic Formula step-by-step and show examples" },
-      { emoji: "🧮", text: "Practice Calculus derivatives", prompt: "Give me some practice problems for Calculus derivatives with solutions" },
-      { emoji: "🔢", text: "Solve systems of linear equations", prompt: "How do I solve systems of linear equations using substitution?" },
-      { emoji: "📝", text: "Trigonometry identities cheat sheet", prompt: "Create a cheat sheet for essential trigonometry identities" }
-    ],
-    physics: [
-      { emoji: "🍎", text: "Newton's Third Law examples", prompt: "Explain Newton's Third Law with real-world examples" },
-      { emoji: "⚡", text: "How to calculate kinetic energy?", prompt: "How do I calculate kinetic energy? Show the formula and an example." },
-      { emoji: "🔌", text: "Series vs Parallel circuits", prompt: "Explain the difference between series and parallel circuits" },
-      { emoji: "🔊", text: "Understand the Doppler effect", prompt: "Help me understand the Doppler effect with a simple analogy" }
-    ],
-    chemistry: [
-      { emoji: "🧪", text: "Electronegativity periodic trends", prompt: "Explain the periodic trends in electronegativity" },
-      { emoji: "⚖️", text: "Help me balance an equation", prompt: "Help me balance a chemical equation: show me the steps" },
-      { emoji: "⚛️", text: "Ionic vs Covalent bonds", prompt: "What is the difference between ionic and covalent bonds?" },
-      { emoji: "🧪", text: "Explain moles in chemistry", prompt: "Explain the concept of moles and Avogadro's number" }
-    ],
-    biology: [
-      { emoji: "🧬", text: "How DNA replication works", prompt: "How does DNA replication work? Break it down into steps." },
-      { emoji: "🔬", text: "Explain stages of Mitosis", prompt: "Explain the stages of Mitosis with key features of each" },
-      { emoji: "🔋", text: "Role of mitochondria in cells", prompt: "What is the role of mitochondria in a cell? Why is it the powerhouse?" },
-      { emoji: "🔄", text: "Summary of the Krebs cycle", prompt: "Create a clear summary of the Krebs cycle steps" }
-    ],
-    history: [
-      { emoji: "🇫🇷", text: "Causes of French Revolution", prompt: "What were the main causes of the French Revolution?" },
-      { emoji: "📅", text: "Timeline of the Cold War", prompt: "Give me a timeline of the major events in the Cold War" },
-      { emoji: "📜", text: "Significance of Magna Carta", prompt: "Explain the historical significance of the Magna Carta" },
-      { emoji: "🎨", text: "Key figures in the Renaissance", prompt: "Who were the most influential figures in the Renaissance and why?" }
-    ],
-    literature: [
-      { emoji: "🍸", text: "Themes in 'The Great Gatsby'", prompt: "What are the main themes in 'The Great Gatsby'?" },
-      { emoji: "👁️", text: "Irony in '1984'", prompt: "Explain the use of irony in George Orwell's '1984'" },
-      { emoji: "🎭", text: "Analyze Hamlet's character", prompt: "Analyze the character of Hamlet and his internal conflict" },
-      { emoji: "✍️", text: "What is a sonnet?", prompt: "What is a sonnet? Explain the structure and give examples." }
-    ]
-  };
-
-  function renderWelcomeSuggestions() {
-    const container = document.getElementById("welcome-suggestions");
-    if (!container) return;
-    
-    const mode = currentSession.mode || "general";
-    const suggestions = MODE_SUGGESTIONS[mode] || MODE_SUGGESTIONS.general;
-    
-    container.innerHTML = "";
-    suggestions.forEach(s => {
-      const btn = document.createElement("button");
-      btn.className = "suggestion-chip t-btn";
-      btn.setAttribute("data-prompt", s.prompt);
-      btn.innerHTML = `${s.emoji} ${s.text}`;
-      btn.addEventListener("click", () => {
-        sendMessage(s.prompt);
-      });
-      container.appendChild(btn);
-    });
   }
 
   function renderModePills() {
@@ -1471,14 +1758,9 @@ ${FORMAT_INSTRUCTIONS}`.trim();
       pill.className = `mode-pill t-btn ${currentSession.mode === mode ? "active" : ""}`;
       pill.innerHTML = `<span>${config.emoji}</span><span>${config.name}</span>`;
       
-      if (history.length > 0) {
-        pill.classList.add("locked");
-        pill.title = "Mode locked for this conversation";
-      } else {
-        pill.addEventListener("click", () => {
-          changeMode(mode);
-        });
-      }
+      pill.addEventListener("click", () => {
+        changeMode(mode);
+      });
       
       container.appendChild(pill);
     });
@@ -1494,37 +1776,32 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     const config = getModeConfig(mode);
     const modeIcon = document.getElementById("mode-icon");
     const modeName = document.getElementById("mode-name");
+    const modeNameMini = document.getElementById("mode-name-mini");
     if (modeIcon) modeIcon.textContent = config.emoji;
     if (modeName) modeName.textContent = config.name;
+    if (modeNameMini) modeNameMini.textContent = config.name + " Mode";
   }
 
   function changeMode(newMode) {
-    // Don't allow mode change if conversation has started
-    if (history.length > 0) {
-      alert("Cannot change mode once conversation has started. Create a new chat to use a different mode.");
-      return;
-    }
-    
     currentSession.mode = newMode;
     currentSession.updatedAt = new Date().toISOString();
     Storage.saveSession(currentSessionId, currentSession);
     applyModeTheme(newMode);
     renderChatHistory();
+    
+    // If we're in an active chat, we might want to refresh the suggestions
+    if (history.length > 0 && history[history.length - 1].role === "assistant") {
+      showSuggestionBar();
+    }
   }
 
   function updateModeButtonState() {
     const modeSelectorBtn = document.getElementById("mode-selector-btn");
     if (!modeSelectorBtn) return;
     
-    if (history.length > 0) {
-      modeSelectorBtn.style.opacity = "0.6";
-      modeSelectorBtn.style.cursor = "not-allowed";
-      modeSelectorBtn.title = "Mode locked for this conversation";
-    } else {
-      modeSelectorBtn.style.opacity = "1";
-      modeSelectorBtn.style.cursor = "pointer";
-      modeSelectorBtn.title = "Change subject mode";
-    }
+    modeSelectorBtn.style.opacity = "1";
+    modeSelectorBtn.style.cursor = "pointer";
+    modeSelectorBtn.title = "Change subject mode";
   }
 
   const selectedChats = new Set();
@@ -1911,6 +2188,11 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     hideSuggestionBar();
 
     input.value = "";
+    const welcomeInput = document.getElementById("welcome-chat-input");
+    if (welcomeInput) {
+      welcomeInput.value = "";
+      welcomeInput.style.height = "auto";
+    }
     resizeInput();
     updateCharCount();
     setSendingState(true);
@@ -1987,8 +2269,6 @@ ${FORMAT_INSTRUCTIONS}`.trim();
           const cursor = document.createElement('span');
           cursor.className = 'streaming-cursor';
           contentElement.appendChild(cursor);
-          
-          scrollToBottom();
         }
 
         // adaptive speed: extremely fast catch-up
@@ -2007,6 +2287,7 @@ ${FORMAT_INSTRUCTIONS}`.trim();
           renderMarkdownAndMath(contentElement, reply);
           renderSpecialContent(contentElement);
         }
+        scrollToBottomIfNear();
       };
 
       let reply = "";
@@ -2387,6 +2668,7 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     loadSessionMessages();
     resizeInput();
     updateCharCount();
+    setupWelcomeInput();
 
     // 4. Deep link: open specific session from hash (e.g. index.html#session_123)
     const hash = window.location.hash.slice(1);
@@ -2550,48 +2832,8 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     animate();
   }
 
-  // ── Typing Effect ──
-  function initWelcomeTyping() {
-    const title = document.querySelector("#welcome-screen h2");
-    const desc = document.querySelector("#welcome-screen p");
-    if (!title || !desc) return;
-
-    const titleText = title.textContent;
-    const descText = desc.textContent;
-    
-    title.textContent = "";
-    desc.textContent = "";
-    desc.style.opacity = "0";
-
-    let i = 0;
-    function typeTitle() {
-      if (i < titleText.length) {
-        title.textContent += titleText.charAt(i);
-        i++;
-        setTimeout(typeTitle, 50);
-      } else {
-        setTimeout(typeDesc, 500);
-      }
-    }
-
-    let j = 0;
-    function typeDesc() {
-      desc.style.opacity = "1";
-      if (j < descText.length) {
-        desc.textContent += descText.charAt(j);
-        j++;
-        setTimeout(typeDesc, 30);
-      }
-    }
-
-    // Start typing after a short delay
-    setTimeout(typeTitle, 600);
-  }
-
   initBackground();
-  initWelcomeTyping();
 
-  
 })();
 
 function initConstellationField() {
@@ -2622,57 +2864,10 @@ function initConstellationField() {
   }
 }
 
-function streamText(element, text, speed = 20) {
-  if (!element) return Promise.resolve();
-  return new Promise((resolve) => {
-    element.textContent = '';
-    let idx = 0;
-    function type() {
-      if (idx < text.length) {
-        element.textContent += text.charAt(idx);
-        idx++;
-        setTimeout(type, speed);
-      } else {
-        resolve();
-      }
-    }
-    type();
-  });
-}
-
-async function initWelcomeMessage() {
-  const firstName = localStorage.getItem('korah_first_name') || 'there';
-  const welcomeHeading = document.getElementById('welcome-heading');
-  const welcomeSubtext = document.getElementById('welcome-subtext');
-  
-  const greetings = [
-    `Hey ${firstName}, I'm Korah ✨`,
-    `Hi ${firstName}! Ready to lock in? 🚀`,
-    `Welcome back, ${firstName}! Let's get started 📚`,
-    `Hey ${firstName} — what shall we work on today? 🎯`,
-    `Good to see you, ${firstName}! Let's get studying 💡`
-  ];
-  
-  const subtexts = [
-    "Your AI study companion. Choose a mode below or tell me what you're working on.",
-    "I'm here to help you ace your classes. What are we learning today?",
-    "Ready to boost your grades? Let's start with something interesting!",
-    "Pick a subject or just tell me what you need help with.",
-    "Let's make learning fun and effective. What topic should we explore?"
-  ];
-  
-  const randomIdx = Math.floor(Math.random() * greetings.length);
-  
-  if (welcomeHeading) welcomeHeading.textContent = greetings[randomIdx];
-  if (welcomeSubtext) await streamText(welcomeSubtext, subtexts[randomIdx], 15);
-}
-
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
     initConstellationField();
-    initWelcomeMessage();
   });
 } else {
   initConstellationField();
-  initWelcomeMessage();
 }
