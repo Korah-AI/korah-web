@@ -582,6 +582,14 @@
     chatBody.scrollTop = chatBody.scrollHeight;
   }
 
+  function scrollToBottomIfNear() {
+    if (!chatBody) return;
+    const isNearBottom = chatBody.scrollHeight - chatBody.scrollTop <= chatBody.clientHeight + 100;
+    if (isNearBottom) {
+      chatBody.scrollTop = chatBody.scrollHeight;
+    }
+  }
+
   function updateCharCount() {
     if (!charCount) return;
     const count = input.value.length;
@@ -913,6 +921,7 @@
   function appendMessage(role, text, isError = false, suggestions = [], contentId = null, studyItem = null, fileAttachments = null) {
     const row = buildMessageRow(role, text, isError, suggestions, contentId, studyItem, fileAttachments);
     messagesList.appendChild(row);
+    scrollToBottomIfNear();
     setWelcomeVisibility(false);
     return row;
   }
@@ -2260,8 +2269,6 @@ ${FORMAT_INSTRUCTIONS}`.trim();
           const cursor = document.createElement('span');
           cursor.className = 'streaming-cursor';
           contentElement.appendChild(cursor);
-          
-          scrollToBottom();
         }
 
         // adaptive speed: extremely fast catch-up
@@ -2280,6 +2287,7 @@ ${FORMAT_INSTRUCTIONS}`.trim();
           renderMarkdownAndMath(contentElement, reply);
           renderSpecialContent(contentElement);
         }
+        scrollToBottomIfNear();
       };
 
       let reply = "";
