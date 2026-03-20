@@ -794,6 +794,11 @@
     if (creationModal) creationModal.classList.remove("active");
   }
 
+  function reopenCreationModal() {
+    if (backdrop) backdrop.classList.add("active");
+    if (creationModal) creationModal.classList.add("active");
+  }
+
   document.querySelectorAll(".create-type-card").forEach(function (btn) {
     btn.addEventListener("click", function () {
       openCreationModal(btn.getAttribute("data-type"));
@@ -1042,6 +1047,7 @@
     var prompt = (document.getElementById("create-ai-prompt") && document.getElementById("create-ai-prompt").value) || title;
 
     btn.disabled = true;
+    closeCreationModal();
     overlay.classList.remove("hidden");
     if (loadingText) loadingText.textContent = "Korah is Generating...";
 
@@ -1057,6 +1063,7 @@
       if (!validated.ok) {
         btn.disabled = false;
         overlay.classList.add("hidden");
+        reopenCreationModal();
         errEl.textContent = validated.message;
         errEl.classList.remove("hidden");
         return;
@@ -1065,6 +1072,7 @@
     }).catch(function (err) {
       btn.disabled = false;
       overlay.classList.add("hidden");
+      reopenCreationModal();
       errEl.textContent = "AI generation failed: " + (err && err.message ? err.message : "please try again");
       errEl.classList.remove("hidden");
     });

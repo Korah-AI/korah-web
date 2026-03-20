@@ -2479,12 +2479,17 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     }
   });
 
-  // Settings modal functionality (placeholder - todo update settings)
+  // Settings modal functionality
   const settingsBtn = document.getElementById("settings-btn");
   const settingsModal = document.getElementById("settings-modal");
   const settingsClose = document.getElementById("settings-close");
+  const settingsThemeSelect = document.getElementById("settings-theme-select");
+  const settingsNameInput = document.getElementById("settings-name-input");
+  const settingsClearData = document.getElementById("settings-clear-data");
+  const settingsSave = document.getElementById("settings-save");
 
   function openSettings() {
+    loadSettings();
     settingsModal.classList.add("show");
   }
 
@@ -2492,8 +2497,75 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     settingsModal.classList.remove("show");
   }
 
+  function loadSettings() {
+    // Load theme
+    const currentTheme = localStorage.getItem('korah_theme') || 'dark';
+    settingsThemeSelect.value = currentTheme;
+    
+    // Load name
+    const savedName = localStorage.getItem('korah_first_name') || '';
+    settingsNameInput.value = savedName;
+  }
+
+  function saveSettings() {
+    // Save theme
+    const selectedTheme = settingsThemeSelect.value;
+    localStorage.setItem('korah_theme', selectedTheme);
+    
+    // Update Alpine.js theme variable
+    const htmlElement = document.documentElement;
+    if (htmlElement._x_dataStack) {
+      const alpineData = htmlElement._x_dataStack[0];
+      if (alpineData && alpineData.theme !== undefined) {
+        alpineData.theme = selectedTheme;
+      }
+    }
+    
+    // Save name
+    const newName = settingsNameInput.value.trim();
+    if (newName) {
+      localStorage.setItem('korah_first_name', newName);
+    } else {
+      localStorage.removeItem('korah_first_name');
+    }
+    
+    closeSettings();
+  }
+
+  function clearAllData() {
+    if (confirm('Are you sure you want to clear all chat data? This will remove your chat history and settings.')) {
+      // Clear only Korah-related data, not Firebase auth
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('korah_')) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+      window.location.reload();
+    }
+  }
+
   if (settingsBtn) settingsBtn.addEventListener("click", openSettings);
   if (settingsClose) settingsClose.addEventListener("click", closeSettings);
+  if (settingsSave) settingsSave.addEventListener("click", saveSettings);
+  if (settingsClearData) settingsClearData.addEventListener("click", clearAllData);
+
+  // Listen for system theme changes
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    const currentTheme = localStorage.getItem('korah_theme');
+    if (currentTheme === 'system') {
+      const htmlElement = document.documentElement;
+      if (htmlElement._x_dataStack) {
+        const alpineData = htmlElement._x_dataStack[0];
+        if (alpineData && alpineData.theme !== undefined) {
+          // Force Alpine to recompute the effective theme
+          alpineData.theme = 'system';
+        }
+      }
+    }
+  });
 
   // ═══ Document Attachment Setup ═══
   setupDocumentAttachment();
