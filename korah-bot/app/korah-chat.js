@@ -81,6 +81,14 @@
     return (bytes / 1048576).toFixed(1) + ' MB';
   }
 
+  function getFileMetadata(processedFile) {
+    return {
+      name: processedFile.name,
+      size: processedFile.size,
+      type: processedFile.type
+    };
+  }
+
   function processFile(file) {
     return new Promise((resolve) => {
       const isImage = file.type.startsWith('image/');
@@ -714,16 +722,40 @@
     input.disabled = sending;
   }
 
+  function normalizeMathDelimiters(markdownText) {
+    if (!markdownText) return "";
+
+    return markdownText
+      .split(/(```[\s\S]*?```)/g)
+      .map(function (segment) {
+        if (segment.startsWith("```")) return segment;
+
+        return segment
+          .replace(/(^|\s)\(([^()\n]*[_^{}][^()\n]*)\)(?=\s|[.,;:!?]|$)/g, function (_, prefix, expr) {
+            return prefix + "\\(" + expr.trim() + "\\)";
+          })
+          .replace(/(^|\n)([ \t]*)(?![-*]\s|>\s|#{1,6}\s)([^`\n]*[_^{}][^`\n]*)(?=\n|$)/g, function (_, lineStart, indent, line) {
+            var trimmed = line.trim();
+            if (!trimmed) return _;
+            if (/^(\\\(|\\\[|\$\$)/.test(trimmed)) return _;
+            if (!/[=+\-*/]|\\[a-zA-Z]+/.test(trimmed)) return _;
+            return lineStart + indent + "\\(" + trimmed + "\\)";
+          });
+      })
+      .join("");
+  }
+
   function renderMarkdownAndMath(targetEl, markdownText) {
     if (!targetEl) return;
 
-    let html = markdownText || "";
+    const normalizedMarkdown = normalizeMathDelimiters(markdownText || "");
+    let html = normalizedMarkdown;
 
     try {
       if (window.marked && typeof window.marked.parse === "function") {
-        html = window.marked.parse(markdownText || "");
+        html = window.marked.parse(normalizedMarkdown);
       } else {
-        html = (markdownText || "")
+        html = normalizedMarkdown
           .replace(/```([\s\S]*?)```/g, "<pre><code>$1</code></pre>")
           .replace(/^### (.*)$/gim, "<h3>$1</h3>")
           .replace(/^## (.*)$/gim, "<h2>$1</h2>")
@@ -735,7 +767,7 @@
       }
     } catch (e) {
       console.error("Markdown render error:", e);
-      html = (markdownText || "").replace(/\n/g, "<br/>");
+      html = normalizedMarkdown.replace(/\n/g, "<br/>");
     }
 
     targetEl.innerHTML = html;
@@ -926,28 +958,7 @@
       { icon: "📄", label: "Generate Study Guide", prompt: "Create a study guide based on what you just explained" },
     ];
 
-    const modeSpecific = {
-      math: [
-        { icon: "✅", label: "Show examples", prompt: "Show me more step-by-step examples" },
-      ],
-      physics: [
-        { icon: "🌍", label: "Example", prompt: "Give me a real-world example of this concept" },
-      ],
-      chemistry: [
-        { icon: "🧪", label: "Related Reactions", prompt: "What are similar chemical reactions?" },
-      ],
-      biology: [
-        { icon: "🧬", label: "Related concepts", prompt: "What other biological concepts relate to this?" },
-      ],
-      history: [
-        { icon: "📅", label: "Create Timeline", prompt: "Create a timeline of these events" },
-      ],
-      literature: [
-        { icon: "📖", label: "Find themes", prompt: "What are the main themes in this text?" },
-      ],
-    };
-
-    return [...commonActions, ...(modeSpecific[mode] || [])];
+    return commonActions;
   }
 
   function appendMessage(role, text, isError = false, suggestions = [], contentId = null, studyItem = null, fileAttachments = null) {
@@ -1496,7 +1507,7 @@
       history.forEach((msg) => {
         // Skip system messages for display
         if (msg.role !== "system") {
-          const msgRow = appendMessage(msg.role, msg.content, false, [], null, msg.studyItem || null);
+          const msgRow = appendMessage(msg.role, msg.content, false, [], null, msg.studyItem || null, msg.fileAttachments || null);
           const contentEl = msgRow.querySelector('.assistant-content');
           if (contentEl) {
             renderSpecialContent(contentEl);
@@ -1704,6 +1715,7 @@ When showing mathematical relationships, use LaTeX and consider including a Desm
   - Display math: $$...$$
 - NEVER use $...$, \\[...\\], [ ... ], or bare math without delimiters
 - Ensure all math delimiters are balanced, and put display math on its own line
+- If you write a formula in parentheses, include the delimiters literally, for example \\(P_{initial} = P_{final}\\), never just (P_{initial} = P_{final})
 
 INTERACTIVE GRAPHS: When showing mathematical functions or graphs, use the Desmos format:
 \`\`\`desmos
@@ -2210,12 +2222,10 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     // NEW: Detect study item request
     const studyReq = detectStudyRequest(text);
 
-    // Display message with file chips; store with file names appended
+    // Display message with file chips; store with file metadata
     appendMessage("user", text, false, [], null, null, hasFiles ? pendingFiles : null);
-    const historyContent = hasFiles
-      ? `${text}\n\n[Attached files: ${pendingFiles.map(f => f.name).join(', ')}]`
-      : text;
-    history.push({ role: "user", content: historyContent });
+    const fileAttachments = hasFiles ? pendingFiles.map(getFileMetadata) : null;
+    history.push({ role: "user", content: text, fileAttachments });
     saveCurrentSession();
     hideSuggestionBar();
 
