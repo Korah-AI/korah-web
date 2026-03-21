@@ -548,8 +548,26 @@
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
+<script src="study/js/sidebar.js"></script>
 <script src="study/js/study-api.js"></script>
 <script src="app/korah-chat.js"></script>
+
+<script>
+  // Initialize sidebar with chat-specific callbacks
+  window.addEventListener('korahReady', () => {
+    if (window.KorahSidebar) {
+      window.KorahSidebar.initSidebar({
+        chatBaseUrl: "index.html",
+        itemPageUrl: "study/item.html",
+        onItemClick: (id) => {
+          if (window.KorahChat && typeof window.KorahChat.switchToSession === 'function') {
+            window.KorahChat.switchToSession(id);
+          }
+        }
+      });
+    }
+  }, { once: true });
+</script>
 
 </body>
 </html>

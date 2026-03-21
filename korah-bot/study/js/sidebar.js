@@ -19,8 +19,6 @@ function showSidebarDeleteModal(name, onConfirm) {
 
 (function () {
   // ─── In-memory caches (populated by Firestore listeners once korahReady fires) ─
-  // Exposed on window so sidebar re-renders triggered externally (e.g. from
-  // korah-chat.js) also see the latest data.
   let _sessionsCache   = {};
   let _studyItemsCache = {};
 
@@ -50,6 +48,7 @@ function showSidebarDeleteModal(name, onConfirm) {
       a.href = baseUrl + "#" + id;
       a.className = "history-item t-btn";
       a.setAttribute("data-session", id);
+      a.setAttribute("title", s.title || "New Chat");
       a.style.textDecoration = "none";
       a.style.color = "inherit";
 
@@ -102,7 +101,6 @@ function showSidebarDeleteModal(name, onConfirm) {
         });
       });
 
-
       actions.querySelector(".delete-btn").addEventListener("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -120,17 +118,14 @@ function showSidebarDeleteModal(name, onConfirm) {
     const items = getStudyItems();
     const itemIds = Object.keys(items);
 
-    // Update Nav Link text if empty
     const navLinks = document.querySelectorAll(".sidebar-nav-link");
     navLinks.forEach(link => {
       if (link.getAttribute("href").indexOf("feed.html") !== -1) {
-        if (itemIds.length === 0) {
-          link.innerHTML = "📚 Study";
-          link.classList.add("nav-empty");
-        } else {
-          link.innerHTML = "📚 Study";
-          link.classList.remove("nav-empty");
-        }
+        link.innerHTML = "<span class='nav-icon'>📚</span> <span class='nav-text'>Study</span>";
+        if (itemIds.length === 0) link.classList.add("nav-empty");
+        else link.classList.remove("nav-empty");
+      } else if (link.getAttribute("href").indexOf("index.html") !== -1) {
+        link.innerHTML = "<span class='nav-icon'>💬</span> <span class='nav-text'>Chat</span>";
       }
     });
 
@@ -157,6 +152,7 @@ function showSidebarDeleteModal(name, onConfirm) {
       a.href = baseUrl + "?id=" + encodeURIComponent(item.id);
       a.className = "history-item t-btn";
       a.setAttribute("data-study-id", item.id);
+      a.setAttribute("title", item.title || "Untitled");
       a.style.textDecoration = "none";
       a.style.color = "inherit";
 
@@ -219,12 +215,9 @@ function showSidebarDeleteModal(name, onConfirm) {
         });
       });
     });
-    if (emptyEl) {
-      emptyEl.classList.toggle("hidden", Object.keys(items).length > 0);
-    }
+    if (emptyEl) emptyEl.classList.toggle("hidden", Object.keys(items).length > 0);
   }
 
-  // ── Starfield Animation (matches index.html) ──
   function initBackground() {
     const canvas = document.getElementById("bg-canvas");
     if (!canvas) return;
@@ -238,9 +231,7 @@ function showSidebarDeleteModal(name, onConfirm) {
     }
 
     class Star {
-      constructor() {
-        this.reset();
-      }
+      constructor() { this.reset(); }
       reset() {
         this.x = Math.random() * w;
         this.y = Math.random() * h;
@@ -248,15 +239,12 @@ function showSidebarDeleteModal(name, onConfirm) {
         this.opacity = Math.random() * 0.7 + 0.1;
         this.twinkleSpeed = Math.random() * 0.015 + 0.005;
         this.twinkleDir = Math.random() > 0.5 ? 1 : -1;
-
         const colors = ["#ffffff", "#eef2ff", "#fffdf2"];
         this.color = colors[Math.floor(Math.random() * colors.length)];
       }
       update() {
         this.opacity += this.twinkleSpeed * this.twinkleDir;
-        if (this.opacity > 0.9 || this.opacity < 0.1) {
-          this.twinkleDir *= -1;
-        }
+        if (this.opacity > 0.9 || this.opacity < 0.1) this.twinkleDir *= -1;
       }
       draw() {
         ctx.fillStyle = this.color;
@@ -264,20 +252,15 @@ function showSidebarDeleteModal(name, onConfirm) {
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
         ctx.fill();
-
         if (this.size > 1.1) {
           ctx.shadowBlur = 5;
           ctx.shadowColor = this.color;
-        } else {
-          ctx.shadowBlur = 0;
-        }
+        } else ctx.shadowBlur = 0;
       }
     }
 
     class ShootingStar {
-      constructor() {
-        this.reset();
-      }
+      constructor() { this.reset(); }
       reset() {
         this.x = Math.random() * w;
         this.y = Math.random() * h * 0.4;
@@ -297,9 +280,7 @@ function showSidebarDeleteModal(name, onConfirm) {
         this.x += this.speedX;
         this.y += this.speedY;
         this.opacity -= 0.02;
-        if (this.opacity <= 0 || this.y > h || this.x < 0) {
-          this.reset();
-        }
+        if (this.opacity <= 0 || this.y > h || this.x < 0) this.reset();
       }
       draw() {
         if (!this.active) return;
@@ -334,15 +315,70 @@ function showSidebarDeleteModal(name, onConfirm) {
     animate();
   }
 
+  function updateActiveItem(id) {
+    const container = document.getElementById("chat-history");
+    if (!container) return;
+    container.querySelectorAll(".history-item").forEach(item => {
+      if (item.getAttribute("data-session") === id) item.classList.add("active");
+      else item.classList.remove("active");
+    });
+  }
+
   function initSidebar(options) {
-    const { chatHistoryId, studyItemsId, chatBaseUrl, itemPageUrl } = options || {};
+    const { chatHistoryId, studyItemsId, chatBaseUrl, itemPageUrl, onItemClick, activeId } = options || {};
     const chatEl = document.getElementById(chatHistoryId || "chat-history");
     const studyEl = document.getElementById(studyItemsId || "study-items-history");
     const resolvedBaseUrl = chatBaseUrl || "../index.html";
     const resolvedItemUrl = itemPageUrl || "item.html";
 
+    // 1. Immediate UI: Background, Toggle, and State
+    initBackground();
+
+    const sidebar = document.getElementById("sidebar");
+    const toggle = document.getElementById("sidebar-toggle");
+    let overlay = document.querySelector(".sidebar-overlay");
+    if (!overlay) {
+      overlay = document.createElement("div");
+      overlay.className = "sidebar-overlay";
+      document.body.appendChild(overlay);
+    }
+
+    function isMobile() { return window.innerWidth <= 768; }
+
+    function updateSidebarState(collapsed) {
+      if (collapsed) sidebar?.classList.add("collapsed");
+      else sidebar?.classList.remove("collapsed");
+      localStorage.setItem("korah_sidebar_collapsed", collapsed);
+    }
+
+    const isCollapsed = localStorage.getItem("korah_sidebar_collapsed") === "true";
+    if (sidebar && !isMobile()) updateSidebarState(isCollapsed);
+
+    if (toggle && sidebar) {
+      toggle.addEventListener("click", () => {
+        if (isMobile()) {
+          sidebar.classList.toggle("mobile-open");
+          overlay.classList.toggle("show");
+        } else {
+          updateSidebarState(!sidebar.classList.contains("collapsed"));
+        }
+      });
+    }
+
+    overlay.addEventListener("click", () => {
+      sidebar?.classList.remove("mobile-open");
+      overlay.classList.remove("show");
+    });
+
+    window.addEventListener("resize", () => {
+      if (!isMobile()) {
+        sidebar?.classList.remove("mobile-open");
+        overlay.classList.remove("show");
+      }
+    });
+
+    // 2. Data Logic: Sync with Firestore/Cache
     function startWithDB() {
-      // Load from localStorage cache immediately for faster initial render
       const cachedSessions = localStorage.getItem("korah_sessions_cache");
       const cachedStudyItems = localStorage.getItem("korah_study_items_cache");
       
@@ -352,6 +388,7 @@ function showSidebarDeleteModal(name, onConfirm) {
           if (Object.keys(parsed).length > 0) {
             _sessionsCache = parsed;
             renderChatHistory(chatEl, resolvedBaseUrl);
+            if (activeId) updateActiveItem(activeId);
           }
         } catch (e) {}
       }
@@ -366,11 +403,11 @@ function showSidebarDeleteModal(name, onConfirm) {
       }
 
       if (window.KorahDB) {
-        // Real-time listeners: populate caches and re-render on every Firestore change.
         window.KorahDB.onConversationsChange((snapshot) => {
           _sessionsCache = snapshot;
           localStorage.setItem("korah_sessions_cache", JSON.stringify(snapshot));
           renderChatHistory(chatEl, resolvedBaseUrl);
+          if (activeId) updateActiveItem(activeId);
         });
         window.KorahDB.onStudyItemsChange((snapshot) => {
           _studyItemsCache = snapshot;
@@ -378,24 +415,20 @@ function showSidebarDeleteModal(name, onConfirm) {
           renderStudyItemsHistory(studyEl, resolvedItemUrl);
         });
       } else {
-        // Fallback: render from whatever is already in the caches.
         renderChatHistory(chatEl, resolvedBaseUrl);
         renderStudyItemsHistory(studyEl, resolvedItemUrl);
+        if (activeId) updateActiveItem(activeId);
       }
-      initChatMultiSelect(chatEl, resolvedBaseUrl);
+      initChatMultiSelect(chatEl, resolvedBaseUrl, onItemClick);
       initStudyMultiSelect(studyEl, resolvedItemUrl);
-      initBackground();
     }
 
-    if (window._korahReadyFired) {
-      startWithDB();
-    } else {
-      window.addEventListener("korahReady", () => startWithDB(), { once: true });
-    }
+    if (window._korahReadyFired) startWithDB();
+    else window.addEventListener("korahReady", startWithDB, { once: true });
   }
 
-  // ── Multi-select: Chats ──
-  function initChatMultiSelect(container, baseUrl) {
+  // ── Multi-select Logic ──
+  function initChatMultiSelect(container, baseUrl, onItemClick) {
     const bar = document.getElementById("chat-select-bar");
     const countEl = document.getElementById("chat-select-count");
     const deleteBtn = document.getElementById("chat-delete-selected");
@@ -403,31 +436,28 @@ function showSidebarDeleteModal(name, onConfirm) {
     if (!container || !bar) return;
 
     const selected = new Set();
-
-    function updateBar() {
+    const updateBar = () => {
       if (selected.size > 0) {
         bar.classList.add("show");
         countEl.textContent = `${selected.size} selected`;
         deleteBtn.textContent = `Delete (${selected.size})`;
-      } else {
-        bar.classList.remove("show");
-      }
-    }
-
-    function clearSelection() {
-      selected.clear();
-      container.querySelectorAll(".history-item.selected").forEach(el => el.classList.remove("selected"));
-      updateBar();
-    }
+      } else bar.classList.remove("show");
+    };
 
     container.addEventListener("click", (e) => {
       const item = e.target.closest(".history-item");
-      if (!item) return;
-      if (e.target.closest(".history-action-btn")) return;
+      if (!item || e.target.closest(".history-action-btn")) return;
       const id = item.getAttribute("data-session");
       if (!id) return;
       const clickedCheckbox = e.target.closest(".item-checkbox");
-      if (selected.size === 0 && !clickedCheckbox) return;
+      if (selected.size === 0 && !clickedCheckbox) {
+        if (onItemClick) {
+          e.preventDefault();
+          onItemClick(id);
+          updateActiveItem(id);
+        }
+        return;
+      }
       e.preventDefault();
       if (selected.has(id)) {
         selected.delete(id);
@@ -441,15 +471,16 @@ function showSidebarDeleteModal(name, onConfirm) {
 
     selectAllBtn?.addEventListener("click", () => {
       const items = container.querySelectorAll(".history-item");
-      const allSelected = selected.size === items.length;
-      clearSelection();
-      if (!allSelected) {
+      const all = selected.size === items.length;
+      selected.clear();
+      items.forEach(el => el.classList.remove("selected"));
+      if (!all) {
         items.forEach(item => {
           const id = item.getAttribute("data-session");
           if (id) { selected.add(id); item.classList.add("selected"); }
         });
-        updateBar();
       }
+      updateBar();
     });
 
     deleteBtn?.addEventListener("click", () => {
@@ -458,13 +489,14 @@ function showSidebarDeleteModal(name, onConfirm) {
         const ids = [...selected];
         ids.forEach(id => delete _sessionsCache[id]);
         if (window.KorahDB) window.KorahDB.deleteConversations(ids);
-        clearSelection();
+        selected.clear();
+        container.querySelectorAll(".history-item.selected").forEach(el => el.classList.remove("selected"));
+        updateBar();
         renderChatHistory(container, baseUrl);
       });
     });
   }
 
-  // ── Multi-select: Study Items ──
   function initStudyMultiSelect(container, itemPageUrl) {
     const bar = document.getElementById("study-select-bar");
     const countEl = document.getElementById("study-select-count");
@@ -473,27 +505,15 @@ function showSidebarDeleteModal(name, onConfirm) {
     if (!container || !bar) return;
 
     const selected = new Set();
-
-    function updateBar() {
+    const updateBar = () => {
       if (selected.size > 0) {
         bar.classList.add("show");
         countEl.textContent = `${selected.size} selected`;
         deleteBtn.textContent = `Delete (${selected.size})`;
-      } else {
-        bar.classList.remove("show");
-      }
-    }
+      } else bar.classList.remove("show");
+    };
 
-    function clearSelection() {
-      selected.clear();
-      container.querySelectorAll(".history-item.selected").forEach(el => el.classList.remove("selected"));
-      updateBar();
-    }
-
-    const observer = new MutationObserver(() => attachListeners());
-    observer.observe(container, { childList: true });
-
-    function attachListeners() {
+    const attachListeners = () => {
       container.querySelectorAll(".history-item").forEach(item => {
         if (item._multiSelectBound) return;
         item._multiSelectBound = true;
@@ -514,20 +534,23 @@ function showSidebarDeleteModal(name, onConfirm) {
           updateBar();
         });
       });
-    }
+    };
+
+    new MutationObserver(attachListeners).observe(container, { childList: true });
     attachListeners();
 
     selectAllBtn?.addEventListener("click", () => {
       const items = container.querySelectorAll(".history-item");
-      const allSelected = selected.size === items.length;
-      clearSelection();
-      if (!allSelected) {
+      const all = selected.size === items.length;
+      selected.clear();
+      items.forEach(el => el.classList.remove("selected"));
+      if (!all) {
         items.forEach(item => {
           const id = item.getAttribute("data-study-id");
           if (id) { selected.add(id); item.classList.add("selected"); }
         });
-        updateBar();
       }
+      updateBar();
     });
 
     deleteBtn?.addEventListener("click", () => {
@@ -536,19 +559,16 @@ function showSidebarDeleteModal(name, onConfirm) {
         const ids = [...selected];
         ids.forEach(id => delete _studyItemsCache[id]);
         if (window.KorahDB) window.KorahDB.deleteStudyItems(ids);
-        clearSelection();
+        selected.clear();
+        container.querySelectorAll(".history-item.selected").forEach(el => el.classList.remove("selected"));
+        updateBar();
         renderStudyItemsHistory(container, itemPageUrl);
       });
     });
   }
 
   window.KorahSidebar = {
-    getSessions,
-    getStudyItems,
-    getTypeEmoji,
-    renderChatHistory,
-    renderStudyItemsHistory,
-    initSidebar,
+    getSessions, getStudyItems, getTypeEmoji, renderChatHistory,
+    renderStudyItemsHistory, updateActiveItem, initSidebar,
   };
-
 })();

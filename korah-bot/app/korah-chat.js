@@ -1580,6 +1580,16 @@
   window.getStudyItemIcon = getStudyItemIcon;
   window.renderStudyItemsHistory = renderStudyItemsHistory;
 
+  // Expose KorahChat API for sidebar.js integration
+  window.KorahChat = {
+    switchToSession: (id) => {
+      switchToSession(id);
+      if (window.KorahSidebar) {
+        window.KorahSidebar.updateActiveItem(id);
+      }
+    }
+  };
+
   function isPlaceholderTitle(title) {
     if (!title) return true;
     const trimmed = title.trim();
@@ -2488,41 +2498,6 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     });
   }
 
-  // Sidebar toggle functionality
-  const sidebar = document.getElementById("sidebar");
-  const sidebarToggle = document.getElementById("sidebar-toggle");
-
-  // Create overlay for mobile
-  const overlay = document.createElement("div");
-  overlay.className = "sidebar-overlay";
-  document.body.appendChild(overlay);
-
-  function isMobile() { return window.innerWidth <= 768; }
-
-  if (sidebarToggle && sidebar) {
-    sidebarToggle.addEventListener("click", () => {
-      if (isMobile()) {
-        sidebar.classList.toggle("mobile-open");
-        overlay.classList.toggle("show");
-      } else {
-        sidebar.classList.toggle("collapsed");
-      }
-    });
-  }
-
-  overlay.addEventListener("click", () => {
-    sidebar.classList.remove("mobile-open");
-    overlay.classList.remove("show");
-  });
-
-  // Auto-collapse on resize
-  window.addEventListener("resize", () => {
-    if (!isMobile()) {
-      sidebar.classList.remove("mobile-open");
-      overlay.classList.remove("show");
-    }
-  });
-
   // Settings modal functionality
   const settingsBtn = document.getElementById("settings-btn");
   const settingsModal = document.getElementById("settings-modal");
@@ -2836,119 +2811,7 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     window.addEventListener("korahReady", initApp, { once: true });
   }
 
-  // ── Starfield Animation ──
-  function initBackground() {
-    const canvas = document.getElementById("bg-canvas");
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    let w, h, stars = [], shootingStars = [];
-
-    function resize() {
-      w = canvas.width = window.innerWidth;
-      h = canvas.height = window.innerHeight;
-      initStars();
-    }
-
-    class Star {
-      constructor() {
-        this.reset();
-      }
-      reset() {
-        this.x = Math.random() * w;
-        this.y = Math.random() * h;
-        this.size = Math.random() * 1.5;
-        this.opacity = Math.random() * 0.7 + 0.1;
-        this.twinkleSpeed = Math.random() * 0.015 + 0.005;
-        this.twinkleDir = Math.random() > 0.5 ? 1 : -1;
-        
-        // Random star colors: white, slight blue, slight yellow
-        const colors = ["#ffffff", "#eef2ff", "#fffdf2"];
-        this.color = colors[Math.floor(Math.random() * colors.length)];
-      }
-      update() {
-        this.opacity += this.twinkleSpeed * this.twinkleDir;
-        if (this.opacity > 0.9 || this.opacity < 0.1) {
-          this.twinkleDir *= -1;
-        }
-      }
-      draw() {
-        ctx.fillStyle = this.color;
-        ctx.globalAlpha = this.opacity;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fill();
-        
-        if (this.size > 1.1) {
-          ctx.shadowBlur = 5;
-          ctx.shadowColor = this.color;
-        } else {
-          ctx.shadowBlur = 0;
-        }
-      }
-    }
-
-    class ShootingStar {
-      constructor() {
-        this.reset();
-      }
-      reset() {
-        this.x = Math.random() * w;
-        this.y = Math.random() * h * 0.4;
-        this.len = Math.random() * 80 + 40;
-        this.speedX = -(Math.random() * 15 + 10);
-        this.speedY = Math.random() * 10 + 5;
-        this.opacity = 1;
-        this.active = false;
-        this.waitTime = Math.random() * 600 + 300;
-      }
-      update() {
-        if (!this.active) {
-          this.waitTime--;
-          if (this.waitTime <= 0) this.active = true;
-          return;
-        }
-        this.x += this.speedX;
-        this.y += this.speedY;
-        this.opacity -= 0.02;
-        if (this.opacity <= 0 || this.y > h || this.x < 0) {
-          this.reset();
-        }
-      }
-      draw() {
-        if (!this.active) return;
-        ctx.globalAlpha = this.opacity;
-        ctx.strokeStyle = "#ffffff";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(this.x, this.y);
-        ctx.lineTo(this.x - this.speedX * 5, this.y - this.speedY * 5);
-        ctx.stroke();
-      }
-    }
-
-    function initStars() {
-      stars = [];
-      const starCount = Math.floor((w * h) / 3000); // Dynamic density
-      for (let i = 0; i < starCount; i++) stars.push(new Star());
-    }
-
-    shootingStars = [];
-    for (let i = 0; i < 2; i++) shootingStars.push(new ShootingStar());
-
-    function animate() {
-      ctx.clearRect(0, 0, w, h);
-      
-      stars.forEach(s => { s.update(); s.draw(); });
-      shootingStars.forEach(s => { s.update(); s.draw(); });
-      requestAnimationFrame(animate);
-    }
-
-    window.addEventListener("resize", resize);
-    resize();
-    animate();
-  }
-
-  initBackground();
+  // ── Constellation field ──
 
 })();
 

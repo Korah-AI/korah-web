@@ -1032,37 +1032,7 @@
     stageContextEl.textContent = sections.length ? sections.length + " sections" : "Reader view";
   }
 
-  var sidebar = document.getElementById("sidebar");
-  var toggle = document.getElementById("sidebar-toggle");
-
-  var overlay = document.createElement("div");
-  overlay.className = "sidebar-overlay";
-  document.body.appendChild(overlay);
-
-  function isMobile() { return window.innerWidth <= 768; }
-
-  if (toggle && sidebar) {
-    toggle.addEventListener("click", function () {
-      if (isMobile()) {
-        sidebar.classList.toggle("mobile-open");
-        overlay.classList.toggle("show");
-      } else {
-        sidebar.classList.toggle("collapsed");
-      }
-    });
-  }
-
-  overlay.addEventListener("click", function () {
-    sidebar.classList.remove("mobile-open");
-    overlay.classList.remove("show");
-  });
-
-  window.addEventListener("resize", function () {
-    if (!isMobile()) {
-      sidebar.classList.remove("mobile-open");
-      overlay.classList.remove("show");
-    }
-  });
+  // Firestore load
 
   var editModal = document.getElementById("item-edit-modal");
   var editForm = document.getElementById("item-edit-form");
@@ -1186,20 +1156,6 @@
     window.addEventListener("korahReady", loadAndRender, { once: true });
   }
 
-  // Settings modal (placeholder - todo update settings)
-  const settingsBtn = document.getElementById("settings-btn");
-  const settingsModal = document.getElementById("settings-modal");
-  const settingsClose = document.getElementById("settings-close");
-
-  function openSettings() {
-    settingsModal.classList.add("show");
-  }
-
-  function closeSettings() { settingsModal.classList.remove("show"); }
-
-  if (settingsBtn) settingsBtn.addEventListener("click", openSettings);
-  if (settingsClose) settingsClose.addEventListener("click", closeSettings);
-  if (settingsModal) settingsModal.addEventListener("click", (e) => { if (e.target === settingsModal) closeSettings(); });
 })();
 </script>
 

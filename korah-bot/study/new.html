@@ -1105,38 +1105,6 @@
     });
   });
 
-  var sidebar = document.getElementById("sidebar");
-  var toggle = document.getElementById("sidebar-toggle");
-  var sideOverlay = document.createElement("div");
-  sideOverlay.className = "sidebar-overlay";
-  document.body.appendChild(sideOverlay);
-
-  function isMobile() { return window.innerWidth <= 768; }
-
-  if (toggle && sidebar) {
-    toggle.addEventListener("click", function () {
-      if (isMobile()) {
-        sidebar.classList.toggle("mobile-open");
-        sideOverlay.classList.toggle("show");
-      } else {
-        sidebar.classList.toggle("collapsed");
-      }
-    });
-  }
-
-  sideOverlay.addEventListener("click", function () {
-    sidebar.classList.remove("mobile-open");
-    sideOverlay.classList.remove("show");
-  });
-
-  // Settings modal
-  const settingsBtn = document.getElementById("settings-btn");
-  const settingsModal = document.getElementById("settings-modal");
-  const settingsClose = document.getElementById("settings-close");
-  if (settingsBtn) settingsBtn.addEventListener("click", () => settingsModal.classList.add("show"));
-  if (settingsClose) settingsClose.addEventListener("click", () => settingsModal.classList.remove("show"));
-  if (settingsModal) settingsModal.addEventListener("click", (e) => { if (e.target === settingsModal) settingsModal.classList.remove("show"); });
-
   // Handle URL params
   var typeParam = new URLSearchParams(window.location.search).get("type");
   if (typeParam && ["flashcards", "studyGuide", "practiceTest"].indexOf(typeParam) >= 0) {
