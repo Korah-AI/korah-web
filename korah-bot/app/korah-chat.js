@@ -116,6 +116,7 @@
     }
     renderDocPanel();
     renderInputFilesBar();
+    renderWelcomeAttachments();
     // Expand panel when files are added
     if (attachedFiles.length > 0) {
       expandDocPanel();
@@ -155,12 +156,14 @@
     attachedFiles.splice(index, 1);
     renderDocPanel();
     renderInputFilesBar();
+    renderWelcomeAttachments();
   }
 
   function clearAttachedFiles() {
     attachedFiles = [];
     renderDocPanel();
     renderInputFilesBar();
+    renderWelcomeAttachments();
     collapseDocPanel();
   }
 
@@ -260,6 +263,34 @@
         <button class="input-file-chip-remove" title="Remove">×</button>`;
       chip.querySelector('.input-file-chip-remove').addEventListener('click', () => removeAttachedFile(i));
       bar.appendChild(chip);
+    });
+  }
+
+  function renderWelcomeAttachments() {
+    const container = document.getElementById('welcome-attachments');
+    if (!container) return;
+    if (attachedFiles.length === 0) {
+      container.innerHTML = '';
+      return;
+    }
+    container.innerHTML = '';
+    attachedFiles.forEach((f, i) => {
+      const card = document.createElement('div');
+      card.className = 'msg-attachment-card';
+      const svgIcon = getFileSvgIcon(f.type, f.name);
+      card.innerHTML = `
+        <div class="msg-attachment-card-icon">${svgIcon}</div>
+        <div class="msg-attachment-card-info">
+          <span class="msg-attachment-card-name">${f.name}</span>
+          <span class="msg-attachment-card-size">${formatFileSize(f.size)}</span>
+        </div>
+        <button class="msg-attachment-card-remove" title="Remove">×</button>
+      `;
+      card.querySelector('.msg-attachment-card-remove').addEventListener('click', () => {
+        removeAttachedFile(i);
+        renderWelcomeAttachments();
+      });
+      container.appendChild(card);
     });
   }
 
@@ -623,6 +654,7 @@
         welcomeInput.focus();
       }
       initWelcomeFeatures();
+      renderWelcomeAttachments();
     } else {
       // Clear intervals when welcome screen is hidden
       if (placeholderInterval) {
@@ -2376,6 +2408,7 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     input.value = "";
     resizeInput();
     updateCharCount();
+    clearAttachedFiles();
     setWelcomeVisibility(true);
     setTyping(false);
     hideSuggestionBar();
@@ -2439,6 +2472,7 @@ ${FORMAT_INSTRUCTIONS}`.trim();
       history.length = 0;
       history.push(...currentSession.messages);
       applyModeTheme(currentSession.mode);
+      clearAttachedFiles();
       loadSessionMessages();
       renderChatHistory();
     });
