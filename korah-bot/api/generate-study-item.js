@@ -6,6 +6,8 @@
  * Requires GEMINI_API_KEY in Vercel env.
  */
 
+import { applyRateLimit } from "./_lib/rate-limit.js";
+
 const MODEL = "gemini-2.5-flash";
 const KATEX_FORMAT_RULES = `KaTeX delimiter policy (REQUIRED):
 - Use \\(...\\) for inline math
@@ -167,6 +169,16 @@ export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
     return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  const rateLimit = applyRateLimit(req, res, {
+    namespace: "generate-study-item",
+    limit: parseInt(process.env.KORAH_STUDY_RATE_LIMIT_MAX || "", 10) || 6,
+    windowMs: parseInt(process.env.KORAH_STUDY_RATE_LIMIT_WINDOW_MS || "", 10) || 600_000,
+    message: "You have reached the study generation limit.",
+  });
+  if (rateLimit.limited) {
+    return res.status(rateLimit.status).json(rateLimit.body);
   }
 
   const apiKey = process.env.GEMINI_API_KEY;

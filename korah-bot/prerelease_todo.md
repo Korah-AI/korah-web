@@ -80,18 +80,22 @@ This checklist is grounded in the current `korah-bot/` codebase, not just the re
   - `study/test.html`
 
 ### 1.5 Add rate limiting
-- Status: release blocker for abuse protection
-- Current code:
-  - `api/gem-proxy.js` and `api/generate-study-item.js` accept requests without visible per-user or per-IP throttling.
+- Status: implemented for release hardening
+- Release decision:
+  - Use IP-based throttling for now because the current `korah-bot` client does not send a verified server-side auth identity to these endpoints.
+  - Apply separate limits for chat and study generation, since study creation is materially more expensive.
+- Implemented:
+  - Added shared API rate-limiting middleware in `api/_lib/rate-limit.js`.
+  - Applied throttling to `api/gem-proxy.js` and `api/generate-study-item.js`.
+  - Added `Retry-After` and rate-limit headers plus user-facing retry messages on `429`.
+  - Prevented `study/js/study-api.js` from bypassing the study limit by falling back to `/api/gem-proxy` after a `429`.
 - Why this matters:
   - Public AI endpoints without rate limits are a release risk for cost, abuse, and degraded availability.
-- Likely implementation:
-  - Add request throttling on both chat and study-generation endpoints.
-  - Decide whether the limiter keys off auth UID, IP, or both.
-  - Return user-friendly retry messages.
 - Files:
+  - `api/_lib/rate-limit.js`
   - `api/gem-proxy.js`
   - `api/generate-study-item.js`
+  - `study/js/study-api.js`
 
 ## 2. UX and visual upgrade work
 
@@ -245,7 +249,7 @@ This checklist is grounded in the current `korah-bot/` codebase, not just the re
 2. Fix generate-flow modal exit in `study/new.html`.
 3. Fix suggestions bar behavior and styling.
 4. Tighten collapsed sidebar UX and centralize the logic.
-5. Add rate limiting on both AI endpoints.
+5. Confirm production rate-limit thresholds/env vars and monitor 429 volume after deploy.
 
 ### Phase 2: ship meaningful user-facing upgrades
 1. Choose whether `korah-bot` stays vanilla or moves toward the React/Next app.

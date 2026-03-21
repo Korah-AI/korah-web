@@ -1,3 +1,5 @@
+import { applyRateLimit } from "./_lib/rate-limit.js";
+
 export const config = {
   maxDuration: 300,
 };
@@ -14,6 +16,16 @@ export default async function handler(req, res) {
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  const rateLimit = applyRateLimit(req, res, {
+    namespace: "gem-proxy",
+    limit: parseInt(process.env.KORAH_CHAT_RATE_LIMIT_MAX || "", 10) || 20,
+    windowMs: parseInt(process.env.KORAH_CHAT_RATE_LIMIT_WINDOW_MS || "", 10) || 60_000,
+    message: "You have reached the chat request limit.",
+  });
+  if (rateLimit.limited) {
+    return res.status(rateLimit.status).json(rateLimit.body);
   }
 
   const API_KEY = process.env.GEMINI_API_KEY;

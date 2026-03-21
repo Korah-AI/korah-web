@@ -107,6 +107,21 @@
     return { title: title, markdown: markdown };
   }
 
+  function createHttpError(defaultMessage, res, payload) {
+    var message = defaultMessage;
+    if (payload && typeof payload.message === "string" && payload.message.trim()) {
+      message = payload.message.trim();
+    } else if (payload && typeof payload.error === "string" && payload.error.trim()) {
+      message = payload.error.trim();
+    }
+    var error = new Error(message);
+    error.status = res && typeof res.status === "number" ? res.status : 0;
+    if (payload && typeof payload.retryAfterSeconds === "number") {
+      error.retryAfterSeconds = payload.retryAfterSeconds;
+    }
+    return error;
+  }
+
   function normalizeContent(type, parsed) {
     if (!parsed || typeof parsed !== "object") return null;
     var result = { title: typeof parsed.title === "string" ? parsed.title : "" };
@@ -226,9 +241,6 @@
     }
 
     function tryBackendApi() {
-      var apiBase = typeof window !== "undefined" && window.location && window.location.origin
-        ? window.location.origin
-        : "";
       var url = "/api/generate-study-item";
       return fetch(url, {
         method: "POST",
@@ -242,8 +254,14 @@
           fileContents: fileContents // Send processed contents
         })
       }).then(function (res) {
-        if (!res.ok) throw new Error("API " + res.status);
-        return res.json();
+        return res.json().catch(function () {
+          return {};
+        }).then(function (data) {
+          if (!res.ok) {
+            throw createHttpError("Oops! There was an error. Please try again.", res, data);
+          }
+          return data;
+        });
       }).then(function (data) {
         if (data && data.content) return data;
         throw new Error("Oops! There was an error. Please try again.");
@@ -282,8 +300,14 @@
           stream: false
         })
       }).then(function (res) {
-        if (!res.ok) throw new Error("Proxy " + res.status);
-        return res.json();
+        return res.json().catch(function () {
+          return {};
+        }).then(function (data) {
+          if (!res.ok) {
+            throw createHttpError("Oops! There was an error. Please try again.", res, data);
+          }
+          return data;
+        });
       }).then(function (data) {
         var raw = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
         if (!raw) throw new Error("Oops! There was an error. Please try again.");
@@ -301,7 +325,10 @@
       });
     }
 
-    return tryBackendApi().catch(function () {
+    return tryBackendApi().catch(function (error) {
+      if (error && error.status === 429) {
+        throw error;
+      }
       return tryChatProxy();
     });
   }
