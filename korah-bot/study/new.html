@@ -8,6 +8,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="../app/korah-chat.css"/>
   <style>
@@ -444,6 +447,37 @@
       .study-modern .create-form { gap: 20px; }
       .study-modern .create-form .create-input { min-height: 64px; font-size: 17px; padding: 16px 20px; }
     }
+    /* Spotlight effect for type cards */
+    .create-type-card.spotlight-effect {
+      position: relative;
+      overflow: hidden;
+      --mouse-x: 50%;
+      --mouse-y: 50%;
+      --spotlight-color: rgba(255, 255, 255, 0.05);
+    }
+    .create-type-card.spotlight-effect::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(circle at var(--mouse-x) var(--mouse-y), var(--spotlight-color), transparent 80%);
+      opacity: 0;
+      transition: opacity 0.5s ease;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .create-type-card.spotlight-effect:hover::before,
+    .create-type-card.spotlight-effect:focus-within::before {
+      opacity: 0.6;
+    }
+    /* Ensure button content is above pseudo-element */
+    .create-type-card.spotlight-effect > * {
+      position: relative;
+      z-index: 1;
+    }
+
   </style>
 </head>
 <body class="bg-base tx study-modern">
@@ -603,23 +637,7 @@
     <!-- Step 1: Choose type (Always visible on main page) -->
     <div id="step-1" class="create-step-panel">
       <h2 class="create-panel-title">Choose type</h2>
-      <div class="create-type-grid">
-        <button type="button" class="create-type-card t-btn" data-type="flashcards">
-          <span class="create-type-emoji">🃏</span>
-          <span class="create-type-name">Flashcard Set</span>
-          <span class="create-type-desc tx2">Front/back cards with rich text and math</span>
-        </button>
-        <button type="button" class="create-type-card t-btn" data-type="studyGuide">
-          <span class="create-type-emoji">📖</span>
-          <span class="create-type-name">Study Guide</span>
-          <span class="create-type-desc tx2">Structured outline with sections and summaries</span>
-        </button>
-        <button type="button" class="create-type-card t-btn" data-type="practiceTest">
-          <span class="create-type-emoji">🎯</span>
-          <span class="create-type-name">Practice Test</span>
-          <span class="create-type-desc tx2">Questions with answer keys and rationales</span>
-        </button>
-      </div>
+      <div class="create-type-grid" id="react-step-1"></div>
     </div>
   </div>
 </main>
@@ -738,6 +756,7 @@
     if (backdrop) backdrop.classList.add("active");
     if (creationModal) creationModal.classList.add("active");
   }
+  window.openCreationModal = openCreationModal;
 
   function closeCreationModal() {
     if (backdrop) backdrop.classList.remove("active");
@@ -1134,6 +1153,53 @@
     localStorage.removeItem('korah_first_name');
     window.location.href = '../login.html';
   });
+</script>
+<script type="text/babel">
+  const { useRef } = React;
+  const typeData = [
+    { id: 'flashcards', emoji: '🃏', name: 'Flashcard Set', desc: 'Front/back cards with rich text and math' },
+    { id: 'studyGuide', emoji: '📖', name: 'Study Guide', desc: 'Structured outline with sections and summaries' },
+    { id: 'practiceTest', emoji: '🎯', name: 'Practice Test', desc: 'Questions with answer keys and rationales' }
+  ];
+
+  function TypeCard({ type }) {
+    const buttonRef = useRef(null);
+    const handleMouseMove = (e) => {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      buttonRef.current.style.setProperty('--mouse-x', `${x}px`);
+      buttonRef.current.style.setProperty('--mouse-y', `${y}px`);
+    };
+    return (
+      <button
+        ref={buttonRef}
+        type="button"
+        className="create-type-card t-btn spotlight-effect"
+        data-type={type.id}
+        onClick={() => window.openCreationModal(type.id)}
+        onMouseMove={handleMouseMove}
+      >
+        <span className="create-type-emoji">{type.emoji}</span>
+        <span className="create-type-name">{type.name}</span>
+        <span className="create-type-desc tx2">{type.desc}</span>
+      </button>
+    );
+  }
+
+  function App() {
+    return (
+      <>
+        {typeData.map(type => (
+          <TypeCard key={type.id} type={type} />
+        ))}
+      </>
+    );
+  }
+
+  const container = document.getElementById('react-step-1');
+  const root = ReactDOM.createRoot(container);
+  root.render(<App />);
 </script>
 </body>
 </html>
