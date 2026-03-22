@@ -498,6 +498,10 @@
           <div class="productivity-section timer-section">
             <h2 class="productivity-title">Focus Timer <i>/ Pomodoro</i></h2>
             
+            <div class="text-sm tx2 mb-6 flex items-center gap-2">
+              <span>🌙</span> <span>Ready to Focus</span>
+            </div>
+
             <div class="timer-circle-container">
               <svg class="timer-svg" viewBox="0 0 300 300">
                 <circle class="timer-circle-bg" cx="150" cy="150" r="135" />
@@ -508,16 +512,18 @@
               <div class="timer-display" x-text="formatTime(timeLeft)"></div>
             </div>
 
+            <div class="text-xs font-semibold tracking-widest uppercase tx3 mb-4 text-center">Session Duration</div>
+
             <div class="flex justify-center gap-3 mb-8">
               <button class="t-btn text-xs font-bold px-6 py-2.5 rounded-xl transition-all" 
-                :class="preset === 25 ? 'grad-bg text-white shadow-glow scale-105' : 'bg-sf2 bd tx2 hover:bg-sf'" 
-                @click="setPreset(25)">25:00</button>
-              <button class="t-btn text-xs font-bold px-6 py-2.5 rounded-xl transition-all" 
-                :class="preset === 50 ? 'grad-bg text-white shadow-glow scale-105' : 'bg-sf2 bd tx2 hover:bg-sf'" 
-                @click="setPreset(50)">50:00</button>
+                :class="preset === 5 ? 'grad-bg text-white shadow-glow scale-105' : 'bg-sf2 bd tx2 hover:bg-sf'" 
+                @click="setPreset(5)">5:00</button>
               <button class="t-btn text-xs font-bold px-6 py-2.5 rounded-xl transition-all" 
                 :class="preset === 10 ? 'grad-bg text-white shadow-glow scale-105' : 'bg-sf2 bd tx2 hover:bg-sf'" 
                 @click="setPreset(10)">10:00</button>
+              <button class="t-btn text-xs font-bold px-6 py-2.5 rounded-xl transition-all" 
+                :class="preset === 25 ? 'grad-bg text-white shadow-glow scale-105' : 'bg-sf2 bd tx2 hover:bg-sf'" 
+                @click="setPreset(25)">25:00</button>
               <template x-for="(customPreset, index) in customPresets" :key="'custom-'+index">
                 <button class="t-btn text-xs font-bold px-6 py-2.5 rounded-xl transition-all" 
                   :class="preset === customPreset ? 'grad-bg text-white shadow-glow scale-105' : 'bg-sf2 bd tx2 hover:bg-sf'" 
@@ -525,10 +531,11 @@
                   <span x-text="customPreset + ':00'"></span>
                 </button>
               </template>
-              <button class="t-btn bg-sf2 bd tx2 hover:bg-sf px-3 py-2.5 rounded-xl text-xs font-bold" 
-                @click="showAddPresetModal = true" 
-                x-show="customPresets.length < 5"
-                title="Add custom timer">+</button>
+              <button class="t-btn bg-sf2 bd tx2 hover:bg-sf px-4 py-2.5 rounded-xl text-xs font-bold" 
+                @click="showAddPresetModal = true"
+                title="Custom timer">
+                Custom
+              </button>
             </div>
 
             <div class="timer-controls">
