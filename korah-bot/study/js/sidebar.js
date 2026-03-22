@@ -4,16 +4,23 @@
  * falls back to empty caches if KorahDB is unavailable.
  */
 
-// Simplified rename function using browser prompt() dialog
+// Use custom modals if available, otherwise fallback to browser dialogs
 function showSidebarRenameModal(currentName, desc, onConfirm) {
-  const n = prompt(desc || "New name:", currentName);
-  if (n && n.trim() && onConfirm) onConfirm(n.trim());
+  if (window.showRenameModal) {
+    window.showRenameModal(currentName, desc, onConfirm);
+  } else {
+    const n = prompt(desc || "New name:", currentName);
+    if (n && n.trim() && onConfirm) onConfirm(n.trim());
+  }
 }
 
-// Simplified delete function using browser confirm() dialog
 function showSidebarDeleteModal(name, onConfirm) {
-  if (confirm(`Delete "${name}"? This cannot be undone.`)) {
-    if (onConfirm) onConfirm();
+  if (window.showDeleteModal) {
+    window.showDeleteModal(name, onConfirm);
+  } else {
+    if (confirm(`Delete "${name}"? This cannot be undone.`)) {
+      if (onConfirm) onConfirm();
+    }
   }
 }
 

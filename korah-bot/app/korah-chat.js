@@ -2683,6 +2683,10 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     if (e.target === deleteModal) hideDeleteModal();
   });
 
+  // Expose modal functions for sidebar.js
+  window.showDeleteModal = showDeleteModal;
+  window.showRenameModal = showRenameModal;
+
   // ── Helpers ──────────────────────────────────────────────────────────────
 
   function stringifyStudyItem(item) {
