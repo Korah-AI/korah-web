@@ -32,44 +32,11 @@
       flex-direction: column;
       max-width: none;
       width: 100%;
-      padding: 20px;
+      padding: 60px 20px;
       overflow-y: auto;
     }
-    .study-modern .create-hero {
-      padding: 28px;
-      border: 1px solid var(--bd);
-      margin-bottom: 20px;
-      text-align: center;
-      flex-shrink: 0;
-    }
-    .study-modern .create-hero-title { font-size: 34px; line-height: 1.2; font-weight: 700; margin-bottom: 8px; color: var(--p5); }
-    .study-modern .create-hero-sub { font-size: 16px; color: var(--tx2); line-height: 1.6; }
-    .study-modern .create-steps {
-      margin: 0 0 16px;
-      padding: 10px;
-      background: var(--bg2);
-      border: 1px solid var(--bd);
-      gap: 10px;
-    }
-    .study-modern .create-step {
-      border-radius: 12px;
-      min-height: 48px;
-      font-size: 14px;
-      padding: 8px 14px;
-    }
-    .study-modern .create-step-num { width: 28px; height: 28px; font-size: 13px; z-index: 0;}
-    .study-modern .create-step-panel {
-      border: 1px solid var(--bd);
-      background: var(--bg2);
-      padding: 40px;
-      z-index: 0;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-    }
-    .study-modern .create-panel-title { font-size: 26px; margin-bottom: 30px; z-index: 0; text-align: center; flex-shrink: 0;}
     .study-modern .create-type-grid {
-      gap: 24px;
+      gap: 32px;
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
       justify-content: center;
@@ -77,24 +44,32 @@
       align-content: center;
     }
     .study-modern .create-type-card {
-      padding: 48px 32px;
+      padding: 64px 32px;
       display: flex;
       flex-direction: column;
       align-items: center;
       text-align: center;
-      gap: 16px;
+      gap: 20px;
       z-index: 0;
-      transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      background: var(--bg2);
+      border: 1px solid var(--bd);
+      border-radius: 32px;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
-    .study-modern .create-type-card:hover { transform: translateY(-4px); }
-    .study-modern .create-type-emoji { font-size: 56px; margin-bottom: 8px; display: block; }
+    .study-modern .create-type-card:hover { 
+      transform: translateY(-12px); 
+      border-color: var(--p5);
+      background: var(--bg3);
+      box-shadow: 0 30px 60px rgba(0,0,0,0.4);
+    }
+    .study-modern .create-type-emoji { font-size: 72px; margin-bottom: 8px; display: block; filter: drop-shadow(0 10px 15px rgba(0,0,0,0.2)); }
+    .study-modern .create-type-name { font-size: 26px; font-weight: 800; display: block; z-index: 0; color: var(--tx1); tracking-tight; }
+    .study-modern .create-type-desc { font-size: 16px; color: var(--tx2); line-height: 1.6; max-width: 280px; opacity: 0.8; }
     .study-modern .create-method-btn {
       min-height: 110px;
       border-radius: 16px;
       padding: 24px;
     }
-    .study-modern .create-type-name { font-size: 22px; font-weight: 700; display: block; z-index: 0;}
-    .study-modern .create-type-desc { font-size: 15px; line-height: 1.55; max-width: 260px; }
     .study-modern .create-label { font-size: 14px; font-weight: 700; margin-bottom: 7px; }
     .study-modern .create-input {
       min-height: 50px;
@@ -118,9 +93,6 @@
     .study-modern .main-content,
     .study-modern .chat-topbar,
     .study-modern .create-flow-body,
-    .study-modern .create-hero,
-    .study-modern .create-steps,
-    .study-modern .create-step-panel,
     .study-modern .create-type-card,
     .study-modern .create-method-btn,
     .study-modern .create-input,
@@ -131,12 +103,10 @@
       z-index: 0;
     }
     @media (max-width: 768px) {
-      .study-modern .create-flow-body { padding: 18px 14px 24px; }
-      .study-modern .create-hero { padding: 18px; margin-bottom: 12px; }
-      .study-modern .create-hero-title { font-size: 24px; }
-      .study-modern .create-panel-title { font-size: 22px; }
-      .study-modern .create-step-panel { padding: 16px; }
-      .study-modern .create-step { min-height: 42px; font-size: 13px; }
+      .study-modern .create-flow-body { padding: 24px 16px; }
+      .study-modern .create-type-card { padding: 48px 24px; }
+      .study-modern .create-type-emoji { font-size: 56px; }
+      .study-modern .create-type-name { font-size: 22px; }
     }
 
     /* --- REFINED MODAL SYSTEM --- */
@@ -629,16 +599,7 @@
   </header>
 
   <div class="create-flow-body">
-    <section class="create-hero bg-sf glass-sm t-theme">
-      <h1 class="create-hero-title">Create a New Study Item</h1>
-      <p class="create-hero-sub">Select a type below to get started with Korah AI.</p>
-    </section>
-
-    <!-- Step 1: Choose type (Always visible on main page) -->
-    <div id="step-1" class="create-step-panel">
-      <h2 class="create-panel-title">Choose type</h2>
-      <div class="create-type-grid" id="react-step-1"></div>
-    </div>
+    <div id="react-step-1" class="w-full max-w-7xl mx-auto"></div>
   </div>
 </main>
 
@@ -768,12 +729,6 @@
     if (backdrop) backdrop.classList.add("active");
     if (creationModal) creationModal.classList.add("active");
   }
-
-  document.querySelectorAll(".create-type-card").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      openCreationModal(btn.getAttribute("data-type"));
-    });
-  });
 
   // Redirect to dedicated creation pages instead of showing step 2
   document.querySelectorAll(".method-card").forEach(function (btn) {
@@ -1189,11 +1144,18 @@
 
   function App() {
     return (
-      <>
-        {typeData.map(type => (
-          <TypeCard key={type.id} type={type} />
-        ))}
-      </>
+      <div className="bg-sf glass-sm t-theme border border-[var(--bd)] rounded-[32px] p-8 md:p-16 flex flex-col items-center shadow-2xl">
+        <header className="text-center mb-12 md:mb-16">
+          <h1 className="text-4xl md:text-6xl font-black mb-4 tracking-tight" style={{ color: 'var(--p5)' }}>Create Study Item</h1>
+          <p className="text-lg md:text-xl tx2 max-w-2xl mx-auto opacity-70 leading-relaxed font-medium">Select a study mode below to generate personalized materials with Korah AI.</p>
+        </header>
+
+        <div className="create-type-grid w-full max-w-6xl">
+          {typeData.map(type => (
+            <TypeCard key={type.id} type={type} />
+          ))}
+        </div>
+      </div>
     );
   }
 
