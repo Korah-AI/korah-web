@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en" x-data="{ theme: localStorage.getItem('korah_theme') || 'dark' }" :data-theme="theme" x-cloak>
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Korah AI — Productivity</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="../app/korah-chat.css"/>
+<style>
+  .productivity-container {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 30px 20px;
+  }
+  .productivity-card {
+    background: var(--bg2);
+    border: 1px solid var(--bd);
+    border-radius: 18px;
+    padding: 24px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+  }
+  .productivity-title {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: var(--tx);
+  }
+  .timer-display {
+    font-size: 48px;
+    font-weight: 700;
+    text-align: center;
+    margin: 20px 0;
+    font-variant-numeric: tabular-nums;
+    color: var(--p5);
+  }
+  .timer-controls {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .timer-btn {
+    min-width: 120px;
+    min-height: 44px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 15px;
+    padding: 0 20px;
+  }
+  .todo-input-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .todo-input {
+    flex: 1;
+    min-height: 44px;
+    border-radius: 12px;
+    padding: 0 16px;
+    font-size: 15px;
+    background: var(--bg);
+    border: 1px solid var(--bd);
+    color: var(--tx);
+  }
+  .todo-add-btn {
+    min-height: 44px;
+    border-radius: 12px;
+    padding: 0 20px;
+    font-weight: 700;
+    font-size: 15px;
+  }
+  .todo-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .todo-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--bd);
+    transition: opacity 0.2s;
+  }
+  .todo-item:last-child {
+    border-bottom: none;
+  }
+  .todo-item.completed {
+    opacity: 0.6;
+  }
+  .todo-item.completed .todo-text {
+    text-decoration: line-through;
+  }
+  .todo-checkbox {
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    border: 2px solid var(--bd);
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .todo-checkbox.checked {
+    background: var(--p5);
+    border-color: var(--p5);
+  }
+  .todo-text {
+    flex: 1;
+    font-size: 15px;
+    color: var(--tx);
+  }
+  .todo-delete {
+    opacity: 0;
+    transition: opacity 0.2s;
+    cursor: pointer;
+    color: var(--tx3);
+  }
+  .todo-item:hover .todo-delete {
+    opacity: 1;
+  }
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--tx3);
+  }
+  .empty-icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+  }
+</style>
+</head>
+
+<body class="bg-base tx">
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+  import { setupKorahDB } from "../app/data/firestore-store.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
+    authDomain: "korah-app.firebaseapp.com",
+    projectId: "korah-app",
+    storageBucket: "korah-app.firebasestorage.app",
+    messagingSenderId: "226169460321",
+    appId: "1:226169460321:web:b166fc8260107c55dafc20"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      window.location.href = 'login.html';
+      return;
+    }
+    await setupKorahDB(app, user.uid);
+    const detail = { uid: user.uid };
+    window._korahReadyFired = detail;
+    window.dispatchEvent(new CustomEvent('korahReady', { detail }));
+  });
+
+  document.getElementById('logout-btn').addEventListener('click', async () => {
+    await signOut(auth);
+    localStorage.removeItem('korah_first_name');
+    window.location.href = 'login.html';
+  });
+</script>
+
+<canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
+
+<!-- ═══ SIDEBAR ═══ -->
+<aside id="sidebar" class="sidebar bg-sf glass t-theme">
+  <div class="sidebar-header">
+    <a href="../index.html" class="flex items-center gap-2.5 no-underline">
+      <div class="w-12 h-12 rounded-xl flex items-center justify-center font-display text-xl font-black text-white shadow-glow logo-btn">
+        <span class="logo-letter">
+          <img src="../app/logo.png" alt="Korah"/>
+        </span>
+      </div>
+      <div class="flex flex-col leading-tight">
+        <span class="font-display text-[19px] font-bold tx">Korah</span>
+        <span class="text-[9px] font-semibold tracking-[2.5px] uppercase tx-p4">Study Smarter</span>
+      </div>
+    </a>
+    <button id="new-chat-btn" class="new-chat-btn text-white text-xs font-bold px-4 py-2 rounded-full border-none cursor-pointer shadow-glow t-btn">
+      <span class="new-chat-icon">+</span> <span class="new-chat-text">New Chat</span>
+    </button>
+  </div>
+
+  <nav class="sidebar-nav">
+    <a href="../index.html" class="sidebar-nav-link t-btn"><span class="nav-icon">💬</span> <span class="nav-text">Chat</span></a>
+    <a href="feed.html" class="sidebar-nav-link t-btn"><span class="nav-icon">📚</span> <span class="nav-text"></span></a>
+    <a href="productivity.html" class="sidebar-nav-link active t-btn"><span class="nav-icon">⏱️</span> <span class="nav-text">Productivity</span></a>
+  </nav>
+
+  <div class="sidebar-middle">
+    <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 12px 0 4px;">
+    <span class="sidebar-section-label" style="margin:0">Recent Chats</span>
+    </div>
+    <div id="chat-select-bar" class="select-bar">
+      <span class="select-bar-count" id="chat-select-count">0 selected</span>
+      <div class="select-bar-actions">
+        <button class="select-bar-btn" id="chat-select-all">Select all</button>
+        <button class="select-bar-btn danger" id="chat-delete-selected">Delete</button>
+      </div>
+    </div>
+    <div id="chat-history" class="chat-history">
+      <div class="skeleton-item">
+        <div class="skeleton-icon"></div>
+        <div class="skeleton-text"></div>
+      </div>
+      <div class="skeleton-item">
+        <div class="skeleton-icon"></div>
+        <div class="skeleton-text"></div>
+      </div>
+      <div class="skeleton-item">
+        <div class="skeleton-icon"></div>
+        <div class="skeleton-text"></div>
+      </div>
+      <div class="skeleton-item">
+        <div class="skeleton-icon"></div>
+        <div class="skeleton-text"></div>
+      </div>
+      <div class="skeleton-item">
+        <div class="skeleton-icon"></div>
+        <div class="skeleton-text"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 12px 0 4px;">
+    <span class="sidebar-section-label" style="margin:0">Recent Study Items</span>
+  </div>
+  <div id="study-select-bar" class="select-bar">
+    <span class="select-bar-count" id="study-select-count">0 selected</span>
+    <div class="select-bar-actions">
+      <button class="select-bar-btn" id="study-select-all">Select all</button>
+      <button class="select-bar-btn danger" id="study-delete-selected">Delete</button>
+    </div>
+  </div>
+  <div id="study-items-history" class="chat-history study-items-history">
+  </div>
+  <div id="study-items-empty" class="study-items-empty hidden">
+    <span class="study-items-empty-icon" aria-hidden="true">📚</span>
+    <div class="study-items-empty-title">No study items yet</div>
+    <div class="study-items-empty-sub">Create one to see it here.</div>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="mood-indicator" id="sidebar-mood">
+      <span class="mood-dot" id="mood-dot">🟢</span>
+      <span class="text-xs tx2 font-medium">Full Focus Mode</span>
+    </div>
+    <div class="sidebar-footer-actions">
+      <button id="logout-btn" class="theme-toggle-small t-btn" title="Log out">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+      </button>
+      <button id="settings-btn" class="theme-toggle-small t-btn" title="Settings">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+      <button @click="theme = theme === 'dark' ? 'light' : 'dark'; localStorage.setItem('korah_theme', theme)" class="theme-toggle-small t-btn" title="Toggle theme">
+        <svg x-show="theme==='light'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" style="color:var(--p5)">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/>
+        </svg>
+        <svg x-show="theme==='dark'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--p4)">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</aside>
+
+<!-- ═══ MAIN AREA ═══ -->
+<div id="main-area-wrapper" class="main-area-wrapper">
+  <main id="main-content" class="main-content">
+    <!-- Top bar -->
+    <header class="chat-topbar bg-sf glass-sm t-theme bd">
+      <button id="sidebar-toggle" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+      <div class="chat-title-area">
+        <div class="korah-status-dot"></div>
+        <span class="font-semibold tx text-sm">Productivity</span>
+      </div>
+    </header>
+
+    <!-- Content -->
+    <div class="productivity-container" x-data="productivityApp()">
+      <!-- Timer Card -->
+      <div class="productivity-card">
+        <h2 class="productivity-title">Focus Timer</h2>
+        <div class="timer-display" x-text="formatTime(timeLeft)"></div>
+        <div class="timer-controls">
+          <button class="timer-btn t-btn grad-bg" @click="toggleTimer" x-text="isRunning ? 'Pause' : (timeLeft === totalSeconds ? 'Start' : 'Resume')"></button>
+          <button class="timer-btn t-btn bg-sf2 bd" @click="resetTimer">Reset</button>
+        </div>
+        <div class="flex justify-center gap-3 mt-4">
+          <button class="t-btn text-sm px-3 py-1 rounded-lg" :class="preset === 25 ? 'grad-bg text-white' : 'bg-sf2 bd'" @click="setPreset(25)">25m</button>
+          <button class="t-btn text-sm px-3 py-1 rounded-lg" :class="preset === 50 ? 'grad-bg text-white' : 'bg-sf2 bd'" @click="setPreset(50)">50m</button>
+          <button class="t-btn text-sm px-3 py-1 rounded-lg" :class="preset === 10 ? 'grad-bg text-white' : 'bg-sf2 bd'" @click="setPreset(10)">10m</button>
+        </div>
+      </div>
+
+      <!-- Todo List Card -->
+      <div class="productivity-card">
+        <h2 class="productivity-title">To-Do List</h2>
+        <div class="todo-input-row">
+          <input type="text" class="todo-input" placeholder="Add a new task..." x-model="newTask" @keyup.enter="addTask">
+          <button class="todo-add-btn t-btn grad-bg text-white" @click="addTask">Add</button>
+        </div>
+        <template x-if="tasks.length === 0">
+          <div class="empty-state">
+            <div class="empty-icon">✅</div>
+            <p>No tasks yet. Add one above!</p>
+          </div>
+        </template>
+        <ul class="todo-list">
+          <template x-for="(task, index) in tasks" :key="task.id">
+            <li class="todo-item" :class="task.completed ? 'completed' : ''">
+              <button class="todo-checkbox" :class="task.completed ? 'checked' : ''" @click="toggleTask(index)">
+                <svg x-show="task.completed" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+              </button>
+              <span class="todo-text" x-text="task.text"></span>
+              <button class="todo-delete" @click="removeTask(index)" title="Delete task">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </li>
+          </template>
+        </ul>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script src="../study/js/sidebar.js"></script>
+<script>
+  // Initialize sidebar with productivity-specific callbacks
+  window.addEventListener('korahReady', () => {
+    if (window.KorahSidebar) {
+      window.KorahSidebar.initSidebar({
+        chatBaseUrl: "../index.html",
+        itemPageUrl: "item.html",
+        onItemClick: (id) => {
+          window.location.href = `item.html?id=${id}`;
+        }
+      });
+    }
+  }, { once: true });
+
+  // Productivity app logic
+  function productivityApp() {
+    return {
+      // Timer
+      timeLeft: 25 * 60, // default 25 minutes
+      totalSeconds: 25 * 60,
+      preset: 25,
+      isRunning: false,
+      timerInterval: null,
+
+      // Todo list
+      tasks: [],
+      newTask: '',
+
+      init() {
+        // Load tasks from localStorage
+        const saved = localStorage.getItem('korah_tasks');
+        if (saved) {
+          try {
+            this.tasks = JSON.parse(saved);
+          } catch (e) {}
+        }
+        // Load timer preset from localStorage
+        const savedPreset = localStorage.getItem('korah_timer_preset');
+        if (savedPreset) {
+          this.setPreset(parseInt(savedPreset) || 25);
+        }
+      },
+
+      // Timer methods
+      formatTime(seconds) {
+        const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+        const s = (seconds % 60).toString().padStart(2, '0');
+        return `${m}:${s}`;
+      },
+
+      toggleTimer() {
+        if (this.isRunning) {
+          this.pauseTimer();
+        } else {
+          this.startTimer();
+        }
+      },
+
+      startTimer() {
+        if (this.timeLeft <= 0) return;
+        this.isRunning = true;
+        this.timerInterval = setInterval(() => {
+          if (this.timeLeft > 0) {
+            this.timeLeft--;
+          } else {
+            this.pauseTimer();
+            this.notifyTimerComplete();
+          }
+        }, 1000);
+      },
+
+      pauseTimer() {
+        this.isRunning = false;
+        clearInterval(this.timerInterval);
+      },
+
+      resetTimer() {
+        this.pauseTimer();
+        this.timeLeft = this.totalSeconds;
+      },
+
+      setPreset(minutes) {
+        this.pauseTimer();
+        this.preset = minutes;
+        this.totalSeconds = minutes * 60;
+        this.timeLeft = this.totalSeconds;
+        localStorage.setItem('korah_timer_preset', minutes);
+      },
+
+      notifyTimerComplete() {
+        // Simple alert for now; could be a nicer notification
+        alert('Timer completed! Take a break.');
+      },
+
+      // Todo methods
+      addTask() {
+        const text = this.newTask.trim();
+        if (!text) return;
+        this.tasks.push({
+          id: Date.now(),
+          text: text,
+          completed: false
+        });
+        this.newTask = '';
+        this.saveTasks();
+      },
+
+      toggleTask(index) {
+        this.tasks[index].completed = !this.tasks[index].completed;
+        this.saveTasks();
+      },
+
+      removeTask(index) {
+        this.tasks.splice(index, 1);
+        this.saveTasks();
+      },
+
+      saveTasks() {
+        localStorage.setItem('korah_tasks', JSON.stringify(this.tasks));
+      }
+    };
+  }
+</script>
+
+</body>
+</html>
