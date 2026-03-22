@@ -212,7 +212,6 @@
     flex-shrink: 0;
   }
 
-  .todo-input-wrapper select,
   .todo-input-wrapper input[type="date"] {
     background: var(--sf2);
     border: 1px solid var(--bd);
@@ -225,10 +224,48 @@
     transition: all 0.2s;
   }
 
-  .todo-input-wrapper select:focus,
   .todo-input-wrapper input[type="date"]:focus {
     outline: none;
     border-color: var(--p4);
+  }
+
+  .priority-dropdown {
+    position: relative;
+  }
+
+  .priority-dropdown > button {
+    background: var(--sf2);
+    border: 1px solid var(--bd);
+    border-radius: 8px;
+    padding: 4px 12px;
+    color: var(--tx);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .priority-dropdown > button:focus {
+    outline: none;
+    border-color: var(--p4);
+  }
+
+  .priority-dropdown > button:hover {
+    border-color: var(--p4);
+  }
+
+  .priority-dropdown > div {
+    background: var(--sf2);
+    border: 1px solid var(--bd);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+
+  .priority-dropdown > div > button:hover {
+    background: var(--sf);
   }
 
   .todo-list-container {
@@ -585,12 +622,32 @@
             
             <div class="todo-header mt-12">
               <div class="todo-input-wrapper">
-                <input type="text" class="todo-input flex-1" placeholder="What is your focus for this session?" x-model="newTask" @keyup.enter="addTask">
-                <select x-model="newTaskPriority" class="bg-sf2 bd rounded-lg px-2 py-1 text-sm tx font-medium cursor-pointer">
-                  <option value="high">🔴 High</option>
-                  <option value="medium">🟡 Medium</option>
-                  <option value="low">🟢 Low</option>
-                </select>
+                <input type="text" class="todo-input flex-1" placeholder="Task Title?" x-model="newTask" @keyup.enter="addTask">
+                <div class="priority-dropdown relative" @click.away="showPriorityDropdown = false">
+                  <button type="button" class="bg-sf2 bd rounded-lg px-3 py-1.5 text-sm tx font-medium cursor-pointer flex items-center gap-2" @click="togglePriorityDropdown()">
+                    <span class="w-2 h-2 rounded-full" :class="{
+                      'bg-red-500': newTaskPriority === 'high',
+                      'bg-yellow-500': newTaskPriority === 'medium',
+                      'bg-green-500': newTaskPriority === 'low'
+                    }"></span>
+                    <span x-text="newTaskPriority.charAt(0).toUpperCase() + newTaskPriority.slice(1)"></span>
+                    <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                  </button>
+                  <div x-show="showPriorityDropdown" x-transition class="absolute z-50 mt-1 w-full bg-sf2 bd rounded-lg shadow-lg py-1">
+                    <button type="button" class="w-full px-3 py-2 text-left text-sm tx hover:bg-sf flex items-center gap-2" @click="selectPriority('high')">
+                      <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                      High
+                    </button>
+                    <button type="button" class="w-full px-3 py-2 text-left text-sm tx hover:bg-sf flex items-center gap-2" @click="selectPriority('medium')">
+                      <span class="w-2 h-2 rounded-full bg-yellow-500"></span>
+                      Medium
+                    </button>
+                    <button type="button" class="w-full px-3 py-2 text-left text-sm tx hover:bg-sf flex items-center gap-2" @click="selectPriority('low')">
+                      <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                      Low
+                    </button>
+                  </div>
+                </div>
                 <input type="date" x-model="newTaskDueDate" class="bg-sf2 bd rounded-lg px-2 py-1 text-sm tx cursor-pointer" title="Due date">
                 <button class="todo-add-btn t-btn grad-bg text-white shadow-glow" @click="addTask">
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
@@ -678,6 +735,7 @@
       newTask: '',
       newTaskPriority: 'medium',
       newTaskDueDate: '',
+      showPriorityDropdown: false,
 
       init() {
         // Load tasks from localStorage
@@ -799,6 +857,15 @@
           low: '#22c55e'
         };
         return `border-left: 4px solid ${colors[priority] || colors.medium}`;
+      },
+
+      togglePriorityDropdown() {
+        this.showPriorityDropdown = !this.showPriorityDropdown;
+      },
+
+      selectPriority(priority) {
+        this.newTaskPriority = priority;
+        this.showPriorityDropdown = false;
       },
 
       removeTask(index) {
