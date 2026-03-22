@@ -11,224 +11,308 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="../app/korah-chat.css"/>
 <style>
-  .productivity-container {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 32px;
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 40px 24px;
-    align-items: start;
-    animation: fadeUp 0.6s ease-out;
-  }
-  @media (max-width: 900px) {
-    .productivity-container {
-      grid-template-columns: 1fr;
-      max-width: 600px;
-      gap: 24px;
-      padding: 20px;
-    }
-  }
-  .productivity-card {
-    background: var(--sf2);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid var(--bd);
-    border-radius: 24px;
-    padding: 32px;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-    transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.3s ease;
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    min-height: 480px;
-  }
-  .productivity-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 20px 60px var(--glow);
-    border-color: var(--p4);
-  }
-  .productivity-title {
-    font-size: 24px;
-    font-weight: 800;
-    margin-bottom: 24px;
-    color: var(--tx);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    letter-spacing: -0.02em;
-  }
-  .productivity-title::before {
-    content: '';
-    width: 4px;
-    height: 24px;
-    background: var(--p4);
-    border-radius: 2px;
-  }
-  .timer-display-container {
+  .productivity-wrapper {
     flex: 1;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    margin: 20px 0;
+    padding: 32px;
+    overflow-y: auto;
+    min-height: 0;
+    animation: fadeUp 0.6s ease-out;
   }
+  
+  .shared-container {
+    background: var(--sf);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border: 1px solid var(--bd);
+    border-radius: 32px;
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.3);
+    overflow: hidden;
+  }
+
+  .productivity-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+    height: 100%;
+  }
+
+  @media (max-width: 1024px) {
+    .productivity-grid {
+      grid-template-columns: 1fr;
+      overflow-y: auto;
+    }
+    .shared-container {
+      height: auto;
+      min-height: 100%;
+    }
+  }
+
+  .productivity-section {
+    padding: 48px;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    position: relative;
+  }
+
+  .timer-section {
+    border-right: 1px solid var(--bd);
+    align-items: center;
+    justify-content: center;
+    background: rgba(139, 92, 246, 0.02);
+  }
+
+  .todo-section {
+    background: transparent;
+  }
+
+  @media (max-width: 1024px) {
+    .timer-section {
+      border-right: none;
+      border-bottom: 1px solid var(--bd);
+      padding: 60px 24px;
+    }
+  }
+
+  .productivity-title {
+    font-size: 20px;
+    font-weight: 800;
+    margin-bottom: 32px;
+    color: var(--tx);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    letter-spacing: -0.02em;
+    position: absolute;
+    top: 40px;
+    left: 48px;
+  }
+
+  .productivity-title i {
+    font-style: normal;
+    opacity: 0.6;
+  }
+
+  /* --- Circular Timer --- */
+  .timer-circle-container {
+    position: relative;
+    width: 320px;
+    height: 320px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 40px 0;
+  }
+
+  .timer-svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+  }
+
+  .timer-circle-bg {
+    fill: none;
+    stroke: var(--bd2);
+    stroke-width: 10;
+  }
+
+  .timer-circle-progress {
+    fill: none;
+    stroke: var(--p4);
+    stroke-width: 10;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.3s ease;
+    filter: drop-shadow(0 0 12px var(--glow));
+  }
+
   .timer-display {
-    font-size: 72px;
+    font-size: 64px;
     font-weight: 800;
     text-align: center;
     font-variant-numeric: tabular-nums;
-    color: var(--p5);
-    text-shadow: 0 0 30px var(--glow);
+    color: var(--tx);
     font-family: 'Plus Jakarta Sans', sans-serif;
     letter-spacing: -0.04em;
+    z-index: 1;
   }
+
   .timer-controls {
     display: flex;
     justify-content: center;
     gap: 16px;
-    margin-top: 32px;
+    margin-top: 24px;
+    width: 100%;
+    max-width: 360px;
   }
+
   .timer-btn {
-    min-width: 140px;
-    height: 48px;
-    border-radius: 14px;
+    flex: 1;
+    height: 52px;
+    border-radius: 16px;
     font-weight: 700;
     font-size: 15px;
     display: flex;
     align-items: center;
     justify-content: center;
   }
-  .todo-section {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-  }
-  .todo-input-row {
-    display: flex;
-    gap: 12px;
+
+  /* --- To-Do Section Refinements --- */
+  .todo-header {
     margin-bottom: 24px;
-    background: var(--bg);
-    padding: 6px;
-    border-radius: 16px;
-    border: 1px solid var(--bd2);
+    padding-top: 24px;
   }
+
+  .todo-input-wrapper {
+    background: var(--bg2);
+    border: 1px solid var(--bd);
+    border-radius: 18px;
+    padding: 6px;
+    display: flex;
+    gap: 8px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+
+  .todo-input-wrapper:focus-within {
+    border-color: var(--p4);
+    box-shadow: 0 8px 24px var(--glow);
+    transform: translateY(-1px);
+  }
+
   .todo-input {
     flex: 1;
-    height: 44px;
     background: transparent;
     border: none;
-    padding: 0 12px;
-    font-size: 15px;
+    padding: 0 16px;
     color: var(--tx);
+    font-size: 15px;
     outline: none;
+    font-weight: 500;
   }
+
   .todo-add-btn {
-    height: 44px;
     width: 44px;
-    border-radius: 12px;
+    height: 44px;
+    border-radius: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0;
+    flex-shrink: 0;
   }
+
   .todo-list-container {
     flex: 1;
     overflow-y: auto;
-    padding-right: 8px;
-    margin-right: -8px;
+    padding-right: 12px;
+    margin-right: -12px;
   }
-  .todo-list-container::-webkit-scrollbar { width: 4px }
-  .todo-list-container::-webkit-scrollbar-thumb { background: var(--bd); border-radius: 2px }
-  
+
+  .todo-list-container::-webkit-scrollbar { width: 5px }
+  .todo-list-container::-webkit-scrollbar-thumb { background: var(--bd); border-radius: 10px }
+
   .todo-list {
     list-style: none;
     padding: 0;
     margin: 0;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
   }
+
   .todo-item {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 14px 16px;
     background: var(--sf2);
     border: 1px solid var(--bd2);
-    border-radius: 14px;
-    transition: all 0.2s ease;
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   }
+
   .todo-item:hover {
-    border-color: var(--bd);
-    background: var(--sf);
-    transform: translateX(4px);
+    border-color: var(--p4);
+    background: var(--cu);
+    transform: translateX(6px);
   }
+
   .todo-item.completed {
-    opacity: 0.6;
-    background: transparent;
+    opacity: 0.5;
   }
+
   .todo-item.completed .todo-text {
     text-decoration: line-through;
-    color: var(--tx3);
   }
+
   .todo-checkbox {
-    width: 22px;
-    height: 22px;
-    border-radius: 7px;
+    width: 24px;
+    height: 24px;
+    border-radius: 8px;
     border: 2px solid var(--bd);
-    background: transparent;
-    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
+    cursor: pointer;
     transition: all 0.2s;
     flex-shrink: 0;
   }
+
   .todo-checkbox.checked {
-    background: var(--p5);
-    border-color: var(--p5);
-    box-shadow: 0 0 12px var(--glow);
+    background: var(--p4);
+    border-color: var(--p4);
+    box-shadow: 0 0 15px var(--glow);
   }
+
   .todo-text {
     flex: 1;
     font-size: 15px;
-    font-weight: 500;
+    font-weight: 600;
     color: var(--tx);
   }
+
   .todo-delete {
     opacity: 0;
-    transition: all 0.2s;
-    cursor: pointer;
     color: var(--tx3);
-    padding: 4px;
-    border-radius: 6px;
+    padding: 6px;
+    border-radius: 8px;
+    transition: all 0.2s;
   }
-  .todo-delete:hover {
-    color: var(--red);
-    background: rgba(239,68,68,0.1);
-  }
+
   .todo-item:hover .todo-delete {
     opacity: 1;
   }
+
+  .todo-delete:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--red);
+  }
+
   .empty-state {
-    text-align: center;
-    padding: 60px 20px;
-    color: var(--tx3);
+    height: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
+    justify-content: center;
+    color: var(--tx3);
+    text-align: center;
+    gap: 16px;
   }
+
   .empty-icon {
-    font-size: 48px;
-    opacity: 0.5;
-    filter: grayscale(1);
-  }
-  .empty-state p {
-    font-weight: 600;
-    font-size: 14px;
+    font-size: 56px;
+    filter: drop-shadow(0 10px 20px rgba(0,0,0,0.1));
   }
 </style>
 </head>
@@ -406,61 +490,91 @@
     </header>
 
     <!-- Content -->
-    <div class="productivity-container" x-data="productivityApp()">
-      <!-- Timer Card -->
-      <div class="productivity-card">
-        <h2 class="productivity-title">Focus Timer</h2>
-        <div class="timer-display-container">
-          <div class="timer-display" x-text="formatTime(timeLeft)"></div>
-          <div class="flex justify-center gap-3 mt-6">
-            <button class="t-btn text-xs font-bold px-4 py-2 rounded-xl" :class="preset === 25 ? 'grad-bg text-white shadow-glow' : 'bg-sf2 bd tx2'" @click="setPreset(25)">25:00</button>
-            <button class="t-btn text-xs font-bold px-4 py-2 rounded-xl" :class="preset === 50 ? 'grad-bg text-white shadow-glow' : 'bg-sf2 bd tx2'" @click="setPreset(50)">50:00</button>
-            <button class="t-btn text-xs font-bold px-4 py-2 rounded-xl" :class="preset === 10 ? 'grad-bg text-white shadow-glow' : 'bg-sf2 bd tx2'" @click="setPreset(10)">10:00</button>
-          </div>
-        </div>
-        <div class="timer-controls">
-          <button class="timer-btn t-btn grad-bg text-white shadow-glow" @click="toggleTimer" x-text="isRunning ? 'Pause' : (timeLeft === totalSeconds ? 'Start' : 'Resume')"></button>
-          <button class="timer-btn t-btn bg-sf2 bd tx" @click="resetTimer">Reset</button>
-        </div>
-      </div>
-
-      <!-- Todo List Card -->
-      <div class="productivity-card">
-        <h2 class="productivity-title">To-Do List</h2>
-        <div class="todo-section">
-          <div class="todo-input-row shadow-sm">
-            <input type="text" class="todo-input" placeholder="What needs to be done?" x-model="newTask" @keyup.enter="addTask">
-            <button class="todo-add-btn t-btn grad-bg text-white" @click="addTask">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-            </button>
-          </div>
+    <div class="productivity-wrapper" x-data="productivityApp()">
+      <div class="shared-container">
+        <div class="productivity-grid">
           
-          <div class="todo-list-container">
-            <template x-if="tasks.length === 0">
-              <div class="empty-state">
-                <div class="empty-icon">📝</div>
-                <p>Your list is empty</p>
-                <span class="text-xs tx3">Add a task to stay productive!</span>
-              </div>
-            </template>
-            <ul class="todo-list">
-              <template x-for="(task, index) in tasks" :key="task.id">
-                <li class="todo-item" :class="task.completed ? 'completed' : ''">
-                  <button class="todo-checkbox" :class="task.completed ? 'checked' : ''" @click="toggleTask(index)">
-                    <svg x-show="task.completed" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                      <polyline points="20 6 9 17 4 12"/>
-                    </svg>
-                  </button>
-                  <span class="todo-text" x-text="task.text"></span>
-                  <button class="todo-delete" @click="removeTask(index)" title="Delete task">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-                    </svg>
-                  </button>
-                </li>
-              </template>
-            </ul>
+          <!-- Timer Section -->
+          <div class="productivity-section timer-section">
+            <h2 class="productivity-title">Focus Timer <i>/ Pomodoro</i></h2>
+            
+            <div class="timer-circle-container">
+              <svg class="timer-svg" viewBox="0 0 300 300">
+                <circle class="timer-circle-bg" cx="150" cy="150" r="135" />
+                <circle class="timer-circle-progress" cx="150" cy="150" r="135" 
+                  stroke-dasharray="848.2" 
+                  :stroke-dashoffset="848.2 * (1 - timeLeft / totalSeconds)" />
+              </svg>
+              <div class="timer-display" x-text="formatTime(timeLeft)"></div>
+            </div>
+
+            <div class="flex justify-center gap-3 mb-8">
+              <button class="t-btn text-xs font-bold px-6 py-2.5 rounded-xl transition-all" 
+                :class="preset === 25 ? 'grad-bg text-white shadow-glow scale-105' : 'bg-sf2 bd tx2 hover:bg-sf'" 
+                @click="setPreset(25)">25:00</button>
+              <button class="t-btn text-xs font-bold px-6 py-2.5 rounded-xl transition-all" 
+                :class="preset === 50 ? 'grad-bg text-white shadow-glow scale-105' : 'bg-sf2 bd tx2 hover:bg-sf'" 
+                @click="setPreset(50)">50:00</button>
+              <button class="t-btn text-xs font-bold px-6 py-2.5 rounded-xl transition-all" 
+                :class="preset === 10 ? 'grad-bg text-white shadow-glow scale-105' : 'bg-sf2 bd tx2 hover:bg-sf'" 
+                @click="setPreset(10)">10:00</button>
+            </div>
+
+            <div class="timer-controls">
+              <button class="timer-btn t-btn grad-bg text-white shadow-glow" @click="toggleTimer">
+                <span x-text="isRunning ? 'Pause' : (timeLeft === totalSeconds ? 'Start Session' : 'Resume')"></span>
+              </button>
+              <button class="timer-btn t-btn bg-sf2 bd tx hover:bg-sf" @click="resetTimer">Reset</button>
+            </div>
           </div>
+
+          <!-- Todo List Section -->
+          <div class="productivity-section todo-section">
+            <h2 class="productivity-title">Objectives <i>/ Tasks</i></h2>
+            
+            <div class="todo-header mt-12">
+              <div class="todo-input-wrapper">
+                <input type="text" class="todo-input" placeholder="What is your focus for this session?" x-model="newTask" @keyup.enter="addTask">
+                <button class="todo-add-btn t-btn grad-bg text-white shadow-glow" @click="addTask">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="todo-list-container">
+              <template x-if="tasks.length === 0">
+                <div class="empty-state">
+                  <div class="empty-icon">🎯</div>
+                  <div class="flex flex-col gap-1">
+                    <p class="font-bold text-lg tx">No active tasks</p>
+                    <span class="text-sm tx3">Add an objective to track your progress</span>
+                  </div>
+                </div>
+              </template>
+              
+              <ul class="todo-list">
+                <template x-for="(task, index) in tasks" :key="task.id">
+                  <li class="todo-item" :class="task.completed ? 'completed' : ''">
+                    <button class="todo-checkbox" :class="task.completed ? 'checked' : ''" @click="toggleTask(index)">
+                      <svg x-show="task.completed" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                    </button>
+                    <span class="todo-text" x-text="task.text"></span>
+                    <button class="todo-delete t-btn" @click="removeTask(index)" title="Remove task">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                      </svg>
+                    </button>
+                  </li>
+                </template>
+              </ul>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
