@@ -518,6 +518,17 @@
               <button class="t-btn text-xs font-bold px-6 py-2.5 rounded-xl transition-all" 
                 :class="preset === 10 ? 'grad-bg text-white shadow-glow scale-105' : 'bg-sf2 bd tx2 hover:bg-sf'" 
                 @click="setPreset(10)">10:00</button>
+              <template x-for="(customPreset, index) in customPresets" :key="'custom-'+index">
+                <button class="t-btn text-xs font-bold px-6 py-2.5 rounded-xl transition-all" 
+                  :class="preset === customPreset ? 'grad-bg text-white shadow-glow scale-105' : 'bg-sf2 bd tx2 hover:bg-sf'" 
+                  @click="setPreset(customPreset)">
+                  <span x-text="customPreset + ':00'"></span>
+                </button>
+              </template>
+              <button class="t-btn bg-sf2 bd tx2 hover:bg-sf px-3 py-2.5 rounded-xl text-xs font-bold" 
+                @click="showAddPresetModal = true" 
+                x-show="customPresets.length < 5"
+                title="Add custom timer">+</button>
             </div>
 
             <div class="timer-controls">
@@ -525,6 +536,18 @@
                 <span x-text="isRunning ? 'Pause' : (timeLeft === totalSeconds ? 'Start Session' : 'Resume')"></span>
               </button>
               <button class="timer-btn t-btn bg-sf2 bd tx hover:bg-sf" @click="resetTimer">Reset</button>
+            </div>
+
+            <!-- Add Custom Preset Modal -->
+            <div x-show="showAddPresetModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="showAddPresetModal = false">
+              <div class="bg-sf rounded-2xl p-6 w-80">
+                <h3 class="font-bold mb-4 tx">Add Custom Timer</h3>
+                <input type="number" min="1" max="180" x-model="newPresetMinutes" class="w-full bg-sf2 bd rounded-xl p-3 mb-4 tx" placeholder="Minutes (1-180)">
+                <div class="flex gap-3">
+                  <button class="flex-1 t-btn bg-sf2 bd tx2 rounded-xl p-2" @click="showAddPresetModal = false">Cancel</button>
+                  <button class="flex-1 t-btn grad-bg text-white rounded-xl p-2" @click="addCustomPreset">Add</button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -604,6 +627,9 @@
       timeLeft: 25 * 60, // default 25 minutes
       totalSeconds: 25 * 60,
       preset: 25,
+      customPresets: JSON.parse(localStorage.getItem('korah_custom_presets') || '[]'),
+      showAddPresetModal: false,
+      newPresetMinutes: 30,
       isRunning: false,
       timerInterval: null,
 
@@ -670,6 +696,15 @@
         this.totalSeconds = minutes * 60;
         this.timeLeft = this.totalSeconds;
         localStorage.setItem('korah_timer_preset', minutes);
+      },
+
+      addCustomPreset() {
+        const mins = parseInt(this.newPresetMinutes);
+        if (mins >= 1 && mins <= 180 && this.customPresets.length < 5) {
+          this.customPresets.push(mins);
+          localStorage.setItem('korah_custom_presets', JSON.stringify(this.customPresets));
+          this.showAddPresetModal = false;
+        }
       },
 
       notifyTimerComplete() {
