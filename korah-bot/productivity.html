@@ -298,12 +298,25 @@
     align-items: center;
     gap: 16px;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: grab;
   }
 
-  .todo-item:hover {
+  .todo-item:hover:not(.drag-over) {
     border-color: var(--p4);
     background: var(--cu);
     transform: translateX(6px);
+  }
+
+  .todo-item.drag-over {
+    border-color: var(--p4);
+    background: var(--cu);
+    transform: scale(1.02);
+  }
+
+  .todo-item.dragging {
+    opacity: 0.5;
+    transform: scale(0.98);
+    cursor: grabbing !important;
   }
 
   .todo-item.completed {
@@ -667,8 +680,17 @@
               
               <ul class="todo-list">
                 <template x-for="(task, index) in tasks" :key="task.id">
-                  <li class="todo-item" :class="task.completed ? 'completed' : ''" :style="getPriorityStyle(task.priority || 'medium')">
-                    <button class="todo-checkbox" :class="task.completed ? 'checked' : ''" @click="toggleTask(index)">
+                  <li class="todo-item" 
+                      :class="task.completed ? 'completed' : ''" 
+                      :style="getPriorityStyle(task.priority || 'medium')"
+                      draggable="true"
+                      @dragstart="handleDragStart($event, index)"
+                      @dragover="handleDragOver($event, index)"
+                      @dragleave="handleDragLeave($event)"
+                      @drop="handleDrop($event, index)"
+                      @dragend="handleDragEnd($event)"
+                      :data-index="index">
+                    <button class="todo-checkbox" :class="task.completed ? 'checked' : ''" @click="toggleTask(index)" draggable="false">
                       <svg x-show="task.completed" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="20 6 9 17 4 12"/>
                       </svg>
@@ -680,7 +702,7 @@
                         <span class="text-xs tx3" x-show="isOverdue(task.dueDate)">Overdue</span>
                       </div>
                     </div>
-                    <button class="todo-delete t-btn" @click="removeTask(index)" title="Remove task">
+                    <button class="todo-delete t-btn" @click="removeTask(index)" title="Remove task" draggable="false">
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M18 6L6 18M6 6l12 12"/>
                       </svg>
@@ -732,6 +754,7 @@
       newTaskPriority: 'medium',
       newTaskDueDate: '',
       showPriorityDropdown: false,
+      draggedIndex: null,
 
       init() {
         // Load tasks from localStorage
@@ -867,6 +890,50 @@
       removeTask(index) {
         this.tasks.splice(index, 1);
         this.saveTasks();
+      },
+
+      // Drag and drop methods
+      handleDragStart(event, index) {
+        this.draggedIndex = index;
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', index);
+        // Add dragging class to the dragged element
+        event.target.classList.add('dragging');
+      },
+
+      handleDragOver(event, index) {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'move';
+        // Add drag-over class to the target element
+        event.currentTarget.classList.add('drag-over');
+      },
+
+      handleDragLeave(event) {
+        // Remove drag-over class when leaving the element
+        event.currentTarget.classList.remove('drag-over');
+      },
+
+      handleDrop(event, index) {
+        event.preventDefault();
+        // Remove drag-over class
+        event.currentTarget.classList.remove('drag-over');
+        const fromIndex = this.draggedIndex;
+        const toIndex = index;
+        if (fromIndex === null || fromIndex === toIndex) return;
+        // Reorder tasks array
+        const task = this.tasks.splice(fromIndex, 1)[0];
+        this.tasks.splice(toIndex, 0, task);
+        this.saveTasks();
+      },
+
+      handleDragEnd(event) {
+        // Remove dragging class from the dragged element
+        event.target.classList.remove('dragging');
+        this.draggedIndex = null;
+        // Remove any remaining drag-over classes (in case drop didn't fire)
+        document.querySelectorAll('.todo-item.drag-over').forEach(el => {
+          el.classList.remove('drag-over');
+        });
       },
 
       saveTasks() {
