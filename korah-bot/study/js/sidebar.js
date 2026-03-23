@@ -527,7 +527,7 @@ function showSidebarDeleteModal(name, onConfirm) {
     // Show celebration when timer just completed
     if (state.completedAt && (Date.now() - state.completedAt < 30000)) {
       container.innerHTML = `
-        <div class="timer-celebration">
+        <div class="timer-celebration" style="color: white;">
           <div class="timer-celebration-icon">🎉</div>
           <div class="timer-celebration-text">Timer Complete!</div>
           <button class="timer-celebration-btn" onclick="window.KorahTimer.dismissCompletion()">
@@ -546,7 +546,7 @@ function showSidebarDeleteModal(name, onConfirm) {
     if (state.isRunning) {
       // Timer is running - show countdown
       container.innerHTML = `
-        <div class="timer-widget running">
+        <div class="timer-widget running" style="color: white;">
           <div class="timer-widget-display">
             <span class="timer-widget-icon pulse">🔴</span>
             <span class="timer-widget-time">${window.KorahTimer.formatTime(remaining)}</span>
@@ -567,7 +567,7 @@ function showSidebarDeleteModal(name, onConfirm) {
     } else if (isPaused) {
       // Timer is paused - show resume option
       container.innerHTML = `
-        <div class="timer-widget paused">
+        <div class="timer-widget paused" style="color: white;">
           <div class="timer-widget-display">
             <span class="timer-widget-icon">⏸️</span>
             <span class="timer-widget-time">${window.KorahTimer.formatTime(remaining)}</span>
@@ -588,23 +588,19 @@ function showSidebarDeleteModal(name, onConfirm) {
     } else {
       // Timer is idle - show presets
       container.innerHTML = `
-        <div class="timer-widget idle">
+        <div class="timer-widget idle" style="color: white;">
           <div class="timer-dropdown-header">
-            <span class="timer-dropdown-title">Quick Timer</span>
-            <a href="../productivity.html" class="timer-dropdown-link">Open Productivity →</a>
+            <span class="timer-dropdown-title">Pomodoro Timer</span>
           </div>
           <div class="timer-dropdown-presets">
             <button class="timer-preset-btn ${state.preset === 5 ? 'active' : ''}" onclick="window.KorahTimer.start(5);">
               <span class="preset-time">5:00</span>
-              <span class="preset-label">Quick Focus</span>
             </button>
             <button class="timer-preset-btn ${state.preset === 10 ? 'active' : ''}" onclick="window.KorahTimer.start(10);">
               <span class="preset-time">10:00</span>
-              <span class="preset-label">Short Break</span>
             </button>
             <button class="timer-preset-btn ${state.preset === 25 ? 'active' : ''}" onclick="window.KorahTimer.start(25);">
               <span class="preset-time">25:00</span>
-              <span class="preset-label">Pomodoro</span>
             </button>
           </div>
         </div>
