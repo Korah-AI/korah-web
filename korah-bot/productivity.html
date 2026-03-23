@@ -246,6 +246,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    height: 100%
   }
 
   .priority-dropdown > button:focus {
@@ -722,6 +723,7 @@
   </main>
 </div>
 
+<script src="../app/timer-manager.js"></script>
 <script src="../study/js/sidebar.js"></script>
 <script>
   // Initialize sidebar with productivity-specific callbacks
@@ -737,11 +739,11 @@
     }
   }, { once: true });
 
-  // Productivity app logic
+  // Productivity app logic (synced with global KorahTimer)
   function productivityApp() {
     return {
-      // Timer
-      timeLeft: 25 * 60, // default 25 minutes
+      // Timer (synced with global KorahTimer)
+      timeLeft: 25 * 60,
       totalSeconds: 25 * 60,
       preset: 25,
       customPresets: JSON.parse(localStorage.getItem('korah_custom_presets') || '[]'),
@@ -771,11 +773,31 @@
             });
           } catch (e) {}
         }
-        // Load timer preset from localStorage
-        const savedPreset = localStorage.getItem('korah_timer_preset');
-        if (savedPreset) {
-          this.setPreset(parseInt(savedPreset) || 25);
+
+        // Sync with global timer
+        this.syncWithGlobalTimer();
+        
+        // Listen for global timer updates
+        if (window.KorahTimer) {
+          window.KorahTimer.addListener((eventType, state) => {
+            this.syncWithGlobalTimer();
+          });
         }
+        
+        // Update display every second
+        setInterval(() => {
+          this.syncWithGlobalTimer();
+        }, 1000);
+      },
+
+      syncWithGlobalTimer() {
+        if (!window.KorahTimer) return;
+        
+        const state = window.KorahTimer.getState();
+        this.timeLeft = window.KorahTimer.getRemainingSeconds();
+        this.totalSeconds = state.totalSeconds;
+        this.preset = state.preset;
+        this.isRunning = state.isRunning;
       },
 
       // Timer methods
@@ -786,42 +808,34 @@
       },
 
       toggleTimer() {
-        if (this.isRunning) {
-          this.pauseTimer();
-        } else {
-          this.startTimer();
+        if (window.KorahTimer) {
+          window.KorahTimer.toggle();
         }
       },
 
       startTimer() {
-        if (this.timeLeft <= 0) return;
-        this.isRunning = true;
-        this.timerInterval = setInterval(() => {
-          if (this.timeLeft > 0) {
-            this.timeLeft--;
-          } else {
-            this.pauseTimer();
-            this.notifyTimerComplete();
-          }
-        }, 1000);
+        if (window.KorahTimer) {
+          window.KorahTimer.start(this.preset);
+        }
       },
 
       pauseTimer() {
-        this.isRunning = false;
-        clearInterval(this.timerInterval);
+        if (window.KorahTimer) {
+          window.KorahTimer.pause();
+        }
       },
 
       resetTimer() {
-        this.pauseTimer();
-        this.timeLeft = this.totalSeconds;
+        if (window.KorahTimer) {
+          window.KorahTimer.reset(this.preset);
+        }
       },
 
       setPreset(minutes) {
-        this.pauseTimer();
         this.preset = minutes;
-        this.totalSeconds = minutes * 60;
-        this.timeLeft = this.totalSeconds;
-        localStorage.setItem('korah_timer_preset', minutes);
+        if (window.KorahTimer) {
+          window.KorahTimer.setPreset(minutes);
+        }
       },
 
       addCustomPreset() {
@@ -831,11 +845,6 @@
           localStorage.setItem('korah_custom_presets', JSON.stringify(this.customPresets));
           this.showAddPresetModal = false;
         }
-      },
-
-      notifyTimerComplete() {
-        // Simple alert for now; could be a nicer notification
-        alert('Timer completed! Take a break.');
       },
 
       // Todo methods

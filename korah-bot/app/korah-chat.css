@@ -3617,3 +3617,261 @@ html {
     0%, 100% { opacity: 0.4; }
     50% { opacity: 0.2; }
 }
+
+/* ── Timer Widget in Sidebar ── */
+.productivity-wrapper {
+    position: relative;
+}
+
+.timer-widget-container {
+    margin: 6px 10px 10px;
+    padding: 10px 12px;
+    background: var(--sf2);
+    border: 1px solid var(--bd);
+    border-radius: 12px;
+    animation: fadeUp 0.2s ease-out;
+}
+
+.timer-widget-container.hidden {
+    display: none;
+}
+
+.timer-widget {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.timer-widget-display {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.timer-widget-icon {
+    font-size: 10px;
+}
+
+.timer-widget-time {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--tx);
+    font-variant-numeric: tabular-nums;
+}
+
+.timer-widget-progress {
+    height: 4px;
+    background: var(--bd2);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.timer-widget-progress-bar {
+    height: 100%;
+    background: var(--p4);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+.timer-widget-controls {
+    display: flex;
+    gap: 6px;
+    justify-content: flex-end;
+}
+
+.timer-widget-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    border: 1px solid var(--bd);
+    background: var(--sf);
+    color: var(--tx2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.timer-widget-btn:hover {
+    background: var(--cu);
+    border-color: var(--p4);
+    color: var(--p5);
+}
+
+/* ── Timer Dropdown ── */
+.timer-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--sf);
+    border: 1px solid var(--bd);
+    border-radius: 16px;
+    padding: 12px;
+    z-index: 100;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.2s ease;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    margin-top: 4px;
+}
+
+.timer-dropdown.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.timer-dropdown-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--bd2);
+}
+
+.timer-dropdown-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--tx);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.timer-dropdown-link {
+    font-size: 11px;
+    color: var(--p4);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.timer-dropdown-link:hover {
+    color: var(--p5);
+}
+
+.timer-dropdown-status {
+    background: var(--bg2);
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 12px;
+}
+
+.timer-dropdown-status.paused {
+    background: rgba(139, 92, 246, 0.1);
+}
+
+.timer-dropdown-time {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--tx);
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    margin-bottom: 8px;
+}
+
+.timer-dropdown-progress {
+    height: 6px;
+    background: var(--bd2);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.timer-dropdown-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--p4), var(--p5));
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+.timer-dropdown-controls {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+}
+
+.timer-dropdown-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--bd);
+    background: var(--sf);
+    color: var(--tx2);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.timer-dropdown-btn:hover {
+    background: var(--cu);
+    border-color: var(--p4);
+    color: var(--p5);
+}
+
+.timer-dropdown-btn.resume-btn {
+    background: var(--p4);
+    border-color: var(--p4);
+    color: white;
+}
+
+.timer-dropdown-btn.resume-btn:hover {
+    background: var(--p5);
+}
+
+.timer-dropdown-presets {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.timer-preset-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--bd2);
+    background: var(--bg2);
+    color: var(--tx);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.timer-preset-btn:hover {
+    border-color: var(--p4);
+    background: var(--cu);
+    transform: translateX(4px);
+}
+
+.timer-preset-btn.active {
+    border-color: var(--p4);
+    background: rgba(139, 92, 246, 0.15);
+}
+
+.preset-time {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--p4);
+}
+
+.preset-label {
+    font-size: 11px;
+    color: var(--tx3);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Hide dropdown when sidebar is collapsed */
+.sidebar.collapsed .timer-dropdown,
+.sidebar.collapsed .timer-widget-container {
+    display: none !important;
+}
