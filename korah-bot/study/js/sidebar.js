@@ -690,7 +690,13 @@ function showSidebarDeleteModal(name, onConfirm) {
       </div>
     `;
 
-    wrapper.appendChild(dropdown);
+    // Insert dropdown BEFORE the timer widget container
+    const timerContainer = wrapper.querySelector('.timer-widget-container');
+    if (timerContainer) {
+      wrapper.insertBefore(dropdown, timerContainer);
+    } else {
+      wrapper.appendChild(dropdown);
+    }
 
     // Close dropdown when clicking outside
     setTimeout(() => {
