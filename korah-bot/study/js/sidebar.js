@@ -707,6 +707,21 @@ function showSidebarDeleteModal(name, onConfirm) {
     const container = document.getElementById('timer-widget-container');
     if (!container) return;
 
+    // Show celebration when timer just completed
+    if (state.completedAt && (Date.now() - state.completedAt < 30000)) {
+      container.classList.remove('hidden');
+      container.innerHTML = `
+        <div class="timer-celebration">
+          <div class="timer-celebration-icon">🎉</div>
+          <div class="timer-celebration-text">Timer Complete!</div>
+          <button class="timer-celebration-btn" onclick="window.KorahTimer.dismissCompletion()">
+            Start New Timer
+          </button>
+        </div>
+      `;
+      return;
+    }
+
     if (state.isRunning || (state.totalSeconds > 0 && state.totalSeconds < state.preset * 60)) {
       container.classList.remove('hidden');
       

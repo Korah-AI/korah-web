@@ -718,6 +718,37 @@
 
         </div>
       </div>
+      
+      <!-- Celebration Overlay -->
+      <template x-if="showCelebration">
+        <div class="productivity-celebration-overlay" @click.self="dismissCelebration()">
+          <div class="productivity-celebration-card">
+            <div class="productivity-celebration-emoji">🎉</div>
+            <h2 class="productivity-celebration-title">Session Complete!</h2>
+            <p class="productivity-celebration-message">
+              Great work! You stayed focused for the entire session. Take a break and recharge!
+            </p>
+            <div class="productivity-celebration-stats">
+              <div class="productivity-celebration-stat">
+                <div class="productivity-celebration-stat-value" x-text="preset + ':00'"></div>
+                <div class="productivity-celebration-stat-label">Duration</div>
+              </div>
+              <div class="productivity-celebration-stat">
+                <div class="productivity-celebration-stat-value">100%</div>
+                <div class="productivity-celebration-stat-label">Completed</div>
+              </div>
+            </div>
+            <div class="productivity-celebration-actions">
+              <button class="productivity-celebration-btn secondary" @click="dismissCelebration()">
+                Dismiss
+              </button>
+              <button class="productivity-celebration-btn primary" @click="dismissCelebration(); setPreset(preset); toggleTimer()">
+                Start Another
+              </button>
+            </div>
+          </div>
+        </div>
+      </template>
     </div>
 
   </main>
@@ -751,6 +782,8 @@
       newPresetMinutes: 30,
       isRunning: false,
       timerInterval: null,
+      showCelebration: false,
+      confettiElements: [],
 
       // Todo list
       tasks: [],
@@ -781,6 +814,18 @@
         if (window.KorahTimer) {
           window.KorahTimer.addListener((eventType, state) => {
             this.syncWithGlobalTimer();
+            
+            // Show celebration on completion
+            if (eventType === 'complete') {
+              this.showCelebration = true;
+              this.spawnConfetti();
+            }
+            
+            // Hide celebration when dismissed
+            if (eventType === 'dismiss') {
+              this.showCelebration = false;
+              this.clearConfetti();
+            }
           });
         }
         
@@ -798,6 +843,50 @@
         this.totalSeconds = state.totalSeconds;
         this.preset = state.preset;
         this.isRunning = state.isRunning;
+        
+        // Check if we should show celebration (coming back to page after completion)
+        if (state.completedAt && (Date.now() - state.completedAt < 30000)) {
+          this.showCelebration = true;
+        }
+      },
+
+      // Confetti animation
+      spawnConfetti() {
+        const container = document.createElement('div');
+        container.className = 'confetti-container';
+        document.body.appendChild(container);
+        
+        const colors = ['#8b5cf6', '#a78bfa', '#f0abfc', '#fbbf24', '#34d399', '#f87171'];
+        
+        for (let i = 0; i < 50; i++) {
+          const confetti = document.createElement('div');
+          confetti.className = 'confetti';
+          confetti.style.left = Math.random() * 100 + '%';
+          confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+          confetti.style.animationDelay = Math.random() * 2 + 's';
+          confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+          container.appendChild(confetti);
+        }
+        
+        this.confettiElements.push(container);
+        
+        // Auto-remove after animation
+        setTimeout(() => {
+          this.clearConfetti();
+        }, 5000);
+      },
+
+      clearConfetti() {
+        this.confettiElements.forEach(el => el.remove());
+        this.confettiElements = [];
+      },
+
+      dismissCelebration() {
+        this.showCelebration = false;
+        this.clearConfetti();
+        if (window.KorahTimer) {
+          window.KorahTimer.dismissCompletion();
+        }
       },
 
       // Timer methods

@@ -240,17 +240,31 @@
         isRunning: false,
         endTime: null,
         totalSeconds: 0,
-        startedAt: null
+        startedAt: null,
+        completedAt: Date.now()  // Track when it completed for celebration
       };
       
       this._saveState(newState);
       this._stopUpdateLoop();
       
-      // Notify listeners
+      // Notify listeners with completion event
       this._notifyListeners('complete');
+    }
+    
+    /**
+     * Dismiss the completion celebration
+     */
+    dismissCompletion() {
+      const state = this.getState();
       
-      // Show alert
-      alert('Timer completed! Take a break.');
+      const newState = {
+        ...state,
+        completedAt: null,
+        totalSeconds: state.preset * 60  // Reset to preset
+      };
+      
+      this._saveState(newState);
+      this._notifyListeners('dismiss');
     }
 
     /**
