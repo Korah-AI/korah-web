@@ -615,9 +615,9 @@ function showSidebarDeleteModal(name, onConfirm) {
       }
     });
 
-    // Create timer widget container (initially hidden)
+    // Create timer widget container (always visible below dropdown)
     const widgetContainer = document.createElement('div');
-    widgetContainer.className = 'timer-widget-container hidden';
+    widgetContainer.className = 'timer-widget-container';
     widgetContainer.id = 'timer-widget-container';
     wrapper.appendChild(widgetContainer);
 
@@ -709,7 +709,6 @@ function showSidebarDeleteModal(name, onConfirm) {
 
     // Show celebration when timer just completed
     if (state.completedAt && (Date.now() - state.completedAt < 30000)) {
-      container.classList.remove('hidden');
       container.innerHTML = `
         <div class="timer-celebration">
           <div class="timer-celebration-icon">🎉</div>
@@ -722,27 +721,46 @@ function showSidebarDeleteModal(name, onConfirm) {
       return;
     }
 
-    if (state.isRunning || (state.totalSeconds > 0 && state.totalSeconds < state.preset * 60)) {
-      container.classList.remove('hidden');
-      
-      const remaining = window.KorahTimer.getRemainingSeconds();
-      const progress = window.KorahTimer.getProgress();
+    const remaining = window.KorahTimer.getRemainingSeconds();
+    const progress = window.KorahTimer.getProgress();
+    const isIdle = !state.isRunning && state.totalSeconds === state.preset * 60;
+    const isPaused = !state.isRunning && state.totalSeconds < state.preset * 60 && state.totalSeconds > 0;
 
+    if (state.isRunning) {
+      // Timer is running - show countdown
       container.innerHTML = `
-        <div class="timer-widget">
+        <div class="timer-widget running">
           <div class="timer-widget-display">
-            <span class="timer-widget-icon">${state.isRunning ? '🔴' : '⏸️'}</span>
+            <span class="timer-widget-icon pulse">🔴</span>
             <span class="timer-widget-time">${window.KorahTimer.formatTime(remaining)}</span>
           </div>
           <div class="timer-widget-progress">
             <div class="timer-widget-progress-bar" style="width: ${progress}%"></div>
           </div>
           <div class="timer-widget-controls">
-            <button class="timer-widget-btn" onclick="window.KorahTimer.toggle()" title="${state.isRunning ? 'Pause' : 'Resume'}">
-              ${state.isRunning ? 
-                '<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>' :
-                '<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>'
-              }
+            <button class="timer-widget-btn" onclick="window.KorahTimer.pause()" title="Pause">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+            </button>
+            <button class="timer-widget-btn" onclick="window.KorahTimer.reset(${state.preset})" title="Reset">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+            </button>
+          </div>
+        </div>
+      `;
+    } else if (isPaused) {
+      // Timer is paused - show resume option
+      container.innerHTML = `
+        <div class="timer-widget paused">
+          <div class="timer-widget-display">
+            <span class="timer-widget-icon">⏸️</span>
+            <span class="timer-widget-time">${window.KorahTimer.formatTime(remaining)}</span>
+          </div>
+          <div class="timer-widget-progress">
+            <div class="timer-widget-progress-bar" style="width: ${progress}%"></div>
+          </div>
+          <div class="timer-widget-controls">
+            <button class="timer-widget-btn resume" onclick="window.KorahTimer.resume()" title="Resume">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             </button>
             <button class="timer-widget-btn" onclick="window.KorahTimer.reset(${state.preset})" title="Reset">
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
@@ -751,7 +769,21 @@ function showSidebarDeleteModal(name, onConfirm) {
         </div>
       `;
     } else {
-      container.classList.add('hidden');
+      // Timer is idle - show start button
+      container.innerHTML = `
+        <div class="timer-widget idle">
+          <div class="timer-widget-display">
+            <span class="timer-widget-icon">⏱️</span>
+            <span class="timer-widget-time idle">${state.preset}:00</span>
+          </div>
+          <div class="timer-widget-controls single">
+            <button class="timer-widget-btn start" onclick="window.KorahTimer.start(${state.preset})" title="Start ${state.preset} min timer">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              <span>Start</span>
+            </button>
+          </div>
+        </div>
+      `;
     }
   }
 
