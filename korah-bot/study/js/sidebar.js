@@ -331,108 +331,7 @@ function showSidebarDeleteModal(name, onConfirm) {
     });
   }
 
-  function initSidebar(options) {
-    const { chatHistoryId, studyItemsId, chatBaseUrl, itemPageUrl, onItemClick, activeId } = options || {};
-    const chatEl = document.getElementById(chatHistoryId || "chat-history");
-    const studyEl = document.getElementById(studyItemsId || "study-items-history");
-    const resolvedBaseUrl = chatBaseUrl || "../index.html";
-    const resolvedItemUrl = itemPageUrl || "item.html";
 
-    // 1. Immediate UI: Background, Toggle, and State
-    initBackground();
-
-    const sidebar = document.getElementById("sidebar");
-    const toggle = document.getElementById("sidebar-toggle");
-    let overlay = document.querySelector(".sidebar-overlay");
-    if (!overlay) {
-      overlay = document.createElement("div");
-      overlay.className = "sidebar-overlay";
-      document.body.appendChild(overlay);
-    }
-
-    function isMobile() { return window.innerWidth <= 768; }
-
-    function updateSidebarState(collapsed) {
-      if (collapsed) sidebar?.classList.add("collapsed");
-      else sidebar?.classList.remove("collapsed");
-      localStorage.setItem("korah_sidebar_collapsed", collapsed);
-    }
-
-    const isCollapsed = localStorage.getItem("korah_sidebar_collapsed") === "true";
-    if (sidebar && !isMobile()) updateSidebarState(isCollapsed);
-
-    if (toggle && sidebar) {
-      toggle.addEventListener("click", () => {
-        if (isMobile()) {
-          sidebar.classList.toggle("mobile-open");
-          overlay.classList.toggle("show");
-        } else {
-          updateSidebarState(!sidebar.classList.contains("collapsed"));
-        }
-      });
-    }
-
-    overlay.addEventListener("click", () => {
-      sidebar?.classList.remove("mobile-open");
-      overlay.classList.remove("show");
-    });
-
-    window.addEventListener("resize", () => {
-      if (!isMobile()) {
-        sidebar?.classList.remove("mobile-open");
-        overlay.classList.remove("show");
-      }
-    });
-
-    // 2. Data Logic: Sync with Firestore/Cache
-    function startWithDB() {
-      const cachedSessions = localStorage.getItem("korah_sessions_cache");
-      const cachedStudyItems = localStorage.getItem("korah_study_items_cache");
-      
-      if (cachedSessions) {
-        try {
-          const parsed = JSON.parse(cachedSessions);
-          if (Object.keys(parsed).length > 0) {
-            _sessionsCache = parsed;
-            renderChatHistory(chatEl, resolvedBaseUrl);
-            if (activeId) updateActiveItem(activeId);
-          }
-        } catch (e) {}
-      }
-      if (cachedStudyItems) {
-        try {
-          const parsed = JSON.parse(cachedStudyItems);
-          if (Object.keys(parsed).length > 0) {
-            _studyItemsCache = parsed;
-            renderStudyItemsHistory(studyEl, resolvedItemUrl);
-          }
-        } catch (e) {}
-      }
-
-      if (window.KorahDB) {
-        window.KorahDB.onConversationsChange((snapshot) => {
-          _sessionsCache = snapshot;
-          localStorage.setItem("korah_sessions_cache", JSON.stringify(snapshot));
-          renderChatHistory(chatEl, resolvedBaseUrl);
-          if (activeId) updateActiveItem(activeId);
-        });
-        window.KorahDB.onStudyItemsChange((snapshot) => {
-          _studyItemsCache = snapshot;
-          localStorage.setItem("korah_study_items_cache", JSON.stringify(snapshot));
-          renderStudyItemsHistory(studyEl, resolvedItemUrl);
-        });
-      } else {
-        renderChatHistory(chatEl, resolvedBaseUrl);
-        renderStudyItemsHistory(studyEl, resolvedItemUrl);
-        if (activeId) updateActiveItem(activeId);
-      }
-      initChatMultiSelect(chatEl, resolvedBaseUrl, onItemClick);
-      initStudyMultiSelect(studyEl, resolvedItemUrl);
-    }
-
-    if (window._korahReadyFired) startWithDB();
-    else window.addEventListener("korahReady", startWithDB, { once: true });
-  }
 
   // ── Multi-select Logic ──
   function initChatMultiSelect(container, baseUrl, onItemClick) {
@@ -604,18 +503,7 @@ function showSidebarDeleteModal(name, onConfirm) {
     productivityLink.parentNode.insertBefore(wrapper, productivityLink);
     wrapper.appendChild(productivityLink);
 
-    // Add dropdown toggle behavior to productivity link
-    productivityLink.addEventListener('click', (e) => {
-      e.preventDefault();
-      const dropdown = wrapper.querySelector('.timer-dropdown');
-      if (dropdown) {
-        dropdown.classList.toggle('show');
-      } else {
-        createTimerDropdown(wrapper);
-      }
-    });
-
-    // Create timer widget container (always visible below dropdown)
+    // Create timer widget container (always visible)
     const widgetContainer = document.createElement('div');
     widgetContainer.className = 'timer-widget-container';
     widgetContainer.id = 'timer-widget-container';
@@ -630,84 +518,7 @@ function showSidebarDeleteModal(name, onConfirm) {
     updateTimerWidget(window.KorahTimer.getState());
   }
 
-  function createTimerDropdown(wrapper) {
-    const dropdown = document.createElement('div');
-    dropdown.className = 'timer-dropdown show';
-    
-    const state = window.KorahTimer.getState();
-    const remaining = window.KorahTimer.getRemainingSeconds();
-    const progress = window.KorahTimer.getProgress();
 
-    dropdown.innerHTML = `
-      <div class="timer-dropdown-header">
-        <span class="timer-dropdown-title">Quick Timer</span>
-        <a href="../productivity.html" class="timer-dropdown-link" onclick="event.stopPropagation()">Open Productivity →</a>
-      </div>
-      
-      ${state.isRunning ? `
-        <div class="timer-dropdown-status">
-          <div class="timer-dropdown-time">${window.KorahTimer.formatTime(remaining)}</div>
-          <div class="timer-dropdown-progress">
-            <div class="timer-dropdown-progress-bar" style="width: ${progress}%"></div>
-          </div>
-          <div class="timer-dropdown-controls">
-            <button class="timer-dropdown-btn pause-btn" onclick="event.stopPropagation(); window.KorahTimer.pause();">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
-            </button>
-            <button class="timer-dropdown-btn reset-btn" onclick="event.stopPropagation(); window.KorahTimer.reset(${state.preset});">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-            </button>
-          </div>
-        </div>
-      ` : remaining < state.totalSeconds ? `
-        <div class="timer-dropdown-status paused">
-          <div class="timer-dropdown-time">${window.KorahTimer.formatTime(remaining)}</div>
-          <div class="timer-dropdown-controls">
-            <button class="timer-dropdown-btn resume-btn" onclick="event.stopPropagation(); window.KorahTimer.resume();">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-              Resume
-            </button>
-            <button class="timer-dropdown-btn reset-btn" onclick="event.stopPropagation(); window.KorahTimer.reset(${state.preset});">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-            </button>
-          </div>
-        </div>
-      ` : ''}
-      
-      <div class="timer-dropdown-presets">
-        <button class="timer-preset-btn" onclick="event.stopPropagation(); window.KorahTimer.start(5);">
-          <span class="preset-time">5:00</span>
-          <span class="preset-label">Quick Focus</span>
-        </button>
-        <button class="timer-preset-btn" onclick="event.stopPropagation(); window.KorahTimer.start(10);">
-          <span class="preset-time">10:00</span>
-          <span class="preset-label">Short Break</span>
-        </button>
-        <button class="timer-preset-btn ${state.preset === 25 ? 'active' : ''}" onclick="event.stopPropagation(); window.KorahTimer.start(25);">
-          <span class="preset-time">25:00</span>
-          <span class="preset-label">Pomodoro</span>
-        </button>
-      </div>
-    `;
-
-    // Insert dropdown BEFORE the timer widget container
-    const timerContainer = wrapper.querySelector('.timer-widget-container');
-    if (timerContainer) {
-      wrapper.insertBefore(dropdown, timerContainer);
-    } else {
-      wrapper.appendChild(dropdown);
-    }
-
-    // Close dropdown when clicking outside
-    setTimeout(() => {
-      document.addEventListener('click', function closeDropdown(e) {
-        if (!wrapper.contains(e.target)) {
-          dropdown.classList.remove('show');
-          document.removeEventListener('click', closeDropdown);
-        }
-      });
-    }, 0);
-  }
 
   function updateTimerWidget(state) {
     const container = document.getElementById('timer-widget-container');
@@ -775,17 +586,25 @@ function showSidebarDeleteModal(name, onConfirm) {
         </div>
       `;
     } else {
-      // Timer is idle - show start button
+      // Timer is idle - show presets
       container.innerHTML = `
         <div class="timer-widget idle">
-          <div class="timer-widget-display">
-            <span class="timer-widget-icon">⏱️</span>
-            <span class="timer-widget-time idle">${state.preset}:00</span>
+          <div class="timer-dropdown-header">
+            <span class="timer-dropdown-title">Quick Timer</span>
+            <a href="../productivity.html" class="timer-dropdown-link">Open Productivity →</a>
           </div>
-          <div class="timer-widget-controls single">
-            <button class="timer-widget-btn start" onclick="window.KorahTimer.start(${state.preset})" title="Start ${state.preset} min timer">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-              <span>Start</span>
+          <div class="timer-dropdown-presets">
+            <button class="timer-preset-btn ${state.preset === 5 ? 'active' : ''}" onclick="window.KorahTimer.start(5);">
+              <span class="preset-time">5:00</span>
+              <span class="preset-label">Quick Focus</span>
+            </button>
+            <button class="timer-preset-btn ${state.preset === 10 ? 'active' : ''}" onclick="window.KorahTimer.start(10);">
+              <span class="preset-time">10:00</span>
+              <span class="preset-label">Short Break</span>
+            </button>
+            <button class="timer-preset-btn ${state.preset === 25 ? 'active' : ''}" onclick="window.KorahTimer.start(25);">
+              <span class="preset-time">25:00</span>
+              <span class="preset-label">Pomodoro</span>
             </button>
           </div>
         </div>
