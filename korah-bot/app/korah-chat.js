@@ -723,7 +723,7 @@
   }
 
   function normalizeMathDelimiters(markdownText) {
-    if (!markdownText) return "";
+    if (!markdownText) return markdownText;
 
     return markdownText
       .split(/(```[\s\S]*?```)/g)
@@ -731,15 +731,11 @@
         if (segment.startsWith("```")) return segment;
 
         return segment
-          .replace(/(^|\s)\(([^()\n]*[_^{}][^()\n]*)\)(?=\s|[.,;:!?]|$)/g, function (_, prefix, expr) {
-            return prefix + "\\(" + expr.trim() + "\\)";
+          .replace(/\\\((.*?)\\\)/gs, function (_, expr) {
+            return "$" + expr.trim() + "$";
           })
-          .replace(/(^|\n)([ \t]*)(?![-*]\s|>\s|#{1,6}\s)([^`\n]*[_^{}][^`\n]*)(?=\n|$)/g, function (_, lineStart, indent, line) {
-            var trimmed = line.trim();
-            if (!trimmed) return _;
-            if (/^(\\\(|\\\[|\$\$)/.test(trimmed)) return _;
-            if (!/[=+\-*/]|\\[a-zA-Z]+/.test(trimmed)) return _;
-            return lineStart + indent + "\\(" + trimmed + "\\)";
+          .replace(/\\[(.*?)]/gs, function (_, expr) {
+            return "$$" + expr.trim() + "$$";
           });
       })
       .join("");
@@ -777,6 +773,7 @@
         window.renderMathInElement(targetEl, {
           delimiters: [
             { left: "$$", right: "$$", display: true },
+            { left: "$", right: "$", display: false },
             { left: "\\(", right: "\\)", display: false },
           ],
           throwOnError: false,
@@ -1666,9 +1663,9 @@
 - Help with study strategies, time management, and motivation
 
 KaTeX delimiter policy (REQUIRED for all math):
-- Inline math: \\(...\\)
-- Display math: $$...$$
-- NEVER use $...$, \\[...\\], or bare math without delimiters`,
+- Inline math: $...$ (single dollar signs)
+- Display math: $$...$$ (double dollar signs)
+- NEVER use \\(...\\), \\[...\\], or bare math without delimiters`,
 
     math: `You are Korah, a math tutor who makes math intuitive and approachable. Your teaching style:
 - Show your work at each step and explain why each step is necessary
@@ -1677,9 +1674,9 @@ KaTeX delimiter policy (REQUIRED for all math):
 - When showing mathematical relationships, consider including a Desmos graph for functions
 
 KaTeX delimiter policy (REQUIRED for all math):
-- Inline math: \\(...\\)
-- Display math: $$...$$
-- NEVER use $...$, \\[...\\], or bare math without delimiters`,
+- Inline math: $...$ (single dollar signs)
+- Display math: $$...$$ (double dollar signs)
+- NEVER use \\(...\\), \\[...\\], or bare math without delimiters`,
 
     physics: `You are Korah, an engaging physics tutor. Your teaching style:
 - Explain concepts through real-world applications and examples
@@ -1690,9 +1687,9 @@ KaTeX delimiter policy (REQUIRED for all math):
 - Help visualize forces, motion, energy, and other physical concepts
 
 KaTeX delimiter policy (REQUIRED for all math):
-- Inline math: \\(...\\)
-- Display math: $$...$$
-- NEVER use $...$, \\[...\\], or bare math without delimiters
+- Inline math: $...$ (single dollar signs)
+- Display math: $...$ (double dollar signs)
+- NEVER use \\(...\\), \\[...\\], or bare math without delimiters
 - Consider including a Desmos graph for functions`,
 
     chemistry: `You are Korah, an enthusiastic chemistry tutor. Your teaching style:
@@ -1704,9 +1701,9 @@ KaTeX delimiter policy (REQUIRED for all math):
 - Show balanced equations and explain stoichiometry clearly
 
 KaTeX delimiter policy (REQUIRED for all math):
-- Inline math: \\(...\\)
-- Display math: $$...$$
-- NEVER use $...$, \\[...\\], or bare math without delimiters`,
+- Inline math: $...$ (single dollar signs)
+- Display math: $$...$$ (double dollar signs)
+- NEVER use \\(...\\), \\[...\\], or bare math without delimiters`,
 
     biology: `You are Korah, a knowledgeable biology tutor. Your teaching style:
 - Explain life processes from molecular to organism level
@@ -1717,9 +1714,9 @@ KaTeX delimiter policy (REQUIRED for all math):
 - Emphasize the interconnectedness of living systems
 
 KaTeX delimiter policy (REQUIRED for all math):
-- Inline math: \\(...\\)
-- Display math: $$...$$
-- NEVER use $...$, \\[...\\], or bare math without delimiters`,
+- Inline math: $...$ (single dollar signs)
+- Display math: $$...$$ (double dollar signs)
+- NEVER use \\(...\\), \\[...\\], or bare math without delimiters`,
 
     history: `You are Korah, an insightful history tutor. Your teaching style:
 - Provide context and background for historical events
@@ -1740,11 +1737,11 @@ KaTeX delimiter policy (REQUIRED for all math):
 
   const FORMAT_INSTRUCTIONS = `
 - KATEX DELIMITER POLICY (REQUIRED):
-  - Inline math: \\(...\\)
-  - Display math: $$...$$
-- NEVER use $...$, \\[...\\], [ ... ], or bare math without delimiters
+  - Inline math: $...$ (single dollar signs)
+  - Display math: $$...$$ (double dollar signs)
+- NEVER use \\(...\\), \\[...\\], [ ... ], or bare math without delimiters
 - Ensure all math delimiters are balanced, and put display math on its own line
-- If you write a formula in parentheses, include the delimiters literally, for example \\(P_{initial} = P_{final}\\), never just (P_{initial} = P_{final})
+- If you write a formula in text, include the delimiters literally, for example $P_{initial} = P_{final}$, never just (P_{initial} = P_{final})
 
 INTERACTIVE GRAPHS: When showing mathematical functions or graphs, use the Desmos format:
 \`\`\`desmos
