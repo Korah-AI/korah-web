@@ -1261,7 +1261,7 @@
     // Generate 2-3 contextual follow-up questions based on AI response content
     const suggestions = [];
     const response = aiResponse.toLowerCase();
-    const mode = currentSession.mode || "physics";
+    const mode = currentSession.mode || "general";
 
     // Mode-specific keyword-based suggestions
     if (mode === "math") {
@@ -1354,7 +1354,7 @@
     const suggestionBar = document.getElementById("suggestion-bar");
     if (!suggestionBar) return;
 
-    const mode = currentSession.mode || "physics";
+    const mode = currentSession.mode || "general";
     const suggestions = getFollowUpActionsForMode(mode);
 
     suggestionBar.innerHTML = "";
@@ -1385,7 +1385,7 @@
 
   async function callChatApi(messages, onChunk = null, options = {}) {
     const { systemPromptOverride } = options || {};
-    const systemPrompt = systemPromptOverride || getSystemPrompt(currentSession.mode || "physics");
+    const systemPrompt = systemPromptOverride || getSystemPrompt(currentSession.mode || "general");
     const messagesWithSystem = [
       { role: "system", content: systemPrompt },
       ...messages
@@ -1533,7 +1533,7 @@
     history.length = 0;
     history.push(...currentSession.messages);
     
-    applyModeTheme(session.mode || "physics");
+    applyModeTheme(session.mode || "general");
     loadSessionMessages();
     renderChatHistory();
   }
@@ -1547,7 +1547,7 @@
       if (sessionIds.length > 0) {
         switchToSession(sessionIds[0]);
       } else {
-        const newId = Storage.createSession("New Chat", "physics");
+        const newId = Storage.createSession("New Chat", "general");
         switchToSession(newId);
       }
     }
