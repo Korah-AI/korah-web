@@ -13,4 +13,4 @@ STEPS TO FOLLOW
 * You can't use LiveServer to preview your changes. As you go, you're gonna have to make a commit, wait a bit, then check Korah.app. 
 * If you make a mistake just use `git reset --hard HEAD~1  \n  git push --force-with-lease origin BRANCH-NAME` and it'll revert the branch to what it was before your last commit. The next time you commit, it'll update the website.
 
-You can do any other UI updates you think are fit, but make sure these are done first for release.
+You can do any other UI updates you think are fit, but make sure these are done first for release. 
