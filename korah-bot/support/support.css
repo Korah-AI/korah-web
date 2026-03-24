@@ -11,7 +11,7 @@
 }
 
 body {
-    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     line-height: 1.6;
     overflow-x: hidden;
     isolation: isolate;
@@ -164,6 +164,7 @@ body {
 .logo-small {
     width: 32px;
     height: 32px;
+    flex-shrink: 0;
 }
 
 .logo-small .logo-k {
@@ -469,6 +470,9 @@ body {
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 16px;
     margin-top: 36px;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .link-card {
@@ -503,72 +507,99 @@ body {
 .footer {
     background: var(--bg);
     border-top: 1px solid var(--bd);
-    padding: 48px 24px 32px;
+    padding: 60px clamp(20px, 6vw, 80px) 40px;
     transition: background-color 0.4s, border-color 0.4s;
 }
 
-.footer-content {
+.footer-grid {
     max-width: 1100px;
     margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 24px;
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 48px;
 }
 
 .footer-brand {
-    text-align: center;
-}
-
-.footer-logo {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 10px;
-    margin-bottom: 8px;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.footer-brand-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
 }
 
 .footer-title {
     font-family: 'Playfair Display', serif;
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 700;
     color: var(--tx);
 }
 
 .footer-tagline {
-    font-size: 11px;
+    font-size: 9px;
     font-weight: 600;
-    letter-spacing: 2px;
+    letter-spacing: 2.5px;
     text-transform: uppercase;
     color: var(--p4);
 }
 
-.footer-links {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 24px;
+.footer-desc {
+    font-size: 14px;
+    color: var(--tx2);
+    line-height: 1.7;
+    max-width: 280px;
 }
 
-.footer-links a {
-    font-size: 13px;
+.footer-heading {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--p5);
+    margin-bottom: 16px;
+}
+
+.footer-link {
+    display: block;
+    font-size: 14px;
     color: var(--tx2);
     text-decoration: none;
+    padding: 6px 0;
     transition: color 0.2s;
 }
 
-.footer-links a:hover {
+.footer-link:hover {
     color: var(--p4);
 }
 
-.footer-copyright {
-    text-align: center;
-}
-
-.footer-copyright p {
+.footer-bottom {
+    max-width: 1100px;
+    margin: 40px auto 0;
+    padding-top: 24px;
+    border-top: 1px solid var(--bd2);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
     font-size: 12px;
     color: var(--tx3);
-    line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+    .footer-grid {
+        grid-template-columns: 1fr;
+        gap: 32px;
+    }
+    
+    .footer-bottom {
+        flex-direction: column;
+        text-align: center;
+    }
 }
 
 /* ── Responsive ── */
