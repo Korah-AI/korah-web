@@ -1,21 +1,12 @@
-# Goals
-<ul>
-  <li>Continue development of "Korah-bot"</li>
-  <li>Link "Korah-Bot" page on landing page</li>
-  <li>Fix JavaScript files for landing page A.I. live demo to work</li>
-  <li>Migrate locally stored app data on Korah Beta repo to cloud so that app and web share same backend</li>
-  <li> Create a Firebase project inlcuding Firebase SDK </li>
-  <li> Create login/signup system </li>
-  <li> Create Firestore Manager and switch user defaults to use the manager </li>
-  <li> updata data models to fit Firestone structure (tasks, flashcards, eg.) </li>              
-</ul>
+# Korah-bot Prerelease Todo List
+`index.html` Sidebar timer UI Updates (found in `sidebar.js` and `korah-chat.css `)
+* Update `timer-widget idle` UI (it doesn't have to have the three buttons, maybe just have a big user input field and a start button
+* Update  `timer-widget running ` UI (same thing as idle, the time itself needs to be bigger. also remove the pulsing emoji)
+* Update  `timer-celebration` UI (just remove the crazy background fill animation, the text layout is good as is)
 
-# Web/Landing Page To Do 
-<ul>
-  <li> Make The Korah-AI (thats free use on the page) be rate limited to 3, and when user finished their 3 tries say AI says something like "To get the full experience, make an account or something". Also filter AI responses. </li>
-  <li> Make shooting stars faster and get rid of the korah in the main background. Also think of ideas for something else to be in the light mode background that stands out well.</li>
-  <li> Make a log in page for the website </li>
-  <li> Use OpenNotebook repo to implement NoteBookLM features </li>
-  <li> Fix the "Company" Part at the very bottom of the page </li>
-  <li> Implement LaTex and Markdown rendering for text streaming w/ JavaScript libraries</li>
-</ul>
+`index.html` Screen-size UI Fixes
+* Replace most pixel-based elements with rem for responsive layout
+* Do especially for the `Main Chat Area` and `doc-panel-expanded-content`
+* You can check by searching up `korah.app ` on ChromeBook until it looks good
+
+You can do any other UI updates you think are fit, but make sure these are done first for release.
