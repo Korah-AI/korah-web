@@ -1,94 +1,514 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Korah AI - SAT Practice Player</title>
-    <link rel="icon" type="image/png" href="../app/logoresized.png" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
-      rel="stylesheet"
-    />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="../app/korah-chat.css" />
-    <link rel="stylesheet" href="./sat.css" />
-  </head>
-  <body class="sat-shell bg-base tx" data-theme="dark">
-    <canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
-    <div class="sat-bg-orb sat-bg-orb-a"></div>
-    <div class="sat-bg-orb sat-bg-orb-c"></div>
-    <main class="sat-page sat-player-page">
-      <header class="sat-player-topbar glass">
-        <div class="sat-topbar-main">
-          <a class="sat-button sat-button-ghost" href="./index.html">Back to bank</a>
+<html lang="en" x-data="{
+  theme: localStorage.getItem('korah_theme') || 'dark',
+  getEffectiveTheme() {
+    if (this.theme === 'system') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return this.theme;
+  }
+}" :data-theme="getEffectiveTheme()" x-cloak>
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Korah AI — SAT Practice Player</title>
+<link rel="icon" type="image/png" href="../app/logoresized.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="../app/korah-chat.css"/>
+<link rel="stylesheet" href="./sat.css"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css"/>
+</head>
+
+<body class="bg-base tx">
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+  import { setupKorahDB } from "../app/data/firestore-store.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
+    authDomain: "korah-app.firebaseapp.com",
+    projectId: "korah-app",
+    storageBucket: "korah-app.firebasestorage.app",
+    messagingSenderId: "226169460321",
+    appId: "1:226169460321:web:b166fc8260107c55dafc20"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      window.location.href = '../login.html';
+      return;
+    }
+    // Set up Firestore and expose window.KorahDB before notifying the app.
+    await setupKorahDB(app, user.uid);
+    const detail = { uid: user.uid };
+    // Cache so korah-chat.js can pick it up even in edge-case timing.
+    window._korahReadyFired = detail;
+    window.dispatchEvent(new CustomEvent('korahReady', { detail }));
+  });
+
+  document.getElementById('logout-btn').addEventListener('click', async () => {
+    await signOut(auth);
+    localStorage.removeItem('korah_first_name');
+    window.location.href = '../login.html';
+  });
+</script>
+
+<canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
+
+<!-- ═══ SIDEBAR ═══ -->
+<aside id="sidebar" class="sidebar bg-sf glass t-theme">
+  <div class="sidebar-header">
+    <a href="../index.html" class="flex items-center gap-2.5 no-underline">
+      <div class="w-12 h-12 rounded-xl flex items-center justify-center font-display text-xl font-black text-white shadow-glow logo-btn">
+        <span class="logo-letter">
+          <img src="../app/logo.png" alt="Korah"/>
+        </span>
+      </div>
+      <div class="flex flex-col leading-tight">
+        <span class="font-display text-[19px] font-bold tx">Korah</span>
+        <span class="text-[9px] font-semibold tracking-[2.5px] uppercase tx-p4">Study Smarter</span>
+      </div>
+    </a>
+    <button id="new-chat-btn" class="new-chat-btn text-white text-xs font-bold px-4 py-2 rounded-full border-none cursor-pointer shadow-glow t-btn">
+      <span class="new-chat-icon">+</span> <span class="new-chat-text">New Chat</span>
+    </button>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="sidebar-nav-row">
+      <a href="../index.html" class="sidebar-nav-link active t-btn"><span class="nav-icon">💬</span> <span class="nav-text"></span></a>
+      <a href="../study/feed.html" class="sidebar-nav-link t-btn"><span class="nav-icon">📚</span> <span class="nav-text"></span></a>
+    </div>
+    <a href="../productivity.html" class="sidebar-nav-link productivity-link t-btn"><span class="nav-icon">⏱️</span> <span class="nav-text">Productivity</span></a>
+  </nav>
+
+  <div class="sidebar-middle">
+    <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 12px 0 4px;">
+    <span class="sidebar-section-label" style="margin:0">Recent Chats</span>
+    </div>
+    <div id="chat-select-bar" class="select-bar">
+      <span class="select-bar-count" id="chat-select-count">0 selected</span>
+      <div class="select-bar-actions">
+        <button class="select-bar-btn" id="chat-select-all">Select all</button>
+        <button class="select-bar-btn danger" id="chat-delete-selected">Delete</button>
+      </div>
+    </div>
+    <div id="chat-history" class="chat-history">
+      <div class="skeleton-item">
+        <div class="skeleton-icon"></div>
+        <div class="skeleton-text"></div>
+      </div>
+      <div class="skeleton-item">
+        <div class="skeleton-icon"></div>
+        <div class="skeleton-text"></div>
+      </div>
+      <div class="skeleton-item">
+        <div class="skeleton-icon"></div>
+        <div class="skeleton-text"></div>
+      </div>
+      <div class="skeleton-item">
+        <div class="skeleton-icon"></div>
+        <div class="skeleton-text"></div>
+      </div>
+      <div class="skeleton-item">
+        <div class="skeleton-icon"></div>
+        <div class="skeleton-text"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 12px 0 4px;">
+    <span class="sidebar-section-label" style="margin:0">Recent Study Items</span>
+  </div>
+  <div id="study-select-bar" class="select-bar">
+    <span class="select-bar-count" id="study-select-count">0 selected</span>
+    <div class="select-bar-actions">
+      <button class="select-bar-btn" id="study-select-all">Select all</button>
+      <button class="select-bar-btn danger" id="study-delete-selected">Delete</button>
+    </div>
+  </div>
+  <div id="study-items-history" class="chat-history study-items-history">
+    <!-- Populated by JS from localStorage -->
+  </div>
+  <div id="study-items-empty" class="study-items-empty hidden">
+    <span class="study-items-empty-icon" aria-hidden="true">📚</span>
+    <div class="study-items-empty-title">No study items yet</div>
+    <div class="study-items-empty-sub">Create one to see it here.</div>
+  </div>
+
+    <div class="sidebar-footer">
+    <div class="mood-indicator" id="sidebar-mood">
+      <span class="mood-dot" id="mood-dot">🟢</span>
+      <span class="text-xs tx2 font-medium">Full Focus Mode</span>
+    </div>
+    <div class="sidebar-footer-actions">
+      <button id="logout-btn" class="theme-toggle-small t-btn" title="Log out">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+      </button>
+      <button id="settings-btn" class="theme-toggle-small t-btn" title="Settings">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+      <button @click="theme = theme === 'dark' ? 'light' : 'dark'; localStorage.setItem('korah_theme', theme)" class="theme-toggle-small t-btn" title="Toggle theme">
+        <svg x-show="theme==='light'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" style="color:var(--p5)">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/>
+        </svg>
+        <svg x-show="theme==='dark'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--p4)">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</aside>
+
+<!-- Hidden file input for document attachment -->
+<input type="file" id="doc-file-input" class="hidden" multiple accept=".pdf,.txt,.png,.jpg,.jpeg,.gif,.webp,.md"/>
+
+<!-- ═══ MAIN AREA WRAPPER ═══ -->
+<div id="main-area-wrapper" class="main-area-wrapper">
+
+<!-- ═══ MAIN CHAT AREA ═══ -->
+<main id="main-content" class="main-content">
+
+  <!-- Top bar -->
+  <header class="chat-topbar bg-sf glass-sm t-theme bd">
+    <button id="sidebar-toggle" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+
+    <div class="logo-container" style="display: flex; align-items: center; margin-right: 12px;">
+      <img src="../app/logo.png" alt="Korah Logo" style="height: 32px; width: auto;">
+    </div>
+
+    <div class="chat-title-area">
+      <div class="korah-status-dot"></div>
+      <span class="font-semibold tx text-sm" id="chat-title">SAT Practice Player</span>
+    </div>
+
+    <div class="mode-selector-wrapper">
+      <button class="mode-selector-btn t-btn" id="mode-selector-btn" title="Change subject mode">
+        <span class="mode-icon" id="mode-icon">✨</span>
+        <span class="mode-name" id="mode-name">General</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+      <div class="mode-dropdown" id="mode-dropdown">
+        <div class="mode-option" data-mode="general">
+          <span class="mode-option-icon">✨</span>
+          <div class="mode-option-info">
+            <div class="mode-option-name">General Mode</div>
+            <div class="mode-option-desc">Versatile AI study companion</div>
+          </div>
+        </div>
+        <div class="mode-option" data-mode="math">
+          <span class="mode-option-icon">🧮</span>
+          <div class="mode-option-info">
+            <div class="mode-option-name">Math Mode</div>
+            <div class="mode-option-desc">Step-by-step problem solving</div>
+          </div>
+        </div>
+        <div class="mode-option" data-mode="physics">
+          <span class="mode-option-icon">⚛️</span>
+          <div class="mode-option-info">
+            <div class="mode-option-name">Physics Mode</div>
+            <div class="mode-option-desc">Conceptual explanations & formulas</div>
+          </div>
+        </div>
+        <div class="mode-option" data-mode="chemistry">
+          <span class="mode-option-icon">⚗️</span>
+          <div class="mode-option-info">
+            <div class="mode-option-name">Chemistry Mode</div>
+            <div class="mode-option-desc">Reactions & molecular structures</div>
+          </div>
+        </div>
+        <div class="mode-option" data-mode="biology">
+          <span class="mode-option-icon">🧬</span>
+          <div class="mode-option-info">
+            <div class="mode-option-name">Biology Mode</div>
+            <div class="mode-option-desc">Life processes & terminology</div>
+          </div>
+        </div>
+        <div class="mode-option" data-mode="history">
+          <span class="mode-option-icon">📜</span>
+          <div class="mode-option-info">
+            <div class="mode-option-name">History Mode</div>
+            <div class="mode-option-desc">Context & cause-effect analysis</div>
+          </div>
+        </div>
+        <div class="mode-option" data-mode="literature">
+          <span class="mode-option-icon">📚</span>
+          <div class="mode-option-info">
+            <div class="mode-option-name">Literature Mode</div>
+            <div class="mode-option-desc">Analysis & interpretation</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="topbar-actions">
+      <button class="topbar-btn t-btn tx2" id="doc-panel-toggle" title="Toggle documents">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+          <polyline points="10 9 9 9 8 9"/>
+        </svg>
+        <span id="doc-count-badge" class="doc-count-badge hidden">0</span>
+      </button>
+      <button class="topbar-btn t-btn tx2" id="clear-chat-btn" title="Clear chat">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="3,6 5,6 21,6"/><path d="M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6"/><path d="M10,11v6M14,11v6"/><path d="M9,6V4a1,1,0,0,1,1-1h4a1,1,0,0,1,1,1v2"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- SAT Player Content -->
+  <div class="sat-page sat-player-page" style="padding: 20px;">
+    <header class="sat-player-topbar glass">
+      <div class="sat-topbar-main">
+        <a class="sat-button sat-button-ghost" href="./index.html">Back to bank</a>
+        <div>
+          <p class="sat-eyebrow grad-text">SAT Player</p>
+          <h1 id="playerTitle">Loading session</h1>
+        </div>
+      </div>
+      <div class="sat-topbar-meta">
+        <div class="sat-pill" id="playerCounter">Question 1 of 1</div>
+        <div class="sat-pill" id="playerTimer">32:00</div>
+      </div>
+    </header>
+
+    <section class="sat-player-layout">
+      <aside class="sat-tools-panel glass">
+        <div class="sat-panel-block">
+          <p class="sat-eyebrow">Session</p>
+          <div id="playerFilters" class="sat-filter-pills"></div>
+        </div>
+        <div class="sat-panel-block">
+          <p class="sat-eyebrow">Tools</p>
+          <button id="markReviewBtn" class="sat-button sat-button-secondary" type="button">Mark for review</button>
+          <button id="toggleCalcBtn" class="sat-button sat-button-secondary" type="button">Toggle calculator</button>
+          <button id="showExplanationBtn" class="sat-button sat-button-ghost" type="button">Show explanation</button>
+        </div>
+        <div id="calculatorPanel" class="sat-calculator-panel is-hidden">
+          <div class="sat-calculator-grid">
+            <span>7</span><span>8</span><span>9</span><span>/</span>
+            <span>4</span><span>5</span><span>6</span><span>x</span>
+            <span>1</span><span>2</span><span>3</span><span>-</span>
+            <span>0</span><span>.</span><span>=</span><span>+</span>
+          </div>
+          <p class="sat-panel-note">Placeholder panel for a future embedded calculator.</p>
+        </div>
+        <div class="sat-panel-block">
+          <p class="sat-eyebrow">Navigator</p>
+          <div id="questionNav" class="sat-question-nav"></div>
+        </div>
+      </aside>
+
+      <section class="sat-question-panel glass">
+        <div class="sat-question-head">
           <div>
-            <p class="sat-eyebrow grad-text">SAT Player</p>
-            <h1 id="playerTitle">Loading session</h1>
+            <p id="questionDomain" class="sat-domain-label"></p>
+            <h2 id="questionStemTitle">Question</h2>
           </div>
+          <div id="reviewBadge" class="sat-pill is-hidden">Marked</div>
         </div>
-        <div class="sat-topbar-meta">
-          <div class="sat-pill" id="playerCounter">Question 1 of 1</div>
-          <div class="sat-pill" id="playerTimer">32:00</div>
-        </div>
-      </header>
 
-      <section class="sat-player-layout">
-        <aside class="sat-tools-panel glass">
-          <div class="sat-panel-block">
-            <p class="sat-eyebrow">Session</p>
-            <div id="playerFilters" class="sat-filter-pills"></div>
-          </div>
-          <div class="sat-panel-block">
-            <p class="sat-eyebrow">Tools</p>
-            <button id="markReviewBtn" class="sat-button sat-button-secondary" type="button">Mark for review</button>
-            <button id="toggleCalcBtn" class="sat-button sat-button-secondary" type="button">Toggle calculator</button>
-            <button id="showExplanationBtn" class="sat-button sat-button-ghost" type="button">Show explanation</button>
-          </div>
-          <div id="calculatorPanel" class="sat-calculator-panel is-hidden">
-            <div class="sat-calculator-grid">
-              <span>7</span><span>8</span><span>9</span><span>/</span>
-              <span>4</span><span>5</span><span>6</span><span>x</span>
-              <span>1</span><span>2</span><span>3</span><span>-</span>
-              <span>0</span><span>.</span><span>=</span><span>+</span>
-            </div>
-            <p class="sat-panel-note">Placeholder panel for a future embedded calculator.</p>
-          </div>
-          <div class="sat-panel-block">
-            <p class="sat-eyebrow">Navigator</p>
-            <div id="questionNav" class="sat-question-nav"></div>
-          </div>
-        </aside>
+        <article class="sat-passage-card">
+          <p id="questionParagraph" class="sat-passage-text"></p>
+          <p id="questionStem" class="sat-question-stem"></p>
+        </article>
 
-        <section class="sat-question-panel glass">
-          <div class="sat-question-head">
-            <div>
-              <p id="questionDomain" class="sat-domain-label"></p>
-              <h2 id="questionStemTitle">Question</h2>
-            </div>
-            <div id="reviewBadge" class="sat-pill is-hidden">Marked</div>
-          </div>
+        <div id="answerChoices" class="sat-answer-list"></div>
 
-          <article class="sat-passage-card">
-            <p id="questionParagraph" class="sat-passage-text"></p>
-            <p id="questionStem" class="sat-question-stem"></p>
-          </article>
+        <section id="feedbackPanel" class="sat-feedback-panel is-hidden"></section>
 
-          <div id="answerChoices" class="sat-answer-list"></div>
-
-          <section id="feedbackPanel" class="sat-feedback-panel is-hidden"></section>
-
-          <footer class="sat-player-actions">
-            <button id="prevQuestionBtn" class="sat-button sat-button-ghost" type="button">Previous</button>
-            <button id="checkAnswerBtn" class="sat-button sat-button-primary" type="button">Check answer</button>
-            <button id="nextQuestionBtn" class="sat-button sat-button-secondary" type="button">Next</button>
-          </footer>
-        </section>
+        <footer class="sat-player-actions">
+          <button id="prevQuestionBtn" class="sat-button sat-button-ghost" type="button">Previous</button>
+          <button id="checkAnswerBtn" class="sat-button sat-button-primary" type="button">Check answer</button>
+          <button id="nextQuestionBtn" class="sat-button sat-button-secondary" type="button">Next</button>
+        </footer>
       </section>
-    </main>
+    </section>
+  </div>
 
-    <script src="./js/sat-shared.js"></script>
-    <script src="./js/sat-player.js"></script>
-  </body>
+</main>
+
+<!-- ═══ DOCUMENT PREVIEW PANEL ═══ -->
+<aside id="doc-panel" class="doc-panel t-theme collapsed">
+  <div id="doc-panel-tab" class="doc-panel-tab" title="Open documents">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <polyline points="15 18 9 12 15 6"/>
+    </svg>
+  </div>
+  <div class="doc-panel-collapsed-content">
+    <div id="doc-count-collapsed" class="doc-count-collapsed hidden">0</div>
+    <button id="doc-add-btn-collapsed" class="doc-add-btn-collapsed t-btn" title="Add documents">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+    </button>
+  </div>
+  
+  <div class="doc-panel-expanded-content">
+    <div class="doc-panel-header">
+      <span class="doc-panel-title">Documents</span>
+    </div>
+    <div id="doc-panel-list" class="doc-panel-list">
+      <button id="doc-add-btn" class="doc-add-btn t-btn" title="Add document">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        <span>Add Document</span>
+      </button>
+      <div class="doc-panel-empty">
+        <span class="doc-panel-empty-icon">📄</span>
+        <span class="doc-panel-empty-text">Drop or add documents</span>
+        <span class="doc-panel-empty-hint">PDFs, images, text files</span>
+      </div>
+    </div>
+  </div>
+</aside>
+
+</div><!-- end .main-area-wrapper -->
+
+<!-- Settings Modal -->
+<div id="settings-modal" class="settings-modal">
+  <div class="settings-modal-content">
+    <div class="settings-header">
+      <h2 class="settings-title">Settings</h2>
+      <button class="settings-close" id="settings-close">&times;</button>
+    </div>
+    
+    <div class="settings-body">
+      <!-- Theme Settings -->
+      <div class="settings-section">
+        <h3 class="settings-section-title">Appearance</h3>
+        <div class="settings-item">
+          <div class="settings-item-label">Theme</div>
+          <div class="settings-item-control">
+            <select id="settings-theme-select" class="settings-select">
+              <option value="dark">Dark</option>
+              <option value="light">Light</option>
+              <option value="system">System</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Profile Settings -->
+      <div class="settings-section">
+        <h3 class="settings-section-title">Profile</h3>
+        <div class="settings-item">
+          <div class="settings-item-label">Display Name</div>
+          <div class="settings-item-control">
+            <input type="text" id="settings-name-input" class="settings-input" placeholder="Your name">
+          </div>
+        </div>
+      </div>
+
+      <!-- Data Settings -->
+      <div class="settings-section">
+        <h3 class="settings-section-title">Data</h3>
+        <div class="settings-item">
+          <div class="settings-item-label">Clear All Data</div>
+          <div class="settings-item-control">
+            <button id="settings-clear-data" class="settings-btn danger">Clear Data</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="settings-actions">
+        <button id="settings-save" class="settings-btn primary">Save Settings</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Rename Modal -->
+<div id="rename-modal" class="delete-modal">
+  <div class="delete-modal-content">
+    <div class="delete-modal-icon">✏️</div>
+    <h3 class="delete-modal-title">Rename</h3>
+    <p class="delete-modal-desc" id="rename-modal-desc">Enter a new name</p>
+    <input id="rename-modal-input" type="text" class="create-input" style="width:100%; margin-top:4px;" placeholder="New name…"/>
+    <div class="delete-modal-actions">
+      <button id="rename-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
+      <button id="rename-modal-confirm" class="delete-modal-btn confirm t-btn" style="background:rgba(139,92,246,.12); color:var(--p5); border-color:rgba(139,92,246,.3);">Rename</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div id="delete-modal" class="delete-modal">
+  <div class="delete-modal-content">
+    <div class="delete-modal-icon">🗑️</div>
+    <h3 class="delete-modal-title">Delete?</h3>
+    <p class="delete-modal-desc">This will permanently delete <span id="delete-modal-name"></span>. This cannot be undone.</p>
+    <div class="delete-modal-actions">
+      <button id="delete-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
+      <button id="delete-modal-confirm" class="delete-modal-btn confirm t-btn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.desmos.com/api/v1.12/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
+<script src="../app/timer-manager.js"></script>
+<script src="../study/js/sidebar.js"></script>
+<script src="../study/js/study-api.js"></script>
+<script src="../app/korah-chat.js"></script>
+
+<script>
+  // Initialize sidebar with chat-specific callbacks
+  window.addEventListener('korahReady', () => {
+    if (window.KorahSidebar) {
+      window.KorahSidebar.initSidebar({
+        chatBaseUrl: "../index.html",
+        itemPageUrl: "../study/item.html",
+        onItemClick: (id) => {
+          if (window.KorahChat && typeof window.KorahChat.switchToSession === 'function') {
+            window.KorahChat.switchToSession(id);
+          }
+        }
+      });
+    }
+  }, { once: true });
+</script>
+
+<script src="./js/sat-shared.js"></script>
+<script src="./js/sat-player.js"></script>
+
+</body>
 </html>
