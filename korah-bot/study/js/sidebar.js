@@ -565,42 +565,60 @@ function showSidebarDeleteModal(name, onConfirm) {
     };
 
     if (state.isRunning) {
-      // Timer is running - show countdown
+      // Timer is running - show countdown with circular progress
+      const circumference = 2 * Math.PI * 45; // radius 45
+      const dashoffset = circumference * (1 - progress / 100);
       container.innerHTML = `
-        <div class="timer-widget running" role="timer" aria-live="polite" aria-label="Timer running, ${formatTimeSafe(remaining)} remaining">
-          <div class="timer-widget-display">
-            <span class="timer-widget-time">${window.KorahTimer.formatTime(remaining)}</span>
-          </div>
-          <div class="timer-widget-progress" role="progressbar" aria-valuenow="${Math.round(progress)}" aria-valuemin="0" aria-valuemax="100">
-            <div class="timer-widget-progress-bar" style="width: ${progress}%"></div>
-          </div>
-          <div class="timer-widget-controls">
-            <button class="timer-widget-btn" onclick="window.KorahTimer.pause()" title="Pause timer" aria-label="Pause timer">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
-            </button>
-            <button class="timer-widget-btn" onclick="window.KorahTimer.reset(${state.preset})" title="Reset timer" aria-label="Reset timer">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-            </button>
+        <div class="timer-widget running circular" role="timer" aria-live="polite" aria-label="Timer running, ${formatTimeSafe(remaining)} remaining">
+          <div class="timer-widget-circular-layout">
+            <div class="timer-widget-left">
+              <div class="timer-widget-time-large">${window.KorahTimer.formatTime(remaining)}</div>
+              <div class="timer-widget-controls-circular">
+                <button class="timer-widget-btn" onclick="window.KorahTimer.pause()" title="Pause timer" aria-label="Pause timer">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                </button>
+                <button class="timer-widget-btn" onclick="window.KorahTimer.reset(${state.preset})" title="Reset timer" aria-label="Reset timer">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="timer-widget-right">
+              <svg class="timer-widget-svg" viewBox="0 0 100 100">
+                <circle class="timer-widget-circle-bg" cx="50" cy="50" r="45" />
+                <circle class="timer-widget-circle-progress" cx="50" cy="50" r="45" 
+                  stroke-dasharray="${circumference}" 
+                  stroke-dashoffset="${dashoffset}" />
+              </svg>
+            </div>
           </div>
         </div>
       `;
     } else if (isPaused) {
-      // Timer is paused - show resume option
+      // Timer is paused - show resume option with circular progress
+      const circumference = 2 * Math.PI * 45; // radius 45
+      const dashoffset = circumference * (1 - progress / 100);
       container.innerHTML = `
-        <div class="timer-widget paused" role="timer" aria-live="polite" aria-label="Timer paused, ${formatTimeSafe(remaining)} remaining">
-          <div class="timer-widget-display">
-            <span class="timer-widget-time">${window.KorahTimer.formatTime(remaining)}</span>
-          </div>
-          <div class="timer-widget-progress" role="progressbar" aria-valuenow="${Math.round(progress)}" aria-valuemin="0" aria-valuemax="100">
-            <div class="timer-widget-progress-bar" style="width: ${progress}%"></div>
-          </div>
-          <div class="timer-widget-controls">
-            <button class="timer-widget-btn resume" onclick="window.KorahTimer.resume()" title="Resume timer" aria-label="Resume timer">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-            </button>
-            <button class="timer-widget-btn" onclick="window.KorahTimer.reset(${state.preset})" title="Reset timer" aria-label="Reset timer">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-            </button>
+        <div class="timer-widget paused circular" role="timer" aria-live="polite" aria-label="Timer paused, ${formatTimeSafe(remaining)} remaining">
+          <div class="timer-widget-circular-layout">
+            <div class="timer-widget-left">
+              <div class="timer-widget-time-large">${window.KorahTimer.formatTime(remaining)}</div>
+              <div class="timer-widget-controls-circular">
+                <button class="timer-widget-btn resume" onclick="window.KorahTimer.resume()" title="Resume timer" aria-label="Resume timer">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                </button>
+                <button class="timer-widget-btn" onclick="window.KorahTimer.reset(${state.preset})" title="Reset timer" aria-label="Reset timer">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="timer-widget-right">
+              <svg class="timer-widget-svg" viewBox="0 0 100 100">
+                <circle class="timer-widget-circle-bg" cx="50" cy="50" r="45" />
+                <circle class="timer-widget-circle-progress" cx="50" cy="50" r="45" 
+                  stroke-dasharray="${circumference}" 
+                  stroke-dashoffset="${dashoffset}" />
+              </svg>
+            </div>
           </div>
         </div>
       `;
