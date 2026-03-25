@@ -539,7 +539,11 @@ function showSidebarDeleteModal(name, onConfirm) {
     }
 
     const remaining = window.KorahTimer.getRemainingSeconds();
-    const progress = window.KorahTimer.getProgress();
+    // const totalSeconds = window.KorahTimer.getState().totalSeconds;
+    const preset = window.KorahTimer.getState().preset;
+    const progress = preset > 0 ? ((preset * 60 - remaining) / (preset * 60)) * 100 : 0;
+    // const remaining = window.KorahTimer.getRemainingSeconds();
+    // const progress = window.KorahTimer.getProgress();
     const isIdle = !state.isRunning && state.totalSeconds === state.preset * 60;
     const isPaused = !state.isRunning && state.totalSeconds < state.preset * 60 && state.totalSeconds > 0;
 
@@ -548,7 +552,6 @@ function showSidebarDeleteModal(name, onConfirm) {
       container.innerHTML = `
         <div class="timer-widget running" style="color: white;">
           <div class="timer-widget-display">
-            <span class="timer-widget-icon pulse">🔴</span>
             <span class="timer-widget-time">${window.KorahTimer.formatTime(remaining)}</span>
           </div>
           <div class="timer-widget-progress">
@@ -569,7 +572,6 @@ function showSidebarDeleteModal(name, onConfirm) {
       container.innerHTML = `
         <div class="timer-widget paused" style="color: white;">
           <div class="timer-widget-display">
-            <span class="timer-widget-icon">⏸️</span>
             <span class="timer-widget-time">${window.KorahTimer.formatTime(remaining)}</span>
           </div>
           <div class="timer-widget-progress">
@@ -586,25 +588,96 @@ function showSidebarDeleteModal(name, onConfirm) {
         </div>
       `;
     } else {
-      // Timer is idle - show presets
+      // Timer is idle - collapsed trigger pill
+      const isOpen = container.getAttribute('data-open') === 'true';
       container.innerHTML = `
-        <div class="timer-widget idle" style="color: white;">
-          <div class="timer-dropdown-header">
-            <span class="timer-dropdown-title">Pomodoro Timer</span>
-          </div>
-          <div class="timer-dropdown-presets">
-            <button class="timer-preset-btn ${state.preset === 5 ? 'active' : ''}" onclick="window.KorahTimer.start(5);">
-              <span class="preset-time">5:00</span>
-            </button>
-            <button class="timer-preset-btn ${state.preset === 10 ? 'active' : ''}" onclick="window.KorahTimer.start(10);">
-              <span class="preset-time">10:00</span>
-            </button>
-            <button class="timer-preset-btn ${state.preset === 25 ? 'active' : ''}" onclick="window.KorahTimer.start(25);">
-              <span class="preset-time">25:00</span>
-            </button>
+        <div class="timer-widget idle">
+          <button class="timer-idle-trigger" id="timer-idle-trigger">
+            <span style="font-size:13px;">Pomodoro Timer</span>
+            <svg class="timer-idle-chevron" id="timer-idle-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
+          <div class="timer-idle-panel" id="timer-idle-panel">
+            <div class="timer-idle-panel-inner">
+              <div class="timer-idle-input-row">
+                <div class="timer-split-input">
+                  <input
+                    id="timer-custom-min"
+                    type="text"
+                    inputmode="numeric"
+                    pattern="[0-9]*"
+                    maxlength="3"
+                    placeholder="25"
+                    value=""
+                    class="timer-custom-input"
+                  />
+                  <span class="timer-input-label">min</span>
+                </div>
+                <div class="timer-split-divider">:</div>
+                <div class="timer-split-input">
+                  <input
+                    id="timer-custom-sec"
+                    type="text"
+                    inputmode="numeric"
+                    pattern="[0-9]*"
+                    maxlength="2"
+                    placeholder="00"
+                    class="timer-custom-input"
+                  />
+                  <span class="timer-input-label">sec</span>
+                </div>
+              </div>
+              <button class="timer-start-btn" id="timer-start-btn">▶ Start</button>
+            </div>
           </div>
         </div>
       `;
+
+      // Restore open state after re-render
+      const panel = container.querySelector('#timer-idle-panel');
+      const chevron = container.querySelector('#timer-idle-chevron');
+      if (isOpen) {
+        panel.classList.add('open');
+        chevron.classList.add('open');
+      }
+
+      // Toggle dropdown
+      container.querySelector('#timer-idle-trigger').addEventListener('click', () => {
+        const nowOpen = container.getAttribute('data-open') !== 'true';
+        container.setAttribute('data-open', nowOpen);
+        panel.classList.toggle('open', nowOpen);
+        chevron.classList.toggle('open', nowOpen);
+      });
+
+      // Custom start button
+      // Strip non-numeric characters as user types
+      const minInput = container.querySelector('#timer-custom-min');
+      const secInput = container.querySelector('#timer-custom-sec');
+
+      minInput.addEventListener('input', (e) => {
+        e.target.value = e.target.value.replace(/[^0-9]/g, '');
+        if (e.target.value === '0') e.target.value = '';
+      });
+
+      secInput.addEventListener('input', (e) => {
+        e.target.value = e.target.value.replace(/[^0-9]/g, '');
+        if (parseInt(e.target.value) > 59) e.target.value = '59';
+      });
+
+      [minInput, secInput].forEach(input => {
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') e.target.blur();
+        });
+      });
+
+      // Custom start button
+      container.querySelector('#timer-start-btn').addEventListener('click', () => {
+        const mins = parseInt(minInput.value) || 0;
+        const secs = parseInt(secInput.value) || 0;
+        const totalMins = mins + secs / 60;
+        if (totalMins > 0) window.KorahTimer.start(totalMins);
+      });
     }
   }
 
