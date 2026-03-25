@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Korah AI - SAT Practice Player</title>
+    <link rel="icon" type="image/png" href="../app/logoresized.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../app/korah-chat.css" />
+    <link rel="stylesheet" href="./sat.css" />
+  </head>
+  <body class="sat-shell bg-base tx" data-theme="dark">
+    <canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
+    <div class="sat-bg-orb sat-bg-orb-a"></div>
+    <div class="sat-bg-orb sat-bg-orb-c"></div>
+    <main class="sat-page sat-player-page">
+      <header class="sat-player-topbar glass">
+        <div class="sat-topbar-main">
+          <a class="sat-button sat-button-ghost" href="./index.html">Back to bank</a>
+          <div>
+            <p class="sat-eyebrow grad-text">SAT Player</p>
+            <h1 id="playerTitle">Loading session</h1>
+          </div>
+        </div>
+        <div class="sat-topbar-meta">
+          <div class="sat-pill" id="playerCounter">Question 1 of 1</div>
+          <div class="sat-pill" id="playerTimer">32:00</div>
+        </div>
+      </header>
+
+      <section class="sat-player-layout">
+        <aside class="sat-tools-panel glass">
+          <div class="sat-panel-block">
+            <p class="sat-eyebrow">Session</p>
+            <div id="playerFilters" class="sat-filter-pills"></div>
+          </div>
+          <div class="sat-panel-block">
+            <p class="sat-eyebrow">Tools</p>
+            <button id="markReviewBtn" class="sat-button sat-button-secondary" type="button">Mark for review</button>
+            <button id="toggleCalcBtn" class="sat-button sat-button-secondary" type="button">Toggle calculator</button>
+            <button id="showExplanationBtn" class="sat-button sat-button-ghost" type="button">Show explanation</button>
+          </div>
+          <div id="calculatorPanel" class="sat-calculator-panel is-hidden">
+            <div class="sat-calculator-grid">
+              <span>7</span><span>8</span><span>9</span><span>/</span>
+              <span>4</span><span>5</span><span>6</span><span>x</span>
+              <span>1</span><span>2</span><span>3</span><span>-</span>
+              <span>0</span><span>.</span><span>=</span><span>+</span>
+            </div>
+            <p class="sat-panel-note">Placeholder panel for a future embedded calculator.</p>
+          </div>
+          <div class="sat-panel-block">
+            <p class="sat-eyebrow">Navigator</p>
+            <div id="questionNav" class="sat-question-nav"></div>
+          </div>
+        </aside>
+
+        <section class="sat-question-panel glass">
+          <div class="sat-question-head">
+            <div>
+              <p id="questionDomain" class="sat-domain-label"></p>
+              <h2 id="questionStemTitle">Question</h2>
+            </div>
+            <div id="reviewBadge" class="sat-pill is-hidden">Marked</div>
+          </div>
+
+          <article class="sat-passage-card">
+            <p id="questionParagraph" class="sat-passage-text"></p>
+            <p id="questionStem" class="sat-question-stem"></p>
+          </article>
+
+          <div id="answerChoices" class="sat-answer-list"></div>
+
+          <section id="feedbackPanel" class="sat-feedback-panel is-hidden"></section>
+
+          <footer class="sat-player-actions">
+            <button id="prevQuestionBtn" class="sat-button sat-button-ghost" type="button">Previous</button>
+            <button id="checkAnswerBtn" class="sat-button sat-button-primary" type="button">Check answer</button>
+            <button id="nextQuestionBtn" class="sat-button sat-button-secondary" type="button">Next</button>
+          </footer>
+        </section>
+      </section>
+    </main>
+
+    <script src="./js/sat-shared.js"></script>
+    <script src="./js/sat-player.js"></script>
+  </body>
+</html>

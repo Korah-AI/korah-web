@@ -1,0 +1,587 @@
+.sat-shell {
+  position: relative;
+  min-height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  font-family: "Plus Jakarta Sans", sans-serif;
+  background: var(--bg);
+}
+
+.sat-bg-orb {
+  position: fixed;
+  border-radius: 999px;
+  pointer-events: none;
+  filter: blur(10px);
+  opacity: 0.65;
+}
+
+.sat-bg-orb-a {
+  top: 72px;
+  left: -80px;
+  width: 260px;
+  height: 260px;
+  background: radial-gradient(circle, rgba(126, 87, 255, 0.45), transparent 68%);
+}
+
+.sat-bg-orb-b {
+  right: 40px;
+  bottom: 80px;
+  width: 360px;
+  height: 360px;
+  background: radial-gradient(circle, rgba(28, 173, 255, 0.18), transparent 66%);
+}
+
+.sat-bg-orb-c {
+  right: 22px;
+  top: 110px;
+  width: 340px;
+  height: 340px;
+  background: radial-gradient(circle, rgba(255, 165, 64, 0.12), transparent 66%);
+}
+
+.sat-page {
+  position: relative;
+  z-index: 1;
+  max-width: 1380px;
+  margin: 0 auto;
+  padding: 28px 20px 44px;
+  color: var(--tx);
+  animation: fadeUp 0.6s ease-out;
+}
+
+.sat-hero,
+.sat-toolbar,
+.sat-selection-panel,
+.sat-player-topbar,
+.sat-tools-panel,
+.sat-question-panel {
+  border: 1px solid var(--bd);
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.28);
+}
+
+.sat-hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 28px;
+  border-radius: 28px;
+}
+
+.sat-hero h1,
+.sat-selection-panel h2,
+.sat-player-topbar h1,
+.sat-question-head h2 {
+  margin: 0;
+  font-family: "Playfair Display", serif;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.sat-hero h1 {
+  font-size: clamp(2.8rem, 5vw, 4.6rem);
+  line-height: 1;
+}
+
+.sat-hero-copy {
+  max-width: 700px;
+}
+
+.sat-eyebrow {
+  margin: 0 0 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--p5);
+}
+
+.sat-hero-text,
+.sat-selection-note,
+.sat-panel-note {
+  color: var(--tx2);
+  line-height: 1.7;
+}
+
+.sat-hero-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(100px, 1fr));
+  gap: 14px;
+  align-self: flex-end;
+  min-width: 360px;
+}
+
+.sat-stat-card {
+  border-radius: 18px;
+  padding: 18px;
+  background: var(--sf2);
+  border: 1px solid var(--bd2);
+}
+
+.sat-stat-card strong {
+  display: block;
+  margin-top: 10px;
+  font-size: 1.55rem;
+  line-height: 1.1;
+}
+
+.sat-stat-label {
+  color: var(--tx2);
+  font-size: 0.82rem;
+}
+
+.sat-toolbar {
+  margin-top: 18px;
+  border-radius: 24px;
+  padding: 18px 20px;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+}
+
+.sat-toolbar-group,
+.sat-toolbar-actions,
+.sat-selection-actions,
+.sat-player-actions,
+.sat-topbar-main,
+.sat-topbar-meta,
+.sat-question-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sat-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 120px;
+  color: var(--tx2);
+  font-size: 0.85rem;
+}
+
+.sat-field input {
+  height: 46px;
+  border-radius: 14px;
+  border: 1px solid var(--bd);
+  background: var(--sf);
+  color: var(--tx);
+  padding: 0 14px;
+  font: inherit;
+}
+
+.sat-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 20px;
+  color: var(--tx);
+  font-weight: 600;
+}
+
+.sat-button {
+  height: 46px;
+  border-radius: 999px;
+  border: 1px solid var(--bd);
+  padding: 0 18px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.sat-button:hover {
+  transform: translateY(-1px);
+  border-color: var(--p4);
+}
+
+.sat-button-primary {
+  background: linear-gradient(135deg, #5b21b6, var(--p4));
+  color: #fff;
+  box-shadow: 0 0 24px var(--glow);
+}
+
+.sat-button-secondary {
+  background: var(--sf2);
+  color: var(--tx);
+}
+
+.sat-button-ghost {
+  background: var(--sf);
+  color: var(--tx2);
+}
+
+.sat-bank-layout,
+.sat-player-layout {
+  display: grid;
+  gap: 18px;
+  margin-top: 18px;
+}
+
+.sat-bank-layout {
+  grid-template-columns: minmax(0, 1.8fr) minmax(300px, 0.85fr);
+  align-items: start;
+}
+
+.sat-section-column {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.sat-section-card {
+  border-radius: 24px;
+  padding: 22px;
+  background: var(--sf);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border: 1px solid var(--bd);
+}
+
+.sat-section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.sat-section-title {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.sat-section-subtitle {
+  margin: 8px 0 0;
+  color: var(--tx2);
+  line-height: 1.6;
+}
+
+.sat-domain-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.sat-domain-card {
+  border-radius: 18px;
+  padding: 16px;
+  background: var(--sf2);
+  border: 1px solid var(--bd2);
+}
+
+.sat-domain-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.sat-domain-name {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.sat-domain-count {
+  color: #d6cafd;
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+.sat-domain-description {
+  margin: 10px 0 14px;
+  color: var(--tx2);
+  font-size: 0.93rem;
+  line-height: 1.6;
+}
+
+.sat-domain-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.sat-chip {
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid var(--bd);
+  background: var(--sf);
+  color: var(--tx);
+  padding: 0 14px;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sat-chip.is-active {
+  background: var(--cu);
+  color: #fff;
+  border-color: var(--p4);
+}
+
+.sat-selection-panel,
+.sat-tools-panel,
+.sat-question-panel {
+  border-radius: 24px;
+  padding: 22px;
+}
+
+.sat-selection-summary {
+  display: grid;
+  gap: 12px;
+  margin: 18px 0;
+}
+
+.sat-summary-card,
+.sat-panel-block,
+.sat-passage-card,
+.sat-feedback-panel {
+  border-radius: 18px;
+  padding: 16px;
+  background: var(--sf2);
+  border: 1px solid var(--bd2);
+}
+
+.sat-summary-label {
+  display: block;
+  color: var(--tx2);
+  font-size: 0.8rem;
+  margin-bottom: 8px;
+}
+
+.sat-summary-value {
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.sat-player-topbar {
+  border-radius: 24px;
+  padding: 18px 20px;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+}
+
+.sat-player-topbar h1 {
+  font-size: clamp(2rem, 3vw, 3rem);
+}
+
+.sat-player-layout {
+  grid-template-columns: minmax(280px, 0.82fr) minmax(0, 1.6fr);
+  align-items: start;
+}
+
+.sat-tools-panel {
+  position: sticky;
+  top: 18px;
+  display: grid;
+  gap: 14px;
+}
+
+.sat-filter-pills,
+.sat-question-nav {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.sat-pill,
+.sat-mini-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--sf2);
+  color: var(--tx);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.sat-mini-pill {
+  min-width: 34px;
+  cursor: pointer;
+  border: 1px solid var(--bd);
+}
+
+.sat-mini-pill.is-current {
+  background: linear-gradient(135deg, #5b21b6, var(--p4));
+  color: #fff;
+}
+
+.sat-mini-pill.is-reviewed {
+  box-shadow: inset 0 0 0 1px rgba(248, 113, 113, 0.68);
+}
+
+.sat-calculator-panel {
+  border-radius: 18px;
+  padding: 16px;
+  background: var(--sf);
+  border: 1px solid var(--bd);
+}
+
+.sat-calculator-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.sat-calculator-grid span {
+  display: grid;
+  place-items: center;
+  min-height: 46px;
+  border-radius: 14px;
+  background: var(--sf2);
+  font-weight: 700;
+}
+
+.sat-question-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.sat-question-head {
+  justify-content: space-between;
+}
+
+.sat-domain-label {
+  margin: 0 0 6px;
+  color: var(--p5);
+  font-size: 0.84rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+.sat-passage-card {
+  display: grid;
+  gap: 18px;
+  padding: 22px;
+}
+
+.sat-passage-text,
+.sat-question-stem {
+  margin: 0;
+  line-height: 1.8;
+  font-size: 1.02rem;
+}
+
+.sat-passage-text {
+  color: #f4eeff;
+}
+
+.sat-question-stem {
+  color: var(--tx2);
+  font-weight: 600;
+}
+
+.sat-answer-list {
+  display: grid;
+  gap: 12px;
+}
+
+.sat-answer-choice {
+  width: 100%;
+  text-align: left;
+  border-radius: 18px;
+  border: 1px solid var(--bd2);
+  background: var(--sf2);
+  padding: 16px;
+  color: var(--tx);
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+}
+
+.sat-answer-choice:hover {
+  transform: translateY(-1px);
+  border-color: var(--p4);
+}
+
+.sat-answer-choice.is-selected {
+  border-color: var(--p4);
+  background: var(--cu);
+}
+
+.sat-answer-choice.is-correct {
+  border-color: rgba(52, 211, 153, 0.8);
+  background: rgba(52, 211, 153, 0.14);
+}
+
+.sat-answer-choice.is-incorrect {
+  border-color: rgba(248, 113, 113, 0.8);
+  background: rgba(248, 113, 113, 0.12);
+}
+
+.sat-answer-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  margin-right: 12px;
+  border-radius: 999px;
+  background: var(--sf);
+  font-weight: 800;
+}
+
+.sat-feedback-panel {
+  color: var(--tx);
+  line-height: 1.7;
+}
+
+.sat-feedback-panel.is-correct {
+  border-color: rgba(52, 211, 153, 0.34);
+}
+
+.sat-feedback-panel.is-incorrect {
+  border-color: rgba(248, 113, 113, 0.34);
+}
+
+.is-hidden {
+  display: none !important;
+}
+
+@media (max-width: 1120px) {
+  .sat-bank-layout,
+  .sat-player-layout,
+  .sat-section-column {
+    grid-template-columns: 1fr;
+  }
+
+  .sat-tools-panel {
+    position: static;
+  }
+}
+
+@media (max-width: 840px) {
+  .sat-page {
+    padding: 18px 14px 28px;
+  }
+
+  .sat-hero,
+  .sat-toolbar,
+  .sat-player-topbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sat-hero-stats {
+    min-width: 0;
+    grid-template-columns: 1fr;
+  }
+
+  .sat-toolbar-group,
+  .sat-toolbar-actions,
+  .sat-topbar-main,
+  .sat-topbar-meta,
+  .sat-selection-actions,
+  .sat-player-actions {
+    flex-wrap: wrap;
+  }
+}
