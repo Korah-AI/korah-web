@@ -247,8 +247,65 @@
       this._saveState(newState);
       this._stopUpdateLoop();
       
+      // Play completion sound if enabled
+      this._playCompletionSound();
+      
       // Notify listeners with completion event
       this._notifyListeners('complete');
+    }
+
+    /**
+     * Play a completion sound notification
+     */
+    _playCompletionSound() {
+      // Check if sound is enabled (default: enabled)
+      const soundEnabled = localStorage.getItem('korah_timer_sound') !== 'disabled';
+      if (!soundEnabled) return;
+
+      try {
+        // Create audio context for sound generation
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Create a pleasant completion chime
+        const notes = [523.25, 659.25, 783.99]; // C5, E5, G5 chord
+        const duration = 0.3;
+        const now = audioContext.currentTime;
+        
+        notes.forEach((freq, i) => {
+          const oscillator = audioContext.createOscillator();
+          const gainNode = audioContext.createGain();
+          
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+          
+          oscillator.type = 'sine';
+          oscillator.frequency.setValueAtTime(freq, now);
+          
+          gainNode.gain.setValueAtTime(0.3, now);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, now + duration);
+          
+          oscillator.start(now + (i * 0.1));
+          oscillator.stop(now + duration + (i * 0.1));
+        });
+      } catch (e) {
+        console.warn('[Timer] Could not play completion sound:', e);
+      }
+    }
+
+    /**
+     * Enable or disable completion sound
+     * @param {boolean} enabled - Whether sound should play on completion
+     */
+    setSoundEnabled(enabled) {
+      localStorage.setItem('korah_timer_sound', enabled ? 'enabled' : 'disabled');
+    }
+
+    /**
+     * Check if completion sound is enabled
+     * @returns {boolean}
+     */
+    isSoundEnabled() {
+      return localStorage.getItem('korah_timer_sound') !== 'disabled';
     }
     
     /**
