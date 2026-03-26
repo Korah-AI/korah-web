@@ -2951,7 +2951,7 @@ html {
     background: var(--sf);
     backdrop-filter: blur(2.5rem);
     -webkit-backdrop-filter: blur(2.5rem);
-    overflow: hidden;
+    overflow: visible;
     transition: width .4s cubic-bezier(.23,1,.32,1), min-width .4s cubic-bezier(.23,1,.32,1), transform .4s cubic-bezier(.23,1,.32,1);
     flex-shrink: 0;
     box-shadow: -0.5rem 0 1.5rem rgba(0,0,0,.12);
@@ -2978,27 +2978,34 @@ html {
 
     .doc-panel.collapsed {
         transform: translateX(100%);
-        width: 20rem !important;
-        min-width: 20rem !important;
     }
 
     .doc-panel-tab {
-        position: fixed;
-        right: 0;
+        display: flex;
+        position: absolute;
+        right: 100%;
+        left: auto;
         top: 50%;
         transform: translateY(-50%);
-        z-index: 202;
+        z-index: 9999;
         border-radius: 0.5rem 0 0 0.5rem;
-        left: auto;
+        width: 1.5rem;
+        height: 3.75rem;
+        background: var(--p4);
+        box-shadow: -0.125rem 0 0.5rem rgba(139,92,246,.3);
+        cursor: pointer;
+        align-items: center;
+        justify-content: center;
     }
 
-    .doc-panel.expanded .doc-panel-tab {
-        right: 20rem;
-        border-radius: 0.5rem 0 0 0.5rem;
+    .doc-panel-tab svg {
+        color: white;
+        transform: rotate(0deg);
+        transition: transform 0.4s cubic-bezier(.23,1,.32,1);
     }
 
     .doc-panel.expanded .doc-panel-tab svg {
-        transform: rotate(0deg);
+        transform: rotate(180deg);
     }
 
     .doc-panel-collapsed-content {
@@ -3029,27 +3036,28 @@ html {
 }
 .doc-panel-tab {
     position: absolute;
-    left: 0;
+    right: 100%;
     top: 50%;
     transform: translateY(-50%);
     width: 1.5rem;
     height: 3.75rem;
     background: var(--p4);
-    border-radius: 0 0.5rem 0.5rem 0;
+    border-radius: 0.5rem 0 0 0.5rem;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all .2s;
-    box-shadow: 0.125rem 0 0.5rem rgba(139,92,246,.3);
+    box-shadow: -0.125rem 0 0.5rem rgba(139,92,246,.3);
     z-index: 10;
 }
 .doc-panel-tab:hover {
     width: 1.75rem;
-    box-shadow: 0.25rem 0 0.75rem rgba(139,92,246,.4);
+    box-shadow: -0.25rem 0 0.75rem rgba(139,92,246,.4);
 }
 .doc-panel-tab svg {
     color: white;
+    transition: transform 0.4s;
 }
 .doc-panel.expanded .doc-panel-tab svg {
     transform: rotate(180deg);
@@ -3141,6 +3149,10 @@ html {
     color: #ffffff;
     filter: drop-shadow(0 0 0.5rem rgba(255,255,255,0.3));
 }
+[data-theme="light"] .doc-panel-title {
+    color: var(--p4);
+    filter: none;
+}
 .doc-add-btn {
     display: flex;
     align-items: center;
@@ -3158,12 +3170,21 @@ html {
     transition: all .25s cubic-bezier(.23,1,.32,1);
     flex-shrink: 0;
 }
+[data-theme="light"] .doc-add-btn {
+    border-color: var(--bd);
+    background: var(--sf2);
+    color: var(--p4);
+}
 .doc-add-btn:hover {
     background: rgba(255,255,255,0.1);
     border-color: var(--p4);
     color: #ffffff;
     transform: translateY(-0.125rem);
     box-shadow: 0 0.25rem 0.75rem rgba(139,92,246,0.3);
+}
+[data-theme="light"] .doc-add-btn:hover {
+    background: var(--cu);
+    color: var(--p5);
 }
 .doc-panel-collapse-btn {
     width: 1.75rem;
@@ -3194,6 +3215,9 @@ html {
     padding: 1.5rem;
     text-align: center;
     width: 100%;
+}
+[data-theme="light"] .doc-panel-empty {
+    color: var(--tx2);
 }
 .doc-panel-empty-icon {
     font-size: 3rem;
