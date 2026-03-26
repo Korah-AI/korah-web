@@ -15,6 +15,7 @@
 * Add padding to "Your Study library" container and the search container
 * Fix creating a study item's x button to be in corner and not in the middle
 * Add or fix setting modal in study html
+* Make the background for when the user is creating something like a study guide or something for light mode be nicer. For example, its too dark compared to the options. Compared to dark mode's version where everything is seen nice.
 
 
 STEPS TO FOLLOW
