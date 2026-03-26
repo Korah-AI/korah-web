@@ -4,14 +4,10 @@
 
 # Korah Web ToDo List (Jayden's | Things I think That Work/fit or need to be worked on)
 
-* Adding full light mode constellation background behind Korah Ai, type animation on landing page.
-* Make the "Korah AI" and description under it be able to be readable during light mode on landing page (Kinda hard to see in light mode) and the web version and download for IOS.
-* Link web version and download for IOS.
 * Update Iphone images on landing page to match the updated Korah
 
 # Korah-bot Todo list (Jayden's)
 
-* Add light mode constellation background to the Main Chat Area
 * Add padding to "Your Study library" container and the search container
 * Fix creating a study item's x button to be in corner and not in the middle
 * Add or fix setting modal in study html
