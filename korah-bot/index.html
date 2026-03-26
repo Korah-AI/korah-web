@@ -62,6 +62,7 @@
 </script>
 
 <canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
+<div class="doc-panel-overlay" id="doc-panel-overlay"></div>
 
 <!-- ═══ SIDEBAR ═══ -->
 <aside id="sidebar" class="sidebar bg-sf glass t-theme">
@@ -90,10 +91,10 @@
     <a href="productivity.html" class="sidebar-nav-link productivity-link t-btn"><span class="nav-icon">⏱️</span> <span class="nav-text">Productivity</span></a>
   </nav>
 
-  <div class="sidebar-middle">
-    <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 12px 0 4px;">
+  <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 12px 0 4px;">
     <span class="sidebar-section-label" style="margin:0">Recent Chats</span>
-    </div>
+</div>
+<div class="sidebar-middle">
     <div id="chat-select-bar" class="select-bar">
       <span class="select-bar-count" id="chat-select-count">0 selected</span>
       <div class="select-bar-actions">
@@ -532,6 +533,15 @@
 <script src="app/korah-chat.js"></script>
 
 <script>
+  // Close doc panel when overlay is clicked
+  document.getElementById('doc-panel-overlay').addEventListener('click', () => {
+    const panel = document.getElementById('doc-panel');
+    const overlay = document.getElementById('doc-panel-overlay');
+    panel.classList.remove('expanded');
+    panel.classList.add('collapsed');
+    overlay.classList.remove('show');
+  });
+
   // Initialize sidebar with chat-specific callbacks
   window.addEventListener('korahReady', () => {
     if (window.KorahSidebar) {

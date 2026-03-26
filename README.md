@@ -12,7 +12,6 @@
 # Korah-bot Todo list (Jayden's)
 
 * Make document's like little sidebar vanish and only the tab show for documents when the window gets too small (like phone sized window or dicuess if it would be better just to have a tab for it)
-* Fix "Recent Chats" So that it doesnt follow the scroll as it does down
 * Add light mode constellation background to the Main Chat Area
 * Add padding to "Your Study library" container and the search container
 * Fix creating a study item's x button to be in corner and not in the middle
