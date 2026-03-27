@@ -127,13 +127,16 @@ function showSidebarDeleteModal(name, onConfirm) {
 
     const navLinks = document.querySelectorAll(".sidebar-nav-link");
     navLinks.forEach(link => {
-      if (link.getAttribute("href").indexOf("feed.html") !== -1) {
+      if (link.hasAttribute('data-sat-link')) return; // Skip SAT links
+      const href = link.getAttribute("href");
+      if (href.includes("feed.html")) {
         link.innerHTML = "<span class='nav-icon'>📚</span> <span class='nav-text'>Study</span>";
         if (itemIds.length === 0) link.classList.add("nav-empty");
         else link.classList.remove("nav-empty");
-      } else if (link.getAttribute("href").indexOf("index.html") !== -1) {
+      } else if (href === "index.html") {
         link.innerHTML = "<span class='nav-icon'>💬</span> <span class='nav-text'>Chat</span>";
       }
+      // All other links (productivity) remain unchanged
     });
 
     if (!container) return;
