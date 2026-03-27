@@ -13,251 +13,132 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
   :root {
-    --bg: #06040f;
-    --bg2: #0d0920;
-    --bg3: #120c28;
-    --sf: rgba(18, 12, 40, 0.7);
-    --sf2: rgba(30, 18, 60, 0.6);
-    --bd: rgba(139, 92, 246, 0.2);
-    --bd2: rgba(139, 92, 246, 0.1);
-    --tx: #f0eaff;
-    --tx2: #a89dc0;
-    --tx3: #6b5f88;
-    --p4: #8b5cf6;
-    --p5: #a78bfa;
-    --ac: #f0abfc;
-    --glow: rgba(139, 92, 246, 0.35);
-    --nb: rgba(6, 4, 15, 0.85);
-    --cb: rgba(15, 9, 35, 0.82);
-    --cu: rgba(91, 33, 182, 0.25);
-    --ca: rgba(18, 12, 40, 0.9);
+    --bg: #06040f; --bg2: #0d0920; --sf: rgba(18, 12, 40, 0.7);
+    --bd: rgba(139, 92, 246, 0.2); --tx: #f0eaff; --tx2: #a89dc0; --tx3: #6b5f88;
+    --p4: #8b5cf6; --p5: #a78bfa; --ac: #f0abfc;
+    --glow: rgba(139, 92, 246, 0.35); --cb: rgba(15, 9, 35, 0.82); --cu: rgba(91, 33, 182, 0.25);
   }
 
-  * { box-sizing: border-box; }
+  * { box-sizing: border-box; margin: 0; }
   
   body {
     font-family: 'Plus Jakarta Sans', sans-serif;
     background: var(--bg);
     color: var(--tx);
     min-height: 100vh;
-    margin: 0;
   }
 
   .bg-canvas {
-    position: fixed;
-    inset: 0;
-    z-index: 0;
+    position: fixed; inset: 0; z-index: 0;
     background: radial-gradient(circle at center, var(--bg2) 0%, var(--bg) 100%);
-    filter: blur(1px);
-    opacity: 0.8;
+    filter: blur(1px); opacity: 0.8;
   }
 
   .login-container {
-    position: relative;
-    z-index: 1;
+    position: relative; z-index: 1;
     min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px;
   }
 
   .login-card {
-    background: var(--cb);
-    backdrop-filter: blur(25px);
-    -webkit-backdrop-filter: blur(25px);
-    border: 1px solid var(--bd);
-    border-radius: 24px;
-    padding: 40px;
-    width: 100%;
-    max-width: 420px;
+    background: var(--cb); backdrop-filter: blur(25px);
+    border: 1px solid var(--bd); border-radius: 20px;
+    padding: 32px 28px; width: 100%; max-width: 400px;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
   }
 
-  .login-logo {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    margin-bottom: 8px;
-  }
+  .login-logo { display: flex; justify-content: center; margin-bottom: 6px; }
 
   .logo-icon {
-    width: 88px;
-    height: 88px;
-    border-radius: 14px;
-    background: #5a21b6a9;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    width: 72px; height: 72px; border-radius: 12px;
+    background: #5a21b6a9; display: flex; align-items: center; justify-content: center;
     box-shadow: 0 0 30px var(--glow);
   }
 
-  .font-display {
-    font-family: 'Plus Jakarta Sans', serif;
-  }
+  .logo-icon img { width: 40px; height: 40px; }
 
   .login-title {
-    font-family: 'Plus Jakarta Sans', serif;
-    font-size: 48px;
-    font-weight: 900;
-    text-align: center;
-    margin: 0 0 8px;
+    font-size: 36px; font-weight: 900; text-align: center; margin: 0 0 6px;
     background: linear-gradient(135deg, var(--p4), var(--ac));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   }
 
-  .login-subtitle {
-    color: var(--tx2);
-    text-align: center;
-    font-size: 18px;
-    margin-bottom: 32px;
-  }
+  .login-subtitle { color: var(--tx2); text-align: center; font-size: 15px; margin-bottom: 24px; }
 
-  .form-group {
-    margin-bottom: 20px;
-  }
+  .form-group { margin-bottom: 16px; }
+  .form-row { display: flex; gap: 10px; }
+  .form-row > div { flex: 1; }
 
-  .form-row {
-    display: flex;
-    gap: 12px;
-  }
-
-  .form-label {
-    display: block;
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--tx2);
-    margin-bottom: 8px;
-  }
+  .form-label { display: block; font-size: 12px; font-weight: 600; color: var(--tx2); margin-bottom: 6px; }
 
   .form-input {
-    width: 100%;
-    padding: 14px 16px;
-    border-radius: 12px;
-    border: 1px solid var(--bd);
-    background: var(--sf);
-    color: var(--tx);
-    font-size: 15px;
-    font-family: inherit;
-    transition: border-color 0.2s, box-shadow 0.2s;
+    width: 100%; padding: 12px 14px; border-radius: 10px;
+    border: 1px solid var(--bd); background: var(--sf); color: var(--tx);
+    font-size: 14px; font-family: inherit; transition: border-color 0.2s, box-shadow 0.2s;
   }
 
-  .form-input:focus {
-    outline: none;
-    border-color: var(--p4);
-    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
-  }
-
-  .form-input::placeholder {
-    color: var(--tx3);
-  }
+  .form-input:focus { outline: none; border-color: var(--p4); box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15); }
+  .form-input::placeholder { color: var(--tx3); }
 
   .btn {
-    width: 100%;
-    padding: 14px 20px;
-    border-radius: 12px;
-    font-size: 15px;
-    font-weight: 600;
-    font-family: inherit;
-    cursor: pointer;
-    transition: all 0.2s;
-    border: none;
+    width: 100%; padding: 12px 16px; border-radius: 10px;
+    font-size: 14px; font-weight: 600; font-family: inherit;
+    cursor: pointer; transition: all 0.2s; border: none;
   }
 
-  .btn-primary {
-    color: white;
-  }
+  .btn-primary { color: white; }
+  .btn-google { background: var(--sf); color: var(--tx); border: 1px solid var(--bd); display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .btn-google:hover { background: var(--bd); }
 
-  .btn-google {
-    background: var(--sf);
-    color: var(--tx);
-    border: 1px solid var(--bd);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-  }
+  .divider { display: flex; align-items: center; gap: 14px; margin: 22px 0; color: var(--tx3); font-size: 12px; }
+  .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--bd); }
 
-  .btn-google:hover {
-    background: var(--bd);
-  }
-
-  .divider {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin: 28px 0;
-    color: var(--tx3);
-    font-size: 13px;
-  }
-
-  .divider::before,
-  .divider::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--bd);
-  }
-
-  .tabs {
-    display: flex;
-    gap: 4px;
-    background: var(--sf);
-    padding: 4px;
-    border-radius: 12px;
-    margin-bottom: 28px;
-  }
-
+  .tabs { display: flex; gap: 4px; background: var(--sf); padding: 3px; border-radius: 10px; margin-bottom: 22px; }
   .tab {
-    flex: 1;
-    padding: 10px;
-    border-radius: 10px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-    background: transparent;
-    color: var(--tx2);
-    border: none;
-    font-family: inherit;
+    flex: 1; padding: 9px; border-radius: 8px; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s; background: transparent;
+    color: var(--tx2); border: none; font-family: inherit;
   }
-
-  .tab.active {
-    background: var(--cu);
-    color: var(--p5);
-    border: 1px solid var(--bd);
-  }
+  .tab.active { background: var(--cu); color: var(--p5); border: 1px solid var(--bd); }
 
   .error-msg {
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    color: #fca5a5;
-    padding: 12px 16px;
-    border-radius: 10px;
-    font-size: 13px;
-    margin-bottom: 20px;
-    display: none;
+    background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #fca5a5; padding: 10px 14px; border-radius: 8px; font-size: 12px;
+    margin-bottom: 16px; display: none;
   }
+  .error-msg.show { display: block; }
 
-  .error-msg.show {
-    display: block;
-  }
-
-  .grad-bg {
-    background: linear-gradient(135deg, #5b21b6, var(--p4));
-    transition: filter .3s, transform .3s, box-shadow .3s;
-  }
-
-  .grad-bg:hover {
-    filter: brightness(1.15);
-    transform: translateY(-1px);
-    box-shadow: 0 0 20px var(--glow);
-  }
+  .grad-bg { background: linear-gradient(135deg, #5b21b6, var(--p4)); transition: filter .3s, transform .3s, box-shadow .3s; }
+  .grad-bg:hover { filter: brightness(1.15); transform: translateY(-1px); box-shadow: 0 0 20px var(--glow); }
 
   .hidden { display: none; }
+
+  .top-logo { position: fixed; top: 16px; left: 16px; z-index: 10; }
+  .top-logo img { height: 32px; width: auto; }
+
+  @media (max-width: 480px) {
+    .login-card { padding: 24px 20px; border-radius: 16px; }
+    .logo-icon { width: 60px; height: 60px; border-radius: 10px; }
+    .logo-icon img { width: 32px; height: 32px; }
+    .login-title { font-size: 28px; }
+    .login-subtitle { font-size: 14px; margin-bottom: 20px; }
+    .form-row { flex-direction: column; gap: 0; }
+    .tabs { margin-bottom: 18px; }
+    .divider { margin: 18px 0; }
+  }
+
+  @media (min-width: 768px) {
+    .top-logo { top: 20px; left: 20px; }
+    .top-logo img { height: 40px; }
+    .login-card { padding: 40px 36px; }
+    .logo-icon { width: 84px; height: 84px; }
+    .logo-icon img { width: 48px; height: 48px; }
+    .login-title { font-size: 44px; }
+    .login-subtitle { font-size: 17px; margin-bottom: 28px; }
+    .form-input { padding: 14px 16px; font-size: 15px; }
+    .btn { padding: 14px 20px; font-size: 15px; }
+  }
 </style>
 </head>
 <body>
@@ -265,8 +146,8 @@
 <div class="bg-canvas"></div>
 
 <!-- Top Left Logo -->
-<div style="position: fixed; top: 20px; left: 20px; z-index: 10;">
-  <img src="app/logo.png" alt="Korah Logo" style="height: 40px; width: auto;">
+<div class="top-logo">
+  <img src="app/logo.png" alt="Korah Logo">
 </div>
 
 <div class="login-container">
@@ -302,11 +183,11 @@
     <!-- Register Form -->
     <form id="register-form" class="hidden">
       <div class="form-row form-group">
-        <div style="flex:1">
+        <div>
           <label class="form-label">First Name</label>
           <input type="text" class="form-input" id="register-firstname" placeholder="John" required>
         </div>
-        <div style="flex:1">
+        <div>
           <label class="form-label">Last Name</label>
           <input type="text" class="form-input" id="register-lastname" placeholder="Doe" required>
         </div>
