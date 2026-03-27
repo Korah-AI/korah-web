@@ -133,7 +133,7 @@ function showSidebarDeleteModal(name, onConfirm) {
         link.innerHTML = "<span class='nav-icon'>📚</span> <span class='nav-text'>Study</span>";
         if (itemIds.length === 0) link.classList.add("nav-empty");
         else link.classList.remove("nav-empty");
-      } else if (href === "index.html") {
+      } else if (href.includes("index.html")) {
         link.innerHTML = "<span class='nav-icon'>💬</span> <span class='nav-text'>Chat</span>";
       }
       // All other links (productivity) remain unchanged
