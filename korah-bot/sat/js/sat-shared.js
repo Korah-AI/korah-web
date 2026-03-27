@@ -5,26 +5,154 @@
         key: "english",
         label: "English Reading & Writing",
         description: "Reading, rhetoric, revision, and language conventions from the SAT verbal section.",
+        count: 1587,
         domains: [
           {
             key: "Information and Ideas",
-            count: 134,
-            description: "Interpret details, make inferences, and synthesize claims across passages."
+            count: 475,
+            description: "Interpret details, make inferences, and synthesize claims across passages.",
+            topics: [
+              {
+                key: "Central Ideas and Details",
+                count: 116,
+                difficulty: "medium",
+                scoreBand: "680-790",
+                timeSpent: "45-90 sec",
+                active: true,
+                marked: false,
+                solved: true,
+                incorrect: false
+              },
+              {
+                key: "Command of Evidence",
+                count: 242,
+                difficulty: "hard",
+                scoreBand: "700-800",
+                timeSpent: "90 sec+",
+                active: true,
+                marked: true,
+                solved: false,
+                incorrect: true,
+                attempts: [
+                  { tone: "gold", label: "2" }
+                ]
+              },
+              {
+                key: "Inferences",
+                count: 117,
+                difficulty: "medium",
+                scoreBand: "650-740",
+                timeSpent: "45-90 sec",
+                active: true,
+                marked: false,
+                solved: false,
+                incorrect: false
+              }
+            ]
           },
           {
             key: "Craft and Structure",
-            count: 121,
-            description: "Analyze word choice, text structure, rhetoric, and point of view."
+            count: 412,
+            description: "Analyze word choice, text structure, rhetoric, and point of view.",
+            topics: [
+              {
+                key: "Cross-Text Connections",
+                count: 56,
+                difficulty: "medium",
+                scoreBand: "640-730",
+                timeSpent: "45-90 sec",
+                active: true,
+                marked: false,
+                solved: true,
+                incorrect: false
+              },
+              {
+                key: "Text Structure and Purpose",
+                count: 130,
+                difficulty: "medium",
+                scoreBand: "660-760",
+                timeSpent: "45-90 sec",
+                active: true,
+                marked: true,
+                solved: false,
+                incorrect: true
+              },
+              {
+                key: "Words in Context",
+                count: 226,
+                difficulty: "easy",
+                scoreBand: "610-700",
+                timeSpent: "Under 45 sec",
+                active: true,
+                marked: false,
+                solved: true,
+                incorrect: false
+              }
+            ]
           },
           {
             key: "Expression of Ideas",
-            count: 116,
-            description: "Revise for clarity, organization, transitions, and rhetorical effectiveness."
+            count: 343,
+            description: "Revise for clarity, organization, transitions, and rhetorical effectiveness.",
+            topics: [
+              {
+                key: "Rhetorical Synthesis",
+                count: 182,
+                difficulty: "hard",
+                scoreBand: "700-800",
+                timeSpent: "90 sec+",
+                active: true,
+                marked: false,
+                solved: false,
+                incorrect: true
+              },
+              {
+                key: "Transitions",
+                count: 161,
+                difficulty: "easy",
+                scoreBand: "610-690",
+                timeSpent: "Under 45 sec",
+                active: true,
+                marked: false,
+                solved: true,
+                incorrect: false
+              }
+            ]
           },
           {
             key: "Standard English Conventions",
-            count: 142,
-            description: "Sentence boundaries, punctuation, agreement, and usage rules."
+            count: 357,
+            description: "Sentence boundaries, punctuation, agreement, and usage rules.",
+            topics: [
+              {
+                key: "Boundaries",
+                count: 180,
+                difficulty: "medium",
+                scoreBand: "660-740",
+                timeSpent: "Under 45 sec",
+                active: true,
+                marked: false,
+                solved: true,
+                incorrect: false,
+                attempts: [
+                  { tone: "green", label: "1" }
+                ]
+              },
+              {
+                key: "Form, Structure, and Sense",
+                count: 177,
+                difficulty: "medium",
+                scoreBand: "650-730",
+                timeSpent: "45-90 sec",
+                active: true,
+                marked: false,
+                solved: true,
+                incorrect: false,
+                attempts: [
+                  { tone: "green", label: "1" }
+                ]
+              }
+            ]
           }
         ]
       },
@@ -32,26 +160,300 @@
         key: "math",
         label: "Math",
         description: "Algebra, advanced math, data analysis, geometry, and trigonometry.",
+        count: 1700,
         domains: [
           {
             key: "Algebra",
-            count: 148,
-            description: "Linear equations, systems, inequalities, and algebraic fluency."
+            count: 569,
+            description: "Linear equations, systems, inequalities, and algebraic fluency.",
+            attempts: [
+              { tone: "gold", label: "2" }
+            ],
+            topics: [
+              {
+                key: "Linear equations in one variable",
+                count: 106,
+                difficulty: "easy",
+                scoreBand: "600-680",
+                timeSpent: "Under 45 sec",
+                active: true,
+                marked: true,
+                solved: false,
+                incorrect: true,
+                attempts: [
+                  { tone: "gold", label: "1" }
+                ]
+              },
+              {
+                key: "Linear functions",
+                count: 152,
+                difficulty: "medium",
+                scoreBand: "640-730",
+                timeSpent: "45-90 sec",
+                active: true,
+                marked: false,
+                solved: true,
+                incorrect: false
+              },
+              {
+                key: "Linear equations in two variables",
+                count: 126,
+                difficulty: "medium",
+                scoreBand: "640-740",
+                timeSpent: "45-90 sec",
+                active: true,
+                marked: false,
+                solved: true,
+                incorrect: false
+              },
+              {
+                key: "Systems of two linear equations in two variables",
+                count: 112,
+                difficulty: "medium",
+                scoreBand: "660-750",
+                timeSpent: "45-90 sec",
+                active: true,
+                marked: false,
+                solved: false,
+                incorrect: false
+              },
+              {
+                key: "Linear inequalities in one or two variables",
+                count: 73,
+                difficulty: "hard",
+                scoreBand: "700-800",
+                timeSpent: "90 sec+",
+                active: true,
+                marked: true,
+                solved: false,
+                incorrect: true,
+                attempts: [
+                  { tone: "gold", label: "1" }
+                ]
+              }
+            ]
           },
           {
             key: "Advanced Math",
-            count: 126,
-            description: "Nonlinear functions, equivalent expressions, and higher-order structure."
+            count: 479,
+            description: "Nonlinear functions, equivalent expressions, and higher-order structure.",
+            topics: [
+              {
+                key: "Equivalent expressions",
+                count: 102,
+                difficulty: "medium",
+                scoreBand: "650-730",
+                timeSpent: "45-90 sec",
+                active: true,
+                marked: false,
+                solved: false,
+                incorrect: false
+              },
+              {
+                key: "Nonlinear equations in one variable and systems of equations in two variables",
+                count: 148,
+                difficulty: "hard",
+                scoreBand: "700-800",
+                timeSpent: "90 sec+",
+                active: true,
+                marked: false,
+                solved: false,
+                incorrect: true
+              },
+              {
+                key: "Nonlinear functions",
+                count: 229,
+                difficulty: "hard",
+                scoreBand: "700-800",
+                timeSpent: "90 sec+",
+                active: true,
+                marked: false,
+                solved: false,
+                incorrect: false
+              }
+            ]
           },
           {
             key: "Problem-Solving and Data Analysis",
-            count: 118,
-            description: "Ratios, rates, percentages, probability, and data interpretation."
+            count: 383,
+            description: "Ratios, rates, percentages, probability, and data interpretation.",
+            attempts: [
+              { tone: "gold", label: "9" },
+              { tone: "green", label: "49" }
+            ],
+            topics: [
+              {
+                key: "Ratios, rates, proportional relationships, and units",
+                count: 86,
+                difficulty: "medium",
+                scoreBand: "640-720",
+                timeSpent: "45-90 sec",
+                active: true,
+                marked: true,
+                solved: true,
+                incorrect: false,
+                attempts: [
+                  { tone: "gold", label: "7" },
+                  { tone: "green", label: "8" }
+                ]
+              },
+              {
+                key: "Percentages",
+                count: 78,
+                difficulty: "easy",
+                scoreBand: "600-680",
+                timeSpent: "Under 45 sec",
+                active: true,
+                marked: true,
+                solved: true,
+                incorrect: false,
+                attempts: [
+                  { tone: "gold", label: "1" },
+                  { tone: "green", label: "10" }
+                ]
+              },
+              {
+                key: "One-variable data: Distributions and measures of center and spread",
+                count: 74,
+                difficulty: "medium",
+                scoreBand: "650-730",
+                timeSpent: "45-90 sec",
+                active: true,
+                marked: false,
+                solved: true,
+                incorrect: false,
+                attempts: [
+                  { tone: "green", label: "9" }
+                ]
+              },
+              {
+                key: "Two-variable data: Models and scatterplots",
+                count: 63,
+                difficulty: "medium",
+                scoreBand: "660-740",
+                timeSpent: "45-90 sec",
+                active: true,
+                marked: false,
+                solved: false,
+                incorrect: false,
+                attempts: [
+                  { tone: "gold", label: "1" },
+                  { tone: "green", label: "8" }
+                ]
+              },
+              {
+                key: "Probability and conditional probability",
+                count: 46,
+                difficulty: "hard",
+                scoreBand: "700-800",
+                timeSpent: "90 sec+",
+                active: true,
+                marked: false,
+                solved: true,
+                incorrect: false,
+                attempts: [
+                  { tone: "green", label: "7" },
+                  { tone: "green", label: "46" }
+                ]
+              },
+              {
+                key: "Inference from sample statistics and margin of error",
+                count: 25,
+                difficulty: "hard",
+                scoreBand: "710-800",
+                timeSpent: "90 sec+",
+                active: true,
+                marked: false,
+                solved: true,
+                incorrect: false,
+                attempts: [
+                  { tone: "green", label: "4" }
+                ]
+              },
+              {
+                key: "Evaluating statistical claims: observational studies and experiments",
+                count: 11,
+                difficulty: "hard",
+                scoreBand: "710-800",
+                timeSpent: "90 sec+",
+                active: true,
+                marked: false,
+                solved: true,
+                incorrect: false,
+                attempts: [
+                  { tone: "green", label: "3" }
+                ]
+              }
+            ]
           },
           {
             key: "Geometry and Trigonometry",
-            count: 108,
-            description: "Angles, circles, area, volume, right triangles, and trig relationships."
+            count: 269,
+            description: "Angles, circles, area, volume, right triangles, and trig relationships.",
+            attempts: [
+              { tone: "gold", label: "2" },
+              { tone: "green", label: "42" }
+            ],
+            topics: [
+              {
+                key: "Area and volume",
+                count: 86,
+                difficulty: "medium",
+                scoreBand: "650-730",
+                timeSpent: "45-90 sec",
+                active: true,
+                marked: true,
+                solved: true,
+                incorrect: false,
+                attempts: [
+                  { tone: "gold", label: "1" },
+                  { tone: "green", label: "17" }
+                ]
+              },
+              {
+                key: "Lines, angles, and triangles",
+                count: 79,
+                difficulty: "medium",
+                scoreBand: "650-740",
+                timeSpent: "45-90 sec",
+                active: true,
+                marked: true,
+                solved: true,
+                incorrect: false,
+                attempts: [
+                  { tone: "gold", label: "1" },
+                  { tone: "green", label: "13" }
+                ]
+              },
+              {
+                key: "Right triangles and trigonometry",
+                count: 54,
+                difficulty: "hard",
+                scoreBand: "700-800",
+                timeSpent: "90 sec+",
+                active: true,
+                marked: false,
+                solved: true,
+                incorrect: false,
+                attempts: [
+                  { tone: "green", label: "7" }
+                ]
+              },
+              {
+                key: "Circles",
+                count: 50,
+                difficulty: "easy",
+                scoreBand: "600-680",
+                timeSpent: "Under 45 sec",
+                active: true,
+                marked: false,
+                solved: true,
+                incorrect: false,
+                attempts: [
+                  { tone: "green", label: "5" }
+                ]
+              }
+            ]
           }
         ]
       }

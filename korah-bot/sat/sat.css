@@ -50,6 +50,210 @@
   animation: fadeUp 0.6s ease-out;
 }
 
+.sat-bank-shell {
+  display: grid;
+  gap: 18px;
+}
+
+.sat-bank-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 4px 2px 0;
+}
+
+.sat-bank-copy h1 {
+  margin: 0;
+  font-size: clamp(2.5rem, 4vw, 4rem);
+  line-height: 0.98;
+  letter-spacing: -0.03em;
+}
+
+.sat-bank-meta {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.sat-inline-stat {
+  min-width: 120px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: var(--sf);
+  border: 1px solid var(--bd);
+}
+
+.sat-inline-stat strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 1.3rem;
+}
+
+.sat-inline-stat-label {
+  color: var(--tx2);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.sat-bank-controls {
+  display: grid;
+  gap: 14px;
+}
+
+.sat-toolbar-row,
+.sat-session-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.sat-toolbar-group-main {
+  flex-wrap: wrap;
+}
+
+.sat-toolbar-pill {
+  height: 44px;
+  border-radius: 16px;
+  border: 1px solid var(--bd);
+  background: var(--sf);
+  color: var(--tx);
+  padding: 0 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
+}
+
+.sat-toolbar-pill:hover {
+  transform: translateY(-1px);
+  border-color: var(--p4);
+}
+
+.sat-toolbar-pill.is-active {
+  background: rgba(126, 87, 255, 0.12);
+  border-color: rgba(126, 87, 255, 0.38);
+  color: var(--p5);
+}
+
+.sat-toolbar-pill-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.sat-switch-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--tx2);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.sat-switch {
+  position: relative;
+  display: inline-flex;
+}
+
+.sat-switch input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sat-switch-track {
+  position: relative;
+  width: 48px;
+  height: 28px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.34);
+  border: 1px solid var(--bd);
+  transition: background 0.2s ease;
+}
+
+.sat-switch-track::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.2);
+  transition: transform 0.2s ease;
+}
+
+.sat-switch input:checked + .sat-switch-track {
+  background: linear-gradient(135deg, #7c3aed, #60a5fa);
+}
+
+.sat-switch input:checked + .sat-switch-track::after {
+  transform: translateX(19px);
+}
+
+.sat-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.sat-filter-select {
+  display: grid;
+  gap: 6px;
+}
+
+.sat-filter-select span {
+  color: var(--tx2);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.sat-filter-select select {
+  width: 100%;
+  height: 52px;
+  border-radius: 16px;
+  border: 1px solid var(--bd);
+  background: var(--sf);
+  color: var(--tx);
+  padding: 0 16px;
+  font: inherit;
+  font-weight: 600;
+}
+
+.sat-inline-selection {
+  flex: 1;
+  min-width: 240px;
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  border-radius: 16px;
+  background: var(--sf);
+  border: 1px solid var(--bd);
+  color: var(--tx2);
+  font-weight: 700;
+}
+
+.sat-bank-layout {
+  display: block;
+  margin-top: 6px;
+}
+
+.sat-section-column {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
 .sat-hero,
 .sat-toolbar,
 .sat-selection-panel,
@@ -223,20 +427,9 @@
   margin-top: 18px;
 }
 
-.sat-bank-layout {
-  grid-template-columns: minmax(0, 1.8fr) minmax(300px, 0.85fr);
-  align-items: start;
-}
-
-.sat-section-column {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
-}
-
 .sat-section-card {
-  border-radius: 24px;
-  padding: 22px;
+  overflow: hidden;
+  border-radius: 26px;
   background: var(--sf);
   backdrop-filter: blur(30px);
   -webkit-backdrop-filter: blur(30px);
@@ -245,64 +438,179 @@
 
 .sat-section-header {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  align-items: center;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 0;
+  padding: 22px 22px 18px;
+  color: #fff;
+}
+
+.sat-section-card.is-english .sat-section-header {
+  background: linear-gradient(135deg, #b12bd8, #9d36d1);
+}
+
+.sat-section-card.is-math .sat-section-header {
+  background: linear-gradient(135deg, #55a7eb, #4b98de);
+}
+
+.sat-section-heading,
+.sat-domain-heading,
+.sat-topic-heading {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.sat-section-heading {
+  flex: 1;
 }
 
 .sat-section-title {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.15rem;
 }
 
-.sat-section-subtitle {
-  margin: 8px 0 0;
-  color: var(--tx2);
-  line-height: 1.6;
+.sat-section-count {
+  margin: 4px 0 0;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.95rem;
+  font-weight: 600;
 }
 
 .sat-domain-grid {
   display: grid;
-  gap: 10px;
+  gap: 0;
 }
 
-.sat-domain-card {
-  border-radius: 18px;
-  padding: 16px;
-  background: var(--sf2);
-  border: 1px solid var(--bd2);
+.sat-domain-group {
+  padding: 18px 22px 12px;
+  border-top: 1px solid var(--bd);
 }
 
-.sat-domain-top {
+.sat-domain-row,
+.sat-topic-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 10px;
+  gap: 12px;
 }
 
 .sat-domain-name {
   margin: 0;
-  font-size: 1rem;
+  font-size: 1.05rem;
 }
 
 .sat-domain-count {
-  color: var(--p5);
-  font-weight: 700;
-  font-size: 0.8rem;
-}
-
-.sat-domain-description {
-  margin: 10px 0 14px;
+  white-space: nowrap;
   color: var(--tx2);
-  font-size: 0.93rem;
-  line-height: 1.6;
+  font-weight: 500;
+  font-size: 0.95rem;
 }
 
-.sat-domain-actions {
-  display: flex;
-  gap: 10px;
+.sat-domain-heading,
+.sat-topic-heading {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sat-topic-list {
+  display: grid;
+  gap: 8px;
+  padding: 10px 0 4px 34px;
+}
+
+.sat-topic-row {
+  min-height: 34px;
+}
+
+.sat-topic-row.is-selected .sat-topic-heading {
+  color: var(--tx);
+  font-weight: 700;
+}
+
+.sat-topic-count {
+  white-space: nowrap;
+  color: var(--tx2);
+  font-size: 0.9rem;
+}
+
+.sat-check {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  margin-top: 3px;
+  border-radius: 6px;
+  border: 1px solid var(--bd2);
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+}
+
+.sat-check.is-active {
+  background: #111827;
+  border-color: #111827;
+}
+
+.sat-check.is-active::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 6px;
+  width: 4px;
+  height: 8px;
+  border-right: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+  transform: rotate(45deg);
+}
+
+.sat-check-lg {
+  width: 20px;
+  height: 20px;
+  border-color: rgba(255, 255, 255, 0.68);
+}
+
+.sat-check-lg.is-active {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.88);
+}
+
+.sat-check-lg.is-active::after {
+  top: 4px;
+  left: 7px;
+}
+
+.sat-attempt-badges {
+  display: inline-flex;
+  gap: 6px;
   flex-wrap: wrap;
+}
+
+.sat-attempt-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.sat-attempt-badge.is-gold {
+  background: rgba(250, 204, 21, 0.24);
+  color: #a16207;
+}
+
+.sat-attempt-badge.is-green {
+  background: rgba(34, 197, 94, 0.18);
+  color: #15803d;
 }
 
 .sat-chip {
@@ -549,10 +857,13 @@
 }
 
 @media (max-width: 1120px) {
-  .sat-bank-layout,
   .sat-player-layout,
   .sat-section-column {
     grid-template-columns: 1fr;
+  }
+
+  .sat-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .sat-tools-panel {
@@ -565,6 +876,7 @@
     padding: 18px 14px 28px;
   }
 
+  .sat-bank-head,
   .sat-hero,
   .sat-toolbar,
   .sat-player-topbar {
@@ -584,6 +896,10 @@
   .sat-selection-actions,
   .sat-player-actions {
     flex-wrap: wrap;
+  }
+
+  .sat-filter-grid {
+    grid-template-columns: 1fr;
   }
 }
 
