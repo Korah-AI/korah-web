@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en" x-data="{
+  theme: localStorage.getItem('korah_theme') || 'system',
+  systemDark: window.matchMedia('(prefers-color-scheme: dark)').matches,
+  init() {
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+      this.systemDark = e.matches;
+    });
+  },
+  getEffectiveTheme() {
+    if (this.theme === 'system') return this.systemDark ? 'dark' : 'light';
+    return this.theme;
+  }
+}" :data-theme="getEffectiveTheme()" x-cloak>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Korah AI — Coming Soon</title>
+    <link rel="icon" type="image/png" href="../app/logoresized.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="release.css">
+</head>
+<body class="prerelease-body">
+    <canvas id="bg-canvas" class="stars-container"></canvas>
+    
+    <main class="content-wrapper">
+        <div class="mascot-container">
+            <img src="../app/logo.png" alt="Korah Mascot" class="korah-mascot">
+        </div>
+        
+        <header class="text-content">
+            <h1 class="title">Coming Soon</h1>
+            <p class="description">We're putting the finishing touches on your new AI study companion.</p>
+            
+            <div class="release-card">
+                <span class="release-label">Official Release</span>
+                <div class="release-date">April 3, 2026</div>
+            </div>
+            
+            <p class="footer-note">Get ready to study smarter.</p>
+        </header>
+    </main>
+
+    <script>
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        let w, h, stars = [], dots = [];
+
+        function resize() {
+            w = canvas.width = window.innerWidth;
+            h = canvas.height = window.innerHeight;
+            initStars();
+            initDots();
+        }
+
+        class Star {
+            constructor() { this.reset(); }
+            reset() {
+                this.x = Math.random() * w;
+                this.y = Math.random() * h;
+                this.size = Math.random() * 1.5;
+                this.opacity = Math.random() * 0.7 + 0.1;
+                this.twinkleSpeed = Math.random() * 0.01 + 0.005;
+                this.twinkleDir = Math.random() > 0.5 ? 1 : -1;
+            }
+            update() {
+                this.opacity += this.twinkleSpeed * this.twinkleDir;
+                if (this.opacity > 0.8 || this.opacity < 0.2) this.twinkleDir *= -1;
+            }
+            draw() {
+                ctx.fillStyle = '#ffffff';
+                ctx.globalAlpha = this.opacity;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        class Dot {
+            constructor() {
+                this.x = Math.random() * w;
+                this.y = Math.random() * h;
+                this.vx = (Math.random() - 0.5) * 0.4;
+                this.vy = (Math.random() - 0.5) * 0.4;
+                this.r = 1.5 + Math.random() * 1.5;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                if (this.x < 0 || this.x > w) this.vx *= -1;
+                if (this.y < 0 || this.y > h) this.vy *= -1;
+            }
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(139,92,246,0.4)';
+                ctx.fill();
+            }
+        }
+
+        function initStars() {
+            stars = [];
+            for (let i = 0; i < 150; i++) stars.push(new Star());
+        }
+
+        function initDots() {
+            dots = [];
+            const count = Math.min(Math.max(Math.floor((w * h) / 15000), 40), 80);
+            for (let i = 0; i < count; i++) dots.push(new Dot());
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, w, h);
+            const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+
+            if (isLight) {
+                ctx.globalAlpha = 1.0;
+                for (let i = 0; i < dots.length; i++) {
+                    for (let j = i + 1; j < dots.length; j++) {
+                        const dx = dots[i].x - dots[j].x;
+                        const dy = dots[i].y - dots[j].y;
+                        const dist = Math.sqrt(dx*dx + dy*dy);
+                        if (dist < 150) {
+                            ctx.beginPath();
+                            ctx.moveTo(dots[i].x, dots[i].y);
+                            ctx.lineTo(dots[j].x, dots[j].y);
+                            ctx.strokeStyle = `rgba(139,92,246,${(1 - dist/150) * 0.2})`;
+                            ctx.lineWidth = 1;
+                            ctx.stroke();
+                        }
+                    }
+                    dots[i].update();
+                    dots[i].draw();
+                }
+            } else {
+                stars.forEach(s => { s.update(); s.draw(); });
+            }
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('resize', resize);
+        resize();
+        animate();
+    </script>
+</body>
+</html>

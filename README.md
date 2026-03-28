@@ -1,10 +1,9 @@
 # Korah-bot Prerelease Todo List
+* Fix all empty links/href in all htmls.
 
-* All Done :)
+# Korah Web Todo List (Jayden's | Things I think That Work/fit or need to be worked on)
 
-# Korah Web ToDo List (Jayden's | Things I think That Work/fit or need to be worked on)
-
-* Update Iphone images on landing page to match the updated Korah
+* Configure the favicon in the header of landing page.
 
 # Korah-bot Todo list (Jayden's)
 
@@ -16,6 +15,11 @@
 * Fix closed side bar center +.
 * Check out creating study item css and check all css and improve.
 * Check out using study items to see if there are any flaws.
+* Make sure that documents side bar doesn't overlap normal side bar when window is minimized.
+
+# Korah-bot Support.html
+* Make sure all links work and are linked.
+* Improve css. (Don't make any drastic changes, only improve.)
 
 
 
