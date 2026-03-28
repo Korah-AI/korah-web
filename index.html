@@ -36,6 +36,7 @@
 
 <!-- Shooting Star background and twinkling stars -->
 <div class="stars-container" id="starField" :style="theme === 'light' ? 'opacity:0;pointer-events:none' : 'opacity:1'" style="transition:opacity 0.4s"></div>
+<canvas id="constellation-canvas" style="position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; opacity:0; transition:opacity 0.5s; z-index:-1;"></canvas>
 
 <!-- ═══ NAVBAR ═══ -->
 <nav id="navbar" class="fixed top-0 left-0 right-0 h-[70px] z-[1000] flex items-center px-4 md:px-[clamp(16px,4vw,52px)]">
@@ -111,12 +112,12 @@
 <section id="design-showcase" style="position:relative;min-height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;padding-top:70px;">
   <canvas id="design-shader-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;display:block;-webkit-mask-image:linear-gradient(to bottom,transparent 0%,black 14%,black 86%,transparent 100%);mask-image:linear-gradient(to bottom,transparent 0%,black 14%,black 86%,transparent 100%);"></canvas>
 
-  <div style="position:relative;z-index:10;border:1px solid #27272a;padding:8px;width:100%;max-width:768px;margin:0 auto;">
-    <main style="position:relative;border:1px solid #27272a;padding:40px 20px;overflow:hidden;text-align:center;">
-      <h1 style="margin-bottom:12px;color:#ffffff;font-size:clamp(2rem,8vw,7rem);font-weight:900;letter-spacing:-0.01em;line-height:1;">
+  <div class="t-theme" style="position:relative;z-index:10;border:1px solid var(--bd);padding:8px;width:100%;max-width:768px;margin:0 auto;">
+    <main class="t-theme" style="position:relative;border:1px solid var(--bd);padding:40px 20px;overflow:hidden;text-align:center;">
+      <h1 class="tx" style="margin-bottom:12px;font-size:clamp(2rem,8vw,7rem);font-weight:900;letter-spacing:-0.01em;line-height:1;">
         <span id="design-typed-korah" style="color:#a855f7;text-shadow:0 0 20px rgba(168,85,247,0.75),0 0 22px rgba(168,85,247,0.55);"></span><span id="design-typed-text"></span><span class="design-typing-cursor" aria-hidden="true">|</span>
       </h1>
-      <p style="color:rgba(255,255,255,0.6);padding:0 24px;font-size:clamp(12px,1.5vw,18px);margin:0;">Everything you've ever wanted in a study app, always 100% free.</p>
+      <p class="tx2" style="padding:0 24px;font-size:clamp(12px,1.5vw,18px);margin:0;">Everything you've ever wanted in a study app, always 100% free.</p>
 
       <div style="margin:32px 0;display:flex;align-items:center;justify-content:center;gap:4px;">
         <span style="position:relative;display:flex;height:12px;width:12px;align-items:center;justify-content:center;">
@@ -127,26 +128,30 @@
       </div>
 
       <div style="display:flex;justify-content:center; gap: 12px">
-        <button
-          style="position:relative;height:48px;padding:0 32px;border-radius:9999px;border:1px solid rgba(255,255,255,0.2);background:transparent;color:#fff;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;justify-content:center;transition:transform 0.3s;"
+        <a
+          href="korah-bot/login.html"
+          class="tx no-underline"
+          style="position:relative;height:48px;padding:0 32px;border-radius:9999px;border:1px solid var(--bd);background:transparent;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;justify-content:center;transition:transform 0.3s;"
           onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
           <!-- glass shadow overlay -->
           <div style="position:absolute;top:0;left:0;z-index:0;height:100%;width:100%;border-radius:9999px;box-shadow:0 0 8px rgba(0,0,0,.03),0 2px 6px rgba(0,0,0,.08),inset 3px 3px .5px -3.5px rgba(255,255,255,.09),inset -3px -3px .5px -3.5px rgba(255,255,255,.85),inset 1px 1px 1px -.5px rgba(255,255,255,.6),inset -1px -1px 1px -.5px rgba(255,255,255,.6),inset 0 0 6px 6px rgba(255,255,255,.12),inset 0 0 2px 2px rgba(255,255,255,.06),0 0 12px rgba(0,0,0,.15);transition:all 0.3s;"></div>
           <!-- backdrop distortion using SVG filter -->
           <div style="position:absolute;top:0;left:0;height:100%;width:100%;overflow:hidden;border-radius:20px;backdrop-filter:url('#design-glass-filter');"></div>
           <span style="pointer-events:none;position:relative;z-index:10;">Web Version</span>
-        </button>
+        </a>
 
-        <button
-          style="position:relative;height:48px;padding:0 32px;border-radius:9999px;border:1px solid rgba(255,255,255,0.2);background:transparent;color:#fff;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;justify-content:center;transition:transform 0.3s;"
+        <a
+          href="https://testflight.apple.com/join/kkxUsBqe"
+          class="tx no-underline"
+          style="position:relative;height:48px;padding:0 32px;border-radius:9999px;border:1px solid var(--bd);background:transparent;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;justify-content:center;transition:transform 0.3s;"
           onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
           <!-- glass shadow overlay -->
           <div style="position:absolute;top:0;left:0;z-index:0;height:100%;width:100%;border-radius:9999px;box-shadow:0 0 8px rgba(0,0,0,.03),0 2px 6px rgba(0,0,0,.08),inset 3px 3px .5px -3.5px rgba(255,255,255,.09),inset -3px -3px .5px -3.5px rgba(255,255,255,.85),inset 1px 1px 1px -.5px rgba(255,255,255,.6),inset -1px -1px 1px -.5px rgba(255,255,255,.6),inset 0 0 6px 6px rgba(255,255,255,.12),inset 0 0 2px 2px rgba(255,255,255,.06),0 0 12px rgba(0,0,0,.15);transition:all 0.3s;"></div>
           <!-- backdrop distortion using SVG filter -->
           <div style="position:absolute;top:0;left:0;height:100%;width:100%;overflow:hidden;border-radius:20px;backdrop-filter:url('#design-glass-filter');"></div>
-          <span style="pointer-events:none;position:relative;z-index:10;">Download for iOS</span>
-        </button>
-        
+            <span style="pointer-events:none;position:relative;z-index:10;">Download For iOS</span>
+        </a>
+
       </div>
     </main>
   </div>
@@ -260,7 +265,6 @@
 
 <!-- ── HERO ── -->
 <section id="home" class="min-h-screen flex flex-col items-center justify-center pt-[calc(70px+60px)] pb-24 px-5 md:px-[clamp(20px,6vw,80px)]" style="position:relative;">
-  <canvas id="constellation-canvas" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; opacity:0; transition:opacity 0.5s; z-index:1;"></canvas>
   <div class="relative z-10 inline-flex items-center gap-2 bg-sf2 border bd px-4 py-2 rounded-full mb-7 text-[12.5px] font-semibold tx-p5 animate-fade-up t-theme">
     <span class="w-2 h-2 rounded-full bg-[var(--grn)] shadow-[0_0_8px_var(--grn)] animate-pulse-dot"></span>
     Now in Early Beta — Free to Try
@@ -905,11 +909,10 @@ window.addEventListener('load', function() {
   const canvas = document.getElementById('constellation-canvas');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
-  const section = canvas.parentElement;
 
   function resize() {
-    canvas.width = section.offsetWidth || window.innerWidth;
-    canvas.height = section.offsetHeight || window.innerHeight;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
   }
   resize();
   window.addEventListener('resize', resize);

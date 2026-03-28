@@ -136,19 +136,27 @@
 
   function expandDocPanel() {
     const panel = document.getElementById('doc-panel');
+    const tab = document.getElementById('doc-panel-tab');
     if (panel) {
       panel.classList.remove('collapsed');
       panel.classList.add('expanded');
       isDocPanelExpanded = true;
     }
+    if (tab) {
+      tab.classList.add('panel-open');
+    }
   }
 
   function collapseDocPanel() {
     const panel = document.getElementById('doc-panel');
+    const tab = document.getElementById('doc-panel-tab');
     if (panel) {
       panel.classList.remove('expanded');
       panel.classList.add('collapsed');
       isDocPanelExpanded = false;
+    }
+    if (tab) {
+      tab.classList.remove('panel-open');
     }
   }
 

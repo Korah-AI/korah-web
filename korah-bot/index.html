@@ -62,6 +62,7 @@
 </script>
 
 <canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
+<div class="doc-panel-overlay" id="doc-panel-overlay"></div>
 
 <!-- ═══ SIDEBAR ═══ -->
 <aside id="sidebar" class="sidebar bg-sf glass t-theme">
@@ -84,16 +85,16 @@
 
   <nav class="sidebar-nav">
     <div class="sidebar-nav-row">
-      <a href="index.html" class="sidebar-nav-link active t-btn"><span class="nav-icon">💬</span> <span class="nav-text"></span></a>
-      <a href="study/feed.html" class="sidebar-nav-link t-btn"><span class="nav-icon">📚</span> <span class="nav-text"></span></a>
+      <a href="index.html" class="sidebar-nav-link active t-btn"><span class="nav-icon">💬</span> <span class="nav-text">Chat</span></a>
+      <a href="study/feed.html" class="sidebar-nav-link t-btn"><span class="nav-icon">📚</span> <span class="nav-text">Study</span></a>
     </div>
     <a href="productivity.html" class="sidebar-nav-link productivity-link t-btn"><span class="nav-icon">⏱️</span> <span class="nav-text">Productivity</span></a>
   </nav>
 
-  <div class="sidebar-middle">
-    <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 12px 0 4px;">
+  <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 12px 0 4px;">
     <span class="sidebar-section-label" style="margin:0">Recent Chats</span>
-    </div>
+</div>
+<div class="sidebar-middle">
     <div id="chat-select-bar" class="select-bar">
       <span class="select-bar-count" id="chat-select-count">0 selected</span>
       <div class="select-bar-actions">
@@ -295,7 +296,7 @@
 
       <!-- Welcome state -->
       <div id="welcome-screen" class="welcome-screen">
-        <h1 class="welcome-title font-display text-5xl font-black tx mb-8">What can I help you study?</h1>
+        <h1 class="welcome-title font-display font-black tx">What can I help you study?</h1>
 
         <div class="welcome-meta">
           <div class="welcome-mode-badge bg-sf glass-sm bd">
@@ -377,15 +378,6 @@
               <line x1="5" y1="12" x2="19" y2="12"></line>
             </svg>
           </button>
-
-          <div id="tools-menu">
-            <button class="input-tool-btn t-btn tx3" id="tool-flashcard" data-prompt="Generate flashcards for: ">
-              🃏 Generate flashcards
-            </button>
-            <button class="input-tool-btn t-btn tx3" id="tool-guide" data-prompt="Create a study guide for: ">
-              📖 Create study guide
-            </button>
-          </div>
         </div>
 
           <button id="send-btn" class="send-btn-circle grad-bg t-btn" aria-label="Send message">
@@ -413,12 +405,13 @@
 </main>
 
 <!-- ═══ DOCUMENT PREVIEW PANEL ═══ -->
+
 <aside id="doc-panel" class="doc-panel t-theme collapsed">
-  <div id="doc-panel-tab" class="doc-panel-tab" title="Open documents">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-      <polyline points="15 18 9 12 15 6"/>
-    </svg>
-  </div>
+<div id="doc-panel-tab" class="doc-panel-tab" title="Open documents">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+    <polyline points="15 18 9 12 15 6"/>
+  </svg>
+</div>
   <div class="doc-panel-collapsed-content">
     <div id="doc-count-collapsed" class="doc-count-collapsed hidden">0</div>
     <button id="doc-add-btn-collapsed" class="doc-add-btn-collapsed t-btn" title="Add documents">
@@ -545,6 +538,15 @@
 <script src="app/korah-chat.js"></script>
 
 <script>
+  // Close doc panel when overlay is clicked
+  document.getElementById('doc-panel-overlay').addEventListener('click', () => {
+    const panel = document.getElementById('doc-panel');
+    const overlay = document.getElementById('doc-panel-overlay');
+    panel.classList.remove('expanded');
+    panel.classList.add('collapsed');
+    overlay.classList.remove('show');
+  });
+
   // Initialize sidebar with chat-specific callbacks
   window.addEventListener('korahReady', () => {
     if (window.KorahSidebar) {

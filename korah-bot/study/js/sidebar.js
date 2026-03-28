@@ -229,12 +229,13 @@ function showSidebarDeleteModal(name, onConfirm) {
     const canvas = document.getElementById("bg-canvas");
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
-    let w, h, stars = [], shootingStars = [];
+    let w, h, stars = [], shootingStars = [], dots = [];
 
     function resize() {
       w = canvas.width = window.innerWidth;
       h = canvas.height = window.innerHeight;
       initStars();
+      initDots();
     }
 
     class Star {
@@ -301,10 +302,39 @@ function showSidebarDeleteModal(name, onConfirm) {
       }
     }
 
+    class Dot {
+      constructor() {
+        this.x = Math.random() * w;
+        this.y = Math.random() * h;
+        this.vx = (Math.random() - 0.5) * 0.4;
+        this.vy = (Math.random() - 0.5) * 0.4;
+        this.r = 2 + Math.random() * 2;
+      }
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        if (this.x < 0 || this.x > w) this.vx *= -1;
+        if (this.y < 0 || this.y > h) this.vy *= -1;
+      }
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(139,92,246,0.5)';
+        ctx.fill();
+      }
+    }
+
     function initStars() {
       stars = [];
       const starCount = Math.floor((w * h) / 3000);
       for (let i = 0; i < starCount; i++) stars.push(new Star());
+    }
+
+    function initDots() {
+      dots = [];
+      const dotCount = Math.floor((w * h) / 15000); // Fewer dots for constellation
+      const count = Math.min(Math.max(dotCount, 40), 100);
+      for (let i = 0; i < count; i++) dots.push(new Dot());
     }
 
     shootingStars = [];
@@ -312,8 +342,31 @@ function showSidebarDeleteModal(name, onConfirm) {
 
     function animate() {
       ctx.clearRect(0, 0, w, h);
-      stars.forEach(s => { s.update(); s.draw(); });
-      shootingStars.forEach(s => { s.update(); s.draw(); });
+      const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+
+      if (isLight) {
+        ctx.globalAlpha = 1.0;
+        ctx.shadowBlur = 0;
+        for (let i = 0; i < dots.length; i++) {
+          for (let j = i + 1; j < dots.length; j++) {
+            const dx = dots[i].x - dots[j].x;
+            const dy = dots[i].y - dots[j].y;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist < 160) {
+              ctx.beginPath();
+              ctx.moveTo(dots[i].x, dots[i].y);
+              ctx.lineTo(dots[j].x, dots[j].y);
+              ctx.strokeStyle = `rgba(139,92,246,${(1 - dist/160) * 0.3})`;
+              ctx.lineWidth = 1;
+              ctx.stroke();
+            }
+          }
+        }
+        dots.forEach(d => { d.update(); d.draw(); });
+      } else {
+        stars.forEach(s => { s.update(); s.draw(); });
+        shootingStars.forEach(s => { s.update(); s.draw(); });
+      }
       requestAnimationFrame(animate);
     }
 
