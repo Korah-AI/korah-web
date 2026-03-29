@@ -2798,7 +2798,13 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     // 5. Study Link: open from ?study=ID
     const params  = new URLSearchParams(window.location.search);
     const studyId = params.get("study");
-    if (studyId) {
+    const forceNewFlag = localStorage.getItem("korah_new_chat_trigger") === "true";
+
+    if (forceNewFlag) {
+      localStorage.removeItem("korah_new_chat_trigger");
+      const newId = Storage.createSession("New Chat", "general");
+      switchToSession(newId);
+    } else if (studyId) {
       const item = studyItemsCache[studyId];
       if (item) {
         const existingId = Object.keys(sessionsCache).find(

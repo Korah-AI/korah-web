@@ -1,9 +1,10 @@
 # Korah-bot Prerelease Todo List
-* Fix all empty links/href in all htmls.
 
 # Korah Web Todo List (Jayden's | Things I think That Work/fit or need to be worked on)
 
 * Configure the favicon in the header of landing page.
+* About Korah Link (Make About Korah Page or find somewhere to link to) Lines 853-856
+* Blog Link (Make About Korah Blog or find somewhere to link to)
 
 # Korah-bot Todo list (Jayden's)
 
@@ -20,7 +21,8 @@
 # Korah-bot Support.html
 * Make sure all links work and are linked.
 * Improve css. (Don't make any drastic changes, only improve.)
-
+* About Korah Link (Make About Korah Page or find somewhere to link to) Lines 285-286
+* Blog Link (Make About Korah Blog or find somewhere to link to)
 
 
 

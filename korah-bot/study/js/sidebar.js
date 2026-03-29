@@ -787,6 +787,19 @@ function showSidebarDeleteModal(name, onConfirm) {
     const resolvedBaseUrl = chatBaseUrl || "../index.html";
     const resolvedItemUrl = itemPageUrl || "item.html";
 
+    const newChatBtn = document.getElementById("new-chat-btn");
+    if (newChatBtn) {
+      newChatBtn.addEventListener("click", () => {
+        // Only redirect if we are NOT on the chat page (index.html)
+        // This ensures the button on the chat page itself remains "smooth"
+        const isChatPage = !!document.getElementById("chat-input");
+        if (!isChatPage) {
+          localStorage.setItem("korah_new_chat_trigger", "true");
+          window.location.href = resolvedBaseUrl;
+        }
+      });
+    }
+
     // 1. Immediate UI: Background, Toggle, and State
     initBackground();
 
