@@ -46,10 +46,71 @@
     }
     .study-modern .feed-search,
     .study-modern .feed-filter-select {
-      min-height: 50px;
-      border-radius: 14px;
-      font-size: 15px;
-      padding: 0 15px;
+      min-height: 48px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 500;
+      padding: 0 2.75rem 0 1rem;
+      border: 1px solid var(--bd2);
+      background-color: var(--sf2);
+      color: var(--tx);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      transition: all .25s cubic-bezier(.23, 1, .32, 1);
+      appearance: none;
+      -webkit-appearance: none;
+      cursor: pointer;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238b5cf6' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 1rem center;
+      box-shadow: 0 2px 8px rgba(0,0,0,.1);
+    }
+    [data-theme="light"] .study-modern .feed-filter-select {
+      background-color: var(--cb);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%237c3aed' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      box-shadow: 0 2px 8px rgba(109,40,217,.1);
+    }
+    .study-modern .feed-search:hover,
+    .study-modern .feed-filter-select:hover {
+      border-color: rgba(139,92,246,.4);
+      background-color: var(--cb);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0,0,0,.15), 0 0 12px rgba(139,92,246,.15);
+    }
+    .study-modern .feed-search:focus,
+    .study-modern .feed-filter-select:focus {
+      outline: none;
+      border-color: var(--p4);
+      background-color: var(--cb);
+      box-shadow: 0 4px 16px rgba(0,0,0,.2), 0 0 20px rgba(139,92,246,.2);
+      transform: translateY(-1px);
+    }
+    .study-modern .feed-filter-select option {
+      background: var(--bg3);
+      color: var(--tx);
+      padding: 0.5rem;
+    }
+    [data-theme="light"] .study-modern .feed-filter-select option {
+      background: var(--cb);
+      color: var(--tx);
+    }
+    .study-modern .feed-search {
+      background-image: none;
+      padding-right: 1rem;
+    }
+    .study-modern .feed-search::placeholder {
+      color: var(--tx3);
+      transition: color .2s;
+    }
+    .study-modern .feed-search:focus::placeholder {
+      color: var(--tx2);
+    }
+    @keyframes selectPulse {
+      0% { box-shadow: 0 4px 16px rgba(0,0,0,.2), 0 0 20px rgba(139,92,246,.2); }
+      50% { box-shadow: 0 4px 20px rgba(0,0,0,.25), 0 0 25px rgba(139,92,246,.25); }
+      100% { box-shadow: 0 4px 16px rgba(0,0,0,.2), 0 0 20px rgba(139,92,246,.2); }
+    }
+    .study-modern .feed-filter-select:focus {
+      animation: selectPulse .8s ease-in-out;
     }
     .study-modern .feed-cards {
       grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -59,11 +120,24 @@
       min-height: 246px;
       padding: 22px;
       border: 1px solid var(--bd);
-      background: linear-gradient(180deg, rgba(255,255,255,.05) 0%, rgba(255,255,255,.02) 100%);
+      background: linear-gradient(180deg, rgba(255,255,255,.08) 0%, rgba(255,255,255,.04) 100%);
+    }
+    [data-theme="light"] .study-modern .feed-card {
+      background: linear-gradient(180deg, rgba(100,60,180,.08) 0%, rgba(100,60,180,.04) 100%);
+      border-color: rgba(109,40,217,.2);
     }
     .study-modern .feed-card-title { font-size: 22px; line-height: 1.25; }
     .study-modern .feed-card-desc { font-size: 14px; }
     .study-modern .feed-card-meta { font-size: 13px; }
+    .feed-card-source {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--tx2);
+      background: var(--sf2);
+      padding: 3px 8px;
+      border-radius: 6px;
+      border: 1px solid var(--bd);
+    }
     .study-modern .feed-card.is-clickable {
       cursor: pointer;
       transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease, background .2s ease;
@@ -100,12 +174,12 @@
     }
     .feed-card-rename-btn,
     .feed-card-delete-btn {
-      width: 24px;
-      height: 24px;
+      width: 26px;
+      height: 26px;
       border-radius: 6px;
-      border: 1px solid rgba(139,92,246,.2);
-      background: rgba(139,92,246,.05);
-      color: var(--tx3);
+      border: 1px solid rgba(139,92,246,.3);
+      background: rgba(139,92,246,.12);
+      color: var(--tx2);
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -113,18 +187,19 @@
       transition: all .2s;
     }
     .feed-card-rename-btn:hover {
-      background: rgba(139,92,246,.15);
+      background: rgba(139,92,246,.25);
       color: var(--p5);
-      border-color: rgba(139,92,246,.4);
+      border-color: rgba(139,92,246,.5);
     }
     .feed-card-delete-btn {
-      border-color: rgba(239,68,68,.2);
-      background: rgba(239,68,68,.05);
+      border-color: rgba(239,68,68,.3);
+      background: rgba(239,68,68,.08);
+      color: #f87171;
     }
     .feed-card-delete-btn:hover {
-      background: rgba(239,68,68,.15);
+      background: rgba(239,68,68,.2);
       color: #f87171;
-      border-color: rgba(239,68,68,.4);
+      border-color: rgba(239,68,68,.5);
     }
     .study-modern .feed-empty {
       border: 1px solid var(--bd);
@@ -135,9 +210,15 @@
       .study-modern .study-feed-body { padding: 20px 14px 24px; }
       .study-modern .feed-hero { padding: 18px; }
       .study-modern .feed-hero-title { font-size: 24px; }
-      .study-modern .study-feed-toolbar { padding: 14px; }
+      .study-modern .study-feed-toolbar { padding: 12px; gap: 10px; }
       .study-modern .feed-search,
-      .study-modern .feed-filter-select { min-height: 46px; font-size: 14px; }
+      .study-modern .feed-filter-select { 
+        min-height: 44px; 
+        font-size: 13px; 
+        border-radius: 10px;
+        padding: 0 2.25rem 0 0.875rem;
+        background-position: right 0.75rem center;
+      }
       .study-modern .feed-cards { grid-template-columns: 1fr; }
     }
   </style>
@@ -183,7 +264,7 @@
     <a href="../productivity.html" class="sidebar-nav-link productivity-link t-btn"><span class="nav-icon">⏱️</span> <span class="nav-text">Productivity</span></a>
   </nav>
 
-  <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 12px 0 4px;">
+  <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 0.75rem 0 0.25rem;">
     <span class="sidebar-section-label" style="margin:0">Recent Chats</span>
 </div>
 <div class="sidebar-middle">
@@ -218,7 +299,7 @@
     </div>
   </div>
 
-  <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 12px 0 4px;">
+  <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 0.75rem 0 0.25rem;">
     <span class="sidebar-section-label" style="margin:0">Recent Study Items</span>
   </div>
   <div id="study-select-bar" class="select-bar">
@@ -284,8 +365,8 @@
         <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
       </svg>
     </button>
-    <div class="logo-container" style="display: flex; align-items: center; margin-right: 12px;">
-      <img src="../app/logo.png" alt="Korah Logo" style="height: 32px; width: auto;">
+    <div class="logo-container" style="display: flex; align-items: center; margin-right: 0.75rem;">
+      <img src="../app/logo.png" alt="Korah Logo" style="height: 2rem; width: auto;">
     </div>
     <div class="chat-title-area">
       <div class="korah-status-dot"></div>
@@ -395,7 +476,7 @@
     <div class="delete-modal-icon">✏️</div>
     <h3 class="delete-modal-title">Rename</h3>
     <p class="delete-modal-desc" id="rename-modal-desc">Enter a new name</p>
-    <input id="rename-modal-input" type="text" class="create-input" style="width:100%; margin-top:4px;" placeholder="New name…"/>
+    <input id="rename-modal-input" type="text" class="create-input" style="width:100%; margin-top:0.25rem;" placeholder="New name…"/>
     <div class="delete-modal-actions">
       <button id="rename-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
       <button id="rename-modal-confirm" class="delete-modal-btn confirm t-btn" style="background:rgba(139,92,246,.12); color:var(--p5); border-color:rgba(139,92,246,.3);">Rename</button>
@@ -480,7 +561,7 @@
       card.innerHTML =
         '<div class="feed-card-header">' +
           '<span class="feed-card-type">' + emoji + ' ' + label + '</span>' +
-          '<div style="display:flex; align-items:center; gap:6px;">' +
+          '<div style="display:flex; align-items:center; gap:0.375rem;">' +
             '<span class="feed-card-source">' + (SOURCE_LABELS[source] || source) + '</span>' +
             '<button class="feed-card-rename-btn" title="Rename">' +
               '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>' +
