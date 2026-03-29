@@ -779,6 +779,53 @@ function showSidebarDeleteModal(name, onConfirm) {
     }
   };
 
+  // ── Settings Modal ──
+  function initSettingsModal() {
+    const settingsModal = document.getElementById('settings-modal');
+    const settingsBtn = document.getElementById('settings-btn');
+    const settingsClose = document.getElementById('settings-close');
+    const settingsThemeSelect = document.getElementById('settings-theme-select');
+    const settingsNameInput = document.getElementById('settings-name-input');
+    const settingsSaveBtn = document.getElementById('settings-save');
+    const settingsClearDataBtn = document.getElementById('settings-clear-data');
+
+    if (!settingsModal || !settingsBtn) return;
+
+    settingsBtn.addEventListener('click', () => {
+      settingsModal.classList.add('show');
+      const savedTheme = localStorage.getItem('korah_theme') || 'dark';
+      const savedName = localStorage.getItem('korah_name') || '';
+      if (settingsThemeSelect) settingsThemeSelect.value = savedTheme;
+      if (settingsNameInput) settingsNameInput.value = savedName;
+    });
+
+    settingsClose?.addEventListener('click', () => {
+      settingsModal.classList.remove('show');
+    });
+
+    settingsModal?.addEventListener('click', (e) => {
+      if (e.target === settingsModal) {
+        settingsModal.classList.remove('show');
+      }
+    });
+
+    settingsSaveBtn?.addEventListener('click', () => {
+      const theme = settingsThemeSelect.value;
+      const name = settingsNameInput.value;
+      localStorage.setItem('korah_theme', theme);
+      localStorage.setItem('korah_name', name);
+      document.documentElement.setAttribute('data-theme', theme);
+      settingsModal.classList.remove('show');
+    });
+
+    settingsClearDataBtn?.addEventListener('click', () => {
+      if (confirm('Are you sure you want to clear all data? This cannot be undone.')) {
+        localStorage.clear();
+        settingsModal.classList.remove('show');
+      }
+    });
+  }
+
   // Initialize timer widget when sidebar is ready
   function initSidebar(options) {
     const { chatHistoryId, studyItemsId, chatBaseUrl, itemPageUrl, onItemClick, activeId } = options || {};
@@ -893,6 +940,9 @@ function showSidebarDeleteModal(name, onConfirm) {
       
       // Initialize timer widget
       initTimerWidget();
+
+      // Initialize settings modal
+      initSettingsModal();
     }
 
     if (window._korahReadyFired) startWithDB();
