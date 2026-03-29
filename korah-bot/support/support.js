@@ -1,35 +1,9 @@
 /* ═══════════════════════════════════════════════════════
    Korah Support Page - JavaScript
-   Shooting stars background + theme toggle
+   Shooting stars background
    ═══════════════════════════════════════════════════════ */
 
 'use strict';
-
-/* ── Theme Toggle ── */
-function initThemeToggle() {
-    const toggle = document.getElementById('themeToggle');
-    const icon = toggle?.querySelector('.theme-icon');
-    const html = document.documentElement;
-    
-    // Load saved theme or default to dark
-    const savedTheme = localStorage.getItem('korah-theme') || 'dark';
-    html.setAttribute('data-theme', savedTheme);
-    updateThemeIcon(savedTheme);
-    
-    toggle?.addEventListener('click', () => {
-        const current = html.getAttribute('data-theme');
-        const next = current === 'dark' ? 'light' : 'dark';
-        html.setAttribute('data-theme', next);
-        localStorage.setItem('korah-theme', next);
-        updateThemeIcon(next);
-    });
-    
-    function updateThemeIcon(theme) {
-        if (icon) {
-            icon.textContent = theme === 'dark' ? '🌙' : '☀️';
-        }
-    }
-}
 
 /* ── Smooth Scrolling ── */
 function initSmoothScroll() {
@@ -139,7 +113,6 @@ function initScrollReveal() {
 
 /* ── Initialize Everything ── */
 function init() {
-    initThemeToggle();
     initSmoothScroll();
     initShootingStars();
     initScrollReveal();

@@ -19,8 +19,6 @@
 * Make sure that documents side bar doesn't overlap normal side bar when window is minimized.
 
 # Korah-bot Support.html
-* Make sure all links work and are linked.
-* Improve css. (Don't make any drastic changes, only improve.)
 * About Korah Link (Make About Korah Page or find somewhere to link to) Lines 285-286
 * Blog Link (Make About Korah Blog or find somewhere to link to)
 
