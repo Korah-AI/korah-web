@@ -4,6 +4,75 @@
  * falls back to empty caches if KorahDB is unavailable.
  */
 
+// ── Rename & Delete Modal Handlers ──
+function initRenameDeleteModals() {
+  const renameModal = document.getElementById("rename-modal");
+  const deleteModal = document.getElementById("delete-modal");
+
+  if (!renameModal || !deleteModal) return;
+
+  const renameInput = document.getElementById("rename-modal-input");
+  const renameDesc = document.getElementById("rename-modal-desc");
+  const renameCancel = document.getElementById("rename-modal-cancel");
+  const renameConfirm = document.getElementById("rename-modal-confirm");
+  const deleteName = document.getElementById("delete-modal-name");
+  const deleteCancel = document.getElementById("delete-modal-cancel");
+  const deleteConfirm = document.getElementById("delete-modal-confirm");
+
+  let renameCallback = null;
+  let deleteCallback = null;
+
+  function showRenameModal(currentName, desc, onConfirm) {
+    renameInput.value = currentName || "";
+    if (renameDesc) renameDesc.textContent = desc || "Enter a new name";
+    renameCallback = onConfirm;
+    renameModal.classList.add("show");
+    setTimeout(() => { renameInput.focus(); renameInput.select(); }, 50);
+  }
+
+  function showDeleteModal(name, onConfirm) {
+    if (deleteName) deleteName.textContent = name || "this item";
+    deleteCallback = onConfirm;
+    deleteModal.classList.add("show");
+  }
+
+  function hideRenameModal() {
+    renameModal.classList.remove("show");
+    renameCallback = null;
+  }
+
+  function hideDeleteModal() {
+    deleteModal.classList.remove("show");
+    deleteCallback = null;
+  }
+
+  renameCancel?.addEventListener("click", hideRenameModal);
+  renameConfirm?.addEventListener("click", () => {
+    const v = renameInput.value.trim();
+    if (v && renameCallback) renameCallback(v);
+    hideRenameModal();
+  });
+  renameInput?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); renameConfirm?.click(); }
+    if (e.key === "Escape") hideRenameModal();
+  });
+
+  deleteCancel?.addEventListener("click", hideDeleteModal);
+  deleteConfirm?.addEventListener("click", () => {
+    if (deleteCallback) deleteCallback();
+    hideDeleteModal();
+  });
+
+  [renameModal, deleteModal].forEach(modal => {
+    modal?.addEventListener("click", (e) => {
+      if (e.target === modal) modal.classList.remove("show");
+    });
+  });
+
+  window.showRenameModal = showRenameModal;
+  window.showDeleteModal = showDeleteModal;
+}
+
 // Use custom modals if available, otherwise fallback to browser dialogs
 function showSidebarRenameModal(currentName, desc, onConfirm) {
   if (window.showRenameModal) {
@@ -943,6 +1012,9 @@ function showSidebarDeleteModal(name, onConfirm) {
 
       // Initialize settings modal
       initSettingsModal();
+
+      // Initialize rename/delete modals
+      initRenameDeleteModals();
     }
 
     if (window._korahReadyFired) startWithDB();

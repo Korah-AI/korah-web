@@ -24,7 +24,8 @@
     }
     .study-modern .feed-hero {
       padding: 22px 24px;
-      border: 1px solid var(--bd);      
+      border: 1px solid var(--bd);
+      margin-bottom: 0.5rem;
     }
     .study-modern .feed-hero-title {
       font-size: 29px;
@@ -388,7 +389,32 @@
   </div>
 </div>
 
-<!-- Modals removed - using browser confirm()/prompt() dialogs instead -->
+<!-- Rename Modal -->
+<div id="rename-modal" class="delete-modal">
+  <div class="delete-modal-content">
+    <div class="delete-modal-icon">✏️</div>
+    <h3 class="delete-modal-title">Rename</h3>
+    <p class="delete-modal-desc" id="rename-modal-desc">Enter a new name</p>
+    <input id="rename-modal-input" type="text" class="create-input" style="width:100%; margin-top:4px;" placeholder="New name…"/>
+    <div class="delete-modal-actions">
+      <button id="rename-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
+      <button id="rename-modal-confirm" class="delete-modal-btn confirm t-btn" style="background:rgba(139,92,246,.12); color:var(--p5); border-color:rgba(139,92,246,.3);">Rename</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div id="delete-modal" class="delete-modal">
+  <div class="delete-modal-content">
+    <div class="delete-modal-icon">🗑️</div>
+    <h3 class="delete-modal-title">Delete?</h3>
+    <p class="delete-modal-desc">This will permanently delete "<span id="delete-modal-name"></span>". This cannot be undone.</p>
+    <div class="delete-modal-actions">
+      <button id="delete-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
+      <button id="delete-modal-confirm" class="delete-modal-btn confirm t-btn">Delete</button>
+    </div>
+  </div>
+</div>
 
 <script type="module" src="js/study-firebase-init.js"></script>
 <script src="../app/timer-manager.js"></script>
@@ -471,22 +497,25 @@
 
       card.querySelector(".feed-card-rename-btn").addEventListener("click", function (e) {
         e.stopPropagation();
-        const newName = prompt("Enter new name:", item.title || "");
-        if (newName && newName.trim()) {
-          item.title = newName.trim();
-          item.updatedAt = new Date().toISOString();
-          _feedStudyItems[item.id] = item;
-          if (window.KorahDB) window.KorahDB.setStudyItem(item.id, item);
-          renderCards();
+        if (window.showRenameModal) {
+          window.showRenameModal(item.title || "", "Enter a new name for this item:", function(newName) {
+            item.title = newName.trim();
+            item.updatedAt = new Date().toISOString();
+            _feedStudyItems[item.id] = item;
+            if (window.KorahDB) window.KorahDB.setStudyItem(item.id, item);
+            renderCards();
+          });
         }
       });
 
       card.querySelector(".feed-card-delete-btn").addEventListener("click", function (e) {
         e.stopPropagation();
-        if (confirm(`Delete "${item.title || "this item"}"? This cannot be undone.`)) {
-          delete _feedStudyItems[item.id];
-          if (window.KorahDB) window.KorahDB.deleteStudyItem(item.id);
-          renderCards();
+        if (window.showDeleteModal) {
+          window.showDeleteModal(item.title || "this item", function() {
+            delete _feedStudyItems[item.id];
+            if (window.KorahDB) window.KorahDB.deleteStudyItem(item.id);
+            renderCards();
+          });
         }
       });
 
