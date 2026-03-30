@@ -1,4 +1,5 @@
 # Korah-bot Prerelease Todo List (from oscar)
+* Improve document tab sidebar styling in `index.html` 
 * Remove the suggestion bar from `index.html` (the one that appears when you scroll down, suggesting which type of study item to generate)
 * Add "Pro Tip" alert notification following every other chat (always after the first chat) that says `"In chat, ask Korah to generate flashcards, practice tests, or study guides."` or other little tips (for example, Desmos, add documents, etc.)
 * Add the About and Blog pages to `landingpage.html`
