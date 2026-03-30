@@ -1,4 +1,13 @@
-# Korah-bot Prerelease Todo List
+# Korah-bot Prerelease Todo List (from oscar)
+* Add the About and Blog pages to 'landingpage.html'
+* Add mood-based (mood is just focus) learning features into 'korah-bot' (this should kinda be a beta version, very experimental.)
+  * Daily focus check-in
+  * Study-tip of the day
+  * Suggest practices for boosting focus or calmness
+  * Suggest certain study techniques
+  * Send user-mood in AI prompt
+  * Mood should NOT have its own page. You could maybe implement it into 'productivity.html'
+  * Honestly implement it in any creative ways you think
 
 # Korah Web Todo List (Jayden's | Things I think That Work/fit or need to be worked on)
 
