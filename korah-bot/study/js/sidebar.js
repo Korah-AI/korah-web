@@ -4,6 +4,75 @@
  * falls back to empty caches if KorahDB is unavailable.
  */
 
+// ── Rename & Delete Modal Handlers ──
+function initRenameDeleteModals() {
+  const renameModal = document.getElementById("rename-modal");
+  const deleteModal = document.getElementById("delete-modal");
+
+  if (!renameModal || !deleteModal) return;
+
+  const renameInput = document.getElementById("rename-modal-input");
+  const renameDesc = document.getElementById("rename-modal-desc");
+  const renameCancel = document.getElementById("rename-modal-cancel");
+  const renameConfirm = document.getElementById("rename-modal-confirm");
+  const deleteName = document.getElementById("delete-modal-name");
+  const deleteCancel = document.getElementById("delete-modal-cancel");
+  const deleteConfirm = document.getElementById("delete-modal-confirm");
+
+  let renameCallback = null;
+  let deleteCallback = null;
+
+  function showRenameModal(currentName, desc, onConfirm) {
+    renameInput.value = currentName || "";
+    if (renameDesc) renameDesc.textContent = desc || "Enter a new name";
+    renameCallback = onConfirm;
+    renameModal.classList.add("show");
+    setTimeout(() => { renameInput.focus(); renameInput.select(); }, 50);
+  }
+
+  function showDeleteModal(name, onConfirm) {
+    if (deleteName) deleteName.textContent = name || "this item";
+    deleteCallback = onConfirm;
+    deleteModal.classList.add("show");
+  }
+
+  function hideRenameModal() {
+    renameModal.classList.remove("show");
+    renameCallback = null;
+  }
+
+  function hideDeleteModal() {
+    deleteModal.classList.remove("show");
+    deleteCallback = null;
+  }
+
+  renameCancel?.addEventListener("click", hideRenameModal);
+  renameConfirm?.addEventListener("click", () => {
+    const v = renameInput.value.trim();
+    if (v && renameCallback) renameCallback(v);
+    hideRenameModal();
+  });
+  renameInput?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); renameConfirm?.click(); }
+    if (e.key === "Escape") hideRenameModal();
+  });
+
+  deleteCancel?.addEventListener("click", hideDeleteModal);
+  deleteConfirm?.addEventListener("click", () => {
+    if (deleteCallback) deleteCallback();
+    hideDeleteModal();
+  });
+
+  [renameModal, deleteModal].forEach(modal => {
+    modal?.addEventListener("click", (e) => {
+      if (e.target === modal) modal.classList.remove("show");
+    });
+  });
+
+  window.showRenameModal = showRenameModal;
+  window.showDeleteModal = showDeleteModal;
+}
+
 // Use custom modals if available, otherwise fallback to browser dialogs
 function showSidebarRenameModal(currentName, desc, onConfirm) {
   if (window.showRenameModal) {
@@ -779,6 +848,53 @@ function showSidebarDeleteModal(name, onConfirm) {
     }
   };
 
+  // ── Settings Modal ──
+  function initSettingsModal() {
+    const settingsModal = document.getElementById('settings-modal');
+    const settingsBtn = document.getElementById('settings-btn');
+    const settingsClose = document.getElementById('settings-close');
+    const settingsThemeSelect = document.getElementById('settings-theme-select');
+    const settingsNameInput = document.getElementById('settings-name-input');
+    const settingsSaveBtn = document.getElementById('settings-save');
+    const settingsClearDataBtn = document.getElementById('settings-clear-data');
+
+    if (!settingsModal || !settingsBtn) return;
+
+    settingsBtn.addEventListener('click', () => {
+      settingsModal.classList.add('show');
+      const savedTheme = localStorage.getItem('korah_theme') || 'dark';
+      const savedName = localStorage.getItem('korah_name') || '';
+      if (settingsThemeSelect) settingsThemeSelect.value = savedTheme;
+      if (settingsNameInput) settingsNameInput.value = savedName;
+    });
+
+    settingsClose?.addEventListener('click', () => {
+      settingsModal.classList.remove('show');
+    });
+
+    settingsModal?.addEventListener('click', (e) => {
+      if (e.target === settingsModal) {
+        settingsModal.classList.remove('show');
+      }
+    });
+
+    settingsSaveBtn?.addEventListener('click', () => {
+      const theme = settingsThemeSelect.value;
+      const name = settingsNameInput.value;
+      localStorage.setItem('korah_theme', theme);
+      localStorage.setItem('korah_name', name);
+      document.documentElement.setAttribute('data-theme', theme);
+      settingsModal.classList.remove('show');
+    });
+
+    settingsClearDataBtn?.addEventListener('click', () => {
+      if (confirm('Are you sure you want to clear all data? This cannot be undone.')) {
+        localStorage.clear();
+        settingsModal.classList.remove('show');
+      }
+    });
+  }
+
   // Initialize timer widget when sidebar is ready
   function initSidebar(options) {
     const { chatHistoryId, studyItemsId, chatBaseUrl, itemPageUrl, onItemClick, activeId } = options || {};
@@ -786,6 +902,19 @@ function showSidebarDeleteModal(name, onConfirm) {
     const studyEl = document.getElementById(studyItemsId || "study-items-history");
     const resolvedBaseUrl = chatBaseUrl || "../index.html";
     const resolvedItemUrl = itemPageUrl || "item.html";
+
+    const newChatBtn = document.getElementById("new-chat-btn");
+    if (newChatBtn) {
+      newChatBtn.addEventListener("click", () => {
+        // Only redirect if we are NOT on the chat page (index.html)
+        // This ensures the button on the chat page itself remains "smooth"
+        const isChatPage = !!document.getElementById("chat-input");
+        if (!isChatPage) {
+          localStorage.setItem("korah_new_chat_trigger", "true");
+          window.location.href = resolvedBaseUrl;
+        }
+      });
+    }
 
     // 1. Immediate UI: Background, Toggle, and State
     initBackground();
@@ -880,6 +1009,12 @@ function showSidebarDeleteModal(name, onConfirm) {
       
       // Initialize timer widget
       initTimerWidget();
+
+      // Initialize settings modal
+      initSettingsModal();
+
+      // Initialize rename/delete modals
+      initRenameDeleteModals();
     }
 
     if (window._korahReadyFired) startWithDB();

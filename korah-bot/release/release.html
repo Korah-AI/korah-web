@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en" x-data="{
+  theme: localStorage.getItem('korah_theme') || 'system',
+  systemDark: window.matchMedia('(prefers-color-scheme: dark)').matches,
+  init() {
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+      this.systemDark = e.matches;
+    });
+  },
+  getEffectiveTheme() {
+    if (this.theme === 'system') return this.systemDark ? 'dark' : 'light';
+    return this.theme;
+  }
+}" :data-theme="getEffectiveTheme()" x-cloak>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Korah AI — Coming Soon</title>
+    <link rel="icon" type="image/png" href="../app/logoresized.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="release.css">
+</head>
+<body class="prerelease-body">
+    <canvas id="bg-canvas" class="stars-container"></canvas>
+    
+    <main class="content-wrapper">
+        <div class="mascot-container">
+            <img src="../app/logo.png" alt="Korah Mascot" class="korah-mascot">
+        </div>
+        
+        <header class="text-content">
+            <h1 class="title">Coming Soon</h1>
+            <p class="description">Don't worry, we'll release in no time.</p>
+            
+            <div class="release-card">
+                <span class="release-label">Official Release</span>
+                <div class="release-date">April 3, 2026</div>
+                <div id="countdown-timer" class="countdown-timer">0d 0h 0m 0s</div>
+            </div>
+            
+            <p class="footer-note">Korah's got you.</p>
+        </header>
+    </main>
+
+    <script src="release.js"></script>
+</body>
+</html>

@@ -11,15 +11,16 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link rel="stylesheet" href="support.css">
 </head>
-<body>
+<body x-data="{ theme: localStorage.getItem('korah_theme') || 'dark' }" :data-theme="theme" x-cloak>
     <!-- Shooting Stars Background -->
     <div class="stars-container" id="starField"></div>
     
     <!-- Navigation -->
     <nav class="navbar">
-        <a href="../../index.html" class="logo-link">
+        <a href="#faq" class="logo-link">
             <div class="logo">
                 <img src="../app/logo.png" alt="Korah" class="logo-img">
             </div>
@@ -34,12 +35,25 @@
             <a href="#contact" class="nav-link">Contact</a>
             <a href="#privacy" class="nav-link">Privacy</a>
             <a href="#terms" class="nav-link">Terms</a>
-            <a href="../../index.html" class="nav-link">Back to Home</a>
+            <a href="../landingpage.html" class="nav-link">Back to Home</a>
         </div>
         
         <div class="nav-actions">
-            <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme">
-                <span class="theme-icon">🌙</span>
+            <button @click="theme = theme === 'dark' ? 'light' : 'dark'; localStorage.setItem('korah_theme', theme)" class="theme-toggle" aria-label="Toggle theme">
+                <svg x-show="theme==='light'" xmlns="http://www.w3.org/2000/svg" class="theme-icon-svg" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/>
+                </svg>
+                <svg x-show="theme==='dark'" xmlns="http://www.w3.org/2000/svg" class="theme-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="5"/>
+                    <line x1="12" y1="1" x2="12" y2="3"/>
+                    <line x1="12" y1="21" x2="12" y2="23"/>
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                    <line x1="1" y1="12" x2="3" y2="12"/>
+                    <line x1="21" y1="12" x2="23" y2="12"/>
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                </svg>
             </button>
         </div>
     </nav>
@@ -107,23 +121,23 @@
                 <div class="contact-card">
                     <div class="contact-icon">📧</div>
                     <h3 class="contact-title">Email Support</h3>
-                    <p class="contact-desc">Get help from our support team within 24 hours.</p>
-                    <a href="mailto:support@korah.ai" class="contact-btn">Contact Support</a>
+                    <p class="contact-desc">Get help from our support team within 24 hours. Contact Support: support@korah.ai</p>
+                    <a href="mailto:support@korah.ai?subject=Korah%20Support%20Inquiry&body=Hi%20Korah%20Team," class="contact-btn">Contact Support</a>
                 </div>
                 
                 <div class="contact-card contact-card-featured">
                     <div class="contact-badge">Direct Line</div>
                     <div class="contact-icon">👨‍💼</div>
                     <h3 class="contact-title">Message the CEO</h3>
-                    <p class="contact-desc">Have important feedback or a partnership inquiry? Reach out directly to Oscar Euceda.</p>
-                    <a href="mailto:oscareucedaf1@gmail.com?subject=Message from Korah Support&body=Hi Oscar," class="contact-btn contact-btn-primary">Email CEO</a>
+                    <p class="contact-desc">Have important feedback or a partnership inquiry? Reach out directly to Oscar Euceda: oscareucedaf1@gmail.com</p>
+                    <a href="mailto:oscareucedaf1@gmail.com?subject=Korah%Creator%20Inquiry&body=Hi%20Oscar," class="contact-btn contact-btn-primary">Email CEO</a>
                 </div>
                 
                 <div class="contact-card">
                     <div class="contact-icon">💬</div>
                     <h3 class="contact-title">Live Chat</h3>
                     <p class="contact-desc">Chat with Korah AI for instant answers to your questions.</p>
-                    <a href="../../index.html#chat" class="contact-btn">Start Chat</a>
+                    <a href="../landingpage.html#chat" class="contact-btn">Start Chat</a>
                 </div>
             </div>
         </div>
@@ -135,23 +149,23 @@
             <h2 class="section-title">Explore Korah</h2>
             
             <div class="links-grid">
-                <a href="../../index.html#how" class="link-card">
+                <a href="../landingpage.html#how" class="link-card">
                     <span class="link-icon">🎯</span>
                     <span class="link-text">How it Works</span>
                 </a>
-                <a href="../../index.html#features" class="link-card">
+                <a href="../landingpage.html#features" class="link-card">
                     <span class="link-icon">✨</span>
                     <span class="link-text">Features</span>
                 </a>
-                <a href="../../index.html#study-tools" class="link-card">
+                <a href="../landingpage.html#study-tools" class="link-card">
                     <span class="link-icon">📚</span>
                     <span class="link-text">Study Tools</span>
                 </a>
-                <a href="../../index.html#chat" class="link-card">
+                <a href="../landingpage.html#chat" class="link-card">
                     <span class="link-icon">🤖</span>
                     <span class="link-text">Korah AI</span>
                 </a>
-                <a href="../../index.html#download" class="link-card">
+                <a href="../landingpage.html#downloads" class="link-card">
                     <span class="link-icon">📲</span>
                     <span class="link-text">Download</span>
                 </a>
@@ -269,21 +283,23 @@
             
             <div>
                 <h4 class="footer-heading">Product</h4>
-                <a href="../../index.html#features" class="footer-link">Features</a>
-                <a href="../../index.html#how" class="footer-link">How it Works</a>
-                <a href="../../index.html#study-tools" class="footer-link">Study Tools</a>
-                <a href="../../index.html#download" class="footer-link">Download</a>
+                <a href="../landingpage.html#features" class="footer-link">Features</a>
+                <a href="../landingpage.html#how" class="footer-link">How it Works</a>
+                <a href="../landingpage.html#study-tools" class="footer-link">Study Tools</a>
+                <a href="../landingpage.html#download" class="footer-link">Download</a>
             </div>
             
             <div>
                 <h4 class="footer-heading">Support</h4>
-                <a href="https://mail.google.com/mail/?view=cm&to=oscareucedaf1@gmail.com&su=Hello from Korah" class="footer-link">Contact The Creator</a>
+                <a href="#contact" class="footer-link">Contact Us</a>
             </div>
             
             <div>
                 <h4 class="footer-heading">Company</h4>
+                <!-- Needs Links -->
                 <a href="#" class="footer-link">About Korah</a>
                 <a href="#" class="footer-link">Blog</a>
+                <!-- Needs links -->
                 <a href="#privacy" class="footer-link">Privacy Policy</a>
                 <a href="#terms" class="footer-link">Terms</a>
             </div>

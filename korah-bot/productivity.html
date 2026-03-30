@@ -456,7 +456,7 @@
     <a href="productivity.html" class="sidebar-nav-link productivity-link active t-btn"><span class="nav-icon">⏱️</span> <span class="nav-text">Productivity</span></a>
   </nav>
 
-  <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 12px 0 4px;">
+  <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 0.75rem 0 0.25rem;">
     <span class="sidebar-section-label" style="margin:0">Recent Chats</span>
 </div>
 <div class="sidebar-middle">
@@ -491,7 +491,7 @@
     </div>
   </div>
 
-  <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 12px 0 4px;">
+  <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 0.75rem 0 0.25rem;">
     <span class="sidebar-section-label" style="margin:0">Recent Study Items</span>
   </div>
   <div id="study-select-bar" class="select-bar">
@@ -1046,7 +1046,108 @@
       }
     };
   }
+
+  // Settings Modal functionality
+  const settingsModal = document.getElementById('settings-modal');
+  const settingsBtn = document.getElementById('settings-btn');
+  const settingsClose = document.getElementById('settings-close');
+  const settingsThemeSelect = document.getElementById('settings-theme-select');
+  const settingsNameInput = document.getElementById('settings-name-input');
+  const settingsSaveBtn = document.getElementById('settings-save');
+  const settingsClearDataBtn = document.getElementById('settings-clear-data');
+
+  settingsBtn?.addEventListener('click', () => {
+    settingsModal.classList.add('show');
+    const savedTheme = localStorage.getItem('korah_theme') || 'dark';
+    const savedName = localStorage.getItem('korah_name') || '';
+    if (settingsThemeSelect) settingsThemeSelect.value = savedTheme;
+    if (settingsNameInput) settingsNameInput.value = savedName;
+  });
+
+  settingsClose?.addEventListener('click', () => {
+    settingsModal.classList.remove('show');
+  });
+
+  settingsModal?.addEventListener('click', (e) => {
+    if (e.target === settingsModal) {
+      settingsModal.classList.remove('show');
+    }
+  });
+
+  settingsSaveBtn?.addEventListener('click', () => {
+    const theme = settingsThemeSelect.value;
+    const name = settingsNameInput.value;
+    localStorage.setItem('korah_theme', theme);
+    localStorage.setItem('korah_name', name);
+    document.documentElement.setAttribute('data-theme', theme);
+    settingsModal.classList.remove('show');
+  });
+
+  settingsClearDataBtn?.addEventListener('click', () => {
+    if (confirm('Are you sure you want to clear all data? This cannot be undone.')) {
+      localStorage.clear();
+      settingsModal.classList.remove('show');
+    }
+  });
 </script>
+<!-- Settings Modal -->
+<div id="settings-modal" class="settings-modal">
+  <div class="settings-modal-content">
+    <div class="settings-header">
+      <h2 class="settings-title">Settings</h2>
+      <button class="settings-close" id="settings-close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    
+    <div class="settings-body">
+      <!-- Theme Settings -->
+      <div class="settings-section">
+        <h3 class="settings-section-title">Appearance</h3>
+        <div class="settings-item">
+          <div class="settings-item-label">Theme</div>
+          <div class="settings-item-control">
+            <select id="settings-theme-select" class="settings-select">
+              <option value="dark">Dark</option>
+              <option value="light">Light</option>
+              <option value="system">System</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Profile Settings -->
+      <div class="settings-section">
+        <h3 class="settings-section-title">Profile</h3>
+        <div class="settings-item">
+          <div class="settings-item-label">Display Name</div>
+          <div class="settings-item-control">
+            <input type="text" id="settings-name-input" class="settings-input" placeholder="Your name">
+          </div>
+        </div>
+      </div>
+
+      <!-- Data Settings -->
+      <div class="settings-section">
+        <h3 class="settings-section-title">Data</h3>
+        <div class="settings-item">
+          <div class="settings-item-label">Clear All Data</div>
+          <div class="settings-item-control">
+            <button id="settings-clear-data" class="settings-btn danger">Clear Data</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="settings-actions">
+        <button id="settings-save" class="settings-btn primary">Save Settings</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>

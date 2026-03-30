@@ -1,22 +1,22 @@
 # Korah-bot Prerelease Todo List
 
-* All Done :)
+# Korah Web Todo List (Jayden's | Things I think That Work/fit or need to be worked on)
 
-# Korah Web ToDo List (Jayden's | Things I think That Work/fit or need to be worked on)
-
-* Update Iphone images on landing page to match the updated Korah
+* About Korah Link (Make About Korah Page or find somewhere to link to) Lines 853-856
+* Blog Link (Make About Korah Blog or find somewhere to link to)
 
 # Korah-bot Todo list (Jayden's)
 
-* Add padding to "Your Study library" container and the search container
-* Fix creating a study item's x button to be in corner and not in the middle
-* Change background for theme options in settings modal. Make colors go with flow of the page.
-* Add or setting modals to all other htmls. And delete study items in feed.html.
-* Make the background for when the user is creating something like a study guide or something for light mode be nicer. For example, its too dark compared to the options. Compared to dark mode's version where everything is seen nice.
 * Fix closed side bar center +.
 * Check out creating study item css and check all css and improve.
 * Check out using study items to see if there are any flaws.
+* Make sure that documents side bar doesn't overlap normal side bar when window is minimized and sidebars are opened.
+* Make sure users can see all recent chats and be able to delete all of them.
+* ^^ Same with recent study items
 
+# Korah-bot Support.html
+* About Korah Link (Make About Korah Page or find somewhere to link to) Lines 285-286
+* Blog Link (Make About Korah Blog or find somewhere to link to)
 
 
 

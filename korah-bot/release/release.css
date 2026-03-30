@@ -1,0 +1,219 @@
+/* ── Korah Prerelease — prerelease.css ── */
+
+:root {
+    --bg: #06040f;
+    --bg2: #0d0920;
+    --tx: #f0eaff;
+    --tx2: #a89dc0;
+    --tx3: #6b5f88;
+    --p4: #8b5cf6;
+    --p5: #a78bfa;
+    --glow: rgba(139, 92, 246, 0.35);
+}
+
+[data-theme="light"] {
+    --bg: #faf8ff;
+    --bg2: #f3efff;
+    --tx: #1a0a3c;
+    --tx2: #5a4a7a;
+    --tx3: #9080aa;
+    --p4: #8b5cf6;
+    --p5: #7c3aed;
+    --glow: rgba(109, 40, 217, 0.15);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background-color: var(--bg);
+    background-image: radial-gradient(circle at 50% 50%, var(--bg2) 0%, var(--bg) 100%);
+    color: var(--tx);
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+}
+
+body::before {
+    content: '';
+    position: absolute;
+    width: 600px;
+    height: 600px;
+    background: var(--p4);
+    filter: blur(150px);
+    opacity: 0.07;
+    border-radius: 50%;
+    z-index: 0;
+}
+
+.stars-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.content-wrapper {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    padding: 2rem;
+    animation: fadeUp 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.mascot-container {
+    margin-bottom: 2.5rem;
+    position: relative;
+    display: inline-block;
+}
+
+.mascot-container::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 140px;
+    height: 140px;
+    background: var(--p4);
+    border-radius: 50%;
+    filter: blur(40px);
+    opacity: 0.2;
+    z-index: -1;
+    animation: soft-pulse 4s infinite ease-in-out;
+}
+
+.korah-mascot {
+    width: 130px;
+    height: auto;
+    filter: drop-shadow(0 0 30px var(--glow));
+    animation: float 5s infinite ease-in-out;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+}
+
+.title {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 4rem;
+    font-weight: 900;
+    margin-bottom: 0.5rem;
+    letter-spacing: -1px;
+    background: linear-gradient(135deg, var(--tx) 30%, var(--p4) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+[data-theme="light"] .title {
+    background: linear-gradient(135deg, var(--tx) 0%, var(--p4) 100%);
+    -webkit-background-clip: text;
+}
+
+.description {
+    font-size: 1.15rem;
+    color: var(--tx2);
+    margin-bottom: 3.5rem;
+    max-width: 440px;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.6;
+    font-weight: 500;
+}
+
+.release-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    padding: 2rem 4rem;
+    border-radius: 32px;
+    display: inline-block;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+[data-theme="light"] .release-card {
+    background: rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(139, 92, 246, 0.15);
+    box-shadow: 0 10px 30px rgba(109, 40, 217, 0.1);
+}
+
+.release-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--p4);
+}
+
+.release-label {
+    display: block;
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: var(--p4);
+    margin-bottom: 0.75rem;
+}
+
+.release-date {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--tx);
+    letter-spacing: -0.5px;
+}
+
+.countdown-timer {
+    margin-top: 1rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--tx);
+    letter-spacing: 2px;
+    opacity: 0.9;
+}
+
+.footer-note {
+    margin-top: 4rem;
+    font-size: 0.85rem;
+    color: var(--tx3);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+}
+
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes soft-pulse {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.15; }
+    50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.25; }
+}
+
+[x-cloak] { display: none !important; }
+
+@media (max-width: 640px) {
+    .title {
+        font-size: 2.8rem;
+    }
+    .description {
+        font-size: 1rem;
+        padding: 0 1rem;
+    }
+    .release-date {
+        font-size: 1.8rem;
+    }
+    .release-card {
+        padding: 1.5rem 2.5rem;
+    }
+}
