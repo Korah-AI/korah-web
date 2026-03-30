@@ -1,13 +1,17 @@
 # Korah-bot Prerelease Todo List (from oscar)
-* Add the About and Blog pages to 'landingpage.html'
+* Remove the suggestion bar from `index.html` (the one that appears when you scroll down, suggesting which type of study item to generate)
+* Add "Pro Tip" alert notification following every other chat (always after the first chat) that says `"In chat, ask Korah to generate flashcards, practice tests, or study guides."` or other little tips (for example, Desmos, add documents, etc.)
+* Add the About and Blog pages to `landingpage.html`
 * Add mood-based (mood is just focus) learning features into 'korah-bot' (this should kinda be a beta version, very experimental.)
   * Daily focus check-in
   * Study-tip of the day
   * Suggest practices for boosting focus or calmness
   * Suggest certain study techniques
   * Send user-mood in AI prompt
-  * Mood should NOT have its own page. You could maybe implement it into 'productivity.html'
-  * Honestly implement it in any creative ways you think
+  * Mood should NOT have its own page. You could maybe implement it into `productivity.html`
+  * Honestly implement it in any creative ways you think are good
+* Replace the typing/scrolling animation for text streaming from the ai in `index.html` with a Gemini-like skeleton loading like response (kind of like when you Google something and the AI response loads in)
+* IF YOU WANT, after you're done all of this, safely implement all of Bronson's changes on `main` with your new changes, but make sure you do this safely on a new branch. I haven't even looked at the changes lol so if they're good just take pics and show me. If not, there's no need to implement them.
 
 # Korah Web Todo List (Jayden's | Things I think That Work/fit or need to be worked on)
 
