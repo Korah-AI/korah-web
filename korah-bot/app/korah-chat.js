@@ -2990,8 +2990,8 @@ ${FORMAT_INSTRUCTIONS}`.trim();
       Storage.setCurrentSessionId(currentSessionId);
     }
 
-    // Restore SAT sub-mode from session
-    if (currentSession.satSubMode) {
+    // Restore SAT sub-mode from session (only if this session is SAT mode)
+    if (currentSession.mode === "sat" && currentSession.satSubMode) {
       satSubMode = currentSession.satSubMode;
     }
 
