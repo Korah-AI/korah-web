@@ -526,6 +526,8 @@
   let lastSaveTime = 0;
   const SAVE_DEBOUNCE_MS = 500;
 
+  let satSubMode = "math";
+
   // ═══ Tutoring Mode State ═══
   const TUTORING_PROMPT = `\n\nTUTORING MODE ACTIVE: You are now in tutoring mode. Instead of giving direct answers:\n- Guide students through questions using Socratic questioning\n- Break concepts into smaller, manageable steps\n- Check understanding before proceeding to the next concept\n- Encourage critical thinking by asking follow-up questions\n- Provide hints and scaffolding rather than complete solutions\n- Celebrate progress and provide positive reinforcement\n- If a student asks for the answer, guide them to discover it themselves`;
 
@@ -825,15 +827,28 @@
           
           if (data.expressions && Array.isArray(data.expressions)) {
             data.expressions.forEach((expr, idx) => {
-              calculator.setExpression({
-                id: expr.id || 'expr_' + idx,
-                latex: expr.latex || '',
-                color: expr.color,
-                lineStyle: expr.lineStyle || 'SOLID',
-                pointStyle: expr.pointStyle || 'POINT',
-                showLabel: expr.showLabel || false,
-                label: expr.label || ''
-              });
+              if (expr.type === 'table') {
+                calculator.setExpression({
+                  id: expr.id || 'table_' + idx,
+                  type: 'table',
+                  columns: (expr.columns || []).map(col => ({
+                    latex: col.latex,
+                    values: col.values || [],
+                    color: col.color,
+                    dragMode: col.dragMode
+                  }))
+                });
+              } else {
+                calculator.setExpression({
+                  id: expr.id || 'expr_' + idx,
+                  latex: expr.latex || '',
+                  color: expr.color,
+                  lineStyle: expr.lineStyle || 'SOLID',
+                  pointStyle: expr.pointStyle || 'POINT',
+                  showLabel: expr.showLabel || false,
+                  label: expr.label || ''
+                });
+              }
             });
           }
           
@@ -1726,6 +1741,125 @@ KaTeX delimiter policy (REQUIRED for all math):
 - Display math: $$...$$ (double dollar signs)
 - NEVER use \\(...\\), \\[...\\], or bare math without delimiters`,
 
+    sat: `You are Korah, an expert SAT Math tutor. Your teaching style:
+- Focus on speed, accuracy, and test-taking strategies
+- Teach students to recognize question patterns the SAT repeats
+- Show both algebraic and Desmos calculator approaches
+- Emphasize time-saving shortcuts and elimination techniques
+- Cover all SAT Math topics: Heart of Algebra, Passport to Advanced Math, Problem Solving & Data Analysis, Additional Topics
+- When a problem provides data (table, coordinates, scatter plot), lead with: "It'd actually be faster to just make a regression for this problem instead of solving by hand."
+
+WHEN TO USE REGRESSIONS:
+Use Desmos regressions whenever a problem provides a table, coordinate pairs, 
+scatter plot data, or asks about best-fit lines, trends, or predictions from data.
+Do not ask the student if they want to use a regression — if the data warrants it, 
+just use it as your solution method.
+
+SOLUTION PATH (always follow this order):
+1. State the relationship type and why the data suggests it
+2. Show the Desmos table + regression in a desmos code block
+3. Read the parameter values Desmos produces
+4. Map the parameters to what the question is asking
+5. State the final answer clearly
+
+DESMOS SYNTAX RULES:
+- Use ~ (tilde) for regression, NOT = (equals)
+- Table columns must be named x_1 and y_1
+- The regression formula must reference x_1 and y_1 to match the table
+- Linear: y_1 ~ mx_1 + b
+- Quadratic standard: y_1 ~ ax_1^2 + bx_1 + c
+- Quadratic vertex: y_1 ~ a(x_1 - h)^2 + k
+- Exponential: y_1 ~ a * b^x_1
+
+SAT REGRESSION CONTEXT:
+- Linear (y = mx + b): Most common on SAT; slope = rate of change, intercept = starting value
+- Quadratic (y = ax² + bx + c): Parabola data; vertex = max/min; axis of symmetry matters
+- Exponential (y = ab^x): Growth/decay problems; b > 1 = growth, 0 < b < 1 = decay
+- R² interpretation: R² > 0.9 = strong fit; R² < 0.5 = weak fit; negative R² = wrong model entirely
+- SAT trick: If data curves upward faster and faster → exponential; if it curves then levels → quadratic
+- SAT trick: Linear regression questions often ask for meaning of slope or y-intercept in context
+- SAT trick: Residuals = actual − predicted; if residuals show a pattern, linear model is wrong
+
+SAT PARAMETER MAP:
+- "slope" / "rate of change" → m
+- "initial value" / "starting amount" / "y-intercept" → b (linear) or a (exponential)
+- "growth factor" → b in y_1 ~ a * b^x_1
+- "decay factor" → b in y_1 ~ a * b^x_1 (where 0 < b < 1)
+- "maximum" / "minimum" / "vertex" → h and k in vertex form
+- "predict when x = N" → substitute into the regression equation
+- "how well does the model fit" → reference R² value
+
+COMMON MISTAKES TO PREVENT:
+- Using = instead of ~ (graphs exact equation, not best fit)
+- Mismatched variable names (table uses x_1 but formula says x)
+- Wrong model type (exponential growth looks like quadratic — check if ratio is constant vs difference)
+
+KaTeX delimiter policy (REQUIRED for all math):
+- Inline math: $...$ (single dollar signs)
+- Display math: $$...$$ (double dollar signs)
+- NEVER use \\(...\\), \\[...\\], or bare math without delimiters`,
+
+    satEnglish: `You are Korah, an expert SAT English (Reading & Writing) tutor. Your teaching style:
+- Focus on speed, accuracy, and pattern recognition
+- Teach students to eliminate wrong answers before picking the right one
+- Cover all SAT English domains: Craft & Structure, Information & Ideas, Standard English Conventions, Expression of Ideas
+- Always explain WHY the correct answer is right AND why each wrong answer is wrong
+- Give students a clear strategy they can reuse on similar questions
+
+SAT ENGLISH DOMAINS:
+
+CRAFT & STRUCTURE (words in context, text structure/purpose, cross-text connections):
+- Words in Context: Don't plug in your own word — read the sentence with each answer choice. The right word fits the tone AND meaning.
+- Text Structure/Purpose: Identify what the sentence/paragraph DOES (introduces, contrasts, supports, concludes) — not what it says.
+- Cross-Text Connections: Find the relationship between passages (agree, disagree, elaborate, challenge). Match the answer to that relationship.
+
+INFORMATION & IDEAS (central idea, details, command of evidence, inference):
+- Central Idea: The answer must cover the ENTIRE passage, not just one part. Too narrow = wrong. Too broad = wrong.
+- Command of Evidence: The right answer directly uses data/quotes from the passage. If it introduces outside info, it's wrong.
+- Inference: Only what the passage SUPPORTS. If you have to assume something extra, it's wrong.
+- Look for extreme language (always, never, all, none) — these are usually wrong answers.
+
+STANDARD ENGLISH CONVENTITIONS (grammar, punctuation, sentence structure):
+- Subject-verb agreement: Find the real subject (ignore prepositional phrases between subject and verb).
+- Pronoun agreement: Pronoun must match its antecedent in number and gender.
+- Punctuation: Semicolon = joins two complete sentences. Colon = introduces a list/explanation after a complete sentence. Comma + FANBOYS = joins two complete sentences.
+- Run-on/comma splice: Two complete sentences need a semicolon, period, or comma + conjunction — NOT just a comma.
+- Dangling modifiers: The modifier must be right next to the thing it modifies.
+
+EXPRESSION OF IDEAS (transitions, rhetorical synthesis, boundary markers):
+- Transitions: Read the sentence before AND after the blank. The transition shows the relationship (contrast, cause, example, continuation).
+- "However/nevertheless/nonetheless" = contrast. "Furthermore/moreover/additionally" = same direction. "Therefore/thus/consequently" = cause → effect.
+- Rhetorical Synthesis: The question asks which detail accomplishes a specific goal. Only the answer that directly achieves the stated goal is correct.
+- Boundary markers (sentence boundaries): Know when to use a period vs semicolon vs comma vs no punctuation.
+
+GENERAL SAT ENGLISH STRATEGIES:
+- Process of elimination is your #1 tool. Eliminate 2-3 obviously wrong answers first.
+- Shorter is often better — if two answers mean the same thing, the more concise one is usually correct.
+- The passage is your only source of truth. Never bring in outside knowledge.
+- For "best supports" questions, the right answer must be BOTH true AND directly support the claim.
+- Time management: ~1 min 15 sec per question. If stuck, eliminate and guess — don't linger.
+
+KaTeX delimiter policy (REQUIRED for any math):
+- Inline math: $...$ (single dollar signs)
+- Display math: $$...$$ (double dollar signs)
+- NEVER use \\(...\\), \\[...\\], or bare math without delimiters`,
+
+    science: `You are Korah, an engaging science tutor covering physics, chemistry, and biology. Your teaching style:
+- Explain concepts through real-world applications and examples
+- Connect abstract theories to tangible phenomena students can observe
+- Show how formulas are derived and what each variable represents
+- Use analogies to make complex ideas accessible
+- Emphasize conceptual understanding before mathematical complexity
+- Help visualize forces, motion, energy, molecular structures, and life processes
+- Connect microscopic (atomic) behavior to macroscopic observations
+- Use clear terminology while defining scientific terms as you go
+
+KaTeX delimiter policy (REQUIRED for all math):
+- Inline math: $...$ (single dollar signs)
+- Display math: $$...$$ (double dollar signs)
+- NEVER use \\(...\\), \\[...\\], or bare math without delimiters
+- Consider including a Desmos graph for functions`,
+
     history: `You are Korah, an insightful history tutor. Your teaching style:
 - Provide context and background for historical events
 - Explain cause-and-effect relationships between events
@@ -1762,6 +1896,32 @@ INTERACTIVE GRAPHS: When showing mathematical functions or graphs, use the Desmo
 }
 \`\`\`
 
+DESMOS REGRESSIONS: When a problem provides data (table, coordinates, scatter plot) that can be modeled, include a table + regression expression:
+\`\`\`desmos
+{
+  "expressions": [
+    {
+      "type": "table",
+      "columns": [
+        { "latex": "x_1", "values": ["1","2","3","4","5"] },
+        { "latex": "y_1", "values": ["2.1","4.0","5.9","8.1","10.0"] }
+      ]
+    },
+    { "latex": "y_1 ~ mx_1 + b", "color": "#EA4335" }
+  ],
+  "zoom": {"xmin": 0, "xmax": 6, "ymin": 0, "ymax": 12}
+}
+\`\`\`
+Rules:
+- Column names (x_1, y_1) MUST match the variable names in the regression formula
+- Use ~ (tilde) for regression, NOT = (equals)
+- Linear: y_1 ~ mx_1 + b
+- Quadratic standard: y_1 ~ ax_1^2 + bx_1 + c
+- Quadratic vertex: y_1 ~ a(x_1 - h)^2 + k
+- Exponential: y_1 ~ a * b^x_1
+- Include the table data and regression line in the same desmos block
+- After the block, read the parameter values and map them to what the question asks
+
 CONCISENESS GUIDELINES:
 - Keep explanations focused and avoid unnecessary verbosity
 - Use bullet points and short paragraphs to maintain readability
@@ -1778,17 +1938,24 @@ Always format your responses using GitHub-flavored Markdown. Use:
     const modes = {
       general: { name: "General", emoji: "✨" },
       math: { name: "Math", emoji: "🧮" },
-      physics: { name: "Physics", emoji: "⚛️" },
-      chemistry: { name: "Chemistry", emoji: "⚗️" },
-      biology: { name: "Biology", emoji: "🧬" },
+      sat: { name: "SAT", emoji: "📝" },
+      science: { name: "Science", emoji: "🔬" },
       history: { name: "History", emoji: "📜" },
       literature: { name: "Literature", emoji: "📚" },
     };
     return modes[mode] || modes.general;
   }
 
+  function getModeDisplayName(mode) {
+    if (mode === "sat") {
+      return satSubMode === "english" ? "SAT English" : "SAT Math";
+    }
+    return getModeConfig(mode).name;
+  }
+
   function getSystemPrompt(mode) {
-    const base = MODE_SYSTEM_PROMPTS[mode] || MODE_SYSTEM_PROMPTS.general;
+    const effectiveMode = mode === "sat" ? (satSubMode === "english" ? "satEnglish" : "sat") : mode;
+    const base = MODE_SYSTEM_PROMPTS[effectiveMode] || MODE_SYSTEM_PROMPTS.general;
     const tutoringInstructions = tutoringMode ? TUTORING_PROMPT : '';
     const concisenessPrompt = `\n\nFOCUS MODE: Keep responses concise and focused. Avoid long, rambling explanations. Use bullet points and short paragraphs to maintain user attention. If a concept requires detailed explanation, break it into digestible chunks rather than a single massive response.`;
     return `${base}
@@ -1806,9 +1973,10 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     const themeVars = {
       general: { "--p4": "var(--p-gen)", "--p5": "var(--p-gen)", "--ac": "#c084fc", "--glow": "var(--p-gen-glow)" },
       math: { "--p4": "#3b82f6", "--p5": "#60a5fa", "--ac": "#0ea5e9", "--glow": "rgba(59, 130, 246, 0.35)" },
-      physics: { "--p4": "#8b5cf6", "--p5": "#a78bfa", "--ac": "#c084fc", "--glow": "rgba(139, 92, 246, 0.35)" },
-      chemistry: { "--p4": "#10b981", "--p5": "#34d399", "--ac": "#14b8a6", "--glow": "rgba(16, 185, 129, 0.35)" },
-      biology: { "--p4": "#22c55e", "--p5": "#4ade80", "--ac": "#84cc16", "--glow": "rgba(34, 197, 94, 0.35)" },
+      sat: satSubMode === "english"
+        ? { "--p4": "#6366f1", "--p5": "#818cf8", "--ac": "#a78bfa", "--glow": "rgba(99, 102, 241, 0.35)" }
+        : { "--p4": "#f59e0b", "--p5": "#fbbf24", "--ac": "#fb923c", "--glow": "rgba(245, 158, 11, 0.35)" },
+      science: { "--p4": "#8b5cf6", "--p5": "#a78bfa", "--ac": "#c084fc", "--glow": "rgba(139, 92, 246, 0.35)" },
       history: { "--p4": "#f59e0b", "--p5": "#fbbf24", "--ac": "#fb923c", "--glow": "rgba(245, 158, 11, 0.35)" },
       literature: { "--p4": "#ec4899", "--p5": "#f472b6", "--ac": "#f9a8d4", "--glow": "rgba(236, 72, 153, 0.35)" },
     };
@@ -1827,7 +1995,7 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     const container = document.getElementById("mode-pills-container");
     if (!container) return;
     
-    const modes = ["general", "math", "physics", "chemistry", "biology", "history", "literature"];
+    const modes = ["general", "math", "sat", "science", "history", "literature"];
     container.innerHTML = "";
     
     modes.forEach(mode => {
@@ -1837,7 +2005,11 @@ ${FORMAT_INSTRUCTIONS}`.trim();
       pill.innerHTML = `<span>${config.emoji}</span><span>${config.name}</span>`;
       
       pill.addEventListener("click", () => {
-        changeMode(mode);
+        if (mode === "sat") {
+          showSATSubModal();
+        } else {
+          changeMode(mode);
+        }
       });
       
       container.appendChild(pill);
@@ -1846,18 +2018,19 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     // Update the large mode text in welcome screen
     const modeNameLarge = document.getElementById("welcome-mode-name");
     if (modeNameLarge) {
-      modeNameLarge.textContent = getModeConfig(currentSession.mode).name;
+      modeNameLarge.textContent = getModeDisplayName(currentSession.mode);
     }
   }
 
   function updateModeUI(mode) {
     const config = getModeConfig(mode);
+    const displayName = getModeDisplayName(mode);
     const modeIcon = document.getElementById("mode-icon");
     const modeName = document.getElementById("mode-name");
     const modeNameMini = document.getElementById("mode-name-mini");
     if (modeIcon) modeIcon.textContent = config.emoji;
-    if (modeName) modeName.textContent = config.name;
-    if (modeNameMini) modeNameMini.textContent = config.name + " Mode";
+    if (modeName) modeName.textContent = displayName;
+    if (modeNameMini) modeNameMini.textContent = displayName + " Mode";
   }
 
   function changeMode(newMode) {
@@ -1871,6 +2044,41 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     if (history.length > 0 && history[history.length - 1].role === "assistant") {
       showSuggestionBar();
     }
+  }
+
+  function setSATSubMode(subMode) {
+    satSubMode = subMode;
+    if (currentSession) {
+      currentSession.satSubMode = subMode;
+      currentSession.updatedAt = new Date().toISOString();
+      Storage.saveSession(currentSessionId, currentSession);
+    }
+    applyModeTheme("sat");
+    renderChatHistory();
+    if (history.length > 0 && history[history.length - 1].role === "assistant") {
+      showSuggestionBar();
+    }
+  }
+
+  function showSATSubModal() {
+    const modal = document.getElementById("sat-sub-modal");
+    if (!modal) return;
+    modal.classList.add("show");
+    const onMath = () => { cleanup(); setSATSubMode("math"); changeMode("sat"); };
+    const onEnglish = () => { cleanup(); setSATSubMode("english"); changeMode("sat"); };
+    const onOutside = (e) => { if (e.target === modal) cleanup(); };
+    const onEsc = (e) => { if (e.key === "Escape") cleanup(); };
+    function cleanup() {
+      modal.classList.remove("show");
+      document.getElementById("sat-math-btn")?.removeEventListener("click", onMath);
+      document.getElementById("sat-english-btn")?.removeEventListener("click", onEnglish);
+      modal.removeEventListener("click", onOutside);
+      document.removeEventListener("keydown", onEsc);
+    }
+    document.getElementById("sat-math-btn")?.addEventListener("click", onMath);
+    document.getElementById("sat-english-btn")?.addEventListener("click", onEnglish);
+    modal.addEventListener("click", onOutside);
+    document.addEventListener("keydown", onEsc);
   }
 
   function updateModeButtonState() {
@@ -2641,8 +2849,13 @@ ${FORMAT_INSTRUCTIONS}`.trim();
         e.stopPropagation();
         const mode = option.getAttribute("data-mode");
         if (mode) {
-          changeMode(mode);
-          modeDropdown.classList.remove("show");
+          if (mode === "sat") {
+            modeDropdown.classList.remove("show");
+            showSATSubModal();
+          } else {
+            changeMode(mode);
+            modeDropdown.classList.remove("show");
+          }
         }
       });
     });
@@ -2775,6 +2988,11 @@ ${FORMAT_INSTRUCTIONS}`.trim();
       currentSessionId = Storage.createSession("New Chat", "general");
       currentSession   = sessionsCache[currentSessionId];
       Storage.setCurrentSessionId(currentSessionId);
+    }
+
+    // Restore SAT sub-mode from session (only if this session is SAT mode)
+    if (currentSession.mode === "sat" && currentSession.satSubMode) {
+      satSubMode = currentSession.satSubMode;
     }
 
     history.length = 0;
