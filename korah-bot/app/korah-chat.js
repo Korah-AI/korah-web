@@ -746,6 +746,10 @@
           })
           .replace(/\\[(.*?)]/gs, function (_, expr) {
             return "$$" + expr.trim() + "$$";
+          })
+          .replace(/([a-zA-Z])_(\d|[a-zA-Z])/g, function (_, var_, sub) {
+            if (var_ && sub) return "$" + var_ + "_{" + sub + "}$";
+            return _;
           });
       })
       .join("");
@@ -865,6 +869,21 @@
         pre.classList.add('desmos-error');
       }
     }
+  }
+
+  function isDesmosBlockComplete(text) {
+    const desmosPattern = /```(?:lang-)?desmos[\s\S]*?```/;
+    return desmosPattern.test(text);
+  }
+
+  function hasCompleteDesmosBlock(text) {
+    const openMatch = text.match(/```(?:lang-)?desmos/);
+    if (!openMatch) return false;
+    
+    const openIndex = text.lastIndexOf(openMatch[0]);
+    const closeIndex = text.indexOf('```', openIndex + openMatch[0].length);
+    
+    return closeIndex !== -1;
   }
 
   function renderStreamingDesmos(container) {
@@ -2632,9 +2651,11 @@ ${FORMAT_INSTRUCTIONS}`.trim();
 
         if (contentElement) {
           renderMarkdownAndMath(contentElement, currentTypedText);
-          renderStreamingDesmos(contentElement);
           
-          // Append cursor after the rendered content
+          if (hasCompleteDesmosBlock(currentTypedText)) {
+            renderStreamingDesmos(contentElement);
+          }
+          
           const cursor = document.createElement('span');
           cursor.className = 'streaming-cursor';
           contentElement.appendChild(cursor);
