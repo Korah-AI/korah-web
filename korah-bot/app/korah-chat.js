@@ -747,10 +747,7 @@
           .replace(/\\[(.*?)]/gs, function (_, expr) {
             return "$$" + expr.trim() + "$$";
           })
-          .replace(/([a-zA-Z])_(\d|[a-zA-Z])/g, function (_, var_, sub) {
-            if (var_ && sub) return "$" + var_ + "_{" + sub + "}$";
-            return _;
-          });
+          .replace(/([a-zA-Z])_([a-zA-Z0-9]+|\{[^}]+\})/g, "$1_{$2}");
       })
       .join("");
   }
@@ -864,93 +861,6 @@
             calculator.setViewport(data.zoom);
           }
         }
-      } catch (e) {
-        console.error("Desmos render error:", e);
-        pre.classList.add('desmos-error');
-      }
-    }
-  }
-
-  function isDesmosBlockComplete(text) {
-    const desmosPattern = /```(?:lang-)?desmos[\s\S]*?```/;
-    return desmosPattern.test(text);
-  }
-
-  function hasCompleteDesmosBlock(text) {
-    const openMatch = text.match(/```(?:lang-)?desmos/);
-    if (!openMatch) return false;
-    
-    const openIndex = text.lastIndexOf(openMatch[0]);
-    const closeIndex = text.indexOf('```', openIndex + openMatch[0].length);
-    
-    return closeIndex !== -1;
-  }
-
-  function renderStreamingDesmos(container) {
-    const codeBlocks = container.querySelectorAll('pre code.language-desmos:not([data-rendered]), pre code.lang-desmos:not([data-rendered])');
-    for (const block of codeBlocks) {
-      const code = block.textContent.trim();
-      const pre = block.parentElement;
-      try {
-        const data = JSON.parse(code);
-        const wrapper = document.createElement('div');
-        wrapper.className = 'desmos-graph';
-        const graphDiv = document.createElement('div');
-        graphDiv.style.width = '100%';
-        graphDiv.style.height = data.height || '400px';
-        graphDiv.style.borderRadius = '8px';
-        graphDiv.style.overflow = 'hidden';
-        wrapper.appendChild(graphDiv);
-        pre.replaceWith(wrapper);
-        
-        if (window.Desmos) {
-          const calculator = Desmos.GraphingCalculator(graphDiv, {
-            keypad: false,
-            graphpaper: true,
-            autosize: true,
-            expressions: true,
-            settingsMenu: false,
-            zoomButtons: true,
-            border: false,
-            keyboard: false
-          });
-          
-          if (data.expressions && Array.isArray(data.expressions)) {
-            data.expressions.forEach((expr, idx) => {
-              if (expr.type === 'table') {
-                calculator.setExpression({
-                  id: expr.id || 'table_' + idx,
-                  type: 'table',
-                  columns: (expr.columns || []).map(col => ({
-                    latex: col.latex,
-                    values: col.values || [],
-                    color: col.color,
-                    dragMode: col.dragMode
-                  }))
-                });
-              } else {
-                calculator.setExpression({
-                  id: expr.id || 'expr_' + idx,
-                  latex: expr.latex || '',
-                  color: expr.color,
-                  lineStyle: expr.lineStyle || 'SOLID',
-                  pointStyle: expr.pointStyle || 'POINT',
-                  showLabel: expr.showLabel || false,
-                  label: expr.label || ''
-                });
-              }
-            });
-          }
-          
-          if (data.viewState) {
-            calculator.setState(data.viewState);
-          }
-          
-          if (data.zoom) {
-            calculator.setViewport(data.zoom);
-          }
-        }
-        block.setAttribute('data-rendered', 'true');
       } catch (e) {
         console.error("Desmos render error:", e);
         pre.classList.add('desmos-error');
@@ -2651,10 +2561,6 @@ ${FORMAT_INSTRUCTIONS}`.trim();
 
         if (contentElement) {
           renderMarkdownAndMath(contentElement, currentTypedText);
-          
-          if (hasCompleteDesmosBlock(currentTypedText)) {
-            renderStreamingDesmos(contentElement);
-          }
           
           const cursor = document.createElement('span');
           cursor.className = 'streaming-cursor';
