@@ -1938,12 +1938,19 @@ Always format your responses using GitHub-flavored Markdown. Use:
     const modes = {
       general: { name: "General", emoji: "✨" },
       math: { name: "Math", emoji: "🧮" },
-      sat: { name: satSubMode === "english" ? "SAT English" : "SAT Math", emoji: satSubMode === "english" ? "📖" : "📝" },
+      sat: { name: "SAT", emoji: "📝" },
       science: { name: "Science", emoji: "🔬" },
       history: { name: "History", emoji: "📜" },
       literature: { name: "Literature", emoji: "📚" },
     };
     return modes[mode] || modes.general;
+  }
+
+  function getModeDisplayName(mode) {
+    if (mode === "sat") {
+      return satSubMode === "english" ? "SAT English" : "SAT Math";
+    }
+    return getModeConfig(mode).name;
   }
 
   function getSystemPrompt(mode) {
@@ -1998,7 +2005,11 @@ ${FORMAT_INSTRUCTIONS}`.trim();
       pill.innerHTML = `<span>${config.emoji}</span><span>${config.name}</span>`;
       
       pill.addEventListener("click", () => {
-        changeMode(mode);
+        if (mode === "sat") {
+          showSATSubModal();
+        } else {
+          changeMode(mode);
+        }
       });
       
       container.appendChild(pill);
@@ -2007,18 +2018,19 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     // Update the large mode text in welcome screen
     const modeNameLarge = document.getElementById("welcome-mode-name");
     if (modeNameLarge) {
-      modeNameLarge.textContent = getModeConfig(currentSession.mode).name;
+      modeNameLarge.textContent = getModeDisplayName(currentSession.mode);
     }
   }
 
   function updateModeUI(mode) {
     const config = getModeConfig(mode);
+    const displayName = getModeDisplayName(mode);
     const modeIcon = document.getElementById("mode-icon");
     const modeName = document.getElementById("mode-name");
     const modeNameMini = document.getElementById("mode-name-mini");
     if (modeIcon) modeIcon.textContent = config.emoji;
-    if (modeName) modeName.textContent = config.name;
-    if (modeNameMini) modeNameMini.textContent = config.name + " Mode";
+    if (modeName) modeName.textContent = displayName;
+    if (modeNameMini) modeNameMini.textContent = displayName + " Mode";
   }
 
   function changeMode(newMode) {
