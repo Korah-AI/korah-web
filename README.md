@@ -1,6 +1,7 @@
 <h1>Korah, the Modern Tutor. </h1>
 
 # Korah-bot Prerelease Todo List (from oscar)
+* Implement production Desmos API key
 * Fix Desmos API prompting to be specialized in teaching regressions mixed with problem solving (you only need two points to create a table then export it as a custom regression to solve for constants in an expression), etc. You can regression EVERYTHING.
 * Improve document tab sidebar styling in `index.html` 
 * Remove the suggestion bar from `index.html` (the one that appears when you scroll down, suggesting which type of study item to generate)
