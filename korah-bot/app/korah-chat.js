@@ -867,6 +867,78 @@
     }
   }
 
+  function renderStreamingDesmos(container) {
+    const codeBlocks = container.querySelectorAll('pre code.language-desmos:not([data-rendered]), pre code.lang-desmos:not([data-rendered])');
+    for (const block of codeBlocks) {
+      const code = block.textContent.trim();
+      const pre = block.parentElement;
+      try {
+        const data = JSON.parse(code);
+        const wrapper = document.createElement('div');
+        wrapper.className = 'desmos-graph';
+        const graphDiv = document.createElement('div');
+        graphDiv.style.width = '100%';
+        graphDiv.style.height = data.height || '400px';
+        graphDiv.style.borderRadius = '8px';
+        graphDiv.style.overflow = 'hidden';
+        wrapper.appendChild(graphDiv);
+        pre.replaceWith(wrapper);
+        
+        if (window.Desmos) {
+          const calculator = Desmos.GraphingCalculator(graphDiv, {
+            keypad: false,
+            graphpaper: true,
+            autosize: true,
+            expressions: true,
+            settingsMenu: false,
+            zoomButtons: true,
+            border: false,
+            keyboard: false
+          });
+          
+          if (data.expressions && Array.isArray(data.expressions)) {
+            data.expressions.forEach((expr, idx) => {
+              if (expr.type === 'table') {
+                calculator.setExpression({
+                  id: expr.id || 'table_' + idx,
+                  type: 'table',
+                  columns: (expr.columns || []).map(col => ({
+                    latex: col.latex,
+                    values: col.values || [],
+                    color: col.color,
+                    dragMode: col.dragMode
+                  }))
+                });
+              } else {
+                calculator.setExpression({
+                  id: expr.id || 'expr_' + idx,
+                  latex: expr.latex || '',
+                  color: expr.color,
+                  lineStyle: expr.lineStyle || 'SOLID',
+                  pointStyle: expr.pointStyle || 'POINT',
+                  showLabel: expr.showLabel || false,
+                  label: expr.label || ''
+                });
+              }
+            });
+          }
+          
+          if (data.viewState) {
+            calculator.setState(data.viewState);
+          }
+          
+          if (data.zoom) {
+            calculator.setViewport(data.zoom);
+          }
+        }
+        block.setAttribute('data-rendered', 'true');
+      } catch (e) {
+        console.error("Desmos render error:", e);
+        pre.classList.add('desmos-error');
+      }
+    }
+  }
+
   function renderSpecialContent(container) {
     renderDesmosGraphs(container);
   }
@@ -1677,6 +1749,32 @@
   }
 
   // ═══ Mode Functions ═══
+  
+  // ═══ Desmos Teaching Block (shared across Math & SAT modes) ═══
+  const DESMOS_TEACHING_BLOCK = `
+DESMOS POWER: You can regression EVERYTHING. Points → equation instantly.
+
+KEY INSIGHT: You only need two points to create a table, then export it as a custom regression to solve for constants in an expression!
+
+SYNTAX (CRITICAL):
+- ~ for regressions (NOT =)
+- Tables: x_1, y_1
+- Linear: y_1 ~ mx_1 + b
+- Quadratic: y_1 ~ ax_1^2 + bx_1 + c
+- Exponential: y_1 ~ a * b^x_1
+
+EXAMPLE: Ask me and I'll show you!
+
+WITHOUT DESMOS (traditional method):
+→ Show concise algebraic approach
+
+DESMOS TRICKS: I'll suggest one relevant trick based on your problem!
+- Verify: Graph your answer + points
+- Graph both sides to find intersections
+- Systems: Graph equations, intersection = solution
+
+TIPS: Tables (+), Regression (click circle), Zoom (wrench)`;
+
   const MODE_SYSTEM_PROMPTS = {
     general: `You are Korah, an all-around AI study companion. Your teaching style:
 - Provide clear, helpful, and concise explanations on any subject
@@ -1694,7 +1792,16 @@ KaTeX delimiter policy (REQUIRED for all math):
 - Show your work at each step and explain why each step is necessary
 - Encourage true understanding and bear with the student
 - When showing equations, explain each variable and operation clearly
-- When showing mathematical relationships, consider including a Desmos graph for functions
+- Include a Desmos graph for functions when helpful
+- Teach both WITH Desmos AND WITHOUT Desmos approaches — let students choose
+- Suggest one relevant Desmos trick based on the problem if helpful
+
+TEACHING APPROACH: If a problem involves points, data, or finding equations, show both methods briefly:
+1. WITH DESMOS: Quick table + regression
+2. WITHOUT DESMOS: Traditional algebra (concise)
+3. Explain why both work — build intuition
+
+${DESMOS_TEACHING_BLOCK}
 
 KaTeX delimiter policy (REQUIRED for all math):
 - Inline math: $...$ (single dollar signs)
@@ -1747,52 +1854,29 @@ KaTeX delimiter policy (REQUIRED for all math):
 - Show both algebraic and Desmos calculator approaches
 - Emphasize time-saving shortcuts and elimination techniques
 - Cover all SAT Math topics: Heart of Algebra, Passport to Advanced Math, Problem Solving & Data Analysis, Additional Topics
-- When a problem provides data (table, coordinates, scatter plot), lead with: "It'd actually be faster to just make a regression for this problem instead of solving by hand."
 
-WHEN TO USE REGRESSIONS:
-Use Desmos regressions whenever a problem provides a table, coordinate pairs, 
-scatter plot data, or asks about best-fit lines, trends, or predictions from data.
-Do not ask the student if they want to use a regression — if the data warrants it, 
-just use it as your solution method.
+SAT TEACHING APPROACH: If a problem involves data, show both methods briefly:
+1. WITH DESMOS: Quick table + regression (usually faster)
+2. WITHOUT DESMOS: Traditional algebra if needed
+3. Explain WHY the method works — build SAT intuition
 
-SOLUTION PATH (always follow this order):
-1. State the relationship type and why the data suggests it
-2. Show the Desmos table + regression in a desmos code block
-3. Read the parameter values Desmos produces
-4. Map the parameters to what the question is asking
-5. State the final answer clearly
+${DESMOS_TEACHING_BLOCK}
 
-DESMOS SYNTAX RULES:
-- Use ~ (tilde) for regression, NOT = (equals)
-- Table columns must be named x_1 and y_1
-- The regression formula must reference x_1 and y_1 to match the table
-- Linear: y_1 ~ mx_1 + b
-- Quadratic standard: y_1 ~ ax_1^2 + bx_1 + c
-- Quadratic vertex: y_1 ~ a(x_1 - h)^2 + k
-- Exponential: y_1 ~ a * b^x_1
+SAT-SPECIFIC RULES:
+- SAT trick: 2 points? Table + regression = instant answer!
+- Linear (y=mx+b): slope = rate, intercept = start
+- Quadratic: vertex = max/min
+- Exponential: b>1 growth, b<1 decay
+- R² > 0.9 = great fit, < 0.5 = weak, negative = wrong model
 
-SAT REGRESSION CONTEXT:
-- Linear (y = mx + b): Most common on SAT; slope = rate of change, intercept = starting value
-- Quadratic (y = ax² + bx + c): Parabola data; vertex = max/min; axis of symmetry matters
-- Exponential (y = ab^x): Growth/decay problems; b > 1 = growth, 0 < b < 1 = decay
-- R² interpretation: R² > 0.9 = strong fit; R² < 0.5 = weak fit; negative R² = wrong model entirely
-- SAT trick: If data curves upward faster and faster → exponential; if it curves then levels → quadratic
-- SAT trick: Linear regression questions often ask for meaning of slope or y-intercept in context
-- SAT trick: Residuals = actual − predicted; if residuals show a pattern, linear model is wrong
+PARAMETER MAP: slope→m, initial→b (linear) or a (exp), growth→b in a*b^x
 
-SAT PARAMETER MAP:
-- "slope" / "rate of change" → m
-- "initial value" / "starting amount" / "y-intercept" → b (linear) or a (exponential)
-- "growth factor" → b in y_1 ~ a * b^x_1
-- "decay factor" → b in y_1 ~ a * b^x_1 (where 0 < b < 1)
-- "maximum" / "minimum" / "vertex" → h and k in vertex form
-- "predict when x = N" → substitute into the regression equation
-- "how well does the model fit" → reference R² value
+SAT SPEED SECRETS:
+- Need slope/intercept? Right in the regression parameters!
+- Stuck on data? Try linear first
+- Verify: Graph your answer + points to check
 
-COMMON MISTAKES TO PREVENT:
-- Using = instead of ~ (graphs exact equation, not best fit)
-- Mismatched variable names (table uses x_1 but formula says x)
-- Wrong model type (exponential growth looks like quadratic — check if ratio is constant vs difference)
+COMMON MISTAKES: ~ (not =) for regressions, x_1/y_1 for tables
 
 KaTeX delimiter policy (REQUIRED for all math):
 - Inline math: $...$ (single dollar signs)
@@ -2548,6 +2632,7 @@ ${FORMAT_INSTRUCTIONS}`.trim();
 
         if (contentElement) {
           renderMarkdownAndMath(contentElement, currentTypedText);
+          renderStreamingDesmos(contentElement);
           
           // Append cursor after the rendered content
           const cursor = document.createElement('span');
