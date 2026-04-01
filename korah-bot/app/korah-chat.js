@@ -741,6 +741,13 @@
         if (segment.startsWith("```")) return segment;
 
         return segment
+          .replace(/`([^`]+)`/g, function (_, expr) {
+            const trimmed = expr.trim();
+            if (/[_^\\{}]/.test(trimmed)) {
+              return "$" + trimmed + "$";
+            }
+            return "`" + expr + "`";
+          })
           .replace(/\\\((.*?)\\\)/gs, function (_, expr) {
             return "$" + expr.trim() + "$";
           })
