@@ -930,6 +930,21 @@ function showSidebarDeleteModal(name, onConfirm) {
 
     function isMobile() { return window.innerWidth <= 768; }
 
+    function getDocPanel() {
+      return document.getElementById('doc-panel');
+    }
+
+    function collapseDocPanelIfNeeded() {
+      const docPanel = getDocPanel();
+      if (docPanel && docPanel.classList.contains('expanded')) {
+        docPanel.classList.remove('expanded');
+        docPanel.classList.add('collapsed');
+        const tab = document.getElementById('doc-panel-tab');
+        if (tab) tab.classList.remove('panel-open');
+        const isDocPanelExpanded = false;
+      }
+    }
+
     function updateSidebarState(collapsed) {
       if (collapsed) sidebar?.classList.add("collapsed");
       else sidebar?.classList.remove("collapsed");
@@ -945,6 +960,10 @@ function showSidebarDeleteModal(name, onConfirm) {
           sidebar.classList.toggle("mobile-open");
           overlay.classList.toggle("show");
         } else {
+          const willExpand = sidebar.classList.contains("collapsed");
+          if (willExpand) {
+            collapseDocPanelIfNeeded();
+          }
           updateSidebarState(!sidebar.classList.contains("collapsed"));
         }
       });

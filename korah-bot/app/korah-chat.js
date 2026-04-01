@@ -134,7 +134,27 @@
   // ═══ Document Panel State ═══
   let isDocPanelExpanded = false;
 
+  function getSidebar() {
+    return document.getElementById('sidebar');
+  }
+
+  function isSidebarExpanded() {
+    const sidebar = getSidebar();
+    return sidebar && !sidebar.classList.contains('collapsed');
+  }
+
+  function collapseSidebar() {
+    const sidebar = getSidebar();
+    if (sidebar) {
+      sidebar.classList.add('collapsed');
+      localStorage.setItem('korah_sidebar_collapsed', 'true');
+    }
+  }
+
   function expandDocPanel() {
+    if (isSidebarExpanded()) {
+      collapseSidebar();
+    }
     const panel = document.getElementById('doc-panel');
     const tab = document.getElementById('doc-panel-tab');
     if (panel) {
@@ -187,6 +207,7 @@
     const count = attachedFiles.length;
     const topbarBadge = document.getElementById('doc-count-badge');
     const collapsedBadge = document.getElementById('doc-count-collapsed');
+    const tabBadge = document.getElementById('doc-tab-badge');
     
     if (topbarBadge) {
       topbarBadge.textContent = count;
@@ -195,6 +216,10 @@
     if (collapsedBadge) {
       collapsedBadge.textContent = count;
       collapsedBadge.classList.toggle('hidden', count === 0);
+    }
+    if (tabBadge) {
+      tabBadge.textContent = count;
+      tabBadge.classList.toggle('show', count > 0);
     }
   }
 

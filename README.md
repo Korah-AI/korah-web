@@ -2,10 +2,10 @@
 
 # Korah-bot Prerelease Todo List (from oscar)
 * Right before release, fix the redirect paths (marked with todo comments)
-* Implement production Desmos API key
 * Improve document tab sidebar styling in `index.html` 
 * Pro tip alerts: Maybe update the styling and where it pops up, etc
-* Add the About and Blog pages to `landingpage.html`
+* Add the About to `landingpage.html`
+* Switch blog to social media and link the instagram page
 * Add mood-based (mood is just focus) learning features into 'korah-bot' (this should kinda be a beta version, very experimental.)
   * Daily focus check-in
   * Study-tip of the day
@@ -20,7 +20,7 @@
 # Korah Web Todo List (Jayden's | Things I think That Work/fit or need to be worked on)
 
 * About Korah Link (Make About Korah Page or find somewhere to link to) Lines 853-856
-* Blog Link (Make About Korah Blog or find somewhere to link to)
+* Social Media Link 
 
 # Korah-bot Todo list (Jayden's)
 
@@ -29,11 +29,11 @@
 * Make sure that documents side bar doesn't overlap normal side bar when window is minimized and sidebars are opened.
 * Make sure users can see all recent chats and be able to delete all of them.
 * ^^ Same with recent study items
-* Add subscripts to the AI Chat
+
 
 # Korah-bot Support.html
 * About Korah Link (Make About Korah Page or find somewhere to link to) Lines 285-286
-* Blog Link (Make About Korah Blog or find somewhere to link to)
+* Social Media Link 
 
 
 
