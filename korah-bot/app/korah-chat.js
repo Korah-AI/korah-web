@@ -533,6 +533,51 @@
 
   let tutoringMode = localStorage.getItem('korah_tutoring_mode') === 'true';
 
+  // ═══ Pro Tip Toast State ═══
+  const PRO_TIPS = [
+    "In chat, ask Korah to generate flashcards, practice tests, or study guides.",
+    "You can attach documents (PDFs, images, text files) for Korah to analyze and answer questions about.",
+    "Try using Desmos graphs in Math and SAT modes — just ask Korah to graph a function!",
+    "Switch between subject modes (Math, Science, History, etc.) using the mode selector at the top.",
+    "Toggle Tutoring Mode on the welcome screen for guided, Socratic-style learning instead of direct answers.",
+    "Ask Korah to create a practice test on any topic — you can specify the number of questions!",
+    "Your chat history is saved automatically. Switch between chats using the sidebar.",
+    "Drag and drop files directly into the chat to attach them instantly.",
+    "Use the Study Library to access all your generated flashcards, guides, and practice tests.",
+    "Try asking Korah to explain concepts with real-world examples for better understanding.",
+    "Create study items like notecards, study guides, and practice tests to build your personal study library.",
+  ];
+
+  let chatMessageCount = 0;
+  let proTipTimeout = null;
+
+  function showProTip() {
+    const toast = document.getElementById('pro-tip-toast');
+    const textEl = document.getElementById('pro-tip-text');
+    const closeBtn = document.getElementById('pro-tip-close');
+    if (!toast || !textEl) return;
+
+    const tipIndex = Math.floor(Math.random() * PRO_TIPS.length);
+    textEl.textContent = PRO_TIPS[tipIndex];
+
+    if (proTipTimeout) clearTimeout(proTipTimeout);
+
+    toast.classList.add('show');
+
+    proTipTimeout = setTimeout(() => {
+      toast.classList.remove('show');
+    }, 6000);
+  }
+
+  function dismissProTip() {
+    const toast = document.getElementById('pro-tip-toast');
+    if (!toast) return;
+    if (proTipTimeout) clearTimeout(proTipTimeout);
+    toast.classList.remove('show');
+  }
+
+  document.getElementById('pro-tip-close')?.addEventListener('click', dismissProTip);
+
   // ═══ Welcome Screen Features ═══
   const GREETING_PHRASES = [
     "What can I help you study, {name}?",
@@ -1361,58 +1406,7 @@
     return suggestions.slice(0, 3);
   }
 
-  let lastScrollTop = 0;
-  if (chatBody) {
-    chatBody.addEventListener("scroll", () => {
-      const st = chatBody.scrollTop;
-      const suggestionBar = document.getElementById("suggestion-bar");
-      
-      // Only act if the suggestion bar has content (i.e., it's supposed to be active)
-      if (!suggestionBar || suggestionBar.innerHTML === "") return;
 
-      if (st > lastScrollTop) {
-        // Scrolling down
-        suggestionBar.classList.add("show");
-      } else if (st < lastScrollTop) {
-        // Scrolling up - hide to give more space for reading
-        suggestionBar.classList.remove("show");
-      }
-      lastScrollTop = st <= 0 ? 0 : st;
-    }, { passive: true });
-  }
-
-  function showSuggestionBar() {
-    const suggestionBar = document.getElementById("suggestion-bar");
-    if (!suggestionBar) return;
-
-    const mode = currentSession.mode || "general";
-    const suggestions = getFollowUpActionsForMode(mode);
-
-    suggestionBar.innerHTML = "";
-    suggestions.forEach((suggestion) => {
-      const btn = document.createElement("button");
-      btn.className = "suggestion-prompt-btn t-btn";
-      btn.innerHTML = `<span>${suggestion.icon}</span><span>${suggestion.label}</span>`;
-      btn.addEventListener("click", () => {
-        sendMessage(suggestion.prompt);
-      });
-      suggestionBar.appendChild(btn);
-    });
-
-    // Check if we are at the bottom or near it
-    const isAtBottom = chatBody.scrollHeight - chatBody.scrollTop <= chatBody.clientHeight + 100;
-    if (isAtBottom) {
-      suggestionBar.classList.add("show");
-    }
-  }
-
-  function hideSuggestionBar() {
-    const suggestionBar = document.getElementById("suggestion-bar");
-    if (suggestionBar) {
-      suggestionBar.classList.remove("show");
-      suggestionBar.innerHTML = ""; // Clear content so scroll listener doesn't re-show it
-    }
-  }
 
   async function callChatApi(messages, onChunk = null, options = {}) {
     const { systemPromptOverride } = options || {};
@@ -1527,7 +1521,6 @@
 
   function loadSessionMessages() {
     messagesList.innerHTML = "";
-    hideSuggestionBar();
     if (history.length === 0) {
       setWelcomeVisibility(true);
     } else {
@@ -1542,10 +1535,6 @@
           }
         }
       });
-      // Show suggestion bar if last message was from assistant
-      if (history.length > 0 && history[history.length - 1].role === "assistant") {
-        showSuggestionBar();
-      }
     }
     if (chatTitleEl) chatTitleEl.textContent = currentSession.title;
     updateModeButtonState();
@@ -2059,11 +2048,6 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     Storage.saveSession(currentSessionId, currentSession);
     applyModeTheme(newMode);
     renderChatHistory();
-    
-    // If we're in an active chat, we might want to refresh the suggestions
-    if (history.length > 0 && history[history.length - 1].role === "assistant") {
-      showSuggestionBar();
-    }
   }
 
   function setSATSubMode(subMode) {
@@ -2075,9 +2059,6 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     }
     applyModeTheme("sat");
     renderChatHistory();
-    if (history.length > 0 && history[history.length - 1].role === "assistant") {
-      showSuggestionBar();
-    }
   }
 
   function showSATSubModal() {
@@ -2489,7 +2470,6 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     const fileAttachments = hasFiles ? pendingFiles.map(getFileMetadata) : null;
     history.push({ role: "user", content: text, fileAttachments });
     saveCurrentSession();
-    hideSuggestionBar();
 
     input.value = "";
     const welcomeInput = document.getElementById("welcome-chat-input");
@@ -2505,7 +2485,6 @@ ${FORMAT_INSTRUCTIONS}`.trim();
       await handleStudyItemGeneration(studyReq.type, studyReq.topic, studyReq.practiceConfig);
       setSendingState(false);
       updateModeButtonState();
-      showSuggestionBar();
       return;
     }
 
@@ -2653,7 +2632,11 @@ ${FORMAT_INSTRUCTIONS}`.trim();
       saveCurrentSession();
       await generateAutoTitleIfNeeded();
       updateModeButtonState();
-      showSuggestionBar();
+      
+      chatMessageCount++;
+      if (chatMessageCount % 2 === 1) {
+        setTimeout(() => showProTip(), 1500);
+      }
     } catch (error) {
       console.error("Chat request failed:", error);
 
@@ -2682,7 +2665,6 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     clearAttachedFiles();
     setWelcomeVisibility(true);
     setTyping(false);
-    hideSuggestionBar();
     saveCurrentSession();
   }
 
