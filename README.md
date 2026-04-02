@@ -2,7 +2,6 @@
 
 # Korah-bot Prerelease Todo List (from oscar)
 * Right before release, fix the redirect paths (marked with todo comments)
-* Pro tip alerts: Maybe update the styling and where it pops up, etc
 * Add the About to `landingpage.html`
 * Switch blog to social media and link the instagram page
 * Add mood-based (mood is just focus) learning features into 'korah-bot' (this should kinda be a beta version, very experimental.)
@@ -13,7 +12,6 @@
   * Send user-mood in AI prompt
   * Mood should NOT have its own page. You could maybe implement it into `productivity.html`
   * Honestly implement it in any creative ways you think are good
-* Replace the typing animation for text streaming from the ai in `index.html` with a Gemini-like skeleton loading like response (kind of like when you Google something and the AI response loads in)
 * IF YOU WANT, after you're done all of this, safely implement all of Bronson's changes on `main` with your new changes, but make sure you do this safely on a new branch. I haven't even looked at the changes lol so if they're good just take pics and show me. If not, there's no need to implement them.
 
 # Korah Web Todo List (Jayden's | Things I think That Work/fit or need to be worked on)

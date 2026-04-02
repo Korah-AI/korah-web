@@ -2572,9 +2572,19 @@ ${FORMAT_INSTRUCTIONS}`.trim();
         if (contentElement) {
           renderMarkdownAndMath(contentElement, currentTypedText);
           
-          const cursor = document.createElement('span');
-          cursor.className = 'streaming-cursor';
-          contentElement.appendChild(cursor);
+          // Replace cursor with skeleton loader
+          const existingSkeleton = contentElement.querySelector('.skeleton-loader');
+          if (!existingSkeleton) {
+            const skeleton = document.createElement('div');
+            skeleton.className = 'skeleton-loader';
+            skeleton.innerHTML = `
+              <div class="skeleton-line"></div>
+              <div class="skeleton-line"></div>
+              <div class="skeleton-line"></div>
+              <div class="skeleton-line"></div>
+            `;
+            contentElement.appendChild(skeleton);
+          }
         }
 
         // adaptive speed: extremely fast catch-up
@@ -2585,8 +2595,12 @@ ${FORMAT_INSTRUCTIONS}`.trim();
       };
 
       const finalizeMessage = () => {
-        if (cursorElement && cursorElement.parentNode) {
-          cursorElement.remove();
+        // Remove skeleton loader when streaming completes
+        if (contentElement) {
+          const skeleton = contentElement.querySelector('.skeleton-loader');
+          if (skeleton) {
+            skeleton.remove();
+          }
         }
         if (contentElement) {
           contentElement.innerHTML = '';
@@ -2602,9 +2616,16 @@ ${FORMAT_INSTRUCTIONS}`.trim();
           thinkingIndicator.remove();
           thinkingIndicator = null;
           if (contentElement) {
-            cursorElement = document.createElement('span');
-            cursorElement.className = 'streaming-cursor';
-            contentElement.appendChild(cursorElement);
+            // Replace thinking indicator with skeleton loader
+            const skeleton = document.createElement('div');
+            skeleton.className = 'skeleton-loader';
+            skeleton.innerHTML = `
+              <div class="skeleton-line"></div>
+              <div class="skeleton-line"></div>
+              <div class="skeleton-line"></div>
+              <div class="skeleton-line"></div>
+            `;
+            contentElement.appendChild(skeleton);
           }
         }
 
