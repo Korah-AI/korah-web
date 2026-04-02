@@ -2592,7 +2592,11 @@ ${FORMAT_INSTRUCTIONS}`.trim();
         }
       });
       
-      // Immediately render final content when stream ends
+      // Stop typewriter and clear buffer immediately
+      charBuffer = [];
+      typewriterActive = false;
+      
+      // Render final content immediately
       if (contentElement) {
         contentElement.innerHTML = '';
         renderMarkdownAndMath(contentElement, reply);
