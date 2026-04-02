@@ -2582,6 +2582,9 @@ ${FORMAT_INSTRUCTIONS}`.trim();
               <div class="skeleton-line"></div>
               <div class="skeleton-line"></div>
               <div class="skeleton-line"></div>
+              <div class="skeleton-line"></div>
+              <div class="skeleton-line"></div>
+              <div class="skeleton-line"></div>
             `;
             contentElement.appendChild(skeleton);
             // Trigger sequential animation
@@ -2637,6 +2640,9 @@ ${FORMAT_INSTRUCTIONS}`.trim();
             const skeleton = document.createElement('div');
             skeleton.className = 'skeleton-loader';
             skeleton.innerHTML = `
+              <div class="skeleton-line"></div>
+              <div class="skeleton-line"></div>
+              <div class="skeleton-line"></div>
               <div class="skeleton-line"></div>
               <div class="skeleton-line"></div>
               <div class="skeleton-line"></div>
