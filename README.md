@@ -1,18 +1,22 @@
-<h1>Korah, the Modern Tutor. </h1>
-
-# Korah-bot Prerelease Todo List (from oscar)
-* Right before release, fix the redirect paths (marked with todo comments)
-* Add the About to `landingpage.html`
-* Switch blog to social media and link the instagram page
-* Add mood-based (mood is just focus) learning features into 'korah-bot' (this should kinda be a beta version, very experimental.)
+# 1.1 Updates (still in development)
+* Questionbank Beta
+  * Still looking for good open source API. Might create my own.
+* Focus-based learning integration
   * Daily focus check-in
   * Study-tip of the day
   * Suggest practices for boosting focus or calmness
   * Suggest certain study techniques
   * Send user-mood in AI prompt
+* Merge `main` changes onto `deployment`
+* web_fetch tool for the most up-to-date indo
+* sat_question fetch tool (chatbot to output SAT problems, JSON formatted)
+* Add from Quizlet
+
+# Patches/Fixes
+* Add the About to `landingpage.html`
+* Switch blog to social media and link the Instagram page
   * Mood should NOT have its own page. You could maybe implement it into `productivity.html`
   * Honestly implement it in any creative ways you think are good
-* IF YOU WANT, after you're done all of this, safely implement all of Bronson's changes on `main` with your new changes, but make sure you do this safely on a new branch. I haven't even looked at the changes lol so if they're good just take pics and show me. If not, there's no need to implement them.
 
 # Korah Web Todo List (Jayden's | Things I think That Work/fit or need to be worked on)
 
