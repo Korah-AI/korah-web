@@ -2584,6 +2584,10 @@ ${FORMAT_INSTRUCTIONS}`.trim();
               <div class="skeleton-line"></div>
             `;
             contentElement.appendChild(skeleton);
+            // Trigger sequential animation
+            setTimeout(() => {
+              skeleton.querySelectorAll('.skeleton-line').forEach(line => line.classList.add('active'));
+            }, 50);
           }
         }
 
@@ -2626,6 +2630,10 @@ ${FORMAT_INSTRUCTIONS}`.trim();
               <div class="skeleton-line"></div>
             `;
             contentElement.appendChild(skeleton);
+            // Trigger sequential animation
+            setTimeout(() => {
+              skeleton.querySelectorAll('.skeleton-line').forEach(line => line.classList.add('active'));
+            }, 50);
           }
         }
 
