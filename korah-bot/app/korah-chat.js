@@ -2542,6 +2542,62 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     const apiMessages = buildApiMessages(history.slice(0, -1), pendingFiles);
 
     try {
+      let previousLength = 0;
+      let cursorElement = null;
+      let charBuffer = [];
+      let typewriterActive = false;
+      let streamFinished = false;
+
+      let currentTypedText = "";
+      const typeNextChar = () => {
+        if (charBuffer.length === 0) {
+          if (streamFinished) {
+            typewriterActive = false;
+            finalizeMessage();
+            return;
+          }
+          typewriterActive = false;
+          return;
+        }
+
+        typewriterActive = true;
+        // Process up to 2 characters at a time if buffer is large for even more speed
+        const charsToType = charBuffer.length > 20 ? 2 : 1;
+        for (let i = 0; i < charsToType; i++) {
+          if (charBuffer.length > 0) {
+            currentTypedText += charBuffer.shift();
+          }
+        }
+
+        if (contentElement) {
+          renderMarkdownAndMath(contentElement, currentTypedText);
+          
+          // Re-add cursor if streaming is still active
+          if (cursorElement) {
+            contentElement.appendChild(cursorElement);
+          }
+        }
+
+        // adaptive speed: extremely fast catch-up
+        let delay = 5; // Very fast base speed (ms)
+        if (charBuffer.length > 50) delay = 0; 
+        
+        setTimeout(typeNextChar, delay);
+      };
+
+      const finalizeMessage = () => {
+        if (cursorElement && cursorElement.parentNode) {
+          cursorElement.remove();
+        }
+        
+        if (contentElement) {
+          contentElement.innerHTML = '';
+          renderMarkdownAndMath(contentElement, reply);
+          renderSpecialContent(contentElement);
+        }
+        scrollToBottomIfNear();
+      };
+
       let reply = "";
       
       reply = await callChatApi(apiMessages, (chunk, fullText) => {
@@ -2549,23 +2605,31 @@ ${FORMAT_INSTRUCTIONS}`.trim();
         if (thinkingIndicator && fullText.length > 0) {
           thinkingIndicator.remove();
           thinkingIndicator = null;
+          // Add cursor after thinking indicator is removed
+          if (contentElement) {
+            cursorElement = document.createElement('span');
+            cursorElement.className = 'streaming-cursor';
+            contentElement.appendChild(cursorElement);
+          }
         }
 
         if (contentElement) {
-          // Add chunk with fade-in animation
-          const chunkSpan = document.createElement('span');
-          chunkSpan.className = 'streaming-chunk';
-          chunkSpan.textContent = chunk;
-          contentElement.appendChild(chunkSpan);
+          const delta = fullText.slice(previousLength);
+          previousLength = fullText.length;
+          
+          charBuffer.push(...delta.split(''));
+          
+          // Start typewriter if not already running
+          if (!typewriterActive) {
+            typeNextChar();
+          }
         }
       });
       
-      // Final render with proper markdown after streaming completes
-      if (contentElement) {
-        contentElement.innerHTML = '';
-        renderMarkdownAndMath(contentElement, reply);
-        renderSpecialContent(contentElement);
-        scrollToBottomIfNear();
+      streamFinished = true;
+      // If typewriter finished before the stream result was returned, finalize now
+      if (!typewriterActive && charBuffer.length === 0) {
+        finalizeMessage();
       }
       
       // Update the placeholder entry instead of adding a new one
