@@ -2572,7 +2572,7 @@ ${FORMAT_INSTRUCTIONS}`.trim();
         if (contentElement) {
           renderMarkdownAndMath(contentElement, currentTypedText);
           
-          // Show skeleton only once when first text arrives
+          // Show skeleton when AI starts responding, keep it visible while streaming
           const existingSkeleton = contentElement.querySelector('.skeleton-loader');
           if (!existingSkeleton && currentTypedText.length > 0) {
             const skeleton = document.createElement('div');
@@ -2585,14 +2585,7 @@ ${FORMAT_INSTRUCTIONS}`.trim();
             `;
             contentElement.appendChild(skeleton);
           }
-          
-          // Remove skeleton immediately when text starts flowing
-          if (existingSkeleton || currentTypedText.length > 10) {
-            const skeleton = contentElement.querySelector('.skeleton-loader');
-            if (skeleton) {
-              skeleton.remove();
-            }
-          }
+          // DON'T remove skeleton while streaming - keep it visible until complete!
         }
 
         // adaptive speed: extremely fast catch-up
@@ -2641,11 +2634,7 @@ ${FORMAT_INSTRUCTIONS}`.trim();
           const delta = fullText.slice(previousLength);
           previousLength = fullText.length;
           
-          // Remove skeleton immediately when text starts flowing
-          const skeleton = contentElement.querySelector('.skeleton-loader');
-          if (skeleton) {
-            skeleton.remove();
-          }
+          // DON'T remove skeleton - keep it visible while streaming!
           charBuffer.push(...delta.split(''));
           
           // Start typewriter if not already running
