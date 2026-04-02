@@ -2599,11 +2599,24 @@ ${FORMAT_INSTRUCTIONS}`.trim();
       };
 
       const finalizeMessage = () => {
-        // Remove skeleton loader when streaming completes
+        // Smoothly fade out skeleton loader, then show final message
         if (contentElement) {
           const skeleton = contentElement.querySelector('.skeleton-loader');
           if (skeleton) {
-            skeleton.remove();
+            // Add fade-out class to each line for smooth transition
+            skeleton.querySelectorAll('.skeleton-line').forEach(line => {
+              line.classList.remove('active');
+              line.classList.add('fade-out');
+            });
+            // Wait for fade animation, then render final message
+            setTimeout(() => {
+              skeleton.remove();
+              contentElement.innerHTML = '';
+              renderMarkdownAndMath(contentElement, reply);
+              renderSpecialContent(contentElement);
+              scrollToBottomIfNear();
+            }, 500);
+            return;
           }
         }
         if (contentElement) {
