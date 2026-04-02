@@ -2572,25 +2572,26 @@ ${FORMAT_INSTRUCTIONS}`.trim();
         if (contentElement) {
           renderMarkdownAndMath(contentElement, currentTypedText);
           
-          // Replace cursor with skeleton loader
+          // Show skeleton only once when first text arrives
           const existingSkeleton = contentElement.querySelector('.skeleton-loader');
-          if (!existingSkeleton) {
+          if (!existingSkeleton && currentTypedText.length > 0) {
             const skeleton = document.createElement('div');
             skeleton.className = 'skeleton-loader';
             skeleton.innerHTML = `
               <div class="skeleton-line"></div>
               <div class="skeleton-line"></div>
               <div class="skeleton-line"></div>
-              <div class="skeleton-line"></div>
-              <div class="skeleton-line"></div>
-              <div class="skeleton-line"></div>
-              <div class="skeleton-line"></div>
+              <div class="skeleton-line short"></div>
             `;
             contentElement.appendChild(skeleton);
-            // Trigger sequential animation
-            setTimeout(() => {
-              skeleton.querySelectorAll('.skeleton-line').forEach(line => line.classList.add('active'));
-            }, 50);
+          }
+          
+          // Remove skeleton immediately when text starts flowing
+          if (existingSkeleton || currentTypedText.length > 10) {
+            const skeleton = contentElement.querySelector('.skeleton-loader');
+            if (skeleton) {
+              skeleton.remove();
+            }
           }
         }
 
@@ -2602,24 +2603,11 @@ ${FORMAT_INSTRUCTIONS}`.trim();
       };
 
       const finalizeMessage = () => {
-        // Smoothly fade out skeleton loader, then show final message
+        // Remove any remaining skeleton
         if (contentElement) {
           const skeleton = contentElement.querySelector('.skeleton-loader');
           if (skeleton) {
-            // Add fade-out class to each line for smooth transition
-            skeleton.querySelectorAll('.skeleton-line').forEach(line => {
-              line.classList.remove('active');
-              line.classList.add('fade-out');
-            });
-            // Wait for fade animation, then render final message
-            setTimeout(() => {
-              skeleton.remove();
-              contentElement.innerHTML = '';
-              renderMarkdownAndMath(contentElement, reply);
-              renderSpecialContent(contentElement);
-              scrollToBottomIfNear();
-            }, 500);
-            return;
+            skeleton.remove();
           }
         }
         if (contentElement) {
@@ -2636,23 +2624,16 @@ ${FORMAT_INSTRUCTIONS}`.trim();
           thinkingIndicator.remove();
           thinkingIndicator = null;
           if (contentElement) {
-            // Replace thinking indicator with skeleton loader
+            // Show skeleton when first chunk arrives
             const skeleton = document.createElement('div');
             skeleton.className = 'skeleton-loader';
             skeleton.innerHTML = `
               <div class="skeleton-line"></div>
               <div class="skeleton-line"></div>
               <div class="skeleton-line"></div>
-              <div class="skeleton-line"></div>
-              <div class="skeleton-line"></div>
-              <div class="skeleton-line"></div>
-              <div class="skeleton-line"></div>
+              <div class="skeleton-line short"></div>
             `;
             contentElement.appendChild(skeleton);
-            // Trigger sequential animation
-            setTimeout(() => {
-              skeleton.querySelectorAll('.skeleton-line').forEach(line => line.classList.add('active'));
-            }, 50);
           }
         }
 
@@ -2660,7 +2641,11 @@ ${FORMAT_INSTRUCTIONS}`.trim();
           const delta = fullText.slice(previousLength);
           previousLength = fullText.length;
           
-          // Add new characters to the buffer
+          // Remove skeleton immediately when text starts flowing
+          const skeleton = contentElement.querySelector('.skeleton-loader');
+          if (skeleton) {
+            skeleton.remove();
+          }
           charBuffer.push(...delta.split(''));
           
           // Start typewriter if not already running
