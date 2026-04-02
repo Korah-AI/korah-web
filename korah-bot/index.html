@@ -41,10 +41,10 @@
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
 
-  // Login redirect handled by onAuthStateChanged
+  // For release: allow unauthenticated access
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
-      window.location.href = 'landingpage.html';
+      // No redirect - allow landing page access
       return;
     }
     // Set up Firestore and expose window.KorahDB before notifying the app.
