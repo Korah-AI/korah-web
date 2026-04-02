@@ -206,20 +206,15 @@
   function updateDocCountBadges() {
     const count = attachedFiles.length;
     const topbarBadge = document.getElementById('doc-count-badge');
-    const collapsedBadge = document.getElementById('doc-count-collapsed');
     const tabBadge = document.getElementById('doc-tab-badge');
     
     if (topbarBadge) {
       topbarBadge.textContent = count;
       topbarBadge.classList.toggle('hidden', count === 0);
     }
-    if (collapsedBadge) {
-      collapsedBadge.textContent = count;
-      collapsedBadge.classList.toggle('hidden', count === 0);
-    }
     if (tabBadge) {
       tabBadge.textContent = count;
-      tabBadge.classList.toggle('show', count > 0);
+      tabBadge.classList.remove('show');
     }
   }
 
@@ -369,6 +364,7 @@
     const docPanelTab = document.getElementById('doc-panel-tab');
     const docAddBtn = document.getElementById('doc-add-btn');
     const docAddBtnCollapsed = document.getElementById('doc-add-btn-collapsed');
+    const docAddBtnHeader = document.getElementById('doc-add-btn-header');
 
     // File input button
     if (attachBtn && fileInput) {
@@ -396,6 +392,9 @@
     }
     if (docAddBtnCollapsed && fileInput) {
       docAddBtnCollapsed.addEventListener('click', () => fileInput.click());
+    }
+    if (docAddBtnHeader && fileInput) {
+      docAddBtnHeader.addEventListener('click', () => fileInput.click());
     }
 
     // Drag & Drop on main chat area

@@ -2,7 +2,6 @@
 
 # Korah-bot Prerelease Todo List (from oscar)
 * Right before release, fix the redirect paths (marked with todo comments)
-* Improve document tab sidebar styling in `index.html` 
 * Pro tip alerts: Maybe update the styling and where it pops up, etc
 * Add the About to `landingpage.html`
 * Switch blog to social media and link the instagram page
