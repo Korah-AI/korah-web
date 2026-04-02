@@ -2543,25 +2543,17 @@ ${FORMAT_INSTRUCTIONS}`.trim();
 
     try {
       let previousLength = 0;
-      let cursorElement = null;
       let charBuffer = [];
       let typewriterActive = false;
-      let streamFinished = false;
 
       let currentTypedText = "";
       const typeNextChar = () => {
         if (charBuffer.length === 0) {
-          if (streamFinished) {
-            typewriterActive = false;
-            finalizeMessage();
-            return;
-          }
           typewriterActive = false;
           return;
         }
 
         typewriterActive = true;
-        // Process up to 2 characters at a time if buffer is large for even more speed
         const charsToType = charBuffer.length > 20 ? 2 : 1;
         for (let i = 0; i < charsToType; i++) {
           if (charBuffer.length > 0) {
@@ -2571,31 +2563,12 @@ ${FORMAT_INSTRUCTIONS}`.trim();
 
         if (contentElement) {
           renderMarkdownAndMath(contentElement, currentTypedText);
-          
-          // Re-add cursor if streaming is still active
-          if (cursorElement) {
-            contentElement.appendChild(cursorElement);
-          }
         }
 
-        // adaptive speed: extremely fast catch-up
-        let delay = 5; // Very fast base speed (ms)
+        let delay = 5;
         if (charBuffer.length > 50) delay = 0; 
         
         setTimeout(typeNextChar, delay);
-      };
-
-      const finalizeMessage = () => {
-        if (cursorElement && cursorElement.parentNode) {
-          cursorElement.remove();
-        }
-        
-        if (contentElement) {
-          contentElement.innerHTML = '';
-          renderMarkdownAndMath(contentElement, reply);
-          renderSpecialContent(contentElement);
-        }
-        scrollToBottomIfNear();
       };
 
       let reply = "";
@@ -2605,12 +2578,6 @@ ${FORMAT_INSTRUCTIONS}`.trim();
         if (thinkingIndicator && fullText.length > 0) {
           thinkingIndicator.remove();
           thinkingIndicator = null;
-          // Add cursor after thinking indicator is removed
-          if (contentElement) {
-            cursorElement = document.createElement('span');
-            cursorElement.className = 'streaming-cursor';
-            contentElement.appendChild(cursorElement);
-          }
         }
 
         if (contentElement) {
@@ -2619,17 +2586,18 @@ ${FORMAT_INSTRUCTIONS}`.trim();
           
           charBuffer.push(...delta.split(''));
           
-          // Start typewriter if not already running
           if (!typewriterActive) {
             typeNextChar();
           }
         }
       });
       
-      streamFinished = true;
-      // If typewriter finished before the stream result was returned, finalize now
-      if (!typewriterActive && charBuffer.length === 0) {
-        finalizeMessage();
+      // Immediately render final content when stream ends
+      if (contentElement) {
+        contentElement.innerHTML = '';
+        renderMarkdownAndMath(contentElement, reply);
+        renderSpecialContent(contentElement);
+        scrollToBottomIfNear();
       }
       
       // Update the placeholder entry instead of adding a new one
