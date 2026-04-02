@@ -2520,29 +2520,6 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     const contentElement = document.getElementById(streamingContentId);
     setTyping(false);
 
-    // Create skeleton loader as overlay
-    let skeletonLoader = null;
-    let skeletonBars = [];
-    if (contentElement) {
-      // Ensure content element can contain the absolute skeleton overlay
-      contentElement.style.position = 'relative';
-      
-      skeletonLoader = document.createElement("div");
-      skeletonLoader.className = "ai-skeleton-loader";
-      
-      // Create skeleton bars (mimicking paragraph structure)
-      const barCount = 12;
-      for (let i = 0; i < barCount; i++) {
-        const bar = document.createElement("div");
-        bar.className = "skeleton-bar";
-        skeletonBars.push(bar);
-        skeletonLoader.appendChild(bar);
-      }
-      
-      // Add skeleton overlay BEFORE the cursor
-      contentElement.appendChild(skeletonLoader);
-    }
-
     // Show pulsing "Thinking" indicator while waiting for first content
     let thinkingIndicator = null;
     if (contentElement) {
@@ -2565,71 +2542,7 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     const apiMessages = buildApiMessages(history.slice(0, -1), pendingFiles);
 
     try {
-      let previousLength = 0;
-      let cursorElement = null;
-      let charBuffer = [];
-      let typewriterActive = false;
-      let streamFinished = false;
-
-      let currentTypedText = "";
-      const typeNextChar = () => {
-        if (charBuffer.length === 0) {
-          if (streamFinished) {
-            typewriterActive = false;
-            finalizeMessage();
-            return;
-          }
-          typewriterActive = false;
-          return;
-        }
-
-        typewriterActive = true;
-        // Process up to 2 characters at a time if buffer is large for even more speed
-        const charsToType = charBuffer.length > 20 ? 2 : 1;
-        for (let i = 0; i < charsToType; i++) {
-          if (charBuffer.length > 0) {
-            currentTypedText += charBuffer.shift();
-          }
-        }
-
-        if (contentElement) {
-          renderMarkdownAndMath(contentElement, currentTypedText);
-          
-          // Re-add cursor if streaming is still active
-          if (cursorElement) {
-            contentElement.appendChild(cursorElement);
-          }
-        }
-
-        // adaptive speed: extremely fast catch-up
-        let delay = 5; // Very fast base speed (ms)
-        if (charBuffer.length > 50) delay = 0; 
-        
-        setTimeout(typeNextChar, delay);
-      };
-
-      const finalizeMessage = () => {
-        if (cursorElement && cursorElement.parentNode) {
-          cursorElement.remove();
-        }
-        
-        // Remove skeleton loader if still present
-        if (skeletonLoader && skeletonLoader.parentNode) {
-          skeletonLoader.remove();
-          skeletonLoader = null;
-          skeletonBars = [];
-        }
-        
-        if (contentElement) {
-          contentElement.innerHTML = '';
-          renderMarkdownAndMath(contentElement, reply);
-          renderSpecialContent(contentElement);
-        }
-        scrollToBottomIfNear();
-      };
-
       let reply = "";
-      const estimatedResponseLength = 500; // Estimated chars for fade calculation
       
       reply = await callChatApi(apiMessages, (chunk, fullText) => {
         // Remove thinking indicator when first chunk arrives
@@ -2637,45 +2550,22 @@ ${FORMAT_INSTRUCTIONS}`.trim();
           thinkingIndicator.remove();
           thinkingIndicator = null;
         }
-        
-        // Fade skeleton gradually as text appears underneath
-        if (skeletonLoader) {
-          const progress = Math.min(fullText.length / estimatedResponseLength, 1);
-          // Skeleton opacity fades from 1 to 0 as text fills in
-          skeletonLoader.style.opacity = Math.max(0, 1 - progress);
-          
-          // Remove skeleton completely when progress is high enough
-          if (progress >= 0.9 && skeletonLoader.parentNode) {
-            skeletonLoader.remove();
-            skeletonLoader = null;
-            skeletonBars = [];
-          }
-        }
-        
-        // Add cursor after thinking indicator is removed
-        if (!cursorElement && contentElement && fullText.length > 0) {
-          cursorElement = document.createElement('span');
-          cursorElement.className = 'streaming-cursor';
-          contentElement.appendChild(cursorElement);
-        }
 
         if (contentElement) {
-          const delta = fullText.slice(previousLength);
-          previousLength = fullText.length;
-          
-          charBuffer.push(...delta.split(''));
-          
-          // Start typewriter if not already running
-          if (!typewriterActive) {
-            typeNextChar();
-          }
+          // Add chunk with fade-in animation
+          const chunkSpan = document.createElement('span');
+          chunkSpan.className = 'streaming-chunk';
+          chunkSpan.textContent = chunk;
+          contentElement.appendChild(chunkSpan);
         }
       });
       
-      streamFinished = true;
-      // If typewriter finished before the stream result was returned, finalize now
-      if (!typewriterActive && charBuffer.length === 0) {
-        finalizeMessage();
+      // Final render with proper markdown after streaming completes
+      if (contentElement) {
+        contentElement.innerHTML = '';
+        renderMarkdownAndMath(contentElement, reply);
+        renderSpecialContent(contentElement);
+        scrollToBottomIfNear();
       }
       
       // Update the placeholder entry instead of adding a new one
