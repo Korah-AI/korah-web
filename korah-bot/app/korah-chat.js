@@ -2520,10 +2520,13 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     const contentElement = document.getElementById(streamingContentId);
     setTyping(false);
 
-    // Create skeleton loader
+    // Create skeleton loader as overlay
     let skeletonLoader = null;
     let skeletonBars = [];
     if (contentElement) {
+      // Ensure content element can contain the absolute skeleton overlay
+      contentElement.style.position = 'relative';
+      
       skeletonLoader = document.createElement("div");
       skeletonLoader.className = "ai-skeleton-loader";
       
@@ -2536,6 +2539,7 @@ ${FORMAT_INSTRUCTIONS}`.trim();
         skeletonLoader.appendChild(bar);
       }
       
+      // Add skeleton overlay BEFORE the cursor
       contentElement.appendChild(skeletonLoader);
     }
 
@@ -2625,41 +2629,26 @@ ${FORMAT_INSTRUCTIONS}`.trim();
       };
 
       let reply = "";
-      let totalCharsReceived = 0;
-      const estimatedResponseLength = 500; // Estimated characters for skeleton progress
+      const estimatedResponseLength = 500; // Estimated chars for fade calculation
       
       reply = await callChatApi(apiMessages, (chunk, fullText) => {
+        // Remove thinking indicator when first chunk arrives
         if (thinkingIndicator && fullText.length > 0) {
           thinkingIndicator.remove();
           thinkingIndicator = null;
         }
         
-        // Update skeleton progress as chunks arrive
-        if (skeletonLoader && skeletonBars.length > 0) {
-          totalCharsReceived = fullText.length;
-          const progress = Math.min(totalCharsReceived / estimatedResponseLength, 1);
-          const barsToFill = Math.floor(progress * skeletonBars.length);
+        // Fade skeleton gradually as text appears underneath
+        if (skeletonLoader) {
+          const progress = Math.min(fullText.length / estimatedResponseLength, 1);
+          // Skeleton opacity fades from 1 to 0 as text fills in
+          skeletonLoader.style.opacity = Math.max(0, 1 - progress);
           
-          skeletonBars.forEach((bar, index) => {
-            if (index < barsToFill - 1) {
-              bar.classList.add('filled');
-              bar.classList.remove('filling');
-            } else if (index === barsToFill - 1 && barsToFill < skeletonBars.length) {
-              bar.classList.add('filling');
-              bar.classList.remove('filled');
-            }
-          });
-          
-          // Remove skeleton when most content is loaded
-          if (progress >= 0.85 && skeletonLoader && !skeletonLoader.classList.contains('fading')) {
-            skeletonLoader.classList.add('fading');
-            setTimeout(() => {
-              if (skeletonLoader && skeletonLoader.parentNode) {
-                skeletonLoader.remove();
-                skeletonLoader = null;
-                skeletonBars = [];
-              }
-            }, 500);
+          // Remove skeleton completely when progress is high enough
+          if (progress >= 0.9 && skeletonLoader.parentNode) {
+            skeletonLoader.remove();
+            skeletonLoader = null;
+            skeletonBars = [];
           }
         }
         
@@ -2674,7 +2663,6 @@ ${FORMAT_INSTRUCTIONS}`.trim();
           const delta = fullText.slice(previousLength);
           previousLength = fullText.length;
           
-          // DON'T remove skeleton - keep it visible while streaming!
           charBuffer.push(...delta.split(''));
           
           // Start typewriter if not already running

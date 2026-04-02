@@ -2066,75 +2066,38 @@ body { display: flex; background: var(--bg) }
 }
 
 /* ── Streaming cursor ── */
-.skeleton-loader {
-    display: flex;
-    flex-direction: column;
-    gap: 0.625rem;
-    padding: 0.875rem 1rem;
-    width: 100%;
-    background: var(--sf2);
-    border-radius: 0.625rem;
-    border: 0.0625rem solid var(--bd);
-}
-.skeleton-line {
-    height: 0.8125rem;
-    background: linear-gradient(90deg, var(--p4) 25%, var(--p5) 50%, var(--p4) 75%);
-    background-size: 200% 100%;
-    border-radius: 0.375rem;
-    animation: shimmer 1.5s infinite linear;
-    box-shadow: 0 0 6px var(--p4), 0 0 10px var(--p5);
-}
-.skeleton-line.short {
-    width: 60%;
-    animation-delay: 0.3s;
-}
-@keyframes shimmer {
-    0% { background-position: -200% 0; }
-    100% { background-position: 200% 0; }
-}
-
-/* Light mode skeleton */
-[data-theme="light"] .skeleton-loader {
-    background: var(--sf);
-    border-color: var(--bd2);
-}
-[data-theme="light"] .skeleton-line {
-    background: linear-gradient(90deg, var(--p5) 25%, var(--p4) 50%, var(--p5) 75%);
-    box-shadow: 0 0 5px var(--p4), 0 0 8px var(--p5);
-}
 .streaming-cursor {
     display: none;
 }
 
 /* ── AI Skeleton Loading Animation ── */
+/* Skeleton acts as an overlay that fades out as text appears underneath */
 .ai-skeleton-loader {
+    position: absolute;
+    inset: 0;
     display: flex;
     flex-direction: column;
-    gap: 0.625rem;
-    padding: 0.25rem 0;
-    animation: skeletonFadeIn 0.3s ease both;
-}
-
-@keyframes skeletonFadeIn {
-    from { opacity: 0; transform: translateY(0.5rem) scale(0.98); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
+    gap: 0.5rem;
+    padding: 0;
+    pointer-events: none;
+    z-index: 10;
+    opacity: 1;
+    transition: opacity 0.1s ease-out;
 }
 
 .skeleton-bar {
-    height: 1.125rem;
-    border-radius: 0.5625rem;
+    height: 1rem;
+    border-radius: 0.5rem;
     background: linear-gradient(90deg, 
-        rgba(59, 130, 246, 0.08) 0%, 
-        rgba(96, 165, 250, 0.15) 20%,
-        rgba(147, 197, 253, 0.25) 50%,
-        rgba(96, 165, 250, 0.15) 80%,
-        rgba(59, 130, 246, 0.08) 100%
+        rgba(99, 102, 241, 0.15) 0%, 
+        rgba(129, 140, 248, 0.25) 30%,
+        rgba(165, 180, 252, 0.35) 50%,
+        rgba(129, 140, 248, 0.25) 70%,
+        rgba(99, 102, 241, 0.15) 100%
     );
     background-size: 200% 100%;
     animation: skeletonShimmer 2s ease-in-out infinite;
-    transition: opacity 0.4s ease, transform 0.4s ease;
     position: relative;
-    overflow: hidden;
 }
 
 .skeleton-bar::before {
@@ -2143,10 +2106,11 @@ body { display: flex; background: var(--bg) }
     inset: 0;
     background: linear-gradient(90deg, 
         transparent 0%,
-        rgba(255, 255, 255, 0.15) 50%,
+        rgba(255, 255, 255, 0.2) 50%,
         transparent 100%
     );
     animation: skeletonHighlight 1.5s ease-in-out infinite;
+    border-radius: inherit;
 }
 
 @keyframes skeletonShimmer {
@@ -2173,81 +2137,26 @@ body { display: flex; background: var(--bg) }
 .skeleton-bar:nth-child(11) { width: 96%; }
 .skeleton-bar:nth-child(12) { width: 75%; }
 
-/* Skeleton bars that have been "filled" by streaming content */
-.skeleton-bar.filled {
-    opacity: 0;
-    transform: scaleX(0.95) translateX(-0.25rem);
-    height: 0;
-    margin: 0;
-    padding: 0;
-    pointer-events: none;
-}
-
-/* Skeleton bar currently being filled (partial fill effect) */
-.skeleton-bar.filling {
-    background: linear-gradient(90deg, 
-        rgba(139, 92, 246, 0.05) 0%, 
-        rgba(59, 130, 246, 0.1) 20%,
-        rgba(147, 197, 253, 0.15) 50%,
-        rgba(59, 130, 246, 0.1) 80%,
-        rgba(59, 130, 246, 0.05) 100%
-    );
-    animation: none;
-}
-
-.skeleton-bar.filling::before {
-    animation: none;
-}
-
 /* Dark theme specific colors */
 [data-theme="dark"] .skeleton-bar {
     background: linear-gradient(90deg, 
-        rgba(99, 102, 241, 0.06) 0%, 
-        rgba(129, 140, 248, 0.12) 20%,
-        rgba(165, 180, 252, 0.2) 50%,
-        rgba(129, 140, 248, 0.12) 80%,
-        rgba(99, 102, 241, 0.06) 100%
-    );
-}
-
-[data-theme="dark"] .skeleton-bar.filling {
-    background: linear-gradient(90deg, 
-        rgba(99, 102, 241, 0.03) 0%, 
-        rgba(129, 140, 248, 0.06) 20%,
-        rgba(165, 180, 252, 0.1) 50%,
-        rgba(129, 140, 248, 0.06) 80%,
-        rgba(99, 102, 241, 0.03) 100%
+        rgba(99, 102, 241, 0.12) 0%, 
+        rgba(129, 140, 248, 0.2) 30%,
+        rgba(165, 180, 252, 0.3) 50%,
+        rgba(129, 140, 248, 0.2) 70%,
+        rgba(99, 102, 241, 0.12) 100%
     );
 }
 
 /* Light theme specific colors */
 [data-theme="light"] .skeleton-bar {
     background: linear-gradient(90deg, 
-        rgba(139, 92, 246, 0.06) 0%, 
-        rgba(167, 139, 250, 0.12) 20%,
-        rgba(196, 181, 253, 0.2) 50%,
-        rgba(167, 139, 250, 0.12) 80%,
-        rgba(139, 92, 246, 0.06) 100%
+        rgba(139, 92, 246, 0.12) 0%, 
+        rgba(167, 139, 250, 0.2) 30%,
+        rgba(196, 181, 253, 0.3) 50%,
+        rgba(167, 139, 250, 0.2) 70%,
+        rgba(139, 92, 246, 0.12) 100%
     );
-}
-
-[data-theme="light"] .skeleton-bar.filling {
-    background: linear-gradient(90deg, 
-        rgba(139, 92, 246, 0.03) 0%, 
-        rgba(167, 139, 250, 0.06) 20%,
-        rgba(196, 181, 253, 0.1) 50%,
-        rgba(167, 139, 250, 0.06) 80%,
-        rgba(139, 92, 246, 0.03) 100%
-    );
-}
-
-/* Skeleton container fade out animation */
-.ai-skeleton-loader.fading {
-    animation: skeletonFadeOut 0.5s ease forwards;
-}
-
-@keyframes skeletonFadeOut {
-    to { opacity: 0; height: 0; margin: 0; padding: 0; overflow: hidden; }
 }
 
 /* ── Streaming chunks with typing animation ── */
