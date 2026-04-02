@@ -2106,6 +2106,150 @@ body { display: flex; background: var(--bg) }
     display: none;
 }
 
+/* ── AI Skeleton Loading Animation ── */
+.ai-skeleton-loader {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    padding: 0.25rem 0;
+    animation: skeletonFadeIn 0.3s ease both;
+}
+
+@keyframes skeletonFadeIn {
+    from { opacity: 0; transform: translateY(0.5rem) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.skeleton-bar {
+    height: 1.125rem;
+    border-radius: 0.5625rem;
+    background: linear-gradient(90deg, 
+        rgba(59, 130, 246, 0.08) 0%, 
+        rgba(96, 165, 250, 0.15) 20%,
+        rgba(147, 197, 253, 0.25) 50%,
+        rgba(96, 165, 250, 0.15) 80%,
+        rgba(59, 130, 246, 0.08) 100%
+    );
+    background-size: 200% 100%;
+    animation: skeletonShimmer 2s ease-in-out infinite;
+    transition: opacity 0.4s ease, transform 0.4s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.skeleton-bar::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, 
+        transparent 0%,
+        rgba(255, 255, 255, 0.15) 50%,
+        transparent 100%
+    );
+    animation: skeletonHighlight 1.5s ease-in-out infinite;
+}
+
+@keyframes skeletonShimmer {
+    0%, 100% { background-position: 200% 0; }
+    50% { background-position: -200% 0; }
+}
+
+@keyframes skeletonHighlight {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+/* Skeleton bar widths - mimicking paragraph text */
+.skeleton-bar:nth-child(1) { width: 100%; }
+.skeleton-bar:nth-child(2) { width: 92%; }
+.skeleton-bar:nth-child(3) { width: 97%; }
+.skeleton-bar:nth-child(4) { width: 78%; }
+.skeleton-bar:nth-child(5) { width: 100%; }
+.skeleton-bar:nth-child(6) { width: 89%; }
+.skeleton-bar:nth-child(7) { width: 95%; }
+.skeleton-bar:nth-child(8) { width: 82%; }
+.skeleton-bar:nth-child(9) { width: 100%; }
+.skeleton-bar:nth-child(10) { width: 91%; }
+.skeleton-bar:nth-child(11) { width: 96%; }
+.skeleton-bar:nth-child(12) { width: 75%; }
+
+/* Skeleton bars that have been "filled" by streaming content */
+.skeleton-bar.filled {
+    opacity: 0;
+    transform: scaleX(0.95) translateX(-0.25rem);
+    height: 0;
+    margin: 0;
+    padding: 0;
+    pointer-events: none;
+}
+
+/* Skeleton bar currently being filled (partial fill effect) */
+.skeleton-bar.filling {
+    background: linear-gradient(90deg, 
+        rgba(139, 92, 246, 0.05) 0%, 
+        rgba(59, 130, 246, 0.1) 20%,
+        rgba(147, 197, 253, 0.15) 50%,
+        rgba(59, 130, 246, 0.1) 80%,
+        rgba(59, 130, 246, 0.05) 100%
+    );
+    animation: none;
+}
+
+.skeleton-bar.filling::before {
+    animation: none;
+}
+
+/* Dark theme specific colors */
+[data-theme="dark"] .skeleton-bar {
+    background: linear-gradient(90deg, 
+        rgba(99, 102, 241, 0.06) 0%, 
+        rgba(129, 140, 248, 0.12) 20%,
+        rgba(165, 180, 252, 0.2) 50%,
+        rgba(129, 140, 248, 0.12) 80%,
+        rgba(99, 102, 241, 0.06) 100%
+    );
+}
+
+[data-theme="dark"] .skeleton-bar.filling {
+    background: linear-gradient(90deg, 
+        rgba(99, 102, 241, 0.03) 0%, 
+        rgba(129, 140, 248, 0.06) 20%,
+        rgba(165, 180, 252, 0.1) 50%,
+        rgba(129, 140, 248, 0.06) 80%,
+        rgba(99, 102, 241, 0.03) 100%
+    );
+}
+
+/* Light theme specific colors */
+[data-theme="light"] .skeleton-bar {
+    background: linear-gradient(90deg, 
+        rgba(139, 92, 246, 0.06) 0%, 
+        rgba(167, 139, 250, 0.12) 20%,
+        rgba(196, 181, 253, 0.2) 50%,
+        rgba(167, 139, 250, 0.12) 80%,
+        rgba(139, 92, 246, 0.06) 100%
+    );
+}
+
+[data-theme="light"] .skeleton-bar.filling {
+    background: linear-gradient(90deg, 
+        rgba(139, 92, 246, 0.03) 0%, 
+        rgba(167, 139, 250, 0.06) 20%,
+        rgba(196, 181, 253, 0.1) 50%,
+        rgba(167, 139, 250, 0.06) 80%,
+        rgba(139, 92, 246, 0.03) 100%
+    );
+}
+
+/* Skeleton container fade out animation */
+.ai-skeleton-loader.fading {
+    animation: skeletonFadeOut 0.5s ease forwards;
+}
+
+@keyframes skeletonFadeOut {
+    to { opacity: 0; height: 0; margin: 0; padding: 0; overflow: hidden; }
+}
+
 /* ── Streaming chunks with typing animation ── */
 .streaming-chunk {
     animation: chunkFadeIn 0.15s ease-out;

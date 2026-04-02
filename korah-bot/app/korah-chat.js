@@ -2520,6 +2520,25 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     const contentElement = document.getElementById(streamingContentId);
     setTyping(false);
 
+    // Create skeleton loader
+    let skeletonLoader = null;
+    let skeletonBars = [];
+    if (contentElement) {
+      skeletonLoader = document.createElement("div");
+      skeletonLoader.className = "ai-skeleton-loader";
+      
+      // Create skeleton bars (mimicking paragraph structure)
+      const barCount = 12;
+      for (let i = 0; i < barCount; i++) {
+        const bar = document.createElement("div");
+        bar.className = "skeleton-bar";
+        skeletonBars.push(bar);
+        skeletonLoader.appendChild(bar);
+      }
+      
+      contentElement.appendChild(skeletonLoader);
+    }
+
     // Show pulsing "Thinking" indicator while waiting for first content
     let thinkingIndicator = null;
     if (contentElement) {
@@ -2572,20 +2591,10 @@ ${FORMAT_INSTRUCTIONS}`.trim();
         if (contentElement) {
           renderMarkdownAndMath(contentElement, currentTypedText);
           
-          // Show skeleton when AI starts responding, keep it visible while streaming
-          const existingSkeleton = contentElement.querySelector('.skeleton-loader');
-          if (!existingSkeleton && currentTypedText.length > 0) {
-            const skeleton = document.createElement('div');
-            skeleton.className = 'skeleton-loader';
-            skeleton.innerHTML = `
-              <div class="skeleton-line"></div>
-              <div class="skeleton-line"></div>
-              <div class="skeleton-line"></div>
-              <div class="skeleton-line short"></div>
-            `;
-            contentElement.appendChild(skeleton);
+          // Re-add cursor if streaming is still active
+          if (cursorElement) {
+            contentElement.appendChild(cursorElement);
           }
-          // DON'T remove skeleton while streaming - keep it visible until complete!
         }
 
         // adaptive speed: extremely fast catch-up
@@ -2596,13 +2605,17 @@ ${FORMAT_INSTRUCTIONS}`.trim();
       };
 
       const finalizeMessage = () => {
-        // Remove any remaining skeleton
-        if (contentElement) {
-          const skeleton = contentElement.querySelector('.skeleton-loader');
-          if (skeleton) {
-            skeleton.remove();
-          }
+        if (cursorElement && cursorElement.parentNode) {
+          cursorElement.remove();
         }
+        
+        // Remove skeleton loader if still present
+        if (skeletonLoader && skeletonLoader.parentNode) {
+          skeletonLoader.remove();
+          skeletonLoader = null;
+          skeletonBars = [];
+        }
+        
         if (contentElement) {
           contentElement.innerHTML = '';
           renderMarkdownAndMath(contentElement, reply);
@@ -2612,22 +2625,49 @@ ${FORMAT_INSTRUCTIONS}`.trim();
       };
 
       let reply = "";
+      let totalCharsReceived = 0;
+      const estimatedResponseLength = 500; // Estimated characters for skeleton progress
+      
       reply = await callChatApi(apiMessages, (chunk, fullText) => {
         if (thinkingIndicator && fullText.length > 0) {
           thinkingIndicator.remove();
           thinkingIndicator = null;
-          if (contentElement) {
-            // Show skeleton when first chunk arrives
-            const skeleton = document.createElement('div');
-            skeleton.className = 'skeleton-loader';
-            skeleton.innerHTML = `
-              <div class="skeleton-line"></div>
-              <div class="skeleton-line"></div>
-              <div class="skeleton-line"></div>
-              <div class="skeleton-line short"></div>
-            `;
-            contentElement.appendChild(skeleton);
+        }
+        
+        // Update skeleton progress as chunks arrive
+        if (skeletonLoader && skeletonBars.length > 0) {
+          totalCharsReceived = fullText.length;
+          const progress = Math.min(totalCharsReceived / estimatedResponseLength, 1);
+          const barsToFill = Math.floor(progress * skeletonBars.length);
+          
+          skeletonBars.forEach((bar, index) => {
+            if (index < barsToFill - 1) {
+              bar.classList.add('filled');
+              bar.classList.remove('filling');
+            } else if (index === barsToFill - 1 && barsToFill < skeletonBars.length) {
+              bar.classList.add('filling');
+              bar.classList.remove('filled');
+            }
+          });
+          
+          // Remove skeleton when most content is loaded
+          if (progress >= 0.85 && skeletonLoader && !skeletonLoader.classList.contains('fading')) {
+            skeletonLoader.classList.add('fading');
+            setTimeout(() => {
+              if (skeletonLoader && skeletonLoader.parentNode) {
+                skeletonLoader.remove();
+                skeletonLoader = null;
+                skeletonBars = [];
+              }
+            }, 500);
           }
+        }
+        
+        // Add cursor after thinking indicator is removed
+        if (!cursorElement && contentElement && fullText.length > 0) {
+          cursorElement = document.createElement('span');
+          cursorElement.className = 'streaming-cursor';
+          contentElement.appendChild(cursorElement);
         }
 
         if (contentElement) {
