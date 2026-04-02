@@ -17,29 +17,17 @@
 * Switch blog to social media and link the Instagram page
   * Mood should NOT have its own page. You could maybe implement it into `productivity.html`
   * Honestly implement it in any creative ways you think are good
-
-# Korah Web Todo List (Jayden's | Things I think That Work/fit or need to be worked on)
-
 * About Korah Link (Make About Korah Page or find somewhere to link to) Lines 853-856
 * Social Media Link 
-
-# Korah-bot Todo list (Jayden's)
-
 * Check out creating study item css and check all css and improve.
 * Check out using study items to see if there are any flaws.
 * Make sure that documents side bar doesn't overlap normal side bar when window is minimized and sidebars are opened.
 * Make sure users can see all recent chats and be able to delete all of them.
 * ^^ Same with recent study items
-
-
-# Korah-bot Support.html
 * About Korah Link (Make About Korah Page or find somewhere to link to) Lines 285-286
 * Social Media Link 
 
-
-
-
-STEPS TO FOLLOW
+TIPS FOR DEVELOPMENT SOURCE CONTROL
 * You can't use LiveServer to preview your changes. As you go, you're gonna have to make a commit, wait a bit, then check Korah.app. 
 * If you make a mistake just use `git reset --hard HEAD~1  \n  git push --force-with-lease origin BRANCH-NAME` and it'll revert the branch to what it was before your last commit. The next time you commit, it'll update the website.
 
