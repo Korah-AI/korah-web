@@ -1,4 +1,6 @@
 # 1.1 Updates (still in development)
+* Clean up commit history
+* Google Drive API for document creation
 * Questionbank Beta
   * Still looking for good open source API. Might create my own.
 * Focus-based learning integration
