@@ -85,12 +85,16 @@ export default async function handler(req, res) {
 
   let upstreamResponse;
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 12_000);
     upstreamResponse = await fetch(upstream.toString(), {
       method: "GET",
       headers: {
         Accept: "application/json",
       },
+      signal: controller.signal,
     });
+    clearTimeout(timeout);
   } catch (err) {
     console.error("OpenSAT fetch error:", err);
     return res.status(502).json({

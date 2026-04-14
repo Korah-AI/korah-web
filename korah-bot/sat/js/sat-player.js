@@ -1,10 +1,13 @@
 (() => {
-  const { parseQuery, getMockQuestions } = window.KorahSAT;
-  const query = parseQuery();
-  const questions = getMockQuestions(query);
+  const { parseOpenSatV1Query, buildOpenSatV1QuestionUrl, OPENSAT_CATALOG } = window.KorahSAT;
+  const query = parseOpenSatV1Query();
+
+  let questions = [];
+  let loadState = "loading"; // loading | success | empty | error
+  let loadError = "";
 
   const state = {
-    currentIndex: Math.min(query.start || 0, Math.max(questions.length - 1, 0)),
+    currentIndex: 0,
     answers: {},
     checked: {},
     reviewed: {}
@@ -33,24 +36,45 @@
   let explanationForcedOpen = false;
   let remainingSeconds = 32 * 60;
 
+  function getSectionLabel(sectionKey) {
+    const section = OPENSAT_CATALOG?.sections?.find((s) => s.key === sectionKey);
+    return section?.label || sectionKey || "SAT";
+  }
+
   function getCurrentQuestion() {
     return questions[state.currentIndex];
   }
 
   function renderHeader() {
-    const sectionLabel = query.section === "math" ? "Math Session" : "English Reading & Writing";
-    playerTitle.textContent = questions.length ? sectionLabel : "No matching questions";
-    playerCounter.textContent = questions.length
-      ? `Question ${state.currentIndex + 1} of ${questions.length}`
-      : "Question 0 of 0";
+    const sectionLabel = getSectionLabel(query.section);
+    const domainLabel = query.domain && query.domain !== "any" ? query.domain : "Any domain";
+
+    if (loadState === "loading") {
+      playerTitle.textContent = "Loading questions…";
+      playerCounter.textContent = "Question 0 of 0";
+    } else if (loadState === "error") {
+      playerTitle.textContent = "Could not load questions";
+      playerCounter.textContent = "Question 0 of 0";
+    } else if (loadState === "empty") {
+      playerTitle.textContent = "No matching questions";
+      playerCounter.textContent = "Question 0 of 0";
+    } else {
+      playerTitle.textContent = sectionLabel;
+      playerCounter.textContent = `Question ${state.currentIndex + 1} of ${questions.length}`;
+    }
+
     playerFilters.innerHTML = `
-      <span class="sat-pill">${query.section || "all sections"}</span>
-      ${(query.domains.length ? query.domains : ["all domains"]).map((domain) => `<span class="sat-pill">${domain}</span>`).join("")}
-      <span class="sat-pill">${query.shuffle ? "shuffled" : "ordered"}</span>
+      <span class="sat-pill">${query.section || "section not set"}</span>
+      <span class="sat-pill">${domainLabel}</span>
+      <span class="sat-pill">${query.limit || 10} questions</span>
     `;
   }
 
   function renderNav() {
+    if (loadState !== "success") {
+      questionNav.innerHTML = "";
+      return;
+    }
     questionNav.innerHTML = questions
       .map((question, index) => {
         const classes = [
@@ -68,17 +92,68 @@
   function renderQuestion() {
     const current = getCurrentQuestion();
 
-    if (!current) {
-      questionDomain.textContent = "No data";
-      questionStemTitle.textContent = "The UI is ready, but no questions matched these filters.";
-      questionParagraph.textContent = "Connect this page to the future OpenSAT proxy to populate the session.";
+    if (loadState === "loading") {
+      questionDomain.textContent = "";
+      questionStemTitle.textContent = "Loading questions…";
+      questionParagraph.textContent = "Fetching your OpenSAT session from Korah.";
       questionStem.textContent = "";
       answerChoices.innerHTML = "";
-      feedbackPanel.className = "sat-feedback-panel";
-      feedbackPanel.textContent = "Expected contract: { section, count, questions: [] }";
+      feedbackPanel.className = "sat-feedback-panel is-hidden";
+      feedbackPanel.innerHTML = "";
+      reviewBadge.classList.add("is-hidden");
       prevQuestionBtn.disabled = true;
       nextQuestionBtn.disabled = true;
       checkAnswerBtn.disabled = true;
+      toggleCalcBtn.disabled = true;
+      showExplanationBtn.disabled = true;
+      markReviewBtn.disabled = true;
+      return;
+    }
+
+    if (loadState === "error") {
+      questionDomain.textContent = "";
+      questionStemTitle.textContent = "OpenSAT connection issue";
+      questionParagraph.textContent = loadError || "Something went wrong while loading questions.";
+      questionStem.textContent = "";
+      answerChoices.innerHTML = `
+        <button class="sat-button sat-button-primary" type="button" id="retryLoadBtn">Retry</button>
+        <a class="sat-button sat-button-ghost" href="./index.html">Back to bank</a>
+      `;
+      feedbackPanel.className = "sat-feedback-panel is-hidden";
+      feedbackPanel.innerHTML = "";
+      reviewBadge.classList.add("is-hidden");
+      prevQuestionBtn.disabled = true;
+      nextQuestionBtn.disabled = true;
+      checkAnswerBtn.disabled = true;
+      toggleCalcBtn.disabled = true;
+      showExplanationBtn.disabled = true;
+      markReviewBtn.disabled = true;
+      return;
+    }
+
+    if (loadState === "empty") {
+      questionDomain.textContent = "";
+      questionStemTitle.textContent = "No questions matched this selection";
+      questionParagraph.textContent = "Try another domain or lower the question limit.";
+      questionStem.textContent = "";
+      answerChoices.innerHTML = `<a class="sat-button sat-button-primary" href="./index.html">Back to bank</a>`;
+      feedbackPanel.className = "sat-feedback-panel is-hidden";
+      feedbackPanel.innerHTML = "";
+      reviewBadge.classList.add("is-hidden");
+      prevQuestionBtn.disabled = true;
+      nextQuestionBtn.disabled = true;
+      checkAnswerBtn.disabled = true;
+      toggleCalcBtn.disabled = true;
+      showExplanationBtn.disabled = true;
+      markReviewBtn.disabled = true;
+      return;
+    }
+
+    if (!current) {
+      loadState = questions.length ? "success" : "empty";
+      renderHeader();
+      renderNav();
+      renderQuestion();
       return;
     }
 
@@ -130,6 +205,11 @@
     if (current.section !== "math") {
       calculatorPanel.classList.add("is-hidden");
     }
+
+    toggleCalcBtn.disabled = current.section !== "math";
+    showExplanationBtn.disabled = false;
+    markReviewBtn.disabled = false;
+    checkAnswerBtn.disabled = !selectedAnswer;
   }
 
   function goTo(index) {
@@ -141,6 +221,12 @@
   }
 
   answerChoices.addEventListener("click", (event) => {
+    const retry = event.target.closest("#retryLoadBtn");
+    if (retry) {
+      void loadQuestions();
+      return;
+    }
+
     const choice = event.target.closest("[data-answer]");
     if (!choice) {
       return;
@@ -173,6 +259,9 @@
   checkAnswerBtn.addEventListener("click", () => {
     const current = getCurrentQuestion();
     if (!current) {
+      return;
+    }
+    if (!state.answers[current.id]) {
       return;
     }
     state.checked[current.id] = true;
@@ -211,7 +300,83 @@
     playerTimer.textContent = `${minutes}:${seconds}`;
   }, 1000);
 
+  async function loadQuestions() {
+    const isValidSection = query.section === "english" || query.section === "math";
+    if (!isValidSection) {
+      loadState = "error";
+      loadError = "This practice link is missing a valid section. Go back to the bank and start a new session.";
+      questions = [];
+      state.currentIndex = 0;
+      explanationForcedOpen = false;
+      renderHeader();
+      renderNav();
+      renderQuestion();
+      return;
+    }
+
+    loadState = "loading";
+    loadError = "";
+    questions = [];
+    state.currentIndex = 0;
+    explanationForcedOpen = false;
+    renderHeader();
+    renderNav();
+    renderQuestion();
+
+    const params = new URLSearchParams();
+    params.set("section", query.section || "");
+    params.set("domain", query.domain || "any");
+    params.set("limit", String(query.limit || 10));
+
+    let response;
+    try {
+      response = await fetch(`/api/sat/questions?${params.toString()}`, {
+        method: "GET",
+        headers: { Accept: "application/json" },
+      });
+    } catch (err) {
+      loadState = "error";
+      loadError = "Could not reach the Korah SAT adapter.";
+      console.error(err);
+      renderHeader();
+      renderNav();
+      renderQuestion();
+      return;
+    }
+
+    if (!response.ok) {
+      loadState = "error";
+      loadError = `Adapter error (${response.status}).`;
+      renderHeader();
+      renderNav();
+      renderQuestion();
+      return;
+    }
+
+    let payload;
+    try {
+      payload = await response.json();
+    } catch (err) {
+      loadState = "error";
+      loadError = "Adapter returned invalid JSON.";
+      console.error(err);
+      renderHeader();
+      renderNav();
+      renderQuestion();
+      return;
+    }
+
+    questions = Array.isArray(payload?.questions) ? payload.questions : [];
+    loadState = questions.length ? "success" : "empty";
+    state.currentIndex = 0;
+    renderHeader();
+    renderNav();
+    renderQuestion();
+  }
+
   renderHeader();
   renderNav();
   renderQuestion();
+
+  void loadQuestions();
 })();
