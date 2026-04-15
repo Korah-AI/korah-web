@@ -163,7 +163,13 @@
 
     questionDomain.textContent = current.domain;
     questionStemTitle.textContent = current.section === "math" ? "Math practice" : "Reading and Writing practice";
-    questionParagraph.textContent = current.paragraph || "No passage text for this item.";
+    if (current.paragraph) {
+      questionParagraph.textContent = current.paragraph;
+      questionParagraph.classList.remove("is-hidden");
+    } else {
+      questionParagraph.textContent = "";
+      questionParagraph.classList.add("is-hidden");
+    }
     questionStem.textContent = current.stem;
     reviewBadge.classList.toggle("is-hidden", !state.reviewed[current.id]);
 

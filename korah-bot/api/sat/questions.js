@@ -38,18 +38,23 @@ function choicesToOptions(choices) {
 }
 
 function normalizeQuestion(item, sectionFromRequest, domainFromRequest) {
+  const nested = item?.question || {};
   const id = typeof item?.id === "string" ? item.id : String(item?.id ?? "");
   const domainFromPayload = typeof item?.domain === "string" ? item.domain : "";
   const domain = domainFromPayload || (domainFromRequest === "any" ? "any" : domainFromRequest);
+
+  const rawParagraph = nested?.paragraph;
+  const paragraph = (typeof rawParagraph === "string" && rawParagraph !== "null" && rawParagraph.trim() !== "") ? rawParagraph : "";
+
   return {
     id,
     section: sectionFromRequest,
     domain,
-    paragraph: typeof item?.paragraph === "string" ? item.paragraph : "",
-    stem: typeof item?.question === "string" ? item.question : String(item?.question ?? ""),
-    options: choicesToOptions(item?.choices),
-    correctAnswer: typeof item?.correct_answer === "string" ? item.correct_answer : String(item?.correct_answer ?? ""),
-    explanation: typeof item?.explanation === "string" ? item.explanation : String(item?.explanation ?? ""),
+    paragraph,
+    stem: typeof nested?.question === "string" ? nested.question : "",
+    options: choicesToOptions(nested?.choices),
+    correctAnswer: typeof nested?.correct_answer === "string" ? nested.correct_answer : String(nested?.correct_answer ?? ""),
+    explanation: typeof nested?.explanation === "string" ? nested.explanation : "",
   };
 }
 
