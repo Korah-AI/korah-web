@@ -3,8 +3,8 @@
 
   const state = {
     section: "",
-    domain: "",
-    limit: 10,
+    domains: [],
+    limit: null,
   };
 
   const sectionColumns = document.getElementById("sectionColumns");
@@ -19,15 +19,20 @@
   domainCount.textContent = String(OPENSAT_CATALOG.sections.reduce((sum, s) => sum + (s.domains?.length || 0), 0));
 
   function renderSummary() {
-    if (!state.section || !state.domain) {
-      selectionSummary.textContent = "Choose a section and domain";
+    if (!state.section) {
+      selectionSummary.textContent = "Choose a section";
       startSelectedBtn.textContent = "Start practice";
       startSelectedBtn.disabled = false;
       return;
     }
     const sectionLabel = OPENSAT_CATALOG.sections.find((s) => s.key === state.section)?.label || state.section;
-    const domainLabel = state.domain === "any" ? "Any domain" : state.domain;
-    selectionSummary.textContent = `${sectionLabel} · ${domainLabel} · ${state.limit} questions`;
+    const domainLabel = state.domains.length === 0 || state.domains.includes("any") 
+      ? "Any domain" 
+      : state.domains.length === 1 
+        ? state.domains[0] 
+        : `${state.domains.length} domains`;
+    const limitLabel = state.limit === null || state.limit === "" ? "No limit" : `${state.limit} questions`;
+    selectionSummary.textContent = `${sectionLabel} · ${domainLabel} · ${limitLabel}`;
     startSelectedBtn.textContent = "Start practice";
     startSelectedBtn.disabled = false;
   }
@@ -50,7 +55,7 @@
             <div class="sat-domain-grid">
               ${section.domains
                 .map((domain) => {
-                  const selected = isActiveSection && state.domain === domain.key;
+                  const selected = isActiveSection && state.domains.includes(domain.key);
                   return `
                     <section class="sat-domain-group">
                       <div class="sat-domain-row">
@@ -75,7 +80,7 @@
   function navigate() {
     const nextState = {
       section: state.section,
-      domain: state.domain || "any",
+      domains: state.domains.length > 0 ? state.domains : ["any"],
       limit: state.limit,
     };
     window.location.href = buildOpenSatV1QuestionUrl(nextState);
@@ -86,26 +91,30 @@
     if (!section) return;
     if (state.section !== sectionKey) {
       state.section = sectionKey;
-      state.domain = "any";
+      state.domains = [];
     }
     renderAll();
   }
 
-  function selectDomain(sectionKey, domainKey) {
+  function toggleDomain(sectionKey, domainKey) {
     const section = OPENSAT_CATALOG.sections.find((s) => s.key === sectionKey);
     if (!section) return;
     const domain = section.domains.find((d) => d.key === domainKey);
     if (!domain) return;
     state.section = sectionKey;
-    state.domain = domainKey;
+    if (state.domains.includes(domainKey)) {
+      state.domains = state.domains.filter((d) => d !== domainKey);
+    } else {
+      state.domains = [...state.domains, domainKey];
+    }
     renderAll();
   }
 
   function resetFilters() {
     state.section = "";
-    state.domain = "";
-    state.limit = 10;
-    limitInput.value = "10";
+    state.domains = [];
+    state.limit = null;
+    limitInput.value = "";
     renderAll();
   }
 
@@ -126,14 +135,19 @@
 
     if (domainTrigger) {
       const [sectionKey, domainKey] = domainTrigger.dataset.selectDomain.split("::");
-      selectDomain(sectionKey, domainKey);
+      toggleDomain(sectionKey, domainKey);
       return;
     }
   });
 
   limitInput.addEventListener("input", () => {
-    const parsed = Number(limitInput.value);
-    state.limit = Number.isFinite(parsed) && parsed > 0 ? parsed : 10;
+    const val = limitInput.value.trim();
+    if (val === "" || val.toLowerCase() === "none") {
+      state.limit = null;
+    } else {
+      const parsed = Number(val);
+      state.limit = Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+    }
     renderSummary();
   });
 

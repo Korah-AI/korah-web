@@ -2,10 +2,17 @@ export const config = {
   maxDuration: 60,
 };
 
-function clampInt(value, fallback, min, max) {
-  const parsed = parseInt(String(value ?? ""), 10);
-  if (Number.isNaN(parsed)) return fallback;
-  return Math.min(max, Math.max(min, parsed));
+function parseLimit(value) {
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+  const str = String(value).trim().toLowerCase();
+  if (str === "none" || str === "unlimited" || str === "max") {
+    return null;
+  }
+  const parsed = parseInt(str, 10);
+  if (Number.isNaN(parsed)) return null;
+  return Math.max(1, parsed);
 }
 
 function normalizeSection(value) {
@@ -15,10 +22,10 @@ function normalizeSection(value) {
 }
 
 function normalizeDomain(value) {
-  const domain = String(value || "").trim();
-  if (!domain) return "any";
-  if (domain.toLowerCase() === "any") return "any";
-  return domain;
+  const domainStr = String(value || "").trim();
+  if (!domainStr || domainStr.toLowerCase() === "any") return "any";
+  const domains = domainStr.split(",").map((d) => d.trim()).filter(Boolean);
+  return domains.length > 0 ? domains : "any";
 }
 
 function choicesToOptions(choices) {
@@ -37,11 +44,16 @@ function choicesToOptions(choices) {
     .filter((opt) => opt.key && opt.text);
 }
 
-function normalizeQuestion(item, sectionFromRequest, domainFromRequest) {
+function normalizeQuestion(item, sectionFromRequest, domainsFromRequest) {
   const nested = item?.question || {};
   const id = typeof item?.id === "string" ? item.id : String(item?.id ?? "");
   const domainFromPayload = typeof item?.domain === "string" ? item.domain : "";
-  const domain = domainFromPayload || (domainFromRequest === "any" ? "any" : domainFromRequest);
+  let domain;
+  if (Array.isArray(domainsFromRequest)) {
+    domain = domainFromPayload || (domainsFromRequest.includes("any") ? "any" : domainsFromRequest[0]);
+  } else {
+    domain = domainFromPayload || (domainsFromRequest === "any" ? "any" : domainsFromRequest);
+  }
 
   const rawParagraph = nested?.paragraph;
   const paragraph = (typeof rawParagraph === "string" && rawParagraph !== "null" && rawParagraph.trim() !== "") ? rawParagraph : "";
@@ -80,13 +92,15 @@ export default async function handler(req, res) {
     });
   }
 
-  const domain = normalizeDomain(req.query?.domain);
-  const limit = clampInt(req.query?.limit, 10, 1, 60);
+  const domain = normalizeDomain(req.query?.domains);
+  const limit = parseLimit(req.query?.limit);
 
   const upstream = new URL("https://pinesat.com/api/questions");
   upstream.searchParams.set("section", section);
   upstream.searchParams.set("domain", domain);
-  upstream.searchParams.set("limit", String(limit));
+  if (limit !== null) {
+    upstream.searchParams.set("limit", String(limit));
+  }
 
   let upstreamResponse;
   try {

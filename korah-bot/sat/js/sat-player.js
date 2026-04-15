@@ -47,7 +47,10 @@
 
   function renderHeader() {
     const sectionLabel = getSectionLabel(query.section);
-    const domainLabel = query.domain && query.domain !== "any" ? query.domain : "Any domain";
+    const domains = query.domains;
+    const domainLabel = Array.isArray(domains) && domains.length > 0 && !domains.includes("any")
+      ? (domains.length === 1 ? domains[0] : `${domains.length} domains`)
+      : "Any domain";
 
     if (loadState === "loading") {
       playerTitle.textContent = "Loading questions…";
@@ -63,10 +66,11 @@
       playerCounter.textContent = `Question ${state.currentIndex + 1} of ${questions.length}`;
     }
 
+    const limitLabel = query.limit === null || query.limit === undefined ? "No limit" : `${query.limit} questions`;
     playerFilters.innerHTML = `
       <span class="sat-pill">${query.section || "section not set"}</span>
       <span class="sat-pill">${domainLabel}</span>
-      <span class="sat-pill">${query.limit || 10} questions</span>
+      <span class="sat-pill">${limitLabel}</span>
     `;
   }
 
@@ -331,8 +335,13 @@
 
     const params = new URLSearchParams();
     params.set("section", query.section || "");
-    params.set("domain", query.domain || "any");
-    params.set("limit", String(query.limit || 10));
+    const domainValue = Array.isArray(query.domains) && query.domains.length > 0 && !query.domains.includes("any")
+      ? query.domains.join(",")
+      : "any";
+    params.set("domains", domainValue);
+    if (query.limit !== null && query.limit !== undefined) {
+      params.set("limit", String(query.limit));
+    }
 
     let response;
     try {
