@@ -1,18 +1,22 @@
 # 1.1 Updates (still in development)
-* Clean up commit history
-* Google Drive API for document creation
-* Questionbank Beta
-  * Still looking for good open source API. Might create my own.
+* SAT Math Mode Updates
+  * Read `sat-math-mode-implementation-plan.md` in the `questionbank-beta` branch
+  * Jayden: UI; Me: Functionality
+* `Questionbank-Beta` Updates
+  * OpenSAT Questionbank is the current implementation and works fine.
+  * Need to expand functionality
+  * Need to update U.I. (Jayden)
+* Need to add Google Drive API for document creation
+* Need to add "Import from Quizlet" option for study items
 * Focus-based learning integration
   * Daily focus check-in
   * Study-tip of the day
   * Suggest practices for boosting focus or calmness
   * Suggest certain study techniques
   * Send user-mood in AI prompt
-* Merge `main` changes onto `deployment`
+* PR for `main` onto `deployment`
 * web_fetch tool for the most up-to-date indo
 * sat_question fetch tool (chatbot to output SAT problems, JSON formatted)
-* Add from Quizlet
 
 # Patches/Fixes
 * Add the About to `landingpage.html`
