@@ -28,7 +28,8 @@
 
   function parseOpenSatV1Query(search) {
     const params = new URLSearchParams(search || window.location.search);
-    const section = (params.get("section") || "").trim();
+    const sectionParam = (params.get("sections") || "").trim();
+    const sections = sectionParam ? sectionParam.split(",").map((s) => s.trim()).filter((s) => s === "english" || s === "math") : [];
     const domainParam = (params.get("domains") || "").trim();
     const domains = domainParam ? domainParam.split(",").map((d) => d.trim()).filter(Boolean) : [];
     const limitRaw = params.get("limit");
@@ -36,7 +37,7 @@
     const effectiveLimit = (limit === null || (Number.isFinite(limit) && limit > 0)) ? limit : null;
 
     return {
-      section,
+      sections: sections.length > 0 ? sections : ["english", "math"],
       domains: domains.length > 0 ? domains : ["any"],
       limit: effectiveLimit,
     };
@@ -44,9 +45,12 @@
 
   function buildOpenSatV1QuestionUrl(state) {
     const params = new URLSearchParams();
-    if (state.section) params.set("section", state.section);
-    const domainValue = state.domains && state.domains.length > 0 && !state.domains.includes("any") 
-      ? state.domains.join(",") 
+    const sectionValue = state.sections && state.sections.length > 0 && !(state.sections.length === 2 && state.sections.includes("english") && state.sections.includes("math"))
+      ? state.sections.join(",")
+      : "any";
+    params.set("sections", sectionValue);
+    const domainValue = state.domains && state.domains.length > 0 && !state.domains.includes("any")
+      ? state.domains.join(",")
       : "any";
     params.set("domains", domainValue);
     if (state.limit !== null && state.limit !== undefined) {

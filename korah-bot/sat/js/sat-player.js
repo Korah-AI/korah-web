@@ -45,8 +45,21 @@
     return questions[state.currentIndex];
   }
 
+  function getSectionsLabel(sectionKeys) {
+    if (!Array.isArray(sectionKeys) return sectionKeys || "SAT";
+    if (sectionKeys.length === 0) return "SAT";
+    if (sectionKeys.length === 1) {
+      return getSectionLabel(sectionKeys[0]);
+    }
+    if (sectionKeys.length === 2 && sectionKeys.includes("english") && sectionKeys.includes("math")) {
+      return "All sections";
+    }
+    return `${sectionKeys.length} sections`;
+  }
+
   function renderHeader() {
-    const sectionLabel = getSectionLabel(query.section);
+    const sections = query.sections;
+    const sectionLabel = getSectionsLabel(sections);
     const domains = query.domains;
     const domainLabel = Array.isArray(domains) && domains.length > 0 && !domains.includes("any")
       ? (domains.length === 1 ? domains[0] : `${domains.length} domains`)
@@ -67,8 +80,11 @@
     }
 
     const limitLabel = query.limit === null || query.limit === undefined ? "No limit" : `${query.limit} questions`;
+    const sectionsPill = Array.isArray(sections) && sections.length > 0
+      ? sections.join(",")
+      : "section not set";
     playerFilters.innerHTML = `
-      <span class="sat-pill">${query.section || "section not set"}</span>
+      <span class="sat-pill">${sectionsPill}</span>
       <span class="sat-pill">${domainLabel}</span>
       <span class="sat-pill">${limitLabel}</span>
     `;
@@ -311,7 +327,8 @@
   }, 1000);
 
   async function loadQuestions() {
-    const isValidSection = query.section === "english" || query.section === "math";
+    const sections = query.sections;
+    const isValidSection = Array.isArray(sections) && sections.length > 0;
     if (!isValidSection) {
       loadState = "error";
       loadError = "This practice link is missing a valid section. Go back to the bank and start a new session.";
@@ -334,7 +351,10 @@
     renderQuestion();
 
     const params = new URLSearchParams();
-    params.set("section", query.section || "");
+    const sectionValue = sections.length === 2 && sections.includes("english") && sections.includes("math")
+      ? "any"
+      : sections.join(",");
+    params.set("sections", sectionValue);
     const domainValue = Array.isArray(query.domains) && query.domains.length > 0 && !query.domains.includes("any")
       ? query.domains.join(",")
       : "any";

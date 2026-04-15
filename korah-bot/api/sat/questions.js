@@ -16,9 +16,10 @@ function parseLimit(value) {
 }
 
 function normalizeSection(value) {
-  const section = String(value || "").trim().toLowerCase();
-  if (section === "english" || section === "math") return section;
-  return null;
+  const sectionStr = String(value || "").trim().toLowerCase();
+  if (!sectionStr) return ["english", "math"];
+  const sections = sectionStr.split(",").map((s) => s.trim()).filter((s) => s === "english" || s === "math");
+  return sections.length > 0 ? sections : ["english", "math"];
 }
 
 function normalizeDomain(value) {
@@ -84,36 +85,54 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const section = normalizeSection(req.query?.section);
-  if (!section) {
+  const sections = normalizeSection(req.query?.section);
+  if (!sections || sections.length === 0) {
     return res.status(400).json({
       error: "Invalid section",
-      message: "section must be one of: english, math",
+      message: "section must be one of: english, math, or a comma-separated combination",
     });
   }
 
-  const domain = normalizeDomain(req.query?.domains);
+  const domains = normalizeDomain(req.query?.domains);
   const limit = parseLimit(req.query?.limit);
 
-  const upstream = new URL("https://pinesat.com/api/questions");
-  upstream.searchParams.set("section", section);
-  upstream.searchParams.set("domain", domain);
-  if (limit !== null) {
-    upstream.searchParams.set("limit", String(limit));
-  }
+  async function fetchQuestionsForSection(sec, dom) {
+    const upstream = new URL("https://pinesat.com/api/questions");
+    upstream.searchParams.set("section", sec);
+    upstream.searchParams.set("domain", dom);
+    if (limit !== null) {
+      upstream.searchParams.set("limit", String(limit));
+    }
 
-  let upstreamResponse;
-  try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 12_000);
-    upstreamResponse = await fetch(upstream.toString(), {
+    const response = await fetch(upstream.toString(), {
       method: "GET",
-      headers: {
-        Accept: "application/json",
-      },
+      headers: { Accept: "application/json" },
       signal: controller.signal,
     });
     clearTimeout(timeout);
+    return response;
+  }
+
+  let allData = { questions: [] };
+  const questionLimitPerSection = limit !== null ? Math.ceil(limit / sections.length) : null;
+
+  try {
+    const requests = sections.map((sec) => fetchQuestionsForSection(sec, domains));
+    const responses = await Promise.all(requests);
+
+    for (const resp of responses) {
+      if (!resp.ok) {
+        return res.status(502).json({
+          error: "OpenSAT upstream error",
+          status: resp.status,
+        });
+      }
+      const data = await resp.json();
+      const rawQuestions = Array.isArray(data?.questions) ? data.questions : Array.isArray(data) ? data : [];
+      allData.questions.push(...rawQuestions);
+    }
   } catch (err) {
     console.error("OpenSAT fetch error:", err);
     return res.status(502).json({
@@ -122,35 +141,15 @@ export default async function handler(req, res) {
     });
   }
 
-  if (!upstreamResponse.ok) {
-    let details = null;
-    try {
-      details = await upstreamResponse.text();
-    } catch (_) {}
-    return res.status(502).json({
-      error: "OpenSAT upstream error",
-      status: upstreamResponse.status,
-      details: details ? details.slice(0, 500) : undefined,
-    });
+  if (limit !== null && allData.questions.length > limit) {
+    allData.questions = allData.questions.slice(0, limit);
   }
 
-  let data;
-  try {
-    data = await upstreamResponse.json();
-  } catch (err) {
-    console.error("OpenSAT JSON parse error:", err);
-    return res.status(502).json({
-      error: "Malformed OpenSAT response",
-      message: "Upstream returned invalid JSON.",
-    });
-  }
-
-  const rawQuestions = Array.isArray(data?.questions) ? data.questions : Array.isArray(data) ? data : [];
-  const normalized = rawQuestions.map((q) => normalizeQuestion(q, section, domain));
+  const normalized = allData.questions.map((q) => normalizeQuestion(q, sections[0], domains));
 
   return res.status(200).json({
-    section,
-    domain,
+    sections,
+    domains,
     count: normalized.length,
     questions: normalized,
   });

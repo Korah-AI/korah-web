@@ -2,7 +2,7 @@
   const { OPENSAT_CATALOG, buildOpenSatV1QuestionUrl } = window.KorahSAT;
 
   const state = {
-    section: "",
+    sections: [],
     domains: [],
     limit: null,
   };
@@ -10,29 +10,29 @@
   const sectionColumns = document.getElementById("sectionColumns");
   const selectionSummary = document.getElementById("selectionSummary");
   const sectionCount = document.getElementById("sectionCount");
-  const domainCount = document.getElementById("domainCount");
+  const domainCountEl = document.getElementById("domainCount");
   const limitInput = document.getElementById("limitInput");
   const startSelectedBtn = document.getElementById("startSelectedBtn");
   const clearFiltersBtn = document.getElementById("clearFiltersBtn");
 
-  sectionCount.textContent = String(OPENSAT_CATALOG.sections.length);
-  domainCount.textContent = String(OPENSAT_CATALOG.sections.reduce((sum, s) => sum + (s.domains?.length || 0), 0));
+  const totalSections = OPENSAT_CATALOG.sections.length;
+  const totalDomains = OPENSAT_CATALOG.sections.reduce((sum, s) => sum + (s.domains?.length || 0), 0);
+  sectionCount.textContent = String(totalSections);
+  domainCountEl.textContent = String(totalDomains);
 
   function renderSummary() {
-    if (!state.section) {
-      selectionSummary.textContent = "Choose a section";
-      startSelectedBtn.textContent = "Start practice";
-      startSelectedBtn.disabled = false;
-      return;
-    }
-    const sectionLabel = OPENSAT_CATALOG.sections.find((s) => s.key === state.section)?.label || state.section;
-    const domainLabel = state.domains.length === 0 || state.domains.includes("any") 
-      ? "Any domain" 
-      : state.domains.length === 1 
-        ? state.domains[0] 
+    const sectionsLabel = state.sections.length === 0 || state.sections.includes("any")
+      ? "All sections"
+      : state.sections.length === 1
+        ? OPENSAT_CATALOG.sections.find((s) => s.key === state.sections[0])?.label || state.sections[0]
+        : `${state.sections.length} sections`;
+    const domainLabel = state.domains.length === 0 || state.domains.includes("any")
+      ? "Any domain"
+      : state.domains.length === 1
+        ? state.domains[0]
         : `${state.domains.length} domains`;
     const limitLabel = state.limit === null || state.limit === "" ? "No limit" : `${state.limit} questions`;
-    selectionSummary.textContent = `${sectionLabel} · ${domainLabel} · ${limitLabel}`;
+    selectionSummary.textContent = `${sectionsLabel} · ${domainLabel} · ${limitLabel}`;
     startSelectedBtn.textContent = "Start practice";
     startSelectedBtn.disabled = false;
   }
@@ -41,7 +41,7 @@
     const sections = OPENSAT_CATALOG.sections;
     sectionColumns.innerHTML = sections
       .map((section) => {
-        const isActiveSection = state.section === section.key;
+        const isActiveSection = state.sections.includes(section.key);
         return `
           <article class="sat-section-card is-${section.key}">
             <header class="sat-section-header">
@@ -79,7 +79,7 @@
 
   function navigate() {
     const nextState = {
-      section: state.section,
+      sections: state.sections.length > 0 ? state.sections : ["any"],
       domains: state.domains.length > 0 ? state.domains : ["any"],
       limit: state.limit,
     };
@@ -89,9 +89,13 @@
   function selectSection(sectionKey) {
     const section = OPENSAT_CATALOG.sections.find((s) => s.key === sectionKey);
     if (!section) return;
-    if (state.section !== sectionKey) {
-      state.section = sectionKey;
-      state.domains = [];
+    if (state.sections.includes(sectionKey)) {
+      state.sections = state.sections.filter((s) => s !== sectionKey);
+    } else {
+      state.sections = [...state.sections, sectionKey];
+      if (state.domains.length === 0) {
+        state.domains = [];
+      }
     }
     renderAll();
   }
@@ -101,7 +105,9 @@
     if (!section) return;
     const domain = section.domains.find((d) => d.key === domainKey);
     if (!domain) return;
-    state.section = sectionKey;
+    if (!state.sections.includes(sectionKey)) {
+      state.sections = [...state.sections, sectionKey];
+    }
     if (state.domains.includes(domainKey)) {
       state.domains = state.domains.filter((d) => d !== domainKey);
     } else {
@@ -111,7 +117,7 @@
   }
 
   function resetFilters() {
-    state.section = "";
+    state.sections = [];
     state.domains = [];
     state.limit = null;
     limitInput.value = "";
@@ -121,6 +127,39 @@
   function renderAll() {
     renderSections();
     renderSummary();
+    fetchQuestionCounts();
+  }
+
+  async function fetchQuestionCounts() {
+    const questionCountEl = document.getElementById("questionCount");
+    if (!questionCountEl) return;
+    
+    const params = new URLSearchParams();
+    const sectionValue = state.sections.length > 0 && !(state.sections.length === 2 && state.sections.includes("english") && state.sections.includes("math"))
+      ? state.sections.join(",")
+      : "any";
+    params.set("sections", sectionValue);
+    const domainValue = state.domains.length > 0 && !state.domains.includes("any")
+      ? state.domains.join(",")
+      : "any";
+    params.set("domains", domainValue);
+    params.set("limit", "1");
+
+    try {
+      const response = await fetch(`/api/sat/questions?${params.toString()}`, {
+        method: "GET",
+        headers: { Accept: "application/json" },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const count = data.count ?? 0;
+        questionCountEl.textContent = count >= 1000 ? `${Math.floor(count / 1000)}k+` : String(count);
+      } else {
+        questionCountEl.textContent = "—";
+      }
+    } catch (err) {
+      questionCountEl.textContent = "—";
+    }
   }
 
   sectionColumns.addEventListener("click", (event) => {
@@ -152,7 +191,7 @@
   });
 
   startSelectedBtn.addEventListener("click", () => {
-    if (!state.section) {
+    if (state.sections.length === 0) {
       return;
     }
     navigate();
