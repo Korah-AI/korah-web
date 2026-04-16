@@ -2631,6 +2631,11 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     modeDropdown.querySelectorAll(".mode-option").forEach((option) => {
       option.addEventListener("click", (e) => {
         e.stopPropagation();
+        const redirectUrl = option.getAttribute("data-redirect");
+        if (redirectUrl) {
+          window.location.href = redirectUrl;
+          return;
+        }
         const mode = option.getAttribute("data-mode");
         if (mode) {
           changeMode(mode);
