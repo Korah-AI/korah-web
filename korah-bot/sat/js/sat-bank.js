@@ -42,9 +42,11 @@
     sectionColumns.innerHTML = sections
       .map((section) => {
         const isActiveSection = state.sections.includes(section.key);
+        const allSelected = section.domains.every(d => state.domains.includes(d.key));
         return `
           <article class="sat-section-card is-${section.key}">
             <header class="sat-section-header">
+              <button class="sat-section-check ${allSelected ? "is-active" : ""}" type="button" data-select-section="${section.key}" aria-label="Select all ${section.label} domains"></button>
               <button class="sat-section-heading" type="button" data-select-section="${section.key}">
                 <div>
                   <h2 class="sat-section-title">${section.label}</h2>
@@ -89,13 +91,21 @@
   function selectSection(sectionKey) {
     const section = OPENSAT_CATALOG.sections.find((s) => s.key === sectionKey);
     if (!section) return;
-    if (state.sections.includes(sectionKey)) {
+
+    const allSelected = section.domains.every(d => state.domains.includes(d.key));
+
+    if (allSelected) {
       state.sections = state.sections.filter((s) => s !== sectionKey);
+      state.domains = state.domains.filter(
+        (d) => !section.domains.some((domain) => domain.key === d)
+      );
     } else {
       state.sections = [...state.sections, sectionKey];
-      if (state.domains.length === 0) {
-        state.domains = [];
-      }
+      section.domains.forEach((domain) => {
+        if (!state.domains.includes(domain.key)) {
+          state.domains.push(domain.key);
+        }
+      });
     }
     renderAll();
   }
