@@ -2678,6 +2678,13 @@ body { display: flex; background: var(--bg) }
 }
 
 /* ── Multi-select ── */
+.select-bar-wrapper {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: transparent;
+}
+
 .select-bar {
     display: none;
     align-items: center;
@@ -3735,12 +3742,19 @@ html {
 }
 
 /* ── Timer Widget in Sidebar ── */
-.productivity-wrapper {
+.sidebar .productivity-wrapper {
     position: relative;
+    width: 100%;
+    overflow: hidden;
+    flex-shrink: 0;
+    margin: 0;
+    padding: 0;
 }
 
 .timer-widget-container {
     animation: fadeUp 0.2s ease-out;
+    max-height: 200px;
+    overflow: hidden;
 }
 
 .timer-widget-container:has(.timer-widget.running),
@@ -3753,7 +3767,7 @@ html {
 }
 
 .timer-widget-container:has(.timer-widget.idle) {
-    margin: 0.375rem 0 0.375rem;
+    margin: 0.375rem 0 0;
     padding: 0;
     background: transparent;
     border: none;

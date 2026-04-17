@@ -11,23 +11,24 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Korah AI — Chat</title>
-<link rel="icon" type="image/png" href="app/logoresized.png">
+<title>Korah AI — SAT Question Bank</title>
+<link rel="icon" type="image/png" href="../app/logoresized.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
-<link rel="stylesheet" href="app/korah-chat.css"/>
+<link rel="stylesheet" href="../app/korah-chat.css"/>
+<link rel="stylesheet" href="./sat.css"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css"/>
 </head>
 
-<body class="bg-base tx">
+<body class="bg-base tx sat-shell">
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
   import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
-  import { setupKorahDB } from "./app/data/firestore-store.js";
+  import { setupKorahDB } from "../app/data/firestore-store.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
@@ -41,10 +42,9 @@
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
 
-  // Redirect unauthenticated users to login page
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
-      window.location.href = 'login.html';
+      window.location.href = '../login.html';
       return;
     }
     // Set up Firestore and expose window.KorahDB before notifying the app.
@@ -58,20 +58,19 @@
   document.getElementById('logout-btn').addEventListener('click', async () => {
     await signOut(auth);
     localStorage.removeItem('korah_first_name');
-    window.location.href = 'login.html';
+    window.location.href = '../login.html';
   });
 </script>
 
 <canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
-<div class="doc-panel-overlay" id="doc-panel-overlay"></div>
 
 <!-- ═══ SIDEBAR ═══ -->
 <aside id="sidebar" class="sidebar bg-sf glass t-theme">
   <div class="sidebar-header">
-    <a href="index.html" class="flex items-center gap-2.5 no-underline">
+    <a href="../index.html" class="flex items-center gap-2.5 no-underline">
       <div class="w-12 h-12 rounded-xl flex items-center justify-center font-display text-xl font-black text-white shadow-glow logo-btn">
         <span class="logo-letter">
-          <img src="app/logo.png" alt="Korah"/>
+          <img src="../app/logo.png" alt="Korah"/>
         </span>
       </div>
       <div class="flex flex-col leading-tight">
@@ -86,24 +85,22 @@
 
   <nav class="sidebar-nav">
     <div class="sidebar-nav-row">
-      <a href="index.html" class="sidebar-nav-link active t-btn"><span class="nav-icon">💬</span> <span class="nav-text">Chat</span></a>
-      <a href="study/feed.html" class="sidebar-nav-link t-btn"><span class="nav-icon">📚</span> <span class="nav-text">Study</span></a>
+      <a href="../index.html" class="sidebar-nav-link active t-btn"><span class="nav-icon">💬</span> <span class="nav-text"></span></a>
+      <a href="../study/feed.html" class="sidebar-nav-link t-btn"><span class="nav-icon">📚</span> <span class="nav-text"></span></a>
     </div>
-    <a href="sat/index.html" class="sidebar-nav-link t-btn" data-sat-link="true"><span class="nav-icon">📝</span> <span class="nav-text">SAT</span></a>
-    <a href="productivity.html" class="sidebar-nav-link productivity-link t-btn"><span class="nav-icon">⏱️</span> <span class="nav-text">Productivity</span></a>
+    <a href="index.html" class="sidebar-nav-link t-btn" data-sat-link="true"><span class="nav-icon">📝</span> <span class="nav-text">SAT</span></a>
+    <a href="../productivity.html" class="sidebar-nav-link productivity-link t-btn"><span class="nav-icon">⏱️</span> <span class="nav-text">Productivity</span></a>
   </nav>
 
-  <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 0.75rem 0 0.25rem;">
+  <div class="sidebar-middle">
+    <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 12px 0 4px;">
     <span class="sidebar-section-label" style="margin:0">Recent Chats</span>
     </div>
-    <div class="select-bar-wrapper">
-      <div id="chat-select-bar" class="select-bar">
-        <span class="select-bar-count" id="chat-select-count">0 selected</span>
-        <div class="select-bar-actions">
-          <button class="select-bar-btn" id="chat-select-all">Select all</button>
-          <button class="select-bar-btn" id="chat-deselect-all">Deselect all</button>
-          <button class="select-bar-btn danger" id="chat-delete-selected">Delete</button>
-        </div>
+    <div id="chat-select-bar" class="select-bar">
+      <span class="select-bar-count" id="chat-select-count">0 selected</span>
+      <div class="select-bar-actions">
+        <button class="select-bar-btn" id="chat-select-all">Select all</button>
+        <button class="select-bar-btn danger" id="chat-delete-selected">Delete</button>
       </div>
     </div>
     <div id="chat-history" class="chat-history">
@@ -130,7 +127,7 @@
     </div>
   </div>
 
-  <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 0.75rem 0 0.25rem;">
+  <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 12px 0 4px;">
     <span class="sidebar-section-label" style="margin:0">Recent Study Items</span>
   </div>
   <div id="study-select-bar" class="select-bar">
@@ -205,13 +202,13 @@
       </svg>
     </button>
 
-    <div class="logo-container" style="display: flex; align-items: center; margin-right: 0.75rem;">
-      <img src="app/logo.png" alt="Korah Logo" style="height: 2rem; width: auto;">
+    <div class="logo-container" style="display: flex; align-items: center; margin-right: 12px;">
+      <img src="../app/logo.png" alt="Korah Logo" style="height: 32px; width: auto;">
     </div>
 
     <div class="chat-title-area">
       <div class="korah-status-dot"></div>
-      <span class="font-semibold tx text-sm" id="chat-title">Photosynthesis Study Guide</span>
+      <span class="font-semibold tx text-sm" id="chat-title">SAT Question Bank</span>
     </div>
 
     <div class="mode-selector-wrapper">
@@ -237,18 +234,25 @@
             <div class="mode-option-desc">Step-by-step problem solving</div>
           </div>
         </div>
-        <div class="mode-option" data-mode="sat">
-          <span class="mode-option-icon">📝</span>
+        <div class="mode-option" data-mode="physics">
+          <span class="mode-option-icon">⚛️</span>
           <div class="mode-option-info">
-            <div class="mode-option-name">SAT Mode</div>
-            <div class="mode-option-desc">SAT Math strategies & regressions</div>
+            <div class="mode-option-name">Physics Mode</div>
+            <div class="mode-option-desc">Conceptual explanations & formulas</div>
           </div>
         </div>
-        <div class="mode-option" data-mode="science">
-          <span class="mode-option-icon">🔬</span>
+        <div class="mode-option" data-mode="chemistry">
+          <span class="mode-option-icon">⚗️</span>
           <div class="mode-option-info">
-            <div class="mode-option-name">Science Mode</div>
-            <div class="mode-option-desc">Physics, chemistry & biology</div>
+            <div class="mode-option-name">Chemistry Mode</div>
+            <div class="mode-option-desc">Reactions & molecular structures</div>
+          </div>
+        </div>
+        <div class="mode-option" data-mode="biology">
+          <span class="mode-option-icon">🧬</span>
+          <div class="mode-option-info">
+            <div class="mode-option-name">Biology Mode</div>
+            <div class="mode-option-desc">Life processes & terminology</div>
           </div>
         </div>
         <div class="mode-option" data-mode="history">
@@ -265,27 +269,10 @@
             <div class="mode-option-desc">Analysis & interpretation</div>
           </div>
         </div>
-        <div class="mode-option" data-redirect="sat/math-chat.html">
-          <span class="mode-option-icon">📊</span>
-          <div class="mode-option-info">
-            <div class="mode-option-name">SAT Math</div>
-            <div class="mode-option-desc">Interactive graph & problem solving</div>
-          </div>
-        </div>
       </div>
     </div>
 
     <div class="topbar-actions">
-      <button class="topbar-btn t-btn tx2" id="doc-panel-toggle" title="Toggle documents">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <polyline points="14 2 14 8 20 8"/>
-          <line x1="16" y1="13" x2="8" y2="13"/>
-          <line x1="16" y1="17" x2="8" y2="17"/>
-          <polyline points="10 9 9 9 8 9"/>
-        </svg>
-        <span id="doc-count-badge" class="doc-count-badge hidden">0</span>
-      </button>
       <button class="topbar-btn t-btn tx2" id="clear-chat-btn" title="Clear chat">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polyline points="3,6 5,6 21,6"/><path d="M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6"/><path d="M10,11v6M14,11v6"/><path d="M9,6V4a1,1,0,0,1,1-1h4a1,1,0,0,1,1,1v2"/>
@@ -294,152 +281,51 @@
     </div>
   </header>
 
-  <!-- Chat messages -->
-  <div id="chat-body" class="chat-body">
-    <div id="messages-container">
-
-      <!-- Welcome state -->
-      <div id="welcome-screen" class="welcome-screen">
-        <h1 class="welcome-title font-display font-black tx">What can I help you study?</h1>
-
-        <div class="welcome-meta">
-          <div class="welcome-mode-badge bg-sf glass-sm bd">
-            <span class="welcome-mode-dot"></span>
-            <span class="welcome-mode-text" id="welcome-mode-name">General Mode</span>
+  <!-- SAT Content -->
+  <div class="sat-page sat-bank-page" style="padding: 20px;">
+    <section class="sat-bank-shell">
+      <section class="sat-bank-header">
+        <p class="sat-eyebrow grad-text">Korah SAT</p>
+        <h1 class="sat-bank-title">Question Bank</h1>
+        <p class="sat-bank-desc">
+          Pick a section and domain, choose how many questions you want, and start OpenSAT practice.
+        </p>
+      </section>
+        <div class="sat-bank-meta">
+          <div class="sat-inline-stat">
+            <span class="sat-inline-stat-label">Sections</span>
+            <strong id="sectionCount">2</strong>
           </div>
-          <div class="tutoring-toggle-wrapper">
-            <span class="tutoring-toggle-label">Tutoring Mode</span>
-            <label class="tutoring-switch">
-              <input type="checkbox" id="tutoring-mode-toggle">
-              <span class="tutoring-slider"></span>
-            </label>
+          <div class="sat-inline-stat">
+            <span class="sat-inline-stat-label">Domains</span>
+            <strong id="domainCount">8</strong>
           </div>
-        </div>
-
-        <div class="welcome-input-container bg-sf2 glass-sm bd shadow-glow-lg">
-          <textarea id="welcome-chat-input" class="welcome-textarea tx" placeholder="Ask Korah a study question..." rows="1"></textarea>
-          <div id="welcome-attachments" class="welcome-attachments"></div>
-          <div class="welcome-input-actions">
-            <button id="welcome-attach-btn" class="welcome-tool-btn t-btn tx3" title="Attach file">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44,11.05l-9.19,9.19a6,6,0,0,1-8.49-8.49l9.19-9.19a4,4,0,0,1,5.66,5.66l-9.2,9.19a2,2,0,0,1-2.83-2.83l8.49-8.48"/></svg>
-            </button>
-            <div class="welcome-right-actions">
-              <button id="welcome-send-btn" class="welcome-send-btn grad-bg t-btn" aria-label="Send message">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="22" y1="2" x2="11" y2="13"></line>
-                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                </svg>
-              </button>
-            </div>
+          <div class="sat-inline-stat">
+            <span class="sat-inline-stat-label">Available</span>
+            <strong id="questionCount">—</strong>
           </div>
         </div>
 
-        <div class="mode-pills mb-8" id="mode-pills-container">
-          <!-- Populated by JS -->
+      <section class="sat-bank-controls">
+        <div class="sat-session-bar">
+          <input id="limitInput" type="text" class="sat-limit-input" placeholder="Question Limit: None" />
+          <div id="selectionSummary" class="sat-inline-selection">Choose a section and domain</div>
+          <div class="sat-toolbar-actions">
+            <button id="clearFiltersBtn" class="sat-button sat-button-ghost t-btn" type="button" aria-label="Clear filters">Clear</button>
+            <button id="startSelectedBtn" class="sat-button sat-button-primary t-btn" type="button" aria-label="Start practice session">Start practice</button>
+          </div>
         </div>
+      </section>
 
-      </div>
-
-      <!-- Messages will appear here -->
-      <div id="messages-list"></div>
-    </div>
-  </div>
-
-  <!-- Typing indicator (hidden by default) -->
-  <div id="typing-indicator" class="typing-bar hidden">
-    <div class="typing-bubble bg-card border bd t-theme">
-      <div class="flex items-center gap-1.5 text-[11px] font-bold tracking-[1px] tx-p4 uppercase mb-1.5">
-        <span class="w-1.5 h-1.5 rounded-full bg-p4 animate-pulse"></span>Korah AI
-      </div>
-      <div class="typing-dots">
-        <span class="typing-dot"></span>
-        <span class="typing-dot" style="animation-delay:.2s"></span>
-        <span class="typing-dot" style="animation-delay:.4s"></span>
-      </div>
-    </div>
-  </div>
-
-  <!-- Input area -->
-  <div class="chat-input-area t-theme hidden">
-    <div class="input-wrapper">
-      <div id="input-files-bar" class="input-files-bar"></div>
-      <textarea
-        id="chat-input"
-        class="chat-textarea tx bg-transparent"
-        placeholder="Reply..."
-        rows="1"
-        style="min-height: 1.5rem;"
-      ></textarea>
-      
-      <div class="input-actions-row">
-        <div class="input-actions-left">
-          <button class="input-action-btn t-btn" id="attach-file-btn" title="Attach file">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-          </button>
-        </div>
-
-          <button id="send-btn" class="send-btn-circle grad-bg t-btn" aria-label="Send message">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="18 15 12 9 6 15"></polyline>
-            </svg>
-          </button>
-        </div>
-      </div>
-    </div>
-    <div class="input-footer">
-      <span class="text-[11px] tx3 opacity-60">Korah is AI and can make mistakes. Please double-check responses.</span>
-    </div>
-  </div>
-
-  <!-- Drag & Drop Overlay -->
-  <div id="drag-overlay" class="drag-overlay">
-    <div class="drag-overlay-inner">
-      <span class="drag-overlay-icon">📄</span>
-      <span class="drag-overlay-text">Drop documents here</span>
-      <span class="drag-overlay-hint">Images, text files, and PDFs</span>
-    </div>
+      <section class="sat-bank-layout">
+        <div class="sat-section-column" id="sectionColumns"></div>
+      </section>
+    </section>
   </div>
 
 </main>
 
-<!-- ═══ DOCUMENT PREVIEW PANEL ═══ -->
 
-<aside id="doc-panel" class="doc-panel t-theme collapsed">
-<div id="doc-panel-tab" class="doc-panel-tab" title="Open documents">
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-    <polyline points="15 18 9 12 15 6"/>
-  </svg>
-  <span class="doc-badge" id="doc-tab-badge">0</span>
-</div>
-  <div class="doc-panel-collapsed-content">
-    <button id="doc-add-btn-collapsed" class="doc-add-btn-collapsed t-btn" title="Add documents">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-      </svg>
-    </button>
-  </div>
-  
-  <div class="doc-panel-expanded-content">
-    <div class="doc-panel-header">
-      <span class="doc-panel-title">Documents</span>
-      <button id="doc-add-btn-header" class="doc-add-btn-header" title="Add document">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-        </svg>
-      </button>
-    </div>
-    <div id="doc-panel-list" class="doc-panel-list">
-      <div class="doc-panel-empty">
-        <span class="doc-panel-empty-icon">📄</span>
-        <span class="doc-panel-empty-text">Drop or add documents</span>
-        <span class="doc-panel-empty-hint">PDFs, images, text files</span>
-      </div>
-    </div>
-  </div>
-</aside>
 
 </div><!-- end .main-area-wrapper -->
 
@@ -448,12 +334,7 @@
   <div class="settings-modal-content">
     <div class="settings-header">
       <h2 class="settings-title">Settings</h2>
-      <button class="settings-close" id="settings-close">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="18" y1="6" x2="6" y2="18"/>
-          <line x1="6" y1="6" x2="18" y2="18"/>
-        </svg>
-      </button>
+      <button class="settings-close" id="settings-close">&times;</button>
     </div>
     
     <div class="settings-body">
@@ -508,7 +389,7 @@
     <div class="delete-modal-icon">✏️</div>
     <h3 class="delete-modal-title">Rename</h3>
     <p class="delete-modal-desc" id="rename-modal-desc">Enter a new name</p>
-    <input id="rename-modal-input" type="text" class="create-input" style="width:100%; margin-top:0.25rem;" placeholder="New name…"/>
+    <input id="rename-modal-input" type="text" class="create-input" style="width:100%; margin-top:4px;" placeholder="New name…"/>
     <div class="delete-modal-actions">
       <button id="rename-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
       <button id="rename-modal-confirm" class="delete-modal-btn confirm t-btn" style="background:rgba(139,92,246,.12); color:var(--p5); border-color:rgba(139,92,246,.3);">Rename</button>
@@ -529,66 +410,22 @@
   </div>
 </div>
 
-<!-- SAT Sub-Mode Modal -->
-<div id="sat-sub-modal" class="delete-modal">
-  <div class="delete-modal-content" style="max-width: 420px;">
-    <div class="delete-modal-icon">📝</div>
-    <h3 class="delete-modal-title">SAT Mode</h3>
-    <p class="delete-modal-desc" style="margin-bottom: 1rem;">Which section are you working on?</p>
-    <div style="display: flex; gap: 0.75rem; width: 100%;">
-      <button id="sat-math-btn" class="sat-sub-btn" style="flex:1; padding: 1rem; border-radius: 12px; border: 2px solid rgba(245,158,11,0.3); background: rgba(245,158,11,0.08); cursor: pointer; text-align: center; transition: all 0.2s;">
-        <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">📝</div>
-        <div style="font-weight: 700; font-size: 0.95rem; color: var(--tx);">Math</div>
-        <div style="font-size: 0.75rem; color: var(--tx3); margin-top: 0.25rem;">Regressions, algebra, geometry</div>
-      </button>
-      <button id="sat-english-btn" class="sat-sub-btn" style="flex:1; padding: 1rem; border-radius: 12px; border: 2px solid rgba(99,102,241,0.3); background: rgba(99,102,241,0.08); cursor: pointer; text-align: center; transition: all 0.2s;">
-        <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">📖</div>
-        <div style="font-weight: 700; font-size: 0.95rem; color: var(--tx);">English</div>
-        <div style="font-size: 0.75rem; color: var(--tx3); margin-top: 0.25rem;">Reading & Writing</div>
-      </button>
-    </div>
-  </div>
-</div>
-
-
-
-
-
-<!-- Pro Tip Toast Notification -->
-<div id="pro-tip-toast" class="pro-tip-toast">
-  <span class="pro-tip-toast-icon">💡</span>
-  <div class="pro-tip-toast-content">
-    <div class="pro-tip-toast-label">Pro Tip</div>
-    <div class="pro-tip-toast-text" id="pro-tip-text"></div>
-  </div>
-  <button class="pro-tip-toast-close" id="pro-tip-close" title="Dismiss">×</button>
-</div>
-
-<script src="https://www.desmos.com/api/v1.11/calculator.js?apiKey=d75985faa7d94050843ebd4528dd94c1"></script>
+<script src="https://www.desmos.com/api/v1.12/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
-<script src="app/timer-manager.js"></script>
-<script src="study/js/sidebar.js"></script>
-<script src="study/js/study-api.js"></script>
-<script src="app/korah-chat.js"></script>
+<script src="../app/timer-manager.js"></script>
+<script src="../study/js/sidebar.js"></script>
+<script src="../study/js/study-api.js"></script>
+<script src="../app/korah-chat.js"></script>
 
 <script>
-  // Close doc panel when overlay is clicked
-  document.getElementById('doc-panel-overlay').addEventListener('click', () => {
-    const panel = document.getElementById('doc-panel');
-    const overlay = document.getElementById('doc-panel-overlay');
-    panel.classList.remove('expanded');
-    panel.classList.add('collapsed');
-    overlay.classList.remove('show');
-  });
-
   // Initialize sidebar with chat-specific callbacks
   window.addEventListener('korahReady', () => {
     if (window.KorahSidebar) {
       window.KorahSidebar.initSidebar({
-        chatBaseUrl: "index.html",
-        itemPageUrl: "study/item.html",
+        chatBaseUrl: "../index.html",
+        itemPageUrl: "../study/item.html",
         onItemClick: (id) => {
           if (window.KorahChat && typeof window.KorahChat.switchToSession === 'function') {
             window.KorahChat.switchToSession(id);
@@ -598,6 +435,9 @@
     }
   }, { once: true });
 </script>
+
+<script src="./js/sat-shared.js"></script>
+<script src="./js/sat-bank.js"></script>
 
 </body>
 </html>
