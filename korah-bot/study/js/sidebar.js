@@ -49,7 +49,7 @@ function showSidebarDeleteModal(name, onConfirm) {
       (a, b) => new Date(sessions[b].updatedAt) - new Date(sessions[a].updatedAt)
     );
     container.innerHTML = "";
-    ids.slice(0, 8).forEach((id) => {
+    ids.forEach((id) => {
       const s = sessions[id];
       const a = document.createElement("a");
       a.href = baseUrl + "#" + id;
@@ -342,6 +342,7 @@ function showSidebarDeleteModal(name, onConfirm) {
     const countEl = document.getElementById("chat-select-count");
     const deleteBtn = document.getElementById("chat-delete-selected");
     const selectAllBtn = document.getElementById("chat-select-all");
+    const deselectAllBtn = document.getElementById("chat-deselect-all");
     if (!container || !bar) return;
 
     const selected = new Set();
@@ -389,6 +390,12 @@ function showSidebarDeleteModal(name, onConfirm) {
           if (id) { selected.add(id); item.classList.add("selected"); }
         });
       }
+      updateBar();
+    });
+
+    deselectAllBtn?.addEventListener("click", () => {
+      selected.clear();
+      container.querySelectorAll(".history-item.selected").forEach(el => el.classList.remove("selected"));
       updateBar();
     });
 
