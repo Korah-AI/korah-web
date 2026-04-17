@@ -1126,6 +1126,17 @@
   });
 
   function renderStudyItemsHistory() {
+    // Wait for data to be loaded from cache/storage first
+    const cachedStudyItems = localStorage.getItem("korah_study_items_cache");
+    if (cachedStudyItems) {
+      try {
+        const parsed = JSON.parse(cachedStudyItems);
+        if (Object.keys(parsed).length > 0) {
+          studyItemsCache = parsed;
+        }
+      } catch (e) {}
+    }
+    
     const container = document.getElementById("study-items-history");
     const items = Storage.getStudyItems();
     const itemIds = Object.keys(items);

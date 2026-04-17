@@ -191,6 +191,17 @@ function showSidebarDeleteModal(name, onConfirm) {
 
   // ── Render Study Items History ──
   function renderStudyItemsHistory(container, itemPageUrl) {
+    // Wait for data to be loaded from cache/storage first
+    const cachedStudyItems = localStorage.getItem("korah_study_items_cache");
+    if (cachedStudyItems) {
+      try {
+        const parsed = JSON.parse(cachedStudyItems);
+        if (Object.keys(parsed).length > 0) {
+          _studyItemsCache = parsed;
+        }
+      } catch (e) {}
+    }
+    
     const items = getStudyItems();
     const itemIds = Object.keys(items);
 

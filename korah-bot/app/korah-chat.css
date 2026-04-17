@@ -2682,7 +2682,12 @@ body { display: flex; background: var(--bg) }
     position: sticky;
     top: 0;
     z-index: 10;
-    background: transparent;
+    background: var(--bg);
+    border-bottom: 0.0625rem solid var(--bd);
+}
+
+[data-theme="dark"] .select-bar-wrapper {
+    background: rgba(18, 12, 40, 0.98);
 }
 
 .select-bar {
@@ -2697,23 +2702,43 @@ body { display: flex; background: var(--bg) }
     animation: fadeUp .2s ease both;
 }
 .select-bar.show { display: flex; }
-.select-bar-count { font-size: 0.6875rem; font-weight: 700; color: var(--p5); }
-.select-bar-actions { display: flex; gap: 0.25rem; }
+.select-bar-count { font-size: 0.75rem; font-weight: 600; color: var(--p5); padding: 0 0.5rem; }
+.select-bar-actions { display: flex; gap: 0.375rem; align-items: center; }
 .select-bar-btn {
+    width: 1.25rem;
+    height: 1.25rem;
+    padding: 0;
+    border-radius: 0.25rem;
+    border: 0.0625rem solid var(--p4);
+    background: transparent;
+    color: var(--p4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all .2s;
+    position: relative;
+    overflow: visible;
+}
+.select-bar-btn:hover { background: var(--bd2); }
+.select-bar-btn svg { width: 0.75rem; height: 0.75rem; }
+.select-bar-btn.danger { 
+    width: auto; 
+    min-width: 4rem;
+    height: 1.5rem;
     padding: 0.1875rem 0.5625rem;
     border-radius: 0.4375rem;
-    border: 0.0625rem solid var(--bd);
+    border: 0.0625rem solid rgba(185, 28, 28, 0.2);
     background: transparent;
-    color: var(--tx2);
+    color: var(--red);
     font-size: 0.6875rem;
     font-weight: 600;
     font-family: 'Plus Jakarta Sans', sans-serif;
-    cursor: pointer;
-    transition: all .2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
-.select-bar-btn:hover { border-color: var(--p4); color: var(--p5); background: var(--sf2); }
-.select-bar-btn.danger { color: var(--red); border-color: rgba(239,68,68,.3); }
-.select-bar-btn.danger:hover { background: rgba(239,68,68,.1); border-color: var(--red); }
+.select-bar-btn.danger:hover { background: rgba(185, 28, 28, 0.1); color: var(--red); border-color: var(--red); }
 
 .item-checkbox {
     width: 0.9375rem;
