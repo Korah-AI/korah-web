@@ -19,6 +19,7 @@
 * sat_question fetch tool (chatbot to output SAT problems, JSON formatted)
 
 # Patches/Fixes
+* MAJOR: Fix the screen sizing for ChromeBooks (67% looks like what it should at 100%)
 * Add the About to `landingpage.html`
 * Switch blog to social media and link the Instagram page
   * Mood should NOT have its own page. You could maybe implement it into `productivity.html`
