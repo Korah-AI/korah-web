@@ -1159,8 +1159,7 @@
     const emptyEl = document.getElementById("study-items-empty");
     const list = itemIds
       .map((id) => ({ id, ...items[id] }))
-      .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt))
-      .slice(0, 8);
+      .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
     container.innerHTML = "";
     if (list.length === 0) {
       if (emptyEl) {

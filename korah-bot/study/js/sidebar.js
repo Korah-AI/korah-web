@@ -223,8 +223,7 @@ function showSidebarDeleteModal(name, onConfirm) {
     const emptyEl = document.getElementById("study-items-empty");
     const list = itemIds
       .map((id) => ({ id, ...items[id] }))
-      .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt))
-      .slice(0, 8);
+      .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
     container.innerHTML = "";
     if (list.length === 0) {
       if (emptyEl) {
@@ -551,6 +550,7 @@ function showSidebarDeleteModal(name, onConfirm) {
     const countEl = document.getElementById("study-select-count");
     const deleteBtn = document.getElementById("study-delete-selected");
     const selectAllBtn = document.getElementById("study-select-all");
+    const deselectAllBtn = document.getElementById("study-deselect-all");
     if (!container || !bar) return;
 
     const selected = new Set();
@@ -561,6 +561,30 @@ function showSidebarDeleteModal(name, onConfirm) {
         deleteBtn.textContent = `Delete (${selected.size})`;
       } else bar.classList.remove("show");
     };
+
+    selectAllBtn.addEventListener("click", () => {
+      const items = container.querySelectorAll(".history-item");
+      const all = selected.size === items.length;
+      selected.clear();
+      items.forEach(el => el.classList.remove("selected"));
+      if (!all) {
+        items.forEach(item => {
+          const id = item.getAttribute("data-study-id");
+          if (id) { selected.add(id); item.classList.add("selected"); }
+        });
+      }
+      updateBar();
+    });
+
+    deselectAllBtn.addEventListener("click", () => {
+      selected.clear();
+      container.querySelectorAll(".history-item.selected").forEach(el => el.classList.remove("selected"));
+      updateBar();
+    });
+
+    // Make elements clickable even if not attached yet
+    selectAllBtn.style.pointerEvents = "auto";
+    deselectAllBtn.style.pointerEvents = "auto";
 
     const attachListeners = () => {
       container.querySelectorAll(".history-item").forEach(item => {
@@ -587,33 +611,6 @@ function showSidebarDeleteModal(name, onConfirm) {
 
     new MutationObserver(attachListeners).observe(container, { childList: true });
     attachListeners();
-
-    selectAllBtn?.addEventListener("click", () => {
-      const items = container.querySelectorAll(".history-item");
-      const all = selected.size === items.length;
-      selected.clear();
-      items.forEach(el => el.classList.remove("selected"));
-      if (!all) {
-        items.forEach(item => {
-          const id = item.getAttribute("data-study-id");
-          if (id) { selected.add(id); item.classList.add("selected"); }
-        });
-      }
-      updateBar();
-    });
-
-    deleteBtn?.addEventListener("click", () => {
-      if (selected.size === 0) return;
-      showSidebarDeleteModal(`${selected.size} study item${selected.size > 1 ? "s" : ""}`, () => {
-        const ids = [...selected];
-        ids.forEach(id => delete _studyItemsCache[id]);
-        if (window.KorahDB) window.KorahDB.deleteStudyItems(ids);
-        selected.clear();
-        container.querySelectorAll(".history-item.selected").forEach(el => el.classList.remove("selected"));
-        updateBar();
-        renderStudyItemsHistory(container, itemPageUrl);
-      });
-    });
   }
 
   // ── Timer Widget ──
