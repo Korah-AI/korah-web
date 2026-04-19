@@ -33,37 +33,55 @@ Your teaching approach:
 - Use the provided Desmos graph to visualize functions, equations, and relationships
 - Reference the graph in your explanations ("Notice on the graph...", "As we can see...")
 
-GRAPH INTERACTION: When you want to display or update the graph, include a JSON code block with the "graph-update" language tag:
-\`\`\`graph-update
+IMPORTANT: You MUST respond in JSON format with two fields: "graph" and "response"
+
+RESPONSE FORMAT (STRICTLY REQUIRED):
 {
-  "expressions": [
-    {"latex": "y = x^2", "color": "#4285F4", "secret": false}
-  ],
-  "viewport": {"xmin": -10, "xmax": 10, "ymin": -10, "ymax": 10}
+  "graph": {
+    "expressions": [
+      {"latex": "y=x^2", "color": "#4285F4", "secret": false}
+    ],
+    "viewport": {"xmin": -10, "xmax": 10, "ymin": -10, "ymax": 10}
+  },
+  "response": "Your explanation here using Markdown and KaTeX..."
 }
-\`\`\`
 
-KaTeX delimiter policy (REQUIRED for all math):
-- Inline math: $...$ (single dollar signs)
-- Display math: $$...$$ (double dollar signs)
-- NEVER use \\(...\\), \\[...\\], or bare math without delimiters
+The "graph" field contains Desmos API expressions to update the graph:
+- "expressions": array of expression objects with latex, color, hidden, lineStyle, lineWidth
+- "viewport": optional bounds (xmin, xmax, ymin, ymax)
+- Use "viewport" to adjust the view when showing different scales
+- Remove expressions by setting "hidden": true
+- Add new expressions to visualize new functions
+- Keep existing expressions you want to preserve
 
-Format your responses with:
-- Clear headings for major steps
-- KaTeX for all mathematical expressions
-- Graph updates when visualizing functions, equations, or data
-- Practice problems with worked solutions when appropriate`;
+The "response" field contains your text explanation using:
+- Markdown headings, bold, italic
+- KaTeX for math: $inline$ or $$display$$
+- NEVER use \\\\(...\\\\\), \\[...\\], or bare math
+
+If no graph update needed, set "graph": null or omit the field:
+{
+  "response": "Just explanation without graph changes..."
+}
 
   const FORMAT_INSTRUCTIONS = `
-- KATEX DELIMITER POLICY (REQUIRED):
-  - Inline math: $...$ (single dollar signs)
-  - Display math: $$...$$ (double dollar signs)
-- NEVER use \\(...\\), \\[...\\], [ ... ], or bare math without delimiters
-- Ensure all math delimiters are balanced
+STRICT RESPONSE FORMAT REQUIRED:
+Output ONLY valid JSON with these exact fields:
+{
+  "graph": {
+    "expressions": [...],
+    "viewport": {...}
+  },
+  "response": "Your explanation in Markdown with KaTeX math..."
+}
 
-GRAPH UPDATES: Use graph-update code blocks to update the persistent Desmos graph.
+Do NOT wrap the JSON in any code block markers. Output raw JSON only.
+If no graph update needed, omit "graph" or set to null.
 
-Always format responses using GitHub-flavored Markdown.`;
+KATEX DELIMITER POLICY (REQUIRED):
+- Inline math: $...$ (single dollar signs)
+- Display math: $$...$$ (double dollar signs)
+- NEVER use \\(...\\), \\[...\\], [ ... ], or bare math without delimiters`;
 
   function initializeSATGraph() {
     const container = document.getElementById('sat-graph-container');
@@ -171,6 +189,7 @@ Always format responses using GitHub-flavored Markdown.`;
 
   function updateSATGraph(data) {
     if (!satMathCalculator) return;
+    if (!data || typeof data !== 'object') return;
 
     const graphContainer = document.getElementById('sat-graph-container');
 
@@ -204,6 +223,11 @@ Always format responses using GitHub-flavored Markdown.`;
     setTimeout(() => graphContainer.classList.remove('graph-updated'), 500);
 
     captureGraphState();
+  }
+
+  function renderGraphUpdates(container) {
+    // Legacy function - no longer needed with structured JSON response
+    // Kept for backward compatibility but does nothing
   }
 
   function renderGraphUpdates(container) {
@@ -268,20 +292,85 @@ Always format responses using GitHub-flavored Markdown.`;
     typingIndicator?.classList.remove('hidden');
     chatBody.scrollTop = chatBody.scrollHeight;
 
-    console.log('Calling API with message:', fullMessage.substring(0, 50));
-    try {
-      const response = await callAPI(fullMessage);
-      console.log('API response received:', response.substring(0, 50));
-      
-      typingIndicator?.classList.add('hidden');
-      
-      const assistantRow = addMessage('assistant', response);
-      
-      if (assistantRow) {
-        renderGraphUpdates(assistantRow);
-      }
+    const streamingContentId = `streaming-content-${Date.now()}`;
+    const streamingRow = addMessage('assistant', '', false, streamingContentId);
+    const contentElement = document.getElementById(streamingContentId);
+    typingIndicator?.classList.add('hidden');
 
-      showSuggestions(response);
+    let currentTypedText = "";
+    let charBuffer = [];
+    let typewriterActive = false;
+
+    const typeNextChar = () => {
+      if (charBuffer.length === 0) {
+        typewriterActive = false;
+        return;
+      }
+      typewriterActive = true;
+      const charsToType = charBuffer.length > 20 ? 2 : 1;
+      for (let i = 0; i < charsToType; i++) {
+        if (charBuffer.length > 0) {
+          currentTypedText += charBuffer.shift();
+        }
+      }
+      if (contentElement) {
+        contentElement.textContent = currentTypedText;
+      }
+      let delay = 5;
+      if (charBuffer.length > 50) delay = 0;
+      setTimeout(typeNextChar, delay);
+    };
+
+    console.log('Calling API with message:', fullMessage.substring(0, 50));
+    let parsedResponse = null;
+    try {
+      await callAPI(fullMessage, (chunk, fullText) => {
+        if (contentElement && fullText) {
+          const delta = fullText.slice(currentTypedText.length);
+          charBuffer.push(...delta.split(''));
+          if (!typewriterActive) {
+            typeNextChar();
+          }
+        }
+      });
+      charBuffer = [];
+      typewriterActive = false;
+      
+      if (contentElement) {
+        currentTypedText = currentTypedText.trim();
+        
+        try {
+          parsedResponse = JSON.parse(currentTypedText);
+          
+          if (parsedResponse && typeof parsedResponse === 'object') {
+            const graphData = parsedResponse.graph;
+            const chatResponse = parsedResponse.response || '';
+            
+            if (graphData) {
+              updateSATGraph(graphData);
+            }
+            
+            if (chatResponse) {
+              contentElement.textContent = '';
+              renderMarkdownAndMath(contentElement, chatResponse);
+            } else {
+              contentElement.textContent = '';
+            }
+          } else {
+            contentElement.textContent = '';
+            renderMarkdownAndMath(contentElement, currentTypedText);
+          }
+        } catch (parseErr) {
+          console.warn('Failed to parse JSON response, displaying raw text:', parseErr);
+          contentElement.textContent = '';
+          renderMarkdownAndMath(contentElement, currentTypedText);
+        }
+        
+        chatBody.scrollTop = chatBody.scrollHeight;
+      }
+      
+      const textForSuggestions = parsedResponse?.response || currentTypedText;
+      showSuggestions(textForSuggestions);
 
     } catch (error) {
       console.error('Error in sendMessage:', error);
@@ -290,7 +379,7 @@ Always format responses using GitHub-flavored Markdown.`;
     }
   }
 
-  async function callAPI(userMessage) {
+  async function callAPI(userMessage, onChunk = null) {
     const messagesWithSystem = [
       { role: 'system', content: SAT_MATH_SYSTEM_PROMPT + FORMAT_INSTRUCTIONS },
       { role: 'user', content: userMessage }
@@ -353,6 +442,7 @@ Always format responses using GitHub-flavored Markdown.`;
               const content = parsed?.choices?.[0]?.delta?.content;
               if (content) {
                 fullReply += content;
+                if (onChunk) onChunk(content, fullReply);
               }
               
               const finishReason = parsed?.choices?.[0]?.finish_reason;
@@ -377,7 +467,7 @@ Always format responses using GitHub-flavored Markdown.`;
     return fullReply;
   }
 
-  function addMessage(role, text, isError = false) {
+  function addMessage(role, text, isError = false, contentId = null) {
     const row = document.createElement('div');
     row.className = `msg-row ${role === 'user' ? 'user' : 'assistant'}`;
     
@@ -393,8 +483,13 @@ Always format responses using GitHub-flavored Markdown.`;
     bubble.className = `msg-bubble ${role === 'user' ? 'user' : 'korah'}${isError ? ' error' : ''}`;
     
     const content = document.createElement('div');
+    if (contentId) {
+      content.id = contentId;
+    }
     content.className = 'assistant-content';
-    renderMarkdownAndMath(content, text);
+    if (text) {
+      renderMarkdownAndMath(content, text);
+    }
     
     bubble.appendChild(content);
     row.appendChild(avatar);
