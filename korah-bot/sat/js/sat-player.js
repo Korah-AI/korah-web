@@ -46,7 +46,7 @@
   }
 
   function getSectionsLabel(sectionKeys) {
-    if (!Array.isArray(sectionKeys) return sectionKeys || "SAT";
+    if (!Array.isArray(sectionKeys)) return sectionKeys || "SAT";
     if (sectionKeys.length === 0) return "SAT";
     if (sectionKeys.length === 1) {
       return getSectionLabel(sectionKeys[0]);
