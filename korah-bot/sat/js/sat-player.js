@@ -1,3 +1,7 @@
+// SAT Practice Player - Questions.html
+// Handles the practice player functionality for SAT questions
+// NEW FEATURES: stopwatch, progress bar, reference panel, session modal, desmos calculator, question number
+// OLD FUNCTIONALITY: all original question loading/display/error handling preserved
 (() => {
   const { parseOpenSatV1Query, buildOpenSatV1QuestionUrl, OPENSAT_CATALOG } = window.KorahSAT;
   const query = parseOpenSatV1Query();
@@ -10,13 +14,27 @@
     currentIndex: 0,
     answers: {},
     checked: {},
-    reviewed: {}
+    reviewed: {},
+    // NEW: Stopwatch state (replaces fixed 32min timer)
+    stopwatchElapsed: 0,
+    isPaused: false,
+    isHidden: false,
+    // NEW: Calculator state
+    calcActive: false
   };
 
+  // DOM Elements - Original + New Elements
   const playerTitle = document.getElementById("playerTitle");
   const playerCounter = document.getElementById("playerCounter");
-  const playerFilters = document.getElementById("playerFilters");
   const playerTimer = document.getElementById("playerTimer");
+  const clockIcon = document.getElementById("clockIcon");
+  const progressBar = document.getElementById("progressBar");
+  const questionNumberEl = document.getElementById("questionNumber");
+  
+  const questionLayout = document.getElementById("questionLayout");
+  const desmosWrapper = document.getElementById("desmosWrapper");
+  const desmosContainer = document.getElementById("desmosContainer");
+
   const questionDomain = document.getElementById("questionDomain");
   const questionStemTitle = document.getElementById("questionStemTitle");
   const questionParagraph = document.getElementById("questionParagraph");
@@ -25,16 +43,33 @@
   const feedbackPanel = document.getElementById("feedbackPanel");
   const questionNav = document.getElementById("questionNav");
   const reviewBadge = document.getElementById("reviewBadge");
+  
   const prevQuestionBtn = document.getElementById("prevQuestionBtn");
   const nextQuestionBtn = document.getElementById("nextQuestionBtn");
   const checkAnswerBtn = document.getElementById("checkAnswerBtn");
-  const showExplanationBtn = document.getElementById("showExplanationBtn");
+  const referenceBtn = document.getElementById("referenceBtn");
   const markReviewBtn = document.getElementById("markReviewBtn");
   const toggleCalcBtn = document.getElementById("toggleCalcBtn");
-  const calculatorPanel = document.getElementById("calculatorPanel");
+  const showExplanationBtn = document.getElementById("showExplanationBtn");
+
+  // NEW: Stopwatch elements
+  const pauseStopwatchBtn = document.getElementById("pauseStopwatchBtn");
+  const pauseIcon = document.getElementById("pauseIcon");
+  const playIcon = document.getElementById("playIcon");
+  const hideStopwatchBtn = document.getElementById("hideStopwatchBtn");
+
+  // NEW: Modal elements
+  const sessionInfoBtn = document.getElementById("sessionInfoBtn");
+  const sessionInfoModal = document.getElementById("sessionInfoModal");
+  const modalSection = document.getElementById("modalSection");
+  const modalDomains = document.getElementById("modalDomains");
+
+  // NEW: Reference panel
+  const referencePanel = document.getElementById("referencePanel");
 
   let explanationForcedOpen = false;
-  let remainingSeconds = 32 * 60;
+  let stopwatchInterval = null;
+  let desmosInstance = null;
 
   function getSectionLabel(sectionKey) {
     const section = OPENSAT_CATALOG?.sections?.find((s) => s.key === sectionKey);
@@ -45,6 +80,7 @@
     return questions[state.currentIndex];
   }
 
+  // RESTORED: Helper function from old version
   function getSectionsLabel(sectionKeys) {
     if (!Array.isArray(sectionKeys)) return sectionKeys || "SAT";
     if (sectionKeys.length === 0) return "SAT";
@@ -66,41 +102,40 @@
       : "Any domain";
 
     if (loadState === "loading") {
-      playerTitle.textContent = "Loading questions…";
+      if (playerTitle) playerTitle.textContent = "Loading questions…";
       playerCounter.textContent = "Question 0 of 0";
     } else if (loadState === "error") {
-      playerTitle.textContent = "Could not load questions";
+      if (playerTitle) playerTitle.textContent = "Could not load questions";
       playerCounter.textContent = "Question 0 of 0";
     } else if (loadState === "empty") {
-      playerTitle.textContent = "No matching questions";
+      if (playerTitle) playerTitle.textContent = "No matching questions";
       playerCounter.textContent = "Question 0 of 0";
     } else {
-      playerTitle.textContent = sectionLabel;
+      if (playerTitle) playerTitle.textContent = sectionLabel;
       playerCounter.textContent = `Question ${state.currentIndex + 1} of ${questions.length}`;
     }
 
-    const limitLabel = query.limit === null || query.limit === undefined ? "No limit" : `${query.limit} questions`;
-    const sectionsPill = Array.isArray(sections) && sections.length > 0
-      ? sections.join(",")
-      : "section not set";
-    playerFilters.innerHTML = `
-      <span class="sat-pill">${sectionsPill}</span>
-      <span class="sat-pill">${domainLabel}</span>
-      <span class="sat-pill">${limitLabel}</span>
-    `;
+    // NEW: Progress bar update
+    if (questions.length > 0) {
+      const progress = ((state.currentIndex + 1) / questions.length) * 100;
+      if (progressBar) progressBar.style.width = `${progress}%`;
+    }
   }
 
   function renderNav() {
+    if (!questionNav) return;
     if (loadState !== "success") {
       questionNav.innerHTML = "";
       return;
     }
     questionNav.innerHTML = questions
       .map((question, index) => {
+        const isAnswered = !!state.answers[question.id];
         const classes = [
           "sat-mini-pill",
           index === state.currentIndex ? "is-current" : "",
-          state.reviewed[question.id] ? "is-reviewed" : ""
+          state.reviewed[question.id] ? "is-reviewed" : "",
+          isAnswered && index !== state.currentIndex ? "is-answered" : ""
         ]
           .filter(Boolean)
           .join(" ");
@@ -109,31 +144,52 @@
       .join("");
   }
 
+  // NEW: Desmos calculator initialization
+  function initDesmos() {
+    if (!desmosContainer) return;
+    if (!desmosInstance) {
+      desmosInstance = Desmos.GraphingCalculator(desmosContainer, {
+        keypad: true,
+        expressions: true,
+        settingsMenu: false,
+        zoomButtons: true,
+        expressionsTopbar: true
+      });
+    }
+  }
+
   function renderQuestion() {
     const current = getCurrentQuestion();
 
+    // RESTORED: Loading state with all button disabled
     if (loadState === "loading") {
+      if (questionNumberEl) questionNumberEl.textContent = "—";
       questionDomain.textContent = "";
-      questionStemTitle.textContent = "Loading questions…";
+      if (questionStemTitle) questionStemTitle.textContent = "Loading questions…";
       questionParagraph.textContent = "Fetching your OpenSAT session from Korah.";
+      questionParagraph.classList.remove("is-hidden");
       questionStem.textContent = "";
       answerChoices.innerHTML = "";
       feedbackPanel.className = "sat-feedback-panel is-hidden";
       feedbackPanel.innerHTML = "";
       reviewBadge.classList.add("is-hidden");
-      prevQuestionBtn.disabled = true;
-      nextQuestionBtn.disabled = true;
-      checkAnswerBtn.disabled = true;
-      toggleCalcBtn.disabled = true;
-      showExplanationBtn.disabled = true;
-      markReviewBtn.disabled = true;
+      // RESTORED: Button disabled states
+      if (prevQuestionBtn) prevQuestionBtn.disabled = true;
+      if (nextQuestionBtn) nextQuestionBtn.disabled = true;
+      if (checkAnswerBtn) checkAnswerBtn.disabled = true;
+      if (toggleCalcBtn) toggleCalcBtn.disabled = true;
+      if (showExplanationBtn) showExplanationBtn.disabled = true;
+      if (markReviewBtn) markReviewBtn.disabled = true;
       return;
     }
 
+    // RESTORED: Error state with retry button
     if (loadState === "error") {
+      if (questionNumberEl) questionNumberEl.textContent = "!";
       questionDomain.textContent = "";
-      questionStemTitle.textContent = "OpenSAT connection issue";
+      if (questionStemTitle) questionStemTitle.textContent = "OpenSAT connection issue";
       questionParagraph.textContent = loadError || "Something went wrong while loading questions.";
+      questionParagraph.classList.remove("is-hidden");
       questionStem.textContent = "";
       answerChoices.innerHTML = `
         <button class="sat-button sat-button-primary" type="button" id="retryLoadBtn">Retry</button>
@@ -142,33 +198,39 @@
       feedbackPanel.className = "sat-feedback-panel is-hidden";
       feedbackPanel.innerHTML = "";
       reviewBadge.classList.add("is-hidden");
-      prevQuestionBtn.disabled = true;
-      nextQuestionBtn.disabled = true;
-      checkAnswerBtn.disabled = true;
-      toggleCalcBtn.disabled = true;
-      showExplanationBtn.disabled = true;
-      markReviewBtn.disabled = true;
+      // RESTORED: Button disabled states
+      if (prevQuestionBtn) prevQuestionBtn.disabled = true;
+      if (nextQuestionBtn) nextQuestionBtn.disabled = true;
+      if (checkAnswerBtn) checkAnswerBtn.disabled = true;
+      if (toggleCalcBtn) toggleCalcBtn.disabled = true;
+      if (showExplanationBtn) showExplanationBtn.disabled = true;
+      if (markReviewBtn) markReviewBtn.disabled = true;
       return;
     }
 
+    // RESTORED: Empty state
     if (loadState === "empty") {
+      if (questionNumberEl) questionNumberEl.textContent = "—";
       questionDomain.textContent = "";
-      questionStemTitle.textContent = "No questions matched this selection";
+      if (questionStemTitle) questionStemTitle.textContent = "No questions matched this selection";
       questionParagraph.textContent = "Try another domain or lower the question limit.";
+      questionParagraph.classList.remove("is-hidden");
       questionStem.textContent = "";
       answerChoices.innerHTML = `<a class="sat-button sat-button-primary" href="./index.html">Back to bank</a>`;
       feedbackPanel.className = "sat-feedback-panel is-hidden";
       feedbackPanel.innerHTML = "";
       reviewBadge.classList.add("is-hidden");
-      prevQuestionBtn.disabled = true;
-      nextQuestionBtn.disabled = true;
-      checkAnswerBtn.disabled = true;
-      toggleCalcBtn.disabled = true;
-      showExplanationBtn.disabled = true;
-      markReviewBtn.disabled = true;
+      // RESTORED: Button disabled states
+      if (prevQuestionBtn) prevQuestionBtn.disabled = true;
+      if (nextQuestionBtn) nextQuestionBtn.disabled = true;
+      if (checkAnswerBtn) checkAnswerBtn.disabled = true;
+      if (toggleCalcBtn) toggleCalcBtn.disabled = true;
+      if (showExplanationBtn) showExplanationBtn.disabled = true;
+      if (markReviewBtn) markReviewBtn.disabled = true;
       return;
     }
 
+    // RESTORED: Fallback if current is undefined but we have questions
     if (!current) {
       loadState = questions.length ? "success" : "empty";
       renderHeader();
@@ -181,8 +243,23 @@
     const checked = Boolean(state.checked[current.id]);
     const showExplanation = checked || explanationForcedOpen;
 
+    // NEW: Math split layout handling
+    const isMath = current.section === "math";
+    if (isMath && state.calcActive && questionLayout && playerRoot && desmosWrapper) {
+      questionLayout.classList.add("sat-math-layout");
+      playerRoot.classList.remove("sat-player-zen-wrap");
+      desmosWrapper.classList.remove("is-hidden");
+      initDesmos();
+    } else if (questionLayout && playerRoot && desmosWrapper) {
+      questionLayout.classList.remove("sat-math-layout");
+      playerRoot.classList.add("sat-player-zen-wrap");
+      desmosWrapper.classList.add("is-hidden");
+    }
+
+    // NEW: Question number display
+    if (questionNumberEl) questionNumberEl.textContent = state.currentIndex + 1;
     questionDomain.textContent = current.domain;
-    questionStemTitle.textContent = current.section === "math" ? "Math practice" : "Reading and Writing practice";
+    if (questionStemTitle) questionStemTitle.textContent = current.section === "math" ? "Math practice" : "Reading and Writing practice";
     if (current.paragraph) {
       questionParagraph.textContent = current.paragraph;
       questionParagraph.classList.remove("is-hidden");
@@ -192,6 +269,13 @@
     }
     questionStem.textContent = current.stem;
     reviewBadge.classList.toggle("is-hidden", !state.reviewed[current.id]);
+
+    // RESTORED: Toggle calc button text + visibility
+    if (toggleCalcBtn) {
+      toggleCalcBtn.textContent = current.section === "math" ? "Toggle calculator" : "Calculator hidden";
+      toggleCalcBtn.disabled = current.section !== "math";
+      toggleCalcBtn.classList.toggle("is-hidden", current.section !== "math");
+    }
 
     answerChoices.innerHTML = current.options
       .map((option) => {
@@ -225,28 +309,110 @@
       feedbackPanel.innerHTML = "";
     }
 
-    prevQuestionBtn.disabled = state.currentIndex === 0;
-    nextQuestionBtn.disabled = state.currentIndex === questions.length - 1;
-    toggleCalcBtn.textContent = current.section === "math" ? "Toggle calculator" : "Calculator hidden";
-    if (current.section !== "math") {
-      calculatorPanel.classList.add("is-hidden");
+    // RESTORED: Button states
+    if (prevQuestionBtn) prevQuestionBtn.disabled = state.currentIndex === 0;
+    if (nextQuestionBtn) nextQuestionBtn.disabled = state.currentIndex === questions.length - 1;
+    if (checkAnswerBtn) checkAnswerBtn.disabled = !selectedAnswer;
+    if (showExplanationBtn) showExplanationBtn.disabled = false;
+    if (markReviewBtn) markReviewBtn.disabled = false;
+    
+    // RESTORED: Button text and active states
+    if (showExplanationBtn) {
+      showExplanationBtn.textContent = explanationForcedOpen ? "Hide explanation" : "Show explanation";
+      showExplanationBtn.classList.toggle("is-active", explanationForcedOpen);
     }
+    if (markReviewBtn) markReviewBtn.classList.toggle("is-active", !!state.reviewed[current.id]);
+  }
 
-    toggleCalcBtn.disabled = current.section !== "math";
-    showExplanationBtn.disabled = false;
-    markReviewBtn.disabled = false;
-    checkAnswerBtn.disabled = !selectedAnswer;
+  // NEW: Stopwatch functions (replaces old 32min timer)
+  function startStopwatch() {
+    state.stopwatchElapsed = 0;
+    updateStopwatchDisplay();
+    if (stopwatchInterval) clearInterval(stopwatchInterval);
+    
+    stopwatchInterval = setInterval(() => {
+      if (!state.isPaused) {
+        state.stopwatchElapsed++;
+        updateStopwatchDisplay();
+      }
+    }, 1000);
+  }
+
+  function updateStopwatchDisplay() {
+    if (!playerTimer || !clockIcon) return;
+    if (state.isHidden) {
+      playerTimer.classList.add("is-hidden");
+      clockIcon.classList.remove("is-hidden");
+    } else {
+      playerTimer.classList.remove("is-hidden");
+      clockIcon.classList.add("is-hidden");
+      const m = String(Math.floor(state.stopwatchElapsed / 60)).padStart(2, "0");
+      const s = String(state.stopwatchElapsed % 60).padStart(2, "0");
+      playerTimer.textContent = `${m}:${s}`;
+    }
   }
 
   function goTo(index) {
     state.currentIndex = index;
     explanationForcedOpen = false;
+    // NEW: Reset stopwatch on navigation
+    startStopwatch();
     renderHeader();
     renderNav();
     renderQuestion();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  // NEW: Session modal population
+  function populateSessionModal() {
+    const sections = query.sections;
+    if (modalSection) modalSection.textContent = getSectionsLabel(sections);
+    
+    const domains = query.domains;
+    if (modalDomains) {
+      if (Array.isArray(domains) && domains.length > 0 && !domains.includes("any")) {
+        modalDomains.innerHTML = domains.map(d => `<span class="domain-tag">${d}</span>`).join("");
+      } else {
+        modalDomains.innerHTML = `<span style="opacity: 0.6; font-style: italic;">All domains selected</span>`;
+      }
+    }
+  }
+
+  // NEW: Draggable reference panel
+  function makeDraggable(el, handleSelector) {
+    const handle = el.querySelector(handleSelector) || el;
+    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+
+    handle.onmousedown = dragMouseDown;
+
+    function dragMouseDown(e) {
+      if (e.target.closest('button')) return;
+      e.preventDefault();
+      pos3 = e.clientX;
+      pos4 = e.clientY;
+      document.onmouseup = closeDragElement;
+      document.onmousemove = elementDrag;
+    }
+
+    function elementDrag(e) {
+      e.preventDefault();
+      pos1 = pos3 - e.clientX;
+      pos2 = pos4 - e.clientY;
+      pos3 = e.clientX;
+      pos4 = e.clientY;
+      el.style.top = (el.offsetTop - pos2) + "px";
+      el.style.left = (el.offsetLeft - pos1) + "px";
+    }
+
+    function closeDragElement() {
+      document.onmouseup = null;
+      document.onmousemove = null;
+    }
+  }
+
+  // Event Listeners
   answerChoices.addEventListener("click", (event) => {
+    // RESTORED: Retry button logic
     const retry = event.target.closest("#retryLoadBtn");
     if (retry) {
       void loadQuestions();
@@ -260,6 +426,7 @@
     const current = getCurrentQuestion();
     state.answers[current.id] = choice.dataset.answer;
     renderQuestion();
+    renderNav();
   });
 
   questionNav.addEventListener("click", (event) => {
@@ -297,7 +464,6 @@
 
   showExplanationBtn.addEventListener("click", () => {
     explanationForcedOpen = !explanationForcedOpen;
-    showExplanationBtn.textContent = explanationForcedOpen ? "Hide explanation" : "Show explanation";
     renderQuestion();
   });
 
@@ -311,23 +477,51 @@
     renderQuestion();
   });
 
+  // NEW: Reference panel toggle
+  referenceBtn.addEventListener("click", () => {
+    const isHidden = referencePanel.classList.toggle("is-hidden");
+    referenceBtn.classList.toggle("is-active", !isHidden);
+  });
+
   toggleCalcBtn.addEventListener("click", () => {
     const current = getCurrentQuestion();
     if (!current || current.section !== "math") {
       return;
     }
-    calculatorPanel.classList.toggle("is-hidden");
+    state.calcActive = !state.calcActive;
+    renderQuestion();
   });
 
-  window.setInterval(() => {
-    remainingSeconds = Math.max(0, remainingSeconds - 1);
-    const minutes = String(Math.floor(remainingSeconds / 60)).padStart(2, "0");
-    const seconds = String(remainingSeconds % 60).padStart(2, "0");
-    playerTimer.textContent = `${minutes}:${seconds}`;
-  }, 1000);
+  // NEW: Stopwatch event listeners
+  pauseStopwatchBtn.addEventListener("click", () => {
+    state.isPaused = !state.isPaused;
+    pauseStopwatchBtn.classList.toggle("is-active", state.isPaused);
+    pauseIcon.classList.toggle("is-hidden", state.isPaused);
+    playIcon.classList.toggle("is-hidden", !state.isPaused);
+  });
 
+  hideStopwatchBtn.addEventListener("click", () => {
+    state.isHidden = !state.isHidden;
+    hideStopwatchBtn.classList.toggle("is-active", state.isHidden);
+    updateStopwatchDisplay();
+  });
+
+  // NEW: Session modal event listeners
+  sessionInfoBtn.addEventListener("click", () => {
+    populateSessionModal();
+    if (sessionInfoModal) sessionInfoModal.style.display = "flex";
+  });
+
+  sessionInfoModal.addEventListener("click", (e) => {
+    if (e.target === sessionInfoModal && sessionInfoModal) {
+      sessionInfoModal.style.display = "none";
+    }
+  });
+
+  // RESTORED: loadQuestions with full validation (keeps new stopwatch and reference panel)
   async function loadQuestions() {
     const sections = query.sections;
+    // RESTORED: Section validation
     const isValidSection = Array.isArray(sections) && sections.length > 0;
     if (!isValidSection) {
       loadState = "error";
@@ -351,10 +545,12 @@
     renderQuestion();
 
     const params = new URLSearchParams();
+    // RESTORED: Section value handling
     const sectionValue = sections.length === 2 && sections.includes("english") && sections.includes("math")
       ? "any"
       : sections.join(",");
     params.set("sections", sectionValue);
+    // RESTORED: Domain value handling  
     const domainValue = Array.isArray(query.domains) && query.domains.length > 0 && !query.domains.includes("any")
       ? query.domains.join(",")
       : "any";
@@ -404,9 +600,16 @@
     questions = Array.isArray(payload?.questions) ? payload.questions : [];
     loadState = questions.length ? "success" : "empty";
     state.currentIndex = 0;
+    // NEW: Start stopwatch
+    startStopwatch();
     renderHeader();
     renderNav();
     renderQuestion();
+    
+    // NEW: Initialize reference panel draggable
+    if (referencePanel) {
+      makeDraggable(referencePanel, ".reference-drag-handle");
+    }
   }
 
   renderHeader();

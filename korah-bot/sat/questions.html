@@ -64,324 +64,188 @@
 
 <canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
 
-<!-- ═══ SIDEBAR ═══ -->
-<aside id="sidebar" class="sidebar bg-sf glass t-theme">
-  <div class="sidebar-header">
-    <a href="../index.html" class="flex items-center gap-2.5 no-underline">
-      <div class="w-12 h-12 rounded-xl flex items-center justify-center font-display text-xl font-black text-white shadow-glow logo-btn">
-        <span class="logo-letter">
-          <img src="../app/logo.png" alt="Korah"/>
-        </span>
-      </div>
-      <div class="flex flex-col leading-tight">
-        <span class="font-display text-[19px] font-bold tx">Korah</span>
-        <span class="text-[9px] font-semibold tracking-[2.5px] uppercase tx-p4">Study Smarter</span>
-      </div>
+<!-- ═══ NAVIGATION BAR ═══ -->
+<header class="sat-player-topbar t-theme bd">
+  <div class="sat-topbar-left">
+    <a href="./index.html" class="sat-button sat-button-ghost" style="height: 2.25rem; font-size: 0.85rem; gap: 6px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+      <span>Back to Bank</span>
     </a>
-    <button id="new-chat-btn" class="new-chat-btn text-white text-xs font-bold px-4 py-2 rounded-full border-none cursor-pointer shadow-glow t-btn">
-      <span class="new-chat-icon">+</span> <span class="new-chat-text">New Chat</span>
-    </button>
   </div>
 
-  <nav class="sidebar-nav">
-    <div class="sidebar-nav-row">
-      <a href="../index.html" class="sidebar-nav-link active t-btn"><span class="nav-icon">💬</span> <span class="nav-text"></span></a>
-      <a href="../study/feed.html" class="sidebar-nav-link t-btn"><span class="nav-icon">📚</span> <span class="nav-text"></span></a>
-    </div>
-    <a href="index.html" class="sidebar-nav-link t-btn" data-sat-link="true"><span class="nav-icon">📝</span> <span class="nav-text">SAT</span></a>
-    <a href="../productivity.html" class="sidebar-nav-link productivity-link t-btn"><span class="nav-icon">⏱️</span> <span class="nav-text">Productivity</span></a>
-  </nav>
-
-  <div class="sidebar-middle">
-    <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 12px 0 4px;">
-    <span class="sidebar-section-label" style="margin:0">Recent Chats</span>
-    </div>
-    <div class="select-bar-wrapper">
-      <div id="chat-select-bar" class="select-bar">
-        <span class="select-bar-count" id="chat-select-count">0 selected</span>
-        <div class="select-bar-actions">
-          <button class="select-bar-btn" id="chat-select-all" title="Select all">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <polyline points="20 6 9 17 4 12"/>
-            </svg>
-          </button>
-          <button class="select-bar-btn" id="chat-deselect-all" title="Deselect all">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <line x1="18" y1="6" x2="6" y2="18"/>
-              <line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
-          <button class="select-bar-btn danger" id="chat-delete-selected" title="Delete selected"></button>
-        </div>
+  <!-- Centered Navbar Stopwatch -->
+  <div class="sat-topbar-center">
+    <div id="stopwatchContainer" style="display: flex; align-items: center; gap: 1rem; background: var(--sf2); padding: 0.25rem 1rem; border-radius: 999px; border: 0.0625rem solid var(--bd);">
+      <div id="stopwatchDisplay" style="display: flex; align-items: center; gap: 8px;">
+        <div id="playerTimer" class="sat-timer-display" style="font-size: 1.1rem; width: 3.5rem; text-align: center;">00:00</div>
+        <svg id="clockIcon" class="is-hidden" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color: var(--p5);">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
       </div>
-    </div>
-    <div id="chat-history" class="chat-history">
-      <div class="skeleton-item">
-        <div class="skeleton-icon"></div>
-        <div class="skeleton-text"></div>
-      </div>
-      <div class="skeleton-item">
-        <div class="skeleton-icon"></div>
-        <div class="skeleton-text"></div>
-      </div>
-      <div class="skeleton-item">
-        <div class="skeleton-icon"></div>
-        <div class="skeleton-text"></div>
-      </div>
-      <div class="skeleton-item">
-        <div class="skeleton-icon"></div>
-        <div class="skeleton-text"></div>
-      </div>
-      <div class="skeleton-item">
-        <div class="skeleton-icon"></div>
-        <div class="skeleton-text"></div>
+      <div class="sat-stopwatch-controls" style="border-left: 0.0625rem solid var(--bd); padding-left: 0.5rem; margin-top: 0;">
+        <button id="pauseStopwatchBtn" class="sat-stopwatch-btn" title="Pause/Resume" style="background: transparent; border: none; padding: 4px;">
+          <svg id="pauseIcon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+          <svg id="playIcon" class="is-hidden" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        </button>
+        <button id="hideStopwatchBtn" class="sat-stopwatch-btn" style="background: transparent; border: none; padding: 4px; font-size: 0.6rem;">Hide</button>
       </div>
     </div>
   </div>
 
-  <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 12px 0 4px;">
-    <span class="sidebar-section-label" style="margin:0">Recent Study Items</span>
-  </div>
-  <div class="sidebar-middle">
-    <div class="select-bar-wrapper">
-      <div id="study-select-bar" class="select-bar">
-        <span class="select-bar-count" id="study-select-count">0 selected</span>
-        <div class="select-bar-actions">
-          <button class="select-bar-btn" id="study-select-all" title="Select all">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <polyline points="20 6 9 17 4 12"/>
-            </svg>
-          </button>
-          <button class="select-bar-btn" id="study-deselect-all" title="Deselect all">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <line x1="18" y1="6" x2="6" y2="18"/>
-              <line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
-          <button class="select-bar-btn danger" id="study-delete-selected" title="Delete selected"></button>
-        </div>
-      </div>
-    </div>
-    <div id="study-items-history" class="chat-history">
-        <!-- Populated by JS from localStorage -->
-      </div>
-      <div id="study-items-empty" class="study-items-empty hidden">
-        <span class="study-items-empty-icon" aria-hidden="true">📚</span>
-        <div class="study-items-empty-title">No study items yet</div>
-        <div class="study-items-empty-sub">Create one to see it here.</div>
-      </div>
-    </div>
-
-    <div class="sidebar-footer">
-    <div class="mood-indicator" id="sidebar-mood">
-      <span class="mood-dot" id="mood-dot">🟢</span>
-      <span class="text-xs tx2 font-medium">Full Focus Mode</span>
-    </div>
-    <div class="sidebar-footer-actions">
-      <button id="logout-btn" class="theme-toggle-small t-btn" title="Log out">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-          <polyline points="16 17 21 12 16 7"/>
-          <line x1="21" y1="12" x2="9" y2="12"/>
-        </svg>
-      </button>
-      <button id="settings-btn" class="theme-toggle-small t-btn" title="Settings">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-        </svg>
-      </button>
-      <button @click="theme = theme === 'dark' ? 'light' : 'dark'; localStorage.setItem('korah_theme', theme)" class="theme-toggle-small t-btn" title="Toggle theme">
-        <svg x-show="theme==='light'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" style="color:var(--p5)">
-          <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/>
-        </svg>
-        <svg x-show="theme==='dark'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--p4)">
-          <circle cx="12" cy="12" r="5"/>
-          <line x1="12" y1="1" x2="12" y2="3"/>
-          <line x1="12" y1="21" x2="12" y2="23"/>
-          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-          <line x1="1" y1="12" x2="3" y2="12"/>
-          <line x1="21" y1="12" x2="23" y2="12"/>
-          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-        </svg>
-      </button>
-    </div>
-  </div>
-</aside>
-
-<!-- Hidden file input for document attachment -->
-<input type="file" id="doc-file-input" class="hidden" multiple accept=".pdf,.txt,.png,.jpg,.jpeg,.gif,.webp,.md"/>
-
-<!-- ═══ MAIN AREA WRAPPER ═══ -->
-<div id="main-area-wrapper" class="main-area-wrapper">
-
-<!-- ═══ MAIN CHAT AREA ═══ -->
-<main id="main-content" class="main-content">
-
-  <!-- Top bar -->
-  <header class="chat-topbar bg-sf glass-sm t-theme bd">
-    <button id="sidebar-toggle" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+  <div class="sat-topbar-right">
+    <button id="referenceBtn" class="sat-button sat-button-ghost" title="Reference" style="height: 2.25rem; width: 2.25rem; padding: 0;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
       </svg>
     </button>
+    <button id="markReviewBtn" class="sat-button sat-button-ghost" title="Mark for review" style="height: 2.25rem; width: 2.25rem; padding: 0;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>
+      </svg>
+    </button>
+    <button id="toggleCalcBtn" class="sat-button sat-button-ghost" title="Calculator" style="height: 2.25rem; width: 2.25rem; padding: 0;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="16" y2="18"/>
+      </svg>
+    </button>
+    <button id="showExplanationBtn" class="sat-button sat-button-ghost" title="Explanation" style="height: 2.25rem; width: 2.25rem; padding: 0;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+    </button>
+  </div>
+</header>
 
-    <div class="logo-container" style="display: flex; align-items: center; margin-right: 12px;">
-      <img src="../app/logo.png" alt="Korah Logo" style="height: 32px; width: auto;">
-    </div>
+<!-- ═══ MAIN CONTENT ═══ -->
+<div id="main-area-wrapper" class="main-area-wrapper" style="margin-left: 0; width: 100%;">
 
-    <div class="chat-title-area">
-      <div class="korah-status-dot"></div>
-      <span class="font-semibold tx text-sm" id="chat-title">SAT Practice Player</span>
-    </div>
+<main id="main-content" class="main-content" style="padding: 0;">
 
-    <div class="mode-selector-wrapper">
-      <button class="mode-selector-btn t-btn" id="mode-selector-btn" title="Change subject mode">
-        <span class="mode-icon" id="mode-icon">✨</span>
-        <span class="mode-name" id="mode-name">General</span>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="6 9 12 15 18 9"/>
-        </svg>
-      </button>
-      <div class="mode-dropdown" id="mode-dropdown">
-        <div class="mode-option" data-mode="general">
-          <span class="mode-option-icon">✨</span>
-          <div class="mode-option-info">
-            <div class="mode-option-name">General Mode</div>
-            <div class="mode-option-desc">Versatile AI study companion</div>
-          </div>
-        </div>
-        <div class="mode-option" data-mode="math">
-          <span class="mode-option-icon">🧮</span>
-          <div class="mode-option-info">
-            <div class="mode-option-name">Math Mode</div>
-            <div class="mode-option-desc">Step-by-step problem solving</div>
-          </div>
-        </div>
-        <div class="mode-option" data-mode="physics">
-          <span class="mode-option-icon">⚛️</span>
-          <div class="mode-option-info">
-            <div class="mode-option-name">Physics Mode</div>
-            <div class="mode-option-desc">Conceptual explanations & formulas</div>
-          </div>
-        </div>
-        <div class="mode-option" data-mode="chemistry">
-          <span class="mode-option-icon">⚗️</span>
-          <div class="mode-option-info">
-            <div class="mode-option-name">Chemistry Mode</div>
-            <div class="mode-option-desc">Reactions & molecular structures</div>
-          </div>
-        </div>
-        <div class="mode-option" data-mode="biology">
-          <span class="mode-option-icon">🧬</span>
-          <div class="mode-option-info">
-            <div class="mode-option-name">Biology Mode</div>
-            <div class="mode-option-desc">Life processes & terminology</div>
-          </div>
-        </div>
-        <div class="mode-option" data-mode="history">
-          <span class="mode-option-icon">📜</span>
-          <div class="mode-option-info">
-            <div class="mode-option-name">History Mode</div>
-            <div class="mode-option-desc">Context & cause-effect analysis</div>
-          </div>
-        </div>
-        <div class="mode-option" data-mode="literature">
-          <span class="mode-option-icon">📚</span>
-          <div class="mode-option-info">
-            <div class="mode-option-name">Literature Mode</div>
-            <div class="mode-option-desc">Analysis & interpretation</div>
-          </div>
-        </div>
+  <div id="playerRoot" class="sat-player-zen-wrap">
+    
+    <!-- Top Progress Indicator -->
+    <div id="topIndicators" class="sat-player-header-center">
+      <h1 id="playerTitle" class="grad-text" style="font-size: 1.25rem; margin: 0 0 0.5rem;">Loading session</h1>
+      <div id="playerCounter" class="sat-pill" style="font-size: 0.75rem; height: 1.75rem;">Question 1 of 1</div>
+      <div class="sat-progress-container" style="max-width: 240px; height: 4px; margin-top: 0.5rem;">
+        <div id="progressBar" class="sat-progress-bar" style="width: 0%;"></div>
       </div>
     </div>
 
-    <div class="topbar-actions">
-      <button class="topbar-btn t-btn tx2" id="clear-chat-btn" title="Clear chat">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="3,6 5,6 21,6"/><path d="M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6"/><path d="M10,11v6M14,11v6"/><path d="M9,6V4a1,1,0,0,1,1-1h4a1,1,0,0,1,1,1v2"/>
-        </svg>
-      </button>
+    <!-- Layout Container (Becomes split grid in Math) -->
+    <div id="questionLayout" class="sat-question-container">
+      
+      <!-- Left: Desmos (Visible in Math split mode) -->
+      <div id="desmosWrapper" class="sat-desmos-container is-hidden">
+        <div id="desmosContainer" style="width: 100%; height: 100%;"></div>
+      </div>
+
+      <!-- Right/Main: Question Content -->
+      <div id="contentWrapper" class="sat-question-content-main">
+        <div style="display: flex; gap: 2rem;">
+          <div id="questionNumber" class="sat-question-number">1</div>
+          
+          <section class="sat-question-panel" style="flex: 1;">
+            <div class="sat-question-head">
+              <div>
+                <p id="questionDomain" class="sat-domain-label"></p>
+                <h2 id="questionStemTitle" class="sat-question-title">Question</h2>
+              </div>
+              <div id="reviewBadge" class="sat-pill is-hidden" style="background: rgba(248, 113, 113, 0.15); color: #f87171; border-color: rgba(248, 113, 113, 0.3);">Marked</div>
+            </div>
+
+            <article class="sat-passage-card">
+              <p id="questionParagraph" class="sat-passage-text"></p>
+              <p id="questionStem" class="sat-question-stem"></p>
+            </article>
+
+            <div id="answerChoices" class="sat-answer-list"></div>
+
+            <section id="feedbackPanel" class="sat-feedback-panel is-hidden"></section>
+
+            <div id="questionNav" class="sat-question-nav" style="justify-content: center; margin-top: 2rem;"></div>
+          </section>
+        </div>
+      </div>
     </div>
-  </header>
-
-  <!-- SAT Player Content -->
-  <div class="sat-page sat-player-page" style="padding: 20px;">
-    <header class="sat-player-topbar glass">
-      <div class="sat-topbar-main">
-        <a class="sat-button sat-button-ghost" href="./index.html">Back to bank</a>
-        <div>
-          <p class="sat-eyebrow grad-text">SAT Player</p>
-          <h1 id="playerTitle">Loading session</h1>
-        </div>
-      </div>
-      <div class="sat-topbar-meta">
-        <div class="sat-pill" id="playerCounter">Question 1 of 1</div>
-        <div class="sat-pill" id="playerTimer">32:00</div>
-      </div>
-    </header>
-
-    <section class="sat-player-layout">
-      <aside class="sat-tools-panel glass">
-        <div class="sat-panel-block">
-          <p class="sat-eyebrow">Session</p>
-          <div id="playerFilters" class="sat-filter-pills"></div>
-        </div>
-        <div class="sat-panel-block">
-          <p class="sat-eyebrow">Tools</p>
-          <button id="markReviewBtn" class="sat-button sat-button-secondary" type="button">Mark for review</button>
-          <button id="toggleCalcBtn" class="sat-button sat-button-secondary" type="button">Toggle calculator</button>
-          <button id="showExplanationBtn" class="sat-button sat-button-ghost" type="button">Show explanation</button>
-        </div>
-        <div id="calculatorPanel" class="sat-calculator-panel is-hidden">
-          <div class="sat-calculator-grid">
-            <span>7</span><span>8</span><span>9</span><span>/</span>
-            <span>4</span><span>5</span><span>6</span><span>x</span>
-            <span>1</span><span>2</span><span>3</span><span>-</span>
-            <span>0</span><span>.</span><span>=</span><span>+</span>
-          </div>
-          <p class="sat-panel-note">Placeholder panel for a future embedded calculator.</p>
-        </div>
-        <div class="sat-panel-block">
-          <p class="sat-eyebrow">Navigator</p>
-          <div id="questionNav" class="sat-question-nav"></div>
-        </div>
-      </aside>
-
-      <section class="sat-question-panel glass">
-        <div class="sat-question-head">
-          <div>
-            <p id="questionDomain" class="sat-domain-label"></p>
-            <h2 id="questionStemTitle">Question</h2>
-          </div>
-          <div id="reviewBadge" class="sat-pill is-hidden">Marked</div>
-        </div>
-
-        <article class="sat-passage-card">
-          <p id="questionParagraph" class="sat-passage-text"></p>
-          <p id="questionStem" class="sat-question-stem"></p>
-        </article>
-
-        <div id="answerChoices" class="sat-answer-list"></div>
-
-        <section id="feedbackPanel" class="sat-feedback-panel is-hidden"></section>
-
-        <footer class="sat-player-actions">
-          <button id="prevQuestionBtn" class="sat-button sat-button-ghost" type="button">Previous</button>
-          <button id="checkAnswerBtn" class="sat-button sat-button-primary" type="button">Check answer</button>
-          <button id="nextQuestionBtn" class="sat-button sat-button-secondary" type="button">Next</button>
-        </footer>
-      </section>
-    </section>
   </div>
 
 </main>
 
+</div>
 
+<!-- ═══ MOVABLE REFERENCE PANEL ═══ -->
+<div id="referencePanel" class="reference-panel is-hidden" style="top: 100px; left: 100px; width: 500px; height: 600px;">
+  <div class="reference-drag-handle">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;">Reference Sheet</span>
+    </div>
+    <button class="reference-close-btn" onclick="document.getElementById('referencePanel').classList.add('is-hidden'); document.getElementById('referenceBtn').classList.remove('is-active');">&times;</button>
+  </div>
+  <div class="reference-content">
+    <img src="https://via.placeholder.com/1200x1600?text=SAT+Formula+Reference+Sheet" alt="Reference Sheet" style="min-width: 1000px; height: auto; display: block;"/>
+  </div>
+</div>
 
-</div><!-- end .main-area-wrapper -->
+<!-- ═══ FOOTER ═══ -->
+<footer class="sat-player-footer">
+  <div class="sat-footer-group">
+    <!-- Standardized Info Button -->
+    <button id="sessionInfoBtn" class="sat-button sat-button-ghost" title="Session Info" style="height: 2.25rem; width: 2.25rem; padding: 0;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+      </svg>
+    </button>
+    
+    <button id="checkAnswerBtn" class="sat-button sat-button-primary" type="button">Check Answer</button>
+    <button id="prevQuestionBtn" class="sat-button sat-button-ghost" type="button">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right: 6px;">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+      Previous
+    </button>
+    <button id="nextQuestionBtn" class="sat-button sat-button-ghost" type="button">
+      Next
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-left: 6px;">
+        <polyline points="9 18 15 12 9 6"/>
+      </svg>
+    </button>
+  </div>
+</footer>
+
+<!-- ═══ SESSION INFO MODAL (Settings-style) ═══ -->
+<div id="sessionInfoModal" class="settings-modal" style="display: none; opacity: 1; pointer-events: auto;">
+  <div class="settings-modal-content" style="max-width: 28rem;">
+    <div class="settings-header">
+      <h2 class="settings-title">Practice Details</h2>
+      <button class="settings-close" onclick="document.getElementById('sessionInfoModal').style.display='none'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    
+    <div class="settings-body">
+      <div class="settings-section">
+        <h3 class="settings-section-title">Session Configuration</h3>
+        <div class="settings-item">
+          <div class="settings-item-label">Target Section</div>
+          <div id="modalSection" class="settings-item-control font-bold tx-p5">—</div>
+        </div>
+        <div class="settings-item" style="flex-direction: column; align-items: flex-start; gap: 0.5rem;">
+          <div class="settings-item-label">Active Domains</div>
+          <div id="modalDomains" style="display: flex; flex-wrap: wrap; gap: 0.5rem; width: 100%;">
+            <!-- Domain tags injected here -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- Settings Modal -->
 <div id="settings-modal" class="settings-modal">
@@ -469,27 +333,7 @@
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
 <script src="../app/timer-manager.js"></script>
-<script src="../study/js/sidebar.js"></script>
 <script src="../study/js/study-api.js"></script>
-<script src="../app/korah-chat.js"></script>
-
-<script>
-  // Initialize sidebar with chat-specific callbacks
-  window.addEventListener('korahReady', () => {
-    if (window.KorahSidebar) {
-      window.KorahSidebar.initSidebar({
-        chatBaseUrl: "../index.html",
-        itemPageUrl: "../study/item.html",
-        onItemClick: (id) => {
-          if (window.KorahChat && typeof window.KorahChat.switchToSession === 'function') {
-            window.KorahChat.switchToSession(id);
-          }
-        }
-      });
-    }
-  }, { once: true });
-</script>
-
 <script src="./js/sat-shared.js"></script>
 <script src="./js/sat-player.js"></script>
 
