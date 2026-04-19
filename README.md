@@ -1,11 +1,10 @@
 # 1.1 Updates (still in development)
-* SAT Math Mode Updates
-  * Read `sat-math-mode-implementation-plan.md` in the `questionbank-beta` branch
-  * Jayden: UI; Me: Functionality
-* `Questionbank-Beta` Updates
-  * OpenSAT Questionbank is the current implementation and works fine.
-  * Need to expand functionality
-  * Need to update U.I. (Jayden)
+* SAT Math Mode and Questionbank (Mostly UI
+  * Make the SAT button in sidebar a dropdown, showing "Questionbank" and "Math Chat"
+  * Update U.I for `math-chat/index.html`
+     * It's overall terrible for CSS and all of that, so you're gonna have to go through it and fix it ngl 
+     * Remove gradients, fix SVG icons
+     * Fix `div id = "chat-input"` CSS
 * Need to add Google Drive API for document creation
 * Need to add "Import from Quizlet" option for study items
 * Focus-based learning integration
@@ -17,6 +16,8 @@
 * PR for `main` onto `deployment`
 * web_fetch tool for the most up-to-date indo
 * sat_question fetch tool (chatbot to output SAT problems, JSON formatted)
+
+--------------------------------------------------------------------
 
 # Patches/Fixes
 * MAJOR: Fix the screen sizing for ChromeBooks (67% looks like what it should at 100%)
