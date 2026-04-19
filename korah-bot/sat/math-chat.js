@@ -36,6 +36,7 @@ Your teaching approach:
 IMPORTANT: You MUST respond in JSON format with two fields: "graph" and "response"
 
 RESPONSE FORMAT (STRICTLY REQUIRED):
+\`\`\`json
 {
   "graph": {
     "expressions": [
@@ -43,8 +44,9 @@ RESPONSE FORMAT (STRICTLY REQUIRED):
     ],
     "viewport": {"xmin": -10, "xmax": 10, "ymin": -10, "ymax": 10}
   },
-  "response": "Your explanation here using Markdown and KaTeX..."
+  "response": "Your explanation here using Markdown and KaTeX . . ."
 }
+\`\`\`
 
 The "graph" field contains Desmos API expressions to update the graph:
 - "expressions": array of expression objects with latex, color, hidden, lineStyle, lineWidth
@@ -57,31 +59,24 @@ The "graph" field contains Desmos API expressions to update the graph:
 The "response" field contains your text explanation using:
 - Markdown headings, bold, italic
 - KaTeX for math: $inline$ or $$display$$
-- NEVER use \\\\(...\\\\\), \\[...\\], or bare math
+- NEVER use \\(...\\), \\[...\\], or bare math
 
-If no graph update needed, set "graph": null or omit the field:
+If no graph update needed, set "graph": null or omit the field.
+
+Response Format Example (just text, no graph):
 {
-  "response": "Just explanation without graph changes..."
+  "response": "Your explanation here..."
 }
 
-  const FORMAT_INSTRUCTIONS = `
-STRICT RESPONSE FORMAT REQUIRED:
-Output ONLY valid JSON with these exact fields:
-{
-  "graph": {
-    "expressions": [...],
-    "viewport": {...}
-  },
-  "response": "Your explanation in Markdown with KaTeX math..."
+Note: Always output raw JSON without any code block markers.`;
+
+function getFormatInstructions() {
+  return `STRICT RESPONSE FORMAT REQUIRED:
+Output ONLY raw JSON. No code blocks or markdown.
+Required fields: { "graph": {...}, "response": "..." }
+
+KATEX: Inline $...$, Display $$...$$`;
 }
-
-Do NOT wrap the JSON in any code block markers. Output raw JSON only.
-If no graph update needed, omit "graph" or set to null.
-
-KATEX DELIMITER POLICY (REQUIRED):
-- Inline math: $...$ (single dollar signs)
-- Display math: $$...$$ (double dollar signs)
-- NEVER use \\(...\\), \\[...\\], [ ... ], or bare math without delimiters`;
 
   function initializeSATGraph() {
     const container = document.getElementById('sat-graph-container');
@@ -226,25 +221,9 @@ KATEX DELIMITER POLICY (REQUIRED):
   }
 
   function renderGraphUpdates(container) {
-    // Legacy function - no longer needed with structured JSON response
-    // Kept for backward compatibility but does nothing
-  }
-
-  function renderGraphUpdates(container) {
-    const codeBlocks = container.querySelectorAll(
-      'pre code.language-graph-update, pre code.lang-graph-update'
-    );
-
-    for (const block of codeBlocks) {
-      const code = block.textContent.trim();
-      try {
-        const data = JSON.parse(code);
-        updateSATGraph(data);
-        block.parentElement.remove();
-      } catch (e) {
-        console.warn('Failed to parse graph-update:', e);
-      }
-    }
+    // Structured JSON responses now carry graph updates directly.
+    // Keep this stub so older call sites remain safe.
+    return container;
   }
 
   function bindGraphControls() {
@@ -381,7 +360,7 @@ KATEX DELIMITER POLICY (REQUIRED):
 
   async function callAPI(userMessage, onChunk = null) {
     const messagesWithSystem = [
-      { role: 'system', content: SAT_MATH_SYSTEM_PROMPT + FORMAT_INSTRUCTIONS },
+      { role: 'system', content: SAT_MATH_SYSTEM_PROMPT + getFormatInstructions() },
       { role: 'user', content: userMessage }
     ];
 
