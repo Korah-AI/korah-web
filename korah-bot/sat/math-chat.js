@@ -177,7 +177,10 @@ KATEX: $...$ for inline, $$...$$ for display.`;
 
     const graphContainer = document.getElementById('sat-graph-container');
 
-    satMathCalculator.removeExpressions({});
+    // To properly "update" we either clear and rebuild or surgically update.
+    // Given the prompt asks to "update existing", we'll clear first to ensure a clean state
+    // but using setBlank() is the standard way to clear everything.
+    satMathCalculator.setBlank();
 
     if (data.viewport) {
       satMathCalculator.setMathBounds({
@@ -194,7 +197,7 @@ KATEX: $...$ for inline, $$...$$ for display.`;
           satMathCalculator.setExpression({
             id: expr.id || 'expr_' + idx,
             latex: expr.latex,
-            color: expr.color || Desmos.Colors.BLUE,
+            color: expr.color || '#4285F4',
             hidden: expr.hidden || false,
             lineStyle: expr.lineStyle || 'SOLID',
             lineWidth: expr.lineWidth || 2,
@@ -203,8 +206,10 @@ KATEX: $...$ for inline, $$...$$ for display.`;
       });
     }
 
-    graphContainer.classList.add('graph-updated');
-    setTimeout(() => graphContainer.classList.remove('graph-updated'), 500);
+    if (graphContainer) {
+      graphContainer.classList.add('graph-updated');
+      setTimeout(() => graphContainer.classList.remove('graph-updated'), 500);
+    }
 
     captureGraphState();
   }
@@ -229,7 +234,7 @@ KATEX: $...$ for inline, $$...$$ for display.`;
 
     document.getElementById('sat-graph-clear')?.addEventListener('click', () => {
       if (satMathCalculator) {
-        satMathCalculator.removeExpressions({});
+        satMathCalculator.setBlank();
         graphExpressions = [];
         updateGraphContextIndicator();
       }
