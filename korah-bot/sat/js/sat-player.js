@@ -20,7 +20,8 @@
     isPaused: false,
     isHidden: false,
     // NEW: Calculator state
-    calcActive: false
+    calcActive: true,
+    userToggledCalc: false
   };
 
   // DOM Elements - Original + New Elements
@@ -28,7 +29,6 @@
   const playerCounter = document.getElementById("playerCounter");
   const playerTimer = document.getElementById("playerTimer");
   const clockIcon = document.getElementById("clockIcon");
-  const progressBar = document.getElementById("progressBar");
   const questionNumberEl = document.getElementById("questionNumber");
   
   const questionLayout = document.getElementById("questionLayout");
@@ -96,34 +96,24 @@
   function renderHeader() {
     const sections = query.sections;
     const sectionLabel = getSectionsLabel(sections);
-    const domains = query.domains;
-    const domainLabel = Array.isArray(domains) && domains.length > 0 && !domains.includes("any")
-      ? (domains.length === 1 ? domains[0] : `${domains.length} domains`)
-      : "Any domain";
 
     if (loadState === "loading") {
       if (playerTitle) playerTitle.textContent = "Loading questions…";
-      playerCounter.textContent = "Question 0 of 0";
+      playerCounter.textContent = "Question 0 out of 0";
     } else if (loadState === "error") {
       if (playerTitle) playerTitle.textContent = "Could not load questions";
-      playerCounter.textContent = "Question 0 of 0";
+      playerCounter.textContent = "Question 0 out of 0";
     } else if (loadState === "empty") {
       if (playerTitle) playerTitle.textContent = "No matching questions";
-      playerCounter.textContent = "Question 0 of 0";
+      playerCounter.textContent = "Question 0 out of 0";
     } else {
       if (playerTitle) playerTitle.textContent = sectionLabel;
-      playerCounter.textContent = `Question ${state.currentIndex + 1} of ${questions.length}`;
-    }
-
-    // NEW: Progress bar update
-    if (questions.length > 0) {
-      const progress = ((state.currentIndex + 1) / questions.length) * 100;
-      if (progressBar) progressBar.style.width = `${progress}%`;
+      playerCounter.textContent = `Question ${state.currentIndex + 1} out of ${questions.length}`;
     }
   }
 
   function renderNav() {
-    if (!questionNav) return;
+    if (!questionNav || !questions.length) return;
     if (loadState !== "success") {
       questionNav.innerHTML = "";
       return;
@@ -158,6 +148,36 @@
     }
   }
 
+  // NEW: Reset/desmos calculator
+  function resetDesmos() {
+    if (desmosInstance) {
+      try {
+        desmosInstance.destroy();
+        desmosInstance = null;
+        desmosContainer.innerHTML = '';
+      } catch (e) {
+        console.log('Desmos destroy error:', e);
+      }
+    }
+  }
+
+  // NEW: Resize desmos to match question container height
+  function resizeDesmos() {
+    if (desmosWrapper && desmosWrapper.style.display !== "none" && questionLayout) {
+      const current = getCurrentQuestion();
+      if (current && current.section === "math" && state.calcActive) {
+        resetDesmos();
+        initDesmos();
+        const containerHeight = questionLayout.offsetHeight - 32;
+        if (containerHeight > 0) {
+          desmosContainer.style.height = containerHeight + "px";
+          desmosWrapper.style.height = containerHeight + "px";
+          desmosInstance.resize();
+        }
+      }
+    }
+  }
+
   function renderQuestion() {
     const current = getCurrentQuestion();
 
@@ -165,7 +185,10 @@
     if (loadState === "loading") {
       if (questionNumberEl) questionNumberEl.textContent = "—";
       questionDomain.textContent = "";
-      if (questionStemTitle) questionStemTitle.textContent = "Loading questions…";
+      if (questionStemTitle) {
+        questionStemTitle.textContent = "Loading questions…";
+        questionStemTitle.classList.remove("is-hidden");
+      }
       questionParagraph.textContent = "Fetching your OpenSAT session from Korah.";
       questionParagraph.classList.remove("is-hidden");
       questionStem.textContent = "";
@@ -187,7 +210,10 @@
     if (loadState === "error") {
       if (questionNumberEl) questionNumberEl.textContent = "!";
       questionDomain.textContent = "";
-      if (questionStemTitle) questionStemTitle.textContent = "OpenSAT connection issue";
+      if (questionStemTitle) {
+        questionStemTitle.textContent = "OpenSAT connection issue";
+        questionStemTitle.classList.remove("is-hidden");
+      }
       questionParagraph.textContent = loadError || "Something went wrong while loading questions.";
       questionParagraph.classList.remove("is-hidden");
       questionStem.textContent = "";
@@ -212,7 +238,10 @@
     if (loadState === "empty") {
       if (questionNumberEl) questionNumberEl.textContent = "—";
       questionDomain.textContent = "";
-      if (questionStemTitle) questionStemTitle.textContent = "No questions matched this selection";
+      if (questionStemTitle) {
+        questionStemTitle.textContent = "No questions matched this selection";
+        questionStemTitle.classList.remove("is-hidden");
+      }
       questionParagraph.textContent = "Try another domain or lower the question limit.";
       questionParagraph.classList.remove("is-hidden");
       questionStem.textContent = "";
@@ -245,21 +274,29 @@
 
     // NEW: Math split layout handling
     const isMath = current.section === "math";
-    if (isMath && state.calcActive && questionLayout && playerRoot && desmosWrapper) {
+    // Only auto-show calculator on initial load if not manually toggled off
+    if (isMath && state.calcActive === true) {
+      // keep enabled
+    } else if (isMath && !state.userToggledCalc) {
+      state.calcActive = true;
+    }
+    if (isMath && state.calcActive && questionLayout && desmosWrapper) {
       questionLayout.classList.add("sat-math-layout");
-      playerRoot.classList.remove("sat-player-zen-wrap");
-      desmosWrapper.classList.remove("is-hidden");
+      desmosWrapper.style.display = "flex";
       initDesmos();
-    } else if (questionLayout && playerRoot && desmosWrapper) {
+      resizeDesmos();
+    } else if (questionLayout && desmosWrapper) {
       questionLayout.classList.remove("sat-math-layout");
-      playerRoot.classList.add("sat-player-zen-wrap");
-      desmosWrapper.classList.add("is-hidden");
+      desmosWrapper.style.display = "none";
     }
 
     // NEW: Question number display
     if (questionNumberEl) questionNumberEl.textContent = state.currentIndex + 1;
     questionDomain.textContent = current.domain;
-    if (questionStemTitle) questionStemTitle.textContent = current.section === "math" ? "Math practice" : "Reading and Writing practice";
+    if (questionStemTitle) {
+      questionStemTitle.textContent = "";
+      questionStemTitle.classList.add("is-hidden");
+    }
     if (current.paragraph) {
       questionParagraph.textContent = current.paragraph;
       questionParagraph.classList.remove("is-hidden");
@@ -272,9 +309,16 @@
 
     // RESTORED: Toggle calc button text + visibility
     if (toggleCalcBtn) {
-      toggleCalcBtn.textContent = current.section === "math" ? "Toggle calculator" : "Calculator hidden";
+      toggleCalcBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="16" y2="18"/>
+      </svg>`;
       toggleCalcBtn.disabled = current.section !== "math";
       toggleCalcBtn.classList.toggle("is-hidden", current.section !== "math");
+    }
+
+    // Show reference button only for math, calc is always visible for math
+    if (referenceBtn) {
+      referenceBtn.classList.toggle("is-hidden", !isMath);
     }
 
     answerChoices.innerHTML = current.options
@@ -318,7 +362,9 @@
     
     // RESTORED: Button text and active states
     if (showExplanationBtn) {
-      showExplanationBtn.textContent = explanationForcedOpen ? "Hide explanation" : "Show explanation";
+      showExplanationBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>`;
       showExplanationBtn.classList.toggle("is-active", explanationForcedOpen);
     }
     if (markReviewBtn) markReviewBtn.classList.toggle("is-active", !!state.reviewed[current.id]);
@@ -357,9 +403,16 @@
     explanationForcedOpen = false;
     // NEW: Reset stopwatch on navigation
     startStopwatch();
+    // Reset desmos calculator when switching questions
+    const current = getCurrentQuestion();
+    if (current && current.section === "math" && state.calcActive) {
+      resetDesmos();
+    }
     renderHeader();
     renderNav();
     renderQuestion();
+    // Resize desmos after render
+    setTimeout(resizeDesmos, 100);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -410,6 +463,47 @@
     }
   }
 
+  // NEW: Toggle reference panel collapse
+  window.toggleReferenceCollapse = function() {
+    const panel = document.getElementById('referencePanel');
+    const btn = document.getElementById('referenceCollapseBtn');
+    if (!panel || !btn) return;
+    
+    panel.classList.toggle('collapsed');
+    btn.classList.toggle('collapsed');
+  };
+
+  // NEW: Resizable reference panel
+  function makeResizable(el) {
+    const resizer = document.createElement('div');
+    resizer.className = 'reference-resize-handle';
+    el.appendChild(resizer);
+
+    let startX, startY, startWidth, startHeight;
+
+    resizer.addEventListener('mousedown', function(e) {
+      e.preventDefault();
+      startX = e.clientX;
+      startY = e.clientY;
+      startWidth = parseInt(document.defaultView.getComputedStyle(el).width, 10);
+      startHeight = parseInt(document.defaultView.getComputedStyle(el).height, 10);
+      document.documentElement.addEventListener('mousemove', resizing);
+      document.documentElement.addEventListener('mouseup', stopResizing);
+    });
+
+    function resizing(e) {
+      const width = startWidth + (e.clientX - startX);
+      const height = startHeight + (e.clientY - startY);
+      el.style.width = width + 'px';
+      el.style.height = height + 'px';
+    }
+
+    function stopResizing() {
+      document.documentElement.removeEventListener('mousemove', resizing);
+      document.documentElement.removeEventListener('mouseup', stopResizing);
+    }
+  }
+
   // Event Listeners
   answerChoices.addEventListener("click", (event) => {
     // RESTORED: Retry button logic
@@ -429,7 +523,7 @@
     renderNav();
   });
 
-  questionNav.addEventListener("click", (event) => {
+  questionNav?.addEventListener("click", (event) => {
     const button = event.target.closest("[data-index]");
     if (!button) {
       return;
@@ -488,6 +582,7 @@
     if (!current || current.section !== "math") {
       return;
     }
+    state.userToggledCalc = true;
     state.calcActive = !state.calcActive;
     renderQuestion();
   });
@@ -518,6 +613,102 @@
     }
   });
 
+  // DEMO MODE - Set to true to use demo data instead of API
+  const DEMO_MODE = true;
+
+  const DEMO_QUESTIONS = [
+    {
+      id: "demo-1",
+      section: "english",
+      domain: "Information and Ideas",
+      paragraph: "The proliferation of digital media has fundamentally transformed how we consume information. In the past, people relied on newspapers, television, and radio for news and entertainment. Today, streaming services, social media, and podcasts dominate the landscape, offering unprecedented access to content on demand.",
+      stem: "Based on the passage, the author's primary purpose is to:",
+      options: [
+        { key: "A", text: "entertain readers with a story about media history" },
+        { key: "B", text: "inform readers about how digital media has changed consumption habits" },
+        { key: "C", text: "persuade readers to abandon traditional media" },
+        { key: "D", text: "criticize the media industry for perceived failures" }
+      ],
+      correctAnswer: "B",
+      explanation: "The passage primarily informs readers about the transformation from traditional to digital media, explaining how consumption habits have changed over time."
+    },
+    {
+      id: "demo-2",
+      section: "english",
+      domain: "Craft and Structure",
+      paragraph: "Despite facing numerous setbacks, the research team persevered in their investigation. Their dedication eventually led to a breakthrough that would change the field forever.",
+      stem: "Which choice best describes the relationship between the two clauses in the passage?",
+      options: [
+        { key: "A", text: "The first clause presents a contrast to the second" },
+        { key: "B", text: "The first clause is the cause of the second" },
+        { key: "C", text: "The clauses present two unrelated ideas" },
+        { key: "D", text: "The second clause summarizes the first" }
+      ],
+      correctAnswer: "A",
+      explanation: "The word 'Despite' signals a contrast between the setbacks (first clause) and the breakthrough (second clause)."
+    },
+    {
+      id: "demo-3",
+      section: "math",
+      domain: "Algebra",
+      paragraph: "",
+      stem: "If 3x + 7 = 22, what is the value of x?",
+      options: [
+        { key: "A", text: "3" },
+        { key: "B", text: "5" },
+        { key: "C", text: "7" },
+        { key: "D", text: "15" }
+      ],
+      correctAnswer: "B",
+      explanation: "3x + 7 = 22\n3x = 22 - 7\n3x = 15\nx = 15 ÷ 3 = 5"
+    },
+    {
+      id: "demo-4",
+      section: "math",
+      domain: "Problem-Solving and Data Analysis",
+      paragraph: "A store sells 120 items in one week. If 60% of the items were gadgets and the rest were gizmos, how many gizmos were sold?",
+      stem: "",
+      options: [
+        { key: "A", text: "36" },
+        { key: "B", text: "48" },
+        { key: "C", text: "72" },
+        { key: "D", text: "84" }
+      ],
+      correctAnswer: "B",
+      explanation: "100% - 60% = 40% are gizmos\n40% of 120 = 0.4 × 120 = 48"
+    },
+    {
+      id: "demo-5",
+      section: "english",
+      domain: "Expression of Ideas",
+      paragraph: "",
+      stem: "Choose the best revision of the underlined sentence:\nThe report, which was written by the committee, needed revisions before submission.",
+      options: [
+        { key: "A", text: "The report needed revisions before submission, which was written by the committee." },
+        { key: "B", text: "The report, written by the committee, needed revisions before submission." },
+        { key: "C", text: "The committee wrote the report, needed revisions before submission." },
+        { key: "D", text: "The report needed revisions; the committee wrote it before submission." }
+      ],
+      correctAnswer: "B",
+      explanation: "The appositive phrase 'written by the committee' directly follows 'The report' in this revision, creating clearer syntax."
+    },
+    {
+      id: "demo-6",
+      section: "math",
+      domain: "Advanced Math",
+      paragraph: "",
+      stem: "If f(x) = 2x² - 5x + 3, what is f(2)?",
+      options: [
+        { key: "A", text: "1" },
+        { key: "B", text: "3" },
+        { key: "C", text: "5" },
+        { key: "D", text: "9" }
+      ],
+      correctAnswer: "A",
+      explanation: "f(2) = 2(2)² - 5(2) + 3 = 2(4) - 10 + 3 = 8 - 10 + 3 = 1"
+    }
+  ];
+
   // RESTORED: loadQuestions with full validation (keeps new stopwatch and reference panel)
   async function loadQuestions() {
     const sections = query.sections;
@@ -544,6 +735,24 @@
     renderNav();
     renderQuestion();
 
+    // DEMO MODE: Use hardcoded demo data
+    if (DEMO_MODE) {
+      console.log("[DEMO MODE] Using demo questions");
+      questions = DEMO_QUESTIONS;
+      loadState = questions.length ? "success" : "empty";
+      state.currentIndex = 0;
+      startStopwatch();
+      renderHeader();
+      renderNav();
+      renderQuestion();
+      if (referencePanel) {
+        makeDraggable(referencePanel, ".reference-drag-handle");
+        makeResizable(referencePanel);
+      }
+      return;
+    }
+
+    // LIVE API MODE (original code)
     const params = new URLSearchParams();
     // RESTORED: Section value handling
     const sectionValue = sections.length === 2 && sections.includes("english") && sections.includes("math")
@@ -609,6 +818,7 @@
     // NEW: Initialize reference panel draggable
     if (referencePanel) {
       makeDraggable(referencePanel, ".reference-drag-handle");
+      makeResizable(referencePanel);
     }
   }
 
