@@ -1,4 +1,7 @@
+console.log('math-chat.js loading...');
 (() => {
+  try {
+  console.log('math-chat.js try block entered');
   const API_ENDPOINT = "/api/gem-proxy";
   const MODEL = "gemini-2.5-flash";
 
@@ -93,9 +96,7 @@ Always format responses using GitHub-flavored Markdown.`;
 
     isGraphInitialized = true;
 
-    satMathCalculator.on('change', () => {
-      captureGraphState();
-    });
+    
   }
 
   let graphStateDebounceTimer = null;
@@ -244,8 +245,13 @@ Always format responses using GitHub-flavored Markdown.`;
   }
 
   async function sendMessage(text) {
+    console.log('sendMessage called', { text, inputValue: input?.value, welcomeInputValue: welcomeInput?.value });
     const userMessage = text || input?.value?.trim() || welcomeInput?.value?.trim();
-    if (!userMessage) return;
+    console.log('userMessage:', userMessage);
+    if (!userMessage) {
+      console.log('No user message, returning early');
+      return;
+    }
 
     welcomeScreen?.classList.add('hidden');
     document.getElementById('chat-input-area')?.classList.remove('hidden');
@@ -253,6 +259,7 @@ Always format responses using GitHub-flavored Markdown.`;
     const graphContext = getGraphContext();
     const fullMessage = userMessage + graphContext;
 
+    console.log('Adding user message to chat');
     addMessage('user', userMessage);
     
     input && (input.value = '');
@@ -261,8 +268,10 @@ Always format responses using GitHub-flavored Markdown.`;
     typingIndicator?.classList.remove('hidden');
     chatBody.scrollTop = chatBody.scrollHeight;
 
+    console.log('Calling API with message:', fullMessage.substring(0, 50));
     try {
       const response = await callAPI(fullMessage);
+      console.log('API response received:', response.substring(0, 50));
       
       typingIndicator?.classList.add('hidden');
       
@@ -275,26 +284,97 @@ Always format responses using GitHub-flavored Markdown.`;
       showSuggestions(response);
 
     } catch (error) {
+      console.error('Error in sendMessage:', error);
       typingIndicator?.classList.add('hidden');
-      addMessage('assistant', 'Sorry, I encountered an error. Please try again.', true);
+      addMessage('assistant', 'Sorry, I encountered an error. Please try again. ' + error.message, true);
     }
   }
 
   async function callAPI(userMessage) {
+    const messagesWithSystem = [
+      { role: 'system', content: SAT_MATH_SYSTEM_PROMPT + FORMAT_INSTRUCTIONS },
+      { role: 'user', content: userMessage }
+    ];
+
     const response = await fetch(API_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         model: MODEL,
-        messages: [
-          { role: 'system', content: SAT_MATH_SYSTEM_PROMPT + FORMAT_INSTRUCTIONS },
-          { role: 'user', content: userMessage }
-        ]
+        temperature: 0.7,
+        messages: messagesWithSystem,
+        stream: true
       })
     });
-    
-    const data = await response.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+    if (!response.ok) {
+      let errorMessage = `Error: ${response.status}`;
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData?.message || errorData?.error || errorMessage;
+      } catch (_error) {}
+      throw new Error(errorMessage);
+    }
+
+    if (!response.body) {
+      throw new Error("No response body received");
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let fullReply = "";
+    let buffer = "";
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        
+        if (done) {
+          break;
+        }
+
+        buffer += decoder.decode(value, { stream: true });
+        
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          const trimmedLine = line.trim();
+          if (!trimmedLine) continue;
+          
+          if (trimmedLine.startsWith("data: ")) {
+            const data = trimmedLine.slice(6);
+            if (data === "[DONE]") {
+              continue;
+            }
+
+            try {
+              const parsed = JSON.parse(data);
+              const content = parsed?.choices?.[0]?.delta?.content;
+              if (content) {
+                fullReply += content;
+              }
+              
+              const finishReason = parsed?.choices?.[0]?.finish_reason;
+              if (finishReason) {
+                console.log("Stream finish reason:", finishReason);
+              }
+            } catch (parseError) {
+              console.error("Parse error:", parseError);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Stream reading error:", error);
+      throw error;
+    }
+
+    if (!fullReply) {
+      throw new Error("API returned an empty response");
+    }
+
+    return fullReply;
   }
 
   function addMessage(role, text, isError = false) {
@@ -409,19 +489,20 @@ Always format responses using GitHub-flavored Markdown.`;
   }
 
   function bindEventListeners() {
-    sendBtn?.addEventListener('click', () => sendMessage());
-    welcomeSendBtn?.addEventListener('click', () => sendMessage());
+    console.log('Binding event listeners', { sendBtn, welcomeSendBtn, input, welcomeInput });
+    sendBtn?.addEventListener('click', () => { console.log('Send button clicked'); sendMessage(input?.value?.trim() || ''); });
+    welcomeSendBtn?.addEventListener('click', () => { console.log('Welcome send button clicked'); sendMessage(welcomeInput?.value?.trim() || ''); });
 
     input?.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
-        sendMessage();
+        sendMessage(input.value.trim());
       }
     });
     welcomeInput?.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
-        sendMessage();
+        sendMessage(welcomeInput.value.trim());
       }
     });
 
@@ -447,14 +528,30 @@ Always format responses using GitHub-flavored Markdown.`;
   }
 
   function init() {
-    initializeSATGraph();
-    bindGraphControls();
-    bindEventListeners();
+    console.log('SAT Math chat initializing...', {
+      input: !!input,
+      welcomeInput: !!welcomeInput,
+      sendBtn: !!sendBtn,
+      welcomeSendBtn: !!welcomeSendBtn,
+      messagesList: !!messagesList,
+      documentReadyState: document.readyState
+    });
+    try {
+      initializeSATGraph();
+      bindGraphControls();
+      bindEventListeners();
+      console.log('Init completed successfully');
+    } catch (e) {
+      console.error('Init error:', e);
+    }
   }
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
     init();
+  }
+  } catch (e) {
+    console.error('SAT Math Chat Error:', e);
   }
 })();

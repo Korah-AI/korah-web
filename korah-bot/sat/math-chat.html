@@ -76,16 +76,98 @@
         <span class="text-[9px] font-semibold tracking-[2.5px] uppercase tx-p4">Study Smarter</span>
       </div>
     </a>
+    <button id="new-chat-btn" class="new-chat-btn text-white text-xs font-bold px-4 py-2 rounded-full border-none cursor-pointer shadow-glow t-btn">
+      <span class="new-chat-icon">+</span> <span class="new-chat-text">New Chat</span>
+    </button>
   </div>
 
   <nav class="sidebar-nav">
     <div class="sidebar-nav-row">
-      <a href="../index.html" class="sidebar-nav-link t-btn"><span class="nav-icon">💬</span> <span class="nav-text"></span></a>
-      <a href="../study/feed.html" class="sidebar-nav-link t-btn"><span class="nav-icon">📚</span> <span class="nav-text"></span></a>
+      <a href="../index.html" class="sidebar-nav-link t-btn"><span class="nav-icon">💬</span> <span class="nav-text">Chat</span></a>
+      <a href="../study/feed.html" class="sidebar-nav-link t-btn"><span class="nav-icon">📚</span> <span class="nav-text">Study</span></a>
     </div>
     <a href="index.html" class="sidebar-nav-link t-btn" data-sat-link="true"><span class="nav-icon">📝</span> <span class="nav-text">SAT</span></a>
     <a href="../productivity.html" class="sidebar-nav-link productivity-link t-btn"><span class="nav-icon">⏱️</span> <span class="nav-text">Productivity</span></a>
   </nav>
+
+  <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 0.75rem 0 0.25rem;">
+    <span class="sidebar-section-label" style="margin:0">Recent Chats</span>
+  </div>
+  <div class="sidebar-middle">
+    <div class="select-bar-wrapper">
+      <div id="chat-select-bar" class="select-bar">
+        <span class="select-bar-count" id="chat-select-count">0 selected</span>
+        <div class="select-bar-actions">
+          <button class="select-bar-btn" id="chat-select-all" title="Select all">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </button>
+          <button class="select-bar-btn" id="chat-deselect-all" title="Deselect all">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+          <button class="select-bar-btn danger" id="chat-delete-selected" title="Delete selected"></button>
+        </div>
+      </div>
+    </div>
+    <div id="chat-history" class="chat-history">
+      <div class="skeleton-item">
+        <div class="skeleton-icon"></div>
+        <div class="skeleton-text"></div>
+      </div>
+      <div class="skeleton-item">
+        <div class="skeleton-icon"></div>
+        <div class="skeleton-text"></div>
+      </div>
+      <div class="skeleton-item">
+        <div class="skeleton-icon"></div>
+        <div class="skeleton-text"></div>
+      </div>
+      <div class="skeleton-item">
+        <div class="skeleton-icon"></div>
+        <div class="skeleton-text"></div>
+      </div>
+      <div class="skeleton-item">
+        <div class="skeleton-icon"></div>
+        <div class="skeleton-text"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 0.75rem 0 0.25rem;">
+    <span class="sidebar-section-label" style="margin:0">Recent Study Items</span>
+  </div>
+  <div class="sidebar-middle">
+    <div class="select-bar-wrapper">
+      <div id="study-select-bar" class="select-bar">
+        <span class="select-bar-count" id="study-select-count">0 selected</span>
+        <div class="select-bar-actions">
+          <button class="select-bar-btn" id="study-select-all" title="Select all">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </button>
+          <button class="select-bar-btn" id="study-deselect-all" title="Deselect all">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+          <button class="select-bar-btn danger" id="study-delete-selected" title="Delete selected"></button>
+        </div>
+      </div>
+    </div>
+    <div id="study-items-history" class="chat-history">
+    </div>
+    <div id="study-items-empty" class="study-items-empty hidden">
+      <span class="study-items-empty-icon" aria-hidden="true">📚</span>
+      <div class="study-items-empty-title">No study items yet</div>
+      <div class="study-items-empty-sub">Create one to see it here.</div>
+    </div>
+  </div>
 
   <div class="sidebar-footer">
     <div class="mood-indicator" id="sidebar-mood">
@@ -184,7 +266,7 @@
             SAT Math Helper
           </h1>
           <p class="welcome-subtitle tx2">
-            Interactive graphing + AI tutoring for SAT Math
+            Learn regressions, key skills, and exam tips
           </p>
           
           <div class="welcome-input-container bg-sf2 glass-sm bd">
@@ -279,7 +361,8 @@
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
-
+<script src="../study/js/sidebar.js"></script>
+<script src="../study/js/study-api.js"></script>
 <script src="./math-chat.js"></script>
 
 <script>
