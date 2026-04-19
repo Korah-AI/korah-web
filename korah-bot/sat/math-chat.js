@@ -33,49 +33,38 @@ Your teaching approach:
 - Use the provided Desmos graph to visualize functions, equations, and relationships
 - Reference the graph in your explanations ("Notice on the graph...", "As we can see...")
 
-IMPORTANT: You MUST respond in JSON format with two fields: "graph" and "response"
+IMPORTANT: You MUST respond in JSON format with two fields: "graph" and "response".
+DO NOT include any markdown formatting like \`\`\`json outside the JSON itself.
+The response must be a single raw JSON object.
 
-RESPONSE FORMAT (STRICTLY REQUIRED):
-\`\`\`json
+RESPONSE FORMAT:
 {
   "graph": {
     "expressions": [
-      {"latex": "y=x^2", "color": "#4285F4", "secret": false}
+      {"latex": "y=x^2", "color": "#4285F4"}
     ],
     "viewport": {"xmin": -10, "xmax": 10, "ymin": -10, "ymax": 10}
   },
   "response": "Your explanation here using Markdown and KaTeX . . ."
 }
-\`\`\`
 
 The "graph" field contains Desmos API expressions to update the graph:
 - "expressions": array of expression objects with latex, color, hidden, lineStyle, lineWidth
 - "viewport": optional bounds (xmin, xmax, ymin, ymax)
 - Use "viewport" to adjust the view when showing different scales
-- Remove expressions by setting "hidden": true
-- Add new expressions to visualize new functions
-- Keep existing expressions you want to preserve
+- To clear the graph, provide an empty expressions array or set expressions to null.
 
 The "response" field contains your text explanation using:
 - Markdown headings, bold, italic
 - KaTeX for math: $inline$ or $$display$$
-- NEVER use \\(...\\), \\[...\\], or bare math
+- NEVER use \\(...\\), \\[...\\], or bare math.
 
-If no graph update needed, set "graph": null or omit the field.
-
-Response Format Example (just text, no graph):
-{
-  "response": "Your explanation here..."
-}
-
-Note: Always output raw JSON without any code block markers.`;
+If no graph update needed, set "graph": null.`;
 
 function getFormatInstructions() {
-  return `STRICT RESPONSE FORMAT REQUIRED:
-Output ONLY raw JSON. No code blocks or markdown.
-Required fields: { "graph": {...}, "response": "..." }
-
-KATEX: Inline $...$, Display $$...$$`;
+  return `STRICT RESPONSE FORMAT: Output ONLY raw JSON. No code blocks.
+Fields: { "graph": {...}, "response": "..." }
+KATEX: $...$ for inline, $$...$$ for display.`;
 }
 
   function initializeSATGraph() {
@@ -279,6 +268,7 @@ KATEX: Inline $...$, Display $$...$$`;
     let currentTypedText = "";
     let charBuffer = [];
     let typewriterActive = false;
+    let lastBufferedLength = 0;
 
     const typeNextChar = () => {
       if (charBuffer.length === 0) {
@@ -302,53 +292,90 @@ KATEX: Inline $...$, Display $$...$$`;
 
     console.log('Calling API with message:', fullMessage.substring(0, 50));
     let parsedResponse = null;
+    let isJSONMode = false;
+    let fullReplyFromAPI = "";
+
     try {
       await callAPI(fullMessage, (chunk, fullText) => {
+        fullReplyFromAPI = fullText;
         if (contentElement && fullText) {
-          const delta = fullText.slice(currentTypedText.length);
-          charBuffer.push(...delta.split(''));
-          if (!typewriterActive) {
-            typeNextChar();
+          const delta = fullText.slice(lastBufferedLength);
+          lastBufferedLength = fullText.length;
+          
+          if (!isJSONMode && (fullText.trim().startsWith('{') || fullText.trim().startsWith('```json'))) {
+            isJSONMode = true;
+            charBuffer = []; 
+          }
+          
+          if (!isJSONMode) {
+            charBuffer.push(...delta.split(''));
+            if (!typewriterActive) {
+              typeNextChar();
+            }
+          } else {
+            // While streaming JSON, try to extract and show the response field
+            const responseMatch = fullText.match(/"response":\s*"((?:[^"\\]|\\.)*)/);
+            if (responseMatch && responseMatch[1]) {
+              const partialResponse = responseMatch[1]
+                .replace(/\\n/g, '\n')
+                .replace(/\\"/g, '"')
+                .replace(/\\t/g, '\t');
+              contentElement.textContent = partialResponse + "▊";
+            } else if (!contentElement.textContent || contentElement.textContent === "Analyzing and updating graph...") {
+              contentElement.textContent = "Analyzing and updating graph...";
+            }
           }
         }
       });
+      
       charBuffer = [];
       typewriterActive = false;
       
       if (contentElement) {
-        currentTypedText = currentTypedText.trim();
+        const finalRawText = fullReplyFromAPI.trim();
         
-        try {
-          parsedResponse = JSON.parse(currentTypedText);
-          
-          if (parsedResponse && typeof parsedResponse === 'object') {
-            const graphData = parsedResponse.graph;
-            const chatResponse = parsedResponse.response || '';
-            
-            if (graphData) {
-              updateSATGraph(graphData);
-            }
-            
-            if (chatResponse) {
-              contentElement.textContent = '';
-              renderMarkdownAndMath(contentElement, chatResponse);
-            } else {
-              contentElement.textContent = '';
-            }
-          } else {
-            contentElement.textContent = '';
-            renderMarkdownAndMath(contentElement, currentTypedText);
+        // Robust JSON parsing
+        const robustParse = (text) => {
+          try { return JSON.parse(text); } catch (e) {}
+          const codeBlockMatch = text.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/);
+          if (codeBlockMatch) {
+            try { return JSON.parse(codeBlockMatch[1].trim()); } catch (e) {}
           }
-        } catch (parseErr) {
-          console.warn('Failed to parse JSON response, displaying raw text:', parseErr);
+          const firstBrace = text.indexOf('{');
+          const lastBrace = text.lastIndexOf('}');
+          if (firstBrace !== -1 && lastBrace !== -1) {
+            try { return JSON.parse(text.substring(firstBrace, lastBrace + 1)); } catch (e) {}
+          }
+          return null;
+        };
+
+        parsedResponse = robustParse(finalRawText);
+        
+        if (parsedResponse && typeof parsedResponse === 'object' && (parsedResponse.graph || parsedResponse.response)) {
+          const graphData = parsedResponse.graph;
+          const chatResponse = parsedResponse.response || '';
+          
+          if (graphData) {
+            console.log('Updating graph with data:', graphData);
+            updateSATGraph(graphData);
+          }
+          
           contentElement.textContent = '';
-          renderMarkdownAndMath(contentElement, currentTypedText);
+          if (chatResponse) {
+            renderMarkdownAndMath(contentElement, chatResponse);
+          } else if (graphData) {
+            renderMarkdownAndMath(contentElement, "_Graph updated._");
+          }
+        } else {
+          // If not valid JSON or missing fields, fall back to rendering the whole text
+          contentElement.textContent = '';
+          renderMarkdownAndMath(contentElement, finalRawText);
         }
         
         chatBody.scrollTop = chatBody.scrollHeight;
       }
       
-      const textForSuggestions = parsedResponse?.response || currentTypedText;
+      const textForSuggestions = parsedResponse?.response || fullReplyFromAPI;
       showSuggestions(textForSuggestions);
 
     } catch (error) {
