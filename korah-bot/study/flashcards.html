@@ -37,33 +37,200 @@
 
   <!-- Sidebar (Same as original but kept for layout consistency) -->
   <aside id="sidebar" class="sidebar bg-sf glass t-theme">
-    <!-- Sidebar content remains same for project consistency -->
-    <div class="sidebar-header">
-      <a href="../index.html" class="flex items-center gap-2.5 no-underline">
-        <div class="w-12 h-12 rounded-xl flex items-center justify-center font-display text-xl font-black text-white shadow-glow logo-btn">
-          <span class="logo-letter"><img src="../app/logo.png" alt="Korah"/></span>
-        </div>
-        <div class="flex flex-col leading-tight">
-          <span class="font-display text-[19px] font-bold tx">Korah</span>
-          <span class="text-[9px] font-semibold tracking-[2.5px] uppercase tx-p4">Study Smarter</span>
-        </div>
-      </a>
-    </div>
-    <nav class="sidebar-nav">
-      <div class="sidebar-nav-row">
-        <a href="../index.html" class="sidebar-nav-link t-btn"><span class="nav-icon">💬</span> <span class="nav-text">Chat</span></a>
-        <a href="feed.html" class="sidebar-nav-link active t-btn"><span class="nav-icon">📚</span> <span class="nav-text"></span></a>
+  <div class="sidebar-header">
+    <a href="../index.html" class="flex items-center gap-2.5 no-underline">
+      <div class="w-12 h-12 rounded-xl flex items-center justify-center font-display text-xl font-black text-white shadow-glow logo-btn">
+        <span class="logo-letter">
+          <img src="../app/logo.png" alt="Korah"/>
+        </span>
       </div>
-      <a href="../sat/index.html" class="sidebar-nav-link t-btn" data-sat-link="true"><span class="nav-icon">📝</span> <span class="nav-text">SAT</span></a>
-      <a href="../productivity.html" class="sidebar-nav-link productivity-link t-btn"><span class="nav-icon">⏱️</span> <span class="nav-text">Productivity</span></a>
-    </nav>
-    <div class="sidebar-middle">
-      <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 0.75rem 0 0.25rem;">
-        <span class="sidebar-section-label" style="margin:0">Recent Study Items</span>
+      <div class="flex flex-col leading-tight">
+        <span class="font-display text-[19px] font-bold tx">Korah</span>
+        <span class="text-[9px] font-semibold tracking-[2.5px] uppercase tx-p4">Study Smarter</span>
       </div>
-      <div id="study-items-history" class="chat-history"></div>
+    </a>
+    <button id="new-chat-btn" class="new-chat-btn text-white text-xs font-bold px-4 py-2 rounded-full border-none cursor-pointer shadow-glow t-btn">
+      <span class="new-chat-icon">+</span> <span class="new-chat-text">New Chat</span>
+    </button>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="sidebar-nav-row">
+      <a href="../index.html" class="sidebar-nav-link t-btn"><span class="nav-icon">💬</span> <span class="nav-text">Chat</span></a>
+      <a href="feed.html" class="sidebar-nav-link t-btn"><span class="nav-icon">📚</span> <span class="nav-text">Study</span></a>
     </div>
-  </aside>
+    <a href="../sat/index.html" class="sidebar-nav-link t-btn" data-sat-link="true"><span class="nav-icon">📝</span> <span class="nav-text">SAT</span></a>
+    <a href="../productivity.html" class="sidebar-nav-link productivity-link t-btn"><span class="nav-icon">⏱️</span> <span class="nav-text">Productivity</span></a>
+  </nav>
+
+  <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 0.75rem 0 0.25rem;">
+    <span class="sidebar-section-label" style="margin:0">Recent Chats</span>
+  </div>
+  <div class="sidebar-middle">
+    <div class="select-bar-wrapper">
+      <div id="chat-select-bar" class="select-bar">
+        <span class="select-bar-count" id="chat-select-count">0 selected</span>
+        <div class="select-bar-actions">
+          <button class="select-bar-btn" id="chat-select-all" title="Select all">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </button>
+          <button class="select-bar-btn" id="chat-deselect-all" title="Deselect all">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+          <button class="select-bar-btn danger" id="chat-delete-selected" title="Delete selected"></button>
+        </div>
+      </div>
+    </div>
+    <div id="chat-history" class="chat-history">
+      <div class="skeleton-item">
+        <div class="skeleton-icon"></div>
+        <div class="skeleton-text"></div>
+      </div>
+      <div class="skeleton-item">
+        <div class="skeleton-icon"></div>
+        <div class="skeleton-text"></div>
+      </div>
+      <div class="skeleton-item">
+        <div class="skeleton-icon"></div>
+        <div class="skeleton-text"></div>
+      </div>
+      <div class="skeleton-item">
+        <div class="skeleton-icon"></div>
+        <div class="skeleton-text"></div>
+      </div>
+      <div class="skeleton-item">
+        <div class="skeleton-icon"></div>
+        <div class="skeleton-text"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 0.75rem 0 0.25rem;">
+    <span class="sidebar-section-label" style="margin:0">Recent Study Items</span>
+  </div>
+  <div class="sidebar-middle">
+    <div class="select-bar-wrapper">
+      <div id="study-select-bar" class="select-bar">
+        <span class="select-bar-count" id="study-select-count">0 selected</span>
+        <div class="select-bar-actions">
+          <button class="select-bar-btn" id="study-select-all" title="Select all">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </button>
+          <button class="select-bar-btn" id="study-deselect-all" title="Deselect all">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+          <button class="select-bar-btn danger" id="study-delete-selected" title="Delete selected"></button>
+        </div>
+      </div>
+    </div>
+    <div id="study-items-history" class="chat-history">
+    </div>
+    <div id="study-items-empty" class="study-items-empty hidden">
+      <span class="study-items-empty-icon" aria-hidden="true">📚</span>
+      <div class="study-items-empty-title">No study items yet</div>
+      <div class="study-items-empty-sub">Create one to see it here.</div>
+    </div>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="mood-indicator" id="sidebar-mood">
+      <span class="mood-dot" id="mood-dot">🟢</span>
+      <span class="text-xs tx2 font-medium">Full Focus Mode</span>
+    </div>
+    <div class="sidebar-footer-actions">
+      <button id="logout-btn" class="theme-toggle-small t-btn" title="Log out">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+      </button>
+      <button id="settings-btn" class="theme-toggle-small t-btn" title="Settings">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+      <button @click="theme = theme === 'dark' ? 'light' : 'dark'; localStorage.setItem('korah_theme', theme)" class="theme-toggle-small t-btn" title="Toggle theme">
+        <svg x-show="theme==='light'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" style="color:var(--p5)">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/>
+        </svg>
+        <svg x-show="theme==='dark'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--p4)">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</aside>
+
+<!-- Settings Modal -->
+<div id="settings-modal" class="settings-modal">
+  <div class="settings-modal-content">
+    <div class="settings-header">
+      <h2 class="settings-title">Settings</h2>
+      <button class="settings-close" id="settings-close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="settings-body">
+      <div class="settings-section">
+        <h3 class="settings-section-title">Appearance</h3>
+        <div class="settings-item">
+          <div class="settings-item-label">Theme</div>
+          <div class="settings-item-control">
+            <select id="settings-theme-select" class="settings-select">
+              <option value="dark">Dark</option>
+              <option value="light">Light</option>
+              <option value="system">System</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3 class="settings-section-title">Profile</h3>
+        <div class="settings-item">
+          <div class="settings-item-label">Display Name</div>
+          <div class="settings-item-control">
+            <input type="text" id="settings-name-input" class="settings-input" placeholder="Your name">
+          </div>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3 class="settings-section-title">Data</h3>
+        <div class="settings-item">
+          <div class="settings-item-label">Clear All Data</div>
+          <div class="settings-item-control">
+            <button id="settings-clear-data" class="settings-btn danger">Clear Data</button>
+          </div>
+        </div>
+      </div>
+      <div class="settings-actions">
+        <button id="settings-save" class="settings-btn primary">Save Settings</button>
+      </div>
+    </div>
+  </div>
+</div>
 
   <main class="main-content flex-1 flex flex-col relative z-10 overflow-hidden">
     <header class="chat-topbar bg-sf glass-sm t-theme bd flex items-center justify-between px-6 h-16 shrink-0">

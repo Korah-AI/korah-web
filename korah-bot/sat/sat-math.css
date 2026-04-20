@@ -11,26 +11,64 @@
 }
 
 .sat-math-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.sat-math-layout .chat-topbar {
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.sat-math-split {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
+  gap: 0.5rem;
+  flex: 1;
   min-height: 0;
+  overflow: hidden;
 }
 
 @media (max-width: 56.25rem) {
-  .sat-math-layout {
+  .sat-math-split {
     grid-template-columns: 1fr;
+  }
+  .sat-graph-panel {
+    flex: 0 0 20rem;
+    min-width: 100%;
   }
 }
 
 .sat-graph-panel {
-  flex: 0 0 50%;
-  min-width: 25rem;
-  max-width: 100%;
   display: flex;
   flex-direction: column;
-  border-right: 0.0625rem solid var(--bd);
   background: var(--bg);
+  overflow: hidden;
+  min-height: 0;
+  min-width: 0;
+}
+
+.sat-chat-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  height: 100%;
+}
+
+.sat-chat-panel .chat-body {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.sat-chat-panel .chat-input-area {
+  flex-shrink: 0;
+  border-top: 0.0625rem solid var(--bd);
 }
 
 .sat-graph-header {
@@ -81,23 +119,6 @@
 .sat-graph-container .desmos-graph-wrapper {
   position: absolute;
   inset: 0;
-}
-
-.sat-chat-panel {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  overflow: hidden;
-}
-
-.sat-chat-panel .chat-body {
-  flex: 1;
-  overflow-y: auto;
-}
-
-.sat-chat-panel .chat-input-area {
-  border-top: 0.0625rem solid var(--bd);
 }
 
 .sat-math-badge {
@@ -162,19 +183,12 @@
   flex-shrink: 0;
 }
 
-@media (max-width: 56.25rem) {
-  .sat-graph-panel {
-    flex: 0 0 40%;
-    min-width: 18.75rem;
-  }
-}
-
-@media (max-width: 37.5rem) {
+@media (max-width: 30rem) {
   .sat-math-layout {
     flex-direction: column;
   }
   .sat-graph-panel {
-    flex: 0 0 40vh;
+    flex: 0 0 15rem;
     min-width: 100%;
     max-width: 100%;
     border-right: none;
@@ -215,4 +229,33 @@ html[data-theme="dark"] .sat-math-shell .welcome-title {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+.sat-math-shell .chat-textarea {
+  background: transparent;
+  color: var(--tx);
+}
+
+.sat-math-shell .chat-input-area {
+  background: var(--sf);
+  border-top: 0.0625rem solid var(--bd);
+}
+
+.sat-math-shell .input-wrapper {
+  background: var(--bg2);
+  border: 0.0625rem solid var(--bd);
+  border-radius: 0.75rem;
+  padding-left: 0.75rem;
+}
+
+.sat-math-shell .input-wrapper:focus-within {
+  border-color: var(--p4);
+}
+
+.sat-math-shell .msg-avatar.korah-av {
+  background-image: url('../app/logo.png');
+  background-size: cover;
+  background-position: center;
+  background-color: var(--grn);
+  border-radius: 50%;
 }

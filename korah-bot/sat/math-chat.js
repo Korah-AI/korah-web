@@ -221,17 +221,6 @@ KATEX: $...$ for inline, $$...$$ for display.`;
   }
 
   function bindGraphControls() {
-    document.getElementById('sat-graph-reset')?.addEventListener('click', () => {
-      if (satMathCalculator) {
-        satMathCalculator.setMathBounds({
-          left: -10,
-          right: 10,
-          bottom: -10,
-          top: 10,
-        });
-      }
-    });
-
     document.getElementById('sat-graph-clear')?.addEventListener('click', () => {
       if (satMathCalculator) {
         satMathCalculator.setBlank();
@@ -504,11 +493,6 @@ KATEX: $...$ for inline, $$...$$ for display.`;
     
     const avatar = document.createElement('div');
     avatar.className = `msg-avatar ${role === 'user' ? 'user-av' : 'korah-av'}`;
-    if (role === 'assistant') {
-      avatar.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
-    } else {
-      avatar.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
-    }
 
     const bubble = document.createElement('div');
     bubble.className = `msg-bubble ${role === 'user' ? 'user' : 'korah'}${isError ? ' error' : ''}`;
