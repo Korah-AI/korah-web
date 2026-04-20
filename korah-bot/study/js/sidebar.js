@@ -616,6 +616,74 @@ function showSidebarDeleteModal(name, onConfirm) {
   // ── Timer Widget ──
   let _timerWidgetInitialized = false;
   let _timerUnsubscribe = null;
+  let _satDropdownInitialized = false;
+
+  function initSatDropdown() {
+    if (_satDropdownInitialized) return;
+    const satLink = document.querySelector('[data-sat-link="true"]');
+    if (!satLink) return;
+    _satDropdownInitialized = true;
+
+    const satHref = satLink.getAttribute('href') || 'sat/index.html';
+    const satDir = satHref.endsWith('index.html')
+      ? satHref.slice(0, -'index.html'.length)
+      : satHref.replace(/[^/]*$/, '');
+    const satIndexHref = `${satDir}index.html`;
+    const satMathChatHref = `${satDir}math-chat.html`;
+
+    // Wrap SAT item so it can "reveal" like the Pomodoro idle panel.
+    const wrapper = document.createElement('div');
+    wrapper.className = 'sat-dropdown-wrapper';
+    wrapper.style.position = 'relative';
+
+    satLink.parentNode.insertBefore(wrapper, satLink);
+    wrapper.appendChild(satLink);
+
+    // Replace the anchor with a button trigger (so click toggles, not navigates).
+    const trigger = document.createElement('button');
+    trigger.type = 'button';
+    trigger.className = satLink.className;
+    trigger.setAttribute('data-sat-link', 'true');
+    trigger.setAttribute('aria-expanded', 'false');
+    trigger.innerHTML = `
+      ${satLink.innerHTML}
+      <svg class="timer-idle-chevron" id="sat-idle-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true" style="margin-left:auto;">
+        <polyline points="6 9 12 15 18 9"/>
+      </svg>
+    `;
+
+    wrapper.replaceChild(trigger, satLink);
+
+    const panel = document.createElement('div');
+    panel.className = 'timer-idle-panel sat-idle-panel';
+    panel.id = 'sat-idle-panel';
+    panel.innerHTML = `
+      <div class="timer-idle-panel-inner">
+        <a class="timer-start-btn sat-dropdown-btn t-btn" href="${satMathChatHref}">SAT Math Chat</a>
+        <a class="timer-start-btn sat-dropdown-btn t-btn" href="${satIndexHref}">SAT</a>
+      </div>
+    `;
+    wrapper.appendChild(panel);
+
+    const chevron = trigger.querySelector('#sat-idle-chevron');
+    const close = () => {
+      trigger.setAttribute('aria-expanded', 'false');
+      panel.classList.remove('open');
+      chevron?.classList.remove('open');
+    };
+
+    trigger.addEventListener('click', () => {
+      const willOpen = !panel.classList.contains('open');
+      trigger.setAttribute('aria-expanded', String(willOpen));
+      panel.classList.toggle('open', willOpen);
+      chevron?.classList.toggle('open', willOpen);
+    });
+
+    // Close when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!wrapper.contains(e.target)) close();
+    });
+  }
 
   function initTimerWidget() {
     if (_timerWidgetInitialized) return;
@@ -1046,6 +1114,9 @@ function showSidebarDeleteModal(name, onConfirm) {
       
       // Initialize timer widget
       initTimerWidget();
+
+      // Initialize SAT dropdown
+      initSatDropdown();
 
       // Initialize settings modal
       initSettingsModal();
