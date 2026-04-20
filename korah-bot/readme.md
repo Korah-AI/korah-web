@@ -7,4 +7,4 @@
 
 # UI Deisgn To Do
 
-* Make the chat box with korah bigger in all aspects.
+* Questions.html. Make it so that when at question 1, you the previous question button does not show up since there is not previous question and also for the next button when there is no next question to either make the button not show up or make it take the user back to question bank.

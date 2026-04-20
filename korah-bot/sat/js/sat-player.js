@@ -321,6 +321,11 @@
       referenceBtn.classList.toggle("is-hidden", !isMath);
     }
 
+    // Update More dropdown for section
+    if (typeof updateDropdownForSection === "function") {
+      updateDropdownForSection();
+    }
+
     answerChoices.innerHTML = current.options
       .map((option) => {
         const classNames = ["sat-answer-choice"];
@@ -613,102 +618,6 @@
     }
   });
 
-  // DEMO MODE - Set to true to use demo data instead of API
-  const DEMO_MODE = true;
-
-  const DEMO_QUESTIONS = [
-    {
-      id: "demo-1",
-      section: "english",
-      domain: "Information and Ideas",
-      paragraph: "The proliferation of digital media has fundamentally transformed how we consume information. In the past, people relied on newspapers, television, and radio for news and entertainment. Today, streaming services, social media, and podcasts dominate the landscape, offering unprecedented access to content on demand.",
-      stem: "Based on the passage, the author's primary purpose is to:",
-      options: [
-        { key: "A", text: "entertain readers with a story about media history" },
-        { key: "B", text: "inform readers about how digital media has changed consumption habits" },
-        { key: "C", text: "persuade readers to abandon traditional media" },
-        { key: "D", text: "criticize the media industry for perceived failures" }
-      ],
-      correctAnswer: "B",
-      explanation: "The passage primarily informs readers about the transformation from traditional to digital media, explaining how consumption habits have changed over time."
-    },
-    {
-      id: "demo-2",
-      section: "english",
-      domain: "Craft and Structure",
-      paragraph: "Despite facing numerous setbacks, the research team persevered in their investigation. Their dedication eventually led to a breakthrough that would change the field forever.",
-      stem: "Which choice best describes the relationship between the two clauses in the passage?",
-      options: [
-        { key: "A", text: "The first clause presents a contrast to the second" },
-        { key: "B", text: "The first clause is the cause of the second" },
-        { key: "C", text: "The clauses present two unrelated ideas" },
-        { key: "D", text: "The second clause summarizes the first" }
-      ],
-      correctAnswer: "A",
-      explanation: "The word 'Despite' signals a contrast between the setbacks (first clause) and the breakthrough (second clause)."
-    },
-    {
-      id: "demo-3",
-      section: "math",
-      domain: "Algebra",
-      paragraph: "",
-      stem: "If 3x + 7 = 22, what is the value of x?",
-      options: [
-        { key: "A", text: "3" },
-        { key: "B", text: "5" },
-        { key: "C", text: "7" },
-        { key: "D", text: "15" }
-      ],
-      correctAnswer: "B",
-      explanation: "3x + 7 = 22\n3x = 22 - 7\n3x = 15\nx = 15 ÷ 3 = 5"
-    },
-    {
-      id: "demo-4",
-      section: "math",
-      domain: "Problem-Solving and Data Analysis",
-      paragraph: "A store sells 120 items in one week. If 60% of the items were gadgets and the rest were gizmos, how many gizmos were sold?",
-      stem: "",
-      options: [
-        { key: "A", text: "36" },
-        { key: "B", text: "48" },
-        { key: "C", text: "72" },
-        { key: "D", text: "84" }
-      ],
-      correctAnswer: "B",
-      explanation: "100% - 60% = 40% are gizmos\n40% of 120 = 0.4 × 120 = 48"
-    },
-    {
-      id: "demo-5",
-      section: "english",
-      domain: "Expression of Ideas",
-      paragraph: "",
-      stem: "Choose the best revision of the underlined sentence:\nThe report, which was written by the committee, needed revisions before submission.",
-      options: [
-        { key: "A", text: "The report needed revisions before submission, which was written by the committee." },
-        { key: "B", text: "The report, written by the committee, needed revisions before submission." },
-        { key: "C", text: "The committee wrote the report, needed revisions before submission." },
-        { key: "D", text: "The report needed revisions; the committee wrote it before submission." }
-      ],
-      correctAnswer: "B",
-      explanation: "The appositive phrase 'written by the committee' directly follows 'The report' in this revision, creating clearer syntax."
-    },
-    {
-      id: "demo-6",
-      section: "math",
-      domain: "Advanced Math",
-      paragraph: "",
-      stem: "If f(x) = 2x² - 5x + 3, what is f(2)?",
-      options: [
-        { key: "A", text: "1" },
-        { key: "B", text: "3" },
-        { key: "C", text: "5" },
-        { key: "D", text: "9" }
-      ],
-      correctAnswer: "A",
-      explanation: "f(2) = 2(2)² - 5(2) + 3 = 2(4) - 10 + 3 = 8 - 10 + 3 = 1"
-    }
-  ];
-
   // RESTORED: loadQuestions with full validation (keeps new stopwatch and reference panel)
   async function loadQuestions() {
     const sections = query.sections;
@@ -734,23 +643,6 @@
     renderHeader();
     renderNav();
     renderQuestion();
-
-    // DEMO MODE: Use hardcoded demo data
-    if (DEMO_MODE) {
-      console.log("[DEMO MODE] Using demo questions");
-      questions = DEMO_QUESTIONS;
-      loadState = questions.length ? "success" : "empty";
-      state.currentIndex = 0;
-      startStopwatch();
-      renderHeader();
-      renderNav();
-      renderQuestion();
-      if (referencePanel) {
-        makeDraggable(referencePanel, ".reference-drag-handle");
-        makeResizable(referencePanel);
-      }
-      return;
-    }
 
     // LIVE API MODE (original code)
     const params = new URLSearchParams();

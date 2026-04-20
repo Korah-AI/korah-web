@@ -21,6 +21,7 @@
 <link rel="stylesheet" href="../app/korah-chat.css"/>
 <link rel="stylesheet" href="./sat.css"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css"/>
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Round"/>
 </head>
 
 <body class="bg-base tx sat-shell">
@@ -95,26 +96,99 @@
   </div>
 
   <div class="sat-topbar-right">
-    <button id="referenceBtn" class="sat-button sat-button-ghost" title="Reference" style="height: 2.25rem; width: 2.25rem; padding: 0;">
+    <button id="referenceBtn" class="sat-button sat-button-ghost nav-icon-item" title="Reference" style="height: 2.25rem; width: 2.25rem; padding: 0;">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
       </svg>
     </button>
-    <button id="toggleCalcBtn" class="sat-button sat-button-ghost" title="Calculator" style="height: 2.25rem; width: 2.25rem; padding: 0;">
+    <button id="toggleCalcBtn" class="sat-button sat-button-ghost nav-icon-item" title="Calculator" style="height: 2.25rem; width: 2.25rem; padding: 0;">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
         <rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="16" y2="18"/>
       </svg>
     </button>
-    <button id="markReviewBtn" class="sat-button sat-button-ghost" title="Mark for review" style="height: 2.25rem; width: 2.25rem; padding: 0;">
+    <button id="markReviewBtn" class="sat-button sat-button-ghost nav-icon-item" title="Mark for review" style="height: 2.25rem; width: 2.25rem; padding: 0;">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
         <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>
       </svg>
     </button>
-    <button id="showExplanationBtn" class="sat-button sat-button-ghost" title="Explanation" style="height: 2.25rem; width: 2.25rem; padding: 0;">
+    <button id="showExplanationBtn" class="sat-button sat-button-ghost nav-icon-item" title="Explanation" style="height: 2.25rem; width: 2.25rem; padding: 0;">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
         <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
       </svg>
     </button>
+    <button id="moreMenuBtn" class="sat-button sat-button-ghost more-dropdown-trigger" title="More" style="height: 2.25rem; width: 2.25rem; padding: 0;">
+      <span class="material-icons-round" style="font-size: 1.25rem;">more_vert</span>
+    </button>
+    
+<!-- More Dropdown Menu -->
+  <div id="moreDropdown" class="more-dropdown-menu">
+    <!-- Main Page -->
+    <ul class="more-dropdown-list more-dropdown-page" data-page="main">
+      <li>
+        <a href="#" class="more-dropdown-item more-dropdown-trigger-item" onclick="openThemePage(); return false;">
+          <span class="material-icons-round">dark_mode</span>
+          <span>Theme</span>
+          <span class="material-icons-round more-dropdown-arrow">chevron_right</span>
+        </a>
+      </li>
+      <li class="more-dropdown-collapsed-item more-dropdown-math-item">
+        <a href="#" class="more-dropdown-item" onclick="document.getElementById('referenceBtn').click(); closeMoreDropdown(); return false;">
+          <span class="material-icons-round">description</span>
+          <span>Reference</span>
+        </a>
+      </li>
+      <li class="more-dropdown-collapsed-item more-dropdown-math-item">
+        <a href="#" class="more-dropdown-item" onclick="document.getElementById('toggleCalcBtn').click(); closeMoreDropdown(); return false;">
+          <span class="material-icons-round">calculate</span>
+          <span>Calculator</span>
+        </a>
+      </li>
+      <li class="more-dropdown-collapsed-item">
+        <a href="#" class="more-dropdown-item" onclick="document.getElementById('markReviewBtn').click(); closeMoreDropdown(); return false;">
+          <span class="material-icons-round">bookmark</span>
+          <span>Mark Review</span>
+        </a>
+      </li>
+      <li class="more-dropdown-collapsed-item">
+        <a href="#" class="more-dropdown-item" onclick="document.getElementById('showExplanationBtn').click(); closeMoreDropdown(); return false;">
+          <span class="material-icons-round">help</span>
+          <span>Explanation</span>
+        </a>
+      </li>
+      </ul>
+    
+    <!-- Theme Page -->
+    <ul class="more-dropdown-list more-dropdown-page" data-page="theme" style="display: none;">
+      <li>
+        <a href="#" class="more-dropdown-item more-dropdown-back" onclick="closeThemePage(); return false;">
+          <span class="material-icons-round">arrow_back</span>
+          <span>Back</span>
+        </a>
+      </li>
+      <li class="more-dropdown-separator"></li>
+      <li>
+        <a href="#" class="more-dropdown-item more-dropdown-theme-option" data-theme="dark" onclick="setThemeFromDropdown('dark'); return false;">
+          <span class="material-icons-round">dark_mode</span>
+          <span>Dark Mode</span>
+          <span class="material-icons-round more-dropdown-check">check</span>
+        </a>
+      </li>
+      <li>
+        <a href="#" class="more-dropdown-item more-dropdown-theme-option" data-theme="light" onclick="setThemeFromDropdown('light'); return false;">
+          <span class="material-icons-round">light_mode</span>
+          <span>Light Mode</span>
+          <span class="material-icons-round more-dropdown-check">check</span>
+        </a>
+      </li>
+      <li>
+        <a href="#" class="more-dropdown-item more-dropdown-theme-option" data-theme="system" onclick="setThemeFromDropdown('system'); return false;">
+          <span class="material-icons-round">settings_suggest</span>
+          <span>System</span>
+          <span class="material-icons-round more-dropdown-check">check</span>
+        </a>
+      </li>
+    </ul>
+  </div>
   </div>
 </header>
 
@@ -334,6 +408,150 @@
 <script src="../study/js/study-api.js"></script>
 <script src="./js/sat-shared.js"></script>
 <script src="./js/sat-player.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize dropdown visibility
+  if (typeof updateDropdownForSection === 'function') {
+    updateDropdownForSection();
+  }
+  
+  // Also update on window resize
+  window.addEventListener('resize', function() {
+    if (typeof updateDropdownForSection === 'function') {
+      updateDropdownForSection();
+    }
+  });
+  
+  var moreBtn = document.getElementById('moreMenuBtn');
+  var moreDropdown = document.getElementById('moreDropdown');
+  
+  if (moreBtn && moreDropdown) {
+    moreBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      moreDropdown.classList.toggle('more-dropdown-open');
+    });
+    
+    document.addEventListener('click', function(e) {
+      if (!moreBtn.contains(e.target) && !moreDropdown.contains(e.target)) {
+        closeMoreDropdown();
+      }
+    });
+    
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closeMoreDropdown();
+      }
+    });
+  }
+});
+
+function openThemePage() {
+  var mainPage = document.querySelector('.more-dropdown-page[data-page="main"]');
+  var themePage = document.querySelector('.more-dropdown-page[data-page="theme"]');
+  if (mainPage && themePage) {
+    mainPage.classList.add('theme-open');
+    themePage.style.display = 'block';
+    setTimeout(function() {
+      themePage.classList.add('active');
+    }, 10);
+  }
+}
+
+function closeThemePage() {
+  var mainPage = document.querySelector('.more-dropdown-page[data-page="main"]');
+  var themePage = document.querySelector('.more-dropdown-page[data-page="theme"]');
+  if (mainPage && themePage) {
+    themePage.classList.remove('active');
+    setTimeout(function() {
+      mainPage.classList.remove('theme-open');
+      themePage.style.display = 'none';
+    }, 250);
+  }
+}
+
+function closeMoreDropdown() {
+  var moreDropdown = document.getElementById('moreDropdown');
+  if (moreDropdown) {
+    moreDropdown.classList.remove('more-dropdown-open');
+    closeThemePage();
+  }
+}
+
+function updateDropdownForSection() {
+  // Check screen width - only show collapsed items on mobile
+  var isMobile = window.innerWidth <= 768;
+  
+  // Check if we're in Math section by checking if calculator button exists and is visible
+  var toggleCalcBtn = document.getElementById('toggleCalcBtn');
+  var referenceBtn = document.getElementById('referenceBtn');
+  
+  var isMathSection = false;
+  
+  // If calculator button is visible and not disabled, we're in Math section
+  if (toggleCalcBtn && !toggleCalcBtn.classList.contains('is-hidden') && !toggleCalcBtn.disabled) {
+    isMathSection = true;
+  }
+  
+  // Show/hide collapsed items based on screen width
+  var collapsedItems = document.querySelectorAll('.more-dropdown-collapsed-item');
+  collapsedItems.forEach(function(item) {
+    if (isMobile) {
+      item.style.display = 'block';
+    } else {
+      item.style.display = 'none';
+    }
+  });
+  
+  // Show/hide Math-specific items based on both screen width AND section type
+  var mathItems = document.querySelectorAll('.more-dropdown-math-item');
+  mathItems.forEach(function(item) {
+    if (isMobile && isMathSection) {
+      item.style.display = 'block';
+    } else {
+      item.style.display = 'none';
+    }
+  });
+  
+  // Update separator visibility
+  var visibleMathItems = document.querySelectorAll('.more-dropdown-math-item:not([style*="display: none"])');
+  var separators = document.querySelectorAll('.more-dropdown-math-separator, .more-dropdown-separator');
+  separators.forEach(function(sep) {
+    if (isMobile && visibleMathItems.length > 0) {
+      sep.style.display = 'block';
+    } else {
+      sep.style.display = 'none';
+    }
+  });
+}
+
+function setThemeFromDropdown(theme) {
+  localStorage.setItem('korah_theme', theme);
+  var effectiveTheme = theme;
+  if (theme === 'system') {
+    effectiveTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  document.documentElement.setAttribute('data-theme', effectiveTheme);
+  updateThemeOptions();
+  closeMoreDropdown();
+}
+
+function updateThemeOptions() {
+  var currentTheme = localStorage.getItem('korah_theme') || 'dark';
+  var options = document.querySelectorAll('.more-dropdown-theme-option');
+  options.forEach(function(opt) {
+    opt.classList.remove('active');
+    if (opt.dataset.theme === currentTheme) {
+      opt.classList.add('active');
+    }
+  });
+}
+
+// Initialize theme on load
+document.addEventListener('DOMContentLoaded', function() {
+  updateThemeOptions();
+});
+</script>
 
 </body>
 </html>
