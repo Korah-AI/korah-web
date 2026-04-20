@@ -288,50 +288,50 @@ KATEX: $...$ for inline, $$...$$ for display.`;
         }
       }
       if (contentElement) {
-        contentElement.textContent = currentTypedText;
-      }
-      let delay = 5;
-      if (charBuffer.length > 50) delay = 0;
-      setTimeout(typeNextChar, delay);
-    };
+        renderMarkdownAndMath(contentElement, currentTypedText);
+    }
+    let delay = 5;
+    if (charBuffer.length > 50) delay = 0;
+    setTimeout(typeNextChar, delay);
+  };
 
-    console.log('Calling API with message:', fullMessage.substring(0, 50));
-    let parsedResponse = null;
-    let isJSONMode = false;
-    let fullReplyFromAPI = "";
+  console.log('Calling API with message:', fullMessage.substring(0, 50));
+  let parsedResponse = null;
+  let isJSONMode = false;
+  let fullReplyFromAPI = "";
 
-    try {
-      await callAPI(fullMessage, (chunk, fullText) => {
-        fullReplyFromAPI = fullText;
-        if (contentElement && fullText) {
-          const delta = fullText.slice(lastBufferedLength);
-          lastBufferedLength = fullText.length;
-          
-          if (!isJSONMode && (fullText.trim().startsWith('{') || fullText.trim().startsWith('```json'))) {
-            isJSONMode = true;
-            charBuffer = []; 
+  try {
+    await callAPI(fullMessage, (chunk, fullText) => {
+      fullReplyFromAPI = fullText;
+      if (contentElement && fullText) {
+        const delta = fullText.slice(lastBufferedLength);
+        lastBufferedLength = fullText.length;
+        
+        if (!isJSONMode && (fullText.trim().startsWith('{') || fullText.trim().startsWith('```json'))) {
+          isJSONMode = true;
+          charBuffer = []; 
+        }
+        
+        if (!isJSONMode) {
+          charBuffer.push(...delta.split(''));
+          if (!typewriterActive) {
+            typeNextChar();
           }
-          
-          if (!isJSONMode) {
-            charBuffer.push(...delta.split(''));
-            if (!typewriterActive) {
-              typeNextChar();
-            }
-          } else {
-            // While streaming JSON, try to extract and show the response field
-            const responseMatch = fullText.match(/"response":\s*"((?:[^"\\]|\\.)*)/);
-            if (responseMatch && responseMatch[1]) {
-              const partialResponse = responseMatch[1]
-                .replace(/\\n/g, '\n')
-                .replace(/\\"/g, '"')
-                .replace(/\\t/g, '\t');
-              contentElement.textContent = partialResponse + "▊";
-            } else if (!contentElement.textContent || contentElement.textContent === "Analyzing and updating graph...") {
-              contentElement.textContent = "Analyzing and updating graph...";
-            }
+        } else {
+          // While streaming JSON, try to extract and show the response field
+          const responseMatch = fullText.match(/"response":\s*"((?:[^"\\]|\\.)*)/);
+          if (responseMatch && responseMatch[1]) {
+            const partialResponse = responseMatch[1]
+              .replace(/\\n/g, '\n')
+              .replace(/\\"/g, '"')
+              .replace(/\\t/g, '\t');
+            renderMarkdownAndMath(contentElement, partialResponse + "▊");
+          } else if (!contentElement.textContent || contentElement.textContent === "Analyzing and updating graph...") {
+            contentElement.textContent = "Analyzing and updating graph...";
           }
         }
-      });
+      }
+    });
       
       charBuffer = [];
       typewriterActive = false;
@@ -512,15 +512,51 @@ KATEX: $...$ for inline, $$...$$ for display.`;
     return row;
   }
 
+  function normalizeMathDelimiters(markdownText) {
+    if (!markdownText) return markdownText;
+
+    return markdownText
+      .split(/(```[\s\S]*?```)/g)
+      .map(function (segment) {
+        if (segment.startsWith("```")) return segment;
+
+        return segment
+          .replace(/`([^`]+)`/g, function (_, expr) {
+            const trimmed = expr.trim();
+            if (/[_^\\{}]/.test(trimmed)) {
+              return "$" + trimmed + "$";
+            }
+            return "`" + expr + "`";
+          })
+          .replace(/\\\((.*?)\\\)/gs, function (_, expr) {
+            return "$" + expr.trim() + "$";
+          })
+          .replace(/\\[(.*?)]/gs, function (_, expr) {
+            return "$$" + expr.trim() + "$$";
+          })
+          .replace(/([a-zA-Z])_([a-zA-Z0-9]+|\{[^}]+\})/g, "$1_{$2}");
+      })
+      .join("");
+  }
+
   function renderMarkdownAndMath(container, text) {
     if (!text) return;
     
-    const escapedText = text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
+    const normalizedMarkdown = normalizeMathDelimiters(text);
+    let html = normalizedMarkdown;
     
-    let html = marked.parse(escapedText);
+    try {
+      if (window.marked && typeof window.marked.parse === "function") {
+        html = window.marked.parse(normalizedMarkdown);
+      } else {
+        html = normalizedMarkdown
+          .replace(/```([\s\S]*?)```/g, "<pre><code>$1</code></pre>")
+          .replace(/\n/g, "<br/>");
+      }
+    } catch (e) {
+      console.error("Markdown render error:", e);
+      html = normalizedMarkdown.replace(/\n/g, "<br/>");
+    }
     
     container.innerHTML = html;
     
@@ -542,16 +578,10 @@ KATEX: $...$ for inline, $$...$$ for display.`;
       renderMathInElement(container, {
         delimiters: [
           {left: '$$', right: '$$', display: true},
-          {left: '$', right: '$', display: false}
+          {left: '$', right: '$', display: false},
+          {left: '\\(', right: '\\)', display: false}
         ],
         throwOnError: false
-      });
-    } else if (typeof katex === 'object') {
-      container.querySelectorAll('script[type="math/tex"]').forEach(script => {
-        const displayMode = script.tagName === 'DIV';
-        try {
-          katex.render(script.textContent, script, { displayMode });
-        } catch (e) {}
       });
     }
   }
