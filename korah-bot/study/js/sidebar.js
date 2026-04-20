@@ -642,7 +642,7 @@ function showSidebarDeleteModal(name, onConfirm) {
     // Replace the anchor with a button trigger (so click toggles, not navigates).
     const trigger = document.createElement('button');
     trigger.type = 'button';
-    trigger.className = satLink.className;
+    trigger.className = satLink.className + ' sat-redirect-trigger';
     trigger.setAttribute('data-sat-link', 'true');
     trigger.setAttribute('aria-expanded', 'false');
     trigger.innerHTML = `
@@ -660,7 +660,7 @@ function showSidebarDeleteModal(name, onConfirm) {
     panel.innerHTML = `
       <div class="timer-idle-panel-inner">
         <a class="timer-start-btn sat-dropdown-btn t-btn" href="${satMathChatHref}">SAT Math Chat</a>
-        <a class="timer-start-btn sat-dropdown-btn t-btn" href="${satIndexHref}">SAT</a>
+        <a class="timer-start-btn sat-dropdown-btn t-btn" href="${satIndexHref}">SAT Questionbank</a>
       </div>
     `;
     wrapper.appendChild(panel);
