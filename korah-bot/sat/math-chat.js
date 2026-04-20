@@ -270,6 +270,20 @@ KATEX: $...$ for inline, $$...$$ for display.`;
     const contentElement = document.getElementById(streamingContentId);
     typingIndicator?.classList.add('hidden');
 
+    // Show pulsing "Thinking" indicator while waiting for first content
+    let thinkingIndicator = null;
+    if (contentElement) {
+      thinkingIndicator = document.createElement("div");
+      thinkingIndicator.className = "thinking-indicator";
+      thinkingIndicator.innerHTML = `
+        <span style="font-size: 0.8125rem; font-weight: 600; margin-right: 0.5rem;">Korah is thinking...</span>
+        <div class="thinking-dot"></div>
+        <div class="thinking-dot"></div>
+        <div class="thinking-dot"></div>
+      `;
+      contentElement.appendChild(thinkingIndicator);
+    }
+
     let currentTypedText = "";
     let charBuffer = [];
     let typewriterActive = false;
@@ -302,6 +316,12 @@ KATEX: $...$ for inline, $$...$$ for display.`;
 
   try {
     await callAPI(fullMessage, (chunk, fullText) => {
+      // Remove thinking indicator when first chunk arrives
+      if (thinkingIndicator && fullText.length > 0) {
+        thinkingIndicator.remove();
+        thinkingIndicator = null;
+      }
+      
       fullReplyFromAPI = fullText;
       if (contentElement && fullText) {
         const delta = fullText.slice(lastBufferedLength);
@@ -326,8 +346,8 @@ KATEX: $...$ for inline, $$...$$ for display.`;
               .replace(/\\"/g, '"')
               .replace(/\\t/g, '\t');
             renderMarkdownAndMath(contentElement, partialResponse + "▊");
-          } else if (!contentElement.textContent || contentElement.textContent === "Analyzing and updating graph...") {
-            contentElement.textContent = "Analyzing and updating graph...";
+          } else if (!contentElement.textContent || contentElement.textContent === "Korah is thinking...") {
+            contentElement.textContent = "Korah is thinking...";
           }
         }
       }
