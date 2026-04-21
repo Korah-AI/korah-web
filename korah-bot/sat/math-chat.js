@@ -689,4 +689,71 @@ KATEX: $...$ for inline, $$...$$ for display.`;
   } catch (e) {
     console.error('SAT Math Chat Error:', e);
   }
+
+  function initResizeHandle() {
+    const handle = document.getElementById('resize-handle');
+    const graphPanel = document.getElementById('sat-graph-panel');
+    const chatPanel = document.getElementById('main-content');
+    if (!handle || !graphPanel || !chatPanel) return;
+
+    let isDragging = false;
+    let startY;
+    let startGraphHeight;
+
+    handle.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      startY = e.clientY;
+      startGraphHeight = graphPanel.offsetHeight;
+      document.body.style.cursor = 'row-resize';
+      document.body.style.userSelect = 'none';
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      const deltaY = e.clientY - startY;
+      const newGraphHeight = startGraphHeight + deltaY;
+      const minHeight = 5 * 16;
+      const maxHeight = window.innerHeight * 0.7;
+      if (newGraphHeight >= minHeight && newGraphHeight <= maxHeight) {
+        graphPanel.style.flex = 'none';
+        graphPanel.style.height = newGraphHeight + 'px';
+        chatPanel.style.flex = '1';
+      }
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (isDragging) {
+        isDragging = false;
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+      }
+    });
+  }
+
+  function handleResize() {
+    const handle = document.getElementById('resize-handle');
+    const graphPanel = document.getElementById('sat-graph-panel');
+    const chatPanel = document.getElementById('main-content');
+    const isMinimized = window.innerWidth <= 56.25 * 16;
+    if (handle) {
+      handle.style.display = isMinimized ? 'block' : 'none';
+    }
+    if (!isMinimized && graphPanel && chatPanel) {
+      graphPanel.style.flex = '';
+      graphPanel.style.height = '';
+      chatPanel.style.flex = '';
+      graphPanel.style.minHeight = '';
+      chatPanel.style.minHeight = '';
+    }
+  }
+
+  window.addEventListener('resize', handleResize);
+  handleResize();
+
+  const checkAndInitResize = setInterval(() => {
+    if (document.getElementById('resize-handle')) {
+      initResizeHandle();
+      clearInterval(checkAndInitResize);
+    }
+  }, 100);
 })();

@@ -992,11 +992,11 @@ function showSidebarDeleteModal(name, onConfirm) {
     const newChatBtn = document.getElementById("new-chat-btn");
     if (newChatBtn) {
       newChatBtn.addEventListener("click", () => {
-        // Only redirect if we are NOT on index.html (the main chat page)
-        // This ensures the button on the chat page itself remains "smooth"
         const currentPage = window.location.pathname;
         const isMainChatPage = currentPage.includes("index.html") || currentPage.endsWith("/");
-        if (!isMainChatPage) {
+        const isSatPage = currentPage.includes("/sat/");
+        // Redirect to main chat if on SAT pages, or stay smooth on main chat page
+        if (isSatPage) {
           localStorage.setItem("korah_new_chat_trigger", "true");
           window.location.href = resolvedBaseUrl;
         }

@@ -35,11 +35,51 @@
 
 @media (max-width: 56.25rem) {
   .sat-math-split {
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
   }
   .sat-graph-panel {
-    flex: 0 0 20rem;
-    min-width: 100%;
+    flex: 0 0 45vh;
+    min-height: 5rem;
+    max-height: 70vh;
+    width: 100%;
+  }
+  .resize-handle {
+    height: 0.5rem;
+    background: transparent;
+    cursor: row-resize;
+    flex-shrink: 0;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    margin: -0.47rem 0;
+    position: relative;
+    z-index: 10;
+  }
+  .resize-handle::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 3rem;
+    height: 0.25rem;
+    background: var(--grn);
+    border-radius: 0.125rem;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .resize-handle:hover {
+    background: transparent;
+  }
+  .resize-handle:hover::after {
+    width: 4rem;
+  }
+  .resize-handle:active::after {
+    width: 4rem;
+  }
+  .sat-chat-panel {
+    flex: 1;
+    min-height: 5rem;
+    overflow: hidden;
   }
 }
 

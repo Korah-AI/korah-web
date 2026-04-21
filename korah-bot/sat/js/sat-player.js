@@ -6,6 +6,219 @@
   const { parseOpenSatV1Query, buildOpenSatV1QuestionUrl, OPENSAT_CATALOG } = window.KorahSAT;
   const query = parseOpenSatV1Query();
 
+  const DEMO_QUESTIONS = [
+    {
+      id: "demo-math-1",
+      section: "math",
+      domain: "Algebra",
+      stem: "If 3x + 7 = 22, what is x?",
+      options: [
+        { key: "A", text: " 3" },
+        { key: "B", text: " 5" },
+        { key: "C", text: " 7" },
+        { key: "D", text: " 15" }
+      ],
+      correctAnswer: "B",
+      type: "mc",
+      explanation: "3x + 7 = 22 → 3x = 15 → x = 5"
+    },
+    {
+      id: "demo-math-2",
+      section: "math",
+      domain: "Problem Solving and Data Analysis",
+      stem: "A store offers 25% off. What is the sale price of an $80 item?",
+      options: [
+        { key: "A", text: " $55" },
+        { key: "B", text: " $60" },
+        { key: "C", text: " $65" },
+        { key: "D", text: " $20" }
+      ],
+      correctAnswer: "B",
+      type: "mc",
+      explanation: "25% off $80 = $80 × 0.25 = $20 discount. Sale price = $80 - $20 = $60"
+    },
+    {
+      id: "demo-english-1",
+      section: "english",
+      domain: "Craft and Structure",
+      stem: "Which word is closest in meaning to 'ephemeral'?",
+      options: [
+        { key: "A", text: " Permanent" },
+        { key: "B", text: " Temporary" },
+        { key: "C", text: " Ancient" },
+        { key: "D", text: " Modern" }
+      ],
+      correctAnswer: "B",
+      type: "mc",
+      explanation: "Ephemeral means lasting for a very short time, similar to temporary"
+    },
+    {
+      id: "demo-english-2",
+      section: "english",
+      domain: "Command of Evidence",
+      stem: "The author's main purpose in this passage is to:",
+      options: [
+        { key: "A", text: " Entertain" },
+        { key: "B", text: " Persuade" },
+        { key: "C", text: " Inform" },
+        { key: "D", text: " Criticize" }
+      ],
+      correctAnswer: "C",
+      type: "mc",
+      explanation: "The passage provides information about the topic without attempting to persuade or criticize"
+    },
+    {
+      id: "demo-math-3",
+      section: "math",
+      domain: "Geometry",
+      stem: "What is the area of a circle with radius 4?",
+      options: [
+        { key: "A", text: " 8π" },
+        { key: "B", text: " 16π" },
+        { key: "C", text: " 4π" },
+        { key: "D", text: " 32π" }
+      ],
+      correctAnswer: "B",
+      type: "mc",
+      explanation: "Area = πr² = π(4)² = 16π"
+    },
+    {
+      id: "demo-math-4",
+      section: "math",
+      domain: "Statistics",
+      stem: "The average of 5 numbers is 20. What is their sum?",
+      options: [
+        { key: "A", text: " 25" },
+        { key: "B", text: " 100" },
+        { key: "C", text: " 4" },
+        { key: "D", text: " 50" }
+      ],
+      correctAnswer: "B",
+      type: "mc",
+      explanation: "Sum = Average × Count = 20 × 5 = 100"
+    },
+    {
+      id: "demo-math-5",
+      section: "math",
+      domain: "Advanced Algebra",
+      stem: "If f(x) = 2x² - 3x + 1, what is f(3)?",
+      options: [
+        { key: "A", text: " 10" },
+        { key: "B", text: " 7" },
+        { key: "C", text: " 13" },
+        { key: "D", text: " 4" }
+      ],
+      correctAnswer: "A",
+      type: "mc",
+      explanation: "f(3) = 2(3)² - 3(3) + 1 = 18 - 9 + 1 = 10"
+    },
+    {
+      id: "demo-english-3",
+      section: "english",
+      domain: "Information and Ideas",
+      stem: "This passage is mainly concerned with:",
+      options: [
+        { key: "A", text: " Historical events" },
+        { key: "B", text: " Scientific findings" },
+        { key: "C", text: " Cultural traditions" },
+        { key: "D", text: " Economic theories" }
+      ],
+      correctAnswer: "B",
+      type: "mc",
+      explanation: "The passage focuses on scientific findings and research methodology"
+    },
+    {
+      id: "demo-english-4",
+      section: "english",
+      domain: "Standard English Conventions",
+      stem: "Choose the correct sentence:",
+      options: [
+        { key: "A", text: " Their going to the store." },
+        { key: "B", text: " They're going to the store." },
+        { key: "C", text: " There going to the store." },
+        { key: "D", text: " Theyre going to the store." }
+      ],
+      correctAnswer: "B",
+      type: "mc",
+      explanation: "They're = They are is the correct contraction"
+    },
+    {
+      id: "demo-english-5",
+      section: "english",
+      domain: "Expression of Ideas",
+      stem: "Which version best combines these sentences? 'The cat slept. It dreamed.'",
+      options: [
+        { key: "A", text: " The cat slept and it dreamed." },
+        { key: "B", text: " The cat, who was sleeping, dreamed." },
+        { key: "C", text: " While sleeping, the cat dreamed." },
+        { key: "D", text: " The cat slept because it dreamed." }
+      ],
+      correctAnswer: "C",
+      type: "mc",
+      explanation: "Option C uses a participial phrase for concise combination"
+    },
+    {
+      id: "demo-math-6",
+      section: "math",
+      domain: "Problem Solving and Data Analysis",
+      stem: "A car travels 240 miles in 4 hours. What is its average speed?",
+      options: [
+        { key: "A", text: " 60 mph" },
+        { key: "B", text: " 50 mph" },
+        { key: "C", text: " 55 mph" },
+        { key: "D", text: " 65 mph" }
+      ],
+      correctAnswer: "A",
+      type: "mc",
+      explanation: "Speed = Distance ÷ Time = 240 ÷ 4 = 60 mph"
+    },
+    {
+      id: "demo-english-6",
+      section: "english",
+      domain: "Craft and Structure",
+      stem: "The author's tone could best be described as:",
+      options: [
+        { key: "A", text: " Angry and confrontational" },
+        { key: "B", text: " Curious and exploratory" },
+        { key: "C", text: " Bitter and resentful" },
+        { key: "D", text: " Indifferent and neutral" }
+      ],
+      correctAnswer: "B",
+      type: "mc",
+      explanation: "The author asks questions and shows interest in discovering new perspectives"
+    },
+    {
+      id: "demo-math-7",
+      section: "math",
+      domain: "Geometry",
+      stem: "A triangle has sides 3, 4, and 5. What type of triangle is it?",
+      options: [
+        { key: "A", text: " Equilateral" },
+        { key: "B", text: " Isosceles" },
+        { key: "C", text: " Right" },
+        { key: "D", text: " Obtuse" }
+      ],
+      correctAnswer: "C",
+      type: "mc",
+      explanation: "3² + 4² = 9², so it satisfies the Pythagorean theorem - it's a right triangle"
+    },
+    {
+      id: "demo-english-7",
+      section: "english",
+      domain: "Command of Evidence",
+      stem: "Which detail best supports the main idea?",
+      options: [
+        { key: "A", text: " The author's birth year" },
+        { key: "B", text: " Statistical evidence from studies" },
+        { key: "C", text: " A friend's personal story" },
+        { key: "D", text: " The weather that day" }
+      ],
+      correctAnswer: "B",
+      type: "mc",
+      explanation: "Statistical evidence provides concrete support for the main argument"
+    }
+  ];
+
   let questions = [];
   let loadState = "loading"; // loading | success | empty | error
   let loadError = "";
@@ -667,6 +880,17 @@
         headers: { Accept: "application/json" },
       });
     } catch (err) {
+      const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+      if (isLocal) {
+        questions = DEMO_QUESTIONS;
+        loadState = questions.length ? "success" : "empty";
+        state.currentIndex = 0;
+        startStopwatch();
+        renderHeader();
+        renderNav();
+        renderQuestion();
+        return;
+      }
       loadState = "error";
       loadError = "Could not reach the Korah SAT adapter.";
       console.error(err);
@@ -677,6 +901,17 @@
     }
 
     if (!response.ok) {
+      const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+      if (isLocal) {
+        questions = DEMO_QUESTIONS;
+        loadState = questions.length ? "success" : "empty";
+        state.currentIndex = 0;
+        startStopwatch();
+        renderHeader();
+        renderNav();
+        renderQuestion();
+        return;
+      }
       loadState = "error";
       loadError = `Adapter error (${response.status}).`;
       renderHeader();
