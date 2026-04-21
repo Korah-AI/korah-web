@@ -59,12 +59,18 @@ The "response" field contains your text explanation using:
 - KaTeX for math: $inline$ or $$display$$
 - NEVER use \\(...\\), \\[...\\], or bare math.
 
-If no graph update needed, set "graph": null.`;
+If no graph update needed, set "graph": null.
+
+OPTIONALLY include a "suggestions" field with 0-2 follow-up questions the user might ask next.
+Only include suggestions if genuinely useful. Max 2 items.
+Example: "suggestions": ["What is the vertex form?", "How do I find the roots?"]
+When suggestions are provided, they will appear as clickable buttons below your response.`;
 
 function getFormatInstructions() {
   return `STRICT RESPONSE FORMAT: Output ONLY raw JSON. No code blocks.
-Fields: { "graph": {...}, "response": "..." }
-KATEX: $...$ for inline, $$...$$ for display.`;
+Fields: { "graph": {...}, "response": "...", "suggestions": [...] }
+KATEX: $...$ for inline, $$...$$ for display.
+OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
 }
 
   function initializeSATGraph() {
@@ -257,7 +263,7 @@ KATEX: $...$ for inline, $$...$$ for display.`;
     const streamingContentId = `streaming-content-${Date.now()}`;
     const streamingRow = addMessage('assistant', '', false, streamingContentId);
     const contentElement = document.getElementById(streamingContentId);
-    typingIndicator?.classList.add('hidden');
+    let aiSuggestions = [];
 
     // Show pulsing "Thinking" indicator while waiting for first content
     let thinkingIndicator = null;
@@ -283,6 +289,7 @@ KATEX: $...$ for inline, $$...$$ for display.`;
         typewriterActive = false;
         return;
       }
+
       typewriterActive = true;
       const charsToType = charBuffer.length > 20 ? 2 : 1;
       for (let i = 0; i < charsToType; i++) {
@@ -290,13 +297,16 @@ KATEX: $...$ for inline, $$...$$ for display.`;
           currentTypedText += charBuffer.shift();
         }
       }
+
       if (contentElement) {
         renderMarkdownAndMath(contentElement, currentTypedText);
-    }
-    let delay = 5;
-    if (charBuffer.length > 50) delay = 0;
-    setTimeout(typeNextChar, delay);
-  };
+      }
+
+      let delay = 5;
+      if (charBuffer.length > 50) delay = 0;
+      
+      setTimeout(typeNextChar, delay);
+    };
 
   console.log('Calling API with message:', fullMessage.substring(0, 50));
   let parsedResponse = null;
@@ -341,6 +351,8 @@ KATEX: $...$ for inline, $$...$$ for display.`;
         }
       }
     });
+      
+      typingIndicator?.classList.add('hidden');
       
       charBuffer = [];
       typewriterActive = false;
@@ -388,9 +400,29 @@ KATEX: $...$ for inline, $$...$$ for display.`;
         
         chatBody.scrollTop = chatBody.scrollHeight;
       }
-      
-      const textForSuggestions = parsedResponse?.response || fullReplyFromAPI;
-      showSuggestions(textForSuggestions);
+
+      if (parsedResponse?.suggestions && Array.isArray(parsedResponse.suggestions)) {
+        aiSuggestions = parsedResponse.suggestions.slice(0, 2);
+      }
+
+      if (aiSuggestions.length > 0 && streamingRow) {
+        const bubble = streamingRow.querySelector('.msg-bubble');
+        if (bubble) {
+          const existingSuggestions = bubble.querySelector('.inline-suggestions');
+          if (!existingSuggestions) {
+            const suggestionsDiv = document.createElement('div');
+            suggestionsDiv.className = 'inline-suggestions';
+            aiSuggestions.forEach((suggestion) => {
+              const btn = document.createElement('button');
+              btn.className = 'inline-suggestion-btn t-btn';
+              btn.textContent = suggestion;
+              btn.addEventListener('click', () => sendMessage(suggestion));
+              suggestionsDiv.appendChild(btn);
+            });
+            bubble.appendChild(suggestionsDiv);
+          }
+        }
+      }
 
     } catch (error) {
       console.error('Error in sendMessage:', error);
@@ -487,16 +519,16 @@ KATEX: $...$ for inline, $$...$$ for display.`;
     return fullReply;
   }
 
-  function addMessage(role, text, isError = false, contentId = null) {
+  function addMessage(role, text, isError = false, contentId = null, suggestions = []) {
     const row = document.createElement('div');
     row.className = `msg-row ${role === 'user' ? 'user' : 'assistant'}`;
-    
+
     const avatar = document.createElement('div');
     avatar.className = `msg-avatar ${role === 'user' ? 'user-av' : 'korah-av'}`;
 
     const bubble = document.createElement('div');
     bubble.className = `msg-bubble ${role === 'user' ? 'user' : 'korah'}${isError ? ' error' : ''}`;
-    
+
     const content = document.createElement('div');
     if (contentId) {
       content.id = contentId;
@@ -505,14 +537,30 @@ KATEX: $...$ for inline, $$...$$ for display.`;
     if (text) {
       renderMarkdownAndMath(content, text);
     }
-    
+
     bubble.appendChild(content);
+
+    if (role === 'assistant' && !isError && suggestions && suggestions.length > 0) {
+      const suggestionsDiv = document.createElement('div');
+      suggestionsDiv.className = 'inline-suggestions';
+
+      suggestions.slice(0, 2).forEach((suggestion) => {
+        const btn = document.createElement('button');
+        btn.className = 'inline-suggestion-btn t-btn';
+        btn.textContent = suggestion;
+        btn.addEventListener('click', () => sendMessage(suggestion));
+        suggestionsDiv.appendChild(btn);
+      });
+
+      bubble.appendChild(suggestionsDiv);
+    }
+
     row.appendChild(avatar);
     row.appendChild(bubble);
-    
+
     messagesList?.appendChild(row);
     chatBody.scrollTop = chatBody.scrollHeight;
-    
+
     return row;
   }
 
@@ -590,44 +638,6 @@ KATEX: $...$ for inline, $$...$$ for display.`;
     }
   }
 
-  function showSuggestions(response) {
-    if (!suggestionBar) return;
-    
-    const text = response.toLowerCase();
-    let suggestions = [];
-
-    if (text.includes('quadratic') || text.includes('x²')) {
-      suggestions = ["What's the vertex form?", "How do I find the roots?"];
-    } else if (text.includes('linear') || text.includes('y =') || text.includes('slope')) {
-      suggestions = ["Show me another example", "What's the y-intercept?"];
-    } else if (text.includes('inequality')) {
-      suggestions = ["How do I graph inequalities?", "What's the test point method?"];
-    } else if (text.includes('system') || text.includes('system of equations')) {
-      suggestions = ["Show me substitution", "Show me elimination"];
-    } else if (text.includes('function') || text.includes('f(x)')) {
-      suggestions = ["What transformations apply?", "How do I find the domain?"];
-    } else if (text.includes('triangle') || text.includes('SOHCAHTOA') || text.includes('trigonometry')) {
-      suggestions = ["Show me a practice problem", "When do I use sine vs cosine?"];
-    } else if (text.includes('circle') || text.includes('radius')) {
-      suggestions = ["How do I write the equation?", "Show me completing the square"];
-    } else {
-      suggestions = ["Show me a practice problem", "Explain the next step"];
-    }
-
-    if (suggestions.length === 0) {
-      suggestionBar.innerHTML = '';
-      return;
-    }
-
-    suggestionBar.innerHTML = suggestions.map(s => 
-      `<button class="suggestion-btn">${s}</button>`
-    ).join('');
-
-    suggestionBar.querySelectorAll('.suggestion-btn').forEach(btn => {
-      btn.addEventListener('click', () => sendMessage(btn.textContent));
-    });
-  }
-
   function bindEventListeners() {
     console.log('Binding event listeners', { sendBtn, welcomeSendBtn, input, welcomeInput });
     sendBtn?.addEventListener('click', () => { console.log('Send button clicked'); sendMessage(input?.value?.trim() || ''); });
@@ -657,7 +667,6 @@ KATEX: $...$ for inline, $$...$$ for display.`;
       messagesList && (messagesList.innerHTML = '');
       welcomeScreen?.classList.remove('hidden');
       document.getElementById('chat-input-area')?.classList.add('hidden');
-      suggestionBar && (suggestionBar.innerHTML = '');
     });
 
   }
