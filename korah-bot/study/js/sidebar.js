@@ -210,11 +210,11 @@ function showSidebarDeleteModal(name, onConfirm) {
       if (link.hasAttribute('data-sat-link')) return; // Skip SAT links
       const href = link.getAttribute("href");
       if (href.includes("feed.html")) {
-        link.innerHTML = "<span class='nav-icon'>📚</span> <span class='nav-text'>Study</span>";
+        link.innerHTML = "<span class='material-icons-round' style='font-size: 1.25rem;'>school</span> <span class='nav-text'>Study</span>";
         if (itemIds.length === 0) link.classList.add("nav-empty");
         else link.classList.remove("nav-empty");
       } else if (href.includes("index.html")) {
-        link.innerHTML = "<span class='nav-icon'>💬</span> <span class='nav-text'>Chat</span>";
+        link.innerHTML = "<span class='material-icons-round' style='font-size: 1.25rem;'>chat</span> <span class='nav-text'>Chat</span>";
       }
       // All other links (productivity) remain unchanged
     });
@@ -645,38 +645,40 @@ function showSidebarDeleteModal(name, onConfirm) {
     trigger.className = satLink.className + ' sat-redirect-trigger';
     trigger.setAttribute('data-sat-link', 'true');
     trigger.setAttribute('aria-expanded', 'false');
-    trigger.innerHTML = `
-      ${satLink.innerHTML}
-      <svg class="timer-idle-chevron" id="sat-idle-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true" style="margin-left:auto;">
-        <polyline points="6 9 12 15 18 9"/>
-      </svg>
-    `;
+    trigger.innerHTML = satLink.innerHTML;
 
     wrapper.replaceChild(trigger, satLink);
 
     const panel = document.createElement('div');
-    panel.className = 'timer-idle-panel sat-idle-panel';
+    panel.className = 'sat-more-dropdown';
     panel.id = 'sat-idle-panel';
     panel.innerHTML = `
-      <div class="timer-idle-panel-inner">
-        <a class="timer-start-btn sat-dropdown-btn t-btn" href="${satMathChatHref}">SAT Math Chat</a>
-        <a class="timer-start-btn sat-dropdown-btn t-btn" href="${satIndexHref}">SAT Questionbank</a>
-      </div>
+      <ul class="more-dropdown-list">
+        <li>
+          <a class="more-dropdown-item" href="${satMathChatHref}">
+            <span class="material-icons-round">calculate</span>
+            <span>SAT Math Chat</span>
+          </a>
+        </li>
+        <li>
+          <a class="more-dropdown-item" href="${satIndexHref}">
+            <span class="material-icons-round">assignment</span>
+            <span>SAT Questionbank</span>
+          </a>
+        </li>
+      </ul>
     `;
     wrapper.appendChild(panel);
 
-    const chevron = trigger.querySelector('#sat-idle-chevron');
     const close = () => {
       trigger.setAttribute('aria-expanded', 'false');
-      panel.classList.remove('open');
-      chevron?.classList.remove('open');
+      panel.classList.remove('more-dropdown-open');
     };
 
     trigger.addEventListener('click', () => {
-      const willOpen = !panel.classList.contains('open');
+      const willOpen = !panel.classList.contains('more-dropdown-open');
       trigger.setAttribute('aria-expanded', String(willOpen));
-      panel.classList.toggle('open', willOpen);
-      chevron?.classList.toggle('open', willOpen);
+      panel.classList.toggle('more-dropdown-open', willOpen);
     });
 
     // Close when clicking outside
@@ -994,6 +996,17 @@ function showSidebarDeleteModal(name, onConfirm) {
       newChatBtn.addEventListener("click", () => {
         const currentPage = window.location.pathname;
         const isMainChatPage = currentPage.includes("index.html") || currentPage.endsWith("/");
+        if (!isMainChatPage) {
+          localStorage.setItem("korah_new_chat_trigger", "true");
+          window.location.href = resolvedBaseUrl;
+        }
+      });
+    }
+
+    if (newChatBtn) {
+      newChatBtn.addEventListener("click", () => {
+        const currentPage = window.location.pathname;
+        const isMainChatPage = currentPage.includes("index.html") || currentPage.endsWith("/");
         const isSatPage = currentPage.includes("/sat/");
         // Redirect to main chat if on SAT pages, or stay smooth on main chat page
         if (isSatPage) {
@@ -1040,6 +1053,195 @@ function showSidebarDeleteModal(name, onConfirm) {
 
     const isCollapsed = localStorage.getItem("korah_sidebar_collapsed") === "true";
     if (sidebar && !isMobile()) updateSidebarState(isCollapsed);
+
+    // Create "more" dropdown for collapsed sidebar
+    function createCollapsedMoreDropdown() {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'collapsed-more-wrapper';
+      
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'collapsed-more-btn sat-button sat-button-ghost more-dropdown-trigger';
+      btn.title = 'More';
+      btn.style.cssText = 'height: 2.25rem; width: 2.25rem; padding: 0;';
+      btn.innerHTML = '<span class="material-icons-round" style="font-size: 1.25rem;">more_vert</span>';
+      
+      const dropdown = document.createElement('div');
+      dropdown.className = 'collapsed-more-dropdown more-dropdown-menu';
+      dropdown.innerHTML = `
+        <!-- Main Page -->
+        <ul class="more-dropdown-list more-dropdown-page" data-page="main">
+          <li>
+            <a href="#" class="more-dropdown-item more-dropdown-trigger-item" onclick="switchToThemePage(this.closest('.collapsed-more-dropdown')); return false;">
+              <span class="material-icons-round">dark_mode</span>
+              <span>Theme</span>
+              <span class="material-icons-round more-dropdown-arrow">chevron_right</span>
+            </a>
+          </li>
+          <li>
+            <a href="#" class="more-dropdown-item" onclick="document.getElementById('settings-modal')?.classList.add('show'); closeCollapsedMoreDropdown(this.closest('.collapsed-more-wrapper')); return false;">
+              <span class="material-icons-round">settings_suggest</span>
+              <span>Settings</span>
+            </a>
+          </li>
+          <li>
+            <a href="#" class="more-dropdown-item danger" onclick="document.getElementById('logout-btn').click(); return false;">
+              <span class="material-icons-round">logout</span>
+              <span>Logout</span>
+            </a>
+          </li>
+        </ul>
+        <!-- Theme Page -->
+        <ul class="more-dropdown-list more-dropdown-page" data-page="theme" style="display: none;">
+          <li>
+            <a href="#" class="more-dropdown-item more-dropdown-back" onclick="switchToMainPage(this.closest('.collapsed-more-dropdown')); return false;">
+              <span class="material-icons-round">arrow_back</span>
+              <span>Back</span>
+            </a>
+          </li>
+          <li>
+            <a href="#" class="more-dropdown-item more-dropdown-theme-option" data-theme="dark" onclick="setThemeFromDropdown('dark', this.closest('.collapsed-more-dropdown'), this.closest('.collapsed-more-wrapper')); return false;">
+              <span class="material-icons-round">dark_mode</span>
+              <span>Dark Mode</span>
+              <span class="material-icons-round more-dropdown-check"></span>
+            </a>
+          </li>
+          <li>
+            <a href="#" class="more-dropdown-item more-dropdown-theme-option" data-theme="light" onclick="setThemeFromDropdown('light', this.closest('.collapsed-more-dropdown'), this.closest('.collapsed-more-wrapper')); return false;">
+              <span class="material-icons-round">light_mode</span>
+              <span>Light Mode</span>
+              <span class="material-icons-round more-dropdown-check"></span>
+            </a>
+          </li>
+          <li>
+            <a href="#" class="more-dropdown-item more-dropdown-theme-option" data-theme="system" onclick="setThemeFromDropdown('system', this.closest('.collapsed-more-dropdown'), this.closest('.collapsed-more-wrapper')); return false;">
+              <span class="material-icons-round">settings_suggest</span>
+              <span>System</span>
+              <span class="material-icons-round more-dropdown-check"></span>
+            </a>
+          </li>
+        </ul>
+      `;
+      
+      function switchToThemePage(dd) {
+        dd.querySelector('[data-page="main"]').style.display = 'none';
+        dd.querySelector('[data-page="theme"]').style.display = 'block';
+        dd.classList.add('showing-theme');
+        updateThemeChecks(dd);
+      }
+      window.switchToThemePage = switchToThemePage;
+      
+      function switchToMainPage(dd) {
+        dd.querySelector('[data-page="theme"]').style.display = 'none';
+        dd.querySelector('[data-page="main"]').style.display = 'block';
+        dd.classList.remove('showing-theme');
+      }
+      window.switchToMainPage = switchToMainPage;
+      
+      function setThemeFromDropdown(theme, dd, wrapper) {
+        localStorage.setItem('korah_theme', theme);
+        let effectiveTheme = theme;
+        if (theme === 'system') {
+          effectiveTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        document.documentElement.setAttribute('data-theme', effectiveTheme);
+        updateThemeChecks(dd);
+        closeCollapsedMoreDropdown(wrapper);
+      }
+      window.setThemeFromDropdown = setThemeFromDropdown;
+      
+      function updateThemeChecks(dd) {
+        const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+        dd.querySelectorAll('.more-dropdown-theme-option').forEach(item => {
+          const check = item.querySelector('.more-dropdown-check');
+          if (item.getAttribute('data-theme') === currentTheme) {
+            check.textContent = 'check';
+          } else {
+            check.textContent = '';
+          }
+        });
+      }
+      
+      function closeCollapsedMoreDropdown(wrap) {
+        wrap.querySelector('.collapsed-more-dropdown').classList.remove('more-dropdown-open');
+        wrap.querySelector('.collapsed-more-btn').classList.remove('is-active');
+        switchToMainPage(wrap.querySelector('.collapsed-more-dropdown'));
+      }
+      window.closeCollapsedMoreDropdown = closeCollapsedMoreDropdown;
+      
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dropdown.classList.toggle('more-dropdown-open');
+        btn.classList.toggle('is-active');
+        if (dropdown.classList.contains('more-dropdown-open')) {
+          updateThemeChecks(dropdown);
+        }
+      });
+      
+      document.addEventListener('click', (e) => {
+        if (!wrapper.contains(e.target)) {
+          dropdown.classList.remove('more-dropdown-open');
+          btn.classList.remove('is-active');
+          switchToMainPage(dropdown);
+        }
+      });
+      
+      wrapper.appendChild(btn);
+      wrapper.appendChild(dropdown);
+      return wrapper;
+    }
+
+    // Append "more" button to sidebar nav when collapsed
+    function initCollapsedMoreDropdown() {
+      if (sidebar?.classList.contains('collapsed')) {
+        const nav = sidebar.querySelector('.sidebar-nav');
+        if (nav && !sidebar.querySelector('.collapsed-more-wrapper')) {
+          const moreWrapper = createCollapsedMoreDropdown();
+          nav.appendChild(moreWrapper);
+        }
+      }
+    }
+
+    // Remove "more" button when sidebar is expanded
+    function removeCollapsedMoreDropdown() {
+      const existing = sidebar?.querySelector('.collapsed-more-wrapper');
+      if (existing) {
+        existing.remove();
+      }
+    }
+
+    // Watch for collapse state changes
+    const originalUpdateSidebarState = updateSidebarState;
+    updateSidebarState = function(collapsed) {
+      originalUpdateSidebarState(collapsed);
+      if (collapsed) {
+        setTimeout(initCollapsedMoreDropdown, 100);
+      } else {
+        removeCollapsedMoreDropdown();
+      }
+    };
+    initCollapsedMoreDropdown();
+
+    // Close dropdowns when sidebar goes off-screen at breakpoint
+    window.addEventListener('resize', () => {
+      if (window.innerWidth <= 640) {
+        const existing = sidebar?.querySelector('.collapsed-more-wrapper');
+        if (existing) {
+          const dropdown = existing.querySelector('.collapsed-more-dropdown');
+          const btn = existing.querySelector('.collapsed-more-btn');
+          if (dropdown) dropdown.classList.remove('more-dropdown-open');
+          if (btn) btn.classList.remove('is-active');
+        }
+        const satWrapper = sidebar?.querySelector('.sat-dropdown-wrapper');
+        if (satWrapper) {
+          const satTrigger = satWrapper.querySelector('.sat-redirect-trigger');
+          const satPanel = satWrapper.querySelector('.sat-more-dropdown');
+          if (satTrigger) satTrigger.setAttribute('aria-expanded', 'false');
+          if (satPanel) satPanel.classList.remove('more-dropdown-open');
+        }
+      }
+    });
+
 
     if (toggle && sidebar) {
       toggle.addEventListener("click", () => {
