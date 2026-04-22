@@ -370,13 +370,39 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
           }
         } else {
           // While streaming JSON, try to extract and show the response field
-          const responseMatch = fullText.match(/"response":\s*"((?:[^"\\]|\\.)*)/);
-          if (responseMatch && responseMatch[1]) {
-            const partialResponse = responseMatch[1]
-              .replace(/\\n/g, '\n')
-              .replace(/\\"/g, '"')
-              .replace(/\\t/g, '\t');
-            renderMarkdownAndMath(contentElement, partialResponse + "▊");
+          // Use more robust parsing - try to find the response value by counting braces
+          const responseStart = fullText.indexOf('"response":');
+          if (responseStart !== -1) {
+            let inString = false;
+            let escapeNext = false;
+            let foundColon = false;
+            let quoteStart = -1;
+            
+            for (let i = responseStart + 9; i < fullText.length; i++) {
+              const char = fullText[i];
+              if (escapeNext) {
+                escapeNext = false;
+                continue;
+              }
+              if (char === '\\') {
+                escapeNext = true;
+                continue;
+              }
+              if (char === '"') {
+                if (!inString) {
+                  inString = true;
+                  quoteStart = i;
+                } else {
+                  // End of string - we have the response value
+                  const responseValue = fullText.substring(quoteStart + 1, i)
+                    .replace(/\\n/g, '\n')
+                    .replace(/\\"/g, '"')
+                    .replace(/\\t/g, '\t');
+                  renderMarkdownAndMath(contentElement, responseValue + "▊");
+                  break;
+                }
+              }
+            }
           } else if (!contentElement.textContent || contentElement.textContent === "Korah is thinking...") {
             contentElement.textContent = "Korah is thinking...";
           }
@@ -394,16 +420,58 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
         
         // Robust JSON parsing
         const robustParse = (text) => {
+          // Try direct parse first
           try { return JSON.parse(text); } catch (e) {}
+          
+          // Try extracting from code blocks
           const codeBlockMatch = text.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/);
           if (codeBlockMatch) {
             try { return JSON.parse(codeBlockMatch[1].trim()); } catch (e) {}
           }
+          
+          // Find JSON bounds - look for balanced braces
           const firstBrace = text.indexOf('{');
-          const lastBrace = text.lastIndexOf('}');
-          if (firstBrace !== -1 && lastBrace !== -1) {
-            try { return JSON.parse(text.substring(firstBrace, lastBrace + 1)); } catch (e) {}
+          if (firstBrace === -1) return null;
+          
+          // Find the matching closing brace by counting nesting depth
+          let depth = 0;
+          let lastBrace = -1;
+          let inString = false;
+          let escapeNext = false;
+          
+          for (let i = firstBrace; i < text.length; i++) {
+            const char = text[i];
+            if (escapeNext) {
+              escapeNext = false;
+              continue;
+            }
+            if (char === '\\') {
+              escapeNext = true;
+              continue;
+            }
+            if (char === '"') {
+              inString = !inString;
+              continue;
+            }
+            if (inString) continue;
+            
+            if (char === '{') depth++;
+            else if (char === '}') {
+              depth--;
+              if (depth === 0) {
+                lastBrace = i;
+                break;
+              }
+            }
           }
+          
+          if (lastBrace !== -1) {
+            const jsonStr = text.substring(firstBrace, lastBrace + 1);
+            try { return JSON.parse(jsonStr); } catch (e) {
+              console.warn('JSON parse failed after extracting bounds:', e);
+            }
+          }
+          
           return null;
         };
 
@@ -557,6 +625,11 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
 
     const avatar = document.createElement('div');
     avatar.className = `msg-avatar ${role === 'user' ? 'user-av' : 'korah-av'}`;
+    if (role === 'user') {
+      avatar.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
+    } else {
+      avatar.innerHTML = `<img src="../app/logo.png" alt="K" class="w-10 h-10 object-contain" />`;
+    }
 
     const bubble = document.createElement('div');
     bubble.className = `msg-bubble ${role === 'user' ? 'user' : 'korah'}${isError ? ' error' : ''}`;
