@@ -92,7 +92,10 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const sections = normalizeSection(req.query?.section);
+  // Support both 'section' and 'sections' query parameters
+  const sectionInput = req.query?.sections || req.query?.section;
+  const sections = normalizeSection(sectionInput);
+  
   if (!sections || sections.length === 0) {
     return res.status(400).json({
       error: "Invalid section",
@@ -100,9 +103,12 @@ export default async function handler(req, res) {
     });
   }
 
-  const domains = normalizeDomain(req.query?.domains);
-  const skills = normalizeSkill(req.query?.skills);
+  const domains = normalizeDomain(req.query?.domains || req.query?.domain);
+  const skills = normalizeSkill(req.query?.skills || req.query?.skill);
   const limit = parseLimit(req.query?.limit);
+
+  // Calculate limit per section to fetch a balanced set if multiple sections are requested
+  const questionLimitPerSection = limit !== null ? Math.ceil(limit / sections.length) : null;
 
   async function fetchQuestionsForSection(sec, dom, skl) {
     const upstream = new URL("https://pinesat.com/api/questions");
@@ -113,8 +119,10 @@ export default async function handler(req, res) {
     if (skl !== "any") {
       upstream.searchParams.set("skill", Array.isArray(skl) ? skl.join(",") : skl);
     }
-    if (limit !== null) {
-      upstream.searchParams.set("limit", String(limit));
+    // Use the per-section limit if available
+    const effectiveLimit = questionLimitPerSection || limit;
+    if (effectiveLimit !== null) {
+      upstream.searchParams.set("limit", String(effectiveLimit));
     }
 
     const controller = new AbortController();
@@ -128,14 +136,16 @@ export default async function handler(req, res) {
     return response;
   }
 
-  let allData = { questions: [] };
-  const questionLimitPerSection = limit !== null ? Math.ceil(limit / sections.length) : null;
+  let normalizedQuestions = [];
 
   try {
     const requests = sections.map((sec) => fetchQuestionsForSection(sec, domains, skills));
     const responses = await Promise.all(requests);
 
-    for (const resp of responses) {
+    for (let i = 0; i < responses.length; i++) {
+      const resp = responses[i];
+      const section = sections[i];
+
       if (!resp.ok) {
         return res.status(502).json({
           error: "OpenSAT upstream error",
@@ -144,7 +154,10 @@ export default async function handler(req, res) {
       }
       const data = await resp.json();
       const rawQuestions = Array.isArray(data?.questions) ? data.questions : Array.isArray(data) ? data : [];
-      allData.questions.push(...rawQuestions);
+      
+      // Normalize each question with its actual section identity
+      const mapped = rawQuestions.map((q) => normalizeQuestion(q, section, domains));
+      normalizedQuestions.push(...mapped);
     }
   } catch (err) {
     console.error("OpenSAT fetch error:", err);
@@ -154,16 +167,15 @@ export default async function handler(req, res) {
     });
   }
 
-  if (limit !== null && allData.questions.length > limit) {
-    allData.questions = allData.questions.slice(0, limit);
+  // Apply global limit to the combined result
+  if (limit !== null && normalizedQuestions.length > limit) {
+    normalizedQuestions = normalizedQuestions.slice(0, limit);
   }
-
-  const normalized = allData.questions.map((q) => normalizeQuestion(q, sections[0], domains));
 
   return res.status(200).json({
     sections,
     domains,
-    count: normalized.length,
-    questions: normalized,
+    count: normalizedQuestions.length,
+    questions: normalizedQuestions,
   });
 }

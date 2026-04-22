@@ -6,6 +6,7 @@
     domains: [],
     skills: [],
     limit: null,
+    globalStats: null,
   };
 
   const sectionColumns = document.getElementById("sectionColumns");
@@ -46,17 +47,26 @@
 
   function renderSections() {
     const sections = OPENSAT_CATALOG.sections;
+    const stats = state.globalStats?.data?.stats || {};
+    const domainStats = stats.domainBreakdown || {};
+    const skillStats = stats.skillBreakdown || {};
+
     sectionColumns.innerHTML = sections
       .map((section) => {
         const isActiveSection = state.sections.includes(section.key);
         const allSelected = section.domains.every(d => state.domains.includes(d.key));
+        
+        // Calculate section total count
+        const sectionTotal = section.domains.reduce((sum, d) => sum + (domainStats[d.code] || 0), 0);
+        const sectionCountLabel = sectionTotal > 0 ? ` — ${sectionTotal} Questions` : "";
+
         return `
           <article class="sat-section-card is-${section.key}">
             <header class="sat-section-header">
               <button class="sat-section-check ${allSelected ? "is-active" : ""}" type="button" data-select-section="${section.key}" aria-label="Select all ${section.label} domains"></button>
               <button class="sat-section-heading" type="button" data-select-section="${section.key}">
                 <div>
-                  <h2 class="sat-section-title">${section.label}</h2>
+                  <h2 class="sat-section-title">${section.label}${sectionCountLabel}</h2>
                   <p class="sat-section-count">${section.description || ""}</p>
                 </div>
               </button>
@@ -65,13 +75,19 @@
               ${section.domains
                 .map((domain) => {
                   const selected = isActiveSection && state.domains.includes(domain.key);
+                  const domainCount = domainStats[domain.code] || 0;
+                  const domainCountLabel = domainCount > 0 ? `${domainCount}` : "";
+
                   const skillHtml = (domain.skills || [])
                     .map((skill) => {
                       const skillSelected = state.skills.includes(skill.code);
+                      const skillCount = skillStats[skill.code] || 0;
+                      const skillCountLabel = skillCount > 0 ? `${skillCount}` : "";
                       return `
                         <div class="sat-topic-row">
                           <button class="sat-check ${skillSelected ? "is-active" : ""}" type="button" data-select-skill="${section.key}::${domain.key}::${skill.code}" aria-label="Select ${skill.key}"></button>
                           <span class="sat-topic-heading">${skill.key}</span>
+                          <span class="sat-topic-count">${skillCountLabel}</span>
                         </div>
                       `;
                     })
@@ -84,7 +100,7 @@
                         <button class="sat-domain-heading" type="button" data-select-domain="${section.key}::${domain.key}">
                           <strong class="sat-domain-name">${domain.key}</strong>
                         </button>
-                        <span class="sat-domain-count"></span>
+                        <span class="sat-domain-count">${domainCountLabel}</span>
                       </div>
                       ${skillHtml ? `<div class="sat-topic-list">${skillHtml}</div>` : (domain.description ? `<div class="sat-topic-list"><div class="sat-topic-row"><span class="sat-topic-heading">${domain.description}</span></div></div>` : "")}
                     </section>
@@ -217,6 +233,21 @@
     fetchQuestionCounts();
   }
 
+  async function fetchGlobalStats() {
+    try {
+      const response = await fetch("/api/sat/stats", {
+        method: "GET",
+        headers: { Accept: "application/json" },
+      });
+      if (response.ok) {
+        state.globalStats = await response.json();
+        renderSections();
+      }
+    } catch (err) {
+      console.error("Failed to fetch global stats:", err);
+    }
+  }
+
   async function fetchQuestionCounts() {
     const questionCountEl = document.getElementById("questionCount");
     if (!questionCountEl) return;
@@ -297,5 +328,6 @@
 
   clearFiltersBtn.addEventListener("click", resetFilters);
 
+  fetchGlobalStats();
   resetFilters();
 })();
