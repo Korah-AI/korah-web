@@ -55,10 +55,10 @@ DESMOS API SYNTAX:
 - Inequalities: {"latex": "y < 2x + 1"}
 
 REGRESSIONS & TABLES:
-To perform a regression, you MUST first provide a table with data points, then the regression expression using the tilde (~).
-Variables in the regression (e.g., x1, y1) must match the column headers in the table.
+CRITICAL: To perform a regression, you MUST provide BOTH a table AND a regression expression.
+The table MUST appear FIRST in the expressions array, then the regression.
 
-Table Example:
+Table Example (note: column headers MUST use underscores):
 {
   "type": "table",
   "columns": [
@@ -67,13 +67,29 @@ Table Example:
   ]
 }
 
-Regression Example (Linear):
-{"latex": "y_1 ~ mx_1 + b"}
+Regression Example (Linear) - uses x_1 and y_1 to match table columns:
+{"latex": "y_1 ~ m x_1 + b"}
 
-Regression Patterns:
-- Linear: y1 ~ mx1 + b
-- Quadratic: y1 ~ ax1^2 + bx1 + c
-- Exponential: y1 ~ ab^{x1}
+Regression Patterns (ALWAYS use x_1 and y_1 with underscores):
+- Linear: y_1 ~ m x_1 + b
+- Quadratic: y_1 ~ a x_1^2 + b x_1 + c
+- Exponential: y_1 ~ a b^{x_1}
+- Power: y_1 ~ a x_1^b
+- Logarithmic: y_1 ~ a ln(x_1) + b
+
+Complete Example - table FIRST, then regression:
+{
+  "expressions": [
+    {
+      "type": "table",
+      "columns": [
+        {"latex": "x_1", "values": ["1", "2", "3", "4", "5"]},
+        {"latex": "y_1", "values": ["2.1", "3.9", "6.2", "8.1", "10.2"]}
+      ]
+    },
+    {"latex": "y_1 ~ m x_1 + b"}
+  ]
+}
 
 STYLING:
 - Colors: #c74440 (red), #2d70b3 (blue), #388c46 (green), #6042a6 (purple), #fa7e19 (orange)
