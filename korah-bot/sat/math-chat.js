@@ -48,8 +48,39 @@ RESPONSE FORMAT:
   "response": "Your explanation here using Markdown and KaTeX . . ."
 }
 
+GRAPH EXPRESSIONS SYNTAX:
+- Plot functions: y = mx + b (e.g., "y=2x+3")
+- Plot points: (x, y) (e.g., "(1, 2)" or "(1, 2, \\"label\\")")
+- Define variables: m = 2 (can reference later as m)
+- Inequalities: x^2 + y^2 < 1 (shades region)
+
+REGRESSION SYNTAX (for curve fitting):
+Regressions use the tilde (~) instead of equals (=). Data must come from a table using subscript notation.
+Format: y1 ~ ax1^2 + c finds parameters a and c that best fit the data.
+
+Common regression patterns:
+- Linear: y1 ~ mx1 + b (finds slope m and y-intercept b)
+- Quadratic: y1 ~ ax1^2 + bx1 + c
+- Cubic: y1 ~ ax1^3 + bx1^2 + cx1 + d
+- Exponential: y1 ~ ab^x1 (finds a and b)
+- Power: y1 ~ ax1^b
+- Sinusoidal: y1 ~ a sin(bx1 + c) + d
+
+To show data points for regression, create a table first:
+{
+  "type": "table",
+  "columns": [
+    {"latex": "x1", "values": ["1", "2", "3", "4"]},
+    {"latex": "y1", "values": ["2", "4", "6", "8"], "points": true}
+  ]
+}
+
+Then add the regression expression:
+{"latex": "y1~mx1+b", "color": "#4285F4"}
+
 The "graph" field contains Desmos API expressions to update the graph:
 - "expressions": array of expression objects with latex, color, hidden, lineStyle, lineWidth
+- For tables, use type: "table" with columns array
 - "viewport": optional bounds (xmin, xmax, ymin, ymax)
 - Use "viewport" to adjust the view when showing different scales
 - To clear the graph, provide an empty expressions array or set expressions to null.
