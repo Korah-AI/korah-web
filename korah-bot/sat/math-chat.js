@@ -48,42 +48,41 @@ RESPONSE FORMAT:
   "response": "Your explanation here using Markdown and KaTeX . . ."
 }
 
-GRAPH EXPRESSIONS SYNTAX:
-- Plot functions: y = mx + b (e.g., "y=2x+3")
-- Plot points: (x, y) (e.g., "(1, 2)" or "(1, 2, \\"label\\")")
-- Define variables: m = 2 (can reference later as m)
-- Inequalities: x^2 + y^2 < 1 (shades region)
+DESMOS API SYNTAX:
+- Simple expressions: {"latex": "y=mx+b", "color": "#2d70b3"}
+- Points: {"latex": "(1,2)", "label": "Vertex", "showLabel": true}
+- Variables: {"latex": "a=5"}
+- Inequalities: {"latex": "y < 2x + 1"}
 
-REGRESSION SYNTAX (for curve fitting):
-Regressions use the tilde (~) instead of equals (=). Data must come from a table using subscript notation.
-Format: y1 ~ ax1^2 + c finds parameters a and c that best fit the data.
+REGRESSIONS & TABLES:
+To perform a regression, you MUST first provide a table with data points, then the regression expression using the tilde (~).
+Variables in the regression (e.g., x1, y1) must match the column headers in the table.
 
-Common regression patterns:
-- Linear: y1 ~ mx1 + b (finds slope m and y-intercept b)
-- Quadratic: y1 ~ ax1^2 + bx1 + c
-- Cubic: y1 ~ ax1^3 + bx1^2 + cx1 + d
-- Exponential: y1 ~ ab^x1 (finds a and b)
-- Power: y1 ~ ax1^b
-- Sinusoidal: y1 ~ a sin(bx1 + c) + d
-
-To show data points for regression, create a table first:
+Table Example:
 {
   "type": "table",
   "columns": [
-    {"latex": "x1", "values": ["1", "2", "3", "4"]},
-    {"latex": "y1", "values": ["2", "4", "6", "8"], "points": true}
+    {"latex": "x_1", "values": ["1", "2", "3", "4", "5"]},
+    {"latex": "y_1", "values": ["2.1", "3.9", "6.2", "8.1", "10.2"]}
   ]
 }
 
-Then add the regression expression:
-{"latex": "y1~mx1+b", "color": "#4285F4"}
+Regression Example (Linear):
+{"latex": "y_1 ~ mx_1 + b"}
+
+Regression Patterns:
+- Linear: y1 ~ mx1 + b
+- Quadratic: y1 ~ ax1^2 + bx1 + c
+- Exponential: y1 ~ ab^{x1}
+
+STYLING:
+- Colors: #c74440 (red), #2d70b3 (blue), #388c46 (green), #6042a6 (purple), #fa7e19 (orange)
+- Line Styles: "SOLID", "DASHED", "DOTTED"
 
 The "graph" field contains Desmos API expressions to update the graph:
-- "expressions": array of expression objects with latex, color, hidden, lineStyle, lineWidth
-- For tables, use type: "table" with columns array
-- "viewport": optional bounds (xmin, xmax, ymin, ymax)
-- Use "viewport" to adjust the view when showing different scales
-- To clear the graph, provide an empty expressions array or set expressions to null.
+- "expressions": array of expression objects. For tables, include "type": "table" and "columns".
+- "viewport": optional bounds (xmin, xmax, ymin, ymax).
+- To clear the graph, provide an empty expressions array.
 
 The "response" field contains your text explanation using:
 - Markdown headings, bold, italic
@@ -94,8 +93,7 @@ If no graph update needed, set "graph": null.
 
 OPTIONALLY include a "suggestions" field with 0-2 follow-up questions the user might ask next.
 Only include suggestions if genuinely useful. Max 2 items.
-Example: "suggestions": ["What is the vertex form?", "How do I find the roots?"]
-When suggestions are provided, they will appear as clickable buttons below your response.`;
+Example: "suggestions": ["What is the vertex form?", "How do I find the roots?"]`;
 
 function getFormatInstructions() {
   return `STRICT RESPONSE FORMAT: Output ONLY raw JSON. No code blocks.
@@ -151,12 +149,21 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
         
         if (state.expressions && state.expressions.list) {
           state.expressions.list.forEach(expr => {
-            if (expr.type === 'expression' && !expr.hidden) {
+            if (expr.hidden) return;
+            
+            if (expr.type === 'expression' && expr.latex) {
               graphExpressions.push({
-                id: expr.id,
-                latex: expr.latex || '',
-                color: expr.color,
-                label: expr.label || ''
+                type: 'expression',
+                latex: expr.latex
+              });
+            } else if (expr.type === 'table' && expr.columns) {
+              const colSummaries = expr.columns.map(c => {
+                const vals = (c.values || []).slice(0, 3);
+                return `${c.latex || '?'}: [${vals.join(',')}${c.values?.length > 3 ? '...' : ''}]`;
+              });
+              graphExpressions.push({
+                type: 'table',
+                summary: `Table(${colSummaries.join(', ')})`
               });
             }
           });
@@ -186,14 +193,14 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
           <path d="M3 3v18h18"/>
           <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/>
         </svg>
-        <span>Graph has ${graphExpressions.length} expression(s)</span>
+        <span>Graph has ${graphExpressions.length} item(s)</span>
       `;
       
       const inputArea = document.getElementById('chat-input-area');
       inputArea?.parentNode?.insertBefore(indicator, inputArea);
     } else {
       indicator.querySelector('span').textContent = 
-        `Graph has ${graphExpressions.length} expression(s)`;
+        `Graph has ${graphExpressions.length} item(s)`;
     }
   }
 
@@ -201,11 +208,10 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
     if (graphExpressions.length === 0) return '';
     
     const exprList = graphExpressions
-      .map(e => e.latex ? `y = ${e.latex}` : null)
-      .filter(Boolean)
-      .join(', ');
+      .map(e => e.type === 'expression' ? e.latex : e.summary)
+      .join('; ');
     
-    return exprList ? `\n\n[Current Graph State: ${exprList}]` : '';
+    return exprList ? `\n\n[Current Desmos State: ${exprList}]` : '';
   }
 
   function updateSATGraph(data) {
@@ -215,8 +221,7 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
     const graphContainer = document.getElementById('sat-graph-container');
 
     // To properly "update" we either clear and rebuild or surgically update.
-    // Given the prompt asks to "update existing", we'll clear first to ensure a clean state
-    // but using setBlank() is the standard way to clear everything.
+    // Given the prompt asks to "update existing", we'll clear first to ensure a clean state.
     satMathCalculator.setBlank();
 
     if (data.viewport) {
@@ -230,16 +235,12 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
 
     if (data.expressions && Array.isArray(data.expressions)) {
       data.expressions.forEach((expr, idx) => {
-        if (expr.latex) {
-          satMathCalculator.setExpression({
-            id: expr.id || 'expr_' + idx,
-            latex: expr.latex,
-            color: expr.color || '#4285F4',
-            hidden: expr.hidden || false,
-            lineStyle: expr.lineStyle || 'SOLID',
-            lineWidth: expr.lineWidth || 2,
-          });
-        }
+        // We pass the expression object directly to Desmos to support tables, regressions, etc.
+        satMathCalculator.setExpression({
+          id: expr.id || 'expr_' + idx,
+          color: expr.color || '#4285F4',
+          ...expr
+        });
       });
     }
 
