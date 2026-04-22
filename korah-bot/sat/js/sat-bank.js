@@ -4,6 +4,7 @@
   const state = {
     sections: [],
     domains: [],
+    skills: [],
     limit: null,
   };
 
@@ -17,6 +18,9 @@
 
   const totalSections = OPENSAT_CATALOG.sections.length;
   const totalDomains = OPENSAT_CATALOG.sections.reduce((sum, s) => sum + (s.domains?.length || 0), 0);
+  const totalSkills = OPENSAT_CATALOG.sections.reduce((sum, s) => {
+    return sum + (s.domains?.reduce((dSum, d) => dSum + (d.skills?.length || 0), 0) || 0);
+  }, 0);
   sectionCount.textContent = String(totalSections);
   domainCountEl.textContent = String(totalDomains);
 
@@ -26,11 +30,14 @@
       : state.sections.length === 1
         ? OPENSAT_CATALOG.sections.find((s) => s.key === state.sections[0])?.label || state.sections[0]
         : `${state.sections.length} sections`;
-    const domainLabel = state.domains.length === 0 || state.domains.includes("any")
-      ? "Any domain"
-      : state.domains.length === 1
-        ? state.domains[0]
-        : `${state.domains.length} domains`;
+    
+    let domainLabel = "Any domain";
+    if (state.skills.length > 0 && !state.skills.includes("any")) {
+      domainLabel = `${state.skills.length} skills`;
+    } else if (state.domains.length > 0 && !state.domains.includes("any")) {
+      domainLabel = state.domains.length === 1 ? state.domains[0] : `${state.domains.length} domains`;
+    }
+
     const limitLabel = state.limit === null || state.limit === "" ? "No limit" : `${state.limit} questions`;
     selectionSummary.textContent = `${sectionsLabel} · ${domainLabel} · ${limitLabel}`;
     startSelectedBtn.textContent = "Start practice";
@@ -58,6 +65,18 @@
               ${section.domains
                 .map((domain) => {
                   const selected = isActiveSection && state.domains.includes(domain.key);
+                  const skillHtml = (domain.skills || [])
+                    .map((skill) => {
+                      const skillSelected = state.skills.includes(skill.code);
+                      return `
+                        <div class="sat-topic-row">
+                          <button class="sat-check ${skillSelected ? "is-active" : ""}" type="button" data-select-skill="${section.key}::${domain.key}::${skill.code}" aria-label="Select ${skill.key}"></button>
+                          <span class="sat-topic-heading">${skill.key}</span>
+                        </div>
+                      `;
+                    })
+                    .join("");
+
                   return `
                     <section class="sat-domain-group">
                       <div class="sat-domain-row">
@@ -67,7 +86,7 @@
                         </button>
                         <span class="sat-domain-count"></span>
                       </div>
-                      ${domain.description ? `<div class="sat-topic-list"><div class="sat-topic-row"><span class="sat-topic-heading">${domain.description}</span></div></div>` : ""}
+                      ${skillHtml ? `<div class="sat-topic-list">${skillHtml}</div>` : (domain.description ? `<div class="sat-topic-list"><div class="sat-topic-row"><span class="sat-topic-heading">${domain.description}</span></div></div>` : "")}
                     </section>
                   `;
                 })
@@ -83,6 +102,7 @@
     const nextState = {
       sections: state.sections.length > 0 ? state.sections : ["any"],
       domains: state.domains.length > 0 ? state.domains : ["any"],
+      skills: state.skills.length > 0 ? state.skills : ["any"],
       limit: state.limit,
     };
     window.location.href = buildOpenSatV1QuestionUrl(nextState);
@@ -99,11 +119,28 @@
       state.domains = state.domains.filter(
         (d) => !section.domains.some((domain) => domain.key === d)
       );
+      // Clear skills for this section
+      const domainKeys = section.domains.map(d => d.key);
+      section.domains.forEach(d => {
+        if (d.skills) {
+          d.skills.forEach(sk => {
+            state.skills = state.skills.filter(s => s !== sk.code);
+          });
+        }
+      });
     } else {
       state.sections = [...state.sections, sectionKey];
       section.domains.forEach((domain) => {
         if (!state.domains.includes(domain.key)) {
           state.domains.push(domain.key);
+        }
+        // Also select all skills if any
+        if (domain.skills) {
+          domain.skills.forEach(sk => {
+            if (!state.skills.includes(sk.code)) {
+              state.skills.push(sk.code);
+            }
+          });
         }
       });
     }
@@ -118,10 +155,49 @@
     if (!state.sections.includes(sectionKey)) {
       state.sections = [...state.sections, sectionKey];
     }
+    
     if (state.domains.includes(domainKey)) {
       state.domains = state.domains.filter((d) => d !== domainKey);
+      // Also deselect its skills
+      if (domain.skills) {
+        domain.skills.forEach(sk => {
+          state.skills = state.skills.filter(s => s !== sk.code);
+        });
+      }
     } else {
       state.domains = [...state.domains, domainKey];
+      // Also select its skills
+      if (domain.skills) {
+        domain.skills.forEach(sk => {
+          if (!state.skills.includes(sk.code)) {
+            state.skills.push(sk.code);
+          }
+        });
+      }
+    }
+    renderAll();
+  }
+
+  function toggleSkill(sectionKey, domainKey, skillCode) {
+    const section = OPENSAT_CATALOG.sections.find((s) => s.key === sectionKey);
+    if (!section) return;
+    const domain = section.domains.find((d) => d.key === domainKey);
+    if (!domain) return;
+
+    if (!state.sections.includes(sectionKey)) {
+      state.sections = [...state.sections, sectionKey];
+    }
+    // Note: domain might not be fully "selected" if only some skills are selected,
+    // but for the upstream API, selecting specific skills is usually more precise.
+    // We'll keep the domain selected if any skill is selected.
+    if (!state.domains.includes(domainKey)) {
+      state.domains.push(domainKey);
+    }
+
+    if (state.skills.includes(skillCode)) {
+      state.skills = state.skills.filter((s) => s !== skillCode);
+    } else {
+      state.skills = [...state.skills, skillCode];
     }
     renderAll();
   }
@@ -129,6 +205,7 @@
   function resetFilters() {
     state.sections = [];
     state.domains = [];
+    state.skills = [];
     state.limit = null;
     limitInput.value = "";
     renderAll();
@@ -153,6 +230,10 @@
       ? state.domains.join(",")
       : "any";
     params.set("domains", domainValue);
+    const skillValue = state.skills.length > 0 && !state.skills.includes("any")
+      ? state.skills.join(",")
+      : "any";
+    params.set("skills", skillValue);
     params.set("limit", "1");
 
     try {
@@ -175,10 +256,17 @@
   sectionColumns.addEventListener("click", (event) => {
     const sectionTrigger = event.target.closest("[data-select-section]");
     const domainTrigger = event.target.closest("[data-select-domain]");
+    const skillTrigger = event.target.closest("[data-select-skill]");
 
     if (sectionTrigger) {
       const sectionKey = sectionTrigger.dataset.selectSection;
       selectSection(sectionKey);
+      return;
+    }
+
+    if (skillTrigger) {
+      const [sectionKey, domainKey, skillCode] = skillTrigger.dataset.selectSkill.split("::");
+      toggleSkill(sectionKey, domainKey, skillCode);
       return;
     }
 

@@ -29,6 +29,13 @@ function normalizeDomain(value) {
   return domains.length > 0 ? domains : "any";
 }
 
+function normalizeSkill(value) {
+  const skillStr = String(value || "").trim();
+  if (!skillStr || skillStr.toLowerCase() === "any") return "any";
+  const skills = skillStr.split(",").map((s) => s.trim()).filter(Boolean);
+  return skills.length > 0 ? skills : "any";
+}
+
 function choicesToOptions(choices) {
   if (!choices || typeof choices !== "object") return [];
   const preferredOrder = ["A", "B", "C", "D"];
@@ -94,12 +101,18 @@ export default async function handler(req, res) {
   }
 
   const domains = normalizeDomain(req.query?.domains);
+  const skills = normalizeSkill(req.query?.skills);
   const limit = parseLimit(req.query?.limit);
 
-  async function fetchQuestionsForSection(sec, dom) {
+  async function fetchQuestionsForSection(sec, dom, skl) {
     const upstream = new URL("https://pinesat.com/api/questions");
     upstream.searchParams.set("section", sec);
-    upstream.searchParams.set("domain", dom);
+    if (dom !== "any") {
+      upstream.searchParams.set("domain", Array.isArray(dom) ? dom.join(",") : dom);
+    }
+    if (skl !== "any") {
+      upstream.searchParams.set("skill", Array.isArray(skl) ? skl.join(",") : skl);
+    }
     if (limit !== null) {
       upstream.searchParams.set("limit", String(limit));
     }
@@ -119,7 +132,7 @@ export default async function handler(req, res) {
   const questionLimitPerSection = limit !== null ? Math.ceil(limit / sections.length) : null;
 
   try {
-    const requests = sections.map((sec) => fetchQuestionsForSection(sec, domains));
+    const requests = sections.map((sec) => fetchQuestionsForSection(sec, domains, skills));
     const responses = await Promise.all(requests);
 
     for (const resp of responses) {
