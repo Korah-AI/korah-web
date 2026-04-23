@@ -1,13 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" x-data="{
-  theme: localStorage.getItem('korah_theme') || 'dark',
-  getEffectiveTheme() {
-    if (this.theme === 'system') {
-      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    }
-    return this.theme;
-  }
-}" :data-theme="getEffectiveTheme()" x-cloak>
+<html lang="en" data-theme="light">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
@@ -20,6 +12,7 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="../app/korah-chat.css"/>
 <link rel="stylesheet" href="./sat.css"/>
+<link rel="stylesheet" href="./sat-player-theme.css"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css"/>
 <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Round"/>
 </head>
@@ -122,15 +115,7 @@
     
 <!-- More Dropdown Menu -->
   <div id="moreDropdown" class="more-dropdown-menu">
-    <!-- Main Page -->
-    <ul class="more-dropdown-list more-dropdown-page" data-page="main">
-      <li>
-        <a href="#" class="more-dropdown-item more-dropdown-trigger-item" onclick="openThemePage(); return false;">
-          <span class="material-icons-round">dark_mode</span>
-          <span>Theme</span>
-          <span class="material-icons-round more-dropdown-arrow">chevron_right</span>
-        </a>
-      </li>
+    <ul class="more-dropdown-list">
       <li class="more-dropdown-collapsed-item more-dropdown-math-item">
         <a href="#" class="more-dropdown-item" onclick="document.getElementById('referenceBtn').click(); closeMoreDropdown(); return false;">
           <span class="material-icons-round">description</span>
@@ -153,38 +138,6 @@
         <a href="#" class="more-dropdown-item" onclick="document.getElementById('showExplanationBtn').click(); closeMoreDropdown(); return false;">
           <span class="material-icons-round">help</span>
           <span>Explanation</span>
-        </a>
-      </li>
-      </ul>
-    
-    <!-- Theme Page -->
-    <ul class="more-dropdown-list more-dropdown-page" data-page="theme" style="display: none;">
-      <li>
-        <a href="#" class="more-dropdown-item more-dropdown-back" onclick="closeThemePage(); return false;">
-          <span class="material-icons-round">arrow_back</span>
-          <span>Back</span>
-        </a>
-      </li>
-      <li class="more-dropdown-separator"></li>
-      <li>
-        <a href="#" class="more-dropdown-item more-dropdown-theme-option" data-theme="dark" onclick="setThemeFromDropdown('dark'); return false;">
-          <span class="material-icons-round">dark_mode</span>
-          <span>Dark Mode</span>
-          <span class="material-icons-round more-dropdown-check">check</span>
-        </a>
-      </li>
-      <li>
-        <a href="#" class="more-dropdown-item more-dropdown-theme-option" data-theme="light" onclick="setThemeFromDropdown('light'); return false;">
-          <span class="material-icons-round">light_mode</span>
-          <span>Light Mode</span>
-          <span class="material-icons-round more-dropdown-check">check</span>
-        </a>
-      </li>
-      <li>
-        <a href="#" class="more-dropdown-item more-dropdown-theme-option" data-theme="system" onclick="setThemeFromDropdown('system'); return false;">
-          <span class="material-icons-round">settings_suggest</span>
-          <span>System</span>
-          <span class="material-icons-round more-dropdown-check">check</span>
         </a>
       </li>
     </ul>
@@ -319,60 +272,6 @@
   </div>
 </div>
 
-<!-- Settings Modal -->
-<div id="settings-modal" class="settings-modal">
-  <div class="settings-modal-content">
-    <div class="settings-header">
-      <h2 class="settings-title">Settings</h2>
-      <button class="settings-close" id="settings-close">&times;</button>
-    </div>
-    
-    <div class="settings-body">
-      <!-- Theme Settings -->
-      <div class="settings-section">
-        <h3 class="settings-section-title">Appearance</h3>
-        <div class="settings-item">
-          <div class="settings-item-label">Theme</div>
-          <div class="settings-item-control">
-            <select id="settings-theme-select" class="settings-select">
-              <option value="dark">Dark</option>
-              <option value="light">Light</option>
-              <option value="system">System</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <!-- Profile Settings -->
-      <div class="settings-section">
-        <h3 class="settings-section-title">Profile</h3>
-        <div class="settings-item">
-          <div class="settings-item-label">Display Name</div>
-          <div class="settings-item-control">
-            <input type="text" id="settings-name-input" class="settings-input" placeholder="Your name">
-          </div>
-        </div>
-      </div>
-
-      <!-- Data Settings -->
-      <div class="settings-section">
-        <h3 class="settings-section-title">Data</h3>
-        <div class="settings-item">
-          <div class="settings-item-label">Clear All Data</div>
-          <div class="settings-item-control">
-            <button id="settings-clear-data" class="settings-btn danger">Clear Data</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Actions -->
-      <div class="settings-actions">
-        <button id="settings-save" class="settings-btn primary">Save Settings</button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- Rename Modal -->
 <div id="rename-modal" class="delete-modal">
   <div class="delete-modal-content">
@@ -446,35 +345,10 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 
-function openThemePage() {
-  var mainPage = document.querySelector('.more-dropdown-page[data-page="main"]');
-  var themePage = document.querySelector('.more-dropdown-page[data-page="theme"]');
-  if (mainPage && themePage) {
-    mainPage.classList.add('theme-open');
-    themePage.style.display = 'block';
-    setTimeout(function() {
-      themePage.classList.add('active');
-    }, 10);
-  }
-}
-
-function closeThemePage() {
-  var mainPage = document.querySelector('.more-dropdown-page[data-page="main"]');
-  var themePage = document.querySelector('.more-dropdown-page[data-page="theme"]');
-  if (mainPage && themePage) {
-    themePage.classList.remove('active');
-    setTimeout(function() {
-      mainPage.classList.remove('theme-open');
-      themePage.style.display = 'none';
-    }, 250);
-  }
-}
-
 function closeMoreDropdown() {
   var moreDropdown = document.getElementById('moreDropdown');
   if (moreDropdown) {
     moreDropdown.classList.remove('more-dropdown-open');
-    closeThemePage();
   }
 }
 
@@ -525,32 +399,6 @@ function updateDropdownForSection() {
   });
 }
 
-function setThemeFromDropdown(theme) {
-  localStorage.setItem('korah_theme', theme);
-  var effectiveTheme = theme;
-  if (theme === 'system') {
-    effectiveTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  }
-  document.documentElement.setAttribute('data-theme', effectiveTheme);
-  updateThemeOptions();
-  closeMoreDropdown();
-}
-
-function updateThemeOptions() {
-  var currentTheme = localStorage.getItem('korah_theme') || 'dark';
-  var options = document.querySelectorAll('.more-dropdown-theme-option');
-  options.forEach(function(opt) {
-    opt.classList.remove('active');
-    if (opt.dataset.theme === currentTheme) {
-      opt.classList.add('active');
-    }
-  });
-}
-
-// Initialize theme on load
-document.addEventListener('DOMContentLoaded', function() {
-  updateThemeOptions();
-});
 </script>
 
 </body>

@@ -1020,39 +1020,10 @@ function showSidebarDeleteModal(name, onConfirm) {
     initBackground();
 
     const sidebar = document.getElementById("sidebar");
-    const toggle = document.getElementById("sidebar-toggle");
-    let overlay = document.querySelector(".sidebar-overlay");
-    if (!overlay) {
-      overlay = document.createElement("div");
-      overlay.className = "sidebar-overlay";
-      document.body.appendChild(overlay);
-    }
-
     function isMobile() { return window.innerWidth <= 768; }
 
-    function getDocPanel() {
-      return document.getElementById('doc-panel');
-    }
-
-    function collapseDocPanelIfNeeded() {
-      const docPanel = getDocPanel();
-      if (docPanel && docPanel.classList.contains('expanded')) {
-        docPanel.classList.remove('expanded');
-        docPanel.classList.add('collapsed');
-        const tab = document.getElementById('doc-panel-tab');
-        if (tab) tab.classList.remove('panel-open');
-        const isDocPanelExpanded = false;
-      }
-    }
-
-    function updateSidebarState(collapsed) {
-      if (collapsed) sidebar?.classList.add("collapsed");
-      else sidebar?.classList.remove("collapsed");
-      localStorage.setItem("korah_sidebar_collapsed", collapsed);
-    }
-
-    const isCollapsed = localStorage.getItem("korah_sidebar_collapsed") === "true";
-    if (sidebar && !isMobile()) updateSidebarState(isCollapsed);
+    // Check if Alpine is managing the sidebar (via :class binding)
+    const alpineManaged = sidebar?.hasAttribute('x-effect');
 
     // Create "more" dropdown for collapsed sidebar
     function createCollapsedMoreDropdown() {
@@ -1210,18 +1181,6 @@ function showSidebarDeleteModal(name, onConfirm) {
       }
     }
 
-    // Watch for collapse state changes
-    const originalUpdateSidebarState = updateSidebarState;
-    updateSidebarState = function(collapsed) {
-      originalUpdateSidebarState(collapsed);
-      if (collapsed) {
-        setTimeout(initCollapsedMoreDropdown, 100);
-      } else {
-        removeCollapsedMoreDropdown();
-      }
-    };
-    initCollapsedMoreDropdown();
-
     // Close dropdowns when sidebar goes off-screen at breakpoint
     window.addEventListener('resize', () => {
       if (window.innerWidth <= 640) {
@@ -1242,33 +1201,75 @@ function showSidebarDeleteModal(name, onConfirm) {
       }
     });
 
-
-    if (toggle && sidebar) {
-      toggle.addEventListener("click", () => {
-        if (isMobile()) {
-          sidebar.classList.toggle("mobile-open");
-          overlay.classList.toggle("show");
+    if (alpineManaged) {
+      // Alpine manages collapse/expand via :class and x-effect.
+      // Expose callback so Alpine's x-effect can notify us of state changes.
+      window.KorahSidebar.onCollapseChange = function(collapsed) {
+        if (collapsed) {
+          setTimeout(initCollapsedMoreDropdown, 100);
         } else {
-          const willExpand = sidebar.classList.contains("collapsed");
-          if (willExpand) {
-            collapseDocPanelIfNeeded();
+          removeCollapsedMoreDropdown();
+        }
+      };
+      // Initialize more dropdown based on current state
+      initCollapsedMoreDropdown();
+    } else {
+      // Vanilla fallback for pages not yet migrated to Alpine sidebar
+      function updateSidebarState(collapsed) {
+        if (collapsed) sidebar?.classList.add("collapsed");
+        else sidebar?.classList.remove("collapsed");
+        localStorage.setItem("korah_sidebar_collapsed", collapsed);
+        if (collapsed) setTimeout(initCollapsedMoreDropdown, 100);
+        else removeCollapsedMoreDropdown();
+      }
+
+      const isCollapsed = localStorage.getItem("korah_sidebar_collapsed") === "true";
+      if (sidebar && !isMobile()) updateSidebarState(isCollapsed);
+      initCollapsedMoreDropdown();
+
+      function collapseDocPanelIfNeeded() {
+        const docPanel = document.getElementById('doc-panel');
+        if (docPanel && docPanel.classList.contains('expanded')) {
+          docPanel.classList.remove('expanded');
+          docPanel.classList.add('collapsed');
+          const tab = document.getElementById('doc-panel-tab');
+          if (tab) tab.classList.remove('panel-open');
+        }
+      }
+
+      const toggle = document.getElementById("sidebar-toggle");
+      let overlay = document.querySelector(".sidebar-overlay");
+      if (!overlay) {
+        overlay = document.createElement("div");
+        overlay.className = "sidebar-overlay";
+        document.body.appendChild(overlay);
+      }
+
+      if (toggle && sidebar) {
+        toggle.addEventListener("click", () => {
+          if (isMobile()) {
+            sidebar.classList.toggle("mobile-open");
+            overlay.classList.toggle("show");
+          } else {
+            const willExpand = sidebar.classList.contains("collapsed");
+            if (willExpand) collapseDocPanelIfNeeded();
+            updateSidebarState(!sidebar.classList.contains("collapsed"));
           }
-          updateSidebarState(!sidebar.classList.contains("collapsed"));
+        });
+      }
+
+      overlay.addEventListener("click", () => {
+        sidebar?.classList.remove("mobile-open");
+        overlay.classList.remove("show");
+      });
+
+      window.addEventListener("resize", () => {
+        if (!isMobile()) {
+          sidebar?.classList.remove("mobile-open");
+          overlay.classList.remove("show");
         }
       });
     }
-
-    overlay.addEventListener("click", () => {
-      sidebar?.classList.remove("mobile-open");
-      overlay.classList.remove("show");
-    });
-
-    window.addEventListener("resize", () => {
-      if (!isMobile()) {
-        sidebar?.classList.remove("mobile-open");
-        overlay.classList.remove("show");
-      }
-    });
 
     // 2. Data Logic: Sync with Firestore/Cache
     function startWithDB() {
@@ -1336,5 +1337,6 @@ function showSidebarDeleteModal(name, onConfirm) {
     getSessions, getStudyItems, getTypeEmoji, renderChatHistory,
     renderStudyItemsHistory, updateActiveItem, initSidebar,
     initTimerWidget, updateTimerWidget,
+    onCollapseChange: null,
   };
 })();
