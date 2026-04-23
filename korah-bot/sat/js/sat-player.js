@@ -511,13 +511,13 @@
       questionStemTitle.classList.add("is-hidden");
     }
     if (current.paragraph) {
-      questionParagraph.textContent = current.paragraph;
+      questionParagraph.innerHTML = current.paragraph;
       questionParagraph.classList.remove("is-hidden");
     } else {
-      questionParagraph.textContent = "";
+      questionParagraph.innerHTML = "";
       questionParagraph.classList.add("is-hidden");
     }
-    questionStem.textContent = current.stem;
+    questionStem.innerHTML = current.stem;
     reviewBadge.classList.toggle("is-hidden", !state.reviewed[current.id]);
 
     // RESTORED: Toggle calc button text + visibility
