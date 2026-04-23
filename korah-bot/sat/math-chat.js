@@ -387,14 +387,14 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
         } else {
           // While streaming JSON, try to extract and show the response field
           // Use more robust parsing - try to find the response value by counting braces
-          const responseStart = fullText.indexOf('"response":');
+          const responseKey = '"response":';
+          const responseStart = fullText.indexOf(responseKey);
           if (responseStart !== -1) {
             let inString = false;
             let escapeNext = false;
-            let foundColon = false;
             let quoteStart = -1;
-            
-            for (let i = responseStart + 9; i < fullText.length; i++) {
+            // Start scanning right after `"response":` (skip optional whitespace to find opening quote)
+            for (let i = responseStart + responseKey.length; i < fullText.length; i++) {
               const char = fullText[i];
               if (escapeNext) {
                 escapeNext = false;
@@ -409,14 +409,26 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
                   inString = true;
                   quoteStart = i;
                 } else {
-                  // End of string - we have the response value
+                  // End of string - we have the full response value so far
                   const responseValue = fullText.substring(quoteStart + 1, i)
                     .replace(/\\n/g, '\n')
                     .replace(/\\"/g, '"')
-                    .replace(/\\t/g, '\t');
+                    .replace(/\\t/g, '\t')
+                    .replace(/\\r/g, '');
                   renderMarkdownAndMath(contentElement, responseValue + "▊");
                   break;
                 }
+              }
+            }
+            // If we found the opening quote but not the closing one yet (still streaming), render partial
+            if (quoteStart !== -1 && inString === true) {
+              const partial = fullText.substring(quoteStart + 1)
+                .replace(/\\n/g, '\n')
+                .replace(/\\"/g, '"')
+                .replace(/\\t/g, '\t')
+                .replace(/\\r/g, '');
+              if (partial.length > 0) {
+                renderMarkdownAndMath(contentElement, partial + "▊");
               }
             }
           } else if (!contentElement.textContent || contentElement.textContent === "Korah is thinking...") {
@@ -434,60 +446,63 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
       if (contentElement) {
         const finalRawText = fullReplyFromAPI.trim();
         
-        // Robust JSON parsing
-        const robustParse = (text) => {
-          // Try direct parse first
-          try { return JSON.parse(text); } catch (e) {}
-          
-          // Try extracting from code blocks
-          const codeBlockMatch = text.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/);
-          if (codeBlockMatch) {
-            try { return JSON.parse(codeBlockMatch[1].trim()); } catch (e) {}
-          }
-          
-          // Find JSON bounds - look for balanced braces
-          const firstBrace = text.indexOf('{');
-          if (firstBrace === -1) return null;
-          
-          // Find the matching closing brace by counting nesting depth
+        // Sanitize common AI JSON output issues before parsing
+        const sanitizeJSON = (text) => {
+          let s = text.trim();
+
+          // Strip ```json ... ``` or ``` ... ``` wrappers (anywhere in string)
+          s = s.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+
+          // Extract the outermost {...} block
+          const firstBrace = s.indexOf('{');
+          if (firstBrace === -1) return s;
+
           let depth = 0;
           let lastBrace = -1;
           let inString = false;
           let escapeNext = false;
-          
-          for (let i = firstBrace; i < text.length; i++) {
-            const char = text[i];
-            if (escapeNext) {
-              escapeNext = false;
-              continue;
-            }
-            if (char === '\\') {
-              escapeNext = true;
-              continue;
-            }
-            if (char === '"') {
-              inString = !inString;
-              continue;
-            }
+
+          for (let i = firstBrace; i < s.length; i++) {
+            const char = s[i];
+            if (escapeNext) { escapeNext = false; continue; }
+            if (char === '\\') { escapeNext = true; continue; }
+            if (char === '"') { inString = !inString; continue; }
             if (inString) continue;
-            
             if (char === '{') depth++;
             else if (char === '}') {
               depth--;
-              if (depth === 0) {
-                lastBrace = i;
-                break;
-              }
+              if (depth === 0) { lastBrace = i; break; }
             }
           }
-          
-          if (lastBrace !== -1) {
-            const jsonStr = text.substring(firstBrace, lastBrace + 1);
-            try { return JSON.parse(jsonStr); } catch (e) {
-              console.warn('JSON parse failed after extracting bounds:', e);
-            }
+
+          s = lastBrace !== -1 ? s.substring(firstBrace, lastBrace + 1) : s.substring(firstBrace);
+
+          // Remove trailing commas before } or ]
+          s = s.replace(/,\s*([}\]])/g, '$1');
+
+          // Replace literal tab/newline/carriage-return control chars inside strings
+          // (only those not already escaped)
+          s = s.replace(/"((?:[^"\\]|\\.)*)"/g, (match) => {
+            return match
+              .replace(/\t/g, '\\t')
+              .replace(/\r/g, '\\r')
+              .replace(/\n/g, '\\n');
+          });
+
+          return s;
+        };
+
+        // Robust JSON parsing with sanitization
+        const robustParse = (text) => {
+          // Try direct parse first
+          try { return JSON.parse(text); } catch (e) {}
+
+          // Sanitize then parse
+          const sanitized = sanitizeJSON(text);
+          try { return JSON.parse(sanitized); } catch (e) {
+            console.warn('JSON parse failed after sanitization:', e.message, '\nSanitized text (first 200):', sanitized.substring(0, 200));
           }
-          
+
           return null;
         };
 
