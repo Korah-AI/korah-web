@@ -284,6 +284,12 @@
   let stopwatchInterval = null;
   let desmosInstance = null;
 
+  // Normalize SPR answers for comparison: trim, lowercase, fix leading decimal (e.g. ".75" → "0.75")
+  function normalizeSprAnswer(val) {
+    if (!val) return "";
+    return String(val).trim().toLowerCase().replace(/^(-?)\./, "$10.");
+  }
+
   function getSectionLabel(sectionKey) {
     const section = OPENSAT_CATALOG?.sections?.find((s) => s.key === sectionKey);
     return section?.label || sectionKey || "SAT";
@@ -539,27 +545,52 @@
       updateDropdownForSection();
     }
 
-    answerChoices.innerHTML = current.options
-      .map((option) => {
-        const classNames = ["sat-answer-choice"];
-        if (selectedAnswer === option.key) {
-          classNames.push("is-selected");
-        }
-        if (checked && option.key === current.correctAnswer) {
-          classNames.push("is-correct");
-        } else if (checked && selectedAnswer === option.key && option.key !== current.correctAnswer) {
-          classNames.push("is-incorrect");
-        }
-        return `
-          <button class="${classNames.join(" ")}" type="button" data-answer="${option.key}">
-            <span class="sat-answer-key">${option.key}</span>${option.text}
-          </button>
-        `;
-      })
-      .join("");
+    const isSpr = current.type === "spr";
+    const isCorrect = isSpr
+      ? normalizeSprAnswer(selectedAnswer) === normalizeSprAnswer(current.correctAnswer)
+      : selectedAnswer === current.correctAnswer;
+
+    if (isSpr) {
+      const safeVal = selectedAnswer ? String(selectedAnswer).replace(/&/g, "&amp;").replace(/"/g, "&quot;") : "";
+      const inputClass = checked ? (isCorrect ? " is-correct" : " is-incorrect") : "";
+      answerChoices.innerHTML = `
+        <div class="sat-spr-wrap">
+          <label class="sat-spr-label" for="sprInput">Enter your answer</label>
+          <input
+            id="sprInput"
+            class="sat-spr-input${inputClass}"
+            type="text"
+            placeholder="Type a number or expression"
+            value="${safeVal}"
+            ${checked ? "readonly" : ""}
+            autocomplete="off"
+            autocorrect="off"
+            spellcheck="false"
+          />
+        </div>
+      `;
+    } else {
+      answerChoices.innerHTML = current.options
+        .map((option) => {
+          const classNames = ["sat-answer-choice"];
+          if (selectedAnswer === option.key) {
+            classNames.push("is-selected");
+          }
+          if (checked && option.key === current.correctAnswer) {
+            classNames.push("is-correct");
+          } else if (checked && selectedAnswer === option.key && option.key !== current.correctAnswer) {
+            classNames.push("is-incorrect");
+          }
+          return `
+            <button class="${classNames.join(" ")}" type="button" data-answer="${option.key}">
+              <span class="sat-answer-key">${option.key}</span>${option.text}
+            </button>
+          `;
+        })
+        .join("");
+    }
 
     if (showExplanation) {
-      const isCorrect = selectedAnswer === current.correctAnswer;
       feedbackPanel.className = `sat-feedback-panel ${isCorrect ? "is-correct" : "is-incorrect"}`;
       feedbackPanel.innerHTML = `
         <strong>${checked ? (isCorrect ? "Correct." : `Correct answer: ${current.correctAnswer}.`) : "Explanation preview."}</strong>
@@ -574,7 +605,7 @@
     // RESTORED: Button states
     if (prevQuestionBtn) prevQuestionBtn.disabled = state.currentIndex === 0;
     if (nextQuestionBtn) nextQuestionBtn.disabled = state.currentIndex === questions.length - 1;
-    if (checkAnswerBtn) checkAnswerBtn.disabled = !selectedAnswer;
+    if (checkAnswerBtn) checkAnswerBtn.disabled = isSpr ? (!selectedAnswer || !String(selectedAnswer).trim()) : !selectedAnswer;
     if (showExplanationBtn) showExplanationBtn.disabled = false;
     if (markReviewBtn) markReviewBtn.disabled = false;
     
@@ -738,6 +769,17 @@
     const current = getCurrentQuestion();
     state.answers[current.id] = choice.dataset.answer;
     renderQuestion();
+    renderNav();
+  });
+
+  // SPR: capture keystrokes without destroying the input on every keystroke
+  answerChoices.addEventListener("input", (event) => {
+    const input = event.target.closest("#sprInput");
+    if (!input) return;
+    const current = getCurrentQuestion();
+    if (!current || current.type !== "spr") return;
+    state.answers[current.id] = input.value;
+    if (checkAnswerBtn) checkAnswerBtn.disabled = !input.value || !input.value.trim();
     renderNav();
   });
 
