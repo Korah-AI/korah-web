@@ -2,6 +2,26 @@ export const config = {
   maxDuration: 60,
 };
 
+// Maps our internal domain key (name) to the upstream API domain code
+const DOMAIN_CODE_MAP = {
+  // English
+  "Information and Ideas": "INI",
+  "Craft and Structure": "CAS",
+  "Expression of Ideas": "EOI",
+  "Standard English Conventions": "SEC",
+  // Math
+  "Algebra": "H",
+  "Advanced Math": "P",
+  "Problem-Solving and Data Analysis": "Q",
+  "Geometry and Trigonometry": "S",
+};
+
+// All domain codes for each section (used when domain is "any")
+const SECTION_DOMAIN_CODES = {
+  english: ["INI", "CAS", "EOI", "SEC"],
+  math: ["H", "P", "Q", "S"],
+};
+
 function parseLimit(value) {
   if (value === undefined || value === null || value === "") {
     return null;
@@ -112,12 +132,30 @@ export default async function handler(req, res) {
 
   async function fetchQuestionsForSection(sec, dom, skl) {
     const upstream = new URL("https://pinesat.com/api/questions");
-    upstream.searchParams.set("section", sec);
-    if (dom !== "any") {
-      upstream.searchParams.set("domain", Array.isArray(dom) ? dom.join(",") : dom);
+
+    // Upstream API has no "section" param — section is expressed via domain codes.
+    // If a specific domain (or list) was requested, map names → codes; otherwise
+    // fall back to all domain codes for this section so we never leak cross-section results.
+    const isAnyDomain = dom === "any" || (Array.isArray(dom) && (dom.length === 0 || dom.includes("any")));
+    let domainCodes;
+    if (isAnyDomain) {
+      domainCodes = SECTION_DOMAIN_CODES[sec] || [];
+    } else {
+      const doms = Array.isArray(dom) ? dom : [dom];
+      domainCodes = doms.map((d) => DOMAIN_CODE_MAP[d] || d).filter(Boolean);
+      // Ensure codes actually belong to the requested section; fall back to full section if none matched
+      if (domainCodes.length === 0) {
+        domainCodes = SECTION_DOMAIN_CODES[sec] || [];
+      }
     }
-    if (skl !== "any") {
-      upstream.searchParams.set("skill", Array.isArray(skl) ? skl.join(",") : skl);
+    if (domainCodes.length > 0) {
+      upstream.searchParams.set("domains", domainCodes.join(","));
+    }
+
+    // Upstream uses "skillCds" not "skill"
+    const isAnySkill = skl === "any" || (Array.isArray(skl) && (skl.length === 0 || skl.includes("any")));
+    if (!isAnySkill) {
+      upstream.searchParams.set("skillCds", Array.isArray(skl) ? skl.join(",") : skl);
     }
     // Use the per-section limit if available
     const effectiveLimit = questionLimitPerSection || limit;

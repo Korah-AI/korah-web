@@ -11,19 +11,12 @@
 
   const sectionColumns = document.getElementById("sectionColumns");
   const selectionSummary = document.getElementById("selectionSummary");
-  const sectionCount = document.getElementById("sectionCount");
-  const domainCountEl = document.getElementById("domainCount");
   const limitInput = document.getElementById("limitInput");
   const startSelectedBtn = document.getElementById("startSelectedBtn");
   const clearFiltersBtn = document.getElementById("clearFiltersBtn");
 
   const totalSections = OPENSAT_CATALOG.sections.length;
   const totalDomains = OPENSAT_CATALOG.sections.reduce((sum, s) => sum + (s.domains?.length || 0), 0);
-  const totalSkills = OPENSAT_CATALOG.sections.reduce((sum, s) => {
-    return sum + (s.domains?.reduce((dSum, d) => dSum + (d.skills?.length || 0), 0) || 0);
-  }, 0);
-  sectionCount.textContent = String(totalSections);
-  domainCountEl.textContent = String(totalDomains);
 
   function renderSummary() {
     const sectionsLabel = state.sections.length === 0 || state.sections.includes("any")
@@ -76,13 +69,13 @@
                 .map((domain) => {
                   const selected = isActiveSection && state.domains.includes(domain.key);
                   const domainCount = domainStats[domain.code] || 0;
-                  const domainCountLabel = domainCount > 0 ? `${domainCount}` : "";
+                  const domainCountLabel = domainCount > 0 ? `${domainCount} Questions` : "";
 
                   const skillHtml = (domain.skills || [])
                     .map((skill) => {
                       const skillSelected = state.skills.includes(skill.code);
                       const skillCount = skillStats[skill.code] || 0;
-                      const skillCountLabel = skillCount > 0 ? `${skillCount}` : "";
+                      const skillCountLabel = skillCount > 0 ? `${skillCount} Questions` : "";
                       return `
                         <div class="sat-topic-row">
                           <button class="sat-check ${skillSelected ? "is-active" : ""}" type="button" data-select-skill="${section.key}::${domain.key}::${skill.code}" aria-label="Select ${skill.key}"></button>
