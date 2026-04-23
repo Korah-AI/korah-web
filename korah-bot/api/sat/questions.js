@@ -29,8 +29,6 @@ const DOMAIN_CODE_TO_NAME = Object.fromEntries(
   Object.entries(DOMAIN_CODE_MAP).map(([name, code]) => [code, name])
 );
 
-const MAX_DETAIL_FETCHES = 50;
-
 function parseLimit(value) {
   if (value === undefined || value === null || value === "") return null;
   const str = String(value).trim().toLowerCase();
@@ -61,6 +59,16 @@ function normalizeSkill(value) {
   return skills.length > 0 ? skills : "any";
 }
 
+// Rewrites relative image/asset src and href paths to absolute upstream URLs
+function fixImageUrls(html) {
+  if (typeof html !== "string") return html;
+  return html
+    .replace(/src="(\/[^"]*)"/g, `src="${UPSTREAM_BASE}$1"`)
+    .replace(/src='(\/[^']*)'/g, `src='${UPSTREAM_BASE}$1'`)
+    .replace(/href="(\/[^"]*)"/g, `href="${UPSTREAM_BASE}$1"`)
+    .replace(/href='(\/[^']*)'/g, `href='${UPSTREAM_BASE}$1'`);
+}
+
 function choicesToOptions(answerOptions) {
   if (!answerOptions || typeof answerOptions !== "object") return [];
   const preferredOrder = ["A", "B", "C", "D"];
@@ -70,10 +78,10 @@ function choicesToOptions(answerOptions) {
     ...keys.filter((k) => !preferredOrder.includes(k)).sort(),
   ];
   return ordered
-    .map((key) => ({
-      key,
-      text: typeof answerOptions[key] === "string" ? answerOptions[key] : String(answerOptions[key] ?? ""),
-    }))
+    .map((key) => {
+      const raw = typeof answerOptions[key] === "string" ? answerOptions[key] : String(answerOptions[key] ?? "");
+      return { key, text: fixImageUrls(raw) };
+    })
     .filter((opt) => opt.key && opt.text);
 }
 
@@ -86,21 +94,32 @@ function shuffleArray(arr) {
   return a;
 }
 
-// Combine list-metadata + detail into the normalized shape the frontend expects
+// Combine list-metadata + detail into the normalized shape the frontend expects.
+// The upstream returns:
+//   stem      — the question text (may contain HTML/MathML/images)
+//   stimulus  — passage or context material (English R&W questions)
+//   answerOptions — { A, B, C, D } or null for SPR
+//   correct_answer — array of strings
+//   rationale  — explanation HTML
+//   type       — "mcq" | "spr"
 function buildQuestion(meta, detail, section) {
   const domainName = DOMAIN_CODE_TO_NAME[meta.primary_class_cd] || meta.primary_class_cd_desc || meta.primary_class_cd || "";
+
+  const stimulus = typeof detail.stimulus === "string" ? detail.stimulus : "";
+  const stem = typeof detail.stem === "string" ? detail.stem : "";
+  const rationale = typeof detail.rationale === "string" ? detail.rationale : "";
 
   return {
     id: meta.questionId || meta.external_id || meta.ibn || "",
     section,
     domain: domainName,
-    paragraph: "",
-    stem: typeof detail.stem === "string" ? detail.stem : "",
+    paragraph: fixImageUrls(stimulus),
+    stem: fixImageUrls(stem),
     options: choicesToOptions(detail.answerOptions),
     correctAnswer: Array.isArray(detail.correct_answer)
       ? detail.correct_answer[0] ?? ""
       : typeof detail.correct_answer === "string" ? detail.correct_answer : "",
-    explanation: typeof detail.rationale === "string" ? detail.rationale : "",
+    explanation: fixImageUrls(rationale),
     type: detail.type || "mcq",
   };
 }
@@ -130,15 +149,15 @@ export default async function handler(req, res) {
   const skills = normalizeSkill(req.query?.skills || req.query?.skill);
   const limit = parseLimit(req.query?.limit);
 
-  // Per-section limit for balanced results when multiple sections are requested
-  const perSectionLimit = limit !== null ? Math.ceil(limit / sections.length) : MAX_DETAIL_FETCHES;
+  // Per-section limit for balanced results. When no limit is set, fetch all available items.
+  const perSectionLimit = limit !== null ? Math.ceil(limit / sections.length) : null;
 
-  // ── Step 1: Fetch question lists for each section ──────────────────────
+  // ── Step 1: Fetch question metadata lists for each section ─────────────
 
   async function fetchListForSection(sec, dom, skl) {
     const url = new URL(`${UPSTREAM_BASE}/api/get-questions`);
 
-    // Determine domain codes — section is expressed through domain codes, there is no "section" param
+    // Section is expressed through domain codes — the upstream has no "section" param
     const isAnyDomain = dom === "any" || (Array.isArray(dom) && (dom.length === 0 || dom.includes("any")));
     let domainCodes;
     if (isAnyDomain) {
@@ -214,11 +233,13 @@ export default async function handler(req, res) {
         return res.status(502).json({ error: "OpenSAT upstream error", status: result.status });
       }
 
-      // Shuffle and limit the metadata list before fetching details
+      // Shuffle then optionally slice — no slice when perSectionLimit is null (fetch all)
       let items = shuffleArray(result.items);
-      items = items.slice(0, perSectionLimit);
+      if (perSectionLimit !== null) {
+        items = items.slice(0, perSectionLimit);
+      }
 
-      // Fetch full question content in parallel
+      // Fetch all question details in parallel
       const detailResults = await Promise.all(
         items.map(async (meta) => {
           const idParam = meta.external_id || meta.ibn;
