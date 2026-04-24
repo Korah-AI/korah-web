@@ -33,3 +33,13 @@ The WHOLE webpage does not really work
 * under the text box, move the SAT either under the other subjects or be the last, same with the drop down on the top
 
 * (DOES NOT NEED TO BE ADDED) has an english supject, you have a SAT part but not a regular questioning part
+
+* (DOES NOT NEED TO BE ADDED) have a "how this works" pop up or button for the new users
+
+# sat/Index.html
+
+* have another box ontop of the selected questions for the missed / incorrected answers (posibly make it so it makes it into the study flashcards or something)
+
+* (DOES NOT NEED TO BE ADDED) shows the percent for how much correct
+
+* on top of the possible box (for incorrect answers) have a selection for saved questions, completed, and answer questions (just like one prep)
