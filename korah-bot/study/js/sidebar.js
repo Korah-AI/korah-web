@@ -237,7 +237,8 @@ function showSidebarDeleteModal(name, onConfirm) {
     }
     list.forEach((item) => {
       const a = document.createElement("a");
-      const baseUrl = item.type === "studyGuide" ? "guide.html" : (itemPageUrl || "item.html");
+      const itemDir = (itemPageUrl || "item.html").replace(/[^/]*$/, '');
+      const baseUrl = item.type === "studyGuide" ? (itemDir + "guide.html") : (itemPageUrl || "item.html");
       a.href = baseUrl + "?id=" + encodeURIComponent(item.id);
       a.className = "history-item t-btn";
       a.setAttribute("data-study-id", item.id);
