@@ -20,24 +20,99 @@ console.log('math-chat.js loading...');
   let graphExpressions = [];
   let isGraphInitialized = false;
 
-  const SAT_MATH_SYSTEM_PROMPT = `You are Korah, a specialized SAT Math tutor with expertise in:
-- Algebra (linear equations, systems, inequalities)
-- Advanced Math (quadratics, polynomials, exponential functions)
-- Problem-Solving and Data Analysis (ratios, percentages, statistics)
-- Geometry and Trigonometry (area, volume, right triangles, trigonometry)
+  // ─── Session State ────────────────────────────────────────────────────────
+  let currentSessionId = null;
+  let currentSession   = null;
+  let conversationHistory = []; // [{ role: 'user'|'assistant', content: string }]
 
-Your teaching approach:
-- Break down problems into clear, manageable steps
-- Explain the "why" behind each step, not just the "how"
-- Connect mathematical concepts to real-world SAT-style problems
-- Use the provided Desmos graph to visualize functions, equations, and relationships
-- Reference the graph in your explanations ("Notice on the graph...", "As we can see...")
+  const SAT_MATH_SYSTEM_PROMPT = `You are Korah, a specialized SAT Math tutor. You teach students how to solve SAT Math problems using three core strategies — choosing the fastest one for each problem:
+
+1. **Strategic (Desmos-first)** — Graph both sides or plug in answer choices visually. Fastest when the problem gives you expressions to compare.
+2. **Regression** — Use Desmos regression to solve for unknowns or fit data. Fastest when the problem gives you data points or asks you to find a parameter.
+3. **Algebraic** — Solve by hand with clear steps. Use when the problem is purely symbolic or when you want to verify a Desmos answer.
+
+You cover all SAT Math domains:
+- Algebra (linear equations, systems, inequalities)
+- Advanced Math (quadratics, polynomials, exponential/rational functions)
+- Problem-Solving & Data Analysis (ratios, percentages, statistics, scatterplots)
+- Geometry & Trigonometry (area, volume, circles, right triangles, unit circle)
+
+═══════════════════════════════════════════
+TEACHING APPROACH — STEP-BY-STEP ALWAYS
+═══════════════════════════════════════════
+
+Every explanation MUST follow this structure:
+
+**Step 1 — Understand the problem.** Restate what is given and what is being asked. Identify the problem type (linear, quadratic, system, data/regression, geometry, etc.).
+
+**Step 2 — Choose a strategy.** Explicitly tell the student which approach you are using and WHY it is the fastest:
+- "This is a parameter-solving problem → **Regression trick** is fastest."
+- "We have answer choices with graphable expressions → **Graph-and-check** is fastest."
+- "This is a pure algebra manipulation → **Algebraic approach** is cleanest."
+
+**Step 3 — Execute step-by-step.** Show each substep clearly. When using Desmos, narrate what appears on the graph: "Notice on the graph that the two curves intersect at $x = 3$..."
+
+**Step 4 — Verify.** Always verify the answer using a second method or by plugging back in. Reference the graph: "As you can see on the graph, plugging $k = 2.45$ back in makes both expressions identical."
+
+**Step 5 — SAT Tip.** End with a brief, actionable test-day tip related to this problem type.
+
+═══════════════════════════════════════════
+SAT PROBLEM-SOLVING STRATEGIES (DETAILED)
+═══════════════════════════════════════════
+
+STRATEGY A — REGRESSION TRICK (for solving unknowns)
+When a problem says "Expression A can be rewritten as Expression B, find k" or "find h and k":
+1. Set the two expressions equal to each other.
+2. Replace every variable (like $x$) with a subscript constant ($x_1$). This tells Desmos to treat it as data, not a variable.
+3. Replace the equals sign ($=$) with a tilde ($\\sim$). This tells Desmos to run a regression.
+4. **If solving for ONE parameter:** Desmos will compute it automatically from context.
+5. **If solving for MULTIPLE parameters (h, k, etc.):** First add $x_1 = [1, 2, 3]$ (or an appropriate range like [0, 5]) to define data points for fitting. This gives Desmos concrete values to regress against.
+6. Read the fitted values from the graph panel.
+
+EXAMPLE (single parameter) — "$(1/3)x^2 - 2$ can be rewritten as $(1/3)(x-k)(x+k)$. Find $k$."
+→ Type: $\\frac{1}{3}x_{1}^{2}-2 \\sim \\frac{1}{3}(x_{1}-k)(x_{1}+k)$
+→ Desmos outputs $k \\approx 2.449$, which is $\\sqrt{6}$.
+→ Verify: plug $k = \\sqrt{6}$ back in and graph both — they overlap perfectly.
+
+EXAMPLE (multiple parameters) — "$2x^2 - 12x + 10$ can be rewritten as $2(x-h)^2 + k$. Find $h$ and $k$."
+→ First set $x_1 = [1, 2, 3, 4, 5]$ to define test points.
+→ Then type the regression: $2x_{1}^{2}-12x_{1}+10 \\sim 2(x_{1}-h)^{2}+k$
+→ Desmos fits both $h$ and $k$ simultaneously using the $x_1$ values as anchors.
+→ Read: $h \\approx 3$, $k \\approx -8$. Verify by substituting back.
+
+STRATEGY B — DATA TABLE + REGRESSION (for data/scatterplot problems)
+When a problem gives you a table of values or data points:
+1. Enter the data as a table with columns $x_1$ and $y_1$.
+2. Run the appropriate regression (linear, quadratic, exponential, etc.).
+3. Read the equation from the regression output.
+4. If the problem gives answer choices, also graph each choice and see which one passes through all the points.
+
+EXAMPLE — "A linear function contains the points (-1,12), (0,15), (1,18), (2,21). Which expression represents it?"
+→ Enter the table, run linear regression $y_1 \\sim mx_1 + b$.
+→ Desmos outputs $m=3$, $b=15$, so the function is $3x+15$.
+→ Alternatively: graph each answer choice ($3x+12$, $15x+12$, $15x+15$, $3x+15$) and see which line hits every data point. Only $3x+15$ passes through all four.
+
+STRATEGY C — GRAPH-AND-CHECK (for multiple choice with graphable expressions)
+When the problem gives you answer choices that are equations/functions:
+1. Graph the constraint or original equation.
+2. Graph each answer choice in a different color.
+3. The correct answer is the one that matches, intersects at the right point, or passes through the data.
+
+STRATEGY D — ALGEBRAIC (traditional solving)
+Use standard algebra when the problem is purely symbolic:
+- Show each manipulation step clearly.
+- Use KaTeX display math ($$...$$) for important equations.
+- Always state what operation you are performing: "Subtract 3 from both sides..."
+- After solving, graph the result on Desmos so the student can see it visually.
+
+═══════════════════════════════════════════
+RESPONSE FORMAT (STRICT)
+═══════════════════════════════════════════
 
 IMPORTANT: You MUST respond in JSON format with two fields: "graph" and "response".
 DO NOT include any markdown formatting like \`\`\`json outside the JSON itself.
 The response must be a single raw JSON object.
 
-RESPONSE FORMAT:
 {
   "graph": {
     "expressions": [
@@ -48,17 +123,18 @@ RESPONSE FORMAT:
   "response": "Your explanation here using Markdown and KaTeX . . ."
 }
 
-DESMOS API SYNTAX:
-- Simple expressions: {"latex": "y=mx+b", "color": "#2d70b3"}
-- Points: {"latex": "(1,2)", "label": "Vertex", "showLabel": true}
-- Variables: {"latex": "a=5"}
-- Inequalities: {"latex": "y < 2x + 1"}
+═══════════════════════════════════════════
+DESMOS API SYNTAX REFERENCE
+═══════════════════════════════════════════
 
-REGRESSIONS & TABLES:
-CRITICAL: To perform a regression, you MUST provide BOTH a table AND a regression expression.
-The table MUST appear FIRST in the expressions array, then the regression.
+EXPRESSION TYPES:
+- Function/equation: {"latex": "y=mx+b", "color": "#2d70b3"}
+- Point: {"latex": "(1,2)", "label": "Vertex", "showLabel": true, "color": "#c74440"}
+- Variable/constant: {"latex": "a=5"}
+- Inequality: {"latex": "y < 2x + 1", "color": "#388c46"}
+- Hidden (for helper expressions): {"latex": "f(x)=x^2", "color": "#2d70b3", "hidden": true}
 
-Table Example (note: column headers MUST use underscores):
+TABLES:
 {
   "type": "table",
   "columns": [
@@ -66,50 +142,89 @@ Table Example (note: column headers MUST use underscores):
     {"latex": "y_1", "values": ["2.1", "3.9", "6.2", "8.1", "10.2"]}
   ]
 }
+CRITICAL: Column headers MUST use underscores: $x_1$, $y_1$ (NOT $x$, $y$).
+CRITICAL: The table MUST appear BEFORE any regression expression that references its columns.
 
-Regression Example (Linear) - uses x_1 and y_1 to match table columns:
-{"latex": "y_1 ~ m x_1 + b"}
+REGRESSIONS:
+A regression uses the tilde (~) to fit parameters. It MUST reference the table columns ($x_1$, $y_1$).
+- Linear: {"latex": "y_1 ~ m x_1 + b"}
+- Quadratic: {"latex": "y_1 ~ a x_1^2 + b x_1 + c"}
+- Exponential: {"latex": "y_1 ~ a b^{x_1}"}
+- Power: {"latex": "y_1 ~ a x_1^b"}
+- Logarithmic: {"latex": "y_1 ~ a \\\\ln(x_1) + b"}
 
-Regression Patterns (ALWAYS use x_1 and y_1 with underscores):
-- Linear: y_1 ~ m x_1 + b
-- Quadratic: y_1 ~ a x_1^2 + b x_1 + c
-- Exponential: y_1 ~ a b^{x_1}
-- Power: y_1 ~ a x_1^b
-- Logarithmic: y_1 ~ a ln(x_1) + b
+REGRESSION TRICK (solving for unknowns without a table):
+When two expressions are equal and you need to find unknown parameters, replace the variable with $x_1$ (a subscript constant) and use tilde instead of equals:
+- Single parameter: {"latex": "\\\\frac{1}{3}x_1^2 - 2 \\\\sim \\\\frac{1}{3}(x_1 - k)(x_1 + k)"}
+- Multiple parameters: Always add $x_1 = [1, 2, 3]$ or an appropriate range FIRST, then the regression expression.
 
-Complete Example - table FIRST, then regression:
+For multiple unknowns, the x_1 data points anchor the fitting. Without them, Desmos cannot uniquely solve for 2+ parameters.
+
+COMPLETE EXAMPLES:
+
+Example 1 — Regression trick (no table):
+{
+  "expressions": [
+    {"latex": "\\\\frac{1}{3}x^{2}-2", "color": "#388c46", "hidden": true},
+    {"latex": "\\\\frac{1}{3}(x-k)(x+k)", "color": "#2d70b3", "hidden": true},
+    {"latex": "\\\\frac{1}{3}x_{1}^{2}-2\\\\sim\\\\frac{1}{3}\\\\left(x_{1}-k\\\\right)\\\\left(x_{1}+k\\\\right)", "color": "#388c46"}
+  ],
+  "viewport": {"xmin": -5, "xmax": 5, "ymin": -5, "ymax": 5}
+}
+
+Example 2 — Data table + linear regression + answer choices:
 {
   "expressions": [
     {
       "type": "table",
       "columns": [
-        {"latex": "x_1", "values": ["1", "2", "3", "4", "5"]},
-        {"latex": "y_1", "values": ["2.1", "3.9", "6.2", "8.1", "10.2"]}
+        {"latex": "x_1", "values": ["-1", "0", "1", "2"]},
+        {"latex": "y_1", "values": ["12", "15", "18", "21"]}
       ]
     },
-    {"latex": "y_1 ~ m x_1 + b"}
-  ]
+    {"latex": "y_1 ~ m x_1 + b", "color": "#388c46"},
+    {"latex": "3x+15", "color": "#c74440", "lineStyle": "DASHED"}
+  ],
+  "viewport": {"xmin": -3, "xmax": 4, "ymin": 5, "ymax": 25}
+}
+
+Example 3 — Regression trick with multiple parameters:
+{
+  "expressions": [
+    {"latex": "x_1 = [1, 2, 3, 4, 5]"},
+    {"latex": "2x_{1}^{2}-12x_{1}+10", "color": "#388c46", "hidden": true},
+    {"latex": "2(x_{1}-h)^{2}+k", "color": "#2d70b3", "hidden": true},
+    {"latex": "2x_{1}^{2}-12x_{1}+10\\\\sim 2(x_{1}-h)^{2}+k", "color": "#388c46"}
+  ],
+  "viewport": {"xmin": 0, "xmax": 6, "ymin": -15, "ymax": 15}
 }
 
 STYLING:
-- Colors: #c74440 (red), #2d70b3 (blue), #388c46 (green), #6042a6 (purple), #fa7e19 (orange)
+- Colors: #c74440 (red), #2d70b3 (blue), #388c46 (green), #6042a6 (purple), #fa7e19 (orange), #000000 (black)
 - Line Styles: "SOLID", "DASHED", "DOTTED"
+- Use different colors for: original expression, answer choices, regression line, verification
 
-The "graph" field contains Desmos API expressions to update the graph:
+GRAPH FIELD RULES:
 - "expressions": array of expression objects. For tables, include "type": "table" and "columns".
-- "viewport": optional bounds (xmin, xmax, ymin, ymax).
-- To clear the graph, provide an empty expressions array.
+- "viewport": optional bounds {xmin, xmax, ymin, ymax}. ALWAYS set a viewport that frames the interesting region of the problem (don't leave everything at -10 to 10 if the data is clustered around 0-5).
+- To clear the graph: provide an empty expressions array.
+- If no graph update needed: set "graph": null.
 
-The "response" field contains your text explanation using:
-- Markdown headings, bold, italic
+═══════════════════════════════════════════
+TEXT RESPONSE RULES
+═══════════════════════════════════════════
+
+The "response" field contains your explanation using:
+- Markdown headings (## Step 1, ## Step 2, etc.), bold, italic
 - KaTeX for math: $inline$ or $$display$$
-- NEVER use \\(...\\), \\[...\\], or bare math.
-
-If no graph update needed, set "graph": null.
+- NEVER use \\\\(...\\\\), \\\\[...\\\\], or bare math outside dollar signs.
+- NEVER embed raw JSON objects, graph updates, or code blocks inside the response text. ALL Desmos graph updates go ONLY in the top-level "graph" field. The "response" field is text only.
+- Reference the graph directly: "Look at the graph — the green regression line passes through all four data points."
+- Always number your steps and label them with the strategy name.
 
 OPTIONALLY include a "suggestions" field with 0-2 follow-up questions the user might ask next.
 Only include suggestions if genuinely useful. Max 2 items.
-Example: "suggestions": ["What is the vertex form?", "How do I find the roots?"]`;
+Example: "suggestions": ["What if the data were exponential instead?", "How do I verify this on test day?"]`;
 
 function getFormatInstructions() {
   return `STRICT RESPONSE FORMAT: Output ONLY raw JSON. No code blocks.
@@ -147,26 +262,29 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
       top: 10,
     });
 
-    isGraphInitialized = true;
+    // Listen for graph state changes and auto-persist
+    satMathCalculator.observe('expressionsChanged', () => {
+      captureGraphState();
+    });
 
-    
+    isGraphInitialized = true;
   }
 
   let graphStateDebounceTimer = null;
 
   function captureGraphState() {
     if (!satMathCalculator) return;
-    
+
     clearTimeout(graphStateDebounceTimer);
     graphStateDebounceTimer = setTimeout(() => {
       try {
         const state = satMathCalculator.getState();
         graphExpressions = [];
-        
+
         if (state.expressions && state.expressions.list) {
           state.expressions.list.forEach(expr => {
             if (expr.hidden) return;
-            
+
             if (expr.type === 'expression' && expr.latex) {
               graphExpressions.push({
                 type: 'expression',
@@ -184,8 +302,14 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
             }
           });
         }
-        
+
         updateGraphContextIndicator();
+
+        // Persist graph state to session
+        if (currentSession) {
+          currentSession.graphState = state;
+          saveCurrentSession();
+        }
       } catch (e) {
         console.warn('Failed to capture graph state:', e);
       }
@@ -284,6 +408,317 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
     });
   }
 
+  // ─── File Attachments ─────────────────────────────────────────────────────
+
+  let attachedFiles = [];
+
+  function getFileIcon(type, name) {
+    if (type === 'image') return '🖼️';
+    const ext = (name || '').split('.').pop().toLowerCase();
+    if (ext === 'pdf') return '📕';
+    return '📄';
+  }
+
+  function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / 1048576).toFixed(1) + ' MB';
+  }
+
+  const MAX_FILE_SIZE = 4 * 1024 * 1024; // 4 MB per file
+  const MAX_IMAGE_DIMENSION = 1024;
+
+  function resizeImage(file) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        let { width, height } = img;
+        if (width <= MAX_IMAGE_DIMENSION && height <= MAX_IMAGE_DIMENSION) {
+          // Already small enough — read as-is
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.readAsDataURL(file);
+          return;
+        }
+        const scale = Math.min(MAX_IMAGE_DIMENSION / width, MAX_IMAGE_DIMENSION / height);
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', 0.8));
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.readAsDataURL(file);
+      };
+      img.src = url;
+    });
+  }
+
+  function processFile(file) {
+    return new Promise(async (resolve) => {
+      const isImage = file.type.startsWith('image/');
+      const isText = file.type === 'text/plain' || ['txt','md','csv'].includes(file.name.split('.').pop().toLowerCase());
+      const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+
+      if (isPDF && file.size > MAX_FILE_SIZE) {
+        resolve({ file, name: file.name, size: file.size, type: 'error', dataUrl: null, content: null, error: 'File too large (max 4 MB)' });
+        return;
+      }
+
+      if (isImage) {
+        const dataUrl = await resizeImage(file);
+        resolve({ file, name: file.name, size: file.size, type: 'image', dataUrl, content: null });
+      } else if (isPDF) {
+        const reader = new FileReader();
+        reader.onload = () => resolve({ file, name: file.name, size: file.size, type: 'pdf', dataUrl: reader.result, content: null });
+        reader.readAsDataURL(file);
+      } else if (isText) {
+        const reader = new FileReader();
+        reader.onload = () => resolve({ file, name: file.name, size: file.size, type: 'text', dataUrl: null, content: reader.result });
+        reader.readAsText(file);
+      } else {
+        resolve({ file, name: file.name, size: file.size, type: 'other', dataUrl: null, content: null });
+      }
+    });
+  }
+
+  async function handleNewFiles(fileList) {
+    const MAX_FILES = 5;
+    const remaining = MAX_FILES - attachedFiles.length;
+    const toProcess = Array.from(fileList).slice(0, Math.max(0, remaining));
+    const errors = [];
+    for (const file of toProcess) {
+      const processed = await processFile(file);
+      if (processed.type === 'error') {
+        errors.push(`${processed.name}: ${processed.error}`);
+      } else {
+        attachedFiles.push(processed);
+      }
+    }
+    if (errors.length > 0) {
+      alert('Some files were skipped:\n' + errors.join('\n'));
+    }
+    renderInputFilesBar();
+    renderWelcomeAttachments();
+  }
+
+  function clearAttachedFiles() {
+    attachedFiles = [];
+    renderInputFilesBar();
+    renderWelcomeAttachments();
+  }
+
+  function renderInputFilesBar() {
+    const bar = document.getElementById('input-files-bar');
+    if (!bar) return;
+    if (attachedFiles.length === 0) { bar.classList.remove('show'); bar.innerHTML = ''; return; }
+    bar.classList.add('show');
+    bar.innerHTML = '';
+    attachedFiles.forEach((f, i) => {
+      const chip = document.createElement('div');
+      chip.className = 'input-file-chip';
+      chip.innerHTML = `<span>${getFileIcon(f.type, f.name)}</span><span class="input-file-chip-name">${f.name}</span><button class="input-file-chip-remove" title="Remove">×</button>`;
+      chip.querySelector('.input-file-chip-remove').addEventListener('click', () => {
+        attachedFiles.splice(i, 1); renderInputFilesBar(); renderWelcomeAttachments();
+      });
+      bar.appendChild(chip);
+    });
+  }
+
+  function renderWelcomeAttachments() {
+    const container = document.getElementById('welcome-attachments');
+    if (!container) return;
+    container.innerHTML = '';
+    attachedFiles.forEach((f, i) => {
+      const chip = document.createElement('div');
+      chip.className = 'input-file-chip';
+      chip.innerHTML = `<span>${getFileIcon(f.type, f.name)}</span><span class="input-file-chip-name">${f.name}</span><button class="input-file-chip-remove" title="Remove">×</button>`;
+      chip.querySelector('.input-file-chip-remove').addEventListener('click', () => {
+        attachedFiles.splice(i, 1); renderInputFilesBar(); renderWelcomeAttachments();
+      });
+      container.appendChild(chip);
+    });
+  }
+
+  function buildUserContent(text, files) {
+    if (!files || files.length === 0) return text;
+    const textParts = [text];
+    const multimodalParts = [];
+    files.forEach(f => {
+      if (f.type === 'text' && f.content) {
+        textParts.push(`\n\n--- Content of ${f.name} ---\n${f.content}\n--- End of ${f.name} ---`);
+      } else if ((f.type === 'image' || f.type === 'pdf') && f.dataUrl) {
+        multimodalParts.push({ type: 'image_url', image_url: { url: f.dataUrl } });
+      } else {
+        textParts.push(`\n[Attached: ${f.name}]`);
+      }
+    });
+    const fullText = textParts.join('');
+    return multimodalParts.length > 0
+      ? [{ type: 'text', text: fullText }, ...multimodalParts]
+      : fullText;
+  }
+
+  function setupFileAttachment() {
+    const fileInput = document.getElementById('doc-file-input');
+    const attachBtn = document.getElementById('attach-file-btn');
+    const welcomeAttachBtn = document.getElementById('welcome-attach-btn');
+    const dragOverlay = document.getElementById('drag-overlay');
+    const mainContent = document.getElementById('main-content');
+
+    attachBtn?.addEventListener('click', () => fileInput?.click());
+    welcomeAttachBtn?.addEventListener('click', () => fileInput?.click());
+
+    fileInput?.addEventListener('change', (e) => {
+      if (e.target.files?.length) { handleNewFiles(e.target.files); e.target.value = ''; }
+    });
+
+    if (mainContent) {
+      mainContent.addEventListener('dragover', (e) => { e.preventDefault(); dragOverlay?.classList.add('show'); });
+      mainContent.addEventListener('dragleave', (e) => { if (!mainContent.contains(e.relatedTarget)) dragOverlay?.classList.remove('show'); });
+      mainContent.addEventListener('drop', (e) => { e.preventDefault(); dragOverlay?.classList.remove('show'); if (e.dataTransfer.files?.length) handleNewFiles(e.dataTransfer.files); });
+    }
+    dragOverlay?.addEventListener('dragleave', () => dragOverlay.classList.remove('show'));
+    dragOverlay?.addEventListener('drop', (e) => { e.preventDefault(); dragOverlay.classList.remove('show'); if (e.dataTransfer.files?.length) handleNewFiles(e.dataTransfer.files); });
+  }
+
+  // ─── Session Management ────────────────────────────────────────────────────
+
+  function createNewSession() {
+    const id = 'sat_' + Date.now();
+    currentSessionId = id;
+    currentSession = {
+      id,
+      title: 'SAT Math Chat',
+      mode: 'sat-math',
+      messages: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      autoTitleGenerated: false,
+      userRenamed: false,
+    };
+    conversationHistory = [];
+    if (window.KorahDB) {
+      window.KorahDB.setConversation(id, currentSession).catch(console.error);
+    }
+    window.location.hash = id;
+  }
+
+  function saveCurrentSession() {
+    if (!currentSession || !window.KorahDB) return;
+    currentSession.messages = conversationHistory;
+    currentSession.updatedAt = new Date().toISOString();
+
+    // Persist graph state
+    if (satMathCalculator) {
+      try {
+        currentSession.graphState = satMathCalculator.getState();
+      } catch (e) {
+        console.warn('Failed to save graph state:', e);
+      }
+    }
+
+    window.KorahDB.setConversation(currentSessionId, currentSession).catch(console.error);
+  }
+
+  function autoTitleFromMessage(text) {
+    if (!currentSession || currentSession.autoTitleGenerated || currentSession.userRenamed) return;
+    currentSession.title = text.slice(0, 50) + (text.length > 50 ? '…' : '');
+    currentSession.autoTitleGenerated = true;
+  }
+
+  function renderSavedMessages() {
+    if (!messagesList || conversationHistory.length === 0) return;
+    messagesList.innerHTML = '';
+    conversationHistory.forEach(msg => {
+      if (msg.role === 'user') {
+        addMessage('user', msg.content);
+      } else if (msg.role === 'assistant') {
+        const row = addMessage('assistant', '');
+        const contentEl = row?.querySelector('.assistant-content');
+        if (contentEl) {
+          try {
+            const parsed = JSON.parse(msg.content);
+            if (parsed?.response) {
+              renderMarkdownAndMath(contentEl, parsed.response);
+            } else {
+              renderMarkdownAndMath(contentEl, msg.content);
+            }
+          } catch (_) {
+            renderMarkdownAndMath(contentEl, msg.content);
+          }
+        }
+      }
+    });
+
+    // Restore graph state from session (persisted separately from messages)
+    if (currentSession?.graphState && satMathCalculator) {
+      try {
+        satMathCalculator.setState(currentSession.graphState);
+        captureGraphState();
+      } catch (e) {
+        console.warn('Failed to restore graph state:', e);
+      }
+    }
+
+    welcomeScreen?.classList.add('hidden');
+    document.getElementById('chat-input-area')?.classList.remove('hidden');
+    chatBody.scrollTop = chatBody.scrollHeight;
+  }
+
+  async function switchToSession(id) {
+    if (id === currentSessionId) return;
+    if (!window.KorahDB) return;
+    const session = await window.KorahDB.getConversation(id);
+    if (!session) return;
+    currentSessionId = id;
+    currentSession = session;
+    conversationHistory = session.messages || [];
+    window.location.hash = id;
+    // Reset UI and clear graph before loading new session
+    if (messagesList) messagesList.innerHTML = '';
+    if (satMathCalculator) satMathCalculator.setBlank();
+    welcomeScreen?.classList.remove('hidden');
+    document.getElementById('chat-input-area')?.classList.add('hidden');
+    // Restore
+    renderSavedMessages();
+    if (window.KorahSidebar) window.KorahSidebar.updateActiveItem(id);
+  }
+
+  function newChat() {
+    if (messagesList) messagesList.innerHTML = '';
+    welcomeScreen?.classList.remove('hidden');
+    document.getElementById('chat-input-area')?.classList.add('hidden');
+    if (satMathCalculator) { satMathCalculator.setBlank(); graphExpressions = []; updateGraphContextIndicator(); }
+    createNewSession();
+  }
+
+  async function initSession() {
+    const hash = window.location.hash.slice(1);
+    if (hash && window.KorahDB) {
+      const session = await window.KorahDB.getConversation(hash);
+      if (session && session.mode === 'sat-math') {
+        currentSessionId = hash;
+        currentSession = session;
+        conversationHistory = session.messages || [];
+        renderSavedMessages();
+        if (window.KorahSidebar) window.KorahSidebar.updateActiveItem(hash);
+        return;
+      }
+    }
+    createNewSession();
+  }
+
+  window.SatMathChat = { initSession, switchToSession, newChat, createNewSession };
+
   async function sendMessage(text) {
     console.log('sendMessage called', { text, inputValue: input?.value, welcomeInputValue: welcomeInput?.value });
     const userMessage = text || input?.value?.trim() || welcomeInput?.value?.trim();
@@ -299,11 +734,19 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
     const graphContext = getGraphContext();
     const fullMessage = userMessage + graphContext;
 
+    // Capture and clear attached files before state changes
+    const pendingFiles = [...attachedFiles];
+    clearAttachedFiles();
+
+    // Auto-title from first message
+    if (conversationHistory.length === 0) autoTitleFromMessage(userMessage);
+
     console.log('Adding user message to chat');
     addMessage('user', userMessage);
-    
+
     input && (input.value = '');
     welcomeInput && (welcomeInput.value = '');
+    if (welcomeInput) welcomeInput.style.height = 'auto';
 
     typingIndicator?.classList.remove('hidden');
     chatBody.scrollTop = chatBody.scrollHeight;
@@ -356,13 +799,42 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
       setTimeout(typeNextChar, delay);
     };
 
+  // Unescape a JSON string value, preserving LaTeX backslashes.
+  // \frac stays as \frac (not form-feed + rac), \n becomes newline.
+  const unescapeJSONString = (s) => {
+    let out = '', esc = false;
+    for (let i = 0; i < s.length; i++) {
+      const ch = s[i];
+      if (esc) {
+        switch (ch) {
+          case '"':  out += '"'; break;
+          case '\\': out += '\\'; break;
+          case '/':  out += '/'; break;
+          case 'n': case 'r': case 't': case 'b': case 'f':
+            if (i + 1 < s.length && /[a-z]/.test(s[i + 1])) {
+              out += '\\' + ch;   // LaTeX: \frac, \nabla, \text …
+            } else {
+              out += ({ n: '\n', r: '\r', t: '\t', b: '', f: '' })[ch];
+            }
+            break;
+          default: out += '\\' + ch; // LaTeX: \sim, \left, \cdot …
+        }
+        esc = false; continue;
+      }
+      if (ch === '\\') { esc = true; continue; }
+      out += ch;
+    }
+    return out;
+  };
+
   console.log('Calling API with message:', fullMessage.substring(0, 50));
   let parsedResponse = null;
   let isJSONMode = false;
   let fullReplyFromAPI = "";
 
   try {
-    await callAPI(fullMessage, (chunk, fullText) => {
+    const userContent = buildUserContent(fullMessage, pendingFiles);
+    await callAPI(userContent, (chunk, fullText) => {
       // Remove thinking indicator when first chunk arrives
       if (thinkingIndicator && fullText.length > 0) {
         thinkingIndicator.remove();
@@ -410,11 +882,7 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
                   quoteStart = i;
                 } else {
                   // End of string - we have the full response value so far
-                  const responseValue = fullText.substring(quoteStart + 1, i)
-                    .replace(/\\n/g, '\n')
-                    .replace(/\\"/g, '"')
-                    .replace(/\\t/g, '\t')
-                    .replace(/\\r/g, '');
+                  const responseValue = unescapeJSONString(fullText.substring(quoteStart + 1, i));
                   renderMarkdownAndMath(contentElement, responseValue + "▊");
                   break;
                 }
@@ -422,11 +890,7 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
             }
             // If we found the opening quote but not the closing one yet (still streaming), render partial
             if (quoteStart !== -1 && inString === true) {
-              const partial = fullText.substring(quoteStart + 1)
-                .replace(/\\n/g, '\n')
-                .replace(/\\"/g, '"')
-                .replace(/\\t/g, '\t')
-                .replace(/\\r/g, '');
+              const partial = unescapeJSONString(fullText.substring(quoteStart + 1));
               if (partial.length > 0) {
                 renderMarkdownAndMath(contentElement, partial + "▊");
               }
@@ -437,7 +901,7 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
         }
       }
     });
-      
+
       typingIndicator?.classList.add('hidden');
       
       charBuffer = [];
@@ -446,67 +910,165 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
       if (contentElement) {
         const finalRawText = fullReplyFromAPI.trim();
         
-        // Sanitize common AI JSON output issues before parsing
-        const sanitizeJSON = (text) => {
-          let s = text.trim();
+        // ── Manual field extraction ──────────────────────────────
+        // Instead of JSON.parse (which breaks on unescaped LaTeX
+        // backslashes like \frac, \sim, \text), we extract each
+        // field directly from the raw text.
 
-          // Strip ```json ... ``` or ``` ... ``` wrappers (anywhere in string)
+        const parseAIResponse = (raw) => {
+          let s = raw.trim();
+          // Strip ```json ... ``` wrappers
           s = s.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+          const braceIdx = s.indexOf('{');
+          if (braceIdx === -1) return null;
+          s = s.substring(braceIdx);
 
-          // Extract the outermost {...} block
-          const firstBrace = s.indexOf('{');
-          if (firstBrace === -1) return s;
+          // Fast path: try JSON.parse first (handles well-formed JSON)
+          try {
+            const p = JSON.parse(s);
+            if (p && (p.response || p.graph)) return p;
+          } catch (_) {}
 
-          let depth = 0;
-          let lastBrace = -1;
-          let inString = false;
-          let escapeNext = false;
+          // Slow path: extract fields manually
+          const result = { graph: null, response: '', suggestions: [] };
 
-          for (let i = firstBrace; i < s.length; i++) {
-            const char = s[i];
-            if (escapeNext) { escapeNext = false; continue; }
-            if (char === '\\') { escapeNext = true; continue; }
-            if (char === '"') { inString = !inString; continue; }
-            if (inString) continue;
-            if (char === '{') depth++;
-            else if (char === '}') {
-              depth--;
-              if (depth === 0) { lastBrace = i; break; }
+          // ── Extract "response" string ──
+          result.response = extractStringField(s, 'response') || '';
+
+          // ── Extract "graph" object or null ──
+          const graphStart = findFieldValueStart(s, 'graph');
+          if (graphStart !== -1) {
+            const after = s.substring(graphStart).trim();
+            if (after.startsWith('null')) {
+              result.graph = null;
+            } else if (after.startsWith('{')) {
+              const obj = extractBraceBlock(after);
+              if (obj) {
+                try { result.graph = JSON.parse(fixEscapesForJSON(obj)); }
+                catch (e) { console.warn('Graph parse failed:', e.message); }
+              }
             }
           }
 
-          s = lastBrace !== -1 ? s.substring(firstBrace, lastBrace + 1) : s.substring(firstBrace);
-
-          // Remove trailing commas before } or ]
-          s = s.replace(/,\s*([}\]])/g, '$1');
-
-          // Replace literal tab/newline/carriage-return control chars inside strings
-          // (only those not already escaped)
-          s = s.replace(/"((?:[^"\\]|\\.)*)"/g, (match) => {
-            return match
-              .replace(/\t/g, '\\t')
-              .replace(/\r/g, '\\r')
-              .replace(/\n/g, '\\n');
-          });
-
-          return s;
-        };
-
-        // Robust JSON parsing with sanitization
-        const robustParse = (text) => {
-          // Try direct parse first
-          try { return JSON.parse(text); } catch (e) {}
-
-          // Sanitize then parse
-          const sanitized = sanitizeJSON(text);
-          try { return JSON.parse(sanitized); } catch (e) {
-            console.warn('JSON parse failed after sanitization:', e.message, '\nSanitized text (first 200):', sanitized.substring(0, 200));
+          // ── Extract "suggestions" array ──
+          const sugStart = findFieldValueStart(s, 'suggestions');
+          if (sugStart !== -1) {
+            const after = s.substring(sugStart).trim();
+            if (after.startsWith('[')) {
+              const end = after.indexOf(']');
+              if (end !== -1) {
+                try { result.suggestions = JSON.parse(after.substring(0, end + 1)); }
+                catch (_) {}
+              }
+            }
           }
 
+          return (result.response || result.graph) ? result : null;
+        };
+
+        // Find the index right after `"fieldName":` in text
+        const findFieldValueStart = (text, name) => {
+          const key = '"' + name + '"';
+          const idx = text.indexOf(key);
+          if (idx === -1) return -1;
+          let i = idx + key.length;
+          while (i < text.length && text[i] !== ':') i++;
+          return i < text.length ? i + 1 : -1;
+        };
+
+        // Extract a JSON string value, properly unescaping while
+        // preserving LaTeX backslashes (\frac → \frac, not form-feed + rac)
+        const extractStringField = (text, name) => {
+          const start = findFieldValueStart(text, name);
+          if (start === -1) return null;
+          let i = start;
+          while (i < text.length && /\s/.test(text[i])) i++;
+          if (text[i] !== '"') return null;
+          i++; // skip opening quote
+
+          let value = '';
+          let esc = false;
+          while (i < text.length) {
+            const ch = text[i];
+            if (esc) {
+              switch (ch) {
+                case '"':  value += '"'; break;
+                case '\\': value += '\\'; break;
+                case '/':  value += '/'; break;
+                case 'n': case 'r': case 't': case 'b': case 'f':
+                  // If next char is also a letter → LaTeX (\frac, \nabla, \text …)
+                  if (i + 1 < text.length && /[a-z]/.test(text[i + 1])) {
+                    value += '\\' + ch;           // keep as literal backslash + letter
+                  } else {
+                    value += ({ n: '\n', r: '\r', t: '\t', b: '', f: '' })[ch];
+                  }
+                  break;
+                case 'u':
+                  if (i + 4 < text.length && /^[0-9a-fA-F]{4}$/.test(text.substring(i + 1, i + 5))) {
+                    value += String.fromCharCode(parseInt(text.substring(i + 1, i + 5), 16));
+                    i += 4;
+                  } else {
+                    value += '\\u';
+                  }
+                  break;
+                default:
+                  // Any other \X → keep as LaTeX (\sim, \left, \cdot …)
+                  value += '\\' + ch;
+              }
+              esc = false; i++; continue;
+            }
+            if (ch === '\\') { esc = true; i++; continue; }
+            if (ch === '"') break; // closing quote
+            value += ch; i++;
+          }
+          return value;
+        };
+
+        // Extract a balanced { … } block from the start of text
+        const extractBraceBlock = (text) => {
+          if (text[0] !== '{') return null;
+          let depth = 0, inStr = false, esc = false;
+          for (let i = 0; i < text.length; i++) {
+            const ch = text[i];
+            if (esc) { esc = false; continue; }
+            if (ch === '\\') { esc = true; continue; }
+            if (ch === '"') { inStr = !inStr; continue; }
+            if (inStr) continue;
+            if (ch === '{') depth++;
+            else if (ch === '}') { depth--; if (depth === 0) return text.substring(0, i + 1); }
+          }
           return null;
         };
 
-        parsedResponse = robustParse(finalRawText);
+        // Fix LaTeX backslashes inside JSON strings so JSON.parse works
+        // (used only for the graph/suggestions objects, not the response text)
+        const fixEscapesForJSON = (jsonStr) => {
+          let out = '', inStr = false, esc = false;
+          for (let i = 0; i < jsonStr.length; i++) {
+            const ch = jsonStr[i];
+            if (esc) {
+              if (inStr) {
+                if (!'"\\/bfnrtu'.includes(ch)) {
+                  out += '\\';
+                } else if ('bfnrt'.includes(ch) && i + 1 < jsonStr.length && /[a-z]/.test(jsonStr[i + 1])) {
+                  out += '\\';
+                }
+              }
+              out += ch; esc = false; continue;
+            }
+            if (ch === '\\') { esc = true; out += ch; continue; }
+            if (ch === '"') inStr = !inStr;
+            if (inStr) {
+              if (ch === '\n') { out += '\\n'; continue; }
+              if (ch === '\r') { out += '\\r'; continue; }
+              if (ch === '\t') { out += '\\t'; continue; }
+            }
+            out += ch;
+          }
+          return out;
+        };
+
+        parsedResponse = parseAIResponse(finalRawText);
         
         if (parsedResponse && typeof parsedResponse === 'object' && (parsedResponse.graph || parsedResponse.response)) {
           const graphData = parsedResponse.graph;
@@ -531,6 +1093,11 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
         
         chatBody.scrollTop = chatBody.scrollHeight;
       }
+
+      // ── Persist conversation history ──
+      conversationHistory.push({ role: 'user', content: userMessage });
+      conversationHistory.push({ role: 'assistant', content: fullReplyFromAPI });
+      saveCurrentSession();
 
       if (parsedResponse?.suggestions && Array.isArray(parsedResponse.suggestions)) {
         aiSuggestions = parsedResponse.suggestions.slice(0, 2);
@@ -562,10 +1129,10 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
     }
   }
 
-  async function callAPI(userMessage, onChunk = null) {
+  async function callAPI(userContent, onChunk = null) {
     const messagesWithSystem = [
       { role: 'system', content: SAT_MATH_SYSTEM_PROMPT + getFormatInstructions() },
-      { role: 'user', content: userMessage }
+      { role: 'user', content: userContent }
     ];
 
     const response = await fetch(API_ENDPOINT, {
@@ -573,7 +1140,7 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         model: MODEL,
-        temperature: 0.7,
+        temperature: 0.4,
         messages: messagesWithSystem,
         stream: true
       })
@@ -785,6 +1352,13 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
         sendMessage(input.value.trim());
       }
     });
+
+    // Auto-resize welcome textarea as user types
+    welcomeInput?.addEventListener('input', () => {
+      welcomeInput.style.height = 'auto';
+      welcomeInput.style.height = Math.min(welcomeInput.scrollHeight, 200) + 'px';
+    });
+
     welcomeInput?.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
@@ -800,11 +1374,8 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
     });
 
     clearChatBtn?.addEventListener('click', () => {
-      messagesList && (messagesList.innerHTML = '');
-      welcomeScreen?.classList.remove('hidden');
-      document.getElementById('chat-input-area')?.classList.add('hidden');
+      newChat();
     });
-
   }
 
   function init() {
@@ -820,6 +1391,7 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
       initializeSATGraph();
       bindGraphControls();
       bindEventListeners();
+      setupFileAttachment();
       console.log('Init completed successfully');
     } catch (e) {
       console.error('Init error:', e);

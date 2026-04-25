@@ -388,6 +388,21 @@
     font-size: 56px;
     filter: drop-shadow(0 10px 20px rgba(0,0,0,0.1));
   }
+
+  /* Purple-themed buttons for productivity page */
+  .timer-btn.grad-bg,
+  .todo-add-btn.grad-bg {
+    background: linear-gradient(135deg, var(--p4), var(--p5));
+  }
+
+  .timer-btn.grad-bg:hover,
+  .todo-add-btn.grad-bg:hover {
+    background: linear-gradient(135deg, var(--p5), var(--p4));
+  }
+
+  .preset-btn-active {
+    background: linear-gradient(135deg, var(--p4), var(--p5));
+  }
 </style>
 </head>
 
@@ -451,8 +466,8 @@
 
   <nav class="sidebar-nav">
     <div class="sidebar-nav-row">
-      <a href="index.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">chat</span> <span class="nav-text"></span></a>
-      <a href="study/feed.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">school</span> <span class="nav-text"></span></a>
+      <a href="index.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">chat</span> <span class="nav-text">Chat</span></a>
+      <a href="study/feed.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">school</span> <span class="nav-text">Study</span></a>
     </div>
     <a href="sat/index.html" class="sidebar-nav-link t-btn" data-sat-link="true"><span class="material-icons-round" style="font-size: 1.25rem;">assignment</span> <span class="nav-text">SAT</span></a>
     <a href="productivity.html" class="sidebar-nav-link productivity-link active t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">timer</span> <span class="nav-text">Productivity</span></a>
@@ -588,7 +603,7 @@
         </svg>
       </button>
       <div class="logo-container" style="display: flex; align-items: center; margin-right: 12px;">
-        <img src="../app/logo.png" alt="Korah Logo" style="height: 32px; width: auto;">
+        <img src="app/logo.png" alt="Korah Logo" style="height: 32px; width: auto;">
       </div>
       <div class="chat-title-area">
         <div class="korah-status-dot"></div>
@@ -1075,49 +1090,34 @@
     };
   }
 
-  // Settings Modal functionality
-  const settingsModal = document.getElementById('settings-modal');
-  const settingsBtn = document.getElementById('settings-btn');
-  const settingsClose = document.getElementById('settings-close');
-  const settingsThemeSelect = document.getElementById('settings-theme-select');
-  const settingsNameInput = document.getElementById('settings-name-input');
-  const settingsSaveBtn = document.getElementById('settings-save');
-  const settingsClearDataBtn = document.getElementById('settings-clear-data');
-
-  settingsBtn?.addEventListener('click', () => {
-    settingsModal.classList.add('show');
-    const savedTheme = localStorage.getItem('korah_theme') || 'dark';
-    const savedName = localStorage.getItem('korah_name') || '';
-    if (settingsThemeSelect) settingsThemeSelect.value = savedTheme;
-    if (settingsNameInput) settingsNameInput.value = savedName;
-  });
-
-  settingsClose?.addEventListener('click', () => {
-    settingsModal.classList.remove('show');
-  });
-
-  settingsModal?.addEventListener('click', (e) => {
-    if (e.target === settingsModal) {
-      settingsModal.classList.remove('show');
-    }
-  });
-
-  settingsSaveBtn?.addEventListener('click', () => {
-    const theme = settingsThemeSelect.value;
-    const name = settingsNameInput.value;
-    localStorage.setItem('korah_theme', theme);
-    localStorage.setItem('korah_name', name);
-    document.documentElement.setAttribute('data-theme', theme);
-    settingsModal.classList.remove('show');
-  });
-
-  settingsClearDataBtn?.addEventListener('click', () => {
-    if (confirm('Are you sure you want to clear all data? This cannot be undone.')) {
-      localStorage.clear();
-      settingsModal.classList.remove('show');
-    }
-  });
 </script>
+<!-- Rename Modal -->
+<div id="rename-modal" class="delete-modal">
+  <div class="delete-modal-content">
+    <div class="delete-modal-icon">✏️</div>
+    <h3 class="delete-modal-title">Rename</h3>
+    <p class="delete-modal-desc" id="rename-modal-desc">Enter a new name</p>
+    <input id="rename-modal-input" type="text" class="create-input" style="width:100%; margin-top:0.25rem;" placeholder="New name…"/>
+    <div class="delete-modal-actions">
+      <button id="rename-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
+      <button id="rename-modal-confirm" class="delete-modal-btn confirm t-btn" style="background:rgba(139,92,246,.12); color:var(--p5); border-color:rgba(139,92,246,.3);">Rename</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div id="delete-modal" class="delete-modal">
+  <div class="delete-modal-content">
+    <div class="delete-modal-icon">🗑️</div>
+    <h3 class="delete-modal-title">Delete?</h3>
+    <p class="delete-modal-desc">This will permanently delete <span id="delete-modal-name"></span>. This cannot be undone.</p>
+    <div class="delete-modal-actions">
+      <button id="delete-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
+      <button id="delete-modal-confirm" class="delete-modal-btn confirm t-btn">Delete</button>
+    </div>
+  </div>
+</div>
+
 <!-- Settings Modal -->
 <div id="settings-modal" class="settings-modal">
   <div class="settings-modal-content">
