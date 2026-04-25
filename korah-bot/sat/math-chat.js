@@ -799,6 +799,34 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
       setTimeout(typeNextChar, delay);
     };
 
+  // Unescape a JSON string value, preserving LaTeX backslashes.
+  // \frac stays as \frac (not form-feed + rac), \n becomes newline.
+  const unescapeJSONString = (s) => {
+    let out = '', esc = false;
+    for (let i = 0; i < s.length; i++) {
+      const ch = s[i];
+      if (esc) {
+        switch (ch) {
+          case '"':  out += '"'; break;
+          case '\\': out += '\\'; break;
+          case '/':  out += '/'; break;
+          case 'n': case 'r': case 't': case 'b': case 'f':
+            if (i + 1 < s.length && /[a-zA-Z]/.test(s[i + 1])) {
+              out += '\\' + ch;   // LaTeX: \frac, \nabla, \text …
+            } else {
+              out += ({ n: '\n', r: '\r', t: '\t', b: '', f: '' })[ch];
+            }
+            break;
+          default: out += '\\' + ch; // LaTeX: \sim, \left, \cdot …
+        }
+        esc = false; continue;
+      }
+      if (ch === '\\') { esc = true; continue; }
+      out += ch;
+    }
+    return out;
+  };
+
   console.log('Calling API with message:', fullMessage.substring(0, 50));
   let parsedResponse = null;
   let isJSONMode = false;
@@ -854,11 +882,7 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
                   quoteStart = i;
                 } else {
                   // End of string - we have the full response value so far
-                  const responseValue = fullText.substring(quoteStart + 1, i)
-                    .replace(/\\n/g, '\n')
-                    .replace(/\\"/g, '"')
-                    .replace(/\\t/g, '\t')
-                    .replace(/\\r/g, '');
+                  const responseValue = unescapeJSONString(fullText.substring(quoteStart + 1, i));
                   renderMarkdownAndMath(contentElement, responseValue + "▊");
                   break;
                 }
@@ -866,11 +890,7 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
             }
             // If we found the opening quote but not the closing one yet (still streaming), render partial
             if (quoteStart !== -1 && inString === true) {
-              const partial = fullText.substring(quoteStart + 1)
-                .replace(/\\n/g, '\n')
-                .replace(/\\"/g, '"')
-                .replace(/\\t/g, '\t')
-                .replace(/\\r/g, '');
+              const partial = unescapeJSONString(fullText.substring(quoteStart + 1));
               if (partial.length > 0) {
                 renderMarkdownAndMath(contentElement, partial + "▊");
               }
@@ -890,94 +910,165 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
       if (contentElement) {
         const finalRawText = fullReplyFromAPI.trim();
         
-        // Sanitize common AI JSON output issues before parsing
-        const sanitizeJSON = (text) => {
-          let s = text.trim();
+        // ── Manual field extraction ──────────────────────────────
+        // Instead of JSON.parse (which breaks on unescaped LaTeX
+        // backslashes like \frac, \sim, \text), we extract each
+        // field directly from the raw text.
 
-          // Strip ```json ... ``` or ``` ... ``` wrappers (anywhere in string)
+        const parseAIResponse = (raw) => {
+          let s = raw.trim();
+          // Strip ```json ... ``` wrappers
           s = s.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+          const braceIdx = s.indexOf('{');
+          if (braceIdx === -1) return null;
+          s = s.substring(braceIdx);
 
-          // Extract the outermost {...} block
-          const firstBrace = s.indexOf('{');
-          if (firstBrace === -1) return s;
+          // Fast path: try JSON.parse first (handles well-formed JSON)
+          try {
+            const p = JSON.parse(s);
+            if (p && (p.response || p.graph)) return p;
+          } catch (_) {}
 
-          let depth = 0;
-          let lastBrace = -1;
-          let inString = false;
-          let escapeNext = false;
+          // Slow path: extract fields manually
+          const result = { graph: null, response: '', suggestions: [] };
 
-          for (let i = firstBrace; i < s.length; i++) {
-            const char = s[i];
-            if (escapeNext) { escapeNext = false; continue; }
-            if (char === '\\') { escapeNext = true; continue; }
-            if (char === '"') { inString = !inString; continue; }
-            if (inString) continue;
-            if (char === '{') depth++;
-            else if (char === '}') {
-              depth--;
-              if (depth === 0) { lastBrace = i; break; }
+          // ── Extract "response" string ──
+          result.response = extractStringField(s, 'response') || '';
+
+          // ── Extract "graph" object or null ──
+          const graphStart = findFieldValueStart(s, 'graph');
+          if (graphStart !== -1) {
+            const after = s.substring(graphStart).trim();
+            if (after.startsWith('null')) {
+              result.graph = null;
+            } else if (after.startsWith('{')) {
+              const obj = extractBraceBlock(after);
+              if (obj) {
+                try { result.graph = JSON.parse(fixEscapesForJSON(obj)); }
+                catch (e) { console.warn('Graph parse failed:', e.message); }
+              }
             }
           }
 
-          s = lastBrace !== -1 ? s.substring(firstBrace, lastBrace + 1) : s.substring(firstBrace);
-
-          // Remove trailing commas before } or ]
-          s = s.replace(/,\s*([}\]])/g, '$1');
-
-          // Fix literal control chars (newlines, tabs) inside JSON strings.
-          // Walk character-by-character because regex `.` can't match newlines.
-          {
-            let out = '';
-            let inStr = false;
-            let esc = false;
-            for (let i = 0; i < s.length; i++) {
-              const ch = s[i];
-              if (esc) {
-                if (inStr) {
-                  // Valid JSON escapes after \: " \ / b f n r t u
-                  if (!'"\\/bfnrtu'.includes(ch)) {
-                    // Definitely LaTeX (\sim, \left, \cdot, etc.) — double the backslash
-                    out += '\\';
-                  } else if ('bfnrt'.includes(ch) && i + 1 < s.length && /[a-zA-Z]/.test(s[i + 1])) {
-                    // \f, \b, \n, \r, \t followed by another letter = LaTeX command
-                    // (\frac, \binom, \nabla, \right, \text, \rho, \tau, etc.)
-                    out += '\\';
-                  }
-                }
-                out += ch;
-                esc = false;
-                continue;
+          // ── Extract "suggestions" array ──
+          const sugStart = findFieldValueStart(s, 'suggestions');
+          if (sugStart !== -1) {
+            const after = s.substring(sugStart).trim();
+            if (after.startsWith('[')) {
+              const end = after.indexOf(']');
+              if (end !== -1) {
+                try { result.suggestions = JSON.parse(after.substring(0, end + 1)); }
+                catch (_) {}
               }
-              if (ch === '\\') { esc = true; out += ch; continue; }
-              if (ch === '"') { inStr = !inStr; out += ch; continue; }
-              if (inStr) {
-                if (ch === '\n') { out += '\\n'; continue; }
-                if (ch === '\r') { out += '\\r'; continue; }
-                if (ch === '\t') { out += '\\t'; continue; }
-              }
-              out += ch;
             }
-            s = out;
           }
 
-          return s;
+          return (result.response || result.graph) ? result : null;
         };
 
-        // Robust JSON parsing with sanitization
-        const robustParse = (text) => {
-          // Try direct parse first
-          try { return JSON.parse(text); } catch (e) {}
+        // Find the index right after `"fieldName":` in text
+        const findFieldValueStart = (text, name) => {
+          const key = '"' + name + '"';
+          const idx = text.indexOf(key);
+          if (idx === -1) return -1;
+          let i = idx + key.length;
+          while (i < text.length && text[i] !== ':') i++;
+          return i < text.length ? i + 1 : -1;
+        };
 
-          // Sanitize then parse
-          const sanitized = sanitizeJSON(text);
-          try { return JSON.parse(sanitized); } catch (e) {
-            console.warn('JSON parse failed after sanitization:', e.message, '\nSanitized text (first 200):', sanitized.substring(0, 200));
+        // Extract a JSON string value, properly unescaping while
+        // preserving LaTeX backslashes (\frac → \frac, not form-feed + rac)
+        const extractStringField = (text, name) => {
+          const start = findFieldValueStart(text, name);
+          if (start === -1) return null;
+          let i = start;
+          while (i < text.length && /\s/.test(text[i])) i++;
+          if (text[i] !== '"') return null;
+          i++; // skip opening quote
+
+          let value = '';
+          let esc = false;
+          while (i < text.length) {
+            const ch = text[i];
+            if (esc) {
+              switch (ch) {
+                case '"':  value += '"'; break;
+                case '\\': value += '\\'; break;
+                case '/':  value += '/'; break;
+                case 'n': case 'r': case 't': case 'b': case 'f':
+                  // If next char is also a letter → LaTeX (\frac, \nabla, \text …)
+                  if (i + 1 < text.length && /[a-zA-Z]/.test(text[i + 1])) {
+                    value += '\\' + ch;           // keep as literal backslash + letter
+                  } else {
+                    value += ({ n: '\n', r: '\r', t: '\t', b: '', f: '' })[ch];
+                  }
+                  break;
+                case 'u':
+                  if (i + 4 < text.length && /^[0-9a-fA-F]{4}$/.test(text.substring(i + 1, i + 5))) {
+                    value += String.fromCharCode(parseInt(text.substring(i + 1, i + 5), 16));
+                    i += 4;
+                  } else {
+                    value += '\\u';
+                  }
+                  break;
+                default:
+                  // Any other \X → keep as LaTeX (\sim, \left, \cdot …)
+                  value += '\\' + ch;
+              }
+              esc = false; i++; continue;
+            }
+            if (ch === '\\') { esc = true; i++; continue; }
+            if (ch === '"') break; // closing quote
+            value += ch; i++;
           }
+          return value;
+        };
 
+        // Extract a balanced { … } block from the start of text
+        const extractBraceBlock = (text) => {
+          if (text[0] !== '{') return null;
+          let depth = 0, inStr = false, esc = false;
+          for (let i = 0; i < text.length; i++) {
+            const ch = text[i];
+            if (esc) { esc = false; continue; }
+            if (ch === '\\') { esc = true; continue; }
+            if (ch === '"') { inStr = !inStr; continue; }
+            if (inStr) continue;
+            if (ch === '{') depth++;
+            else if (ch === '}') { depth--; if (depth === 0) return text.substring(0, i + 1); }
+          }
           return null;
         };
 
-        parsedResponse = robustParse(finalRawText);
+        // Fix LaTeX backslashes inside JSON strings so JSON.parse works
+        // (used only for the graph/suggestions objects, not the response text)
+        const fixEscapesForJSON = (jsonStr) => {
+          let out = '', inStr = false, esc = false;
+          for (let i = 0; i < jsonStr.length; i++) {
+            const ch = jsonStr[i];
+            if (esc) {
+              if (inStr) {
+                if (!'"\\/bfnrtu'.includes(ch)) {
+                  out += '\\';
+                } else if ('bfnrt'.includes(ch) && i + 1 < jsonStr.length && /[a-zA-Z]/.test(jsonStr[i + 1])) {
+                  out += '\\';
+                }
+              }
+              out += ch; esc = false; continue;
+            }
+            if (ch === '\\') { esc = true; out += ch; continue; }
+            if (ch === '"') inStr = !inStr;
+            if (inStr) {
+              if (ch === '\n') { out += '\\n'; continue; }
+              if (ch === '\r') { out += '\\r'; continue; }
+              if (ch === '\t') { out += '\\t'; continue; }
+            }
+            out += ch;
+          }
+          return out;
+        };
+
+        parsedResponse = parseAIResponse(finalRawText);
         
         if (parsedResponse && typeof parsedResponse === 'object' && (parsedResponse.graph || parsedResponse.response)) {
           const graphData = parsedResponse.graph;
