@@ -1,11 +1,3 @@
-# 1.1 Updates (still in development)
-* SAT Math Mode Updates
-  * Read `sat-math-mode-implementation-plan.md` in the `questionbank-beta` branch
-  * Jayden: UI; Me: Functionality
-* `Questionbank-Beta` Updates
-  * OpenSAT Questionbank is the current implementation and works fine.
-  * Need to expand functionality
-  * Need to update U.I. (Jayden)
 * Need to add Google Drive API for document creation
 * Need to add "Import from Quizlet" option for study items
 * Focus-based learning integration
@@ -19,7 +11,6 @@
 * sat_question fetch tool (chatbot to output SAT problems, JSON formatted)
 
 # Patches/Fixes
-* MAJOR: Fix the screen sizing for ChromeBooks (67% looks like what it should at 100%)
 * Add the About to `landingpage.html`
 * Switch blog to social media and link the Instagram page
   * Mood should NOT have its own page. You could maybe implement it into `productivity.html`
