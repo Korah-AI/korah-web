@@ -89,23 +89,62 @@
     };
   }
 
-  function processFile(file) {
+  const MAX_FILE_SIZE = 4 * 1024 * 1024; // 4 MB per file
+  const MAX_IMAGE_DIMENSION = 1024;
+
+  function resizeImage(file) {
     return new Promise((resolve) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        let { width, height } = img;
+        if (width <= MAX_IMAGE_DIMENSION && height <= MAX_IMAGE_DIMENSION) {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.readAsDataURL(file);
+          return;
+        }
+        const scale = Math.min(MAX_IMAGE_DIMENSION / width, MAX_IMAGE_DIMENSION / height);
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', 0.8));
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.readAsDataURL(file);
+      };
+      img.src = url;
+    });
+  }
+
+  function processFile(file) {
+    return new Promise(async (resolve) => {
       const isImage = file.type.startsWith('image/');
       const isText = file.type === 'text/plain' || ['txt','md','csv'].includes(file.name.split('.').pop().toLowerCase());
       const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-      const reader = new FileReader();
-      if (isImage || isPDF) {
-        reader.onload = () => resolve({ 
-          file, 
-          name: file.name, 
-          size: file.size, 
-          type: isImage ? 'image' : 'pdf', 
-          dataUrl: reader.result, 
-          content: null 
-        });
+
+      if (isPDF && file.size > MAX_FILE_SIZE) {
+        resolve({ file, name: file.name, size: file.size, type: 'error', dataUrl: null, content: null, error: 'File too large (max 4 MB)' });
+        return;
+      }
+
+      if (isImage) {
+        const dataUrl = await resizeImage(file);
+        resolve({ file, name: file.name, size: file.size, type: 'image', dataUrl, content: null });
+      } else if (isPDF) {
+        const reader = new FileReader();
+        reader.onload = () => resolve({ file, name: file.name, size: file.size, type: 'pdf', dataUrl: reader.result, content: null });
         reader.readAsDataURL(file);
       } else if (isText) {
+        const reader = new FileReader();
         reader.onload = () => resolve({ file, name: file.name, size: file.size, type: 'text', dataUrl: null, content: reader.result });
         reader.readAsText(file);
       } else {
@@ -118,9 +157,17 @@
     const MAX_FILES = 5;
     const remaining = MAX_FILES - attachedFiles.length;
     const toProcess = Array.from(fileList).slice(0, Math.max(0, remaining));
+    const errors = [];
     for (const file of toProcess) {
       const processed = await processFile(file);
-      attachedFiles.push(processed);
+      if (processed.type === 'error') {
+        errors.push(`${processed.name}: ${processed.error}`);
+      } else {
+        attachedFiles.push(processed);
+      }
+    }
+    if (errors.length > 0) {
+      alert('Some files were skipped:\n' + errors.join('\n'));
     }
     renderDocPanel();
     renderInputFilesBar();
