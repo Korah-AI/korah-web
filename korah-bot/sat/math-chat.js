@@ -262,26 +262,29 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
       top: 10,
     });
 
-    isGraphInitialized = true;
+    // Listen for graph state changes and auto-persist
+    satMathCalculator.observe('expressionsChanged', () => {
+      captureGraphState();
+    });
 
-    
+    isGraphInitialized = true;
   }
 
   let graphStateDebounceTimer = null;
 
   function captureGraphState() {
     if (!satMathCalculator) return;
-    
+
     clearTimeout(graphStateDebounceTimer);
     graphStateDebounceTimer = setTimeout(() => {
       try {
         const state = satMathCalculator.getState();
         graphExpressions = [];
-        
+
         if (state.expressions && state.expressions.list) {
           state.expressions.list.forEach(expr => {
             if (expr.hidden) return;
-            
+
             if (expr.type === 'expression' && expr.latex) {
               graphExpressions.push({
                 type: 'expression',
@@ -299,8 +302,14 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
             }
           });
         }
-        
+
         updateGraphContextIndicator();
+
+        // Persist graph state to session
+        if (currentSession) {
+          currentSession.graphState = state;
+          saveCurrentSession();
+        }
       } catch (e) {
         console.warn('Failed to capture graph state:', e);
       }
@@ -551,6 +560,16 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
     if (!currentSession || !window.KorahDB) return;
     currentSession.messages = conversationHistory;
     currentSession.updatedAt = new Date().toISOString();
+
+    // Persist graph state
+    if (satMathCalculator) {
+      try {
+        currentSession.graphState = satMathCalculator.getState();
+      } catch (e) {
+        console.warn('Failed to save graph state:', e);
+      }
+    }
+
     window.KorahDB.setConversation(currentSessionId, currentSession).catch(console.error);
   }
 
@@ -574,10 +593,6 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
             const parsed = JSON.parse(msg.content);
             if (parsed?.response) {
               renderMarkdownAndMath(contentEl, parsed.response);
-              // Restore graph from last assistant message only
-              if (msg === conversationHistory[conversationHistory.length - 1] && parsed?.graph) {
-                updateSATGraph(parsed.graph);
-              }
             } else {
               renderMarkdownAndMath(contentEl, msg.content);
             }
@@ -587,6 +602,17 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
         }
       }
     });
+
+    // Restore graph state from session (persisted separately from messages)
+    if (currentSession?.graphState && satMathCalculator) {
+      try {
+        satMathCalculator.setState(currentSession.graphState);
+        captureGraphState();
+      } catch (e) {
+        console.warn('Failed to restore graph state:', e);
+      }
+    }
+
     welcomeScreen?.classList.add('hidden');
     document.getElementById('chat-input-area')?.classList.remove('hidden');
     chatBody.scrollTop = chatBody.scrollHeight;
@@ -601,8 +627,9 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
     currentSession = session;
     conversationHistory = session.messages || [];
     window.location.hash = id;
-    // Reset UI
+    // Reset UI and clear graph before loading new session
     if (messagesList) messagesList.innerHTML = '';
+    if (satMathCalculator) satMathCalculator.setBlank();
     welcomeScreen?.classList.remove('hidden');
     document.getElementById('chat-input-area')?.classList.add('hidden');
     // Restore
