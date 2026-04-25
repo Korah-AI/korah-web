@@ -636,6 +636,12 @@
         chatBaseUrl: "index.html",
         itemPageUrl: "study/item.html",
         onItemClick: (id) => {
+          const sessions = window.KorahSidebar.getSessions() || {};
+          const session = sessions[id];
+          if (session && session.mode === 'sat-math') {
+            window.location.href = 'sat/math-chat.html#' + id;
+            return;
+          }
           if (window.KorahChat && typeof window.KorahChat.switchToSession === 'function') {
             window.KorahChat.switchToSession(id);
           }

@@ -20,6 +20,11 @@ console.log('math-chat.js loading...');
   let graphExpressions = [];
   let isGraphInitialized = false;
 
+  // ─── Session State ────────────────────────────────────────────────────────
+  let currentSessionId = null;
+  let currentSession   = null;
+  let conversationHistory = []; // [{ role: 'user'|'assistant', content: string }]
+
   const SAT_MATH_SYSTEM_PROMPT = `You are Korah, a specialized SAT Math tutor. You teach students how to solve SAT Math problems using three core strategies — choosing the fastest one for each problem:
 
 1. **Strategic (Desmos-first)** — Graph both sides or plug in answer choices visually. Fastest when the problem gives you expressions to compare.
@@ -373,6 +378,243 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
     });
   }
 
+  // ─── File Attachments ─────────────────────────────────────────────────────
+
+  let attachedFiles = [];
+
+  function getFileIcon(type, name) {
+    if (type === 'image') return '🖼️';
+    const ext = (name || '').split('.').pop().toLowerCase();
+    if (ext === 'pdf') return '📕';
+    return '📄';
+  }
+
+  function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / 1048576).toFixed(1) + ' MB';
+  }
+
+  function processFile(file) {
+    return new Promise(resolve => {
+      const isImage = file.type.startsWith('image/');
+      const isText = file.type === 'text/plain' || ['txt','md','csv'].includes(file.name.split('.').pop().toLowerCase());
+      const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+      const reader = new FileReader();
+      if (isImage || isPDF) {
+        reader.onload = () => resolve({ file, name: file.name, size: file.size, type: isImage ? 'image' : 'pdf', dataUrl: reader.result, content: null });
+        reader.readAsDataURL(file);
+      } else if (isText) {
+        reader.onload = () => resolve({ file, name: file.name, size: file.size, type: 'text', dataUrl: null, content: reader.result });
+        reader.readAsText(file);
+      } else {
+        resolve({ file, name: file.name, size: file.size, type: 'other', dataUrl: null, content: null });
+      }
+    });
+  }
+
+  async function handleNewFiles(fileList) {
+    const MAX_FILES = 5;
+    const remaining = MAX_FILES - attachedFiles.length;
+    const toProcess = Array.from(fileList).slice(0, Math.max(0, remaining));
+    for (const file of toProcess) {
+      attachedFiles.push(await processFile(file));
+    }
+    renderInputFilesBar();
+    renderWelcomeAttachments();
+  }
+
+  function clearAttachedFiles() {
+    attachedFiles = [];
+    renderInputFilesBar();
+    renderWelcomeAttachments();
+  }
+
+  function renderInputFilesBar() {
+    const bar = document.getElementById('input-files-bar');
+    if (!bar) return;
+    if (attachedFiles.length === 0) { bar.classList.remove('show'); bar.innerHTML = ''; return; }
+    bar.classList.add('show');
+    bar.innerHTML = '';
+    attachedFiles.forEach((f, i) => {
+      const chip = document.createElement('div');
+      chip.className = 'input-file-chip';
+      chip.innerHTML = `<span>${getFileIcon(f.type, f.name)}</span><span class="input-file-chip-name">${f.name}</span><button class="input-file-chip-remove" title="Remove">×</button>`;
+      chip.querySelector('.input-file-chip-remove').addEventListener('click', () => {
+        attachedFiles.splice(i, 1); renderInputFilesBar(); renderWelcomeAttachments();
+      });
+      bar.appendChild(chip);
+    });
+  }
+
+  function renderWelcomeAttachments() {
+    const container = document.getElementById('welcome-attachments');
+    if (!container) return;
+    container.innerHTML = '';
+    attachedFiles.forEach((f, i) => {
+      const chip = document.createElement('div');
+      chip.className = 'input-file-chip';
+      chip.innerHTML = `<span>${getFileIcon(f.type, f.name)}</span><span class="input-file-chip-name">${f.name}</span><button class="input-file-chip-remove" title="Remove">×</button>`;
+      chip.querySelector('.input-file-chip-remove').addEventListener('click', () => {
+        attachedFiles.splice(i, 1); renderInputFilesBar(); renderWelcomeAttachments();
+      });
+      container.appendChild(chip);
+    });
+  }
+
+  function buildUserContent(text, files) {
+    if (!files || files.length === 0) return text;
+    const textParts = [text];
+    const multimodalParts = [];
+    files.forEach(f => {
+      if (f.type === 'text' && f.content) {
+        textParts.push(`\n\n--- Content of ${f.name} ---\n${f.content}\n--- End of ${f.name} ---`);
+      } else if ((f.type === 'image' || f.type === 'pdf') && f.dataUrl) {
+        multimodalParts.push({ type: 'image_url', image_url: { url: f.dataUrl } });
+      } else {
+        textParts.push(`\n[Attached: ${f.name}]`);
+      }
+    });
+    const fullText = textParts.join('');
+    return multimodalParts.length > 0
+      ? [{ type: 'text', text: fullText }, ...multimodalParts]
+      : fullText;
+  }
+
+  function setupFileAttachment() {
+    const fileInput = document.getElementById('doc-file-input');
+    const attachBtn = document.getElementById('attach-file-btn');
+    const welcomeAttachBtn = document.getElementById('welcome-attach-btn');
+    const dragOverlay = document.getElementById('drag-overlay');
+    const mainContent = document.getElementById('main-content');
+
+    attachBtn?.addEventListener('click', () => fileInput?.click());
+    welcomeAttachBtn?.addEventListener('click', () => fileInput?.click());
+
+    fileInput?.addEventListener('change', (e) => {
+      if (e.target.files?.length) { handleNewFiles(e.target.files); e.target.value = ''; }
+    });
+
+    if (mainContent) {
+      mainContent.addEventListener('dragover', (e) => { e.preventDefault(); dragOverlay?.classList.add('show'); });
+      mainContent.addEventListener('dragleave', (e) => { if (!mainContent.contains(e.relatedTarget)) dragOverlay?.classList.remove('show'); });
+      mainContent.addEventListener('drop', (e) => { e.preventDefault(); dragOverlay?.classList.remove('show'); if (e.dataTransfer.files?.length) handleNewFiles(e.dataTransfer.files); });
+    }
+    dragOverlay?.addEventListener('dragleave', () => dragOverlay.classList.remove('show'));
+    dragOverlay?.addEventListener('drop', (e) => { e.preventDefault(); dragOverlay.classList.remove('show'); if (e.dataTransfer.files?.length) handleNewFiles(e.dataTransfer.files); });
+  }
+
+  // ─── Session Management ────────────────────────────────────────────────────
+
+  function createNewSession() {
+    const id = 'sat_' + Date.now();
+    currentSessionId = id;
+    currentSession = {
+      id,
+      title: 'SAT Math Chat',
+      mode: 'sat-math',
+      messages: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      autoTitleGenerated: false,
+      userRenamed: false,
+    };
+    conversationHistory = [];
+    if (window.KorahDB) {
+      window.KorahDB.setConversation(id, currentSession).catch(console.error);
+    }
+    window.location.hash = id;
+  }
+
+  function saveCurrentSession() {
+    if (!currentSession || !window.KorahDB) return;
+    currentSession.messages = conversationHistory;
+    currentSession.updatedAt = new Date().toISOString();
+    window.KorahDB.setConversation(currentSessionId, currentSession).catch(console.error);
+  }
+
+  function autoTitleFromMessage(text) {
+    if (!currentSession || currentSession.autoTitleGenerated || currentSession.userRenamed) return;
+    currentSession.title = text.slice(0, 50) + (text.length > 50 ? '…' : '');
+    currentSession.autoTitleGenerated = true;
+  }
+
+  function renderSavedMessages() {
+    if (!messagesList || conversationHistory.length === 0) return;
+    messagesList.innerHTML = '';
+    conversationHistory.forEach(msg => {
+      if (msg.role === 'user') {
+        addMessage('user', msg.content);
+      } else if (msg.role === 'assistant') {
+        const row = addMessage('assistant', '');
+        const contentEl = row?.querySelector('.assistant-content');
+        if (contentEl) {
+          try {
+            const parsed = JSON.parse(msg.content);
+            if (parsed?.response) {
+              renderMarkdownAndMath(contentEl, parsed.response);
+              // Restore graph from last assistant message only
+              if (msg === conversationHistory[conversationHistory.length - 1] && parsed?.graph) {
+                updateSATGraph(parsed.graph);
+              }
+            } else {
+              renderMarkdownAndMath(contentEl, msg.content);
+            }
+          } catch (_) {
+            renderMarkdownAndMath(contentEl, msg.content);
+          }
+        }
+      }
+    });
+    welcomeScreen?.classList.add('hidden');
+    document.getElementById('chat-input-area')?.classList.remove('hidden');
+    chatBody.scrollTop = chatBody.scrollHeight;
+  }
+
+  async function switchToSession(id) {
+    if (id === currentSessionId) return;
+    if (!window.KorahDB) return;
+    const session = await window.KorahDB.getConversation(id);
+    if (!session) return;
+    currentSessionId = id;
+    currentSession = session;
+    conversationHistory = session.messages || [];
+    window.location.hash = id;
+    // Reset UI
+    if (messagesList) messagesList.innerHTML = '';
+    welcomeScreen?.classList.remove('hidden');
+    document.getElementById('chat-input-area')?.classList.add('hidden');
+    // Restore
+    renderSavedMessages();
+    if (window.KorahSidebar) window.KorahSidebar.updateActiveItem(id);
+  }
+
+  function newChat() {
+    if (messagesList) messagesList.innerHTML = '';
+    welcomeScreen?.classList.remove('hidden');
+    document.getElementById('chat-input-area')?.classList.add('hidden');
+    if (satMathCalculator) { satMathCalculator.setBlank(); graphExpressions = []; updateGraphContextIndicator(); }
+    createNewSession();
+  }
+
+  async function initSession() {
+    const hash = window.location.hash.slice(1);
+    if (hash && window.KorahDB) {
+      const session = await window.KorahDB.getConversation(hash);
+      if (session && session.mode === 'sat-math') {
+        currentSessionId = hash;
+        currentSession = session;
+        conversationHistory = session.messages || [];
+        renderSavedMessages();
+        if (window.KorahSidebar) window.KorahSidebar.updateActiveItem(hash);
+        return;
+      }
+    }
+    createNewSession();
+  }
+
+  window.SatMathChat = { initSession, switchToSession, newChat, createNewSession };
+
   async function sendMessage(text) {
     console.log('sendMessage called', { text, inputValue: input?.value, welcomeInputValue: welcomeInput?.value });
     const userMessage = text || input?.value?.trim() || welcomeInput?.value?.trim();
@@ -388,11 +630,19 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
     const graphContext = getGraphContext();
     const fullMessage = userMessage + graphContext;
 
+    // Capture and clear attached files before state changes
+    const pendingFiles = [...attachedFiles];
+    clearAttachedFiles();
+
+    // Auto-title from first message
+    if (conversationHistory.length === 0) autoTitleFromMessage(userMessage);
+
     console.log('Adding user message to chat');
     addMessage('user', userMessage);
-    
+
     input && (input.value = '');
     welcomeInput && (welcomeInput.value = '');
+    if (welcomeInput) welcomeInput.style.height = 'auto';
 
     typingIndicator?.classList.remove('hidden');
     chatBody.scrollTop = chatBody.scrollHeight;
@@ -451,7 +701,8 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
   let fullReplyFromAPI = "";
 
   try {
-    await callAPI(fullMessage, (chunk, fullText) => {
+    const userContent = buildUserContent(fullMessage, pendingFiles);
+    await callAPI(userContent, (chunk, fullText) => {
       // Remove thinking indicator when first chunk arrives
       if (thinkingIndicator && fullText.length > 0) {
         thinkingIndicator.remove();
@@ -526,7 +777,7 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
         }
       }
     });
-      
+
       typingIndicator?.classList.add('hidden');
       
       charBuffer = [];
@@ -642,6 +893,11 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
         chatBody.scrollTop = chatBody.scrollHeight;
       }
 
+      // ── Persist conversation history ──
+      conversationHistory.push({ role: 'user', content: userMessage });
+      conversationHistory.push({ role: 'assistant', content: fullReplyFromAPI });
+      saveCurrentSession();
+
       if (parsedResponse?.suggestions && Array.isArray(parsedResponse.suggestions)) {
         aiSuggestions = parsedResponse.suggestions.slice(0, 2);
       }
@@ -672,10 +928,10 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
     }
   }
 
-  async function callAPI(userMessage, onChunk = null) {
+  async function callAPI(userContent, onChunk = null) {
     const messagesWithSystem = [
       { role: 'system', content: SAT_MATH_SYSTEM_PROMPT + getFormatInstructions() },
-      { role: 'user', content: userMessage }
+      { role: 'user', content: userContent }
     ];
 
     const response = await fetch(API_ENDPOINT, {
@@ -895,6 +1151,13 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
         sendMessage(input.value.trim());
       }
     });
+
+    // Auto-resize welcome textarea as user types
+    welcomeInput?.addEventListener('input', () => {
+      welcomeInput.style.height = 'auto';
+      welcomeInput.style.height = Math.min(welcomeInput.scrollHeight, 200) + 'px';
+    });
+
     welcomeInput?.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
@@ -910,11 +1173,8 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
     });
 
     clearChatBtn?.addEventListener('click', () => {
-      messagesList && (messagesList.innerHTML = '');
-      welcomeScreen?.classList.remove('hidden');
-      document.getElementById('chat-input-area')?.classList.add('hidden');
+      newChat();
     });
-
   }
 
   function init() {
@@ -930,6 +1190,7 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
       initializeSATGraph();
       bindGraphControls();
       bindEventListeners();
+      setupFileAttachment();
       console.log('Init completed successfully');
     } catch (e) {
       console.error('Init error:', e);
