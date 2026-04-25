@@ -811,7 +811,7 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
           case '\\': out += '\\'; break;
           case '/':  out += '/'; break;
           case 'n': case 'r': case 't': case 'b': case 'f':
-            if (i + 1 < s.length && /[a-zA-Z]/.test(s[i + 1])) {
+            if (i + 1 < s.length && /[a-z]/.test(s[i + 1])) {
               out += '\\' + ch;   // LaTeX: \frac, \nabla, \text …
             } else {
               out += ({ n: '\n', r: '\r', t: '\t', b: '', f: '' })[ch];
@@ -997,7 +997,7 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
                 case '/':  value += '/'; break;
                 case 'n': case 'r': case 't': case 'b': case 'f':
                   // If next char is also a letter → LaTeX (\frac, \nabla, \text …)
-                  if (i + 1 < text.length && /[a-zA-Z]/.test(text[i + 1])) {
+                  if (i + 1 < text.length && /[a-z]/.test(text[i + 1])) {
                     value += '\\' + ch;           // keep as literal backslash + letter
                   } else {
                     value += ({ n: '\n', r: '\r', t: '\t', b: '', f: '' })[ch];
@@ -1050,7 +1050,7 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
               if (inStr) {
                 if (!'"\\/bfnrtu'.includes(ch)) {
                   out += '\\';
-                } else if ('bfnrt'.includes(ch) && i + 1 < jsonStr.length && /[a-zA-Z]/.test(jsonStr[i + 1])) {
+                } else if ('bfnrt'.includes(ch) && i + 1 < jsonStr.length && /[a-z]/.test(jsonStr[i + 1])) {
                   out += '\\';
                 }
               }
