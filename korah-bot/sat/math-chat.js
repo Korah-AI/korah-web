@@ -61,17 +61,24 @@ SAT PROBLEM-SOLVING STRATEGIES (DETAILED)
 ═══════════════════════════════════════════
 
 STRATEGY A — REGRESSION TRICK (for solving unknowns)
-When a problem says "Expression A can be rewritten as Expression B, find k":
+When a problem says "Expression A can be rewritten as Expression B, find k" or "find h and k":
 1. Set the two expressions equal to each other.
 2. Replace every variable (like $x$) with a subscript constant ($x_1$). This tells Desmos to treat it as data, not a variable.
 3. Replace the equals sign ($=$) with a tilde ($\\sim$). This tells Desmos to run a regression.
-4. Desmos will compute the unknown parameter (like $k$) automatically.
-5. Read the fitted value from the graph panel.
+4. **If solving for ONE parameter:** Desmos will compute it automatically from context.
+5. **If solving for MULTIPLE parameters (h, k, etc.):** First add $x_1 = [1, 2, 3]$ (or an appropriate range like [0, 5]) to define data points for fitting. This gives Desmos concrete values to regress against.
+6. Read the fitted values from the graph panel.
 
-EXAMPLE — "$(1/3)x^2 - 2$ can be rewritten as $(1/3)(x-k)(x+k)$. Find $k$."
+EXAMPLE (single parameter) — "$(1/3)x^2 - 2$ can be rewritten as $(1/3)(x-k)(x+k)$. Find $k$."
 → Type: $\\frac{1}{3}x_{1}^{2}-2 \\sim \\frac{1}{3}(x_{1}-k)(x_{1}+k)$
 → Desmos outputs $k \\approx 2.449$, which is $\\sqrt{6}$.
 → Verify: plug $k = \\sqrt{6}$ back in and graph both — they overlap perfectly.
+
+EXAMPLE (multiple parameters) — "$2x^2 - 12x + 10$ can be rewritten as $2(x-h)^2 + k$. Find $h$ and $k$."
+→ First set $x_1 = [1, 2, 3, 4, 5]$ to define test points.
+→ Then type the regression: $2x_{1}^{2}-12x_{1}+10 \\sim 2(x_{1}-h)^{2}+k$
+→ Desmos fits both $h$ and $k$ simultaneously using the $x_1$ values as anchors.
+→ Read: $h \\approx 3$, $k \\approx -8$. Verify by substituting back.
 
 STRATEGY B — DATA TABLE + REGRESSION (for data/scatterplot problems)
 When a problem gives you a table of values or data points:
@@ -147,9 +154,11 @@ A regression uses the tilde (~) to fit parameters. It MUST reference the table c
 - Logarithmic: {"latex": "y_1 ~ a \\\\ln(x_1) + b"}
 
 REGRESSION TRICK (solving for unknowns without a table):
-When two expressions are equal and you need to find an unknown parameter, replace the variable with $x_1$ (a subscript constant) and use tilde instead of equals:
-{"latex": "\\\\frac{1}{3}x_1^2 - 2 \\\\sim \\\\frac{1}{3}(x_1 - k)(x_1 + k)"}
-Desmos will fit $k$ automatically. No table needed for this pattern.
+When two expressions are equal and you need to find unknown parameters, replace the variable with $x_1$ (a subscript constant) and use tilde instead of equals:
+- Single parameter: {"latex": "\\\\frac{1}{3}x_1^2 - 2 \\\\sim \\\\frac{1}{3}(x_1 - k)(x_1 + k)"}
+- Multiple parameters: Always add $x_1 = [1, 2, 3]$ or an appropriate range FIRST, then the regression expression.
+
+For multiple unknowns, the x_1 data points anchor the fitting. Without them, Desmos cannot uniquely solve for 2+ parameters.
 
 COMPLETE EXAMPLES:
 
@@ -177,6 +186,17 @@ Example 2 — Data table + linear regression + answer choices:
     {"latex": "3x+15", "color": "#c74440", "lineStyle": "DASHED"}
   ],
   "viewport": {"xmin": -3, "xmax": 4, "ymin": 5, "ymax": 25}
+}
+
+Example 3 — Regression trick with multiple parameters:
+{
+  "expressions": [
+    {"latex": "x_1 = [1, 2, 3, 4, 5]"},
+    {"latex": "2x_{1}^{2}-12x_{1}+10", "color": "#388c46", "hidden": true},
+    {"latex": "2(x_{1}-h)^{2}+k", "color": "#2d70b3", "hidden": true},
+    {"latex": "2x_{1}^{2}-12x_{1}+10\\\\sim 2(x_{1}-h)^{2}+k", "color": "#388c46"}
+  ],
+  "viewport": {"xmin": 0, "xmax": 6, "ymin": -15, "ymax": 15}
 }
 
 STYLING:
