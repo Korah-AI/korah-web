@@ -569,14 +569,35 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
           // Remove trailing commas before } or ]
           s = s.replace(/,\s*([}\]])/g, '$1');
 
-          // Replace literal tab/newline/carriage-return control chars inside strings
-          // (only those not already escaped)
-          s = s.replace(/"((?:[^"\\]|\\.)*)"/g, (match) => {
-            return match
-              .replace(/\t/g, '\\t')
-              .replace(/\r/g, '\\r')
-              .replace(/\n/g, '\\n');
-          });
+          // Fix literal control chars (newlines, tabs) inside JSON strings.
+          // Walk character-by-character because regex `.` can't match newlines.
+          {
+            let out = '';
+            let inStr = false;
+            let esc = false;
+            for (let i = 0; i < s.length; i++) {
+              const ch = s[i];
+              if (esc) {
+                // Fix invalid JSON escapes from LaTeX (e.g. \sim, \frac, \left)
+                // Valid JSON escapes: " \ / b f n r t u
+                if (inStr && !'"\\/bfnrtu'.includes(ch)) {
+                  out += '\\';  // double the backslash to make it literal
+                }
+                out += ch;
+                esc = false;
+                continue;
+              }
+              if (ch === '\\') { esc = true; out += ch; continue; }
+              if (ch === '"') { inStr = !inStr; out += ch; continue; }
+              if (inStr) {
+                if (ch === '\n') { out += '\\n'; continue; }
+                if (ch === '\r') { out += '\\r'; continue; }
+                if (ch === '\t') { out += '\\t'; continue; }
+              }
+              out += ch;
+            }
+            s = out;
+          }
 
           return s;
         };
@@ -662,7 +683,7 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         model: MODEL,
-        temperature: 0.7,
+        temperature: 0.4,
         messages: messagesWithSystem,
         stream: true
       })
