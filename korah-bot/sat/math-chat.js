@@ -198,6 +198,7 @@ The "response" field contains your explanation using:
 - Markdown headings (## Step 1, ## Step 2, etc.), bold, italic
 - KaTeX for math: $inline$ or $$display$$
 - NEVER use \\\\(...\\\\), \\\\[...\\\\], or bare math outside dollar signs.
+- NEVER embed raw JSON objects, graph updates, or code blocks inside the response text. ALL Desmos graph updates go ONLY in the top-level "graph" field. The "response" field is text only.
 - Reference the graph directly: "Look at the graph — the green regression line passes through all four data points."
 - Always number your steps and label them with the strategy name.
 
@@ -829,10 +830,16 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
             for (let i = 0; i < s.length; i++) {
               const ch = s[i];
               if (esc) {
-                // Fix invalid JSON escapes from LaTeX (e.g. \sim, \frac, \left)
-                // Valid JSON escapes: " \ / b f n r t u
-                if (inStr && !'"\\/bfnrtu'.includes(ch)) {
-                  out += '\\';  // double the backslash to make it literal
+                if (inStr) {
+                  // Valid JSON escapes after \: " \ / b f n r t u
+                  if (!'"\\/bfnrtu'.includes(ch)) {
+                    // Definitely LaTeX (\sim, \left, \cdot, etc.) — double the backslash
+                    out += '\\';
+                  } else if ('bfnrt'.includes(ch) && i + 1 < s.length && /[a-zA-Z]/.test(s[i + 1])) {
+                    // \f, \b, \n, \r, \t followed by another letter = LaTeX command
+                    // (\frac, \binom, \nabla, \right, \text, \rho, \tau, etc.)
+                    out += '\\';
+                  }
                 }
                 out += ch;
                 esc = false;
