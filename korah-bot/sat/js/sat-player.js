@@ -293,6 +293,12 @@
     return String(val).trim().toLowerCase().replace(/^(-?)\./, "$10.");
   }
 
+  // Helper — always call this instead of setting playerCounter.textContent directly
+  function setCounterText(text) {
+    const el = document.getElementById('qNavCounterText');
+    if (el) el.textContent = text;
+  }
+
   function getSectionLabel(sectionKey) {
     const section = OPENSAT_CATALOG?.sections?.find((s) => s.key === sectionKey);
     return section?.label || sectionKey || "SAT";
@@ -321,16 +327,16 @@
 
     if (loadState === "loading") {
       if (playerTitle) playerTitle.textContent = "Loading questions…";
-      playerCounter.textContent = "Question 0 out of 0";
+      setCounterText('Question 0 of 0');
     } else if (loadState === "error") {
       if (playerTitle) playerTitle.textContent = "Could not load questions";
-      playerCounter.textContent = "Question 0 out of 0";
+      setCounterText('Question 0 of 0');
     } else if (loadState === "empty") {
       if (playerTitle) playerTitle.textContent = "No matching questions";
-      playerCounter.textContent = "Question 0 out of 0";
+      setCounterText('Question 0 of 0');
     } else {
       if (playerTitle) playerTitle.textContent = sectionLabel;
-      playerCounter.textContent = `Question ${state.currentIndex + 1} out of ${questions.length}`;
+      setCounterText(`Question ${state.currentIndex + 1} of ${questions.length}`);
     }
   }
 
@@ -618,6 +624,8 @@
       showExplanationBtn.classList.toggle("is-active", explanationForcedOpen);
     }
     if (markReviewBtn) markReviewBtn.classList.toggle("is-active", !!state.reviewed[current.id]);
+
+    if (window.qNav) window.qNav.refresh();
   }
 
   // NEW: Stopwatch functions (replaces old 32min timer)
@@ -659,6 +667,7 @@
 
     renderHeader();
     renderQuestion();
+    if (window.qNav) window.qNav.refresh();
     
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -830,6 +839,7 @@
     }
     state.checked[current.id] = true;
     renderQuestion();
+    if (window.qNav) window.qNav.refresh();
   });
 
   showExplanationBtn.addEventListener("click", () => {
@@ -844,6 +854,7 @@
     }
     state.reviewed[current.id] = !state.reviewed[current.id];
     renderQuestion();
+    if (window.qNav) window.qNav.refresh();
   });
 
   // Reference panel toggle
@@ -991,6 +1002,8 @@
     
     // Initialize resize handle
     initResizeHandle();
+
+    if (window.qNav) window.qNav.refresh();
   }
 
 /**
@@ -1132,6 +1145,275 @@
   if (referencePanel) {
     makeResizable(referencePanel);
   }
+
+  // ─────────────────────────────────────────────────
+  // QUESTION NAVIGATOR
+  // ─────────────────────────────────────────────────
+  (function initQNav() {
+    const panel   = document.getElementById('qNavPanel');
+    const trigger = document.getElementById('playerCounter');
+    const grid    = document.getElementById('qNavGrid');
+    const stats   = document.getElementById('qNavStats');
+
+    if (!panel || !trigger || !grid || !stats) return;
+
+    let isOpen = false;
+
+    // ── viewport mode detection ───────────────────────────────
+    // Returns true when the panel should render as a bottom sheet
+    // (mobile portrait). Must match the CSS @media (max-width: 480px) breakpoint.
+    function isMobileViewport() {
+      return window.innerWidth <= 480;
+    }
+
+    // ── position the panel above the trigger button ───────────────────────
+    // MODIFIED FROM ORIGINAL + MODIFICATION 3:
+    //
+    // On mobile (≤ 480px): skip all JS positioning entirely. The CSS
+    // @media (max-width: 480px) block overrides position/width/transform
+    // with !important, turning the panel into a full-width bottom sheet.
+    //
+    // On tablet/desktop (> 480px): read the trigger's bounding rect and
+    // float the panel as a compact popover centered above it. Horizontal
+    // clamping ensures the card never overflows either viewport edge regardless
+    // of where the trigger button sits (important on smaller tablets where the
+    // footer layout may push the counter near an edge).
+    function positionPanel() {
+      if (isMobileViewport()) {
+        // Clear any stale inline custom properties from a previous popover
+        // positioning so they don't interfere with the CSS !important overrides.
+        panel.style.removeProperty('--q-nav-bottom');
+        panel.style.removeProperty('--q-nav-left');
+        return;
+      }
+
+      const rect       = trigger.getBoundingClientRect();
+      const GAP        = 10;   // px gap between panel bottom edge and trigger top
+      const EDGE_MARGIN = 12;  // minimum px from either viewport edge
+
+      // Vertical: distance from viewport bottom to trigger top, plus gap
+      const panelBottom = window.innerHeight - rect.top + GAP;
+
+      // Horizontal: derive actual rendered panel width from CSS
+      // (falls back to 420 if panel not yet painted, matches base CSS min())
+      const panelWidth = panel.offsetWidth || Math.min(420, window.innerWidth - 32);
+      const halfW      = panelWidth / 2;
+
+      // Center on the trigger midpoint, then clamp so neither edge clips
+      let centerX = rect.left + rect.width / 2;
+      centerX = Math.max(
+        halfW + EDGE_MARGIN,
+        Math.min(centerX, window.innerWidth - halfW - EDGE_MARGIN)
+      );
+
+      panel.style.setProperty('--q-nav-bottom', `${panelBottom}px`);
+      panel.style.setProperty('--q-nav-left',   `${centerX}px`);
+    }
+
+    // ── open / close ──────────────────────────────
+    function openNav() {
+      isOpen = true;
+      refresh();           // always refresh before showing so state is current
+      positionPanel();     // compute position relative to trigger
+      panel.classList.add('is-open');
+      panel.setAttribute('aria-hidden', 'false');
+      trigger.classList.add('is-open');
+      trigger.setAttribute('aria-expanded', 'true');
+      setPillTabIndex(true);
+      // Focus the current-question pill after the slide animation settles
+      setTimeout(() => {
+        const current = grid.querySelector('.q-pill.is-current') || grid.querySelector('.q-pill');
+        if (current) current.focus();
+      }, 280);
+    }
+
+    function closeNav(returnFocus = true) {
+      isOpen = false;
+      panel.classList.remove('is-open');
+      panel.setAttribute('aria-hidden', 'true');
+      trigger.classList.remove('is-open');
+      trigger.setAttribute('aria-expanded', 'false');
+      setPillTabIndex(false);
+      if (returnFocus) trigger.focus();
+    }
+
+    function toggleNav() {
+      isOpen ? closeNav() : openNav();
+    }
+
+    function setPillTabIndex(enabled) {
+      grid.querySelectorAll('.q-pill').forEach(p =>
+        p.setAttribute('tabindex', enabled ? '0' : '-1')
+      );
+    }
+
+    // ── derive per-question state ─────────────────
+    // Returns one of: 'unanswered' | 'attempted' | 'correct' | 'incorrect'
+    // Plus a separate boolean `flagged`.
+    function getPillState(q, i) {
+      const answered  = state.answers[q.id];
+      const checked   = Boolean(state.checked[q.id]);
+      const flagged   = Boolean(state.reviewed[q.id]);
+      const isCurrent = i === state.currentIndex;
+
+      let status;
+      if (!answered) {
+        status = 'unanswered';
+      } else if (!checked) {
+        status = 'attempted';
+      } else {
+        const isCorrect = q.type === 'spr'
+          ? normalizeSprAnswer(answered) === normalizeSprAnswer(q.correctAnswer)
+          : answered === q.correctAnswer;
+        status = isCorrect ? 'correct' : 'incorrect';
+      }
+
+      return { status, flagged, isCurrent };
+    }
+
+    // NOTE: pillIcon() from the original plan has been removed entirely.
+    // Pills always show their question number. State is colour-only (plus bookmark icon).
+
+    const bookmarkIcon = `
+      <span class="q-pill-flag">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>
+        </svg>
+      </span>
+    `;
+
+    // ── rebuild or update the grid ────────────────
+    function refresh() {
+      if (!questions || !questions.length) return;
+
+      // Build compact legend HTML for top row
+      stats.innerHTML = `
+        <div class="q-stat-item">
+          <div class="q-legend-icon-correct"><span class="material-icons-round">check</span></div>Correct
+        </div>
+        <div class="q-stat-item">
+          <div class="q-legend-icon-incorrect"><span class="material-icons-round">close</span></div>Incorrect
+        </div>
+        <div class="q-stat-item">
+          <div class="q-legend-icon-flag">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>
+            </svg>
+          </div>Flagged
+        </div>
+        <div class="q-stat-item">
+          <div class="q-legend-icon-attempted"></div>Attempted
+        </div>
+        <span class="q-stat-total">${questions.length} total</span>
+      `;
+
+      // Build pills — create DOM nodes on first render, update classes on subsequent calls
+      const existingPills = grid.querySelectorAll('.q-pill');
+      const needsRebuild  = existingPills.length !== questions.length;
+
+      if (needsRebuild) {
+        grid.innerHTML = '';
+        questions.forEach((q, i) => {
+          const btn = document.createElement('button');
+          btn.setAttribute('role', 'listitem');
+          btn.setAttribute('tabindex', '-1');
+          btn.className = 'q-pill';
+          btn.addEventListener('click', () => {
+            goTo(i);
+            closeNav(false);
+          });
+          grid.appendChild(btn);
+        });
+      }
+
+      // Update every pill's classes, ARIA label, and inner content
+      grid.querySelectorAll('.q-pill').forEach((pill, i) => {
+        const q = questions[i];
+        if (!q) return;
+        const { status, flagged, isCurrent } = getPillState(q, i);
+
+        pill.className = [
+          'q-pill',
+          `is-${status}`,
+          isCurrent ? 'is-current' : '',
+        ].filter(Boolean).join(' ');
+
+        pill.setAttribute('aria-label',
+          `Question ${i + 1}` +
+          (isCurrent ? ', current' : '') +
+          (status !== 'unanswered' ? `, ${status}` : ', unanswered') +
+          (flagged ? ', flagged for review' : '')
+        );
+
+        // Render question number and bookmark icon if flagged
+        pill.innerHTML = String(i + 1) + (flagged ? bookmarkIcon : '');
+      });
+    }
+
+    // ── keyboard handling ─────────────────────────
+    document.addEventListener('keydown', e => {
+      if (!isOpen) return;
+
+      if (e.key === 'Escape') {
+        closeNav();
+        return;
+      }
+
+      if (['ArrowRight','ArrowLeft','ArrowUp','ArrowDown','Home','End'].includes(e.key)) {
+        e.preventDefault();
+        const pills = [...grid.querySelectorAll('.q-pill')];
+        const cols  = Math.max(1, Math.round(grid.offsetWidth / ((pills[0]?.offsetWidth || 44) + 8)));
+        const idx   = pills.indexOf(document.activeElement);
+
+        let next = idx;
+        if (e.key === 'ArrowRight') next = Math.min(idx + 1, pills.length - 1);
+        if (e.key === 'ArrowLeft')  next = Math.max(idx - 1, 0);
+        if (e.key === 'ArrowDown')  next = Math.min(idx + cols, pills.length - 1);
+        if (e.key === 'ArrowUp')    next = Math.max(idx - cols, 0);
+        if (e.key === 'Home')       next = 0;
+        if (e.key === 'End')        next = pills.length - 1;
+
+        pills[next]?.focus();
+        return;
+      }
+
+      if (e.key === 'Tab') {
+        const pills  = [...grid.querySelectorAll('.q-pill')];
+        const first  = pills[0];
+        const last   = pills[pills.length - 1];
+        const active = document.activeElement;
+
+        if (e.shiftKey && active === first) {
+          e.preventDefault(); trigger.focus();
+        } else if (!e.shiftKey && active === last) {
+          e.preventDefault(); trigger.focus();
+        } else if (!e.shiftKey && active === trigger) {
+          e.preventDefault(); first?.focus();
+        }
+      }
+    });
+
+    // Reposition panel if window is resized while open
+    window.addEventListener('resize', () => {
+      if (isOpen) positionPanel();
+    }, { passive: true });
+
+    // Click outside to close
+    document.addEventListener('pointerdown', e => {
+      if (isOpen && !panel.contains(e.target) && !trigger.contains(e.target)) {
+        closeNav(false);
+      }
+    });
+
+    // Wire up the trigger
+    trigger.addEventListener('click', toggleNav);
+
+    // Expose API so sat-player.js can call qNav.refresh() anywhere
+    window.qNav = { refresh, open: openNav, close: closeNav };
+  })();
+  // ─────────────────────────────────────────────────
+  // END QUESTION NAVIGATOR
+  // ─────────────────────────────────────────────────
 
   renderHeader();
   renderQuestion();

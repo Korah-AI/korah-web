@@ -1999,6 +1999,653 @@ html[data-theme="light"] .more-dropdown-item.danger:hover {
     background: var(--p4);
     color: white;
 }
+
+/* ═══════════════════════════════════════════════════
+   QUESTION NAVIGATOR
+   ═══════════════════════════════════════════════════ */
+
+/* ── Trigger button (replaces the plain counter span) ── */
+.q-nav-trigger {
+  background: rgba(139, 92, 246, 0.12);
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  border-radius: 0.75rem;
+  padding: 0.375rem 0.875rem;
+  color: var(--p5);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-right: 0.375rem;
+  position: relative;
+  flex-wrap: wrap;
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.35), 0 1px 4px rgba(139, 92, 246, 0.2);
+}
+
+.sat-footer-group {
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+}
+
+.q-nav-trigger:hover,
+.q-nav-trigger.is-open {
+  background: rgba(139, 92, 246, 0.15);
+  border-color: var(--p5);
+  color: var(--p5);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
+}
+
+html[data-theme="light"] .q-nav-trigger {
+  background: rgba(124, 58, 237, 0.08);
+  border-color: rgba(124, 58, 237, 0.35);
+  color: #7c3aed;
+  box-shadow: 0 4px 16px rgba(124, 58, 237, 0.25), 0 1px 4px rgba(124, 58, 237, 0.15);
+}
+
+html[data-theme="light"] .q-nav-trigger:hover,
+html[data-theme="light"] .q-nav-trigger.is-open {
+  background: rgba(124, 58, 237, 0.08);
+  border-color: var(--p5);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.1);
+}
+
+.q-nav-trigger:active {
+  transform: translateY(0);
+}
+
+.q-nav-trigger:focus-visible {
+  outline: 2px solid var(--p5);
+  outline-offset: 2px;
+}
+
+.q-nav-chevron {
+  flex-shrink: 0;
+  opacity: 0.8;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
+}
+
+.q-nav-trigger.is-open .q-nav-chevron {
+  transform: rotate(180deg);
+  opacity: 1;
+}
+.q-nav-panel {
+  position: fixed;
+  bottom: var(--q-nav-bottom, 60px);
+  left: var(--q-nav-left, 50%);
+  transform: translateX(-50%) translateY(12px);
+  width: min(420px, calc(100vw - 2rem));
+  max-height: min(720px, calc(100vh - var(--player-topbar-h, 56px) - var(--player-footer-h, 56px) - 3rem));
+  background: rgba(8, 4, 20, 0.98);
+  border: 1px solid rgba(139, 92, 246, 0.35);
+  border-radius: 1.25rem;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  z-index: 999;
+
+  /* Hidden by default — fades and slides up slightly */
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.2s ease;
+  will-change: transform, opacity;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow:
+    0 4px 6px rgba(0, 0, 0, 0.3),
+    0 12px 32px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(139, 92, 246, 0.1);
+}
+
+/* Gradient accent line at the top of the panel */
+.q-nav-panel::before {
+  content: '';
+  display: block;
+  height: 2px;
+  flex-shrink: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    #7c3aed 20%,
+    var(--p5) 50%,
+    #7c3aed 80%,
+    transparent 100%
+  );
+}
+
+/* Open state */
+.q-nav-panel.is-open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+}
+
+.q-nav-inner {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem 1rem 1.25rem;
+}
+
+/* ── Stats strip (injected by JS refresh()) ── */
+.q-nav-stats {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(139, 92, 246, 0.12);
+}
+
+.q-stat-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.q-stat-total {
+  margin-left: auto;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: rgba(139, 92, 246, 0.8);
+  background: rgba(139, 92, 246, 0.1);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+}
+
+/* Legend icon squares/circles */
+.q-legend-icon-correct,
+.q-legend-icon-incorrect,
+.q-legend-icon-attempted,
+.q-legend-icon-flag {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.q-legend-icon-correct {
+  background: rgba(34, 197, 94, 0.14);
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  color: #22c55e;
+}
+.q-legend-icon-correct .material-icons-round { font-size: 11px; }
+
+.q-legend-icon-incorrect {
+  background: rgba(248, 113, 113, 0.12);
+  border: 1px solid rgba(248, 113, 113, 0.4);
+  color: #f87171;
+}
+.q-legend-icon-incorrect .material-icons-round { font-size: 11px; }
+
+.q-legend-icon-attempted {
+  background: rgba(139, 92, 246, 0.15);
+  border: 1px solid rgba(139, 92, 246, 0.45);
+}
+
+.q-legend-icon-flag {
+  background: transparent;
+  border: none;
+  color: #f59e0b;
+}
+
+/* Light mode overrides for stats strip */
+html[data-theme="light"] .q-stat-item {
+  color: rgba(26, 10, 60, 0.5);
+}
+html[data-theme="light"] .q-stat-total {
+  color: #7c3aed;
+  background: rgba(124, 58, 237, 0.08);
+  border-color: rgba(124, 58, 237, 0.15);
+}
+html[data-theme="light"] .q-legend-icon-correct {
+  background: rgba(34, 197, 94, 0.1);
+  border-color: #22c55e;
+  color: #166534;
+}
+html[data-theme="light"] .q-legend-icon-incorrect {
+  background: rgba(248, 113, 113, 0.1);
+  border-color: #ef4444;
+  color: #991b1b;
+}
+html[data-theme="light"] .q-legend-icon-attempted {
+  background: rgba(124, 58, 237, 0.1);
+  border-color: rgba(124, 58, 237, 0.35);
+}
+
+/* Flag badge — orange Lucide bookmark icon style */
+.q-pill-flag {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  color: #f59e0b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 2;
+  filter: drop-shadow(0 0 2px rgba(0,0,0,0.5));
+}
+
+.q-pill-flag .material-icons-round { font-size: 14px; }
+
+
+
+/* ── Section label ── */
+.q-nav-section-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(168, 157, 192, 0.5);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.625rem;
+}
+
+.q-nav-section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(139, 92, 246, 0.15);
+}
+
+/* ── Grid ── */
+.q-nav-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(2.75rem, 1fr));
+  gap: 0.5rem;
+}
+
+/* ── Individual pill ── */
+/*
+ * MODIFIED FROM ORIGINAL:
+ * Pills always show the question number. No icon is ever rendered inside.
+ * State is communicated by background/border/text colour only.
+ */
+.q-pill {
+  aspect-ratio: 1;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  background: rgba(30, 18, 60, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+  position: relative;
+  transition: transform 0.15s ease, border-color 0.15s ease,
+  background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+}
+
+.q-pill:hover {
+  border-color: var(--p4);
+  background: rgba(139, 92, 246, 0.18);
+  color: #fff;
+  transform: scale(1.07);
+  z-index: 1;
+}
+
+.q-pill:focus-visible {
+  outline: 2px solid var(--p5);
+  outline-offset: 2px;
+  z-index: 2;
+}
+
+/* Current: purple ring + underline accent */
+.q-pill.is-current {
+  border-color: var(--p5);
+  background: rgba(139, 92, 246, 0.25);
+  color: #fff;
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.3),
+              inset 0 0 8px rgba(139, 92, 246, 0.1);
+}
+
+.q-pill.is-current::after {
+  content: '';
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 12px;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--p5);
+  opacity: 0.85;
+}
+
+/* Attempted: purple-tinted, answer selected but not yet checked */
+.q-pill.is-attempted {
+  border-color: rgba(139, 92, 246, 0.45);
+  background: rgba(139, 92, 246, 0.15);
+  color: var(--p5);
+}
+
+/* Correct — green background, number stays visible in green */
+.q-pill.is-correct {
+  border-color: rgba(34, 197, 94, 0.5);
+  background: rgba(34, 197, 94, 0.14);
+  color: #22c55e;
+}
+
+/* Incorrect — red background, number stays visible in red */
+.q-pill.is-incorrect {
+  border-color: rgba(248, 113, 113, 0.5);
+  background: rgba(248, 113, 113, 0.12);
+  color: #f87171;
+}
+
+
+/* ── Legend ── */
+.q-nav-legend {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding-top: 0.625rem;
+  border-top: 1px solid rgba(139, 92, 246, 0.1);
+  flex-shrink: 0;
+}
+
+.q-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.q-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  border: 1px solid;
+  flex-shrink: 0;
+}
+
+.q-legend-unanswered { background: rgba(30,18,60,.6);      border-color: rgba(139,92,246,.25); }
+.q-legend-attempted  { background: rgba(139,92,246,.15);   border-color: rgba(139,92,246,.5);  }
+.q-legend-correct    { background: rgba(34,197,94,.14);    border-color: rgba(34,197,94,.5);   }
+.q-legend-incorrect  { background: rgba(248,113,113,.12);  border-color: rgba(248,113,113,.5); }
+.q-legend-flagged    { background: #f59e0b; border-color: #d97706; border-radius: 50%; width: 8px; height: 8px; }
+.q-legend-current    { background: rgba(139,92,246,.25);   border-color: rgba(167,139,250,.6); }
+
+/* ── Custom scrollbar inside the inner scroll area ── */
+.q-nav-inner::-webkit-scrollbar       { width: 4px; }
+.q-nav-inner::-webkit-scrollbar-track { background: transparent; }
+.q-nav-inner::-webkit-scrollbar-thumb { background: rgba(139,92,246,.4); border-radius: 4px; }
+
+/* ── Light mode overrides ── */
+html[data-theme="light"] .q-nav-panel {
+  background: rgba(250, 248, 255, 0.98);
+  border-color: rgba(109, 40, 217, 0.25);
+  box-shadow: 0 4px 6px rgba(109, 40, 217, 0.08), 0 12px 32px rgba(109, 40, 217, 0.15);
+}
+
+html[data-theme="light"] .q-nav-panel::before {
+  background: linear-gradient(90deg, transparent, #8b5cf6, #7c3aed, #8b5cf6, transparent);
+}
+
+html[data-theme="light"] .q-pill {
+  background: rgba(243, 239, 255, 0.8);
+  border-color: rgba(109, 40, 217, 0.15);
+  color: rgba(26, 10, 60, 0.5);
+}
+
+html[data-theme="light"] .q-pill:hover {
+  background: rgba(139, 92, 246, 0.12);
+  border-color: #8b5cf6;
+  color: #5b21b6;
+}
+
+html[data-theme="light"] .q-pill.is-current {
+  background: rgba(139, 92, 246, 0.15);
+  border-color: #7c3aed;
+  color: #5b21b6;
+}
+
+html[data-theme="light"] .q-pill.is-attempted {
+  border-color: rgba(109, 40, 217, 0.5);
+  background: rgba(109, 40, 217, 0.12);
+  color: #7c3aed;
+}
+
+html[data-theme="light"] .q-pill.is-correct {
+  border-color: #16a34a;
+  background: rgba(34, 197, 94, 0.15);
+  color: #15803d;
+}
+
+html[data-theme="light"] .q-pill.is-incorrect {
+  border-color: #dc2626;
+  background: rgba(248, 113, 113, 0.15);
+  color: #991b1b;
+}
+
+html[data-theme="light"] .q-nav-section-label { color: rgba(90, 74, 122, 0.5); }
+html[data-theme="light"] .q-legend-item        { color: rgba(26, 10, 60, 0.45); }
+
+html[data-theme="light"] .q-nav-trigger:hover,
+html[data-theme="light"] .q-nav-trigger.is-open {
+  background: rgba(109, 40, 217, 0.08);
+  border-color: rgba(109, 40, 217, 0.2);
+  color: #7c3aed;
+}
+
+html[data-theme="light"] .q-stat-pill.is-unanswered {
+  background: rgba(0,0,0,.04);
+  color: rgba(26,10,60,.5);
+  border-color: rgba(0,0,0,.08);
+}
+
+html[data-theme="light"] .q-legend-unanswered {
+  background: rgba(243,239,255,.8);
+  border-color: rgba(109,40,217,.2);
+}
+
+html[data-theme="light"] .q-stat-total {
+  background: rgba(109,40,217,.08);
+  border-color: rgba(109,40,217,.15);
+  color: #7c3aed;
+}
+
+/* ════════════════════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS
+   Strategy:
+     ≤ 480px portrait  → full-width bottom sheet (no popover)
+     ≤ 480px landscape → bottom sheet, short max-height, no legend
+     481px–768px       → popover 400px wide, 2.75rem pills
+     769px–1024px      → popover 460px wide, 3rem pills
+     1025px–1279px     → popover 480px wide, 3rem pills  (base styles)
+     ≥ 1280px          → popover 520px wide, 3.25rem pills
+   ════════════════════════════════════════════════════════════ */
+
+/* ── Mobile portrait ≤ 480px: full-width bottom sheet ── */
+@media (max-width: 480px) {
+  .q-nav-panel {
+    /*
+     * Override all popover positioning with !important so the inline
+     * CSS custom properties set by positionPanel() are ignored on mobile.
+     * JS detects this breakpoint and skips positionPanel() entirely.
+     */
+    left: 0 !important;
+    right: 0 !important;
+    bottom: var(--player-footer-h, 56px) !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: 70vh;
+    border-radius: 1rem 1rem 0 0;  /* rounded top, flush bottom */
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+    /* Slide up from below instead of popover fade-in */
+    transform: translateY(100%) !important;
+    opacity: 1 !important;         /* rely on transform only, not opacity */
+    box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.5),
+                0 0 0 1px rgba(139, 92, 246, 0.15);
+  }
+
+  .q-nav-panel.is-open {
+    transform: translateY(0) !important;
+    opacity: 1 !important;
+  }
+
+  .q-nav-inner {
+    padding: 1rem 1rem 1.25rem;
+    gap: 0.75rem;
+  }
+
+  .q-nav-grid {
+    /* Wider viewport than tall — more columns fits better */
+    grid-template-columns: repeat(auto-fill, minmax(2.625rem, 1fr));
+    gap: 0.45rem;
+  }
+
+  .q-pill {
+    min-width:  2.625rem;
+    min-height: 2.625rem;
+    font-size: 0.78rem;
+    border-radius: 0.5rem;
+  }
+
+  .q-nav-legend {
+    gap: 0.625rem;
+    flex-wrap: wrap;
+  }
+
+  .q-legend-item { font-size: 0.68rem; }
+  .q-stat-pill   { font-size: 0.7rem; padding: 0.2rem 0.6rem; }
+}
+
+/* ── Mobile landscape: short viewport, bottom sheet with reduced height ── */
+/*
+ * Targets phones rotated sideways (e.g. iPhone SE landscape = 568×320).
+ * The bottom sheet should not consume the full 70vh because that leaves
+ * almost no room for the question below. Cap it at ~50vh and drop the
+ * legend to reclaim vertical space.
+ */
+@media (max-height: 480px) and (orientation: landscape) {
+  .q-nav-panel {    
+    width: min(300px, calc(100vw - 2rem));
+    max-height: 52vh !important;
+  }
+
+  /* Hide legend — saves ~2.5rem of vertical space on short screens */
+  .q-nav-legend {
+    display: none;
+  }
+
+  .q-nav-inner {
+    gap: 0.5rem;
+    padding: 0.75rem 1rem 1rem;
+  }
+
+  .q-nav-grid {
+    /* Landscape gives us more horizontal space — use it for more columns */
+    grid-template-columns: repeat(auto-fill, minmax(2.375rem, 1fr));
+    gap: 0.375rem;
+  }
+
+  .q-pill {
+    min-width:  2.375rem;
+    min-height: 2.375rem;
+    font-size: 0.72rem;
+  }
+
+  .q-nav-stats {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .q-nav-stats::-webkit-scrollbar { display: none; }
+}
+
+/* ── Tablet portrait: 481px–768px ── */
+/*
+ * Popover mode. Pills are a comfortable tap target at 2.75rem.
+ * Panel is 400px wide — wide enough to show ~10 pills per row.
+ */
+@media (min-width: 481px) and (max-width: 768px) {
+  .q-nav-panel {
+    width: min(300px, calc(100vw - 2rem));
+    max-height: min(400px, calc(100vh - var(--player-topbar-h, 56px) - var(--player-footer-h, 56px) - 2rem));
+  } 
+
+  .q-nav-grid {
+    grid-template-columns: repeat(6, 1fr);
+    gap: 0.375rem;
+  }
+
+  .q-nav-inner { padding: 1rem 1.125rem 1.25rem; gap: 0.875rem; }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .q-nav-panel {
+    width: min(350px, calc(100vw - 2rem));
+    max-height: min(440px, calc(100vh - var(--player-topbar-h, 56px) - var(--player-footer-h, 56px) - 2rem));
+  }
+
+  .q-nav-grid {
+    grid-template-columns: repeat(6, 1fr);
+    gap: 0.375rem;
+  }
+
+  .q-nav-inner { padding: 1.125rem 1.25rem 1.375rem; gap: 0.875rem; }
+  .q-stat-pill { font-size: 0.775rem; }
+}
+
+@media (min-width: 1025px) and (max-width: 1279px) {
+  .q-nav-panel {
+    width: min(350px, calc(100vw - 2rem));
+    max-height: min(460px, calc(100vh - var(--player-topbar-h, 56px) - var(--player-footer-h, 56px) - 2rem));
+  }
+
+  .q-nav-grid {
+    grid-template-columns: repeat(6, 1fr);
+    gap: 0.375rem;
+  }
+
+
+@media (min-width: 1280px) {
+  .q-nav-panel {
+    width: min(300px, calc(100vw - 2rem));
+    max-height: min(500px, calc(100vh - var(--player-topbar-h, 56px) - var(--player-footer-h, 56px) - 2rem));
+  } 
+
+  .q-nav-grid {
+    grid-template-columns: repeat(6, 1fr);
+    gap: 0.375rem;
+  }
+
+  .q-nav-inner    { padding: 1.25rem 1.5rem 1.5rem; gap: 1rem; }
+  .q-stat-pill    { font-size: 0.8rem; }
+  .q-legend-item  { font-size: 0.75rem; }
+}
+}
+
 .sat-answer-item.is-selected .sat-answer-letter {
     border-color: var(--p5);
     background: var(--p5);

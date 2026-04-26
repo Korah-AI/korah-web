@@ -325,7 +325,28 @@ html[data-theme="light"] {
 <footer class="sat-player-footer">
   <div class="sat-footer-group">
     <!-- Question Counter -->
-    <span id="playerCounter" class="sat-counter-text">Question — out of —</span>
+    <button
+      id="playerCounter"
+      class="q-nav-trigger"
+      aria-controls="qNavPanel"
+      aria-expanded="false"
+      aria-haspopup="dialog"
+      type="button"
+    >
+      <svg
+        id="qNavChevron"
+        class="q-nav-chevron"
+        width="14" height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.5"
+        aria-hidden="true"
+      >
+        <polyline points="18 15 12 9 6 15"/>
+      </svg>
+      <span id="qNavCounterText">Question — of —</span>
+    </button>
     <!-- Standardized Info Button -->
     <button id="sessionInfoBtn" class="sat-button sat-button-ghost" title="Session Info" style="height: 2.25rem; width: 2.25rem; padding: 0;">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -406,6 +427,35 @@ html[data-theme="light"] {
     </div>
   </div>
 </div>
+
+<!-- ═══ QUESTION NAVIGATOR PANEL ═══ -->
+<div
+  id="qNavPanel"
+  class="q-nav-panel"
+  role="dialog"
+  aria-label="Question navigator"
+  aria-modal="true"
+  aria-hidden="true"
+>
+  <div class="q-nav-inner">
+
+    <!-- Summary stats strip -->
+    <div class="q-nav-stats" id="qNavStats" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- Question grid -->
+    <div>
+      <div class="q-nav-section-label" aria-hidden="true">all questions</div>
+      <div
+        class="q-nav-grid"
+        id="qNavGrid"
+        role="list"
+        aria-label="Question list"
+      ></div>
+    </div>
+
+  </div>
+</div>
+<!-- END QUESTION NAVIGATOR PANEL -->
 
 <script src="https://www.desmos.com/api/v1.12/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
