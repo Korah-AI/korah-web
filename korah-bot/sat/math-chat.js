@@ -435,8 +435,8 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
       img.onload = () => {
         URL.revokeObjectURL(url);
         let { width, height } = img;
-        if (width <= MAX_IMAGE_DIMENSION && height <= MAX_IMAGE_DIMENSION) {
-          // Already small enough — read as-is
+        if (width <= MAX_IMAGE_DIMENSION && height <= MAX_IMAGE_DIMENSION && file.size < 300000) {
+          // Already small enough and reasonable size — read as-is
           const reader = new FileReader();
           reader.onload = () => resolve(reader.result);
           reader.readAsDataURL(file);
@@ -450,7 +450,8 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', 0.8));
+        // Use 0.7 quality to stay well under Vercel's 4.5MB limit
+        resolve(canvas.toDataURL('image/jpeg', 0.7));
       };
       img.onerror = () => {
         URL.revokeObjectURL(url);
@@ -1135,15 +1136,23 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
       { role: 'user', content: userContent }
     ];
 
+    const bodyObj = {
+      model: MODEL,
+      temperature: 0.4,
+      messages: messagesWithSystem,
+      stream: true
+    };
+
+    const bodyStr = JSON.stringify(bodyObj);
+    // Vercel 4.5MB limit is approx 4.7 million characters in base64/json
+    if (bodyStr.length > 4.4 * 1024 * 1024) {
+      throw new Error("Payload too large. Please try removing some attachments or using smaller images.");
+    }
+
     const response = await fetch(API_ENDPOINT, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: MODEL,
-        temperature: 0.4,
-        messages: messagesWithSystem,
-        stream: true
-      })
+      body: bodyStr
     });
 
     if (!response.ok) {

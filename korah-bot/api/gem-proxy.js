@@ -18,6 +18,12 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  // Payload size check (Vercel has 4.5MB limit, let's catch it if it hits our handler)
+  const contentLength = parseInt(req.headers['content-length'] || '0', 10);
+  if (contentLength > 4.5 * 1024 * 1024) {
+    return res.status(413).json({ error: 'Payload too large', message: 'The request body exceeds the 4.5MB limit.' });
+  }
+
   const rateLimit = applyRateLimit(req, res, {
     namespace: "gem-proxy",
     limit: parseInt(process.env.KORAH_CHAT_RATE_LIMIT_MAX || "", 10) || 20,

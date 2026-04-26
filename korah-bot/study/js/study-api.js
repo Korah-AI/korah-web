@@ -196,7 +196,7 @@
     for (var i = 0; i < files.length; i++) {
       var file = files[i];
       if (file.type.startsWith("image/")) {
-        var base64 = await toBase64(file);
+        var base64 = await resizeImage(file);
         fileContents.push({ type: "image", name: file.name, data: base64 });
       } else if (file.type === "application/pdf") {
         var base64 = await toBase64(file);
@@ -240,19 +240,61 @@
       });
     }
 
+    function resizeImage(file) {
+      return new Promise((resolve) => {
+        const MAX_DIM = 1024;
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = function() {
+          URL.revokeObjectURL(url);
+          var width = img.width;
+          var height = img.height;
+          
+          // If small enough and already reasonable size, skip canvas
+          if (width <= MAX_DIM && height <= MAX_DIM && file.size < 300000) {
+            toBase64(file).then(resolve);
+            return;
+          }
+
+          var scale = Math.min(MAX_DIM / width, MAX_DIM / height);
+          width = Math.round(width * scale);
+          height = Math.round(height * scale);
+
+          var canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          var ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, width, height);
+          // 0.7 quality JPEG is usually ~1/10th the size of a PNG
+          resolve(canvas.toDataURL("image/jpeg", 0.7));
+        };
+        img.onerror = function() {
+          URL.revokeObjectURL(url);
+          toBase64(file).then(resolve);
+        };
+        img.src = url;
+      });
+    }
+
     function tryBackendApi() {
       var url = "/api/generate-study-item";
+      var bodyStr = JSON.stringify({ 
+        type: type, 
+        prompt: prompt, 
+        title: title, 
+        subject: subject, 
+        testConfig: testConfig,
+        fileContents: fileContents 
+      });
+
+      if (bodyStr.length > 4.4 * 1024 * 1024) {
+        return Promise.reject(new Error("Payload too large. Please remove some attachments or use smaller images."));
+      }
+
       return fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          type: type, 
-          prompt: prompt, 
-          title: title, 
-          subject: subject, 
-          testConfig: testConfig,
-          fileContents: fileContents // Send processed contents
-        })
+        body: bodyStr
       }).then(function (res) {
         return res.json().catch(function () {
           return {};
@@ -290,15 +332,21 @@
 
       messages.push({ role: "user", content: userContent });
 
+      var bodyStr = JSON.stringify({
+        model: MODEL,
+        temperature: 0.6,
+        messages: messages,
+        stream: false
+      });
+
+      if (bodyStr.length > 4.4 * 1024 * 1024) {
+        return Promise.reject(new Error("Payload too large. Please remove some attachments or use smaller images."));
+      }
+
       return fetch(CHAT_PROXY, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: MODEL,
-          temperature: 0.6,
-          messages: messages,
-          stream: false
-        })
+        body: bodyStr
       }).then(function (res) {
         return res.json().catch(function () {
           return {};

@@ -99,7 +99,7 @@
       img.onload = () => {
         URL.revokeObjectURL(url);
         let { width, height } = img;
-        if (width <= MAX_IMAGE_DIMENSION && height <= MAX_IMAGE_DIMENSION) {
+        if (width <= MAX_IMAGE_DIMENSION && height <= MAX_IMAGE_DIMENSION && file.size < 300000) {
           const reader = new FileReader();
           reader.onload = () => resolve(reader.result);
           reader.readAsDataURL(file);
@@ -113,7 +113,7 @@
         canvas.height = height;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', 0.8));
+        resolve(canvas.toDataURL('image/jpeg', 0.7));
       };
       img.onerror = () => {
         URL.revokeObjectURL(url);
@@ -1497,15 +1497,22 @@
       ...messages
     ];
 
+    const bodyObj = {
+      model: MODEL,
+      temperature: 0.7,
+      messages: messagesWithSystem,
+      stream: true
+    };
+
+    const bodyStr = JSON.stringify(bodyObj);
+    if (bodyStr.length > 4.4 * 1024 * 1024) {
+      throw new Error("Payload too large. Please remove some attachments or use smaller images.");
+    }
+
     const response = await fetch(API_ENDPOINT, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: MODEL,
-        temperature: 0.7,
-        messages: messagesWithSystem,
-        stream: true
-      })
+      body: bodyStr
     });
 
     if (!response.ok) {
