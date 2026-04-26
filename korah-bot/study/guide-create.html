@@ -229,11 +229,33 @@
         <div class="settings-item">
           <div class="settings-item-label">Theme</div>
           <div class="settings-item-control">
-            <select id="settings-theme-select" class="settings-select">
-              <option value="dark">Dark</option>
-              <option value="light">Light</option>
-              <option value="system">System</option>
-            </select>
+            <div class="settings-custom-select" id="settings-theme-custom-select">
+              <div class="settings-select-trigger" id="settings-theme-trigger">
+                <div class="flex items-center gap-2">
+                  <span class="material-icons-round trigger-icon">dark_mode</span>
+                  <span class="trigger-text">Dark Mode</span>
+                </div>
+                <span class="material-icons-round">expand_more</span>
+              </div>
+              <div class="settings-select-menu" id="settings-theme-menu">
+                <div class="settings-select-option" data-value="dark">
+                  <span class="material-icons-round">dark_mode</span>
+                  <span>Dark Mode</span>
+                  <span class="material-icons-round check-icon">check</span>
+                </div>
+                <div class="settings-select-option" data-value="light">
+                  <span class="material-icons-round">light_mode</span>
+                  <span>Light Mode</span>
+                  <span class="material-icons-round check-icon">check</span>
+                </div>
+                <div class="settings-select-option" data-value="system">
+                  <span class="material-icons-round">settings_suggest</span>
+                  <span>System</span>
+                  <span class="material-icons-round check-icon">check</span>
+                </div>
+              </div>
+              <input type="hidden" id="settings-theme-select" value="dark">
+            </div>
           </div>
         </div>
       </div>
@@ -258,6 +280,33 @@
       <div class="settings-actions">
         <button id="settings-save" class="settings-btn primary">Save Settings</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Rename Modal -->
+<div id="rename-modal" class="delete-modal">
+  <div class="delete-modal-content">
+    <div class="delete-modal-icon">✏️</div>
+    <h3 class="delete-modal-title">Rename</h3>
+    <p class="delete-modal-desc" id="rename-modal-desc">Enter a new name</p>
+    <input id="rename-modal-input" type="text" class="create-input" style="width:100%; margin-top:0.25rem;" placeholder="New name…"/>
+    <div class="delete-modal-actions">
+      <button id="rename-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
+      <button id="rename-modal-confirm" class="delete-modal-btn confirm t-btn" style="background:rgba(139,92,246,.12); color:var(--p5); border-color:rgba(139,92,246,.3);">Rename</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div id="delete-modal" class="delete-modal">
+  <div class="delete-modal-content">
+    <div class="delete-modal-icon">🗑️</div>
+    <h3 class="delete-modal-title">Delete?</h3>
+    <p class="delete-modal-desc">This will permanently delete <span id="delete-modal-name"></span>. This cannot be undone.</p>
+    <div class="delete-modal-actions">
+      <button id="delete-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
+      <button id="delete-modal-confirm" class="delete-modal-btn confirm t-btn">Delete</button>
     </div>
   </div>
 </div>

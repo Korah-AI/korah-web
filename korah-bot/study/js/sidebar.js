@@ -941,24 +941,91 @@ function showSidebarDeleteModal(name, onConfirm) {
     }
   };
 
+  // ── Theme Logic (Matches More Dropdown) ──
+  function setTheme(theme) {
+    localStorage.setItem('korah_theme', theme);
+    
+    // Calculate effective theme for data-theme attribute
+    let effectiveTheme = theme;
+    if (theme === 'system') {
+      effectiveTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    document.documentElement.setAttribute('data-theme', effectiveTheme);
+    
+    // Update Alpine.js if present
+    const alpineRoot = document.querySelector('[x-data]');
+    if (alpineRoot && alpineRoot.__x) {
+      const alpineData = alpineRoot.__x.$data;
+      if (alpineData && alpineData.theme !== undefined) {
+        alpineData.theme = theme;
+      }
+    } else if (document.documentElement._x_dataStack) {
+      const alpineData = document.documentElement._x_dataStack[0];
+      if (alpineData && alpineData.theme !== undefined) {
+        alpineData.theme = theme;
+      }
+    }
+
+    // Update all theme UI components
+    updateThemeUI(theme);
+  }
+  window.setKorahTheme = setTheme;
+
+  function updateThemeUI(theme) {
+    const currentTheme = theme || localStorage.getItem('korah_theme') || 'dark';
+    
+    // Update checkmarks in "more" dropdown
+    document.querySelectorAll('.more-dropdown-theme-option').forEach(item => {
+      item.classList.toggle('active', item.getAttribute('data-theme') === currentTheme);
+    });
+
+    // Update custom settings dropdown
+    const customSelect = document.getElementById('settings-theme-custom-select');
+    if (customSelect) {
+      const trigger = customSelect.querySelector('.settings-select-trigger');
+      const hiddenInput = document.getElementById('settings-theme-select');
+      if (hiddenInput) hiddenInput.value = currentTheme;
+
+      customSelect.querySelectorAll('.settings-select-option').forEach(opt => {
+        const isSelected = opt.getAttribute('data-value') === currentTheme;
+        opt.classList.toggle('active', isSelected);
+        if (isSelected && trigger) {
+          const icon = opt.querySelector('.material-icons-round:not(.check-icon)').textContent;
+          const text = opt.querySelector('span:not(.material-icons-round)').textContent;
+          const triggerIcon = trigger.querySelector('.trigger-icon');
+          const triggerText = trigger.querySelector('.trigger-text');
+          if (triggerIcon) triggerIcon.textContent = icon;
+          if (triggerText) triggerText.textContent = text;
+        }
+      });
+    }
+  }
+  window.updateKorahThemeUI = updateThemeUI;
+
   // ── Settings Modal ──
   function initSettingsModal() {
     const settingsModal = document.getElementById('settings-modal');
     const settingsBtn = document.getElementById('settings-btn');
     const settingsClose = document.getElementById('settings-close');
-    const settingsThemeSelect = document.getElementById('settings-theme-select');
     const settingsNameInput = document.getElementById('settings-name-input');
     const settingsSaveBtn = document.getElementById('settings-save');
     const settingsClearDataBtn = document.getElementById('settings-clear-data');
+
+    // Custom Theme Dropdown
+    const themeCustomSelect = document.getElementById('settings-theme-custom-select');
+    const themeTrigger = document.getElementById('settings-theme-trigger');
+    const themeMenu = document.getElementById('settings-theme-menu');
 
     if (!settingsModal || !settingsBtn) return;
 
     settingsBtn.addEventListener('click', () => {
       settingsModal.classList.add('show');
       const savedTheme = localStorage.getItem('korah_theme') || 'dark';
-      const savedName = localStorage.getItem('korah_name') || '';
-      if (settingsThemeSelect) settingsThemeSelect.value = savedTheme;
+      const savedName = localStorage.getItem('korah_name') || localStorage.getItem('korah_first_name') || '';
       if (settingsNameInput) settingsNameInput.value = savedName;
+      
+      // Initialize custom theme UI
+      updateThemeUI(savedTheme);
     });
 
     settingsClose?.addEventListener('click', () => {
@@ -971,12 +1038,47 @@ function showSidebarDeleteModal(name, onConfirm) {
       }
     });
 
+    // Custom Theme Dropdown Logic
+    if (themeTrigger && themeMenu) {
+      themeTrigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        themeMenu.classList.toggle('show');
+        themeTrigger.classList.toggle('active');
+      });
+
+      themeMenu.querySelectorAll('.settings-select-option').forEach(option => {
+        option.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const theme = option.getAttribute('data-value');
+          setTheme(theme);
+          themeMenu.classList.remove('show');
+          themeTrigger.classList.remove('active');
+        });
+      });
+
+      document.addEventListener('click', () => {
+        themeMenu.classList.remove('show');
+        themeTrigger.classList.remove('active');
+      });
+    }
+
     settingsSaveBtn?.addEventListener('click', () => {
-      const theme = settingsThemeSelect.value;
-      const name = settingsNameInput.value;
+      const hiddenThemeInput = document.getElementById('settings-theme-select');
+      const theme = hiddenThemeInput ? hiddenThemeInput.value : (localStorage.getItem('korah_theme') || 'dark');
+      const name = settingsNameInput ? settingsNameInput.value.trim() : '';
+      
       localStorage.setItem('korah_theme', theme);
-      localStorage.setItem('korah_name', name);
-      document.documentElement.setAttribute('data-theme', theme);
+      if (name) {
+        localStorage.setItem('korah_name', name);
+        localStorage.setItem('korah_first_name', name);
+      } else {
+        localStorage.removeItem('korah_name');
+        localStorage.removeItem('korah_first_name');
+      }
+      
+      // Ensure effective theme is applied
+      setTheme(theme);
+      
       settingsModal.classList.remove('show');
     });
 
@@ -1104,7 +1206,7 @@ function showSidebarDeleteModal(name, onConfirm) {
         dd.querySelector('[data-page="main"]').style.display = 'none';
         dd.querySelector('[data-page="theme"]').style.display = 'block';
         dd.classList.add('showing-theme');
-        updateThemeChecks(dd);
+        updateThemeUI();
       }
       window.switchToThemePage = switchToThemePage;
       
@@ -1116,22 +1218,9 @@ function showSidebarDeleteModal(name, onConfirm) {
       window.switchToMainPage = switchToMainPage;
       
       function setThemeFromDropdown(theme, dd, wrapper) {
-        localStorage.setItem('korah_theme', theme);
-        let effectiveTheme = theme;
-        if (theme === 'system') {
-          effectiveTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-        }
-        document.documentElement.setAttribute('data-theme', effectiveTheme);
-        updateThemeChecks(dd);
+        setTheme(theme);
       }
       window.setThemeFromDropdown = setThemeFromDropdown;
-      
-      function updateThemeChecks(dd) {
-        const currentTheme = localStorage.getItem('korah_theme') || 'dark';
-        dd.querySelectorAll('.more-dropdown-theme-option').forEach(item => {
-          item.classList.toggle('active', item.getAttribute('data-theme') === currentTheme);
-        });
-      }
       
       function closeCollapsedMoreDropdown(wrap) {
         wrap.querySelector('.collapsed-more-dropdown').classList.remove('more-dropdown-open');
@@ -1145,7 +1234,7 @@ function showSidebarDeleteModal(name, onConfirm) {
         dropdown.classList.toggle('more-dropdown-open');
         btn.classList.toggle('is-active');
         if (dropdown.classList.contains('more-dropdown-open')) {
-          updateThemeChecks(dropdown);
+          updateThemeUI();
         }
       });
       
