@@ -1,5 +1,34 @@
 <!DOCTYPE html>
-<html lang="en" x-data="{ theme: localStorage.getItem('korah_theme') || 'dark' }" :data-theme="theme" x-cloak>
+<html lang="en" x-data="{
+  theme: localStorage.getItem('korah_theme') || 'dark',
+  sidebarCollapsed: window.innerWidth <= 768 ? false : localStorage.getItem('korah_sidebar_collapsed') === 'true',
+  mobileOpen: false,
+  getEffectiveTheme() {
+    if (this.theme === 'system') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return this.theme;
+  },
+  toggleSidebar() {
+    if (window.innerWidth <= 768) {
+      this.mobileOpen = !this.mobileOpen;
+      const overlay = document.querySelector('.sidebar-overlay');
+      if (overlay) overlay.classList.toggle('show', this.mobileOpen);
+    } else {
+      if (this.sidebarCollapsed) {
+        const dp = document.getElementById('doc-panel');
+        if (dp?.classList.contains('expanded')) {
+          dp.classList.remove('expanded');
+          dp.classList.add('collapsed');
+          const tab = document.getElementById('doc-panel-tab');
+          if (tab) tab.classList.remove('panel-open');
+        }
+      }
+      this.sidebarCollapsed = !this.sidebarCollapsed;
+      localStorage.setItem('korah_sidebar_collapsed', this.sidebarCollapsed);
+    }
+  }
+}" :data-theme="getEffectiveTheme()" x-cloak>
   <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
@@ -769,6 +798,7 @@
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
 
 <canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
+<div class="sidebar-overlay" @click="mobileOpen = false; document.querySelector('.sidebar-overlay').classList.remove('show')"></div>
 
 <!-- Loading Overlay -->
 <div id="loading-overlay" class="loading-overlay hidden">
@@ -781,7 +811,10 @@
 </div>
 
 <!-- ═══ SIDEBAR ═══ -->
-<aside id="sidebar" class="sidebar bg-sf glass t-theme">
+<aside id="sidebar" class="sidebar bg-sf glass t-theme"
+  :class="{ collapsed: sidebarCollapsed, 'mobile-open': mobileOpen }"
+  x-effect="window.KorahSidebar?.onCollapseChange?.(sidebarCollapsed)"
+  @resize.window="if (window.innerWidth > 768) { mobileOpen = false; const overlay = document.querySelector('.sidebar-overlay'); if (overlay) overlay.classList.remove('show'); }">
   <div class="sidebar-header">
     <a href="../index.html" class="flex items-center gap-2.5 no-underline">
       <div class="w-12 h-12 rounded-xl flex items-center justify-center font-display text-xl font-black text-white shadow-glow logo-btn">
@@ -934,7 +967,7 @@
 
 <main id="main-content" class="main-content">
   <header class="chat-topbar bg-sf glass-sm t-theme bd">
-    <button id="sidebar-toggle" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
+    <button id="sidebar-toggle" @click="toggleSidebar()" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
       </svg>

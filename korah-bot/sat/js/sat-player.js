@@ -228,25 +228,28 @@
     answers: {},
     checked: {},
     reviewed: {},
-    // NEW: Stopwatch state (replaces fixed 32min timer)
+    // Stopwatch state
     stopwatchElapsed: 0,
     isPaused: false,
     isHidden: false,
-    // NEW: Calculator state
-    calcActive: true,
-    userToggledCalc: false
+    // Calculator state
+    calcActive: false, // hidden by default until Math question
+    userToggledCalc: false,
+    lastDesmosWidth: '50%' // for desktop  persistence
   };
 
-  // DOM Elements - Original + New Elements
+  // DOM Elements
   const playerTitle = document.getElementById("playerTitle");
   const playerCounter = document.getElementById("playerCounter");
   const playerTimer = document.getElementById("playerTimer");
   const clockIcon = document.getElementById("clockIcon");
   const questionNumberEl = document.getElementById("questionNumber");
   
-  const questionLayout = document.getElementById("questionLayout");
+  const playerSplit = document.getElementById("playerSplit");
   const desmosWrapper = document.getElementById("desmosWrapper");
   const desmosContainer = document.getElementById("desmosContainer");
+  const contentWrapper = document.getElementById("contentWrapper");
+  const resizeHandle = document.getElementById("resize-handle");
 
   const questionDomain = document.getElementById("questionDomain");
   const questionStemTitle = document.getElementById("questionStemTitle");
@@ -254,7 +257,6 @@
   const questionStem = document.getElementById("questionStem");
   const answerChoices = document.getElementById("answerChoices");
   const feedbackPanel = document.getElementById("feedbackPanel");
-  const questionNav = document.getElementById("questionNav");
   const reviewBadge = document.getElementById("reviewBadge");
   
   const prevQuestionBtn = document.getElementById("prevQuestionBtn");
@@ -265,24 +267,25 @@
   const toggleCalcBtn = document.getElementById("toggleCalcBtn");
   const showExplanationBtn = document.getElementById("showExplanationBtn");
 
-  // NEW: Stopwatch elements
+  // Stopwatch elements
   const pauseStopwatchBtn = document.getElementById("pauseStopwatchBtn");
   const pauseIcon = document.getElementById("pauseIcon");
   const playIcon = document.getElementById("playIcon");
   const hideStopwatchBtn = document.getElementById("hideStopwatchBtn");
 
-  // NEW: Modal elements
+  // Modal elements
   const sessionInfoBtn = document.getElementById("sessionInfoBtn");
   const sessionInfoModal = document.getElementById("sessionInfoModal");
   const modalSection = document.getElementById("modalSection");
   const modalDomains = document.getElementById("modalDomains");
 
-  // NEW: Reference panel
+  // Reference panel
   const referencePanel = document.getElementById("referencePanel");
 
   let explanationForcedOpen = false;
   let stopwatchInterval = null;
   let desmosInstance = null;
+  let resizeHandleInitialized = false;
 
   // Normalize SPR answers for comparison: trim, lowercase, fix leading decimal (e.g. ".75" → "0.75")
   function normalizeSprAnswer(val) {
@@ -331,69 +334,62 @@
     }
   }
 
-  function renderNav() {
-    if (!questionNav || !questions.length) return;
-    if (loadState !== "success") {
-      questionNav.innerHTML = "";
-      return;
-    }
-    questionNav.innerHTML = questions
-      .map((question, index) => {
-        const isAnswered = !!state.answers[question.id];
-        const classes = [
-          "sat-mini-pill",
-          index === state.currentIndex ? "is-current" : "",
-          state.reviewed[question.id] ? "is-reviewed" : "",
-          isAnswered && index !== state.currentIndex ? "is-answered" : ""
-        ]
-          .filter(Boolean)
-          .join(" ");
-        return `<button class="${classes}" type="button" data-index="${index}">${index + 1}</button>`;
-      })
-      .join("");
-  }
-
-  // NEW: Desmos calculator initialization
+  // DESMOS MANAGEMENT
   function initDesmos() {
     if (!desmosContainer) return;
     if (!desmosInstance) {
+      // Mirror math-chat.js options exactly
       desmosInstance = Desmos.GraphingCalculator(desmosContainer, {
         keypad: true,
         expressions: true,
         settingsMenu: false,
         zoomButtons: true,
-        expressionsTopbar: true
+        expressionsTopbar: true,
+        pointsOfInterest: true,
+        trace: true,
+        border: false,
+        lockViewport: false
       });
+      console.log("SAT Player: Desmos Initialized");
+    } else {
+      desmosInstance.resize();
     }
   }
 
-  // NEW: Reset/desmos calculator
-  function resetDesmos() {
+  function destroyDesmos() {
     if (desmosInstance) {
-      try {
-        desmosInstance.destroy();
-        desmosInstance = null;
-        desmosContainer.innerHTML = '';
-      } catch (e) {
-        console.log('Desmos destroy error:', e);
-      }
+      desmosInstance.destroy();
+      desmosInstance = null;
+      if (desmosContainer) desmosContainer.innerHTML = '';
+      console.log("SAT Player: Desmos Destroyed");
     }
   }
 
-  // NEW: Resize desmos to match question container height
-  function resizeDesmos() {
-    if (desmosWrapper && desmosWrapper.style.display !== "none" && questionLayout) {
-      const current = getCurrentQuestion();
-      if (current && current.section === "math" && state.calcActive) {
-        resetDesmos();
-        initDesmos();
-        const containerHeight = questionLayout.offsetHeight - 32;
-        if (containerHeight > 0) {
-          desmosContainer.style.height = containerHeight + "px";
-          desmosWrapper.style.height = containerHeight + "px";
-          desmosInstance.resize();
-        }
+  /**
+   * Toggles the split layout (Panel A + Handle + Panel B).
+   * @param {boolean} show - whether to show Desmos
+   */
+  function applyCalcLayout(show) {
+    if (!playerSplit || !desmosWrapper || !resizeHandle) return;
+
+    if (show) {
+      playerSplit.classList.add("has-desmos");
+      desmosWrapper.style.display = "flex";
+      // Resize handle visibility is controlled by CSS media query only — no inline style here
+      if (window.innerWidth > 900) {
+        // Clear any stale mobile inline height overrides
+        desmosWrapper.style.flex = '';
+        desmosWrapper.style.height = '';
+        desmosWrapper.style.maxHeight = '';
+        playerSplit.style.gridTemplateColumns = `${state.lastDesmosWidth} 0.5rem 1fr`;
       }
+      initDesmos();
+    } else {
+      playerSplit.classList.remove("has-desmos");
+      desmosWrapper.style.display = "none";
+      // Resize handle visibility is controlled by CSS media query only — no inline style here
+      playerSplit.style.gridTemplateColumns = ""; // reset grid
+      destroyDesmos();
     }
   }
 
@@ -482,7 +478,6 @@
     if (!current) {
       loadState = questions.length ? "success" : "empty";
       renderHeader();
-      renderNav();
       renderQuestion();
       return;
     }
@@ -491,25 +486,19 @@
     const checked = Boolean(state.checked[current.id]);
     const showExplanation = checked || explanationForcedOpen;
 
-    // NEW: Math split layout handling
+    // MATH SPLIT LAYOUT
     const isMath = current.section === "math";
-    // Only auto-show calculator on initial load if not manually toggled off
-    if (isMath && state.calcActive === true) {
-      // keep enabled
-    } else if (isMath && !state.userToggledCalc) {
+
+    // Auto-enable calc if Math question and not manually toggled off
+    if (isMath && !state.userToggledCalc) {
       state.calcActive = true;
-    }
-    if (isMath && state.calcActive && questionLayout && desmosWrapper) {
-      questionLayout.classList.add("sat-math-layout");
-      desmosWrapper.style.display = "flex";
-      initDesmos();
-      resizeDesmos();
-    } else if (questionLayout && desmosWrapper) {
-      questionLayout.classList.remove("sat-math-layout");
-      desmosWrapper.style.display = "none";
+    } else if (!isMath) {
+      state.calcActive = false;
     }
 
-    // NEW: Question number display
+    applyCalcLayout(state.calcActive);
+
+    // Question number display
     if (questionNumberEl) questionNumberEl.textContent = state.currentIndex + 1;
     questionDomain.textContent = current.domain;
     if (questionStemTitle) {
@@ -526,16 +515,17 @@
     questionStem.innerHTML = current.stem;
     reviewBadge.classList.toggle("is-hidden", !state.reviewed[current.id]);
 
-    // RESTORED: Toggle calc button text + visibility
+    // Toggle calc button text + visibility
     if (toggleCalcBtn) {
       toggleCalcBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
         <rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="16" y2="18"/>
       </svg>`;
       toggleCalcBtn.disabled = current.section !== "math";
       toggleCalcBtn.classList.toggle("is-hidden", current.section !== "math");
+      toggleCalcBtn.classList.toggle("is-active", state.calcActive);
     }
 
-    // Show reference button only for math, calc is always visible for math
+    // Show reference button only for math
     if (referenceBtn) {
       referenceBtn.classList.toggle("is-hidden", !isMath);
     }
@@ -602,14 +592,25 @@
       feedbackPanel.innerHTML = "";
     }
 
-    // RESTORED: Button states
-    if (prevQuestionBtn) prevQuestionBtn.disabled = state.currentIndex === 0;
-    if (nextQuestionBtn) nextQuestionBtn.disabled = state.currentIndex === questions.length - 1;
+    // Button states - hide/show and text
+    if (prevQuestionBtn) {
+      prevQuestionBtn.style.display = state.currentIndex === 0 ? 'none' : '';
+      prevQuestionBtn.disabled = false;
+    }
+    if (nextQuestionBtn) {
+      const isLastQuestion = state.currentIndex === questions.length - 1;
+      nextQuestionBtn.disabled = false;
+      if (isLastQuestion) {
+        nextQuestionBtn.innerHTML = `Back to Bank`;
+      } else {
+        nextQuestionBtn.innerHTML = `Next<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-left: 6px;"><polyline points="9 18 15 12 9 6"/></svg>`;
+      }
+    }
     if (checkAnswerBtn) checkAnswerBtn.disabled = isSpr ? (!selectedAnswer || !String(selectedAnswer).trim()) : !selectedAnswer;
     if (showExplanationBtn) showExplanationBtn.disabled = false;
     if (markReviewBtn) markReviewBtn.disabled = false;
     
-    // RESTORED: Button text and active states
+    // Button text and active states
     if (showExplanationBtn) {
       showExplanationBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
         <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
@@ -652,16 +653,13 @@
     explanationForcedOpen = false;
     // NEW: Reset stopwatch on navigation
     startStopwatch();
-    // Reset desmos calculator when switching questions
-    const current = getCurrentQuestion();
-    if (current && current.section === "math" && state.calcActive) {
-      resetDesmos();
-    }
+    
+    // Clean up Desmos before moving
+    destroyDesmos();
+
     renderHeader();
-    renderNav();
     renderQuestion();
-    // Resize desmos after render
-    setTimeout(resizeDesmos, 100);
+    
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -680,82 +678,109 @@
     }
   }
 
-  // NEW: Draggable reference panel
-  function makeDraggable(el, handleSelector) {
-    const handle = el.querySelector(handleSelector) || el;
-    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+  /**
+   * Universal resize logic for desktop (columns) and mobile (rows).
+   * Mirrors math-chat.js exactly.
+   */
+  function initResizeHandle() {
+    if (resizeHandleInitialized) return;
+    const handle = document.getElementById("resize-handle");
+    const layout = document.getElementById("playerSplit");
+    const desmosWrap = document.getElementById("desmosWrapper");
+    const contentPanel = document.getElementById("contentWrapper");
 
-    handle.onmousedown = dragMouseDown;
+    if (!handle || !layout || !desmosWrap) return;
 
-    function dragMouseDown(e) {
-      if (e.target.closest('button')) return;
+    let isResizing = false;
+    let currentBreakpoint = window.innerWidth <= 900 ? "mobile" : "desktop";
+
+    handle.addEventListener("mousedown", (e) => {
+      isResizing = true;
+      currentBreakpoint = window.innerWidth <= 900 ? "mobile" : "desktop";
+      document.body.style.cursor = currentBreakpoint === "mobile" ? "row-resize" : "col-resize";
+      document.body.classList.add("is-resizing");
       e.preventDefault();
-      pos3 = e.clientX;
-      pos4 = e.clientY;
-      document.onmouseup = closeDragElement;
-      document.onmousemove = elementDrag;
-    }
-
-    function elementDrag(e) {
-      e.preventDefault();
-      pos1 = pos3 - e.clientX;
-      pos2 = pos4 - e.clientY;
-      pos3 = e.clientX;
-      pos4 = e.clientY;
-      el.style.top = (el.offsetTop - pos2) + "px";
-      el.style.left = (el.offsetLeft - pos1) + "px";
-    }
-
-    function closeDragElement() {
-      document.onmouseup = null;
-      document.onmousemove = null;
-    }
-  }
-
-  // NEW: Toggle reference panel collapse
-  window.toggleReferenceCollapse = function() {
-    const panel = document.getElementById('referencePanel');
-    const btn = document.getElementById('referenceCollapseBtn');
-    if (!panel || !btn) return;
-    
-    panel.classList.toggle('collapsed');
-    btn.classList.toggle('collapsed');
-  };
-
-  // NEW: Resizable reference panel
-  function makeResizable(el) {
-    const resizer = document.createElement('div');
-    resizer.className = 'reference-resize-handle';
-    el.appendChild(resizer);
-
-    let startX, startY, startWidth, startHeight;
-
-    resizer.addEventListener('mousedown', function(e) {
-      e.preventDefault();
-      startX = e.clientX;
-      startY = e.clientY;
-      startWidth = parseInt(document.defaultView.getComputedStyle(el).width, 10);
-      startHeight = parseInt(document.defaultView.getComputedStyle(el).height, 10);
-      document.documentElement.addEventListener('mousemove', resizing);
-      document.documentElement.addEventListener('mouseup', stopResizing);
     });
 
-    function resizing(e) {
-      const width = startWidth + (e.clientX - startX);
-      const height = startHeight + (e.clientY - startY);
-      el.style.width = width + 'px';
-      el.style.height = height + 'px';
-    }
+    document.addEventListener("mousemove", (e) => {
+      if (!isResizing) return;
 
-    function stopResizing() {
-      document.documentElement.removeEventListener('mousemove', resizing);
-      document.documentElement.removeEventListener('mouseup', stopResizing);
-    }
+      const rect = layout.getBoundingClientRect();
+      const breakpoint = window.innerWidth <= 900 ? "mobile" : "desktop";
+
+      if (breakpoint === "mobile") {
+        // MOBILE: vertical resize (Panel A height)
+        const relativeY = e.clientY - rect.top;
+        const totalHeight = rect.height;
+        // Clamp: Panel A cannot be smaller than 130px OR larger than (Total - 130px)
+        const minContentHeight = 130; 
+        if (relativeY > minContentHeight && relativeY < totalHeight - minContentHeight) {
+          const heightPx = relativeY;
+          desmosWrap.style.flex = `0 0 ${heightPx}px`;
+          desmosWrap.style.height = `${heightPx}px`;
+          desmosWrap.style.maxHeight = `${heightPx}px`;
+          // Set content panel to remaining height
+          const handleHeight = 12; // px for the resize handle
+          const contentHeight = totalHeight - heightPx - handleHeight;
+          if (contentPanel) {
+            contentPanel.style.height = `${contentHeight}px`;
+            contentPanel.style.flex = 'none';
+          }
+        }
+      } else {
+        // DESKTOP: horizontal resize (Panel A width)
+        const relativeX = e.clientX - rect.left;
+        const totalWidth = rect.width;
+        if (relativeX > 200 && relativeX < totalWidth - 200) {
+          const percentage = (relativeX / totalWidth) * 100;
+          state.lastDesmosWidth = `${percentage}%`;
+          layout.style.gridTemplateColumns = `${state.lastDesmosWidth} 0.5rem 1fr`;
+        }
+      }
+
+      if (desmosInstance) {
+        requestAnimationFrame(() => desmosInstance.resize());
+      }
+    });
+
+    document.addEventListener("mouseup", () => {
+      if (isResizing) {
+        isResizing = false;
+        document.body.style.cursor = "default";
+        document.body.classList.remove("is-resizing");
+      }
+    });
+
+    // Reset mobile drag-set heights when window returns to desktop
+    window.addEventListener('resize', () => {
+      const newBreakpoint = window.innerWidth <= 900 ? "mobile" : "desktop";
+      if (currentBreakpoint === "mobile" && newBreakpoint === "desktop") {
+        // Clear any mobile inline height overrides on the Desmos wrapper
+        desmosWrap.style.flex = '';
+        desmosWrap.style.height = '';
+        desmosWrap.style.maxHeight = '';
+        // Clear content panel height override
+        if (contentPanel) {
+          contentPanel.style.height = '';
+          contentPanel.style.flex = '';
+        }
+        // Restore desktop grid if Desmos is active
+        if (layout.classList.contains('has-desmos')) {
+          layout.style.gridTemplateColumns = `${state.lastDesmosWidth} 0.5rem 1fr`;
+        }
+        // Tell Desmos to reflow
+        if (desmosInstance) desmosInstance.resize();
+      }
+      currentBreakpoint = newBreakpoint;
+    });
+
+    resizeHandleInitialized = true;
+    console.log("SAT Player: Resize handle initialized");
   }
 
   // Event Listeners
   answerChoices.addEventListener("click", (event) => {
-    // RESTORED: Retry button logic
+    // Retry button logic
     const retry = event.target.closest("#retryLoadBtn");
     if (retry) {
       void loadQuestions();
@@ -769,7 +794,6 @@
     const current = getCurrentQuestion();
     state.answers[current.id] = choice.dataset.answer;
     renderQuestion();
-    renderNav();
   });
 
   // SPR: capture keystrokes without destroying the input on every keystroke
@@ -780,15 +804,6 @@
     if (!current || current.type !== "spr") return;
     state.answers[current.id] = input.value;
     if (checkAnswerBtn) checkAnswerBtn.disabled = !input.value || !input.value.trim();
-    renderNav();
-  });
-
-  questionNav?.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-index]");
-    if (!button) {
-      return;
-    }
-    goTo(Number(button.dataset.index));
   });
 
   prevQuestionBtn.addEventListener("click", () => {
@@ -798,7 +813,9 @@
   });
 
   nextQuestionBtn.addEventListener("click", () => {
-    if (state.currentIndex < questions.length - 1) {
+    if (state.currentIndex === questions.length - 1) {
+      window.location.href = "./index.html";
+    } else if (state.currentIndex < questions.length - 1) {
       goTo(state.currentIndex + 1);
     }
   });
@@ -813,7 +830,6 @@
     }
     state.checked[current.id] = true;
     renderQuestion();
-    renderNav();
   });
 
   showExplanationBtn.addEventListener("click", () => {
@@ -827,11 +843,10 @@
       return;
     }
     state.reviewed[current.id] = !state.reviewed[current.id];
-    renderNav();
     renderQuestion();
   });
 
-  // NEW: Reference panel toggle
+  // Reference panel toggle
   referenceBtn.addEventListener("click", () => {
     const isHidden = referencePanel.classList.toggle("is-hidden");
     referenceBtn.classList.toggle("is-active", !isHidden);
@@ -847,7 +862,7 @@
     renderQuestion();
   });
 
-  // NEW: Stopwatch event listeners
+  // Stopwatch event listeners
   pauseStopwatchBtn.addEventListener("click", () => {
     state.isPaused = !state.isPaused;
     pauseStopwatchBtn.classList.toggle("is-active", state.isPaused);
@@ -861,7 +876,7 @@
     updateStopwatchDisplay();
   });
 
-  // NEW: Session modal event listeners
+  // Session modal event listeners
   sessionInfoBtn.addEventListener("click", () => {
     populateSessionModal();
     if (sessionInfoModal) sessionInfoModal.style.display = "flex";
@@ -873,10 +888,9 @@
     }
   });
 
-  // RESTORED: loadQuestions with full validation (keeps new stopwatch and reference panel)
+  // RESTORED: loadQuestions with full validation
   async function loadQuestions() {
     const sections = query.sections;
-    // RESTORED: Section validation
     const isValidSection = Array.isArray(sections) && sections.length > 0;
     if (!isValidSection) {
       loadState = "error";
@@ -885,7 +899,6 @@
       state.currentIndex = 0;
       explanationForcedOpen = false;
       renderHeader();
-      renderNav();
       renderQuestion();
       return;
     }
@@ -896,17 +909,14 @@
     state.currentIndex = 0;
     explanationForcedOpen = false;
     renderHeader();
-    renderNav();
     renderQuestion();
 
-    // LIVE API MODE (original code)
+    // LIVE API MODE
     const params = new URLSearchParams();
-    // RESTORED: Section value handling
     const sectionValue = sections.length === 2 && sections.includes("english") && sections.includes("math")
       ? "any"
       : sections.join(",");
     params.set("sections", sectionValue);
-    // RESTORED: Domain value handling  
     const domainValue = Array.isArray(query.domains) && query.domains.length > 0 && !query.domains.includes("any")
       ? query.domains.join(",")
       : "any";
@@ -929,15 +939,14 @@
         state.currentIndex = 0;
         startStopwatch();
         renderHeader();
-        renderNav();
         renderQuestion();
+        initResizeHandle();
         return;
       }
       loadState = "error";
       loadError = "Could not reach the Korah SAT adapter.";
       console.error(err);
       renderHeader();
-      renderNav();
       renderQuestion();
       return;
     }
@@ -950,14 +959,13 @@
         state.currentIndex = 0;
         startStopwatch();
         renderHeader();
-        renderNav();
         renderQuestion();
+        initResizeHandle();
         return;
       }
       loadState = "error";
       loadError = `Adapter error (${response.status}).`;
       renderHeader();
-      renderNav();
       renderQuestion();
       return;
     }
@@ -970,7 +978,6 @@
       loadError = "Adapter returned invalid JSON.";
       console.error(err);
       renderHeader();
-      renderNav();
       renderQuestion();
       return;
     }
@@ -978,22 +985,167 @@
     questions = Array.isArray(payload?.questions) ? payload.questions : [];
     loadState = questions.length ? "success" : "empty";
     state.currentIndex = 0;
-    // NEW: Start stopwatch
     startStopwatch();
     renderHeader();
-    renderNav();
     renderQuestion();
     
-    // NEW: Initialize reference panel draggable
-    if (referencePanel) {
-      makeDraggable(referencePanel, ".reference-drag-handle");
-      makeResizable(referencePanel);
-    }
+    // Initialize resize handle
+    initResizeHandle();
+  }
+
+/**
+    * Makes an element resizable from all edges (edge detection, no visible handles).
+    * Also makes the entire element draggable from anywhere.
+    * @param {HTMLElement} el
+    */
+  function makeResizable(el) {
+    if (!el) return;
+    el.style.position = 'fixed';
+    el.style.overflow = 'hidden';
+    
+    const dragThreshold = 24;
+    let isDragging = false;
+    let isResizing = false;
+    let resizeFrom = null;
+    let startX = 0, startY = 0;
+    let startWidth = 0, startHeight = 0, startLeft = 0, startTop = 0;
+    // No mobile check - resize works at all screen sizes
+
+    // Reset position when transitioning to small screens
+    window.addEventListener('resize', () => {
+      // Reset position when window gets very small
+      if (window.innerWidth < 400) {
+        el.style.bottom = '';
+        el.style.top = '0';
+        el.style.left = '0';
+        el.style.right = '';
+      }
+    });
+
+    // Cursor based on position
+    const getCursor = (x, y) => {
+      if (!el) return 'default';
+      const rect = el.getBoundingClientRect();
+      const fromBottom = rect.bottom - y < dragThreshold;
+      const fromLeft = x - rect.left < dragThreshold;
+      const fromRight = rect.right - x < dragThreshold;
+      const midX = rect.left + rect.width / 2;
+
+      // Corners
+      if (fromBottom && fromLeft) return 'sw-resize';
+      if (fromBottom && fromRight) return 'se-resize';
+      // Bottom edge - 50/50 split
+      if (fromBottom) {
+        return x < midX ? 's-left' : 's-right';
+      }
+      // Left/Right edges
+      if (fromLeft) return 'w-resize';
+      if (fromRight) return 'e-resize';
+      return 'grab';
+    };
+
+    // Check if collapsed
+    const isCollapsed = () => el.classList.contains('collapsed');
+
+    el.addEventListener('mousedown', (e) => {
+      if (e.target.closest('button')) return;
+      e.preventDefault();
+      
+      startX = e.clientX;
+      startY = e.clientY;
+      startWidth = el.offsetWidth;
+      startHeight = el.offsetHeight;
+      startLeft = parseFloat(el.style.left) || el.offsetLeft;
+      startTop = parseFloat(el.style.top) || el.offsetTop;
+
+      // Allow dragging and resizing at all screen sizes
+      const cursor = getCursor(e.clientX, e.clientY);
+      if (cursor === 'grab' || isCollapsed()) {
+        isDragging = true;
+      } else {
+        isResizing = true;
+        resizeFrom = cursor;
+      }
+      
+      const finalCursor = cursor === 'grab' ? 'grabbing' : cursor;
+      document.body.style.userSelect = 'none';
+      document.body.style.cursor = finalCursor;
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      el.style.cursor = getCursor(e.clientX, e.clientY);
+      if (!isDragging && !isResizing) return;
+
+      if (isDragging) {
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        const maxLeft = window.innerWidth - el.offsetWidth;
+        const maxTop = window.innerHeight - el.offsetHeight;
+        el.style.left = Math.max(0, Math.min(maxLeft, startLeft + dx)) + 'px';
+        el.style.top = Math.max(0, Math.min(maxTop, startTop + dy)) + 'px';
+        el.style.bottom = '';
+      } else if (isResizing) {
+        const dx = e.clientX - startX;
+        const minW = 320;
+        // Scale with window: Desktop (>1000px) cap at 850px (53rem), Mobile (≤1000px): window - 10rem (160px)
+        const maxW = window.innerWidth > 1000 ? 850 : window.innerWidth - 160;
+
+        // Right edge - pull left shrinks, pull right grows
+        if (resizeFrom === 'e-resize') {
+          const newW = Math.min(maxW, Math.max(minW, startWidth + dx));
+          el.style.width = newW + 'px';
+          el.style.height = 'auto';
+        }
+        // Left edge - pull right shrinks, pull left grows
+        if (resizeFrom === 'w-resize') {
+          const newW = Math.min(maxW, Math.max(minW, startWidth - dx));
+          el.style.left = startLeft + (startWidth - newW);
+          el.style.width = newW + 'px';
+          el.style.height = 'auto';
+        }
+        // Bottom edge right half - grows like right edge
+        if (resizeFrom === 's-right') {
+          const newW = Math.min(maxW, Math.max(minW, startWidth + dx));
+          el.style.width = newW + 'px';
+          el.style.height = 'auto';
+        }
+        // Bottom edge left half - grows like left edge
+        if (resizeFrom === 's-left') {
+          const newW = Math.min(maxW, Math.max(minW, startWidth - dx));
+          el.style.left = startLeft + (startWidth - newW);
+          el.style.width = newW + 'px';
+          el.style.height = 'auto';
+        }
+      }
+    });
+
+    document.addEventListener('mouseup', () => {
+      isDragging = false;
+      isResizing = false;
+      resizeFrom = null;
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+    });
+  }
+
+  // Initialize reference panel (draggable + resizable combined)
+  if (referencePanel) {
+    makeResizable(referencePanel);
   }
 
   renderHeader();
-  renderNav();
   renderQuestion();
 
   void loadQuestions();
 })();
+
+// Defined outside the IIFE so inline onclick can reach it
+window.toggleReferenceCollapse = function() {
+  const panel = document.getElementById('referencePanel');
+  const btn = document.getElementById('referenceCollapseBtn');
+  if (!panel || !btn) return;
+
+  const isCollapsed = panel.classList.toggle('collapsed');
+  btn.classList.toggle('collapsed', isCollapsed);
+  btn.setAttribute('aria-label', isCollapsed ? 'Expand reference sheet' : 'Collapse reference sheet');
+};

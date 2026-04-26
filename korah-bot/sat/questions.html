@@ -1,6 +1,34 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
-<head>
+<html lang="en" x-data="{
+  theme: localStorage.getItem('korah_theme') || 'dark',
+  sidebarCollapsed: localStorage.getItem('korah_sidebar_collapsed') === 'true',
+  mobileOpen: false,
+  getEffectiveTheme() {
+    if (this.theme === 'system') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return this.theme;
+  },
+  toggleSidebar() {
+    if (window.innerWidth <= 768) {
+      this.mobileOpen = !this.mobileOpen;
+      const overlay = document.querySelector('.sidebar-overlay');
+      if (overlay) overlay.classList.toggle('show', this.mobileOpen);
+    } else {
+      if (this.sidebarCollapsed) {
+        const dp = document.getElementById('doc-panel');
+        if (dp?.classList.contains('expanded')) {
+          dp.classList.remove('expanded');
+          dp.classList.add('collapsed');
+          const tab = document.getElementById('doc-panel-tab');
+          if (tab) tab.classList.remove('panel-open');
+        }
+      }
+      this.sidebarCollapsed = !this.sidebarCollapsed;
+      localStorage.setItem('korah_sidebar_collapsed', this.sidebarCollapsed);
+    }
+  }
+}" :data-theme="getEffectiveTheme()" x-cloak><head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Korah AI — SAT Practice Player</title>
@@ -15,9 +43,50 @@
 <link rel="stylesheet" href="./sat-player-theme.css"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css"/>
 <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Round"/>
+
+<style>
+  /* Dark mode - white text outside question container (questions.html only) */
+html[data-theme="dark"] {
+    --bg: #06040f;
+    --sf: rgba(18, 12, 40, 0.7);
+    --sf2: rgba(30, 18, 60, 0.6);
+    --bd: rgba(139, 92, 246, 0.2);
+    --tx: #ffffff;
+    --tx2: #ffffff;
+    --tx3: #a89dc0;
+    --p4: #8b5cf6;
+    --p5: #a78bfa;
+    --glow: rgba(139, 92, 246, 0.15);
+}
+
+/* Light mode - black text outside question container (questions.html only) */
+html[data-theme="light"] {
+    --bg: #faf8ff;
+    --sf: rgba(255, 255, 255, 0.85);
+    --sf2: rgba(243, 239, 255, 0.9);
+    --bd: rgba(109, 40, 217, 0.18);
+    --tx: #000000;
+    --tx2: #000000;
+    --tx3: #9080aa;
+    --p4: #8b5cf6;
+    --p5: #7c3aed;
+    --glow: rgba(109, 40, 217, 0.15);
+}
+
+</style>
 </head>
 
 <body class="bg-base tx sat-shell">
+
+<script>
+  (function() {
+    var theme = localStorage.getItem('korah_theme') || 'dark';
+    if (theme === 'system') {
+      theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    document.documentElement.setAttribute('data-theme', theme);
+  })();
+</script>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
@@ -115,81 +184,120 @@
     
 <!-- More Dropdown Menu -->
   <div id="moreDropdown" class="more-dropdown-menu">
-    <ul class="more-dropdown-list">
-      <li class="more-dropdown-collapsed-item more-dropdown-math-item">
-        <a href="#" class="more-dropdown-item" onclick="document.getElementById('referenceBtn').click(); closeMoreDropdown(); return false;">
-          <span class="material-icons-round">description</span>
-          <span>Reference</span>
-        </a>
-      </li>
-      <li class="more-dropdown-collapsed-item more-dropdown-math-item">
-        <a href="#" class="more-dropdown-item" onclick="document.getElementById('toggleCalcBtn').click(); closeMoreDropdown(); return false;">
-          <span class="material-icons-round">calculate</span>
-          <span>Calculator</span>
-        </a>
-      </li>
-      <li class="more-dropdown-collapsed-item">
-        <a href="#" class="more-dropdown-item" onclick="document.getElementById('markReviewBtn').click(); closeMoreDropdown(); return false;">
-          <span class="material-icons-round">bookmark</span>
-          <span>Mark Review</span>
-        </a>
-      </li>
-      <li class="more-dropdown-collapsed-item">
-        <a href="#" class="more-dropdown-item" onclick="document.getElementById('showExplanationBtn').click(); closeMoreDropdown(); return false;">
-          <span class="material-icons-round">help</span>
-          <span>Explanation</span>
-        </a>
-      </li>
-    </ul>
-  </div>
-  </div>
+    <!-- Main page -->
+    <div class="more-dropdown-page" data-page="main" id="moreDropdownMain">
+      <ul class="more-dropdown-list">
+        <li class="more-dropdown-collapsed-item more-dropdown-math-item">
+          <a href="#" class="more-dropdown-item" onclick="document.getElementById('referenceBtn').click(); closeMoreDropdown(); return false;">
+            <span class="material-icons-round">description</span>
+            <span>Reference</span>
+          </a>
+        </li>
+        <li class="more-dropdown-collapsed-item more-dropdown-math-item">
+          <a href="#" class="more-dropdown-item" onclick="document.getElementById('toggleCalcBtn').click(); closeMoreDropdown(); return false;">
+            <span class="material-icons-round">calculate</span>
+            <span>Calculator</span>
+          </a>
+        </li>
+        <li class="more-dropdown-collapsed-item">
+          <a href="#" class="more-dropdown-item" onclick="document.getElementById('markReviewBtn').click(); closeMoreDropdown(); return false;">
+            <span class="material-icons-round">bookmark</span>
+            <span>Mark Review</span>
+          </a>
+        </li>
+        <li class="more-dropdown-collapsed-item">
+          <a href="#" class="more-dropdown-item" onclick="document.getElementById('showExplanationBtn').click(); closeMoreDropdown(); return false;">
+            <span class="material-icons-round">help</span>
+            <span>Explanation</span>
+          </a>
+        </li>
+        <!-- Theme option — always visible in dropdown -->
+        <li>
+          <a href="#" class="more-dropdown-item" id="themeDropdownTrigger" onclick="openThemeSubpanel(); return false;">
+            <span class="material-icons-round">palette</span>
+            <span>Theme</span>
+            <span class="more-dropdown-arrow material-icons-round" style="margin-left:auto; font-size:1rem;">chevron_right</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Theme sub-panel -->
+    <div class="more-dropdown-page more-dropdown-theme-panel" data-page="theme" id="moreDropdownTheme" style="display:none;">
+      <ul class="more-dropdown-list">
+        <li>
+          <a href="#" class="more-dropdown-item" onclick="closeThemeSubpanel(); return false;">
+            <span class="material-icons-round" style="font-size:1rem;">arrow_back</span>
+            <span>Back</span>
+          </a>
+        </li>
+        <li>
+          <a href="#" class="more-dropdown-item more-dropdown-theme-option" id="themeOptDark" onclick="setDropdownTheme('dark'); return false;">
+            <span class="material-icons-round">dark_mode</span>
+            <span>Dark</span>
+            <span class="more-dropdown-check material-icons-round" id="checkDark">check</span>
+          </a>
+        </li>
+        <li>
+          <a href="#" class="more-dropdown-item more-dropdown-theme-option" id="themeOptLight" onclick="setDropdownTheme('light'); return false;">
+            <span class="material-icons-round">light_mode</span>
+            <span>Light</span>
+            <span class="more-dropdown-check material-icons-round" id="checkLight">check</span>
+          </a>
+        </li>
+        <li>
+          <a href="#" class="more-dropdown-item more-dropdown-theme-option" id="themeOptSystem" onclick="setDropdownTheme('system'); return false;">
+            <span class="material-icons-round">settings_suggest</span>
+            <span>System</span>
+            <span class="more-dropdown-check material-icons-round" id="checkSystem">check</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>  </div>
 </header>
 
 <!-- ═══ MAIN CONTENT ═══ -->
 <div id="main-area-wrapper" class="main-area-wrapper" style="margin-left: 0; width: 100%;">
 
-<main id="main-content" class="main-content" style="padding: 0;">
+  <!-- NEW: flat split wrapper, mirrors .sat-math-split -->
+  <div class="sat-player-split" id="playerSplit">
 
-  <div id="playerRoot" class="sat-player-zen-wrap">
-    
-    <!-- Top Progress Indicator -->
-    <div id="topIndicators" class="sat-player-header-center">
-      <h1 id="playerTitle" class="grad-text" style="font-size: 1.25rem; margin: 0; display: none;">Loading session</h1>
+    <!-- Panel A: Desmos (hidden by default) -->
+    <div class="sat-player-graph-panel" id="desmosWrapper" style="display:none;">
+      <div id="desmosContainer" style="width:100%; height:100%;"></div>
     </div>
 
-    <!-- Layout Container (Becomes split grid in Math) -->
-    <div id="questionLayout" class="sat-question-container">
-      
-      <!-- Left: Desmos (Visible in Math split mode) -->
-      <div id="desmosWrapper" class="sat-desmos-container" style="display: none; height: 100%;">
-        <div id="desmosContainer" style="width: 100%; height: 100%; position: relative; z-index: 10;"></div>
-      </div>
+    <!-- Resize handle (hidden by default) -->
+    <div class="sat-player-resize-handle" id="resize-handle"></div>
 
-      <!-- Right/Main: Question Content -->
-      <div id="contentWrapper" class="sat-question-content-main">
-        <section class="sat-question-panel" style="flex: 1;">
+    <!-- Panel B: SAT question content (always visible) -->
+    <div class="sat-player-content-panel" id="contentWrapper">
+      <div class="sat-player-scroll" id="playerScroll">
+
+        <!-- question panel card -->
+        <section class="sat-question-panel" id="satQuestionPanel">
           <div class="sat-question-head" style="display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap;">
-            <span id="questionNumber" class="sat-question-number" style="display: inline;"></span>
-            <span id="questionDomain" class="sat-domain-label" style="display: inline;"></span>
-            <h2 id="questionStemTitle" class="sat-question-title" style="display: inline; margin: 0;">Question</h2>
+            <span id="questionNumber" class="sat-question-number"></span>
+            <span id="questionDomain" class="sat-domain-label"></span>
+            <h2 id="questionStemTitle" class="sat-question-title" style="margin:0;">Question</h2>
             <div id="reviewBadge" class="sat-pill is-hidden" style="background: rgba(248, 113, 113, 0.15); color: #f87171; border-color: rgba(248, 113, 113, 0.3);">Marked</div>
           </div>
+          <article class="sat-passage-card">
+            <p id="questionParagraph" class="sat-passage-text"></p>
+            <p id="questionStem" class="sat-question-stem"></p>
+          </article>
+          <div id="answerChoices" class="sat-answer-list"></div>
+          <section id="feedbackPanel" class="sat-feedback-panel is-hidden"></section>
+        </section>
 
-            <article class="sat-passage-card">
-              <p id="questionParagraph" class="sat-passage-text"></p>
-              <p id="questionStem" class="sat-question-stem"></p>
-            </article>
 
-            <div id="answerChoices" class="sat-answer-list"></div>
 
-            <section id="feedbackPanel" class="sat-feedback-panel is-hidden"></section>
-          </section>
-        </div>
       </div>
     </div>
-  </div>
 
-</main>
+  </div>
+  <!-- END sat-player-split -->
 
 </div>
 
@@ -200,7 +308,7 @@
       <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;">Reference Sheet</span>
     </div>
     <div style="display: flex; align-items: center; gap: 4px;">
-      <button id="referenceCollapseBtn" class="reference-collapse-btn" onclick="toggleReferenceCollapse()">
+      <button id="referenceCollapseBtn" class="reference-collapse-btn" onclick="toggleReferenceCollapse()" aria-label="Collapse reference sheet">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <polyline points="6 9 12 15 18 9"/>
         </svg>
@@ -350,6 +458,43 @@ function closeMoreDropdown() {
   if (moreDropdown) {
     moreDropdown.classList.remove('more-dropdown-open');
   }
+  // Always reset to main page when dropdown closes
+  closeThemeSubpanel();
+}
+
+function openThemeSubpanel() {
+  var main  = document.getElementById('moreDropdownMain');
+  var theme = document.getElementById('moreDropdownTheme');
+  if (main)  main.style.display  = 'none';
+  if (theme) theme.style.display = 'block';
+  syncThemeChecks();
+}
+
+function closeThemeSubpanel() {
+  var main  = document.getElementById('moreDropdownMain');
+  var theme = document.getElementById('moreDropdownTheme');
+  if (main)  main.style.display  = 'block';
+  if (theme) theme.style.display = 'none';
+}
+
+function syncThemeChecks() {
+  var current = localStorage.getItem('korah_theme') || 'dark';
+  ['dark', 'light', 'system'].forEach(function(t) {
+    var el = document.getElementById('check' + t.charAt(0).toUpperCase() + t.slice(1));
+    if (el) el.style.opacity = (current === t) ? '1' : '0';
+  });
+}
+
+function setDropdownTheme(theme) {
+  localStorage.setItem('korah_theme', theme);
+  // Apply theme to the html element (questions.html uses data-theme directly, not Alpine)
+  var effective = theme;
+  if (theme === 'system') {
+    effective = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  document.documentElement.setAttribute('data-theme', effective);
+  syncThemeChecks();
+  // Don't close the dropdown — let the user see the checkmark update
 }
 
 function updateDropdownForSection() {

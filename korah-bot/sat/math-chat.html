@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en" x-data="{
   theme: localStorage.getItem('korah_theme') || 'dark',
-  sidebarCollapsed: localStorage.getItem('korah_sidebar_collapsed') === 'true',
+  sidebarCollapsed: window.innerWidth <= 768 ? false : localStorage.getItem('korah_sidebar_collapsed') === 'true',
   mobileOpen: false,
   getEffectiveTheme() {
     if (this.theme === 'system') {
@@ -12,6 +12,8 @@
   toggleSidebar() {
     if (window.innerWidth <= 768) {
       this.mobileOpen = !this.mobileOpen;
+      const overlay = document.querySelector('.sidebar-overlay');
+      if (overlay) overlay.classList.toggle('show', this.mobileOpen);
     } else {
       this.sidebarCollapsed = !this.sidebarCollapsed;
       localStorage.setItem('korah_sidebar_collapsed', this.sidebarCollapsed);
@@ -78,7 +80,7 @@
 <aside id="sidebar" class="sidebar bg-sf glass t-theme"
   :class="{ collapsed: sidebarCollapsed, 'mobile-open': mobileOpen }"
   x-effect="window.KorahSidebar?.onCollapseChange?.(sidebarCollapsed)"
-  @resize.window="if (window.innerWidth > 768) mobileOpen = false">
+  @resize.window="if (window.innerWidth > 768) { mobileOpen = false; const overlay = document.querySelector('.sidebar-overlay'); if (overlay) overlay.classList.remove('show'); }">
   <div class="sidebar-header">
     <a href="../index.html" class="flex items-center gap-2.5 no-underline">
       <div class="w-12 h-12 rounded-xl flex items-center justify-center font-display text-xl font-black text-white shadow-glow logo-btn">
@@ -98,8 +100,8 @@
 
   <nav class="sidebar-nav">
     <div class="sidebar-nav-row">
-      <a href="../index.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">chat</span> <span class="nav-text">Chat</span></a>
-      <a href="../study/feed.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">school</span> <span class="nav-text">Study</span></a>
+      <a href="../index.html" class="sidebar-nav-link nav-empty t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">chat</span> <span class="nav-text">Chat</span></a>
+      <a href="../study/feed.html" class="sidebar-nav-link  t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">school</span> <span class="nav-text">Study</span></a>
     </div>
     <a href="index.html" class="sidebar-nav-link t-btn" data-sat-link="true"><span class="material-icons-round" style="font-size: 1.25rem;">assignment</span> <span class="nav-text">SAT</span></a>
     <a href="../productivity.html" class="sidebar-nav-link productivity-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">timer</span> <span class="nav-text">Productivity</span></a>
@@ -531,6 +533,7 @@
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
+<script src="../app/timer-manager.js"></script>
 <script src="../study/js/sidebar.js"></script>
 <script src="../study/js/study-api.js"></script>
 <script src="./math-chat.js"></script>

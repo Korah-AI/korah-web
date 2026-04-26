@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en" x-data="{
   theme: localStorage.getItem('korah_theme') || 'dark',
-  sidebarCollapsed: localStorage.getItem('korah_sidebar_collapsed') === 'true',
+  sidebarCollapsed: window.innerWidth <= 768 ? false : localStorage.getItem('korah_sidebar_collapsed') === 'true',
   mobileOpen: false,
   getEffectiveTheme() {
     if (this.theme === 'system') {
@@ -12,6 +12,8 @@
   toggleSidebar() {
     if (window.innerWidth <= 768) {
       this.mobileOpen = !this.mobileOpen;
+      const overlay = document.querySelector('.sidebar-overlay');
+      if (overlay) overlay.classList.toggle('show', this.mobileOpen);
     } else {
       if (this.sidebarCollapsed) {
         const dp = document.getElementById('doc-panel');
@@ -90,7 +92,7 @@
 <aside id="sidebar" class="sidebar bg-sf glass t-theme"
   :class="{ collapsed: sidebarCollapsed, 'mobile-open': mobileOpen }"
   x-effect="window.KorahSidebar?.onCollapseChange?.(sidebarCollapsed)"
-  @resize.window="if (window.innerWidth > 768) mobileOpen = false">
+  @resize.window="if (window.innerWidth > 768) { mobileOpen = false; const overlay = document.querySelector('.sidebar-overlay'); if (overlay) overlay.classList.remove('show'); }">
   <div class="sidebar-header">
     <a href="index.html" class="flex items-center gap-2.5 no-underline">
       <div class="w-12 h-12 rounded-xl flex items-center justify-center font-display text-xl font-black text-white shadow-glow logo-btn">
@@ -583,7 +585,7 @@
         <div style="font-size: 0.75rem; color: var(--tx3); margin-top: 0.25rem;">Regressions, algebra, geometry</div>
       </button>
       <button id="sat-english-btn" class="sat-sub-btn" style="flex:1; padding: 1rem; border-radius: 12px; border: 2px solid rgba(99,102,241,0.3); background: rgba(99,102,241,0.08); cursor: pointer; text-align: center; transition: all 0.2s;">
-        <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">📖</div>
+        <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">📖</div> 
         <div style="font-weight: 700; font-size: 0.95rem; color: var(--tx);">English</div>
         <div style="font-size: 0.75rem; color: var(--tx3); margin-top: 0.25rem;">Reading & Writing</div>
       </button>

@@ -631,6 +631,7 @@ function showSidebarDeleteModal(name, onConfirm) {
       : satHref.replace(/[^/]*$/, '');
     const satIndexHref = `${satDir}index.html`;
     const satMathChatHref = `${satDir}math-chat.html`;
+    
 
     // Wrap SAT item so it can "reveal" like the Pomodoro idle panel.
     const wrapper = document.createElement('div');
@@ -656,7 +657,7 @@ function showSidebarDeleteModal(name, onConfirm) {
     panel.innerHTML = `
       <ul class="more-dropdown-list">
         <li>
-          <a class="more-dropdown-item" href="${satMathChatHref}">
+          <a class="more-dropdown-item" href="${satMathChatHref}" id="sat-math-chat-link">
             <span class="material-icons-round">calculate</span>
             <span>SAT Math Chat</span>
           </a>
@@ -670,6 +671,9 @@ function showSidebarDeleteModal(name, onConfirm) {
       </ul>
     `;
     wrapper.appendChild(panel);
+    panel.querySelector('#sat-math-chat-link')?.addEventListener('click', () => {
+      localStorage.setItem('korah_sidebar_collapsed', 'true');
+    });
 
     const close = () => {
       trigger.setAttribute('aria-expanded', 'false');
@@ -1045,9 +1049,10 @@ function showSidebarDeleteModal(name, onConfirm) {
         <ul class="more-dropdown-list more-dropdown-page" data-page="main">
           <li>
             <a href="#" class="more-dropdown-item more-dropdown-trigger-item" onclick="switchToThemePage(this.closest('.collapsed-more-dropdown')); return false;">
-              <span class="material-icons-round">dark_mode</span>
+              <span class="material-icons-round">palette</span>
               <span>Theme</span>
               <span class="material-icons-round more-dropdown-arrow">chevron_right</span>
+
             </a>
           </li>
           <li>
@@ -1073,23 +1078,23 @@ function showSidebarDeleteModal(name, onConfirm) {
           </li>
           <li>
             <a href="#" class="more-dropdown-item more-dropdown-theme-option" data-theme="dark" onclick="setThemeFromDropdown('dark', this.closest('.collapsed-more-dropdown'), this.closest('.collapsed-more-wrapper')); return false;">
-              <span class="material-icons-round">dark_mode</span>
+              <span class="material-icons-round">palette</span>
               <span>Dark Mode</span>
-              <span class="material-icons-round more-dropdown-check"></span>
+              <span class="more-dropdown-check material-icons-round" id="checkDark">check</span>
             </a>
           </li>
           <li>
             <a href="#" class="more-dropdown-item more-dropdown-theme-option" data-theme="light" onclick="setThemeFromDropdown('light', this.closest('.collapsed-more-dropdown'), this.closest('.collapsed-more-wrapper')); return false;">
               <span class="material-icons-round">light_mode</span>
               <span>Light Mode</span>
-              <span class="material-icons-round more-dropdown-check"></span>
+              <span class="more-dropdown-check material-icons-round" id="checkLight">check</span>
             </a>
           </li>
           <li>
             <a href="#" class="more-dropdown-item more-dropdown-theme-option" data-theme="system" onclick="setThemeFromDropdown('system', this.closest('.collapsed-more-dropdown'), this.closest('.collapsed-more-wrapper')); return false;">
               <span class="material-icons-round">settings_suggest</span>
               <span>System</span>
-              <span class="material-icons-round more-dropdown-check"></span>
+              <span class="more-dropdown-check material-icons-round" id="checkSystem">check</span>
             </a>
           </li>
         </ul>
@@ -1118,19 +1123,13 @@ function showSidebarDeleteModal(name, onConfirm) {
         }
         document.documentElement.setAttribute('data-theme', effectiveTheme);
         updateThemeChecks(dd);
-        closeCollapsedMoreDropdown(wrapper);
       }
       window.setThemeFromDropdown = setThemeFromDropdown;
       
       function updateThemeChecks(dd) {
-        const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+        const currentTheme = localStorage.getItem('korah_theme') || 'dark';
         dd.querySelectorAll('.more-dropdown-theme-option').forEach(item => {
-          const check = item.querySelector('.more-dropdown-check');
-          if (item.getAttribute('data-theme') === currentTheme) {
-            check.textContent = 'check';
-          } else {
-            check.textContent = '';
-          }
+          item.classList.toggle('active', item.getAttribute('data-theme') === currentTheme);
         });
       }
       
@@ -1203,8 +1202,6 @@ function showSidebarDeleteModal(name, onConfirm) {
     });
 
     if (alpineManaged) {
-      // Alpine manages collapse/expand via :class and x-effect.
-      // Expose callback so Alpine's x-effect can notify us of state changes.
       window.KorahSidebar.onCollapseChange = function(collapsed) {
         if (collapsed) {
           setTimeout(initCollapsedMoreDropdown, 100);
@@ -1212,8 +1209,8 @@ function showSidebarDeleteModal(name, onConfirm) {
           removeCollapsedMoreDropdown();
         }
       };
-      // Initialize more dropdown based on current state
-      initCollapsedMoreDropdown();
+      // Delay initial check so Alpine has time to apply the collapsed class
+      setTimeout(initCollapsedMoreDropdown, 150);
     } else {
       // Vanilla fallback for pages not yet migrated to Alpine sidebar
       function updateSidebarState(collapsed) {

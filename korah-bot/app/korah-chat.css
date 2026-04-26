@@ -66,7 +66,7 @@ html {
 }
 @keyframes soft-pulse {
     0%, 100% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.05); opacity: 0.9; }
+    50% { transform: scale(1.025); opacity: 0.9; }
 }
 
 /* ── Thinking Indicator ── */
@@ -188,6 +188,7 @@ html {
     filter: drop-shadow(0 0 1.5rem var(--glow));
 }
 .grad-bg { background: linear-gradient(135deg, var(--grn), #059669) }
+.grad-bg-purple { background: linear-gradient(135deg, var(--p4), var(--p5)) !important; }
 
 .glass    { backdrop-filter: blur(1.5625rem); -webkit-backdrop-filter: blur(1.5625rem); background: var(--sf) }
 .glass-sm { backdrop-filter: blur(0.9375rem); -webkit-backdrop-filter: blur(0.9375rem); background: var(--sf) }
@@ -324,7 +325,10 @@ body { display: flex; background: var(--bg) }
 .sidebar.collapsed .sidebar-nav {
     position: relative;
     flex-direction: column;
+    flex: 1;
+    display: flex;
     gap: 0.75rem;
+    overflow: visible;
 }
 
 .sidebar.collapsed .sidebar-nav-link {
@@ -352,6 +356,7 @@ body { display: flex; background: var(--bg) }
   transform: translateX(-50%);
   padding: 0.5rem;
   z-index: 9999;
+  margin-top: auto;
 }
 
 .collapsed-more-btn {
@@ -368,7 +373,6 @@ body { display: flex; background: var(--bg) }
   height: 2.25rem;
   width: 2.25rem;
   padding: 0;
-  margin-top: 24rem;
 }
 
 .collapsed-more-btn:hover {
@@ -389,8 +393,7 @@ body { display: flex; background: var(--bg) }
 
 .collapsed-more-dropdown {
   position: absolute;
-  top: 15rem;
-  min-width: 14rem;
+  bottom: calc(100% + 0.5rem);  min-width: 14rem;
   background: var(--sf);
   border-radius: 0.75rem;
   box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.35);
@@ -464,7 +467,7 @@ html[data-theme="dark"] .collapsed-more-dropdown .more-dropdown-item {
 }
 
 html[data-theme="dark"] .collapsed-more-dropdown .more-dropdown-item .material-icons-round {
-  color: #ffffff;
+  color: #a78bfa;
 }
 html[data-theme="dark"] .collapsed-more-dropdown .more-dropdown-item::before {
   background: #c4b5fd;
@@ -503,7 +506,7 @@ html[data-theme="light"] .collapsed-more-dropdown .more-dropdown-item .material-
 }
 
 .collapsed-more-dropdown.showing-theme {
-  top: 12.2rem;
+  bottom: calc(100% + 0.5rem);
 }
 
 html[data-theme="light"] .collapsed-more-dropdown {
@@ -558,6 +561,11 @@ html[data-theme="light"] .collapsed-more-dropdown .more-dropdown-item.danger:hov
 
 .sidebar.collapsed .mood-indicator {
     justify-content: center;
+}
+
+.sidebar #logout-btn svg {
+    color: var(--red) !important;
+    stroke: var(--red) !important;
 }
 
 .sidebar-header {
@@ -624,7 +632,6 @@ html[data-theme="light"] .collapsed-more-dropdown .more-dropdown-item.danger:hov
 .sidebar-nav-link.active { background: var(--cu); color: var(--p5); border-color: var(--bd) }
 
 .sidebar-nav-link.nav-empty {
-  animation: soft-pulse 2s ease-in-out infinite;
   color: var(--p4);
   border-color: rgba(139, 92, 246, 0.2);
 }
@@ -842,6 +849,9 @@ html[data-theme="light"] .sat-more-dropdown .more-dropdown-item::before {
     justify-content: center;
     gap: 0.375rem;
     color: var(--tx3);
+    text-align: center;
+    padding: 3rem 0.5rem 1rem;    
+    width: 100%;
 }
 .study-items-empty-icon {
     font-size: 1.25rem;
@@ -1187,6 +1197,7 @@ html[data-theme="light"] .sat-more-dropdown .more-dropdown-item::before {
 .chat-body {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 1.5rem 1.25rem;
     display: flex;
     flex-direction: column;
@@ -4103,7 +4114,7 @@ html {
 .sidebar .productivity-wrapper {
     position: relative;
     width: 100%;
-    overflow: hidden;
+    overflow: visible;
     flex-shrink: 0;
     margin: 0;
     padding: 0;
@@ -5103,3 +5114,228 @@ html {
 [data-theme="light"] .chat-body::-webkit-scrollbar-thumb { background: var(--p5) !important; }
 [data-theme="light"] .chat-body::-webkit-scrollbar-thumb:hover { background: var(--p4) !important; }
 
+/* ═══ Theme Dropdown Styles (from sat.css) ═══ */
+/* Theme panel */
+.more-dropdown-theme-panel {
+  min-width: 14rem;
+}
+
+.more-dropdown-theme-header {
+  padding: 0.375rem 0.5rem 0;
+  margin-bottom: 0.25rem;
+}
+
+.more-dropdown-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: transparent;
+  border: none;
+  color: var(--tx2);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0.375rem 0.5rem;
+  border-radius: 0.375rem;
+  transition: color 0.15s ease, background 0.15s ease;
+  width: 100%;
+  text-align: left;
+}
+
+.more-dropdown-back-btn:hover {
+  color: var(--p5);
+  background: rgba(139, 92, 246, 0.08);
+}
+
+/* Checkmarks */
+.more-dropdown-check {
+  margin-left: auto;
+  font-size: 1rem !important;
+  color: var(--p5);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.more-dropdown-theme-option.active .more-dropdown-check {
+  opacity: 1;
+}
+
+/* Collapsed dropdown theme page */
+.collapsed-more-dropdown .more-dropdown-page[data-page="theme"] {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--sf);
+  border: none;
+  border-radius: 0.75rem;
+  box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.35);
+}
+
+.collapsed-more-dropdown .more-dropdown-page[data-page="theme"].active {
+  transform: translateX(0);
+}
+
+.collapsed-more-dropdown .more-dropdown-page[data-page="main"].theme-open {
+  transform: translateX(-100%);
+  opacity: 0;
+}
+
+.collapsed-more-dropdown.showing-theme {
+  bottom: calc(100% + 0.5rem);
+}
+
+/* Theme checkmark in collapsed dropdown */
+.collapsed-more-dropdown .more-dropdown-check {
+  margin-left: auto;
+  font-size: 1rem;
+  color: var(--p5);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.collapsed-more-dropdown .more-dropdown-theme-option.active .more-dropdown-check {
+  opacity: 1;
+}
+
+/* Dark mode */
+html[data-theme="dark"] .collapsed-more-dropdown .more-dropdown-item {
+  color: #ffffff;
+}
+html[data-theme="dark"] .collapsed-more-dropdown .more-dropdown-item .material-icons-round {
+  color: #a78bfa;
+}
+html[data-theme="dark"] .collapsed-more-dropdown .more-dropdown-item::before {
+  background: #c4b5fd;
+}
+html[data-theme="dark"] .collapsed-more-dropdown .more-dropdown-item.danger {
+  color: #f87171;
+}
+html[data-theme="dark"] .collapsed-more-dropdown .more-dropdown-item.danger .material-icons-round {
+  color: #f87171;
+}
+html[data-theme="dark"] .collapsed-more-dropdown .more-dropdown-item.danger:hover {
+  background: rgba(248, 113, 113, 0.1);
+}
+
+/* Light mode (with purple hovers instead of green) */
+html[data-theme="light"] .collapsed-more-dropdown .more-dropdown-item {
+  color: #1a0a3c;
+}
+html[data-theme="light"] .collapsed-more-dropdown .more-dropdown-item .material-icons-round {
+  color: #1a0a3c;
+}
+html[data-theme="light"] .collapsed-more-dropdown {
+  background: #faf8ff;
+}
+html[data-theme="light"] .collapsed-more-dropdown .more-dropdown-item:hover {
+  background: rgba(139, 92, 246, 0.15);
+}
+html[data-theme="light"] .collapsed-more-dropdown .more-dropdown-item:hover .material-icons-round {
+  color: #8b5cf6;
+}
+html[data-theme="light"] .collapsed-more-dropdown .more-dropdown-item::before {
+  background: #8b5cf6;
+}
+html[data-theme="light"] .collapsed-more-dropdown .more-dropdown-item.danger {
+  color: #dc2626;
+}
+html[data-theme="light"] .collapsed-more-dropdown .more-dropdown-item.danger .material-icons-round {
+  color: #dc2626;
+}
+html[data-theme="light"] .collapsed-more-dropdown .more-dropdown-item.danger:hover {
+  background: rgba(220, 38, 38, 0.1);
+}
+html[data-theme="light"] .collapsed-more-dropdown .more-dropdown-page[data-page="theme"] {
+  box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.35);
+}
+
+/* Back button light mode */
+html[data-theme="light"] .more-dropdown-back-btn {
+  color: var(--tx2);
+}
+html[data-theme="light"] .more-dropdown-back-btn:hover {
+  color: var(--p5);
+}
+html[data-theme="light"] .more-dropdown-check {
+  color: var(--p5);
+}
+html[data-theme="light"] .more-dropdown-theme-header {
+  border-bottom-color: rgba(130, 110, 175, 0.12);
+}
+
+/* Hide collapsed more dropdown when sidebar is expanded */
+.sidebar:not(.collapsed) .collapsed-more-wrapper {
+    display: none !important;
+}
+
+/* ── Mobile sidebar z-index fix ── */
+@media (max-width: 48rem) {
+    .sidebar.mobile-open {
+        z-index: 300 !important;
+        width: 80vw !important;
+        min-width: 0 !important;
+        padding: 1.5rem 1.25rem !important;
+        transform: translateX(0) !important;
+        opacity: 1 !important;
+        pointer-events: all !important;
+    }
+
+    /* Ensure sidebar overlay is above doc panel but below sidebar */
+    .sidebar-overlay {
+        z-index: 299 !important;
+    }
+
+    /* Doc panel should never cover the sidebar on mobile */
+    .doc-panel {
+        z-index: 201 !important;
+    }
+
+    /* Force full sidebar width on mobile, never icon-only */
+    .sidebar.mobile-open.collapsed {
+        width: 80vw !important;
+        min-width: 0 !important;
+        padding: 1.5rem 1.25rem !important;
+    }
+
+    /* Show all text elements when mobile sidebar is open */
+    .sidebar.mobile-open.collapsed .sidebar-header a div:last-child,
+    .sidebar.mobile-open.collapsed .new-chat-text,
+    .sidebar.mobile-open.collapsed .nav-text,
+    .sidebar.mobile-open.collapsed .sidebar-section-label,
+    .sidebar.mobile-open.collapsed .history-text,
+    .sidebar.mobile-open.collapsed .history-actions,
+    .sidebar.mobile-open.collapsed .sidebar-middle,
+    .sidebar.mobile-open.collapsed .chat-history {
+        display: flex !important;
+    }
+
+    .sidebar.mobile-open.collapsed .sidebar-section-label,
+    .sidebar.mobile-open.collapsed .history-text,
+    .sidebar.mobile-open.collapsed .new-chat-text,
+    .sidebar.mobile-open.collapsed .nav-text {
+        display: block !important;
+    }
+
+    /* Hide the collapsed more button when mobile sidebar is open */
+    .sidebar.mobile-open.collapsed .collapsed-more-wrapper {
+        display: none !important;
+    }
+
+    /* Restore nav links to full width row on mobile */
+    .sidebar.mobile-open.collapsed .sidebar-nav-link {
+        justify-content: flex-start !important;
+        padding: 0.5rem 0.75rem !important;
+        height: auto !important;
+        font-size: 0.6875rem !important;
+    }
+
+    .sidebar.mobile-open.collapsed .sidebar-nav {
+        flex-direction: column !important;
+        gap: 0.375rem !important;
+    }
+
+    .sidebar.mobile-open.collapsed .sidebar-nav-row {
+        flex-direction: row !important;
+    }
+}

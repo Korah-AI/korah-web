@@ -1,4 +1,38 @@
 /* ── SAT Question Bank Styles ── */
+:root {
+  --player-topbar-h: 3.5rem;
+  --player-footer-h: 4rem;
+  
+  /* Purple Scrollbar */
+  --scrollbar-width: 0.5rem;
+  --scrollbar-track: var(--sf2);
+  --scrollbar-thumb: var(--p4);
+}
+/* Purple Scrollbar Styles */
+::-webkit-scrollbar {
+    width: var(--scrollbar-width);
+    height: var(--scrollbar-width);
+}
+
+::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: var(--scrollbar-width);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--p5);
+}
+
+/* Firefox Scrollbar */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
 /* Matches korah-bot coding patterns: rem units, CSS variables, consistent spacing */
 /* Fully responsive with rem units */
 
@@ -26,24 +60,7 @@
     box-sizing: border-box;
 }
 
-/* ── Responsive Breakpoints ── */
-@media (max-width: 1024px) {
-    .sat-player-zen-wrap {
-        margin: 3rem auto 6rem;
-        padding: 1rem 1.5rem;
-    }
-}
 
-@media (max-width: 768px) {
-    .sat-player-zen-wrap {
-        margin: 2.5rem auto 5rem;
-        padding: 0.75rem 1rem;
-    }
-    
-    .sat-topbar-center {
-        display: none;
-    }
-}
 
 @media (max-width: 480px) {
     .sat-topbar-left span,
@@ -52,7 +69,7 @@
     }
 }
 
-/* ── Shell & Layout ── */
+/* Shell & Layout */
 .sat-shell {
     position: relative;
     min-height: 100vh;
@@ -64,7 +81,7 @@
     box-sizing: border-box;
 }
 
-/* ── New Player Topbar (Questions.html) ── */
+/* New Player Topbar (Questions.html) */
 .sat-player-topbar {
     position: fixed;
     top: 0;
@@ -75,11 +92,13 @@
     align-items: center;
     justify-content: space-between;
     padding: 0.75rem 1.25rem;
+    height: var(--player-topbar-h);
     background: var(--sf);
     border-bottom: 0.0625rem solid var(--bd);
     border-radius: 0;
     backdrop-filter: blur(1rem);
     -webkit-backdrop-filter: blur(1rem);
+    box-sizing: border-box;
 }
 
 .sat-topbar-left {
@@ -192,70 +211,6 @@ html[data-theme="light"] .sat-player-zen-wrap .sat-question-panel {
     width: 0%;
 }
 
-/* Question Container */
-.sat-question-container {
-    display: flex;
-    gap: 2rem;
-    overflow-y: hidden;
-    max-height: calc(100vh - 11rem);
-    padding: 2rem 0 3rem;
-    box-sizing: border-box;
-}
-
-.sat-question-container.sat-math-layout {
-    display: flex !important;
-    flex-direction: row !important;
-    max-height: calc(100vh - 11rem);
-    overflow: hidden;
-    padding: 2rem 1rem 3rem;
-    gap: 1.5rem;
-    align-items: stretch;
-    position: relative;
-    z-index: 1;
-}
-
-.sat-question-container.sat-math-layout #desmosWrapper {
-    display: flex !important;
-    flex: 1;
-    min-width: 0;
-    height: 100%;
-    position: relative;
-    z-index: 100;
-}
-
-.sat-question-container.sat-math-layout #contentWrapper {
-    flex: 1;
-    min-width: 0;
-    height: 100%;
-    overflow: hidden;
-}
-
-.sat-question-container.sat-math-layout #desmosWrapper {
-    display: flex !important;
-    flex: 1 1 50%;
-    min-width: 0;
-    position: relative;
-    z-index: 100;
-}
-
-.sat-question-container.sat-math-layout #contentWrapper {
-    flex: 1 1 50%;
-    min-width: 0;
-}
-
-.sat-question-content-main {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-    min-height: 0;
-}
-
-.sat-question-container.sat-math-layout .sat-question-content-main {
-    height: 100%;
-    overflow: hidden;
-}
-
 .sat-question-number,
 .sat-domain-label {
     display: inline-block;
@@ -318,10 +273,12 @@ html[data-theme="light"] .sat-desmos-container {
     display: flex;
     justify-content: flex-end;
     padding: 0.75rem 2rem;
+    min-height: var(--player-footer-h);
     background: linear-gradient(to top, var(--sf) 0%, rgba(30, 18, 60, 0.95) 100%);
     border-top: 0.0625rem solid var(--bd);
     backdrop-filter: blur(1rem);
     -webkit-backdrop-filter: blur(1rem);
+    box-sizing: border-box;
 }
 
 .sat-footer-group {
@@ -721,6 +678,12 @@ html[data-theme="light"] .sat-desmos-container {
     box-shadow: 0 0.75rem 1.5rem rgba(0,0,0,0.2);
 }
 
+html[data-theme="light"] .sat-section-header:hover {
+    opacity: 0.85;
+    filter: brightness(1.05);
+    box-shadow: 0 0.75rem 1.5rem rgba(0,0,0,0.1);
+}
+
 .sat-section-title {
     transition: text-shadow .2s ease;
 }
@@ -1080,7 +1043,8 @@ html[data-theme="light"] .sat-desmos-container {
 .sat-question-panel {
     display: grid;
     gap: 1rem;
-    background: var(--sf);
+    background: var(--sf);/* Question card inside scroll — constrained width, centered */
+    height: 100%;
     border: 0.0625rem solid var(--bd);
     border-radius: 1.5rem;
     padding: 1.375rem;
@@ -1118,6 +1082,18 @@ html[data-theme="light"] .sat-desmos-container {
     border-radius: 1.125rem;
     background: var(--sf2);
     border: 0.0625rem solid var(--bd2);
+}
+
+/* Dark mode: lighten the passage card so dark images/content are visible */
+html[data-theme="dark"] .sat-passage-card {
+  background: rgba(139, 92, 246, 0.75);
+  border-color: rgba(139, 92, 246, 0.15);
+}
+html[data-theme="dark"] .sat-passage-text {
+  color: #e9d5ff;
+}
+html[data-theme="dark"] .sat-question-stem {
+  color: #e9d5ff;
 }
 
 .sat-passage-text,
@@ -1301,174 +1277,218 @@ html[data-theme="light"] .sat-spr-input.is-incorrect {
     display: none !important;
 }
 
-/* Reference Panel */
+/* ═══ REFERENCE PANEL — polished draggable overlay ═══ */
+
 .reference-panel {
-    position: fixed;
-    z-index: 9999;
-    width: 37.5rem;
-    height: auto;
-    min-width: 25rem;
-    min-height: 0;
-    max-height: none;
-    background: var(--sf);
-    border: 0.0625rem solid var(--bd);
-    border-radius: 0.75rem;
-    box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(124, 58, 237, 0.1);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    animation: refPanelFadeIn 0.2s ease-out;
+  position: fixed;
+  z-index: 9999;
+  width: 37.5rem;
+  min-width: 20rem;
+  max-width: 90vw;
+  height: auto;
+  background: var(--sf);
+  border: 0.0625rem solid var(--bd);
+  border-radius: 0.875rem;
+  box-shadow:
+    0 0.75rem 2.5rem rgba(0, 0, 0, 0.35),
+    0 0 0 0.0625rem rgba(124, 58, 237, 0.08);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: refPanelFadeIn 0.2s ease-out;
+}
+
+.reference-panel:hover {
+  box-shadow:
+    0 1rem 3rem rgba(0, 0, 0, 0.4),
+    0 0 0 0.0625rem rgba(124, 58, 237, 0.15);
+  border-color: rgba(139, 92, 246, 0.35);
 }
 
 @keyframes refPanelFadeIn {
-    from {
-        opacity: 0;
-        transform: scale(0.95);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1);
-    }
+  from { opacity: 0; transform: scale(0.95) translateY(-0.5rem); }
+  to   { opacity: 1; transform: scale(1)    translateY(0); }
 }
 
-.reference-panel::-webkit-scrollbar {
-    width: 0.5rem;
+/* Drag handle bar */
+.reference-drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  background: rgba(139, 92, 246, 0.08);
+  border-bottom: 0.0625rem solid rgba(139, 92, 246, 0.06);
+  transition: background 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: grab;
 }
 
-.reference-panel::-webkit-scrollbar-track {
-    background: var(--sf2);
+.reference-drag-handle:active {
+  cursor: grabbing;
 }
 
-.reference-panel::-webkit-scrollbar-thumb {
-    background: var(--p4);
-    border-radius: 0.25rem;
+.reference-drag-handle:hover {
+  background: rgba(139, 92, 246, 0.6);
+  border-color: rgba(139, 92, 246, 0.12);
 }
 
-.reference-panel::-webkit-scrollbar-thumb:hover {
-    background: var(--p5);
+
+.reference-drag-handle span {
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(255,255,255,0.9);
 }
 
-.reference-close-btn {
-    border: none;
-    color: white;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    padding: 0.375rem 0.5rem;
-    line-height: 1;
-    border-radius: 0.375rem;
-    transition: all 0.2s;
+/* Right-side buttons container */
+.reference-drag-handle > div:last-child {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
-.reference-close-btn:hover {
-    background: rgba(239, 68,68, 0.85);
-    color: white;
-}
-
+/* Collapse button */
 .reference-collapse-btn {
-    background: transparent;
-    border: none;
-    color: white;
-    font-size: 1rem;
-    cursor: pointer;
-    padding: 0.375rem 0.5rem;
-    line-height: 1;
-    border-radius: 0.375rem;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.85);
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: background 0.18s ease, transform 0.2s ease;
 }
 
 .reference-collapse-btn:hover {
-    box-shadow: 0 0 8px 2px rgba(255, 255, 255, 0.3);
-    transform: scale(1.1);
+  background: rgba(139, 92, 246, 0.25);
 }
 
+.reference-collapse-btn:active {
+  transform: scale(0.92);
+}
+
+.reference-collapse-btn svg {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* When panel is collapsed, flip the chevron */
 .reference-collapse-btn.collapsed svg {
-    transform: rotate(180deg);
+  transform: rotate(180deg);
 }
 
-.reference-panel.collapsed .reference-content {
-    display: none;
+/* Close button */
+.reference-close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 1.125rem;
+  font-weight: 500;
+  line-height: 1;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: background 0.18s ease, transform 0.15s ease;
 }
 
-.reference-panel.collapsed {
-    height: auto;
-    min-height: 0;
+.reference-close-btn:hover {
+  background: rgba(239, 68, 68, 0.85);
 }
 
+.reference-close-btn:active {
+  transform: scale(0.92);
+}
+
+/* Content area */
 .reference-content {
-    flex: 1;
-    overflow: hidden;
-    padding: 0;
-    transition: max-height 0.3s ease-out, opacity 0.2s ease-out;
-    max-height: 1000px;
-    opacity: 1;
-}
-
-.reference-drag-handle {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.625rem 1rem;
-    background: var(--p4);
-    color: white;
-    cursor: move;
-    flex-shrink: 0;
-}
-
-.reference-content {
-    flex: 1;
-    overflow: hidden;
-    padding: 0;
-    background: var(--sf2);
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    max-height: 1000px;
-    opacity: 1;
-    transform: scaleY(1);
-    transform-origin: top;
-}
-
-.reference-panel.collapsed .reference-content {
-    max-height: 0;
-    opacity: 0;
-    transform: scaleY(0);
-    padding: 0;
-    margin: 0;
+  flex: 1;
+  overflow: hidden;
+  background: var(--sf2);
+  transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease, padding 0.25s ease;
+  opacity: 1;
 }
 
 .reference-content img {
-    height: auto;
-    display: block;
+  width: 100%;
+  height: auto;
+  display: block;
+  max-height: none;
 }
 
-/* Resize handle for reference panel */
-.reference-resize-handle {
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    width: 1rem;
-    height: 1rem;
-    cursor: se-resize;
-    background: linear-gradient(135deg, transparent 50%, var(--p3) 50%);
-    transition: background 0.2s;
+/* Collapsed state - only hide content, keep handle visible */
+.reference-panel.collapsed .reference-content {
+  display: none;
 }
 
-.reference-resize-handle:hover {
-    background: linear-gradient(135deg, transparent 50%, var(--p4) 50%);
+/* Light mode overrides */
+html[data-theme="light"] .reference-panel {
+  background: #ffffff;
+  border-color: rgba(130, 110, 175, 0.2);
+  box-shadow:
+    0 0.75rem 2rem rgba(108, 89, 179, 0.12),
+    0 0 0 0.0625rem rgba(108, 89, 179, 0.06);
 }
 
-/* Responsive reference panel */
-@media (max-width: 768px) {
-    .reference-panel {
-        width: 90vw;
-        max-width: 90vw;
-        height: auto;
-        min-height: 0;
-        left: 5vw;
-        top: 15vh;
-    }
+html[data-theme="light"] .reference-panel:hover {
+  box-shadow:
+    0 1rem 3rem rgba(108, 89, 179, 0.18),
+    0 0 0 0.0625rem rgba(108, 89, 179, 0.14);
+  border-color: rgba(130, 110, 175, 0.3);
+}
+
+html[data-theme="light"] .reference-drag-handle {
+  background: transparent;
+  border-bottom-color: rgba(139, 92, 246, 0.06);
+}
+
+html[data-theme="light"] .reference-drag-handle:hover {
+  background: rgba(139, 92, 246, 0.95);
+  border-bottom-color: rgba(139, 92, 246, 0.08);
+}
+
+html[data-theme="light"] .reference-close-btn {
+  color: #fff;
+}
+
+html[data-theme="light"] .reference-close-btn:hover {
+  background: rgba(239, 68, 68, 0.85);
+}
+
+html[data-theme="light"] .reference-collapse-btn:hover {
+  background: rgb(255, 255, 255,0.15);
+}
+
+html[data-theme="light"] .reference-content {
+  background: #f5f3ff;
+}
+
+/* Mobile breakpoint */
+@media (max-width: 56.25rem) {
+  .reference-panel {
+    width: 95vw;
+    max-width:95vw;
+    border-radius: 1rem 1rem 0.5rem 0.5rem;
+    top:auto;
+  }
+
+  .reference-panel .reference-drag-handle {
+    cursor: grab !important;
+  }
+
+  .reference-panel:active .reference-drag-handle:active {
+    cursor: grabbing !important;
+  }
+
+  .reference-content {
+    max-height: 50vh;
+  }
 }
 
 /* ── Focus States ── */
@@ -1539,12 +1559,14 @@ html[data-theme="light"] .sat-section-card {
 
 html[data-theme="light"] .sat-button-primary {
     background: linear-gradient(135deg, #8b5cf6, #a78bfa);
-    box-shadow: 0 0 0.75rem var(--glow);
+    box-shadow: 0 0.75rem var(--glow);
+    height: 2.875rem;
+    border-radius: 0.875rem;
+    padding: 0 1rem;
 }
 
 html[data-theme="light"] .sat-player-topbar,
-html[data-theme="light"] .sat-tools-panel,
-html[data-theme="light"] .sat-question-panel {
+html[data-theme="light"] .sat-tools-panel {
     background: rgba(255, 255, 255, 0.85);
     box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.08);
 }
@@ -1758,6 +1780,502 @@ html[data-theme="light"] .more-dropdown-item .material-icons-round {
     opacity: 1;
 }
 
+/* Light mode theme check */
+html[data-theme="light"] .more-dropdown-check {
+    color: #7c3aed;
+}
+html[data-theme="light"] .more-dropdown-badge {
+    background: #f5f3ff;
+    color: #9080aa;
+}
+/* Light theme for dropdown */
+html[data-theme="light"] .more-dropdown-menu {
+    background: rgba(255, 255, 255, 0.95);
+    border-color: #e0e0e0;
+}
+html[data-theme="light"] .more-dropdown-item:hover {
+    background: rgba(139, 92, 246, 0.15);
+}
+html[data-theme="light"] .more-dropdown-item::before {
+    background: #c4b5fd;
+}
+html[data-theme="light"] .more-dropdown-item.danger:hover {
+    background: rgba(248, 113, 113, 0.12);
+}
+/* ═══ ENHANCED NAVBAR ICONS ═══ */
+.sat-topbar-right .sat-button {
+    position: relative;
+    transition: all 0.2s ease;
+}
+.sat-topbar-right .sat-button::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 0.5rem;
+    background: var(--p5);
+    opacity: 0;
+    transform: scale(0.8);
+    transition: all 0.2s ease;
+    z-index: -1;
+}
+.sat-topbar-right .sat-button:hover {
+    background: var(--sf2);
+    transform: translateY(-0.0625rem);
+}
+.sat-topbar-right .sat-button:active {
+    transform: translateY(0) scale(0.96);
+}
+.sat-topbar-right .sat-button.is-active {
+    background: var(--sf2);
+}
+.sat-topbar-right .sat-button.is-active svg,
+.sat-topbar-right .sat-button.is-active .material-icons-round {
+    color: var(--p5);
+}
+.sat-topbar-right .sat-button svg {
+    transition: color 0.2s ease;
+}
+.sat-topbar-right .sat-button:hover svg {
+    color: var(--p5);
+}
+/* ═══ ENHANCED PLAYER TIMER ═══ */
+#stopwatchContainer {
+    background: var(--sf2) !important;
+    border: 0.0625rem solid var(--bd) !important;
+    transition: all 0.3s ease;
+}
+#stopwatchContainer:focus-within {
+    border-color: var(--p4) !important;
+    box-shadow: 0 0 0 0.25rem rgba(139, 92, 246, 0.15);
+}
+#playerTimer {
+    background: transparent;
+    -webkit-background-clip: text;
+    background-clip: text;
+}
+/* Timer running state */
+#stopwatchContainer.running {
+    border-color: var(--p4) !important;
+}
+#stopwatchContainer.running #playerTimer {
+    color: var(--p5);
+}
+/* ═══ ENHANCED FOOTER BUTTONS ═══ */
+.sat-player-footer {
+    background: linear-gradient(to top, var(--sf) 0%, rgba(30, 30, 30, 0.98) 100%) !important;
+    border-top: 0.0625rem solid var(--bd) !important;
+}
+.sat-player-footer .sat-button-primary {
+    background: linear-gradient(135deg, var(--p4), var(--p5)) !important;
+    border: none !important;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    transition: all 0.2s ease;
+    box-shadow: 0 0.25rem 0.75rem rgba(139, 92, 246, 0.3);
+    color: #fff !important;
+}
+.sat-player-footer .sat-button-primary:hover {
+    transform: translateY(-0.125rem);
+    box-shadow: 0 0.5rem 1rem rgba(139, 92, 246, 0.4);
+}
+.sat-player-footer .sat-button-primary:active {
+    transform: translateY(0);
+}
+.sat-player-footer .sat-button-ghost {
+    transition: all 0.2s ease;
+}
+.sat-player-footer .sat-button-ghost:hover {
+    background: var(--sf2);
+    color: var(--p5);
+}
+/* ═══ ENHANCED QUESTION AREA ═══ */
+.sat-question-panel {
+    display: grid;
+    gap: 1rem;
+    background: var(--sf);
+    border: 0.0625rem solid var(--bd);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+    min-height: 0;
+}
+.sat-question-number {
+    font-size: 1.75rem;
+    font-weight: 900;
+    color: var(--p5);
+    text-shadow: 0 0 2rem rgba(139, 92, 246, 0.3);
+}
+.sat-domain-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--p4);
+    background: rgba(139, 92, 246, 0.1);
+    padding: 0.25rem 0.625rem;
+    border-radius: 999px;
+}
+/* ═══ ENHANCED ANSWER CHOICES ═══ */
+.sat-answer-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    overflow: hidden;
+    min-height: 0;
+}
+.sat-answer-item {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    padding: 0.875rem 1rem;
+    background: var(--sf2);
+    border: 0.0625rem solid var(--bd);
+    border-radius: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+.sat-answer-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 0.25rem;
+    background: var(--p4);
+    transform: scaleY(0);
+    transition: transform 0.2s ease;
+    transform-origin: bottom;
+}
+.sat-answer-item:hover {
+    border-color: var(--p4);
+    background: var(--sf);
+    transform: translateX(0.25rem);
+}
+.sat-answer-item:hover::before {
+    transform: scaleY(1);
+}
+.sat-answer-item.is-selected {
+    border-color: var(--p5);
+    background: rgba(139, 92, 246, 0.1);
+}
+.sat-answer-item.is-selected::before {
+    transform: scaleY(1);
+    background: var(--p5);
+}
+.sat-answer-item.is-correct {
+    border-color: #22c55e;
+    background: rgba(34, 197, 94, 0.1);
+}
+.sat-answer-item.is-correct::before {
+    background: #22c55e;
+    transform: scaleY(1);
+}
+.sat-answer-item.is-incorrect {
+    border-color: #f87171;
+    background: rgba(248, 113, 113, 0.1);
+}
+.sat-answer-item.is-incorrect::before {
+    background: #f87171;
+    transform: scaleY(1);
+}
+/* Answer letter circles */
+.sat-answer-letter {
+    width: 1.75rem;
+    height: 1.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--sf);
+    border: 0.125rem solid var(--bd);
+    font-weight: 700;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+}
+.sat-answer-item:hover .sat-answer-letter {
+    border-color: var(--p4);
+    background: var(--p4);
+    color: white;
+}
+.sat-answer-item.is-selected .sat-answer-letter {
+    border-color: var(--p5);
+    background: var(--p5);
+    color: white;
+}
+/* ═══ RESPONSIVE ENHANCEMENTS ═══ */
+@media (max-width: 768px) {
+    .sat-player-topbar {
+        flex-direction: row;
+        flex-wrap: nowrap;
+    }
+    .sat-topbar-left .sat-button span {
+        display: none;
+    }
+    .sat-topbar-right .nav-icon-item {
+        display: none;
+    }
+    .sat-topbar-right .more-dropdown-trigger {
+        display: flex;
+    }
+    .more-dropdown-menu {
+        position: fixed;
+        top: auto;
+        bottom: 3rem;
+        right: 0;
+        left: auto;
+        max-width: none;
+        width: auto;
+        z-index: 10001;
+        background: #1e1535;              /* fully opaque dark purple, dark mode */
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.6), 0 0.125rem 0.25rem rgba(0, 0, 0, 0.4);
+    }
+    html[data-theme="light"] .more-dropdown-menu {
+        background: #ffffff;    /* fully opaque white in light mode */
+        border-color: rgba(130, 110, 175, 0.15);
+    }
+    .more-dropdown-page {
+        background: inherit;
+        border-radius: 0.75rem;
+    }
+    .sat-player-topbar {
+        padding: 0.75rem 1.25rem;
+    }
+    .sat-topbar-center {
+        display: flex;
+    }
+    .sat-shell .main-content {
+        max-height: calc(100vh - var(--player-topbar-h) - var(--player-footer-h));
+    }
+    .sat-player-footer {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    .sat-counter-text {
+        width: 100%;
+        text-align: center;
+        margin-bottom: 0.25rem;
+    }
+}
+/* Extra small - keep all on one line even at very small sizes */
+@media (max-width: 360px) {
+    .sat-player-topbar {
+        padding: 0.25rem 0.375rem;
+        gap: 0.125rem;
+    }
+    .sat-topbar-left .sat-button {
+        padding: 0.125rem 0.25rem;
+    }
+    
+    .sat-counter-text {
+        width: 100%;
+        text-align: center;
+        margin-bottom: 0.25rem;
+    }
+}
+
+/* ═══ LIGHT MODE COMPREHENSIVE ENHANCEMENTS ═══ */
+
+html[data-theme="light"] .sat-passage-card {
+    background: white;
+    border-color: rgba(109, 40, 217, 0.12);
+    box-shadow: 0 0.125rem 0.5rem rgba(109, 40, 217, 0.06);
+}
+html[data-theme="light"] .sat-passage-text,
+html[data-theme="light"] .sat-question-stem {
+    color: #1a0a3c !important;
+}
+html[data-theme="light"] .sat-question-stem {
+    color: #3a2a5a !important;
+    font-weight: 600;
+}
+html[data-theme="light"] .sat-answer-choice {
+    background: #f5f3ff;
+    border-color: rgba(109, 40, 217, 0.15);
+    color: #1a0a3c;
+}
+html[data-theme="light"] .sat-answer-choice:hover {
+    background: white;
+    border-color: rgba(109, 40, 217, 0.25);
+}
+
+
+html[data-theme="light"] .sat-answer-choice.is-selected {
+    background: rgba(124, 58, 237, 0.1);
+    border-color: #7c3aed;
+}
+html[data-theme="light"] .sat-answer-choice.is-correct {
+    background: rgba(34, 197, 94, 0.1);
+    border-color: #22c55e;
+    color: #166534;
+}
+html[data-theme="light"] .sat-answer-choice.is-incorrect {
+    background: rgba(248, 113, 113, 0.1);
+    border-color: #ef4444;
+    color: #991b1b;
+}
+html[data-theme="light"] .sat-answer-key {
+    background: #f5f3ff;
+    border-color: rgba(109, 40, 217, 0.2);
+    color: #7c3aed;
+}
+html[data-theme="light"] .sat-feedback-panel {
+    background: white;
+    color: #1a0a3c;
+}
+html[data-theme="light"] .sat-player-topbar {
+    background: rgba(255, 255, 255, 0.9);
+    border-bottom-color: rgba(109, 40, 217, 0.15);
+    box-shadow: 0 0.125rem 0.5rem rgba(109, 40, 217, 0.08);
+}
+html[data-theme="light"] .sat-player-footer {
+    background: rgba(250, 248, 255, 0.98) !important;
+    border-top-color: rgba(124, 58, 237, 0.25);
+    box-shadow: 0 -0.25rem 1.5rem rgba(0, 0, 0, 0.1), 0 -0.0625rem 0.25rem rgba(0, 0, 0, 0.08);
+}
+html[data-theme="light"] .sat-player-topbar .sat-button,
+html[data-theme="light"] .sat-player-footer .sat-button {
+    color: #5a4a7a;
+}
+html[data-theme="light"] .sat-player-topbar .sat-button:hover,
+html[data-theme="light"] .sat-player-footer .sat-button:hover {
+    background: rgba(109, 40, 217, 0.08);
+    color: #7c3aed;
+}
+html[data-theme="light"] .sat-timer-display {
+    font-size: 1.25rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    color: #7c3aed !important;
+}
+html[data-theme="light"] .sat-counter-text {
+    color: var(--tx2);
+    font-weight: 600;
+}
+html[data-theme="light"] .sat-player-title,
+html[data-theme="light"] #playerTitle {
+    background: linear-gradient(135deg, #7c3aed, #8b5cf6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+html[data-theme="light"] .sat-question-panel {
+    background: white;
+    border-color: rgba(109, 40, 217, 0.15);
+    box-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.08), 0 0.0625rem 0.125rem rgba(0, 0, 0, 0.05);
+}
+html[data-theme="light"] .sat-question-number {
+    color: #3b0764 !important;
+    text-shadow: none !important;
+}
+html[data-theme="light"] .sat-domain-label {
+    color: #7c3aed;
+    background: rgba(124, 58, 237, 0.1);
+}
+html[data-theme="light"] .sat-answer-item {
+    background: #f5f3ff;
+    border-color: rgba(109, 40, 217, 0.12);
+}
+html[data-theme="light"] .sat-answer-item:hover {
+    background: white;
+    border-color: rgba(109, 40, 217, 0.25);
+}
+html[data-theme="light"] .sat-answer-letter {
+    background: #f5f3ff;
+    border-color: rgba(109, 40, 217, 0.2);
+    color: #5a4a7a;
+}
+html[data-theme="light"] .sat-answer-item:hover .sat-answer-letter {
+    background: #8b5cf6;
+    border-color: #8b5cf6;
+    color: white;
+}
+html[data-theme="light"] .sat-answer-item.is-selected .sat-answer-letter {
+    background: #7c3aed;
+    border-color: #7c3aed;
+    color: white;
+}
+html[data-theme="light"] .sat-button-primary {
+    background: linear-gradient(135deg, #7c3aed, #8b5cf6) !important;
+    box-shadow: 0 0.25rem 0.75rem rgba(124, 58, 237, 0.25);
+    color: white !important;
+    border: none !important;
+    height: 2.875rem;
+    padding: 0 1rem;
+}
+
+html[data-theme="light"] .more-dropdown-menu {
+    background: rgba(255, 255, 255, 0.98);
+    border-color: rgba(109, 40, 217, 0.15);
+    box-shadow: 0 0.75rem 2rem rgba(109, 40, 217, 0.15), 0 0.125rem 0.25rem rgba(109, 40, 217, 0.1);
+}
+html[data-theme="light"] .more-dropdown-item {
+    color: #1a0a3c;
+}
+html[data-theme="light"] .more-dropdown-item .material-icons-round {
+    color: #4a3a6a;
+}
+html[data-theme="light"] .more-dropdown-item:hover {
+    background: rgba(139, 92, 246, 0.15);
+}
+html[data-theme="light"] .more-dropdown-item:hover .material-icons-round {
+    color: #7c3aed;
+}
+html[data-theme="light"] .more-dropdown-item::before {
+    background: #c4b5fd;
+}
+html[data-theme="light"] .more-dropdown-check,
+html[data-theme="light"] .more-dropdown-arrow {
+    color: #4a3a6a;
+}
+html[data-theme="light"] .more-dropdown-separator {
+    background: rgba(109, 40, 217, 0.15);
+}
+/* ── Theme sub-panel ── */
+.more-dropdown-theme-panel {
+  min-width: 14rem;
+}
+.more-dropdown-theme-header {
+  padding: 0.375rem 0.5rem 0;
+  margin-bottom: 0.25rem;
+}
+.more-dropdown-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: transparent;
+  border: none;
+  color: var(--tx2);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0.375rem 0.5rem;
+  border-radius: 0.375rem;
+  transition: color 0.15s ease, background 0.15s ease;
+  width: 100%;
+  text-align: left;
+}
+.more-dropdown-back-btn:hover {
+  color: var(--p5);
+  background: rgba(139, 92, 246, 0.08);
+}
+.more-dropdown-check {
+  margin-left: auto;
+  font-size: 1rem !important;  /* material icon size */
+  color: var(--p5);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+/* Light mode */
+html[data-theme="light"] .more-dropdown-back-btn {
+  color: var(--tx2);
+}
+html[data-theme="light"] .more-dropdown-back-btn:hover {
+  color: var(--p5);
+}
+
 /* Disabled item */
 .more-dropdown-disabled {
     opacity: 0.5;
@@ -1806,548 +2324,7 @@ html[data-theme="light"] .more-dropdown-item .material-icons-round {
 
 /* Light mode theme check */
 html[data-theme="light"] .more-dropdown-check {
-    color: #7c3aed;
-}
-
-html[data-theme="light"] .more-dropdown-badge {
-    background: #f5f3ff;
-    color: #9080aa;
-}
-
-/* Light theme for dropdown */
-html[data-theme="light"] .more-dropdown-menu {
-    background: rgba(255, 255, 255, 0.95);
-    border-color: #e0e0e0;
-    box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.12), 0 0.125rem 0.25rem rgba(0, 0, 0, 0.08);
-}
-
-html[data-theme="light"] .more-dropdown-item:hover {
-    background: rgba(139, 92, 246, 0.15);
-}
-
-html[data-theme="light"] .more-dropdown-item::before {
-    background: #c4b5fd;
-}
-
-html[data-theme="light"] .more-dropdown-item.danger:hover {
-    background: rgba(248, 113, 113, 0.12);
-}
-
-/* ═══ ENHANCED NAVBAR ICONS ═══ */
-.sat-topbar-right .sat-button {
-    position: relative;
-    transition: all 0.2s ease;
-}
-
-.sat-topbar-right .sat-button::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: 0.5rem;
-    background: var(--p5);
-    opacity: 0;
-    transform: scale(0.8);
-    transition: all 0.2s ease;
-    z-index: -1;
-}
-
-.sat-topbar-right .sat-button:hover {
-    background: var(--sf2);
-    transform: translateY(-0.0625rem);
-}
-
-.sat-topbar-right .sat-button:active {
-    transform: translateY(0) scale(0.96);
-}
-
-.sat-topbar-right .sat-button.is-active {
-    background: var(--sf2);
-}
-
-.sat-topbar-right .sat-button.is-active svg,
-.sat-topbar-right .sat-button.is-active .material-icons-round {
-    color: var(--p5);
-}
-
-.sat-topbar-right .sat-button svg {
-    transition: color 0.2s ease;
-}
-
-.sat-topbar-right .sat-button:hover svg {
-    color: var(--p5);
-}
-
-/* ═══ ENHANCED PLAYER TIMER ═══ */
-#stopwatchContainer {
-    background: var(--sf2) !important;
-    border: 0.0625rem solid var(--bd) !important;
-    transition: all 0.3s ease;
-}
-
-#stopwatchContainer:focus-within {
-    border-color: var(--p4) !important;
-    box-shadow: 0 0 0 0.25rem rgba(139, 92, 246, 0.15);
-}
-
-#playerTimer {
-    background: transparent;
-    -webkit-background-clip: text;
-    background-clip: text;
-}
-
-/* Timer running state */
-#stopwatchContainer.running {
-    border-color: var(--p4) !important;
-}
-
-#stopwatchContainer.running #playerTimer {
-    color: var(--p5);
-}
-
-/* ═══ ENHANCED FOOTER BUTTONS ═══ */
-.sat-player-footer {
-    background: linear-gradient(to top, var(--sf) 0%, rgba(30, 30, 30, 0.98) 100%) !important;
-    border-top: 0.0625rem solid var(--bd) !important;
-}
-
-.sat-player-footer .sat-button-primary {
-    background: linear-gradient(135deg, var(--p4), var(--p5)) !important;
-    border: none !important;
-    font-weight: 700;
-    letter-spacing: 0.02em;
-    transition: all 0.2s ease;
-    box-shadow: 0 0.25rem 0.75rem rgba(139, 92, 246, 0.3);
-    color: #fff !important;
-}
-
-.sat-player-footer .sat-button-primary:hover {
-    transform: translateY(-0.125rem);
-    box-shadow: 0 0.5rem 1rem rgba(139, 92, 246, 0.4);
-}
-
-.sat-player-footer .sat-button-primary:active {
-    transform: translateY(0);
-}
-
-.sat-player-footer .sat-button-ghost {
-    transition: all 0.2s ease;
-}
-
-.sat-player-footer .sat-button-ghost:hover {
-    background: var(--sf2);
-    color: var(--p5);
-}
-
-/* ═══ ENHANCED QUESTION AREA ═══ */
-.sat-question-panel {
-    background: var(--sf);
-    border: 0.0625rem solid var(--bd);
-    border-radius: 1rem;
-    padding: 1.5rem;
-    transition: all 0.3s ease;
-}
-
-.sat-question-number {
-    font-size: 1.75rem;
-    font-weight: 900;
-    color: var(--p5);
-    text-shadow: 0 0 2rem rgba(139, 92, 246, 0.3);
-}
-
-.sat-domain-label {
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    color: var(--p4);
-    background: rgba(139, 92, 246, 0.1);
-    padding: 0.25rem 0.625rem;
-    border-radius: 999px;
-}
-
-/* ═══ ENHANCED ANSWER CHOICES ═══ */
-.sat-answer-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.625rem;
-}
-
-.sat-answer-item {
-    display: flex;
-    align-items: center;
-    gap: 0.875rem;
-    padding: 0.875rem 1rem;
-    background: var(--sf2);
-    border: 0.0625rem solid var(--bd);
-    border-radius: 0.75rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    position: relative;
-    overflow: hidden;
-}
-
-.sat-answer-item::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 0.25rem;
-    background: var(--p4);
-    transform: scaleY(0);
-    transition: transform 0.2s ease;
-    transform-origin: bottom;
-}
-
-.sat-answer-item:hover {
-    border-color: var(--p4);
-    background: var(--sf);
-    transform: translateX(0.25rem);
-}
-
-.sat-answer-item:hover::before {
-    transform: scaleY(1);
-}
-
-.sat-answer-item.is-selected {
-    border-color: var(--p5);
-    background: rgba(139, 92, 246, 0.1);
-}
-
-.sat-answer-item.is-selected::before {
-    transform: scaleY(1);
-    background: var(--p5);
-}
-
-.sat-answer-item.is-correct {
-    border-color: #22c55e;
-    background: rgba(34, 197, 94, 0.1);
-}
-
-.sat-answer-item.is-correct::before {
-    background: #22c55e;
-    transform: scaleY(1);
-}
-
-.sat-answer-item.is-incorrect {
-    border-color: #f87171;
-    background: rgba(248, 113, 113, 0.1);
-}
-
-.sat-answer-item.is-incorrect::before {
-    background: #f87171;
-    transform: scaleY(1);
-}
-
-/* Answer letter circles */
-.sat-answer-letter {
-    width: 1.75rem;
-    height: 1.75rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    background: var(--sf);
-    border: 0.125rem solid var(--bd);
-    font-weight: 700;
-    font-size: 0.875rem;
-    transition: all 0.2s ease;
-}
-
-.sat-answer-item:hover .sat-answer-letter {
-    border-color: var(--p4);
-    background: var(--p4);
-    color: white;
-}
-
-.sat-answer-item.is-selected .sat-answer-letter {
-    border-color: var(--p5);
-    background: var(--p5);
-    color: white;
-}
-
-/* ═══ RESPONSIVE ENHANCEMENTS ═══ */
-@media (max-width: 768px) {
-    .sat-player-topbar {
-        flex-direction: row;
-        flex-wrap: nowrap;
-    }
-
-    .sat-topbar-left .sat-button span {
-        display: none;
-    }
-
-    .sat-topbar-right .nav-icon-item {
-        display: none;
-    }
-
-    .sat-topbar-right .more-dropdown-trigger {
-        display: flex;
-    }
-
-    .more-dropdown-menu {
-        position: fixed;
-        top: auto;
-        bottom: 3rem;
-        right: 0;
-        left: auto;
-        max-width: none;
-        width: auto;
-        z-index: 10001;
-        background: var(--sf);
-        backdrop-filter: none;
-        -webkit-backdrop-filter: none;
-        box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.5), 0 0.125rem 0.25rem rgba(0, 0, 0, 0.3);
-    }
-
-    .more-dropdown-page {
-        background: var(--sf);
-    }
-
-    .sat-player-topbar {
-        padding: 0.75rem 1.25rem;
-    }
-
-    .sat-topbar-center {
-        display: flex;
-    }
-
-    .sat-shell .main-content {
-        max-height: calc(100vh - 3.5rem - 4rem);
-    }
-
-    .sat-player-footer {
-        flex-wrap: wrap;
-        justify-content: center;
-    }
-
-    .sat-counter-text {
-        width: 100%;
-        text-align: center;
-        margin-bottom: 0.25rem;
-    }
-}
-
-/* Extra small - keep all on one line even at very small sizes */
-@media (max-width: 360px) {
-    .sat-player-topbar {
-        padding: 0.25rem 0.375rem;
-        gap: 0.125rem;
-    }
-
-    .sat-topbar-left .sat-button {
-        padding: 0.125rem 0.25rem;
-    }
-
-    
-
-    .sat-counter-text {
-        width: 100%;
-        text-align: center;
-        margin-bottom: 0.25rem;
-    }
-}
-
-/* ═══ LIGHT MODE COMPREHENSIVE ENHANCEMENTS ═══ */
-html[data-theme="light"] {
-    --bg: #faf8ff;
-    --sf: rgba(255, 255, 255, 0.85);
-    --sf2: rgba(243, 239, 255, 0.9);
-    --bd: rgba(109, 40, 217, 0.18);
-    --tx: #1a0a3c;
-    --tx2: #4a3a6a;
-    --tx3: #9080aa;
-    --p4: #8b5cf6;
-    --p5: #7c3aed;
-    --glow: rgba(109, 40, 217, 0.15);
-}
-
-html[data-theme="light"] .sat-passage-card {
-    background: white;
-    border-color: rgba(109, 40, 217, 0.12);
-    box-shadow: 0 0.125rem 0.5rem rgba(109, 40, 217, 0.06);
-}
-
-html[data-theme="light"] .sat-passage-text,
-html[data-theme="light"] .sat-question-stem {
-    color: #1a0a3c !important;
-}
-
-html[data-theme="light"] .sat-question-stem {
-    color: #3a2a5a !important;
-    font-weight: 600;
-}
-
-html[data-theme="light"] .sat-answer-choice {
-    background: #f5f3ff;
-    border-color: rgba(109, 40, 217, 0.15);
-    color: #1a0a3c;
-}
-
-html[data-theme="light"] .sat-answer-choice:hover {
-    background: white;
-    border-color: rgba(109, 40, 217, 0.25);
-}
-
-html[data-theme="light"] .sat-answer-choice.is-selected {
-    background: rgba(124, 58, 237, 0.1);
-    border-color: #7c3aed;
-}
-
-html[data-theme="light"] .sat-answer-choice.is-correct {
-    background: rgba(34, 197, 94, 0.1);
-    border-color: #22c55e;
-    color: #166534;
-}
-
-html[data-theme="light"] .sat-answer-choice.is-incorrect {
-    background: rgba(248, 113, 113, 0.1);
-    border-color: #ef4444;
-    color: #991b1b;
-}
-
-html[data-theme="light"] .sat-answer-key {
-    background: #f5f3ff;
-    border-color: rgba(109, 40, 217, 0.2);
-    color: #7c3aed;
-}
-
-html[data-theme="light"] .sat-feedback-panel {
-    background: white;
-    color: #1a0a3c;
-}
-
-html[data-theme="light"] .sat-player-topbar {
-    background: rgba(255, 255, 255, 0.9);
-    border-bottom-color: rgba(109, 40, 217, 0.15);
-    box-shadow: 0 0.125rem 0.5rem rgba(109, 40, 217, 0.08);
-}
-
-html[data-theme="light"] .sat-player-footer {
-    background: rgba(250, 248, 255, 0.98) !important;
-    border-top-color: rgba(124, 58, 237, 0.25);
-    box-shadow: 0 -0.25rem 1.5rem rgba(0, 0, 0, 0.1), 0 -0.0625rem 0.25rem rgba(0, 0, 0, 0.08);
-}
-
-html[data-theme="light"] .sat-player-topbar .sat-button,
-html[data-theme="light"] .sat-player-footer .sat-button {
-    color: #5a4a7a;
-}
-
-html[data-theme="light"] .sat-player-topbar .sat-button:hover,
-html[data-theme="light"] .sat-player-footer .sat-button:hover {
-    background: rgba(109, 40, 217, 0.08);
-    color: #7c3aed;
-}
-
-html[data-theme="light"] .sat-timer-display {
-    color: #7c3aed !important;
-}
-
-html[data-theme="light"] .sat-counter-text {
-    color: var(--tx2);
-    font-weight: 600;
-}
-
-html[data-theme="light"] .sat-player-title,
-html[data-theme="light"] #playerTitle {
-    background: linear-gradient(135deg, #7c3aed, #8b5cf6);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
-
-html[data-theme="light"] .sat-question-panel {
-    background: white;
-    border-color: rgba(109, 40, 217, 0.15);
-    box-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.08), 0 0.0625rem 0.125rem rgba(0, 0, 0, 0.05);
-}
-
-html[data-theme="light"] .sat-question-number {
-    color: #3b0764 !important;
-    text-shadow: none !important;
-}
-
-html[data-theme="light"] .sat-domain-label {
-    color: #7c3aed;
-    background: rgba(124, 58, 237, 0.1);
-}
-
-html[data-theme="light"] .sat-answer-item {
-    background: #f5f3ff;
-    border-color: rgba(109, 40, 217, 0.12);
-}
-
-html[data-theme="light"] .sat-answer-item:hover {
-    background: white;
-    border-color: rgba(109, 40, 217, 0.25);
-}
-
-html[data-theme="light"] .sat-answer-letter {
-    background: #f5f3ff;
-    border-color: rgba(109, 40, 217, 0.2);
-    color: #5a4a7a;
-}
-
-html[data-theme="light"] .sat-answer-item:hover .sat-answer-letter {
-    background: #8b5cf6;
-    border-color: #8b5cf6;
-    color: white;
-}
-
-html[data-theme="light"] .sat-answer-item.is-selected .sat-answer-letter {
-    background: #7c3aed;
-    border-color: #7c3aed;
-    color: white;
-}
-
-html[data-theme="light"] .sat-button-primary {
-    background: linear-gradient(135deg, #7c3aed, #8b5cf6) !important;
-    box-shadow: 0 0.25rem 0.75rem rgba(124, 58, 237, 0.25);
-    color: white !important;
-    border: none !important;
-}
-
-html[data-theme="light"] .sat-button-primary:hover {
-    box-shadow: 0 0.5rem 1rem rgba(124, 58, 237, 0.35);
-}
-
-html[data-theme="light"] .more-dropdown-menu {
-    background: rgba(255, 255, 255, 0.98);
-    border-color: rgba(109, 40, 217, 0.15);
-    box-shadow: 0 0.75rem 2rem rgba(109, 40, 217, 0.15), 0 0.125rem 0.25rem rgba(109, 40, 217, 0.1);
-}
-
-html[data-theme="light"] .more-dropdown-item {
-    color: #1a0a3c;
-}
-
-html[data-theme="light"] .more-dropdown-item .material-icons-round {
-    color: #4a3a6a;
-}
-
-html[data-theme="light"] .more-dropdown-item:hover {
-    background: rgba(139, 92, 246, 0.15);
-}
-
-html[data-theme="light"] .more-dropdown-item:hover .material-icons-round {
-    color: #7c3aed;
-}
-
-html[data-theme="light"] .more-dropdown-item::before {
-    background: #c4b5fd;
-}
-
-html[data-theme="light"] .more-dropdown-check,
-html[data-theme="light"] .more-dropdown-arrow {
-    color: #4a3a6a;
-}
-
-html[data-theme="light"] .more-dropdown-separator {
-    background: rgba(109, 40, 217, 0.15);
-}
-
-html[data-theme="light"] body {
-    background: #faf8ff;
+  color: var(--p5);
 }
 
 /* Stopwatch container light mode */
@@ -2416,6 +2393,8 @@ html[data-theme="light"] .sat-stopwatch-btn.is-active {
     list-style: none;
     margin: 0;
     padding: 0.375rem 0;
+    box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.35), 0 0.125rem 0.25rem rgba(0, 0, 0, 0.15);    
+    border-radius: 0.75rem;
 }
 
 .more-dropdown-list li {
@@ -2461,11 +2440,12 @@ html[data-theme="light"] .more-dropdown-item.danger:hover {
 /* Collapsed sidebar "more" icon and dropdown */
 .collapsed-more-wrapper {
   position: relative;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
   padding: 0.5rem;
   z-index: 9999;
+  overflow: visible;
+  display: flex;
+  justify-content: center;
+  margin-top: auto;
 }
 
 .collapsed-more-btn {
@@ -2501,10 +2481,11 @@ html[data-theme="light"] .more-dropdown-item.danger:hover {
 
 .collapsed-more-dropdown {
   position: absolute;
-  top: 15.5rem;
-  left: 10%;
+  bottom: 100%;
+  margin-bottom: 0.5rem;  
+  left: 0;
   min-width: 14rem;
-  background: var(--sf);
+  background: var(--cb);
   border-radius: 0.75rem;
   box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.35);
   backdrop-filter: blur(1rem);
@@ -2513,6 +2494,7 @@ html[data-theme="light"] .more-dropdown-item.danger:hover {
   z-index: 9999;
   opacity: 0;
   visibility: hidden;
+  transform-origin: bottom left;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -2591,7 +2573,7 @@ html[data-theme="light"] .more-dropdown-item.danger:hover {
 
 .collapsed-more-dropdown .more-dropdown-page[data-page="theme"] {
     position: absolute;
-    top: 0.9rem;
+    bottom: 0;
     left: 0;
     right: 0;
     background: var(--sf);
@@ -2625,8 +2607,13 @@ html[data-theme="light"] .more-dropdown-item.danger:hover {
     transition: opacity 0.2s ease;
 }
 
+html[data-theme="dark"] .collapsed-more-dropdown .more-dropdown-check {
+  color: #a78bfa;
+}
+
 .collapsed-more-dropdown.showing-theme {
-  top: 12.2rem;
+  bottom: calc(100% + 0.5rem);
+  margin-bottom: 0.5rem;
 }
 
 /* Dark theme */
@@ -2634,7 +2621,7 @@ html[data-theme="dark"] .collapsed-more-dropdown .more-dropdown-item {
   color: #ffffff;
 }
 html[data-theme="dark"] .collapsed-more-dropdown .more-dropdown-item .material-icons-round {
-  color: #ffffff;
+  color: #a78bfa;
 }
 html[data-theme="dark"] .collapsed-more-dropdown .more-dropdown-item::before {
   background: #c4b5fd;
@@ -2654,16 +2641,16 @@ html[data-theme="light"] .collapsed-more-dropdown .more-dropdown-item .material-
   color: #1a0a3c;
 }
 html[data-theme="light"] .collapsed-more-dropdown {
-  background: #faf8ff;
+  background: var(--cb);
 }
 html[data-theme="light"] .collapsed-more-dropdown .more-dropdown-item:hover {
-  background: rgba(34, 197, 94, 0.15);
+  background: rgba(139, 92, 246, 0.15);
 }
 html[data-theme="light"] .collapsed-more-dropdown .more-dropdown-item:hover .material-icons-round {
-  color: #22c55e;
+  color: #8b5cf6;
 }
 html[data-theme="light"] .collapsed-more-dropdown .more-dropdown-item::before {
-  background: #22c55e;
+  background: #8b5cf6;
 }
 html[data-theme="light"] .collapsed-more-dropdown .more-dropdown-item.danger {
   color: #dc2626;
@@ -2676,4 +2663,237 @@ html[data-theme="light"] .collapsed-more-dropdown .more-dropdown-item.danger:hov
 }
 html[data-theme="light"] .collapsed-more-dropdown .more-dropdown-page[data-page="theme"] {
   box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.35);
+}
+
+/* ═══════════════════════════════════════════════════════
+   SAT PLAYER SPLIT LAYOUT (questions.html)
+   Mirrors .sat-math-split from math-chat / sat-math.css
+   ═══════════════════════════════════════════════════════ */
+
+/* The split wrapper fills all space between topbar and footer */
+.sat-player-split {
+  position: fixed;
+  top: var(--player-topbar-h);
+  bottom: var(--player-footer-h);
+  left: 0;
+  right: 0;
+  overflow: hidden;
+  /* Default: content-only, single column */
+  display: flex;
+  flex-direction: row;
+}
+
+/* When Desmos is active: 50/50 grid, desktop */
+.sat-player-split.has-desmos {
+  display: grid;
+  grid-template-columns: 1fr 0.5rem 1fr;
+  grid-template-rows: 100%;
+}
+
+/* Desmos panel */
+.sat-player-graph-panel {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+}
+
+.sat-player-graph-panel #desmosContainer {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+/* Resize handle — vertical bar on desktop */
+.sat-player-resize-handle {
+  display: none;    /* hidden unless overridden below */
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+}
+
+/* Desktop: invisible spacer — grid column handles visual spacing */
+.sat-player-split.has-desmos .sat-player-resize-handle {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: col-resize;
+  pointer-events: auto;
+  background: transparent;
+  border: none;
+  position: relative;
+}
+
+/* Thin accent line, only visible on hover */
+.sat-player-split.has-desmos .sat-player-resize-handle::after {
+  content: '';
+  display: block;
+  position: absolute;
+  top: 10%;
+  bottom: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0.1875rem;
+  background: var(--bd);
+  border-radius: 0.125rem;
+  opacity: 0;
+  transition: opacity 0.2s ease, background 0.2s ease;
+}
+
+.sat-player-split.has-desmos .sat-player-resize-handle:hover::after {
+  opacity: 1;
+  background: var(--p4);
+}
+
+/* Question content panel — fills remaining space */
+.sat-player-content-panel {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Scrollable area inside the content panel */
+.sat-player-scroll {
+  flex: 1 1 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 1.5rem;
+  box-sizing: border-box;
+  min-height: 0;
+}
+
+
+
+/* ── Mobile breakpoint: stack vertically ── */
+@media (max-width: 56.25rem) {
+
+  /* ── Stack vertically when Desmos is active ── */
+  .sat-player-split.has-desmos {
+    display: flex;
+    flex-direction: column;
+    grid-template-columns: unset;
+    grid-template-rows: unset;
+    overflow: hidden;
+  }
+
+  /* ── Desmos panel: fixed proportion, never grows ── */
+  .sat-player-split.has-desmos .sat-player-graph-panel {
+    flex: 0 0 42%;
+    min-height: 8rem;
+    max-height: 60%;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  /* ── Resize handle: visible horizontal bar at breakpoint only ── */
+  .sat-player-split.has-desmos .sat-player-resize-handle {
+    display: block;
+    width: 100%;
+    height: 0.75rem;
+    cursor: row-resize;
+    flex-shrink: 0;
+    pointer-events: auto;
+    background: var(--sf2);
+    border-top: 0.0625rem solid var(--bd);
+    border-bottom: 0.0625rem solid var(--bd);
+    position: relative;
+    z-index: 20;
+  }
+
+  .sat-player-split.has-desmos .sat-player-resize-handle::after {
+    content: '';
+    display: block;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 2.5rem;
+    height: 0.25rem;
+    background: var(--p4);
+    border-radius: 0.125rem;
+    transition: width 0.2s ease, background 0.2s ease !important;
+    opacity: 0.5 !important;
+  }
+
+  .sat-player-split.has-desmos .sat-player-resize-handle:hover::after,
+  .sat-player-split.has-desmos .sat-player-resize-handle:active::after {
+    width: 3.5rem !important;
+    background: var(--p4) !important;
+    opacity: 1 !important;
+  }
+
+  /* ── Content panel: takes ALL remaining flex space ── */
+  .sat-player-split.has-desmos .sat-player-content-panel {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Scroll child: this is where actual scrolling happens ── */
+  .sat-player-split.has-desmos .sat-player-scroll {
+    flex: 1 1 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    min-height: 0;
+    padding: 1rem;
+  }
+
+  /* ── Question card: full width, no centering constraints ── */
+  .sat-player-split.has-desmos .sat-question-panel {
+    height: auto;
+  }
+
+  .sat-player-scroll .sat-question-panel {
+    max-width: 100%;
+    width: 100%;
+    margin: 0;
+    box-sizing: border-box;
+  }
+
+}
+
+/* SAT Index page - Purple hovers in light mode (NOT for math-chat.html) */
+html[data-theme="light"] .sat-more-dropdown .more-dropdown-item:hover {
+  background: rgba(139, 92, 246, 0.15) !important;
+}
+html[data-theme="light"] .sat-more-dropdown .more-dropdown-item:hover .material-icons-round {
+  color: #8b5cf6 !important;
+}
+html[data-theme="light"] .sat-more-dropdown .more-dropdown-item::before {
+  background: #8b5cf6 !important;
+}
+
+.sidebar.collapsed {
+  overflow: visible !important;
+}
+
+/* Fix collapsed sidebar "more" dropdown to open upward on SAT pages */
+.sidebar.collapsed .collapsed-more-dropdown {
+    top: auto !important;
+    bottom: calc(100% + 0.5rem) !important;
+    transform-origin: bottom left;
+}
+
+/* Fix theme sub-panel positioning in collapsed sidebar on SAT pages */
+.sidebar.collapsed .collapsed-more-dropdown .more-dropdown-page[data-page="theme"] {
+    top: auto !important;
+    bottom: 0 !important;
+}
+
+/* Reference panel breakpoint - resizable at 768px */
+@media (max-width: 768px) {
+    .reference-panel {
+        width: calc(100vw - 2rem);
+        max-width: calc(100vw - 2rem);
+    }
 }
