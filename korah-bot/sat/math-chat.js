@@ -133,6 +133,7 @@ EXPRESSION TYPES:
 - Variable/constant: {"latex": "a=5"}
 - Inequality: {"latex": "y < 2x + 1", "color": "#388c46"}
 - Hidden (for helper expressions): {"latex": "f(x)=x^2", "color": "#2d70b3", "hidden": true}
+- Text note: {"type": "text", "text": "This is a note"} — do NOT include a latex or color field on text notes.
 
 TABLES:
 {
@@ -375,12 +376,13 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
 
     if (data.expressions && Array.isArray(data.expressions)) {
       data.expressions.forEach((expr, idx) => {
-        // We pass the expression object directly to Desmos to support tables, regressions, etc.
-        satMathCalculator.setExpression({
-          id: expr.id || 'expr_' + idx,
-          color: expr.color || '#4285F4',
-          ...expr
-        });
+        const isTextNote = expr.type === 'text';
+        // Text notes don't accept a color property — spread everything except color.
+        // All other expression types get the default color fallback.
+        satMathCalculator.setExpression(isTextNote
+          ? { id: expr.id || 'expr_' + idx, ...expr }
+          : { id: expr.id || 'expr_' + idx, color: expr.color || '#4285F4', ...expr }
+        );
       });
     }
 
