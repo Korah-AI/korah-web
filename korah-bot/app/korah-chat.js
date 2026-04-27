@@ -1033,15 +1033,39 @@
       attachDiv.className = 'msg-attachments';
       fileAttachments.forEach(f => {
         const card = document.createElement('div');
-        card.className = 'msg-attachment-card';
-        const svgIcon = getFileSvgIcon(f.type, f.name);
-        card.innerHTML = `
-          <div class="msg-attachment-card-icon">${svgIcon}</div>
-          <div class="msg-attachment-card-info">
-            <span class="msg-attachment-card-name">${f.name}</span>
-            <span class="msg-attachment-card-size">${formatFileSize(f.size)}</span>
-          </div>
-        `;
+        const isImage = f.type === 'image' && f.dataUrl;
+        card.className = 'msg-attachment-card' + (isImage ? ' has-preview' : '');
+        card.title = f.name;
+        if (isImage) {
+          card.innerHTML = `
+            <img class="msg-attachment-card-thumb" src="${f.dataUrl}" alt="${f.name}" />
+            <div class="msg-attachment-card-info">
+              <span class="msg-attachment-card-name">${f.name}</span>
+              <span class="msg-attachment-card-size">${formatFileSize(f.size)}</span>
+            </div>
+          `;
+          card.addEventListener('click', () => {
+            const win = window.open();
+            win.document.write(`<img src="${f.dataUrl}" style="max-width:100%;max-height:100vh;display:block;margin:auto;" />`);
+          });
+        } else {
+          const svgIcon = getFileSvgIcon(f.type, f.name);
+          card.innerHTML = `
+            <div class="msg-attachment-card-icon">${svgIcon}</div>
+            <div class="msg-attachment-card-info">
+              <span class="msg-attachment-card-name">${f.name}</span>
+              <span class="msg-attachment-card-size">${formatFileSize(f.size)}</span>
+            </div>
+          `;
+          if (f.dataUrl) {
+            card.addEventListener('click', () => {
+              const a = document.createElement('a');
+              a.href = f.dataUrl;
+              a.download = f.name;
+              a.click();
+            });
+          }
+        }
         attachDiv.appendChild(card);
       });
       bubble.appendChild(attachDiv);

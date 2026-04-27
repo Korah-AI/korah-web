@@ -786,7 +786,7 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
     if (conversationHistory.length === 0) autoTitleFromMessage(userMessage);
 
     console.log('Adding user message to chat');
-    addMessage('user', userMessage);
+    addMessage('user', userMessage, false, null, [], pendingFiles);
 
     input && (input.value = '');
     welcomeInput && (welcomeInput.value = '');
@@ -1269,7 +1269,7 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
     return fullReply;
   }
 
-  function addMessage(role, text, isError = false, contentId = null, suggestions = []) {
+  function addMessage(role, text, isError = false, contentId = null, suggestions = [], fileAttachments = []) {
     const row = document.createElement('div');
     row.className = `msg-row ${role === 'user' ? 'user' : 'assistant'}`;
 
@@ -1283,6 +1283,54 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
 
     const bubble = document.createElement('div');
     bubble.className = `msg-bubble ${role === 'user' ? 'user' : 'korah'}${isError ? ' error' : ''}`;
+
+    // Show file attachment cards for user messages
+    if (role === 'user' && fileAttachments && fileAttachments.length > 0) {
+      const attachDiv = document.createElement('div');
+      attachDiv.className = 'msg-attachments';
+      fileAttachments.forEach(f => {
+        const card = document.createElement('div');
+        const isImage = f.type === 'image' && f.dataUrl;
+        card.className = 'msg-attachment-card' + (isImage ? ' has-preview' : '');
+        card.title = f.name;
+        if (isImage) {
+          card.innerHTML = `
+            <img class="msg-attachment-card-thumb" src="${f.dataUrl}" alt="${f.name}" />
+            <div class="msg-attachment-card-info">
+              <span class="msg-attachment-card-name">${f.name}</span>
+              <span class="msg-attachment-card-size">${formatFileSize(f.size)}</span>
+            </div>
+          `;
+          card.addEventListener('click', () => {
+            const win = window.open();
+            win.document.write(`<img src="${f.dataUrl}" style="max-width:100%;max-height:100vh;display:block;margin:auto;" />`);
+          });
+        } else {
+          card.innerHTML = `
+            <div class="msg-attachment-card-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+              </svg>
+            </div>
+            <div class="msg-attachment-card-info">
+              <span class="msg-attachment-card-name">${f.name}</span>
+              <span class="msg-attachment-card-size">${formatFileSize(f.size)}</span>
+            </div>
+          `;
+          if (f.dataUrl) {
+            card.addEventListener('click', () => {
+              const a = document.createElement('a');
+              a.href = f.dataUrl;
+              a.download = f.name;
+              a.click();
+            });
+          }
+        }
+        attachDiv.appendChild(card);
+      });
+      bubble.appendChild(attachDiv);
+    }
 
     const content = document.createElement('div');
     if (contentId) {
