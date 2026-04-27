@@ -638,6 +638,53 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
     currentSession.autoTitleGenerated = true;
   }
 
+  // Extract the value of a JSON string field without using JSON.parse,
+  // so LaTeX backslashes (\frac, \sim, etc.) are preserved correctly.
+  function extractSavedResponseField(raw) {
+    const key = '"response":';
+    const keyIdx = raw.indexOf(key);
+    if (keyIdx === -1) return null;
+    let i = keyIdx + key.length;
+    while (i < raw.length && /\s/.test(raw[i])) i++;
+    if (raw[i] !== '"') return null;
+    i++; // skip opening quote
+    let value = '';
+    let esc = false;
+    while (i < raw.length) {
+      const ch = raw[i];
+      if (esc) {
+        switch (ch) {
+          case '"':  value += '"'; break;
+          case '\\': value += '\\'; break;
+          case '/':  value += '/'; break;
+          case 'n': case 'r': case 't': case 'b': case 'f':
+            // If next char is a letter → LaTeX command (\frac, \nabla …)
+            if (i + 1 < raw.length && /[a-z]/.test(raw[i + 1])) {
+              value += '\\' + ch;
+            } else {
+              value += ({ n: '\n', r: '\r', t: '\t', b: '', f: '' })[ch];
+            }
+            break;
+          case 'u':
+            if (i + 4 < raw.length && /^[0-9a-fA-F]{4}$/.test(raw.substring(i + 1, i + 5))) {
+              value += String.fromCharCode(parseInt(raw.substring(i + 1, i + 5), 16));
+              i += 4;
+            } else {
+              value += '\\u';
+            }
+            break;
+          default:
+            value += '\\' + ch; // LaTeX: \sim, \left, \cdot …
+        }
+        esc = false; i++; continue;
+      }
+      if (ch === '\\') { esc = true; i++; continue; }
+      if (ch === '"') break; // closing quote
+      value += ch; i++;
+    }
+    return value || null;
+  }
+
   function renderSavedMessages() {
     if (!messagesList || conversationHistory.length === 0) return;
     messagesList.innerHTML = '';
@@ -648,16 +695,10 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
         const row = addMessage('assistant', '');
         const contentEl = row?.querySelector('.assistant-content');
         if (contentEl) {
-          try {
-            const parsed = JSON.parse(msg.content);
-            if (parsed?.response) {
-              renderMarkdownAndMath(contentEl, parsed.response);
-            } else {
-              renderMarkdownAndMath(contentEl, msg.content);
-            }
-          } catch (_) {
-            renderMarkdownAndMath(contentEl, msg.content);
-          }
+          // Use LaTeX-aware extraction instead of JSON.parse, which breaks on
+          // unescaped LaTeX backslashes stored in the raw API response.
+          const extracted = extractSavedResponseField(msg.content);
+          renderMarkdownAndMath(contentEl, extracted ?? msg.content);
         }
       }
     });
