@@ -2,79 +2,66 @@
 
 ## Goal
 
-Give the math-chat bot two complementary Desmos superpowers:
+Replace the AI-generated Desmos expression system with a library-driven architecture. Instead of asking the model to write Desmos syntax from scratch (which is error-prone), the model reads a list of available templates, selects the best one for the problem, and returns the template id plus the input values it extracted from the problem. The client does the substitution and loads the result directly into the calculator via `setState()`.
 
-1. **Concept visualizers** — interactive graphs that show *what* a concept looks like (symmetry, concavity, transformations, etc.). Already authored; shown on demand.
-2. **Problem-solving templates** — step-by-step Desmos strategies for specific SAT problem types, demonstrating *how* to use regressions and graph tools to solve problems faster than by hand. The AI selects the right template, extracts values from the problem, and the client injects those values into the verified graph state.
-
-The core insight for problem-solving templates: many SAT algebra and data problems that students grind through analytically can be solved in seconds by setting up the right Desmos regression and reading off the result. The bot teaches that strategy, not just the answer.
+The model never writes a LaTeX expression. Every graph that appears is from a hand-verified template file.
 
 ---
 
 ## Two Template Types
 
-### Type 1 — Concept Visualizers (`Desmos json/`)
+### Type 1 — Concept Visualizers (`type: "visualizer"`)
 
-The existing files. Loaded as-is (no parameterization). The AI references them when a student needs to understand a concept visually. No substitution required.
+Interactive Desmos states that show *what* a concept looks like — sliders, animated tangent lines, labeled points, folder-organized steps. Loaded as-is with no substitution. Shown when a student asks about a concept visually.
 
-```
-korah-bot/sat/Desmos json/
-  3-types-of-symmetry.json
-  concavity-discovery.json
-  concavity-rate-of-change.json
-  nonrigid-transformations-dilations.json
-  quadratic-from-vertex-point.json
-  sine-cosine-sinuoids-graphs.json
-  unit-circle.json
-```
+Existing files (already authored):
+- `symmetry_types` — x-axis, y-axis, origin symmetry
+- `concavity_discovery` — animated tangent line on a parabola
+- `concavity_rate_of_change` — concave up/down on a polynomial
+- `nonrigid_transformations` — vertical/horizontal dilations on √x
+- `quadratic_vertex_point` — vertex form quadratic with sliders for h, k, and a point
+- `sinusoids` — sine and cosine comparative graphs
+- `unit_circle` — interactive angle on the unit circle
 
-### Type 2 — Problem-Solving Templates (`Desmos problem-solving/`)
+### Type 2 — Problem-Solving Templates (`type: "problem-solver"`)
 
-New files, one per SAT problem class. Each one:
-- Embeds step-by-step instructions and tips as Desmos **text nodes** (visible in the calculator panel alongside the graph)
-- Uses `{{PARAM}}` placeholders in LaTeX strings for values the AI extracts from the problem
-- Carries a `parameters` schema so the AI knows exactly what to extract and in what format
-
-```
-korah-bot/sat/Desmos problem-solving/
-  linear-regression.json
-  quadratic-regression.json
-  exponential-regression.json
-  system-of-equations.json
-  vertex-form-completion.json
-  ... (one file per problem type, added as needed)
-```
+Parameterized Desmos states for specific SAT problem classes. The AI extracts input values from the problem and substitutes them into `{{PARAM}}` slots. Step-by-step instructions and SAT strategy tips are embedded as Desmos text nodes so they appear in the calculator panel alongside the graph. Added by the user one file at a time as SAT topic coverage grows.
 
 ---
 
 ## Architecture
 
 ```
+System prompt includes the full template index
+(id + type + name + description + keywords for every entry)
+        │
+        ▼
 User sends a problem
         │
         ▼
-Client sends AI:
-  - template index (id + name + description + keywords, no full state)
-  - user message
+Model reads index, picks best-matching template, responds with:
+  {
+    "stateId": "linear_regression",
+    "params": { "X_VALUES": "-1,0,1,2", "Y_VALUES": "12,15,18,21" },
+    "response": "Step-by-step explanation..."
+  }
         │
         ▼
-AI response includes TWO things:
-  1. Natural language explanation (shown to student)
-  2. Structured JSON: { "templateId": "linear_regression", "params": { "X_VALUES": "-1,0,1,2", ... } }
+Client looks up stateId in desmos-library.json
         │
-        ▼
-Client matches templateId → fetches full state from library file
+        ├─ type === "visualizer"
+        │       └─ setState(entry.state)  ← load as-is, no substitution
         │
-        ▼
-Client substitutes params into {{PLACEHOLDER}} slots in the state JSON
-        │
-        ▼
-Desmos.loadState(substitutedState)   ← no AI-generated Desmos syntax
+        └─ type === "problem-solver"
+                └─ substitute {{PARAM}} slots with params values
+                   └─ setState(substitutedState)
+
+Graph updates. Model never wrote a single LaTeX expression.
 ```
 
-**Key property:** The AI never writes Desmos expressions. It only identifies which template to use and extracts scalar values from the problem. All Desmos syntax comes from the hand-verified template files.
+**If no template fits** the problem (stateId is null or missing), the graph is not updated. The model responds with text only.
 
-If no template matches (or the problem is conceptual), the AI falls back to referencing a concept visualizer or responding without a graph update.
+**Params are always problem-side inputs** — values the model can read directly from the problem text (data point values, equation coefficients, function arguments). They are never intermediate computed results. Desmos handles step-to-step dependencies internally: once a regression runs and fits `m` and `b`, those variables are live in the calculator and any subsequent expression in the same template state automatically references them. The model does not need to know `m` or `b` in advance.
 
 ---
 
@@ -82,287 +69,289 @@ If no template matches (or the problem is conceptual), the AI falls back to refe
 
 ```
 korah-bot/sat/
-  Desmos json/              ← concept visualizers (existing, unchanged)
-  Desmos problem-solving/   ← problem-solving templates (new)
-  template-index.json       ← lightweight index: id + name + description + keywords for both types
-  template-loader.js        ← classification, substitution, state loading
-math-chat.js                ← minimal additions
+  desmos-library.json        ← full library: all entries with complete state objects
+  template-index.json        ← lightweight index: id + type + name + description + keywords only
+                                (this is what gets injected into the system prompt)
+  Desmos json/               ← source files for visualizers (reference; library is canonical)
+  Desmos problem-solving/    ← source files for problem-solving templates (added per topic)
+math-chat.js                 ← changes described below
 ```
 
 ---
 
-## Problem-Solving Template Schema
+## Library Entry Schemas
 
-Each file in `Desmos problem-solving/`:
+### Visualizer entry
+
+```json
+{
+  "id": "unit_circle",
+  "type": "visualizer",
+  "name": "Unit Circle",
+  "category": "Geometry / Trigonometry",
+  "keywords": ["unit circle", "sine", "cosine", "angle", "radian", "trig"],
+  "description": "Interactive unit circle with a moveable angle showing the (cos θ, sin θ) point — show when a student asks about trig values or the relationship between angles and coordinates",
+  "state": {
+    "version": 11,
+    "randomSeed": "...",
+    "graph": { "viewport": { ... } },
+    "expressions": { "list": [ ... ] }
+  }
+}
+```
+
+The `state` field is the complete Desmos calculator state export. Nothing is stripped. `viewport`, `randomSeed`, `includeFunctionParametersInRandomSeed` — all preserved. `setState()` expects the full object.
+
+### Problem-solver entry
 
 ```json
 {
   "id": "linear_regression",
   "type": "problem-solver",
-  "category": "Data Analysis",
   "name": "Linear Regression from a Data Table",
-  "description": "Find the best-fit linear equation from a set of (x, y) data points using a Desmos regression",
-  "keywords": ["table", "data", "linear", "best fit", "scatterplot", "points", "predict", "equation", "slope"],
-  "exampleProblem": "The table shows values of a linear function. Find the equation of the line.",
+  "category": "Data Analysis",
+  "keywords": ["table", "data", "linear", "best fit", "scatterplot", "predict", "slope"],
+  "description": "Runs a linear regression on (x, y) data to find the best-fit equation — use when the problem gives a table of values and asks for a line equation or prediction",
   "parameters": [
-    {
-      "name": "X_VALUES",
-      "description": "x-values from the table, comma-separated",
-      "example": "-1, 0, 1, 2"
-    },
-    {
-      "name": "Y_VALUES",
-      "description": "y-values from the table, comma-separated",
-      "example": "12, 15, 18, 21"
-    },
-    {
-      "name": "XMIN", "description": "viewport left edge (data xmin minus ~20%)", "example": "-3"
-    },
-    {
-      "name": "XMAX", "description": "viewport right edge (data xmax plus ~20%)", "example": "4"
-    },
-    {
-      "name": "YMIN", "description": "viewport bottom edge (data ymin minus ~20%)", "example": "5"
-    },
-    {
-      "name": "YMAX", "description": "viewport top edge (data ymax plus ~20%)", "example": "25"
-    }
+    { "name": "X_VALUES", "description": "x-values from the table, comma-separated", "example": "-1, 0, 1, 2" },
+    { "name": "Y_VALUES", "description": "y-values from the table, comma-separated", "example": "12, 15, 18, 21" }
   ],
   "state": {
     "version": 11,
-    "graph": {
-      "viewport": {
-        "xmin": "{{XMIN}}",
-        "xmax": "{{XMAX}}",
-        "ymin": "{{YMIN}}",
-        "ymax": "{{YMAX}}"
-      }
-    },
+    "graph": { "viewport": { "xmin": -10, "xmax": 10, "ymin": -10, "ymax": 10 } },
     "expressions": {
       "list": [
-        {
-          "type": "text",
-          "id": "step1",
-          "text": "Step 1 — Enter your data. The table below holds your (x, y) pairs. x₁ are the inputs, y₁ are the outputs."
-        },
-        {
-          "type": "table",
-          "id": "data_table",
-          "columns": [
-            { "latex": "x_1", "values": ["{{X_VALUES}}"] },
-            { "latex": "y_1", "values": ["{{Y_VALUES}}"] }
-          ]
-        },
-        {
-          "type": "text",
-          "id": "step2",
-          "text": "Step 2 — Run the regression. The expression below uses ~ (tilde, not =) to tell Desmos to fit m and b to your data. Watch the stats panel — it shows the exact values."
-        },
-        {
-          "type": "expression",
-          "id": "regression",
-          "latex": "y_1 \\sim mx_1 + b",
-          "color": "#388c46"
-        },
-        {
-          "type": "text",
-          "id": "step3",
-          "text": "Step 3 — Read the answer. m is the slope, b is the y-intercept. The dashed line below is the fitted equation y = mx + b plotted over your data."
-        },
-        {
-          "type": "expression",
-          "id": "fitted_line",
-          "latex": "mx+b",
-          "color": "#c74440",
-          "lineStyle": "DASHED"
-        },
-        {
-          "type": "text",
-          "id": "tip",
-          "text": "SAT tip: For any problem that gives you a table and asks for an equation or a predicted value, this setup finds the answer in under 30 seconds — no algebra required."
-        }
+        { "type": "text", "id": "s1", "text": "Step 1 — Enter your data. x₁ = inputs, y₁ = outputs." },
+        { "type": "table", "id": "tbl", "columns": [
+          { "latex": "x_1", "values": ["{{X_VALUES}}"] },
+          { "latex": "y_1", "values": ["{{Y_VALUES}}"] }
+        ]},
+        { "type": "text", "id": "s2", "text": "Step 2 — The regression below uses ~ to fit m and b. Read the values from the stats panel." },
+        { "type": "expression", "id": "reg", "latex": "y_1 \\sim mx_1+b", "color": "#388c46" },
+        { "type": "text", "id": "s3", "text": "Step 3 — This dashed line is the fitted equation y = mx + b." },
+        { "type": "expression", "id": "line", "latex": "mx+b", "color": "#c74440", "lineStyle": "DASHED" },
+        { "type": "text", "id": "tip", "text": "SAT tip: For any table problem asking for an equation or prediction, this finds the answer in under 30 seconds — no algebra needed." }
       ]
     }
   }
 }
 ```
 
-### Notes on the schema
-
-- **Steps are text nodes** embedded in the Desmos state, so they appear in the calculator panel alongside the graph. The student sees the instructions and the graph at the same time.
-- **`{{PARAM}}` placeholders** are substituted client-side before `loadState`. Viewport values are numbers; table values are comma-separated strings that the loader splits into arrays.
-- **The `parameters` array** is the contract between the template and the AI — it lists exactly what the AI needs to extract from the problem and in what format.
-- All Desmos API rules (subscript columns, `~` not `=`, table-before-regression order, no `color` on text nodes) are enforced at authoring time, not at runtime.
-
----
-
-## Critical Desmos v1.12 API Rules
-
-These must be correct in every problem-solving template. They are the exact failure modes the model hits when generating expressions freehand:
-
-1. **Table columns must use subscript notation** — `x_1`, `y_1`. Plain `x` and `y` are free variables, not data columns.
-2. **Table must precede its regression** — expressions are processed in order. A regression referencing `x_1` before the table defining it silently fails.
-3. **Regression uses `~` not `=`** — `y_1 ~ mx_1 + b` fits parameters; `y_1 = mx_1 + b` just plots a function.
-4. **Multi-parameter regression requires an `x_1` anchor array** — when fitting 2+ unknowns (e.g., `h` and `k` in vertex form), add `{"latex": "x_1 = [1,2,3,4,5]"}` as the first expression.
-5. **Text nodes must not have a `color` field** — `{"type": "text", "text": "..."}` only. Adding `color` causes Desmos to silently drop the note.
-6. **Viewport must frame the data** — compute `xmin/xmax` from the actual data range ±20%.
+Key points:
+- **Text nodes carry the step-by-step walkthrough** — they appear directly in the Desmos expression panel alongside the graph
+- **`{{PARAM}}` placeholders** appear in latex strings and table value slots
+- **No viewport params** — a fixed default viewport is set in the state; the student can pan/zoom
+- **The `parameters` array** tells the model exactly what values to extract from the problem
 
 ---
 
-## Template Loader (`template-loader.js`)
+## `template-index.json` (what the model sees)
 
-Responsibilities:
-1. Load `template-index.json` (lightweight, loaded once)
-2. Provide the index to the AI prompt as context
-3. Parse the AI's `{ templateId, params }` response
-4. Fetch the full template state from the appropriate file
-5. Substitute `{{PARAM}}` placeholders and split comma-separated array values
-6. Return the final state object ready for `Desmos.loadState()`
-
-```javascript
-let _index = null;
-
-async function loadIndex() {
-  if (_index) return _index;
-  const res = await fetch('./sat/template-index.json');
-  _index = await res.json();
-  return _index;
-}
-
-// Returns the index as a compact string for injection into the system prompt.
-export async function getTemplateContextBlock() {
-  const index = await loadIndex();
-  const lines = index.map(t =>
-    `- ${t.id} (${t.type}): ${t.description} [keywords: ${t.keywords.join(', ')}]`
-  );
-  return `AVAILABLE DESMOS TEMPLATES:\n${lines.join('\n')}`;
-}
-
-// Given the AI's structured response, load and substitute the template.
-// Returns a Desmos-ready state object, or null if templateId is unrecognized.
-export async function resolveTemplate(templateId, params) {
-  const index = await loadIndex();
-  const entry = index.find(t => t.id === templateId);
-  if (!entry) return null;
-
-  const dir = entry.type === 'problem-solver' ? 'problem-solving' : 'json';
-  const res = await fetch(`./sat/Desmos ${dir}/${entry.filename}`);
-  const template = await res.json();
-
-  return substituteParams(template.state, params);
-}
-
-// Replace {{PARAM}} markers in the state JSON string, then re-parse.
-// Comma-separated strings in table value slots are split into arrays.
-function substituteParams(state, params) {
-  let str = JSON.stringify(state);
-  for (const [key, val] of Object.entries(params)) {
-    str = str.replaceAll(`"{{${key}}}"`, JSON.stringify(val));
-    str = str.replaceAll(`{{${key}}}`, val);
+```json
+[
+  {
+    "id": "unit_circle",
+    "type": "visualizer",
+    "name": "Unit Circle",
+    "description": "Interactive unit circle with a moveable angle showing the (cos θ, sin θ) point — show when a student asks about trig values or the relationship between angles and coordinates",
+    "keywords": ["unit circle", "sine", "cosine", "angle", "radian", "trig"]
+  },
+  {
+    "id": "linear_regression",
+    "type": "problem-solver",
+    "name": "Linear Regression from a Data Table",
+    "description": "Runs a linear regression on (x, y) data to find the best-fit equation — use when the problem gives a table of values and asks for a line equation or prediction",
+    "keywords": ["table", "data", "linear", "best fit", "scatterplot", "predict", "slope"]
   }
-  const result = JSON.parse(str);
-  // Split comma-separated table values into arrays
-  for (const expr of result.expressions?.list ?? []) {
-    if (expr.type === 'table') {
-      for (const col of expr.columns) {
-        if (col.values?.length === 1 && typeof col.values[0] === 'string' && col.values[0].includes(',')) {
-          col.values = col.values[0].split(',').map(v => v.trim());
-        }
-      }
-    }
-  }
-  return result;
-}
+]
 ```
+
+No state, no category — just enough for the model to pick the right template.
 
 ---
 
 ## Changes to `math-chat.js`
 
+### 1. Load template index at startup
+
 ```javascript
-// 1. Top of file:
-import { getTemplateContextBlock, resolveTemplate } from './sat/template-loader.js';
+let _templateIndex = null;
 
-// 2. In sendMessage(), before callAPI() — inject template index into system prompt for this turn:
-const templateContext = await getTemplateContextBlock();
-// append templateContext to the per-turn system prompt (not persisted in history)
+async function loadTemplateIndex() {
+  if (_templateIndex) return _templateIndex;
+  const res = await fetch('./sat/template-index.json');
+  _templateIndex = await res.json();
+  return _templateIndex;
+}
 
-// 3. After parseAIResponse() — if response contains templateId + params, load the state:
-if (aiResponse.templateId) {
-  const state = await resolveTemplate(aiResponse.templateId, aiResponse.params);
-  if (state) updateSATGraph(state);
+function buildTemplateIndexBlock(index) {
+  const lines = index.map(t =>
+    `  { "id": "${t.id}", "type": "${t.type}", "name": "${t.name}", "description": "${t.description}", "keywords": [${t.keywords.map(k => `"${k}"`).join(', ')}] }`
+  );
+  return `AVAILABLE DESMOS TEMPLATES (pick the best match or return null):\n[\n${lines.join(',\n')}\n]`;
 }
 ```
 
-The AI response format must include a structured JSON block alongside the natural language explanation. The existing `parseAIResponse` function will need a minor extension to extract `templateId` and `params` from the response.
+### 2. Inject index into the per-turn system prompt
+
+```javascript
+// In sendMessage(), before callAPI():
+const index = await loadTemplateIndex();
+const templateBlock = buildTemplateIndexBlock(index);
+// Append templateBlock to the system prompt for this turn only (not persisted in history)
+```
+
+### 3. Load and apply the chosen state
+
+```javascript
+async function resolveAndLoadState(stateId, params) {
+  const res = await fetch('./sat/desmos-library.json');
+  const library = await res.json();
+  const entry = library.find(e => e.id === stateId);
+  if (!entry) return;
+
+  let state = entry.state;
+
+  if (entry.type === 'problem-solver' && params) {
+    // Substitute {{PARAM}} placeholders via string replacement
+    let str = JSON.stringify(state);
+    for (const [key, val] of Object.entries(params)) {
+      str = str.replaceAll(`"{{${key}}}"`, JSON.stringify(val));
+      str = str.replaceAll(`{{${key}}}`, val);
+    }
+    state = JSON.parse(str);
+
+    // Split comma-separated table values into arrays
+    for (const expr of state.expressions?.list ?? []) {
+      if (expr.type === 'table') {
+        for (const col of expr.columns) {
+          if (col.values?.length === 1 && typeof col.values[0] === 'string' && col.values[0].includes(',')) {
+            col.values = col.values[0].split(',').map(v => v.trim());
+          }
+        }
+      }
+    }
+  }
+
+  satMathCalculator.setState(state);
+  captureGraphState();
+}
+```
+
+### 4. Parse `stateId` from AI response and remove the old `graph` field
+
+The AI response format changes from:
+```json
+{ "graph": { "expressions": [...], "viewport": {...} }, "response": "..." }
+```
+
+To:
+```json
+{ "stateId": "linear_regression", "params": { "X_VALUES": "-1,0,1,2", "Y_VALUES": "12,15,18,21" }, "response": "..." }
+```
+
+Or for a visualizer (no params):
+```json
+{ "stateId": "unit_circle", "response": "..." }
+```
+
+Or when no graph is needed:
+```json
+{ "stateId": null, "response": "..." }
+```
+
+`parseAIResponse` is extended to extract `stateId` and `params`. The existing `graph` field handling is removed.
+
+### 5. Remove `updateSATGraph`
+
+`updateSATGraph` (which used `setBlank()` + `setExpression()`) is replaced by `resolveAndLoadState()`. No AI-generated expressions reach the calculator.
 
 ---
 
-## Authoring Workflow for Problem-Solving Templates
+## Authoring Problem-Solving Templates
 
-Each template is hand-authored and verified in a live Desmos session before being committed.
+Each template is hand-authored and verified in a live Desmos session before being added to the library. The user adds them one file at a time as SAT topic coverage grows.
+
+### Workflow
 
 1. Open `https://www.desmos.com/calculator`
-2. Enter the expressions in order, using representative placeholder values
-3. Confirm the regression fits and the graph looks correct
-4. Write the step-by-step text nodes in plain language — focus on the *why* ("Desmos uses ~ to fit parameters") and the SAT strategy tip
-5. Export the calculator state via the browser console:
-   ```javascript
-   JSON.stringify(Desmos.Calculator.getState(), null, 2)
-   ```
-6. Replace concrete values with `{{PARAM}}` placeholders
-7. Add the `parameters` array describing each placeholder
-8. Add `id`, `name`, `category`, `keywords`, `exampleProblem`, `type: "problem-solver"`
-9. Add an entry to `template-index.json`
+2. Enter expressions with representative placeholder values (e.g., use `[1, 2, 3]` where `{{X_VALUES}}` will go)
+3. Write step-by-step text nodes — plain language, focus on the *why* and the SAT tip
+4. Confirm graph looks correct and interactive features work
+5. Export state via browser console: `JSON.stringify(Desmos.Calculator.getState(), null, 2)`
+6. Replace concrete input values with `{{PARAM}}` placeholders
+7. Add the entry to `desmos-library.json` and a lightweight entry to `template-index.json`
 
 ### Validation checklist
 
 ```
 ✓ Table columns use x_1 and y_1 (not x and y)
-✓ Table appears before regression in the expressions list
+✓ Table appears before any regression expression that references it
 ✓ Regression uses ~ (tilde), not =
 ✓ Multi-param regression has x_1 = [...] anchor as first expression
 ✓ Text nodes have no color field
-✓ Viewport placeholders are present and correct
 ✓ Every {{PARAM}} has a matching entry in the parameters array
-✓ File is registered in template-index.json
+✓ Entry added to both desmos-library.json and template-index.json
+✓ JSON.parse validates the full library file after adding
+```
+
+### Critical Desmos v1.12 API rules
+
+These must be correct in every problem-solver template (these are the exact failure modes the old AI-generation approach hit):
+
+1. **Table columns must use subscript notation** — `x_1`, `y_1`. Plain `x`/`y` are free variables, not data columns.
+2. **Table must precede its regression** — expressions are processed in order.
+3. **Regression uses `~` not `=`** — `y_1 ~ mx_1 + b` fits parameters; `y_1 = mx_1 + b` just plots a function.
+4. **Multi-parameter regression requires an `x_1` anchor array** — add `{"latex": "x_1 = [1,2,3,4,5]"}` as the first expression when fitting 2+ unknowns.
+5. **Text nodes must not have a `color` field** — `{"type": "text", "text": "..."}` only.
+
+---
+
+## System Prompt Changes
+
+The existing `SAT_MATH_SYSTEM_PROMPT` is updated to:
+
+1. **Remove** the `DESMOS API SYNTAX REFERENCE` section and all `COMPLETE EXAMPLES` — the model no longer writes expressions
+2. **Replace** the graph field documentation with the new response format
+3. **Add** the template index block (injected per-turn, not hardcoded in the prompt)
+4. **Update** strategy descriptions to reference template selection instead of expression generation
+
+New response format section in the prompt:
+
+```
+RESPONSE FORMAT:
+Output a single raw JSON object with these fields:
+{
+  "stateId": "template_id_from_index",   ← id from the template list, or null
+  "params": { "PARAM_NAME": "value" },   ← only for problem-solver templates; omit for visualizers
+  "response": "Your explanation here",
+  "suggestions": ["Follow-up 1", "Follow-up 2"]  ← optional, max 2
+}
+
+To select a template: match the problem to the best entry in the template index above.
+params values are the input values you read from the problem (data points, coefficients, etc.).
+If no template fits, set stateId to null — the graph will not update.
 ```
 
 ---
 
 ## Implementation Order
 
-1. **Create `Desmos problem-solving/` directory** and stub `template-index.json`
-2. **Author the first problem-solving template** — `linear-regression.json` (most common SAT data question, clearest example of the strategy)
-3. **Write `template-loader.js`** and test substitution with the linear regression template
-4. **Extend `parseAIResponse`** in `math-chat.js` to extract `templateId` + `params` from AI responses
-5. **Wire `getTemplateContextBlock`** into the per-turn system prompt
-6. **Test end-to-end** with a linear regression problem before adding more templates
-7. **Add remaining problem-solving templates** as new SAT problem types are covered (one file at a time, each verified before committing)
+1. **`desmos-library.json`** — merge all 7 visualizer source files into the library (done by subagent)
+2. **`template-index.json`** — companion lightweight index (done by subagent)
+3. **Update `SAT_MATH_SYSTEM_PROMPT`** — remove Desmos syntax reference, add new response format and template index injection
+4. **Update `parseAIResponse`** — extract `stateId` and `params` instead of `graph`
+5. **Add `resolveAndLoadState`** — fetch library, substitute params, call `setState()`
+6. **Remove `updateSATGraph`** — no longer needed
+7. **Test** with each visualizer and one problem-solver template
+8. **Add problem-solver templates** one by one as SAT topics are covered
 
 ---
 
-## Testing Protocol
+## What Is No Longer Part of This System
 
-For each problem-solving template:
-
-- [ ] AI correctly identifies the template from a natural language problem
-- [ ] AI extracts all parameter values from the problem text
-- [ ] Substituted state loads in Desmos without errors
-- [ ] Table column headers are `x_1` / `y_1` after substitution
-- [ ] Regression expression uses `~`
-- [ ] Text nodes appear in the calculator panel (no `color` field corruption)
-- [ ] Viewport frames the data correctly
-- [ ] `parseAIResponse` extracts `templateId` and `params` without errors (check console)
-- [ ] Fallback: problem with no matching template → no graph update, bot responds normally
-
----
-
-## What This Does NOT Change
-
-- `callAPI` — unchanged
-- Session storage / IndexedDB schema — unchanged
-- The SSE streaming render path — unchanged
-- Concept visualizer files — unchanged
-
-The template layer is additive. If no template matches, the system behaves exactly as it does today.
+- AI-generated Desmos expressions (`graph` field in AI response)
+- `updateSATGraph` / `setBlank()` + `setExpression()` approach
+- Prompt-injection of "verified example" blocks for the model to imitate
+- Viewport parameters (the state's own viewport is used as-is)
+- Any Desmos syntax documentation in the system prompt
