@@ -2,7 +2,7 @@
 # UI Deisgn To Do
 
 # rBUGs.md
-* Do all these I guess :)
+* Do all these I guess :(
 
 # sat/index.html
 * Theres like an invisible footer like this at the bottom of the main content area (maybe leave it or get rid of it)
@@ -14,6 +14,15 @@
 * Fix top option hover in sat question container, the first option when hovered, its like top border hover gets cut off
 * Check "Clear ALL Data" btn function to make sure it functions properly in all settings modals. 
 * Also for the top legends like the check mark with "Correct" text, can make text in dark mode be white and in light mode be black or another more "seen" colors. Same with question pills (if you want)
+
+# Sidebar
+* For settings modal for the clear all data button, when clicked make modal transition into "Are you sure?", if no, then goes back to settings modal and if so, then clear all data
+* Make a "Are you sure you wanna logoout?" modal for the logout icon button. 
+* ^^ BOTH SHOULD BE INCORRPERATED IN DROPDOWNS TOO
+
+# Scroll Bars
+* Make sure all scrollbars are purple globally in all HTML's in both light and dark modes.
+
 
 ##### UPCOMING WEEK ##########
 * Refine all css files syntaxing and remove duplicates. Make sure there are NO CONFLICTING css classes while making sure each html css and design remains the same. (Do the same with html pages and js files)
