@@ -1,45 +1,80 @@
 # Desmos Template Library — Implementation Plan
 
-## Problem Statement
+## Goal
 
-`math-chat.js` currently asks Gemini to generate Desmos expressions from scratch on every turn. The Desmos API (v1.12) syntax is niche and under-represented in training data, so the model reliably makes the following classes of mistakes:
+Give the math-chat bot two complementary Desmos superpowers:
 
-| Error class | Example |
-|---|---|
-| Table column headers without subscripts | `x` instead of `x_1` |
-| Regression uses `=` instead of `~` | `y_1 = mx_1 + b` |
-| Multi-param regression missing `x_1` anchor array | Desmos can't fit h and k |
-| Text note gets `color` field injected | Desmos ignores the note entirely |
-| Viewport leaves data off-screen | Regression line visible but data isn't |
+1. **Concept visualizers** — interactive graphs that show *what* a concept looks like (symmetry, concavity, transformations, etc.). Already authored; shown on demand.
+2. **Problem-solving templates** — step-by-step Desmos strategies for specific SAT problem types, demonstrating *how* to use regressions and graph tools to solve problems faster than by hand. The AI selects the right template, extracts values from the problem, and the client injects those values into the verified graph state.
 
-The fix is a **curated JSON library** of verified Desmos expression templates mapped to SAT problem categories. Before each API call, the user's message is classified client-side and the matching template is injected into the prompt as a concrete, already-correct example. The model imitates rather than invents.
+The core insight for problem-solving templates: many SAT algebra and data problems that students grind through analytically can be solved in seconds by setting up the right Desmos regression and reading off the result. The bot teaches that strategy, not just the answer.
 
-No server changes, no MCP, no new dependencies — this is purely a prompt-engineering + data layer.
+---
+
+## Two Template Types
+
+### Type 1 — Concept Visualizers (`Desmos json/`)
+
+The existing files. Loaded as-is (no parameterization). The AI references them when a student needs to understand a concept visually. No substitution required.
+
+```
+korah-bot/sat/Desmos json/
+  3-types-of-symmetry.json
+  concavity-discovery.json
+  concavity-rate-of-change.json
+  nonrigid-transformations-dilations.json
+  quadratic-from-vertex-point.json
+  sine-cosine-sinuoids-graphs.json
+  unit-circle.json
+```
+
+### Type 2 — Problem-Solving Templates (`Desmos problem-solving/`)
+
+New files, one per SAT problem class. Each one:
+- Embeds step-by-step instructions and tips as Desmos **text nodes** (visible in the calculator panel alongside the graph)
+- Uses `{{PARAM}}` placeholders in LaTeX strings for values the AI extracts from the problem
+- Carries a `parameters` schema so the AI knows exactly what to extract and in what format
+
+```
+korah-bot/sat/Desmos problem-solving/
+  linear-regression.json
+  quadratic-regression.json
+  exponential-regression.json
+  system-of-equations.json
+  vertex-form-completion.json
+  ... (one file per problem type, added as needed)
+```
 
 ---
 
 ## Architecture
 
 ```
-User message
-     │
-     ▼
-classifyProblem(message)          ← keyword match against template index
-     │
-     ▼
-getTemplate(templateId)           ← load from desmos-templates.json
-     │
-     ▼
-buildPromptWithTemplate(template) ← inject as "VERIFIED EXAMPLE" block
-     │
-     ▼
-callAPI(prompt)                   ← existing Gemini SSE call
-     │
-     ▼
-parseAIResponse → updateSATGraph  ← existing graph layer (unchanged)
+User sends a problem
+        │
+        ▼
+Client sends AI:
+  - template index (id + name + description + keywords, no full state)
+  - user message
+        │
+        ▼
+AI response includes TWO things:
+  1. Natural language explanation (shown to student)
+  2. Structured JSON: { "templateId": "linear_regression", "params": { "X_VALUES": "-1,0,1,2", ... } }
+        │
+        ▼
+Client matches templateId → fetches full state from library file
+        │
+        ▼
+Client substitutes params into {{PLACEHOLDER}} slots in the state JSON
+        │
+        ▼
+Desmos.loadState(substitutedState)   ← no AI-generated Desmos syntax
 ```
 
-The template layer sits entirely between `sendMessage` and `callAPI` in `math-chat.js`. Everything downstream is unchanged.
+**Key property:** The AI never writes Desmos expressions. It only identifies which template to use and extracts scalar values from the problem. All Desmos syntax comes from the hand-verified template files.
+
+If no template matches (or the problem is conceptual), the AI falls back to referencing a concept visualizer or responding without a graph update.
 
 ---
 
@@ -47,178 +82,196 @@ The template layer sits entirely between `sendMessage` and `callAPI` in `math-ch
 
 ```
 korah-bot/sat/
-  templates/
-    desmos-templates.json      ← full template library (source of truth)
-    template-loader.js         ← classification + prompt injection
-  math-chat.js                 ← add 3 lines: import, classify, inject
+  Desmos json/              ← concept visualizers (existing, unchanged)
+  Desmos problem-solving/   ← problem-solving templates (new)
+  template-index.json       ← lightweight index: id + name + description + keywords for both types
+  template-loader.js        ← classification, substitution, state loading
+math-chat.js                ← minimal additions
 ```
 
 ---
 
-## Template JSON Schema
+## Problem-Solving Template Schema
 
-Each entry in `desmos-templates.json`:
+Each file in `Desmos problem-solving/`:
 
 ```json
 {
-  "id": "linear_regression_data_table",
+  "id": "linear_regression",
+  "type": "problem-solver",
   "category": "Data Analysis",
-  "subcategory": "Regression",
-  "keywords": ["table", "data", "linear", "best fit", "scatterplot", "points", "predict"],
-  "description": "Linear regression from a data table",
-  "desmosExpressions": [
+  "name": "Linear Regression from a Data Table",
+  "description": "Find the best-fit linear equation from a set of (x, y) data points using a Desmos regression",
+  "keywords": ["table", "data", "linear", "best fit", "scatterplot", "points", "predict", "equation", "slope"],
+  "exampleProblem": "The table shows values of a linear function. Find the equation of the line.",
+  "parameters": [
     {
-      "type": "table",
-      "columns": [
-        { "latex": "x_1", "values": ["-1", "0", "1", "2"] },
-        { "latex": "y_1", "values": ["12", "15", "18", "21"] }
-      ]
+      "name": "X_VALUES",
+      "description": "x-values from the table, comma-separated",
+      "example": "-1, 0, 1, 2"
     },
-    { "latex": "y_1 \\sim m x_1 + b", "color": "#388c46" },
-    { "latex": "m x + b", "color": "#c74440", "lineStyle": "DASHED" }
+    {
+      "name": "Y_VALUES",
+      "description": "y-values from the table, comma-separated",
+      "example": "12, 15, 18, 21"
+    },
+    {
+      "name": "XMIN", "description": "viewport left edge (data xmin minus ~20%)", "example": "-3"
+    },
+    {
+      "name": "XMAX", "description": "viewport right edge (data xmax plus ~20%)", "example": "4"
+    },
+    {
+      "name": "YMIN", "description": "viewport bottom edge (data ymin minus ~20%)", "example": "5"
+    },
+    {
+      "name": "YMAX", "description": "viewport top edge (data ymax plus ~20%)", "example": "25"
+    }
   ],
-  "viewport": { "xmin": -3, "xmax": 4, "ymin": 5, "ymax": 25 },
-  "exampleProblem": "A linear function contains (-1,12), (0,15), (1,18), (2,21). Find the equation.",
-  "keyNotes": [
-    "Table MUST appear before the regression expression",
-    "Column headers MUST use subscripts: x_1 and y_1 (not x and y)",
-    "Regression uses tilde ~ not equals =",
-    "After fitting, plot m*x+b as a separate expression to visualize the line"
-  ]
+  "state": {
+    "version": 11,
+    "graph": {
+      "viewport": {
+        "xmin": "{{XMIN}}",
+        "xmax": "{{XMAX}}",
+        "ymin": "{{YMIN}}",
+        "ymax": "{{YMAX}}"
+      }
+    },
+    "expressions": {
+      "list": [
+        {
+          "type": "text",
+          "id": "step1",
+          "text": "Step 1 — Enter your data. The table below holds your (x, y) pairs. x₁ are the inputs, y₁ are the outputs."
+        },
+        {
+          "type": "table",
+          "id": "data_table",
+          "columns": [
+            { "latex": "x_1", "values": ["{{X_VALUES}}"] },
+            { "latex": "y_1", "values": ["{{Y_VALUES}}"] }
+          ]
+        },
+        {
+          "type": "text",
+          "id": "step2",
+          "text": "Step 2 — Run the regression. The expression below uses ~ (tilde, not =) to tell Desmos to fit m and b to your data. Watch the stats panel — it shows the exact values."
+        },
+        {
+          "type": "expression",
+          "id": "regression",
+          "latex": "y_1 \\sim mx_1 + b",
+          "color": "#388c46"
+        },
+        {
+          "type": "text",
+          "id": "step3",
+          "text": "Step 3 — Read the answer. m is the slope, b is the y-intercept. The dashed line below is the fitted equation y = mx + b plotted over your data."
+        },
+        {
+          "type": "expression",
+          "id": "fitted_line",
+          "latex": "mx+b",
+          "color": "#c74440",
+          "lineStyle": "DASHED"
+        },
+        {
+          "type": "text",
+          "id": "tip",
+          "text": "SAT tip: For any problem that gives you a table and asks for an equation or a predicted value, this setup finds the answer in under 30 seconds — no algebra required."
+        }
+      ]
+    }
+  }
 }
 ```
 
-### Critical schema rules (derived from the Desmos v1.12 API)
+### Notes on the schema
 
-These rules must be applied correctly in every template. They are the exact failure modes the model hits:
-
-1. **Table columns must use subscript notation** — `x_1`, `y_1`. Plain `x` and `y` are treated as free variables, not data columns.
-2. **Table must precede its regression** — Desmos processes expressions in order. A regression referencing `x_1` before the table defining `x_1` silently fails.
-3. **Regression uses `~` not `=`** — `y_1 ~ mx_1 + b` tells Desmos to fit parameters; `y_1 = mx_1 + b` would just plot a function.
-4. **Multi-parameter regression requires an `x_1` anchor array** — When fitting 2+ unknowns (e.g., `h` and `k` in vertex form), Desmos needs concrete `x_1` values to anchor the system. Add `{"latex": "x_1 = [1,2,3,4,5]"}` as the first expression.
-5. **Text notes must not have a `color` field** — `{"type": "text", "text": "Note here"}` only. Adding `color` causes Desmos to render the note as a malformed expression entry.
-6. **Single-parameter regression trick needs no table** — `LHS ~ RHS` where both sides reference `x_1` directly works without a data table (Desmos uses the variable as a symbolic anchor).
-7. **Viewport must frame the data** — Always compute `xmin/xmax` from the actual data range ± 20%.
+- **Steps are text nodes** embedded in the Desmos state, so they appear in the calculator panel alongside the graph. The student sees the instructions and the graph at the same time.
+- **`{{PARAM}}` placeholders** are substituted client-side before `loadState`. Viewport values are numbers; table values are comma-separated strings that the loader splits into arrays.
+- **The `parameters` array** is the contract between the template and the AI — it lists exactly what the AI needs to extract from the problem and in what format.
+- All Desmos API rules (subscript columns, `~` not `=`, table-before-regression order, no `color` on text nodes) are enforced at authoring time, not at runtime.
 
 ---
 
-## The 20 Core Templates
+## Critical Desmos v1.12 API Rules
 
-### Category 1 — Data Analysis / Regression (5)
+These must be correct in every problem-solving template. They are the exact failure modes the model hits when generating expressions freehand:
 
-| ID | Description |
-|---|---|
-| `linear_regression_data_table` | Table + `y_1 ~ mx_1 + b` |
-| `quadratic_regression_data_table` | Table + `y_1 ~ ax_1^2 + bx_1 + c` |
-| `exponential_regression_data_table` | Table + `y_1 ~ a \cdot b^{x_1}` |
-| `power_regression_data_table` | Table + `y_1 ~ a x_1^b` |
-| `logarithmic_regression_data_table` | Table + `y_1 ~ a\ln(x_1) + b` |
-
-Each includes: the table with realistic SAT data values, the regression expression, a dashed line for the fitted function, and a viewport that frames the data.
-
-### Category 2 — Regression Trick (parameter solving without a data table) (4)
-
-| ID | Description |
-|---|---|
-| `vertex_form_single_param` | `\frac{1}{3}x_1^2 - 2 \sim \frac{1}{3}(x_1-k)(x_1+k)` — solve for one unknown |
-| `vertex_form_h_and_k` | `x_1 = [1,2,3,4,5]` anchor + `2x_1^2-12x_1+10 \sim 2(x_1-h)^2+k` |
-| `exponential_parameter` | `y_1 \sim a \cdot b^{x_1}` with two data points to find `a` and `b` |
-| `linear_standard_form_rewrite` | `ax_1 + by_1 = c \sim y_1 \sim mx_1 + b` form conversion |
-
-### Category 3 — Graph-and-Check (multiple choice) (3)
-
-| ID | Description |
-|---|---|
-| `system_intersection` | Two functions graphed in different colors; intersection point labeled |
-| `quadratic_roots_check` | Parabola + 4 answer-choice roots graphed as vertical lines |
-| `answer_choice_comparison` | 4 functions graphed in 4 colors against a reference curve |
-
-### Category 4 — Algebra Visualization (5)
-
-| ID | Description |
-|---|---|
-| `quadratic_standard_to_vertex` | `y = ax^2 + bx + c` + vertex point labeled |
-| `linear_system_two_equations` | Two lines + intersection point labeled |
-| `absolute_value_function` | `y = a|x - h| + k` with transformations |
-| `inequality_region` | `y < mx + b` or `y \geq ax^2 + bx + c` shaded region |
-| `polynomial_factored_form` | `y = a(x-r_1)(x-r_2)(x-r_3)` with roots labeled |
-
-### Category 5 — Geometry & Trig (3)
-
-| ID | Description |
-|---|---|
-| `circle_standard_form` | `(x-h)^2 + (y-k)^2 = r^2` + center/radius labeled |
-| `right_triangle_trig` | Unit circle with angle, opposite/adjacent/hypotenuse labeled |
-| `exponential_growth_decay` | `y = a \cdot b^x` with initial value and growth/decay rate shown |
+1. **Table columns must use subscript notation** — `x_1`, `y_1`. Plain `x` and `y` are free variables, not data columns.
+2. **Table must precede its regression** — expressions are processed in order. A regression referencing `x_1` before the table defining it silently fails.
+3. **Regression uses `~` not `=`** — `y_1 ~ mx_1 + b` fits parameters; `y_1 = mx_1 + b` just plots a function.
+4. **Multi-parameter regression requires an `x_1` anchor array** — when fitting 2+ unknowns (e.g., `h` and `k` in vertex form), add `{"latex": "x_1 = [1,2,3,4,5]"}` as the first expression.
+5. **Text nodes must not have a `color` field** — `{"type": "text", "text": "..."}` only. Adding `color` causes Desmos to silently drop the note.
+6. **Viewport must frame the data** — compute `xmin/xmax` from the actual data range ±20%.
 
 ---
 
 ## Template Loader (`template-loader.js`)
 
+Responsibilities:
+1. Load `template-index.json` (lightweight, loaded once)
+2. Provide the index to the AI prompt as context
+3. Parse the AI's `{ templateId, params }` response
+4. Fetch the full template state from the appropriate file
+5. Substitute `{{PARAM}}` placeholders and split comma-separated array values
+6. Return the final state object ready for `Desmos.loadState()`
+
 ```javascript
-// template-loader.js
-// Loads desmos-templates.json, classifies a user message, and returns
-// a "VERIFIED TEMPLATE EXAMPLE" block to inject into the system prompt.
+let _index = null;
 
-let _templates = null;
-
-async function loadTemplates() {
-  if (_templates) return _templates;
-  const res = await fetch('./templates/desmos-templates.json');
-  _templates = await res.json();
-  return _templates;
+async function loadIndex() {
+  if (_index) return _index;
+  const res = await fetch('./sat/template-index.json');
+  _index = await res.json();
+  return _index;
 }
 
-// Score a template against a user message.
-// Returns a numeric score — higher = better match.
-function scoreTemplate(template, message) {
-  const lower = message.toLowerCase();
-  let score = 0;
-  for (const kw of template.keywords) {
-    if (lower.includes(kw.toLowerCase())) score++;
-  }
-  return score;
-}
-
-// Returns the best-matching template, or null if no template scores > 0.
-export async function classifyAndGetTemplate(userMessage) {
-  const templates = await loadTemplates();
-  let best = null;
-  let bestScore = 0;
-  for (const t of templates) {
-    const s = scoreTemplate(t, userMessage);
-    if (s > bestScore) { bestScore = s; best = t; }
-  }
-  return bestScore > 0 ? best : null;
-}
-
-// Build the injection block to append to the system prompt for this turn.
-export function buildTemplateInjection(template) {
-  if (!template) return '';
-
-  const expressionsJson = JSON.stringify(
-    { expressions: template.desmosExpressions, viewport: template.viewport },
-    null, 2
+// Returns the index as a compact string for injection into the system prompt.
+export async function getTemplateContextBlock() {
+  const index = await loadIndex();
+  const lines = index.map(t =>
+    `- ${t.id} (${t.type}): ${t.description} [keywords: ${t.keywords.join(', ')}]`
   );
+  return `AVAILABLE DESMOS TEMPLATES:\n${lines.join('\n')}`;
+}
 
-  const notes = template.keyNotes.map(n => `- ${n}`).join('\n');
+// Given the AI's structured response, load and substitute the template.
+// Returns a Desmos-ready state object, or null if templateId is unrecognized.
+export async function resolveTemplate(templateId, params) {
+  const index = await loadIndex();
+  const entry = index.find(t => t.id === templateId);
+  if (!entry) return null;
 
-  return `
-═══════════════════════════════════════════
-VERIFIED DESMOS TEMPLATE FOR THIS PROBLEM
-═══════════════════════════════════════════
-Problem type detected: ${template.description}
-Example problem: ${template.exampleProblem}
+  const dir = entry.type === 'problem-solver' ? 'problem-solving' : 'json';
+  const res = await fetch(`./sat/Desmos ${dir}/${entry.filename}`);
+  const template = await res.json();
 
-Use this EXACT expression structure (syntax already verified against Desmos v1.12):
-${expressionsJson}
+  return substituteParams(template.state, params);
+}
 
-Key rules for this template:
-${notes}
-
-Adapt the values to match the student's specific problem, but preserve the
-expression types, column naming (x_1/y_1), and ordering shown above.
-═══════════════════════════════════════════`;
+// Replace {{PARAM}} markers in the state JSON string, then re-parse.
+// Comma-separated strings in table value slots are split into arrays.
+function substituteParams(state, params) {
+  let str = JSON.stringify(state);
+  for (const [key, val] of Object.entries(params)) {
+    str = str.replaceAll(`"{{${key}}}"`, JSON.stringify(val));
+    str = str.replaceAll(`{{${key}}}`, val);
+  }
+  const result = JSON.parse(str);
+  // Split comma-separated table values into arrays
+  for (const expr of result.expressions?.list ?? []) {
+    if (expr.type === 'table') {
+      for (const col of expr.columns) {
+        if (col.values?.length === 1 && typeof col.values[0] === 'string' && col.values[0].includes(',')) {
+          col.values = col.values[0].split(',').map(v => v.trim());
+        }
+      }
+    }
+  }
+  return result;
 }
 ```
 
@@ -226,88 +279,90 @@ expression types, column naming (x_1/y_1), and ordering shown above.
 
 ## Changes to `math-chat.js`
 
-Three additions, all in `sendMessage`:
-
 ```javascript
-// 1. At top of file (after existing imports/consts):
-import { classifyAndGetTemplate, buildTemplateInjection } from './templates/template-loader.js';
+// 1. Top of file:
+import { getTemplateContextBlock, resolveTemplate } from './sat/template-loader.js';
 
-// 2. In sendMessage(), before callAPI():
-const template = await classifyAndGetTemplate(userMessage);
-const templateInjection = buildTemplateInjection(template);
+// 2. In sendMessage(), before callAPI() — inject template index into system prompt for this turn:
+const templateContext = await getTemplateContextBlock();
+// append templateContext to the per-turn system prompt (not persisted in history)
 
-// 3. In callAPI(), append templateInjection to the system prompt for this turn:
-{ role: 'system', content: SAT_MATH_SYSTEM_PROMPT + getFormatInstructions() + templateInjection }
+// 3. After parseAIResponse() — if response contains templateId + params, load the state:
+if (aiResponse.templateId) {
+  const state = await resolveTemplate(aiResponse.templateId, aiResponse.params);
+  if (state) updateSATGraph(state);
+}
 ```
 
-The injection is per-turn only — it does not persist in `conversationHistory`. This keeps the conversation history clean and avoids redundant template blocks inflating the token count on follow-up messages.
+The AI response format must include a structured JSON block alongside the natural language explanation. The existing `parseAIResponse` function will need a minor extension to extract `templateId` and `params` from the response.
 
 ---
 
-## Building the JSON Templates — Workflow
+## Authoring Workflow for Problem-Solving Templates
 
-The template JSON is hand-authored, not generated. Each template must be verified in a live Desmos session before being committed.
-
-### Verification steps for each template
+Each template is hand-authored and verified in a live Desmos session before being committed.
 
 1. Open `https://www.desmos.com/calculator`
-2. Enter each expression in the array in order
-3. Confirm the regression fits / graph looks correct
-4. Export the full calculator state JSON via the browser console:
+2. Enter the expressions in order, using representative placeholder values
+3. Confirm the regression fits and the graph looks correct
+4. Write the step-by-step text nodes in plain language — focus on the *why* ("Desmos uses ~ to fit parameters") and the SAT strategy tip
+5. Export the calculator state via the browser console:
    ```javascript
    JSON.stringify(Desmos.Calculator.getState(), null, 2)
    ```
-5. Cross-reference the `expressions.list` in the exported state with the template — confirm `latex` fields match exactly
-6. Set the viewport and confirm all interesting regions are in frame
-7. Paste the verified expressions into `desmos-templates.json`
+6. Replace concrete values with `{{PARAM}}` placeholders
+7. Add the `parameters` array describing each placeholder
+8. Add `id`, `name`, `category`, `keywords`, `exampleProblem`, `type: "problem-solver"`
+9. Add an entry to `template-index.json`
 
-### Common validation checks
+### Validation checklist
 
 ```
 ✓ Table columns use x_1 and y_1 (not x and y)
-✓ Table appears before regression in the expressions array
+✓ Table appears before regression in the expressions list
 ✓ Regression uses ~ (tilde), not =
 ✓ Multi-param regression has x_1 = [...] anchor as first expression
-✓ Text notes have no color field
-✓ Viewport xmin/xmax/ymin/ymax are set and frame the data
-✓ Hidden expressions (helpers) have "hidden": true
-✓ Regression line plotted separately from regression expression
+✓ Text nodes have no color field
+✓ Viewport placeholders are present and correct
+✓ Every {{PARAM}} has a matching entry in the parameters array
+✓ File is registered in template-index.json
 ```
 
 ---
 
 ## Implementation Order
 
-1. **Create `templates/` directory** and stub `desmos-templates.json` as an empty array
-2. **Author and verify the 5 regression templates** (highest impact — these are the most common SAT data-analysis questions and the most error-prone for the model)
-3. **Author and verify the 4 regression trick templates** (second highest: completing the square / vertex form is on nearly every SAT)
-4. **Write `template-loader.js`** with `classifyAndGetTemplate` and `buildTemplateInjection`
-5. **Wire into `math-chat.js`** (3-line change described above)
-6. **Test end-to-end** with the 9 problem types above before adding remaining templates
-7. **Author remaining 11 templates** (graph-and-check, algebra visualization, geometry/trig)
+1. **Create `Desmos problem-solving/` directory** and stub `template-index.json`
+2. **Author the first problem-solving template** — `linear-regression.json` (most common SAT data question, clearest example of the strategy)
+3. **Write `template-loader.js`** and test substitution with the linear regression template
+4. **Extend `parseAIResponse`** in `math-chat.js` to extract `templateId` + `params` from AI responses
+5. **Wire `getTemplateContextBlock`** into the per-turn system prompt
+6. **Test end-to-end** with a linear regression problem before adding more templates
+7. **Add remaining problem-solving templates** as new SAT problem types are covered (one file at a time, each verified before committing)
 
 ---
 
 ## Testing Protocol
 
-For each template category, send the example problem from the template's `exampleProblem` field and verify:
+For each problem-solving template:
 
-- [ ] Graph panel updates with the correct expression types
-- [ ] Regression expressions use `~` and subscript columns
-- [ ] Multi-param templates include the `x_1 = [...]` anchor
+- [ ] AI correctly identifies the template from a natural language problem
+- [ ] AI extracts all parameter values from the problem text
+- [ ] Substituted state loads in Desmos without errors
+- [ ] Table column headers are `x_1` / `y_1` after substitution
+- [ ] Regression expression uses `~`
+- [ ] Text nodes appear in the calculator panel (no `color` field corruption)
 - [ ] Viewport frames the data correctly
-- [ ] Text notes (if any) render as styled notes, not raw expressions
-- [ ] The AI's explanation references the graph correctly
-- [ ] `parseAIResponse` extracts the graph object without errors (check console)
+- [ ] `parseAIResponse` extracts `templateId` and `params` without errors (check console)
+- [ ] Fallback: problem with no matching template → no graph update, bot responds normally
 
 ---
 
 ## What This Does NOT Change
 
 - `callAPI` — unchanged
-- `parseAIResponse` / `updateSATGraph` — unchanged
 - Session storage / IndexedDB schema — unchanged
-- The system prompt (`SAT_MATH_SYSTEM_PROMPT`) — the injection is additive per-turn, not a replacement
 - The SSE streaming render path — unchanged
+- Concept visualizer files — unchanged
 
-The template layer is purely additive and opt-in per message. If no template matches (score = 0), the system behaves exactly as it does today.
+The template layer is additive. If no template matches, the system behaves exactly as it does today.
