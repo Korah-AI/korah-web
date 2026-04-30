@@ -27,8 +27,6 @@ when in a different page, and the side bar fully open, selecing the chat page to
 
 * (DOES NOT HAVE TO CHANGE) have the logout button be last button on the side bar
 
-* TRY TO FIND A WAY to fix it flashing if you click to a different part for the webpage (Basically smooth transitions between pages like React does but for our vanilla html pages: Look Into It to see if thats possible)
-
 (DOES NOT NEED TO CHANGE) under the text box (under the chat box), move the SAT  subject either under the other subjects ("general, math, science, history, literature" then under them "SAT") or be the last, (("general, math, science, history, literature, SAT")), same with the drop down on the topbar
 
 * (DOES NOT NEED TO BE ADDED) have a "how this works" pop up or button for the new users

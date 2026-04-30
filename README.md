@@ -11,20 +11,14 @@
 * web_fetch tool for the most up-to-date indo
 * sat_question fetch tool (chatbot to output SAT problems, JSON formatted)
 
-# Patches/Fixes
-* Add the About to `landingpage.html`
-* Switch blog to social media and link the Instagram page
-  * Mood should NOT have its own page. You could maybe implement it into `productivity.html`
-  * Honestly implement it in any creative ways you think are good
-* About Korah Link (Make About Korah Page or find somewhere to link to) Lines 853-856
-* Social Media Link 
-* Check out creating study item css and check all css and improve.
-* Check out using study items to see if there are any flaws.
-* Make sure that documents side bar doesn't overlap normal side bar when window is minimized and sidebars are opened.
-* Make sure users can see all recent chats and be able to delete all of them.
-* ^^ Same with recent study items
-* About Korah Link (Make About Korah Page or find somewhere to link to) Lines 285-286
-* Social Media Link 
+# Potential Updates
+* Find API's for AP classes and make a page regarding AP prep
+* Update Question SAT navigator, backend to statistical data (like how much a user got wrong, write, and marked for review,etc..). This is so we can add options that filter user SAT questions.
+* Remake korah landing page to be a 3d scroll interative website that explains the app and introduces it (Maybe using figma or something else). When the users enter, everything like dark (but still a bit visible) with "Korah A.I" lightened up and as they keep scrolling, everything listens up and there are 3d very well animated iphone with korah explaining features.
+* Add sat question prep on korah app.
+* Add user setting sin korah app for user experience.
+* Add mood based option like "full focus mode" to match how it is in korah and depending on the mood tips and advice or positive things show up for the user.
+
 
 TIPS FOR DEVELOPMENT SOURCE CONTROL
 * You can't use LiveServer to preview your changes. As you go, you're gonna have to make a commit, wait a bit, then check Korah.app. 
