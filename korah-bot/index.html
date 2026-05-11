@@ -42,6 +42,59 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="app/korah-chat.css"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css"/>
+<style>
+  .opp-feature-intro-modal {
+    position: fixed; inset: 0; z-index: 9999;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.35s cubic-bezier(0.4,0,0.2,1);
+  }
+  .opp-feature-intro-modal.show { opacity: 1; pointer-events: auto; }
+  .opp-feature-intro-backdrop {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(0.5rem); -webkit-backdrop-filter: blur(0.5rem);
+  }
+  .opp-feature-intro-content {
+    position: relative;
+    background: var(--sf); border: 0.0625rem solid var(--bd);
+    border-radius: 1.25rem; padding: 2.5rem 2.5rem 2rem;
+    max-width: 36rem; width: calc(100% - 2rem);
+    box-shadow: 0 1.5rem 4rem rgba(0,0,0,0.4), 0 0 2rem rgba(139,92,246,0.2);
+    transform: translateY(1.5rem) scale(0.95);
+    transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    text-align: center;
+  }
+  .opp-feature-intro-modal.show .opp-feature-intro-content { transform: translateY(0) scale(1); }
+  .opp-feature-intro-close {
+    position: absolute; top: 0.75rem; right: 0.75rem;
+    width: 2rem; height: 2rem; border: none; background: transparent;
+    color: var(--tx3); font-size: 1.25rem; cursor: pointer;
+    border-radius: 0.5rem; display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s ease; z-index: 1;
+  }
+  .opp-feature-intro-close:hover { background: rgba(139,92,246,0.15); color: var(--tx); }
+  .opp-feature-intro-slides { display: flex; align-items: center; justify-content: center; }
+  .opp-feature-intro-slide { display: flex; flex-direction: column; align-items: center; gap: 1rem; width: 100%; }
+  .opp-feature-intro-icon-large { font-size: 3.5rem; line-height: 1; margin-bottom: 0.25rem; filter: drop-shadow(0 0 0.75rem rgba(139,92,246,0.4)); }
+  .opp-feature-intro-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.5rem; font-weight: 800; color: var(--tx); margin: 0; line-height: 1.3; }
+  .opp-feature-intro-desc { font-size: 0.9375rem; line-height: 1.65; color: var(--tx2); margin: 0; max-width: 32rem; }
+  .opp-feature-intro-badge-new {
+    display: inline-block; padding: 0.2rem 0.75rem; border-radius: 1rem;
+    font-size: 0.65rem; font-weight: 800; letter-spacing: 0.1rem; text-transform: uppercase;
+    background: linear-gradient(135deg, var(--p4), var(--p5)); color: #fff; margin-top: 0.25rem;
+  }
+  .opp-feature-intro-actions { display: flex; justify-content: space-between; gap: 0.75rem; margin-top: 1.75rem; }
+  .opp-feature-intro-btn {
+    flex: 1; padding: 0.625rem 1.25rem; border-radius: 0.625rem;
+    font-size: 0.875rem; font-weight: 700; cursor: pointer;
+    border: 0.0625rem solid transparent; transition: all 0.2s ease; font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .opp-feature-intro-btn.primary { background: linear-gradient(135deg, var(--p4), var(--p5)); color: #fff; border-color: var(--p5); }
+  .opp-feature-intro-btn.primary:hover { filter: brightness(1.1); transform: translateY(-0.0625rem); }
+  .opp-feature-intro-btn.secondary { background: transparent; color: var(--tx2); border-color: var(--bd); }
+  .opp-feature-intro-btn.secondary:hover { background: var(--sf2); color: var(--tx); }
+</style>
 </head>
 
 <body class="bg-base tx korah-home-chat">
@@ -620,6 +673,28 @@
 
 
 
+<!-- Opportunities Feature Intro Modal -->
+<div id="opp-intro-modal" class="opp-feature-intro-modal">
+  <div class="opp-feature-intro-backdrop"></div>
+  <div class="opp-feature-intro-content">
+    <button class="opp-feature-intro-close" id="opp-intro-close">&times;</button>
+    <div class="opp-feature-intro-slides">
+      <div class="opp-feature-intro-slide active">
+        <div class="opp-feature-intro-icon-large">🚀</div>
+        <h2 class="opp-feature-intro-title">STEM Opportunities</h2>
+        <p class="opp-feature-intro-desc">
+          Discover programs, internships, competitions, and scholarships for underrepresented students in NJ and beyond — all in one place. Browse and filter by grade, cost, and category.
+        </p>
+        <div class="opp-feature-intro-badge-new">NEW</div>
+      </div>
+    </div>
+    <div class="opp-feature-intro-actions">
+      <button class="opp-feature-intro-btn secondary" id="opp-intro-dismiss">Maybe Later</button>
+      <button class="opp-feature-intro-btn primary" id="opp-intro-go">Explore Opportunities</button>
+    </div>
+  </div>
+</div>
+
 <!-- Pro Tip Toast Notification -->
 <div id="pro-tip-toast" class="pro-tip-toast">
   <span class="pro-tip-toast-icon">💡</span>
@@ -653,6 +728,30 @@
   document.getElementById('sat-math-btn').addEventListener('click', () => {
     window.location.href = 'sat/math-chat.html';
   });
+
+  // ── Opportunities Feature Intro ──
+  (function() {
+    const INTRO_KEY = 'korah_opp_intro_seen';
+    if (localStorage.getItem(INTRO_KEY)) return;
+
+    const modal = document.getElementById('opp-intro-modal');
+    if (!modal) return;
+
+    function closeModal() {
+      modal.classList.remove('show');
+      localStorage.setItem(INTRO_KEY, 'true');
+    }
+
+    document.getElementById('opp-intro-go').addEventListener('click', () => {
+      closeModal();
+      window.location.href = 'opportunities.html';
+    });
+    document.getElementById('opp-intro-dismiss').addEventListener('click', closeModal);
+    document.getElementById('opp-intro-close').addEventListener('click', closeModal);
+    modal.querySelector('.opp-feature-intro-backdrop').addEventListener('click', closeModal);
+
+    setTimeout(() => modal.classList.add('show'), 800);
+  })();
 
   // Initialize sidebar with chat-specific callbacks
   window.addEventListener('korahReady', () => {
