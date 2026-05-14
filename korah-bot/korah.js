@@ -106,6 +106,7 @@ function app() {
     /* FIX #17: removed dead scrollTo function */
     navLinks: [
       { id: 'home', label: 'Home' }, { id: 'how', label: 'How it Works' },
+      { id: 'sat', label: 'SAT Prep' },
       { id: 'features', label: 'Features' }, { id: 'study-tools', label: 'Study Tools' },
       { id: 'chat', label: 'Korah AI' }, { id: 'download', label: 'Download' }
     ],
