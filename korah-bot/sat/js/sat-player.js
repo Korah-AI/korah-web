@@ -277,7 +277,18 @@
   const sessionInfoBtn = document.getElementById("sessionInfoBtn");
   const sessionInfoModal = document.getElementById("sessionInfoModal");
   const modalSection = document.getElementById("modalSection");
+  const modalAssessment = document.getElementById("modalAssessment");
+  const modalDifficulty = document.getElementById("modalDifficulty");
   const modalDomains = document.getElementById("modalDomains");
+  const sessionFilterChips = document.getElementById("sessionFilterChips");
+
+  const DIFFICULTY_LABELS = { E: "Easy", M: "Medium", H: "Hard" };
+  function difficultyText(diffs) {
+    if (!Array.isArray(diffs) || diffs.length === 0 || diffs.includes("any")) {
+      return "Any";
+    }
+    return diffs.map((d) => DIFFICULTY_LABELS[d] || d).join(", ");
+  }
 
   // Reference panel
   const referencePanel = document.getElementById("referencePanel");
@@ -764,7 +775,9 @@
   function populateSessionModal() {
     const sections = query.sections;
     if (modalSection) modalSection.textContent = getSectionsLabel(sections);
-    
+    if (modalAssessment) modalAssessment.textContent = query.assessment || "SAT";
+    if (modalDifficulty) modalDifficulty.textContent = difficultyText(query.difficulties);
+
     const domains = query.domains;
     if (modalDomains) {
       if (Array.isArray(domains) && domains.length > 0 && !domains.includes("any")) {
@@ -773,6 +786,21 @@
         modalDomains.innerHTML = `<span style="opacity: 0.6; font-style: italic;">All domains selected</span>`;
       }
     }
+  }
+
+  // Render small persistent chips next to the question domain so the active
+  // difficulty/assessment filters are always visible, not just in the modal.
+  function renderSessionFilterChips() {
+    if (!sessionFilterChips) return;
+    const chips = [];
+    const diffs = Array.isArray(query.difficulties) ? query.difficulties : [];
+    if (diffs.length > 0 && !diffs.includes("any")) {
+      chips.push(`<span class="sat-filter-chip">${difficultyText(diffs)}</span>`);
+    }
+    if (query.assessment && query.assessment !== "SAT") {
+      chips.push(`<span class="sat-filter-chip">${query.assessment}</span>`);
+    }
+    sessionFilterChips.innerHTML = chips.join("");
   }
 
   /**
@@ -1108,6 +1136,7 @@
     state.currentIndex = 0;
     startStopwatch();
     renderHeader();
+    renderSessionFilterChips();
     renderQuestion();
 
     // Initialize resize handle

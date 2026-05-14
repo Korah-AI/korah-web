@@ -13,20 +13,32 @@ export const config = {
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 let cache = null;
 
+function makeBucket() {
+  return { total: 0, E: 0, M: 0, H: 0 };
+}
+
 async function computeStats(assessmentKey) {
   const asmtEventId = ASSESSMENTS[assessmentKey] ?? ASSESSMENTS.SAT;
 
+  // Per-domain and per-skill counts are nested by difficulty so the client can
+  // narrow them to the user's difficulty selection without an extra API hit.
+  // Top-level `domainBreakdown[code]` and `skillBreakdown[code]` remain flat
+  // numeric totals for backwards compatibility with any older callers.
   const stats = {
     totalQuestions: 0,
     domainBreakdown: {},
+    domainBreakdownByDifficulty: {},
     difficultyBreakdown: { E: 0, M: 0, H: 0 },
     skillBreakdown: {},
+    skillBreakdownByDifficulty: {},
     assessmentInfo: { assessment: assessmentKey, asmtEventId },
   };
-  for (const code of ALL_DOMAIN_CODES) stats.domainBreakdown[code] = 0;
+  for (const code of ALL_DOMAIN_CODES) {
+    stats.domainBreakdown[code] = 0;
+    stats.domainBreakdownByDifficulty[code] = makeBucket();
+  }
 
   // Single combined POST for all 8 domain codes (matches MySATPrep's call shape).
-  // We then group counts client-side by primary_class_cd / skill_cd / difficulty.
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 30_000);
   let items = [];
@@ -42,15 +54,25 @@ async function computeStats(assessmentKey) {
 
   for (const q of items) {
     const code = q.primary_class_cd;
+    const diff = q.difficulty;
     if (code && stats.domainBreakdown[code] != null) {
       stats.domainBreakdown[code]++;
+      const bucket = stats.domainBreakdownByDifficulty[code];
+      bucket.total++;
+      if (diff && bucket[diff] != null) bucket[diff]++;
     }
-    if (q.difficulty && stats.difficultyBreakdown[q.difficulty] != null) {
-      stats.difficultyBreakdown[q.difficulty]++;
+    if (diff && stats.difficultyBreakdown[diff] != null) {
+      stats.difficultyBreakdown[diff]++;
     }
     if (q.skill_cd) {
       stats.skillBreakdown[q.skill_cd] =
         (stats.skillBreakdown[q.skill_cd] || 0) + 1;
+      if (!stats.skillBreakdownByDifficulty[q.skill_cd]) {
+        stats.skillBreakdownByDifficulty[q.skill_cd] = makeBucket();
+      }
+      const sb = stats.skillBreakdownByDifficulty[q.skill_cd];
+      sb.total++;
+      if (diff && sb[diff] != null) sb[diff]++;
     }
   }
   stats.totalQuestions = items.length;
@@ -92,8 +114,10 @@ export default async function handler(req, res) {
         stats,
         totalQuestions: stats.totalQuestions,
         domainBreakdown: stats.domainBreakdown,
+        domainBreakdownByDifficulty: stats.domainBreakdownByDifficulty,
         difficultyBreakdown: stats.difficultyBreakdown,
         skillBreakdown: stats.skillBreakdown,
+        skillBreakdownByDifficulty: stats.skillBreakdownByDifficulty,
         assessmentInfo: stats.assessmentInfo,
       },
       message: "Question bank stats fetched successfully",

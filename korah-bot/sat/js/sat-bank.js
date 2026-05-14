@@ -61,19 +61,31 @@
     const stats = state.globalStats?.data?.stats || {};
     const domainStats = stats.domainBreakdown || {};
     const skillStats = stats.skillBreakdown || {};
-    // /api/sat/stats reports counts across the whole bank, not narrowed by
-    // the user's difficulty selection — so when a difficulty filter is active
-    // the numbers would mislead. Hide them in that case.
-    const showCounts = state.difficulties.length === 0;
+    const domainByDiff = stats.domainBreakdownByDifficulty || {};
+    const skillByDiff = stats.skillBreakdownByDifficulty || {};
+    const difficultyFilter = state.difficulties; // [] | array of "E"/"M"/"H"
+
+    function countDomain(code) {
+      if (difficultyFilter.length === 0) return domainStats[code] || 0;
+      const bucket = domainByDiff[code];
+      if (!bucket) return 0;
+      return difficultyFilter.reduce((sum, d) => sum + (bucket[d] || 0), 0);
+    }
+    function countSkill(code) {
+      if (difficultyFilter.length === 0) return skillStats[code] || 0;
+      const bucket = skillByDiff[code];
+      if (!bucket) return 0;
+      return difficultyFilter.reduce((sum, d) => sum + (bucket[d] || 0), 0);
+    }
 
     sectionColumns.innerHTML = sections
       .map((section) => {
         const isActiveSection = state.sections.includes(section.key);
         const allSelected = section.domains.every(d => state.domains.includes(d.key));
 
-        // Calculate section total count
-        const sectionTotal = section.domains.reduce((sum, d) => sum + (domainStats[d.code] || 0), 0);
-        const sectionCountLabel = showCounts && sectionTotal > 0 ? ` — ${sectionTotal} Questions` : "";
+        // Calculate section total count (respecting difficulty filter)
+        const sectionTotal = section.domains.reduce((sum, d) => sum + countDomain(d.code), 0);
+        const sectionCountLabel = sectionTotal > 0 ? ` — ${sectionTotal} Questions` : "";
 
         return `
           <article class="sat-section-card is-${section.key}">
@@ -90,14 +102,14 @@
               ${section.domains
                 .map((domain) => {
                   const selected = isActiveSection && state.domains.includes(domain.key);
-                  const domainCount = domainStats[domain.code] || 0;
-                  const domainCountLabel = showCounts && domainCount > 0 ? `${domainCount} Questions` : "";
+                  const domainCount = countDomain(domain.code);
+                  const domainCountLabel = domainCount > 0 ? `${domainCount} Questions` : "";
 
                   const skillHtml = (domain.skills || [])
                     .map((skill) => {
                       const skillSelected = state.skills.includes(skill.code);
-                      const skillCount = skillStats[skill.code] || 0;
-                      const skillCountLabel = showCounts && skillCount > 0 ? `${skillCount} Questions` : "";
+                      const skillCount = countSkill(skill.code);
+                      const skillCountLabel = skillCount > 0 ? `${skillCount} Questions` : "";
                       return `
                         <div class="sat-topic-row">
                           <button class="sat-check ${skillSelected ? "is-active" : ""}" type="button" data-select-skill="${section.key}::${domain.key}::${skill.code}" aria-label="Select ${skill.key}"></button>
