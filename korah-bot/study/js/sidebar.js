@@ -631,6 +631,7 @@ function showSidebarDeleteModal(name, onConfirm) {
       : satHref.replace(/[^/]*$/, '');
     const satIndexHref = `${satDir}index.html`;
     const satMathChatHref = `${satDir}math-chat.html`;
+    const satDashboardHref = `${satDir}dashboard.html`;
     
 
     // Wrap SAT item so it can "reveal" like the Pomodoro idle panel.
@@ -666,6 +667,12 @@ function showSidebarDeleteModal(name, onConfirm) {
           <a class="more-dropdown-item" href="${satIndexHref}">
             <span class="material-icons-round">assignment</span>
             <span>SAT Questionbank</span>
+          </a>
+        </li>
+        <li>
+          <a class="more-dropdown-item" href="${satDashboardHref}">
+            <span class="material-icons-round">insights</span>
+            <span>SAT Dashboard</span>
           </a>
         </li>
       </ul>
