@@ -93,7 +93,7 @@ export default async function handler(req, res) {
         if (sectionCodes.length === 0) return [];
 
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 15_000);
+        const timeout = setTimeout(() => controller.abort(), 30_000);
         try {
           const list = await fetchQuestionList({
             asmtEventId,
@@ -126,7 +126,7 @@ export default async function handler(req, res) {
           const id = meta.external_id || meta.ibn;
           if (!id) return null;
           const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 10_000);
+          const timeout = setTimeout(() => controller.abort(), 30_000);
           try {
             const detail = await fetchQuestionDetail(id, controller.signal);
             if (!detail) return null;
@@ -151,6 +151,11 @@ export default async function handler(req, res) {
     combined = combined.slice(0, limit);
   }
 
+  // Mirror MySATPrep's CDN cache hints — lets Vercel's edge cache the response
+  // and dramatically reduces upstream load on College Board.
+  res.setHeader("Cache-Control", "public, s-maxage=3600");
+  res.setHeader("CDN-Cache-Control", "public, s-maxage=60");
+  res.setHeader("Vercel-CDN-Cache-Control", "public, s-maxage=3600");
   return res.status(200).json({
     sections,
     domains,

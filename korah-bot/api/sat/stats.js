@@ -8,8 +8,8 @@ export const config = {
   maxDuration: 60,
 };
 
-// In-memory cache so concurrent requests (and repeated visits) don't hammer the
-// CB upstream. Stats refresh every 6 hours.
+// In-memory cache for cold starts; the Vercel CDN does the heavy lifting via
+// the response headers below.
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 let cache = null;
 
@@ -23,37 +23,37 @@ async function computeStats(assessmentKey) {
     skillBreakdown: {},
     assessmentInfo: { assessment: assessmentKey, asmtEventId },
   };
+  for (const code of ALL_DOMAIN_CODES) stats.domainBreakdown[code] = 0;
 
-  // Fetch each domain individually so we can attribute counts per-domain (matches
-  // MySATPrep's stats route behavior).
-  const lists = await Promise.all(
-    ALL_DOMAIN_CODES.map(async (code) => {
-      try {
-        const items = await fetchQuestionList({
-          asmtEventId,
-          domainCodes: [code],
-        });
-        return { code, items };
-      } catch (err) {
-        console.error(`Stats: domain ${code} failed`, err);
-        return { code, items: [] };
-      }
-    })
-  );
+  // Single combined POST for all 8 domain codes (matches MySATPrep's call shape).
+  // We then group counts client-side by primary_class_cd / skill_cd / difficulty.
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30_000);
+  let items = [];
+  try {
+    items = await fetchQuestionList({
+      asmtEventId,
+      domainCodes: ALL_DOMAIN_CODES,
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
 
-  for (const { code, items } of lists) {
-    stats.domainBreakdown[code] = items.length;
-    stats.totalQuestions += items.length;
-    for (const q of items) {
-      if (q.difficulty && stats.difficultyBreakdown[q.difficulty] != null) {
-        stats.difficultyBreakdown[q.difficulty]++;
-      }
-      if (q.skill_cd) {
-        stats.skillBreakdown[q.skill_cd] =
-          (stats.skillBreakdown[q.skill_cd] || 0) + 1;
-      }
+  for (const q of items) {
+    const code = q.primary_class_cd;
+    if (code && stats.domainBreakdown[code] != null) {
+      stats.domainBreakdown[code]++;
+    }
+    if (q.difficulty && stats.difficultyBreakdown[q.difficulty] != null) {
+      stats.difficultyBreakdown[q.difficulty]++;
+    }
+    if (q.skill_cd) {
+      stats.skillBreakdown[q.skill_cd] =
+        (stats.skillBreakdown[q.skill_cd] || 0) + 1;
     }
   }
+  stats.totalQuestions = items.length;
 
   return stats;
 }
@@ -78,6 +78,9 @@ export default async function handler(req, res) {
     cache.key === cacheKey &&
     now - cache.builtAt < CACHE_TTL_MS
   ) {
+    res.setHeader("Cache-Control", "public, s-maxage=3600");
+    res.setHeader("CDN-Cache-Control", "public, s-maxage=60");
+    res.setHeader("Vercel-CDN-Cache-Control", "public, s-maxage=3600");
     return res.status(200).json(cache.payload);
   }
 
@@ -96,6 +99,9 @@ export default async function handler(req, res) {
       message: "Question bank stats fetched successfully",
     };
     cache = { key: cacheKey, builtAt: now, payload };
+    res.setHeader("Cache-Control", "public, s-maxage=3600");
+    res.setHeader("CDN-Cache-Control", "public, s-maxage=60");
+    res.setHeader("Vercel-CDN-Cache-Control", "public, s-maxage=3600");
     return res.status(200).json(payload);
   } catch (err) {
     console.error("Stats fetch error:", err);

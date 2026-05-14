@@ -61,6 +61,7 @@ export async function fetchQuestionList({
       test: 2,
       domain: domainCodes.join(","),
     }),
+    cache: "force-cache",
     signal,
   });
   if (!resp.ok) {
@@ -79,6 +80,7 @@ async function fetchDisclosedQuestion(questionId, signal) {
   const resp = await fetch(`${SAIC_DISCLOSED_BASE}/${encodeURIComponent(questionId)}.json`, {
     method: "GET",
     headers: { Accept: "application/json" },
+    cache: "force-cache",
     signal,
   });
   if (!resp.ok) return null;
@@ -155,6 +157,7 @@ async function fetchRegularQuestion(externalId, signal) {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify({ external_id: externalId }),
+    cache: "force-cache",
     signal,
   });
   if (!resp.ok) return null;
