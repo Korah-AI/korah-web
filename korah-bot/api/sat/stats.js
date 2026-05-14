@@ -105,10 +105,13 @@ export default async function handler(req, res) {
     return res.status(200).json(payload);
   } catch (err) {
     console.error("Stats fetch error:", err);
-    return res.status(502).json({
+    const body = {
       success: false,
       error: "Failed to fetch question bank stats",
-      details: err instanceof Error ? err.message : String(err),
-    });
+    };
+    if (process.env.VERCEL_ENV !== "production") {
+      body.details = err instanceof Error ? err.message : String(err);
+    }
+    return res.status(502).json(body);
   }
 }

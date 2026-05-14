@@ -55,7 +55,27 @@ function sectionForDomainCode(code) {
 // calls. Responses are memoized in-process for `LIST_CACHE_TTL_MS` so a warm
 // Vercel function instance can serve repeated requests without re-hitting CB.
 const LIST_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+const LIST_CACHE_MAX = 32;
 const listCache = new Map(); // key → { items, fetchedAt }
+
+// Map preserves insertion order, so the oldest key is `keys().next().value`.
+// Re-inserting on hit promotes a key to "newest"; eviction drops the head when
+// the cache exceeds its cap.
+function cacheSet(map, key, value, max) {
+  if (map.has(key)) map.delete(key);
+  map.set(key, value);
+  while (map.size > max) {
+    const oldest = map.keys().next().value;
+    map.delete(oldest);
+  }
+}
+function cacheTouch(map, key) {
+  const v = map.get(key);
+  if (v === undefined) return undefined;
+  map.delete(key);
+  map.set(key, v);
+  return v;
+}
 
 export async function fetchQuestionList({
   asmtEventId = 99,
@@ -65,7 +85,7 @@ export async function fetchQuestionList({
   if (!Array.isArray(domainCodes) || domainCodes.length === 0) return [];
   const sorted = [...new Set(domainCodes)].sort();
   const key = `${asmtEventId}::${sorted.join(",")}`;
-  const cached = listCache.get(key);
+  const cached = cacheTouch(listCache, key);
   if (cached && Date.now() - cached.fetchedAt < LIST_CACHE_TTL_MS) {
     return cached.items;
   }
@@ -86,7 +106,7 @@ export async function fetchQuestionList({
   }
   const data = await resp.json();
   const items = Array.isArray(data) ? data : [];
-  listCache.set(key, { items, fetchedAt: Date.now() });
+  cacheSet(listCache, key, { items, fetchedAt: Date.now() }, LIST_CACHE_MAX);
   return items;
 }
 
@@ -94,6 +114,7 @@ export async function fetchQuestionList({
 // Disclosed (-DC) questions use the saic.collegeboard.org JSON dump; everything
 // else goes through the regular qbank get-question POST.
 const DETAIL_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+const DETAIL_CACHE_MAX = 500;
 const detailCache = new Map(); // questionId → { detail, fetchedAt }
 
 async function fetchDisclosedQuestion(questionId, signal) {
@@ -218,7 +239,7 @@ async function fetchRegularQuestion(externalId, signal) {
 export async function fetchQuestionDetail(idParam, signal) {
   if (!idParam) return null;
   const id = String(idParam);
-  const cached = detailCache.get(id);
+  const cached = cacheTouch(detailCache, id);
   if (cached && Date.now() - cached.fetchedAt < DETAIL_CACHE_TTL_MS) {
     return cached.detail;
   }
@@ -226,7 +247,9 @@ export async function fetchQuestionDetail(idParam, signal) {
     const detail = id.includes("-DC")
       ? await fetchDisclosedQuestion(id, signal)
       : await fetchRegularQuestion(id, signal);
-    if (detail) detailCache.set(id, { detail, fetchedAt: Date.now() });
+    if (detail) {
+      cacheSet(detailCache, id, { detail, fetchedAt: Date.now() }, DETAIL_CACHE_MAX);
+    }
     return detail;
   } catch {
     return null;

@@ -59,9 +59,10 @@ export default async function handler(req, res) {
     });
   } catch (err) {
     console.error("question detail error:", err);
-    return res.status(502).json({
-      error: "College Board unavailable",
-      detail: err instanceof Error ? err.message : String(err),
-    });
+    const body = { error: "College Board unavailable" };
+    if (process.env.VERCEL_ENV !== "production") {
+      body.detail = err instanceof Error ? err.message : String(err);
+    }
+    return res.status(502).json(body);
   }
 }

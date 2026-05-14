@@ -61,15 +61,19 @@
     const stats = state.globalStats?.data?.stats || {};
     const domainStats = stats.domainBreakdown || {};
     const skillStats = stats.skillBreakdown || {};
+    // /api/sat/stats reports counts across the whole bank, not narrowed by
+    // the user's difficulty selection — so when a difficulty filter is active
+    // the numbers would mislead. Hide them in that case.
+    const showCounts = state.difficulties.length === 0;
 
     sectionColumns.innerHTML = sections
       .map((section) => {
         const isActiveSection = state.sections.includes(section.key);
         const allSelected = section.domains.every(d => state.domains.includes(d.key));
-        
+
         // Calculate section total count
         const sectionTotal = section.domains.reduce((sum, d) => sum + (domainStats[d.code] || 0), 0);
-        const sectionCountLabel = sectionTotal > 0 ? ` — ${sectionTotal} Questions` : "";
+        const sectionCountLabel = showCounts && sectionTotal > 0 ? ` — ${sectionTotal} Questions` : "";
 
         return `
           <article class="sat-section-card is-${section.key}">
@@ -87,13 +91,13 @@
                 .map((domain) => {
                   const selected = isActiveSection && state.domains.includes(domain.key);
                   const domainCount = domainStats[domain.code] || 0;
-                  const domainCountLabel = domainCount > 0 ? `${domainCount} Questions` : "";
+                  const domainCountLabel = showCounts && domainCount > 0 ? `${domainCount} Questions` : "";
 
                   const skillHtml = (domain.skills || [])
                     .map((skill) => {
                       const skillSelected = state.skills.includes(skill.code);
                       const skillCount = skillStats[skill.code] || 0;
-                      const skillCountLabel = skillCount > 0 ? `${skillCount} Questions` : "";
+                      const skillCountLabel = showCounts && skillCount > 0 ? `${skillCount} Questions` : "";
                       return `
                         <div class="sat-topic-row">
                           <button class="sat-check ${skillSelected ? "is-active" : ""}" type="button" data-select-skill="${section.key}::${domain.key}::${skill.code}" aria-label="Select ${skill.key}"></button>
@@ -247,7 +251,6 @@
     renderSections();
     renderDifficulty();
     renderSummary();
-    fetchQuestionCounts();
   }
 
   async function fetchGlobalStats() {
@@ -265,48 +268,6 @@
       }
     } catch (err) {
       console.error("Failed to fetch global stats:", err);
-    }
-  }
-
-  async function fetchQuestionCounts() {
-    const questionCountEl = document.getElementById("questionCount");
-    if (!questionCountEl) return;
-    
-    const params = new URLSearchParams();
-    const sectionValue = state.sections.length > 0 && !(state.sections.length === 2 && state.sections.includes("english") && state.sections.includes("math"))
-      ? state.sections.join(",")
-      : "any";
-    params.set("sections", sectionValue);
-    const domainValue = state.domains.length > 0 && !state.domains.includes("any")
-      ? state.domains.join(",")
-      : "any";
-    params.set("domains", domainValue);
-    const skillValue = state.skills.length > 0 && !state.skills.includes("any")
-      ? state.skills.join(",")
-      : "any";
-    params.set("skills", skillValue);
-    if (state.difficulties.length > 0) {
-      params.set("difficulties", state.difficulties.join(","));
-    }
-    if (state.assessment && state.assessment !== "SAT") {
-      params.set("assessment", state.assessment);
-    }
-    params.set("limit", "1");
-
-    try {
-      const response = await fetch(`/api/sat/questions?${params.toString()}`, {
-        method: "GET",
-        headers: { Accept: "application/json" },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        const count = data.count ?? 0;
-        questionCountEl.textContent = count >= 1000 ? `${Math.floor(count / 1000)}k+` : String(count);
-      } else {
-        questionCountEl.textContent = "—";
-      }
-    } catch (err) {
-      questionCountEl.textContent = "—";
     }
   }
 

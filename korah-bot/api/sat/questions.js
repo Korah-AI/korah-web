@@ -197,11 +197,14 @@ export default async function handler(req, res) {
     }
   } catch (err) {
     console.error("College Board fetch error:", err);
-    return res.status(502).json({
+    const body = {
       error: "College Board unavailable",
       message: "Could not reach the College Board question bank.",
-      detail: err instanceof Error ? err.message : String(err),
-    });
+    };
+    if (process.env.VERCEL_ENV !== "production") {
+      body.detail = err instanceof Error ? err.message : String(err);
+    }
+    return res.status(502).json(body);
   }
 
   // CDN headers — the list response is deterministic per query string.
