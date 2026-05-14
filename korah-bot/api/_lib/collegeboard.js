@@ -249,23 +249,31 @@ export function normalizeQuestion(meta, detail) {
     domainCode ||
     "";
   const section = sectionForDomainCode(domainCode) || "english";
+  const loaded = Boolean(detail);
+  const detailKey = meta?.external_id || meta?.ibn || "";
 
   return {
     id: meta?.questionId || meta?.external_id || meta?.ibn || "",
+    // The upstream identifier the frontend hands back when requesting on-demand
+    // detail via /api/sat/question?id=…
+    detailKey,
     section,
     domain: domainName,
     skillCd: meta?.skill_cd || "",
     difficulty: meta?.difficulty || "",
-    paragraph: fixImageUrls(detail?.stimulus),
-    stem: fixImageUrls(detail?.stem),
-    options: optionsArray(detail?.answerOptions),
-    correctAnswer: Array.isArray(detail?.correct_answer)
-      ? detail.correct_answer[0] ?? ""
-      : typeof detail?.correct_answer === "string"
-        ? detail.correct_answer
-        : "",
-    explanation: fixImageUrls(detail?.rationale),
-    type: detail?.type || "mcq",
+    paragraph: loaded ? fixImageUrls(detail.stimulus) : "",
+    stem: loaded ? fixImageUrls(detail.stem) : "",
+    options: loaded ? optionsArray(detail.answerOptions) : [],
+    correctAnswer: loaded
+      ? Array.isArray(detail.correct_answer)
+        ? detail.correct_answer[0] ?? ""
+        : typeof detail.correct_answer === "string"
+          ? detail.correct_answer
+          : ""
+      : "",
+    explanation: loaded ? fixImageUrls(detail.rationale) : "",
+    type: loaded ? detail.type || "mcq" : "mcq",
+    loaded,
   };
 }
 

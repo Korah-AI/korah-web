@@ -488,6 +488,37 @@
       return;
     }
 
+    // Stub (not yet fully loaded) — show loading or load-error placeholder
+    // and let ensureDetail(currentIndex) hydrate it in the background.
+    if (!current.loaded) {
+      if (questionNumberEl) questionNumberEl.textContent = state.currentIndex + 1;
+      questionDomain.textContent = current.domain || "";
+      if (questionStemTitle) {
+        questionStemTitle.textContent = current._loadError ? "Could not load question" : "Loading question…";
+        questionStemTitle.classList.remove("is-hidden");
+      }
+      questionParagraph.textContent = current._loadError
+        ? "Skip to the next one, or try again."
+        : "Fetching question from the College Board question bank.";
+      questionParagraph.classList.remove("is-hidden");
+      questionStem.textContent = "";
+      answerChoices.innerHTML = current._loadError
+        ? `<button class="sat-button sat-button-primary" type="button" id="retryDetailBtn">Retry</button>`
+        : "";
+      feedbackPanel.className = "sat-feedback-panel is-hidden";
+      feedbackPanel.innerHTML = "";
+      reviewBadge.classList.add("is-hidden");
+      if (prevQuestionBtn) prevQuestionBtn.disabled = state.currentIndex === 0;
+      if (nextQuestionBtn) nextQuestionBtn.disabled = false;
+      if (checkAnswerBtn) checkAnswerBtn.disabled = true;
+      if (toggleCalcBtn) toggleCalcBtn.disabled = true;
+      if (showExplanationBtn) showExplanationBtn.disabled = true;
+      if (markReviewBtn) markReviewBtn.disabled = true;
+      // Kick off the hydration (no-op if already in flight).
+      ensureDetail(state.currentIndex);
+      return;
+    }
+
     const selectedAnswer = state.answers[current.id];
     const checked = Boolean(state.checked[current.id]);
     const showExplanation = checked || explanationForcedOpen;
@@ -661,15 +692,72 @@
     explanationForcedOpen = false;
     // NEW: Reset stopwatch on navigation
     startStopwatch();
-    
+
     // Clean up Desmos before moving
     destroyDesmos();
 
     renderHeader();
     renderQuestion();
     if (window.qNav) window.qNav.refresh();
-    
+    // Hydrate the current question if it's still a stub, and warm up nearby ones.
+    ensureDetail(index);
+    prefetchAround(index, 3);
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ── Lazy detail loading ──────────────────────────────────────────────────
+  // /api/sat/questions ships the full filtered list, but only the first
+  // batchSize entries are fully detailed. Everything beyond ships as a stub
+  // (loaded: false). We hydrate stubs on demand as the user navigates, and
+  // prefetch a small window around the current question so navigation feels
+  // instant.
+  const detailFetchPromises = new Map(); // index → Promise
+
+  async function ensureDetail(index) {
+    const q = questions[index];
+    if (!q || q.loaded) return;
+    if (detailFetchPromises.has(index)) return detailFetchPromises.get(index);
+    const detailKey = q.detailKey || q.id;
+    if (!detailKey) return;
+
+    const promise = (async () => {
+      try {
+        const resp = await fetch(`/api/sat/question?id=${encodeURIComponent(detailKey)}`, {
+          method: "GET",
+          headers: { Accept: "application/json" },
+        });
+        if (!resp.ok) throw new Error(`status ${resp.status}`);
+        const body = await resp.json();
+        // Merge detail fields into the existing stub so id/section/domain etc. survive.
+        Object.assign(questions[index], {
+          type: body.type || q.type,
+          paragraph: body.paragraph || "",
+          stem: body.stem || "",
+          options: Array.isArray(body.options) ? body.options : [],
+          correctAnswer: body.correctAnswer || "",
+          explanation: body.explanation || "",
+          loaded: true,
+        });
+        // Re-render if the user is still on this question.
+        if (state.currentIndex === index) renderQuestion();
+      } catch (err) {
+        console.error("ensureDetail failed for index", index, err);
+        questions[index]._loadError = err?.message || "load failed";
+        if (state.currentIndex === index) renderQuestion();
+      } finally {
+        detailFetchPromises.delete(index);
+      }
+    })();
+    detailFetchPromises.set(index, promise);
+    return promise;
+  }
+
+  function prefetchAround(index, radius = 3) {
+    for (let i = 1; i <= radius; i++) {
+      const fwd = index + i;
+      if (fwd < questions.length) ensureDetail(fwd);
+    }
   }
 
   // NEW: Session modal population
@@ -793,6 +881,18 @@
     const retry = event.target.closest("#retryLoadBtn");
     if (retry) {
       void loadQuestions();
+      return;
+    }
+
+    // Retry a single failed question detail.
+    const retryDetail = event.target.closest("#retryDetailBtn");
+    if (retryDetail) {
+      const idx = state.currentIndex;
+      if (questions[idx]) {
+        delete questions[idx]._loadError;
+        renderQuestion();
+        ensureDetail(idx);
+      }
       return;
     }
 
@@ -1009,11 +1109,18 @@
     startStopwatch();
     renderHeader();
     renderQuestion();
-    
+
     // Initialize resize handle
     initResizeHandle();
 
     if (window.qNav) window.qNav.refresh();
+
+    // The first batch arrives fully detailed; warm up the next few in the
+    // background so forward navigation feels instant.
+    if (questions.length > 0) {
+      ensureDetail(0);
+      prefetchAround(0, 5);
+    }
   }
 
 /**
