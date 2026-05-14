@@ -31,7 +31,7 @@ A phased blueprint for evolving Korah's SAT section into a top-tier study produc
 | Question player | ⚠️ MCQ-only, demo fallback present | `korah-bot/sat/js/sat-player.js` |
 | Firestore CRUD primitives | ✅ working | `korah-bot/app/data/firestore-store.js` |
 | KaTeX + Desmos | ✅ loaded | global |
-| SAT Math chat (Desmos) | 📋 designed, not built | `docs/sat-math-mode-implementation-plan.md` |
+| SAT Math chat (Desmos) | ✅ built (beta) | `korah-bot/sat/math-chat.html` + `math-chat.js` |
 | Session model | ❌ none | — |
 | Stats / analytics | ❌ none | — |
 | Bookmarks | ❌ none | — |
@@ -289,28 +289,68 @@ Client-side transaction on each answer: read `satStats/aggregated`, mutate local
 
 ---
 
-## Phase 6 — SAT Math Chat with Desmos
+## Phase 6 — SAT Math Chat — Integrate with Sessions + Stats
 
-**Goal:** Build the AI math tutor with persistent graphing canvas. The existing design docs cover most of this; this phase wires it into the new session/stats model.
+**Status:** The SAT Math chat page is already built (in beta) at `korah-bot/sat/math-chat.html` and `korah-bot/sat/math-chat.js`, with a persistent Desmos graph panel, split-view layout, feature-intro carousel, pro-tips, and integration with the shared sidebar / Firestore via `setupKorahDB`. This phase **does not rebuild it** — it wires it into the new session/stats model and adds adaptive study suggestions.
 
-### Existing design (don't duplicate here)
+### Existing design references
 - [`docs/sat-math-mode-implementation-plan.md`](./sat-math-mode-implementation-plan.md)
 - [`docs/sat-math-chat-architecture.md`](./sat-math-chat-architecture.md)
 - [`docs/desmos-template-library-plan.md`](./desmos-template-library-plan.md)
 
-### Additions for this round
+### What's already there (no work needed)
+- ✅ Page shell, sidebar integration, Firebase auth gate
+- ✅ Desmos calculator panel (resizable, with clear-graph control)
+- ✅ Chat input + welcome screen with quick-prompt buttons (Linear Equations, Quadratics, Systems, Trigonometry)
+- ✅ Session persistence (`window.SatMathChat.switchToSession`, `newChat`, `initSession`)
+- ✅ Feature intro carousel (one-time onboarding via `korah_sat_math_intro_seen`)
+- ✅ Rotating Pro Tips on every other user message
+
+### What to add in this phase
 
 | File | Change |
 |------|--------|
-| `korah-bot/sat/math-chat.html` *(new — per existing plan)* | Build it |
-| `korah-bot/sat/math-chat.js` *(new — per existing plan)* | Build it |
-| `korah-bot/sat/js/sat-review.js` | "Ask Korah" button → open math-chat with question stem injected as opening message |
-| `korah-bot/api/gem-proxy.js` | Accept optional `questionContext` payload to seed system prompt |
+| `korah-bot/sat/js/sat-review.js` | "Ask Korah" button on each wrong-question card → opens `math-chat.html#new` with the question stem injected as the opening user message |
+| `korah-bot/sat/math-chat.js` | Read `?question={qId}` or hash payload on init; if present, prime the chat with the question stem + correct answer as system context |
+| `korah-bot/api/gem-proxy.js` | Accept optional `questionContext` payload to seed the system prompt with the SAT question + user's wrong answer |
+| `korah-bot/sat/math-chat.js` | On session-end, write summary to `satSessions/{id}` (chat sessions count toward stats: topics covered, time spent) |
+| `korah-bot/sat/math-chat.js` | Replace the static `data-prompt` quick-prompts with **adaptive suggestions** (see below) |
+
+### Adaptive Study Suggestions (new — leverages Phase 3 stats)
+
+Today the math-chat welcome screen shows four hard-coded buttons (Linear Equations, Quadratics, Systems, Trigonometry). Once `satStats/aggregated` exists (Phase 3), swap them for dynamic suggestions personalized to the user.
+
+**Suggestion algorithm:**
+1. On `korahReady`, fetch `users/{uid}/satStats/aggregated`.
+2. Filter `bySkill` to **math-only** skill codes (H.\*, P.\*, Q.\*, S.\*) where `total ≥ 3` (need enough signal).
+3. Compute `accuracy = correct / total` and `avgTime = totalTimeMs / total` per skill.
+4. Rank by **weakness score** = `(1 - accuracy) * 0.7 + (avgTime / globalAvgTime) * 0.3` — combines wrong-answer rate and slowness.
+5. Pick the **top 3 weakest skills** the user has practiced + 1 "discovery" suggestion (a math skill they've never tried).
+6. Map each skill code → human label + a chat prompt template:
+   ```js
+   { "H.A.": { label: "Linear Equations", prompt: "Teach me linear equations in one variable — I keep getting them wrong on the SAT" },
+     "Q.E.": { label: "Probability",     prompt: "Walk me through SAT probability questions step by step" },
+     ... }
+   ```
+7. Render as the four quick-prompt buttons with a small accuracy badge ("48% · 3 wrong recently") on each.
+
+**Fallback for new users (no stats yet):** show the current four hard-coded buttons.
+
+**Empty state (low signal):** show the user's chosen difficulty/domain from their most recent session.
+
+**File touch:**
+- `korah-bot/sat/math-chat.js` — replace the `.quick-prompt-btn` render block; new helper `renderAdaptiveSuggestions(stats)`
+- `korah-bot/app/data/firestore-store.js` — expose `getSatStats()` (read-only)
+- `korah-bot/sat/sat-math.css` — small accuracy-badge style on `.quick-prompt-btn`
+
+### Optional: in-chat "next topic" nudges
+After 5+ messages on one topic, surface a soft banner: *"You've spent 8 min on quadratics. Want to switch to your next weakest skill — Systems of Equations (52% accuracy)?"* — single-click swap.
 
 ### Verification
-- Get a math question wrong on review page.
-- Click "Ask Korah why I got this wrong".
-- Confirm math-chat opens with the question loaded, an opening AI turn explains the misstep, and graphing it on Desmos works.
+- New user opens math-chat → sees the default 4 static quick prompts.
+- After completing a Phase 1+3 practice session with mixed performance → math-chat welcome screen shows the user's three weakest math skills as quick prompts, each with an accuracy badge.
+- From the review page, click "Ask Korah why I got this wrong" on a missed math question → math-chat opens with the question loaded and the opening AI turn explains the misstep with a graph.
+- Spend 5+ messages on one topic → "switch to next weakest" nudge appears.
 
 ---
 
@@ -369,7 +409,7 @@ Simple SM-2-lite:
 | 3. Stats + tracker | M | Retention loop |
 | 4. Bookmarks + review | S | Quick wins on session data |
 | 5. Bank browser + shareable URLs | S | korah-bot integration surface |
-| 6. SAT Math chat (Desmos) | L | Differentiator |
+| 6. SAT Math chat — sessions + adaptive prompts | S | Differentiator (page already built) |
 | 7. Vocab system | L | Parallel to 6 |
 | 8. Polish | S | Quality bar |
 
