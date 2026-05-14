@@ -4,7 +4,7 @@
       {
         key: "english",
         label: "English Reading & Writing",
-        description: "Section/domain-based SAT practice powered by OpenSAT.",
+        description: "Practice questions sourced from the Official College Board Question Bank.",
         domains: [
           {
             key: "Information and Ideas",
@@ -49,7 +49,7 @@
       {
         key: "math",
         label: "Math",
-        description: "Section/domain-based SAT practice powered by OpenSAT.",
+        description: "Practice questions sourced from the Official College Board Question Bank.",
         domains: [
           {
             key: "Algebra",

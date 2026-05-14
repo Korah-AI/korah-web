@@ -421,7 +421,7 @@
         questionStemTitle.textContent = "Loading questions…";
         questionStemTitle.classList.remove("is-hidden");
       }
-      questionParagraph.textContent = "Fetching your OpenSAT session from Korah.";
+      questionParagraph.textContent = "Fetching your session from the Official College Board Question Bank.";
       questionParagraph.classList.remove("is-hidden");
       questionStem.textContent = "";
       answerChoices.innerHTML = "";
@@ -443,7 +443,7 @@
       if (questionNumberEl) questionNumberEl.textContent = "!";
       questionDomain.textContent = "";
       if (questionStemTitle) {
-        questionStemTitle.textContent = "OpenSAT connection issue";
+        questionStemTitle.textContent = "College Board connection issue";
         questionStemTitle.classList.remove("is-hidden");
       }
       questionParagraph.textContent = loadError || "Something went wrong while loading questions.";
