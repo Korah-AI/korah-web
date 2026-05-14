@@ -46,22 +46,37 @@ function sectionForDomainCode(code) {
 }
 
 // ── List endpoint ──────────────────────────────────────────────────────
-// POST { asmtEventId, test: 2, domain: "INI,CAS,..." } → array of question metadata
+// POST { asmtEventId, test: 2, domain: "INI,CAS,..." } → array of question metadata.
+//
+// We always issue ONE request against the full set of section codes the caller
+// cares about and partition the response locally — this matches the request
+// shape MySATPrep uses (a single POST per session) and avoids hitting CB with
+// multiple concurrent POSTs that triggered intermittent 502s on per-domain
+// calls. Responses are memoized in-process for `LIST_CACHE_TTL_MS` so a warm
+// Vercel function instance can serve repeated requests without re-hitting CB.
+const LIST_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+const listCache = new Map(); // key → { items, fetchedAt }
+
 export async function fetchQuestionList({
   asmtEventId = 99,
   domainCodes,
   signal,
 } = {}) {
   if (!Array.isArray(domainCodes) || domainCodes.length === 0) return [];
+  const sorted = [...new Set(domainCodes)].sort();
+  const key = `${asmtEventId}::${sorted.join(",")}`;
+  const cached = listCache.get(key);
+  if (cached && Date.now() - cached.fetchedAt < LIST_CACHE_TTL_MS) {
+    return cached.items;
+  }
   const resp = await fetch(`${CB_QBANK_BASE}/digital/get-questions`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify({
       asmtEventId,
       test: 2,
-      domain: domainCodes.join(","),
+      domain: sorted.join(","),
     }),
-    cache: "force-cache",
     signal,
   });
   if (!resp.ok) {
@@ -70,17 +85,21 @@ export async function fetchQuestionList({
     throw err;
   }
   const data = await resp.json();
-  return Array.isArray(data) ? data : [];
+  const items = Array.isArray(data) ? data : [];
+  listCache.set(key, { items, fetchedAt: Date.now() });
+  return items;
 }
 
 // ── Detail endpoints ───────────────────────────────────────────────────
 // Disclosed (-DC) questions use the saic.collegeboard.org JSON dump; everything
 // else goes through the regular qbank get-question POST.
+const DETAIL_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+const detailCache = new Map(); // questionId → { detail, fetchedAt }
+
 async function fetchDisclosedQuestion(questionId, signal) {
   const resp = await fetch(`${SAIC_DISCLOSED_BASE}/${encodeURIComponent(questionId)}.json`, {
     method: "GET",
     headers: { Accept: "application/json" },
-    cache: "force-cache",
     signal,
   });
   if (!resp.ok) return null;
@@ -157,7 +176,6 @@ async function fetchRegularQuestion(externalId, signal) {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify({ external_id: externalId }),
-    cache: "force-cache",
     signal,
   });
   if (!resp.ok) return null;
@@ -199,11 +217,17 @@ async function fetchRegularQuestion(externalId, signal) {
 
 export async function fetchQuestionDetail(idParam, signal) {
   if (!idParam) return null;
+  const id = String(idParam);
+  const cached = detailCache.get(id);
+  if (cached && Date.now() - cached.fetchedAt < DETAIL_CACHE_TTL_MS) {
+    return cached.detail;
+  }
   try {
-    if (String(idParam).includes("-DC")) {
-      return await fetchDisclosedQuestion(idParam, signal);
-    }
-    return await fetchRegularQuestion(idParam, signal);
+    const detail = id.includes("-DC")
+      ? await fetchDisclosedQuestion(id, signal)
+      : await fetchRegularQuestion(id, signal);
+    if (detail) detailCache.set(id, { detail, fetchedAt: Date.now() });
+    return detail;
   } catch {
     return null;
   }

@@ -14,13 +14,22 @@ export const config = {
 
 const VALID_DIFFICULTIES = ["E", "M", "H"];
 
+// Cap on details fetched per request — protects the function from runaway
+// concurrent fetches when a caller forgets to send `limit`.
+const DEFAULT_LIMIT = 20;
+const HARD_MAX_LIMIT = 50;
+
+// Cap on simultaneous open detail fetches to CB. MySATPrep effectively gets
+// this for free via Next's data cache; here we pool manually.
+const DETAIL_CONCURRENCY = 5;
+
 function parseLimit(value) {
-  if (value === undefined || value === null || value === "") return null;
+  if (value === undefined || value === null || value === "") return DEFAULT_LIMIT;
   const str = String(value).trim().toLowerCase();
-  if (str === "none" || str === "unlimited" || str === "max") return null;
+  if (str === "none" || str === "unlimited" || str === "max") return HARD_MAX_LIMIT;
   const parsed = parseInt(str, 10);
-  if (Number.isNaN(parsed)) return null;
-  return Math.max(1, parsed);
+  if (Number.isNaN(parsed)) return DEFAULT_LIMIT;
+  return Math.min(HARD_MAX_LIMIT, Math.max(1, parsed));
 }
 
 function normalizeSection(value) {
@@ -50,6 +59,22 @@ function normalizeDifficulties(value) {
   return items.length > 0 ? items : null;
 }
 
+// Run `worker(item)` over `items` with at most `concurrency` in flight at once.
+async function pooledMap(items, concurrency, worker) {
+  const results = new Array(items.length);
+  let cursor = 0;
+  async function next() {
+    while (true) {
+      const i = cursor++;
+      if (i >= items.length) return;
+      results[i] = await worker(items[i], i);
+    }
+  }
+  const runners = Array.from({ length: Math.min(concurrency, items.length) }, next);
+  await Promise.all(runners);
+  return results;
+}
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
@@ -71,9 +96,22 @@ export default async function handler(req, res) {
   const assessmentKey = String(req.query?.assessment || "SAT").toUpperCase();
   const asmtEventId = ASSESSMENTS[assessmentKey] ?? ASSESSMENTS.SAT;
 
-  // Per-section limit for balanced results across English/Math when both selected.
-  const perSectionLimit =
-    limit !== null ? Math.ceil(limit / sections.length) : null;
+  // Resolve target domain codes across ALL requested sections, then issue ONE
+  // combined POST against CB (this mirrors MySATPrep's actual request shape
+  // and is the same call that already works for /api/sat/stats).
+  const allCodes = new Set();
+  for (const sec of sections) {
+    const codes = resolveDomainCodes({ sections: [sec], domains });
+    for (const c of codes) {
+      if ((SECTION_DOMAIN_CODES[sec] || []).includes(c)) allCodes.add(c);
+    }
+  }
+  const targetCodes = [...allCodes];
+  if (targetCodes.length === 0) {
+    return res.status(200).json({
+      sections, domains, skills, difficulties, count: 0, questions: [],
+    });
+  }
 
   const isAnySkill =
     skills === "any" ||
@@ -83,79 +121,73 @@ export default async function handler(req, res) {
   let combined = [];
 
   try {
-    const perSectionLists = await Promise.all(
-      sections.map(async (sec) => {
-        const codes = resolveDomainCodes({ sections: [sec], domains });
-        // Restrict to codes that belong to this section so per-section limits stay balanced.
-        const sectionCodes = codes.filter((c) =>
-          (SECTION_DOMAIN_CODES[sec] || []).includes(c)
-        );
-        if (sectionCodes.length === 0) return [];
-
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 30_000);
-        try {
-          const list = await fetchQuestionList({
-            asmtEventId,
-            domainCodes: sectionCodes,
-            signal: controller.signal,
-          });
-          return list;
-        } finally {
-          clearTimeout(timeout);
-        }
-      })
-    );
-
-    for (let i = 0; i < perSectionLists.length; i++) {
-      let items = perSectionLists[i] || [];
-
-      if (skillFilter) {
-        items = items.filter((q) => skillFilter.has(q.skill_cd));
-      }
-      if (difficulties) {
-        items = items.filter((q) => difficulties.includes(q.difficulty));
-      }
-
-      items = shuffleArray(items);
-      if (perSectionLimit !== null) items = items.slice(0, perSectionLimit);
-
-      // Fetch details in parallel for the selected metas.
-      const detailed = await Promise.all(
-        items.map(async (meta) => {
-          const id = meta.external_id || meta.ibn;
-          if (!id) return null;
-          const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 30_000);
-          try {
-            const detail = await fetchQuestionDetail(id, controller.signal);
-            if (!detail) return null;
-            return normalizeQuestion(meta, detail);
-          } finally {
-            clearTimeout(timeout);
-          }
-        })
-      );
-
-      combined.push(...detailed.filter(Boolean));
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30_000);
+    let listItems;
+    try {
+      listItems = await fetchQuestionList({
+        asmtEventId,
+        domainCodes: targetCodes,
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeout);
     }
+
+    // Partition items by section and apply filters before sampling.
+    const bySection = { english: [], math: [] };
+    for (const meta of listItems) {
+      const code = meta?.primary_class_cd;
+      if (SECTION_DOMAIN_CODES.english.includes(code)) bySection.english.push(meta);
+      else if (SECTION_DOMAIN_CODES.math.includes(code)) bySection.math.push(meta);
+    }
+
+    function applyFilters(arr) {
+      let out = arr;
+      if (skillFilter) out = out.filter((q) => skillFilter.has(q.skill_cd));
+      if (difficulties) out = out.filter((q) => difficulties.includes(q.difficulty));
+      return out;
+    }
+
+    // Per-section sampling so a 2-section request stays balanced.
+    const perSectionLimit = Math.max(1, Math.ceil(limit / sections.length));
+    const sampledMetas = [];
+    for (const sec of sections) {
+      let pool = applyFilters(bySection[sec] || []);
+      pool = shuffleArray(pool);
+      sampledMetas.push(...pool.slice(0, perSectionLimit));
+    }
+
+    // Fetch details with bounded concurrency to avoid CB throttling.
+    const detailed = await pooledMap(sampledMetas, DETAIL_CONCURRENCY, async (meta) => {
+      const id = meta?.external_id || meta?.ibn;
+      if (!id) return null;
+      const dc = new AbortController();
+      const dt = setTimeout(() => dc.abort(), 30_000);
+      try {
+        const detail = await fetchQuestionDetail(id, dc.signal);
+        if (!detail) return null;
+        return normalizeQuestion(meta, detail);
+      } finally {
+        clearTimeout(dt);
+      }
+    });
+
+    combined = detailed.filter(Boolean);
   } catch (err) {
     console.error("College Board fetch error:", err);
     return res.status(502).json({
       error: "College Board unavailable",
       message: "Could not reach the College Board question bank.",
+      detail: err instanceof Error ? err.message : String(err),
     });
   }
 
-  if (limit !== null && combined.length > limit) {
-    combined = combined.slice(0, limit);
-  }
+  if (combined.length > limit) combined = combined.slice(0, limit);
 
-  // Mirror MySATPrep's CDN cache hints — lets Vercel's edge cache the response
-  // and dramatically reduces upstream load on College Board.
-  res.setHeader("Cache-Control", "public, s-maxage=3600");
+  res.setHeader("Cache-Control", "public, s-maxage=300");
   res.setHeader("CDN-Cache-Control", "public, s-maxage=60");
-  res.setHeader("Vercel-CDN-Cache-Control", "public, s-maxage=3600");
+  res.setHeader("Vercel-CDN-Cache-Control", "public, s-maxage=300");
   return res.status(200).json({
     sections,
     domains,
