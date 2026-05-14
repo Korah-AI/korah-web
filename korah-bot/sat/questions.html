@@ -92,6 +92,7 @@ html[data-theme="light"] {
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
   import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
   import { setupKorahDB } from "../app/data/firestore-store.js";
+  import { initSatAnalytics } from "./js/sat-analytics.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
@@ -112,6 +113,7 @@ html[data-theme="light"] {
     }
     // Set up Firestore and expose window.KorahDB before notifying the app.
     await setupKorahDB(app, user.uid);
+    await initSatAnalytics(app, user.uid);
     const detail = { uid: user.uid };
     // Cache so korah-chat.js can pick it up even in edge-case timing.
     window._korahReadyFired = detail;

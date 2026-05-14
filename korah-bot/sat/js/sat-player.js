@@ -965,9 +965,29 @@
     if (!state.answers[current.id]) {
       return;
     }
+    const wasChecked = state.checked[current.id];
     state.checked[current.id] = true;
     renderQuestion();
     if (window.qNav) window.qNav.refresh();
+
+    // Log to Firestore — only the first time the user checks this question
+    // in this session, so refreshing/re-clicking doesn't double-count.
+    if (!wasChecked && window.KorahSATAnalytics) {
+      const selected = state.answers[current.id];
+      const isSpr = current.type === "spr";
+      const isCorrect = isSpr
+        ? normalizeSprAnswer(selected) === normalizeSprAnswer(current.correctAnswer)
+        : selected === current.correctAnswer;
+      window.KorahSATAnalytics.recordAttempt({
+        questionId: current.id,
+        skillCd: current.skillCd || "",
+        domain: current.domain || "",
+        section: current.section || "",
+        difficulty: current.difficulty || "",
+        assessment: query.assessment || "SAT",
+        correct: isCorrect,
+      }).catch((e) => console.warn("[SAT] recordAttempt failed", e));
+    }
   });
 
   showExplanationBtn.addEventListener("click", () => {

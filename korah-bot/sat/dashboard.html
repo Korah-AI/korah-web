@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en" x-data="{
+  theme: localStorage.getItem('korah_theme') || 'dark',
+  sidebarCollapsed: window.innerWidth <= 768 ? false : localStorage.getItem('korah_sidebar_collapsed') === 'true',
+  mobileOpen: false,
+  getEffectiveTheme() {
+    if (this.theme === 'system') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return this.theme;
+  },
+  toggleSidebar() {
+    if (window.innerWidth <= 768) {
+      this.mobileOpen = !this.mobileOpen;
+    } else {
+      this.sidebarCollapsed = !this.sidebarCollapsed;
+      localStorage.setItem('korah_sidebar_collapsed', this.sidebarCollapsed);
+    }
+  }
+}" :data-theme="getEffectiveTheme()" x-cloak>
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Korah AI — SAT Dashboard</title>
+<link rel="icon" type="image/png" href="../app/logoresized.png">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="../app/korah-chat.css"/>
+<link rel="stylesheet" href="./sat.css"/>
+<style>
+  .dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .dash-card {
+    background: var(--sf); border: 1px solid var(--bd);
+    border-radius: 14px; padding: 18px; backdrop-filter: blur(8px);
+  }
+  .dash-card h3 { font-size: 13px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1.5px; color: var(--tx3); margin: 0 0 12px; }
+  .dash-stat { font-size: 28px; font-weight: 800; color: var(--tx); line-height: 1.1; }
+  .dash-stat-sub { font-size: 12px; color: var(--tx3); margin-top: 4px; }
+  .score-bar { height: 10px; background: var(--sf2); border-radius: 8px;
+    overflow: hidden; margin-top: 10px; }
+  .score-bar-fill { height: 100%; background: linear-gradient(90deg, #8b5cf6, #a78bfa);
+    transition: width .4s ease; }
+  .skill-row { display: flex; align-items: center; gap: 10px; padding: 10px 0;
+    border-bottom: 1px solid var(--bd); }
+  .skill-row:last-child { border-bottom: none; }
+  .skill-meta { flex: 1; min-width: 0; }
+  .skill-name { font-size: 13px; font-weight: 600; color: var(--tx);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .skill-sub { font-size: 11px; color: var(--tx3); margin-top: 2px; }
+  .skill-acc { font-size: 13px; font-weight: 700; color: var(--p5);
+    font-variant-numeric: tabular-nums; }
+  .domain-bar-row { margin-bottom: 12px; }
+  .domain-bar-row:last-child { margin-bottom: 0; }
+  .domain-bar-label { display: flex; justify-content: space-between;
+    font-size: 12px; font-weight: 600; color: var(--tx2); margin-bottom: 4px; }
+  .domain-bar { height: 8px; background: var(--sf2); border-radius: 6px; overflow: hidden; }
+  .domain-bar-fill { height: 100%; background: var(--p4); transition: width .4s ease; }
+  .empty-hint { color: var(--tx3); font-size: 13px; text-align: center; padding: 20px 0; }
+  .practice-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; font-weight: 600; padding: 6px 10px;
+    border-radius: 8px; background: rgba(139,92,246,.12);
+    color: var(--p5); border: 1px solid rgba(139,92,246,.3);
+    text-decoration: none; cursor: pointer;
+  }
+  .practice-btn:hover { background: rgba(139,92,246,.2); }
+</style>
+</head>
+<body class="bg-base tx">
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+  import { setupKorahDB } from "../app/data/firestore-store.js";
+  import { initSatAnalytics } from "./js/sat-analytics.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
+    authDomain: "korah-app.firebaseapp.com",
+    projectId: "korah-app",
+    storageBucket: "korah-app.firebasestorage.app",
+    messagingSenderId: "226169460321",
+    appId: "1:226169460321:web:b166fc8260107c55dafc20"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      window.location.href = '../login.html';
+      return;
+    }
+    await setupKorahDB(app, user.uid);
+    await initSatAnalytics(app, user.uid);
+    window.dispatchEvent(new CustomEvent('korahReady', { detail: { uid: user.uid } }));
+    renderDashboard();
+  });
+</script>
+
+<canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
+
+<main style="max-width: 1100px; margin: 0 auto; padding: 32px 24px;">
+
+  <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px;">
+    <div>
+      <p class="sat-eyebrow grad-text">Korah SAT</p>
+      <h1 class="sat-bank-title" style="margin: 4px 0 0;">Your Dashboard</h1>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <a href="./index.html" class="sat-button sat-button-ghost t-btn" style="text-decoration: none;">Back to Bank</a>
+      <button id="editGoalBtn" class="sat-button sat-button-ghost t-btn" type="button">Edit Goal</button>
+    </div>
+  </header>
+
+  <section class="dash-grid" style="margin-bottom: 20px;">
+    <div class="dash-card">
+      <h3>Current → Goal</h3>
+      <div id="scoreRow" style="display: flex; align-items: baseline; gap: 12px;">
+        <span class="dash-stat" id="currentScore">—</span>
+        <span style="color: var(--tx3);">→</span>
+        <span class="dash-stat" id="goalScore">—</span>
+      </div>
+      <div class="dash-stat-sub" id="scoreSub">Set a goal to track your progress.</div>
+      <div class="score-bar"><div class="score-bar-fill" id="scoreBar" style="width: 0%;"></div></div>
+    </div>
+
+    <div class="dash-card">
+      <h3>Activity</h3>
+      <div class="dash-stat" id="answeredCount">0</div>
+      <div class="dash-stat-sub">questions answered · <span id="accuracyText">0% accuracy</span></div>
+    </div>
+
+    <div class="dash-card">
+      <h3>XP &amp; Level</h3>
+      <div class="dash-stat"><span id="levelNum">0</span> <span style="font-size: 14px; color: var(--tx3); font-weight: 500;">level</span></div>
+      <div class="dash-stat-sub"><span id="xpNum">0</span> XP earned</div>
+    </div>
+  </section>
+
+  <section class="dash-grid">
+    <div class="dash-card">
+      <h3>Study these next</h3>
+      <div id="suggestionList">
+        <div class="empty-hint">Loading…</div>
+      </div>
+    </div>
+
+    <div class="dash-card">
+      <h3>Accuracy by domain</h3>
+      <div id="domainList">
+        <div class="empty-hint">Loading…</div>
+      </div>
+    </div>
+
+    <div class="dash-card">
+      <h3>Recent activity</h3>
+      <div id="recentList">
+        <div class="empty-hint">Loading…</div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- Edit Goal Modal (reuse onboarding markup) -->
+<div id="sat-onboarding-modal" class="delete-modal">
+  <div class="delete-modal-content" style="max-width: 440px;">
+    <div class="delete-modal-icon">🎯</div>
+    <h3 class="delete-modal-title">Update your SAT goal</h3>
+    <p class="delete-modal-desc">Adjust your current and goal scores anytime.</p>
+    <div style="display:flex; flex-direction:column; gap:14px; margin-top:8px; text-align:left;">
+      <label style="display:flex; flex-direction:column; gap:6px; font-size:13px; font-weight:600; color:var(--tx2);">
+        Current SAT score
+        <input id="sat-onboarding-current" type="number" min="400" max="1600" step="10" class="create-input" style="width:100%;"/>
+      </label>
+      <label style="display:flex; flex-direction:column; gap:6px; font-size:13px; font-weight:600; color:var(--tx2);">
+        Goal SAT score
+        <input id="sat-onboarding-goal" type="number" min="400" max="1600" step="10" class="create-input" style="width:100%;"/>
+      </label>
+    </div>
+    <div class="delete-modal-actions">
+      <button id="sat-onboarding-skip" class="delete-modal-btn cancel t-btn">Cancel</button>
+      <button id="sat-onboarding-save" class="delete-modal-btn confirm t-btn" style="background:rgba(139,92,246,.12); color:var(--p5); border-color:rgba(139,92,246,.3);">Save</button>
+    </div>
+  </div>
+</div>
+
+<script src="./js/sat-shared.js"></script>
+<script>
+  const DIFFICULTY_LABEL = { E: "Easy", M: "Medium", H: "Hard" };
+  const SECTION_LABEL = { english: "English", math: "Math" };
+
+  function pct(x) { return Math.round(x * 100); }
+
+  function findSectionForDomain(domainName) {
+    const cat = window.KorahSAT?.OPENSAT_CATALOG;
+    if (!cat) return null;
+    for (const s of cat.sections) {
+      if (s.domains.some((d) => d.key === domainName)) return s.key;
+    }
+    return null;
+  }
+
+  function practiceHrefForSkill(skillCd, domain) {
+    const section = findSectionForDomain(domain);
+    const params = new URLSearchParams();
+    if (section) params.set("sections", section);
+    if (domain) params.set("domains", domain);
+    if (skillCd) params.set("skills", skillCd);
+    params.set("limit", "10");
+    return `./questions.html?${params.toString()}`;
+  }
+
+  async function renderDashboard() {
+    const a = window.KorahSATAnalytics;
+    if (!a) return;
+
+    const [profile, totals, suggestions, domains, recent] = await Promise.all([
+      a.getProfile(),
+      a.getTotals(),
+      a.suggestSkills(5),
+      a.getDomainBreakdown(),
+      a.getRecentAttempts(8),
+    ]);
+
+    // Score block
+    if (profile?.goalScore) {
+      document.getElementById("goalScore").textContent = profile.goalScore;
+      const cur = profile.currentScore;
+      document.getElementById("currentScore").textContent = cur ?? "—";
+      const sub = cur
+        ? `${profile.goalScore - cur} points to go`
+        : "Take a practice test to log your current score.";
+      document.getElementById("scoreSub").textContent = sub;
+      if (cur) {
+        // Bar represents progress from 400 → goal
+        const pctDone = Math.max(0, Math.min(1, (cur - 400) / (profile.goalScore - 400)));
+        document.getElementById("scoreBar").style.width = `${pctDone * 100}%`;
+      }
+    }
+
+    // Activity
+    const answered = totals.answered || 0;
+    document.getElementById("answeredCount").textContent = answered;
+    const acc = answered > 0 ? totals.correct / answered : 0;
+    document.getElementById("accuracyText").textContent = `${pct(acc)}% accuracy`;
+
+    // XP / level
+    document.getElementById("levelNum").textContent = totals.level || 0;
+    document.getElementById("xpNum").textContent = totals.totalXP || 0;
+
+    // Suggestions
+    const suggEl = document.getElementById("suggestionList");
+    if (!suggestions.length) {
+      suggEl.innerHTML = `<div class="empty-hint">Start practicing to get suggestions.</div>`;
+    } else {
+      suggEl.innerHTML = suggestions.map((s) => {
+        const accStr = s.attempts > 0 ? `${pct(s.accuracy)}% · ${s.attempts} attempts` : "Not yet practiced";
+        return `
+          <div class="skill-row">
+            <div class="skill-meta">
+              <div class="skill-name">${s.skillName}</div>
+              <div class="skill-sub">${s.domain} · ${SECTION_LABEL[s.section] || s.section}</div>
+            </div>
+            <div class="skill-acc">${accStr}</div>
+            <a class="practice-btn" href="${practiceHrefForSkill(s.skillCd, s.domain)}">Practice</a>
+          </div>`;
+      }).join("");
+    }
+
+    // Domains
+    const domEl = document.getElementById("domainList");
+    if (!domains.length) {
+      domEl.innerHTML = `<div class="empty-hint">No data yet.</div>`;
+    } else {
+      domains.sort((x, y) => y.attempts - x.attempts);
+      domEl.innerHTML = domains.map((d) => `
+        <div class="domain-bar-row">
+          <div class="domain-bar-label">
+            <span>${d.domain}</span>
+            <span>${pct(d.accuracy)}% · ${d.attempts}</span>
+          </div>
+          <div class="domain-bar"><div class="domain-bar-fill" style="width: ${pct(d.accuracy)}%;"></div></div>
+        </div>
+      `).join("");
+    }
+
+    // Recent
+    const recEl = document.getElementById("recentList");
+    if (!recent.length) {
+      recEl.innerHTML = `<div class="empty-hint">No attempts logged yet.</div>`;
+    } else {
+      recEl.innerHTML = recent.map((r) => {
+        const when = new Date(r.ts);
+        const timeStr = when.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+        const icon = r.correct ? "✅" : "❌";
+        return `
+          <div class="skill-row">
+            <div style="font-size:16px;">${icon}</div>
+            <div class="skill-meta">
+              <div class="skill-name">${r.domain || "—"}</div>
+              <div class="skill-sub">${DIFFICULTY_LABEL[r.difficulty] || r.difficulty} · ${timeStr}</div>
+            </div>
+            <div class="skill-acc" style="color: ${r.correct ? "#22c55e" : "#ef4444"};">${r.correct ? "+" : ""}${r.xp} XP</div>
+          </div>`;
+      }).join("");
+    }
+  }
+
+  // Edit goal modal wiring
+  (function () {
+    const modal = document.getElementById("sat-onboarding-modal");
+    const curIn = document.getElementById("sat-onboarding-current");
+    const goalIn = document.getElementById("sat-onboarding-goal");
+    document.getElementById("editGoalBtn").addEventListener("click", async () => {
+      const p = await window.KorahSATAnalytics?.getProfile();
+      curIn.value = p?.currentScore ?? "";
+      goalIn.value = p?.goalScore ?? "";
+      modal.classList.add("show");
+    });
+    document.getElementById("sat-onboarding-skip").addEventListener("click", () => modal.classList.remove("show"));
+    document.getElementById("sat-onboarding-save").addEventListener("click", async () => {
+      const cur = curIn.value ? Number(curIn.value) : null;
+      const goal = goalIn.value ? Number(goalIn.value) : null;
+      if (!goal) { goalIn.focus(); return; }
+      await window.KorahSATAnalytics?.saveProfile({ currentScore: cur, goalScore: goal });
+      modal.classList.remove("show");
+      renderDashboard();
+    });
+  })();
+</script>
+
+</body>
+</html>
