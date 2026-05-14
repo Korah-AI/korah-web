@@ -932,6 +932,16 @@
       ? query.domains.join(",")
       : "any";
     params.set("domains", domainValue);
+    const skillValue = Array.isArray(query.skills) && query.skills.length > 0 && !query.skills.includes("any")
+      ? query.skills.join(",")
+      : "any";
+    params.set("skills", skillValue);
+    if (Array.isArray(query.difficulties) && query.difficulties.length > 0 && !query.difficulties.includes("any")) {
+      params.set("difficulties", query.difficulties.join(","));
+    }
+    if (query.assessment && query.assessment !== "SAT") {
+      params.set("assessment", query.assessment);
+    }
     if (query.limit !== null && query.limit !== undefined) {
       params.set("limit", String(query.limit));
     }

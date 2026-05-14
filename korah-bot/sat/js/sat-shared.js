@@ -103,6 +103,9 @@
     ],
   };
 
+  const VALID_DIFFICULTIES = ["E", "M", "H"];
+  const VALID_ASSESSMENTS = ["SAT", "PSAT/NMSQT", "PSAT"];
+
   function parseOpenSatV1Query(search) {
     const params = new URLSearchParams(search || window.location.search);
     const sectionParam = (params.get("sections") || "").trim();
@@ -111,6 +114,12 @@
     const domains = domainParam ? domainParam.split(",").map((d) => d.trim()).filter(Boolean) : [];
     const skillParam = (params.get("skills") || "").trim();
     const skills = skillParam ? skillParam.split(",").map((s) => s.trim()).filter(Boolean) : [];
+    const difficultyParam = (params.get("difficulties") || "").trim().toUpperCase();
+    const difficulties = difficultyParam
+      ? difficultyParam.split(",").map((d) => d.trim()).filter((d) => VALID_DIFFICULTIES.includes(d))
+      : [];
+    const assessmentRaw = (params.get("assessment") || "").trim().toUpperCase();
+    const assessment = VALID_ASSESSMENTS.find((a) => a.toUpperCase() === assessmentRaw) || "SAT";
     const limitRaw = params.get("limit");
     const limit = limitRaw === null || limitRaw === "" ? null : (limitRaw.toLowerCase() === "none" ? null : Number(limitRaw));
     const effectiveLimit = (limit === null || (Number.isFinite(limit) && limit > 0)) ? limit : null;
@@ -119,6 +128,8 @@
       sections: sections.length > 0 ? sections : ["english", "math"],
       domains: domains.length > 0 ? domains : ["any"],
       skills: skills.length > 0 ? skills : ["any"],
+      difficulties: difficulties.length > 0 ? difficulties : ["any"],
+      assessment,
       limit: effectiveLimit,
     };
   }
@@ -137,6 +148,13 @@
       ? state.skills.join(",")
       : "any";
     params.set("skills", skillValue);
+    const difficultyValue = state.difficulties && state.difficulties.length > 0 && !state.difficulties.includes("any")
+      ? state.difficulties.join(",")
+      : "any";
+    params.set("difficulties", difficultyValue);
+    if (state.assessment && state.assessment !== "SAT") {
+      params.set("assessment", state.assessment);
+    }
     if (state.limit !== null && state.limit !== undefined) {
       params.set("limit", String(state.limit));
     }

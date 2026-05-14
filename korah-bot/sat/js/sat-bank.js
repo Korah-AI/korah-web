@@ -5,6 +5,8 @@
     sections: [],
     domains: [],
     skills: [],
+    difficulties: [],
+    assessment: "SAT",
     limit: null,
     globalStats: null,
   };
@@ -14,6 +16,8 @@
   const limitInput = document.getElementById("limitInput");
   const startSelectedBtn = document.getElementById("startSelectedBtn");
   const clearFiltersBtn = document.getElementById("clearFiltersBtn");
+  const assessmentSelect = document.getElementById("assessmentSelect");
+  const difficultyChips = document.getElementById("difficultyChips");
 
   const totalSections = OPENSAT_CATALOG.sections.length;
   const totalDomains = OPENSAT_CATALOG.sections.reduce((sum, s) => sum + (s.domains?.length || 0), 0);
@@ -33,9 +37,23 @@
     }
 
     const limitLabel = state.limit === null || state.limit === "" ? "No limit" : `${state.limit} questions`;
-    selectionSummary.textContent = `${sectionsLabel} · ${domainLabel} · ${limitLabel}`;
+    const difficultyLabel = state.difficulties.length === 0
+      ? "Any difficulty"
+      : state.difficulties.map((d) => ({ E: "Easy", M: "Medium", H: "Hard" }[d] || d)).join("/");
+    const assessmentLabel = state.assessment && state.assessment !== "SAT" ? ` · ${state.assessment}` : "";
+    selectionSummary.textContent = `${sectionsLabel} · ${domainLabel} · ${difficultyLabel} · ${limitLabel}${assessmentLabel}`;
     startSelectedBtn.textContent = "Start practice";
     startSelectedBtn.disabled = false;
+  }
+
+  function renderDifficulty() {
+    if (!difficultyChips) return;
+    difficultyChips.querySelectorAll("[data-difficulty]").forEach((btn) => {
+      const code = btn.dataset.difficulty;
+      const active = state.difficulties.includes(code);
+      btn.classList.toggle("is-active", active);
+      btn.setAttribute("aria-pressed", active ? "true" : "false");
+    });
   }
 
   function renderSections() {
@@ -112,6 +130,8 @@
       sections: state.sections.length > 0 ? state.sections : ["any"],
       domains: state.domains.length > 0 ? state.domains : ["any"],
       skills: state.skills.length > 0 ? state.skills : ["any"],
+      difficulties: state.difficulties.length > 0 ? state.difficulties : ["any"],
+      assessment: state.assessment || "SAT",
       limit: state.limit,
     };
     window.location.href = buildOpenSatV1QuestionUrl(nextState);
@@ -215,20 +235,27 @@
     state.sections = [];
     state.domains = [];
     state.skills = [];
+    state.difficulties = [];
+    state.assessment = "SAT";
     state.limit = null;
     limitInput.value = "";
+    if (assessmentSelect) assessmentSelect.value = "SAT";
     renderAll();
   }
 
   function renderAll() {
     renderSections();
+    renderDifficulty();
     renderSummary();
     fetchQuestionCounts();
   }
 
   async function fetchGlobalStats() {
     try {
-      const response = await fetch("/api/sat/stats", {
+      const assessmentParam = state.assessment && state.assessment !== "SAT"
+        ? `?assessment=${encodeURIComponent(state.assessment)}`
+        : "";
+      const response = await fetch(`/api/sat/stats${assessmentParam}`, {
         method: "GET",
         headers: { Accept: "application/json" },
       });
@@ -258,6 +285,12 @@
       ? state.skills.join(",")
       : "any";
     params.set("skills", skillValue);
+    if (state.difficulties.length > 0) {
+      params.set("difficulties", state.difficulties.join(","));
+    }
+    if (state.assessment && state.assessment !== "SAT") {
+      params.set("assessment", state.assessment);
+    }
     params.set("limit", "1");
 
     try {
@@ -320,6 +353,29 @@
   });
 
   clearFiltersBtn.addEventListener("click", resetFilters);
+
+  if (difficultyChips) {
+    difficultyChips.addEventListener("click", (event) => {
+      const btn = event.target.closest("[data-difficulty]");
+      if (!btn) return;
+      const code = btn.dataset.difficulty;
+      if (state.difficulties.includes(code)) {
+        state.difficulties = state.difficulties.filter((d) => d !== code);
+      } else {
+        state.difficulties = [...state.difficulties, code];
+      }
+      renderAll();
+    });
+  }
+
+  if (assessmentSelect) {
+    assessmentSelect.addEventListener("change", () => {
+      state.assessment = assessmentSelect.value || "SAT";
+      // Stats are per-assessment; refetch so counts reflect the new context.
+      fetchGlobalStats();
+      renderAll();
+    });
+  }
 
   fetchGlobalStats();
   resetFilters();
