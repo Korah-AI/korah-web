@@ -55,8 +55,8 @@
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    padding: 0 1.25rem;
-    height: 3.5rem;
+    padding: 0 2.25rem;
+    height: 4.25rem;
     border-bottom: 1px solid var(--bd);
     background: var(--sf);
     backdrop-filter: blur(1.5rem);
@@ -75,12 +75,80 @@
 
   /* ── Hero ── */
   .opp-hero {
-    padding: 2rem 2.25rem;
+    padding: 2.25rem 2.5rem;
     border: 1px solid var(--bd);
-    border-radius: 1.25rem;
-    background: var(--sf);
+    border-radius: 1.125rem;
+    background: linear-gradient(135deg, rgba(139,92,246,0.09) 0%, rgba(255,255,255,.04) 55%, rgba(139,92,246,0.04) 100%);
     margin-bottom: 1.25rem;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    gap: 2.5rem;
   }
+  [data-theme="light"] .opp-hero {
+    background: linear-gradient(135deg, rgba(100,60,180,0.07) 0%, rgba(100,60,180,0.02) 60%, transparent 100%);
+  }
+  .opp-hero::before {
+    content: '';
+    position: absolute;
+    width: 480px;
+    height: 480px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(139,92,246,0.18) 0%, transparent 68%);
+    top: -160px;
+    right: -120px;
+    pointer-events: none;
+  }
+  .opp-hero::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle, rgba(139,92,246,0.06) 1px, transparent 1px);
+    background-size: 28px 28px;
+    pointer-events: none;
+    mask-image: radial-gradient(ellipse 80% 80% at 70% 50%, black 0%, transparent 100%);
+    -webkit-mask-image: radial-gradient(ellipse 80% 80% at 70% 50%, black 0%, transparent 100%);
+  }
+  .opp-hero-left {
+    flex: 1;
+    min-width: 0;
+    position: relative;
+    z-index: 1;
+  }
+  .opp-hero-right {
+    flex-shrink: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    position: relative;
+    z-index: 1;
+  }
+  .opp-stat-mini {
+    border: 1px solid var(--bd);
+    border-radius: 0.875rem;
+    padding: 0.625rem 0.875rem;
+    background: linear-gradient(180deg, rgba(255,255,255,.06) 0%, rgba(255,255,255,.02) 100%);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--tx2);
+    white-space: nowrap;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+    cursor: default;
+  }
+  [data-theme="light"] .opp-stat-mini {
+    background: linear-gradient(180deg, rgba(100,60,180,.06) 0%, rgba(100,60,180,.01) 100%);
+  }
+  .opp-stat-mini:hover { transform: translateY(-2px); }
+  .opp-stat-mini.sm-program   { border-color: rgba(139,92,246,0.3); }
+  .opp-stat-mini.sm-internship{ border-color: rgba(59,130,246,0.3); }
+  .opp-stat-mini.sm-coding    { border-color: rgba(232,72,229,0.3); }
+  .opp-stat-mini.sm-robotics  { border-color: rgba(52,211,153,0.3); }
+  .opp-stat-mini.sm-competition{border-color: rgba(251,191,36,0.3); }
+  .opp-stat-mini.sm-scholarship{border-color: rgba(34,197,94,0.3); }
   .opp-hero-eyebrow {
     display: inline-flex;
     align-items: center;
@@ -114,7 +182,7 @@
     font-size: 0.9375rem;
     line-height: 1.65;
     color: var(--tx2);
-    max-width: 56ch;
+    max-width: 52ch;
     margin-bottom: 1.25rem;
   }
   .opp-hero-actions {
@@ -138,7 +206,7 @@
     font-weight: 600;
     color: var(--p5);
     text-decoration: none;
-    padding: 0.3rem 0.75rem;
+    padding: 0.3rem 0.875rem;
     border: 1px solid rgba(139,92,246,0.3);
     border-radius: 9999px;
     background: rgba(139,92,246,0.08);
@@ -155,21 +223,58 @@
   /* ── Filters ── */
   .opp-filters {
     border: 1px solid var(--bd);
-    border-radius: 1rem;
-    padding: 1rem 1.25rem;
-    background: var(--bg2);
+    border-radius: 1.125rem;
+    padding: 1.125rem 1.5rem;
+    background: linear-gradient(180deg, rgba(255,255,255,.055) 0%, rgba(255,255,255,.02) 100%);
     margin-bottom: 1.5rem;
     display: flex;
     flex-direction: column;
     gap: 0.875rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  [data-theme="light"] .opp-filters {
+    background: linear-gradient(180deg, rgba(100,60,180,.055) 0%, rgba(100,60,180,.015) 100%);
+  }
+  .opp-filters:focus-within {
+    border-color: rgba(139,92,246,0.35);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08), 0 0 14px rgba(139,92,246,0.08);
+  }
+  .opp-filters-header {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--p5);
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--bd2);
+  }
+  .opp-search-wrap {
+    position: relative;
+    width: 100%;
+  }
+  .opp-search-icon {
+    position: absolute;
+    left: 0.875rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.125rem;
+    color: var(--tx3);
+    pointer-events: none;
+    transition: color 0.2s;
+  }
+  .opp-search-wrap:focus-within .opp-search-icon {
+    color: var(--p5);
   }
   .opp-search {
     width: 100%;
-    min-height: 2.625rem;
-    border-radius: 0.75rem;
+    min-height: 2.75rem;
+    border-radius: 0.875rem;
     font-size: 0.875rem;
     font-weight: 500;
-    padding: 0 1rem;
+    padding: 0 1rem 0 2.75rem;
     border: 1px solid var(--bd2);
     background: var(--sf2);
     color: var(--tx);
@@ -462,11 +567,18 @@
   /* ── Responsive ── */
   @media (max-width: 900px) {
     .opp-body { padding: 1.25rem 1rem 3rem; }
-    .opp-hero { padding: 1.375rem 1.25rem; }
+    .opp-hero { padding: 1.5rem 1.375rem; gap: 1.5rem; }
+    .opp-hero-right { grid-template-columns: repeat(3, 1fr); min-width: 0; }
   }
-  @media (max-width: 600px) {
+  @media (max-width: 700px) {
+    .opp-hero { flex-direction: column; align-items: flex-start; gap: 1.25rem; }
+    .opp-hero-right { width: 100%; grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (max-width: 480px) {
+    .opp-hero-right { grid-template-columns: repeat(2, 1fr); }
     .opp-grid { grid-template-columns: 1fr; }
     .opp-filter-row { flex-direction: column; align-items: flex-start; }
+    .opp-topbar { padding: 0 1rem; }
   }
 </style>
 </head>
@@ -580,35 +692,53 @@
 
       <!-- Hero -->
       <section class="opp-hero">
-        <div class="opp-hero-eyebrow">
-          <span class="material-icons-round" style="font-size: 0.875rem;">rocket_launch</span>
-          Open Resource Library
+        <div class="opp-hero-left">
+          <div class="opp-hero-eyebrow">
+            <span class="material-icons-round" style="font-size: 0.875rem;">rocket_launch</span>
+            Open Resource Library
+          </div>
+          <h1 class="opp-hero-title">
+            STEM Opportunities<br>
+            <span>in New Jersey</span>
+          </h1>
+          <p class="opp-hero-sub">
+            A free, open-source directory of programs, internships, competitions, and scholarships for underrepresented students in NJ and beyond. Curated by <strong style="color:var(--tx)">Korah</strong>, a community nonprofit.
+          </p>
+          <div class="opp-hero-actions">
+            <span class="opp-badge-count" x-text="opportunities.length + ' opportunities listed'"></span>
+            <a class="opp-submit-link" href="https://github.com/Korah-AI/korah-web/issues/new?title=Add+Opportunity&body=Name:%0AOrg:%0ALink:%0ADescription:" target="_blank" rel="noopener">
+              <span class="material-icons-round" style="font-size: 0.875rem;">add_circle_outline</span>
+              Submit an Opportunity
+            </a>
+          </div>
         </div>
-        <h1 class="opp-hero-title">
-          STEM Opportunities<br>
-          <span>in New Jersey</span>
-        </h1>
-        <p class="opp-hero-sub">
-          A free, open-source directory of programs, internships, competitions, and scholarships for underrepresented students in NJ and beyond. Curated by <strong style="color:var(--tx)">Korah</strong>, a community nonprofit.
-        </p>
-        <div class="opp-hero-actions">
-          <span class="opp-badge-count" x-text="opportunities.length + ' opportunities listed'"></span>
-          <a class="opp-submit-link" href="https://github.com/Korah-AI/korah-web/issues/new?title=Add+Opportunity&body=Name:%0AOrg:%0ALink:%0ADescription:" target="_blank" rel="noopener">
-            <span class="material-icons-round" style="font-size: 0.875rem;">add_circle_outline</span>
-            Submit an Opportunity
-          </a>
+
+        <div class="opp-hero-right">
+          <div class="opp-stat-mini sm-program"><span style="color:#a78bfa; font-size:0.6rem;">●</span> Programs</div>
+          <div class="opp-stat-mini sm-internship"><span style="color:#93c5fd; font-size:0.6rem;">●</span> Internships</div>
+          <div class="opp-stat-mini sm-coding"><span style="color:#f0abfc; font-size:0.6rem;">●</span> Coding</div>
+          <div class="opp-stat-mini sm-robotics"><span style="color:#6ee7b7; font-size:0.6rem;">●</span> Robotics</div>
+          <div class="opp-stat-mini sm-competition"><span style="color:#fcd34d; font-size:0.6rem;">●</span> Competitions</div>
+          <div class="opp-stat-mini sm-scholarship"><span style="color:#86efac; font-size:0.6rem;">●</span> Scholarships</div>
         </div>
       </section>
 
       <!-- Filters -->
       <div class="opp-filters">
-        <input
-          class="opp-search"
-          type="search"
-          placeholder="Search programs, orgs, or keywords…"
-          x-model="search"
-          autocomplete="off"
-        />
+        <div class="opp-filters-header">
+          <span class="material-icons-round" style="font-size: 1rem;">tune</span>
+          Filter Opportunities
+        </div>
+        <div class="opp-search-wrap">
+          <span class="material-icons-round opp-search-icon">search</span>
+          <input
+            class="opp-search"
+            type="search"
+            placeholder="Search programs, orgs, or keywords…"
+            x-model="search"
+            autocomplete="off"
+          />
+        </div>
         <div class="opp-filter-row">
           <span class="opp-filter-label">Category</span>
           <div class="opp-chip-group">
