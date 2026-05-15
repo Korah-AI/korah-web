@@ -4,12 +4,82 @@
  * falls back to empty caches if KorahDB is unavailable.
  */
 
-// ── Rename & Delete Modal Handlers ──
-function initRenameDeleteModals() {
+// ── Action Confirmation Modal Handlers ──
+function injectActionModals() {
+  // Inject Clear Data and Logout modals if they don't exist
+  if (!document.getElementById("clear-data-modal")) {
+    const clearDataHTML = `
+      <div id="clear-data-modal" class="delete-modal">
+        <div class="delete-modal-content">
+          <div class="delete-modal-icon">
+            <span class="material-icons-round" style="font-size: 2.5rem; color: var(--red);">warning</span>
+          </div>
+          <h3 class="delete-modal-title">Clear All Data?</h3>
+          <p class="delete-modal-desc">This will remove all your chats, study items, and settings. Your account will remain, but all your local and cloud progress will be wiped. <strong>This cannot be undone.</strong></p>
+          <div class="delete-modal-actions">
+            <button id="clear-data-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
+            <button id="clear-data-modal-confirm" class="delete-modal-btn confirm t-btn clear-everything-btn">Clear Everything</button>
+          </div>
+        </div>
+      </div>
+      <style>
+        .clear-everything-btn {
+          background: var(--red); 
+          color: #fff; 
+          border-color: var(--red);
+          transition: all 0.2s ease;
+        }
+        .clear-everything-btn:hover {
+          background: #ef4444;
+          filter: brightness(1.1);
+          box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
+        }
+        html[data-theme="light"] .clear-everything-btn:hover {
+          background: #dc2626;
+          box-shadow: 0 0 12px rgba(220, 38, 38, 0.2);
+        }
+      </style>
+    `;
+    document.body.insertAdjacentHTML('beforeend', clearDataHTML);
+  }
+
+  if (!document.getElementById("logout-modal")) {
+    const logoutHTML = `
+      <div id="logout-modal" class="delete-modal">
+        <div class="delete-modal-content">
+          <div class="delete-modal-icon">
+            <span class="material-icons-round" style="font-size: 2.5rem; color: var(--p5);">logout</span>
+          </div>
+          <h3 class="delete-modal-title">Log Out?</h3>
+          <p class="delete-modal-desc">Are you sure you want to log out of your session? You'll need to sign in again to access your chats and study tools.</p>
+          <div class="delete-modal-actions">
+            <button id="logout-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
+            <button id="logout-modal-confirm" class="delete-modal-btn confirm t-btn">Log Out</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', logoutHTML);
+  }
+}
+
+function initActionModals() {
+  injectActionModals();
+
   const renameModal = document.getElementById("rename-modal");
   const deleteModal = document.getElementById("delete-modal");
+  const clearDataModal = document.getElementById("clear-data-modal");
+  const logoutModal = document.getElementById("logout-modal");
 
-  if (!renameModal || !deleteModal) return;
+  // Standardize existing Rename/Delete modal icons to Material Icons
+  if (renameModal) {
+    const icon = renameModal.querySelector('.delete-modal-icon');
+    if (icon) icon.innerHTML = '<span class="material-icons-round" style="font-size: 2.5rem; color: var(--p5);">edit</span>';
+  }
+  if (deleteModal) {
+    const icon = deleteModal.querySelector('.delete-modal-icon');
+    if (icon) icon.innerHTML = '<span class="material-icons-round" style="font-size: 2.5rem; color: var(--red);">delete</span>';
+  }
 
   const renameInput = document.getElementById("rename-modal-input");
   const renameDesc = document.getElementById("rename-modal-desc");
@@ -18,11 +88,19 @@ function initRenameDeleteModals() {
   const deleteName = document.getElementById("delete-modal-name");
   const deleteCancel = document.getElementById("delete-modal-cancel");
   const deleteConfirm = document.getElementById("delete-modal-confirm");
+  
+  const clearDataCancel = document.getElementById("clear-data-modal-cancel");
+  const clearDataConfirm = document.getElementById("clear-data-modal-confirm");
+  const logoutCancel = document.getElementById("logout-modal-cancel");
+  const logoutConfirm = document.getElementById("logout-modal-confirm");
 
   let renameCallback = null;
   let deleteCallback = null;
+  let clearDataCallback = null;
+  let logoutCallback = null;
 
   function showRenameModal(currentName, desc, onConfirm) {
+    if (!renameModal) return;
     renameInput.value = currentName || "";
     if (renameDesc) renameDesc.textContent = desc || "Enter a new name";
     renameCallback = onConfirm;
@@ -31,46 +109,68 @@ function initRenameDeleteModals() {
   }
 
   function showDeleteModal(name, onConfirm) {
+    if (!deleteModal) return;
     if (deleteName) deleteName.textContent = name || "this item";
     deleteCallback = onConfirm;
     deleteModal.classList.add("show");
   }
 
-  function hideRenameModal() {
-    renameModal.classList.remove("show");
-    renameCallback = null;
+  function showClearDataModal(onConfirm) {
+    if (!clearDataModal) return;
+    clearDataCallback = onConfirm;
+    clearDataModal.classList.add("show");
   }
 
-  function hideDeleteModal() {
-    deleteModal.classList.remove("show");
-    deleteCallback = null;
+  function showLogoutModal(onConfirm) {
+    if (!logoutModal) return;
+    logoutCallback = onConfirm;
+    logoutModal.classList.add("show");
   }
 
-  renameCancel?.addEventListener("click", hideRenameModal);
+  function hideModals() {
+    [renameModal, deleteModal, clearDataModal, logoutModal].forEach(m => m?.classList.remove("show"));
+    renameCallback = deleteCallback = clearDataCallback = logoutCallback = null;
+  }
+
+  renameCancel?.addEventListener("click", hideModals);
   renameConfirm?.addEventListener("click", () => {
     const v = renameInput.value.trim();
     if (v && renameCallback) renameCallback(v);
-    hideRenameModal();
+    hideModals();
   });
   renameInput?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") { e.preventDefault(); renameConfirm?.click(); }
-    if (e.key === "Escape") hideRenameModal();
+    if (e.key === "Escape") hideModals();
   });
 
-  deleteCancel?.addEventListener("click", hideDeleteModal);
+  deleteCancel?.addEventListener("click", hideModals);
   deleteConfirm?.addEventListener("click", () => {
     if (deleteCallback) deleteCallback();
-    hideDeleteModal();
+    hideModals();
   });
 
-  [renameModal, deleteModal].forEach(modal => {
+  clearDataCancel?.addEventListener("click", hideModals);
+  clearDataConfirm?.addEventListener("click", () => {
+    if (clearDataCallback) clearDataCallback();
+    hideModals();
+  });
+
+  logoutCancel?.addEventListener("click", hideModals);
+  logoutConfirm?.addEventListener("click", () => {
+    if (logoutCallback) logoutCallback();
+    hideModals();
+  });
+
+  [renameModal, deleteModal, clearDataModal, logoutModal].forEach(modal => {
     modal?.addEventListener("click", (e) => {
-      if (e.target === modal) modal.classList.remove("show");
+      if (e.target === modal) hideModals();
     });
   });
 
   window.showRenameModal = showRenameModal;
   window.showDeleteModal = showDeleteModal;
+  window.showClearDataModal = showClearDataModal;
+  window.showLogoutModal = showLogoutModal;
 }
 
 // Use custom modals if available, otherwise fallback to browser dialogs
@@ -1090,16 +1190,46 @@ function showSidebarDeleteModal(name, onConfirm) {
     });
 
     settingsClearDataBtn?.addEventListener('click', () => {
-      if (confirm('Are you sure you want to clear all data? This cannot be undone.')) {
-        localStorage.clear();
-        settingsModal.classList.remove('show');
-      }
+      // Transition from settings modal to clear data confirmation
+      settingsModal.classList.remove('show');
+      
+      window.showClearDataModal(async () => {
+        try {
+          // 1. Clear Firestore data if KorahDB is available
+          if (window.KorahDB && window.KorahDB.clearAllData) {
+            await window.KorahDB.clearAllData();
+          }
+
+          // 2. Clear LocalStorage
+          localStorage.clear();
+
+          // Redirect to index to ensure all in-memory states are reset
+          const resolvedBaseUrl = document.getElementById('new-chat-btn')?.getAttribute('data-base-url') || (window.location.pathname.includes('/study/') || window.location.pathname.includes('/sat/') ? '../index.html' : 'index.html');
+          window.location.href = resolvedBaseUrl;
+
+        } catch (err) {
+          console.error("Clear Data failed:", err);
+          alert('Failed to clear some data. Please try again.');
+        }
+      });
     });
   }
+
+  // Helper for HTML files to trigger logout modal
+  window.confirmLogout = function(onConfirm) {
+    if (window.showLogoutModal) {
+      window.showLogoutModal(onConfirm);
+    } else {
+      if (confirm("Are you sure you want to log out?")) onConfirm();
+    }
+  };
 
   // Initialize timer widget when sidebar is ready
   function initSidebar(options) {
     const { chatHistoryId, studyItemsId, chatBaseUrl, itemPageUrl, onItemClick, activeId } = options || {};
+
+    // 0. Action Modals (Rename, Delete, Clear, Logout)
+    initActionModals();
     const chatEl = document.getElementById(chatHistoryId || "chat-history");
     const studyEl = document.getElementById(studyItemsId || "study-items-history");
     const resolvedBaseUrl = chatBaseUrl || "../index.html";
@@ -1110,20 +1240,10 @@ function showSidebarDeleteModal(name, onConfirm) {
       newChatBtn.addEventListener("click", () => {
         const currentPage = window.location.pathname;
         const isMainChatPage = currentPage.includes("index.html") || currentPage.endsWith("/");
-        if (!isMainChatPage) {
-          localStorage.setItem("korah_new_chat_trigger", "true");
-          window.location.href = resolvedBaseUrl;
-        }
-      });
-    }
-
-    if (newChatBtn) {
-      newChatBtn.addEventListener("click", () => {
-        const currentPage = window.location.pathname;
-        const isMainChatPage = currentPage.includes("index.html") || currentPage.endsWith("/");
         const isSatPage = currentPage.includes("/sat/");
-        // Redirect to main chat if on SAT pages, or stay smooth on main chat page
-        if (isSatPage) {
+        
+        // Redirect to main chat if not on main page or on SAT pages
+        if (!isMainChatPage || isSatPage) {
           localStorage.setItem("korah_new_chat_trigger", "true");
           window.location.href = resolvedBaseUrl;
         }

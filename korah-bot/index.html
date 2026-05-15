@@ -130,10 +130,12 @@
     window.dispatchEvent(new CustomEvent('korahReady', { detail }));
   });
 
-  document.getElementById('logout-btn').addEventListener('click', async () => {
-    await signOut(auth);
-    localStorage.removeItem('korah_first_name');
-    window.location.href = 'login.html';
+  document.getElementById('logout-btn').addEventListener('click', () => {
+    window.confirmLogout(async () => {
+      await signOut(auth);
+      localStorage.removeItem('korah_first_name');
+      window.location.href = 'login.html';
+    });
   });
 </script>
 

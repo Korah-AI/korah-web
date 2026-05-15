@@ -8,18 +8,11 @@ when in a different page, and the side bar fully open, selecing the chat page to
 Also, need to add a function for all pages wheen changing themes, for a smooth transition from dark --> Light b/c it's like a blocky load
 
 
-# productivity.html
-
-* when in vertical the timer should be inside the circle, the todo list does not really show fully and doesnt look right
-
-* (I DONT KNOW) the chats do not show 
-
 # sat/Index.html
 
 * when in vertical / touch screen, your not able to move the desmos graph. Resize handler not resizing on mobile (maybe problem is with touch screen since there is no mouse or maybe just doesn't work at the breakpoint/not allowed)
 
 # Collapsed Sidebar
-* Just make the "more" icon not have margin top , since it looks ugly with margin top auto and does not stay at the bottom of collapsed sidebar and adjust dropdown positioning.
 * Make a rendering function for the collapsed "more" icon button because sometimes it doesn't load but when the page is refeshed it pops up for some odd reason. This function needs to affect all HTML's with collapsed sidebar. Sidebar.js
 
 # CHANGES FROM A CONSUMER THOUGHT

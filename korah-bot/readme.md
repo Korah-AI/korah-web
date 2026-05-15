@@ -29,14 +29,10 @@
 * Answer Choice buttons arn't visible sometimes in the container.
 
 * Fix top option hover in sat question container, the first option when hovered, its like top border hover gets cut off
-* Check "Clear ALL Data" btn function to make sure it functions properly in all settings modals. 
 * Also for the top legends like the check mark with "Correct" text, can make text in dark mode be white and in light mode be black or another more "seen" colors. Same with question pills (if you want)
 * Fix responsive layouts that are lines 2473-2647 because it's not smoothly being responsive and it's like the width of the navigator changes and it's inside padding. Goal for it is to have 6-7 (67 LOL ;) questions pills per row (At desktop there are 7 per row and at smaller window is 6  per row****FIX THIS*****). Futhermore do whatever updates you think looks best.
 
 # Sidebar
-* For settings modal for the clear all data button, when clicked make modal transition into "Are you sure?", if no, then goes back to settings modal and if so, then clear all data
-* Make a "Are you sure you wanna logoout?" modal for the logout icon button. 
-* ^^ BOTH SHOULD BE INCORRPERATED IN DROPDOWNS TOO
 * Add new icons to each chat and study items accordingly instead of emojis.
 
 # Study items
