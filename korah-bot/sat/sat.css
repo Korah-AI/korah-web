@@ -1161,11 +1161,14 @@ html[data-theme="light"] .sat-section-header:hover {
     display: grid;
     gap: 1rem;
     background: var(--sf);/* Question card inside scroll — constrained width, centered */
-    height: 100%;
+    min-height: 0;
     border: 0.0625rem solid var(--bd);
     border-radius: 1.5rem;
     padding: 1.375rem;
     box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.15);
+    overflow: visible;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .sat-question-head {
@@ -1213,22 +1216,19 @@ html[data-theme="dark"] .sat-question-stem {
   color: rgba(255, 255, 255, 0.82);
 }
 
-/* Dark mode: invert SVG/image colors in question content so dark diagrams are visible */
-html[data-theme="dark"] .sat-passage-card svg,
+/* Dark mode: keep loaded images on a white background so black content stays visible */
 html[data-theme="dark"] .sat-passage-card img,
-html[data-theme="dark"] .sat-answer-list svg,
 html[data-theme="dark"] .sat-answer-list img {
-  filter: invert(1) hue-rotate(180deg);
+  filter: none;
+  background: #ffffff;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
 }
 
-html[data-theme="dark"] .sat-passage-card svg path,
-html[data-theme="dark"] .sat-passage-card svg line,
-html[data-theme="dark"] .sat-passage-card svg rect,
-html[data-theme="dark"] .sat-passage-card svg circle,
-html[data-theme="dark"] .sat-answer-item svg path,
-html[data-theme="dark"] .sat-answer-item svg line,
-html[data-theme="dark"] .sat-answer-item svg circle {
-    color: var(--tx);
+/* Inline SVG diagrams: invert so dark lines become white and are readable on dark bg */
+html[data-theme="dark"] .sat-passage-card svg,
+html[data-theme="dark"] .sat-answer-list svg {
+  filter: invert(1) hue-rotate(180deg);
 }
 
 .sat-passage-text,
@@ -1910,6 +1910,9 @@ html[data-theme="light"] .more-dropdown-item .material-icons-round {
     opacity: 0;
     transition: opacity 0.2s ease;
 }
+html[data-theme="dark"] .more-dropdown-check {
+    color: #ffffff;
+}
 
 .more-dropdown-theme-option.active .more-dropdown-check {
     opacity: 1;
@@ -1973,6 +1976,14 @@ html[data-theme="light"] .more-dropdown-item.danger:hover {
 .sat-topbar-right .sat-button:hover svg {
     color: var(--p5);
 }
+html[data-theme="dark"] .sat-topbar-right .sat-button:hover svg,
+html[data-theme="dark"] .sat-topbar-right .sat-button:hover .material-icons-round {
+    color: #ffffff;
+}
+html[data-theme="dark"] .sat-topbar-right .sat-button.is-active svg,
+html[data-theme="dark"] .sat-topbar-right .sat-button.is-active .material-icons-round {
+    color: rgba(255, 255, 255, 0.9);
+}
 /* ═══ ENHANCED PLAYER TIMER ═══ */
 #stopwatchContainer {
     background: var(--sf2) !important;
@@ -1994,6 +2005,9 @@ html[data-theme="light"] .more-dropdown-item.danger:hover {
 }
 #stopwatchContainer.running #playerTimer {
     color: var(--p5);
+}
+html[data-theme="dark"] #stopwatchContainer.running #playerTimer {
+    color: #ffffff;
 }
 /* ═══ ENHANCED FOOTER BUTTONS ═══ */
 .sat-player-footer {
@@ -2022,6 +2036,9 @@ html[data-theme="light"] .more-dropdown-item.danger:hover {
 .sat-player-footer .sat-button-ghost:hover {
     background: var(--sf2);
     color: var(--p5);
+}
+html[data-theme="dark"] .sat-player-footer .sat-button-ghost:hover {
+    color: #ffffff;
 }
 /* ═══ ENHANCED QUESTION AREA ═══ */
 .sat-question-panel {
@@ -2055,6 +2072,11 @@ html[data-theme="dark"] .sat-question-panel {
     line-height: 1;
     flex-shrink: 0;
 }
+html[data-theme="dark"] .sat-question-number {
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.22);
+}
 .sat-domain-label {
     font-size: 0.75rem;
     font-weight: 700;
@@ -2064,6 +2086,10 @@ html[data-theme="dark"] .sat-question-panel {
     background: rgba(139, 92, 246, 0.1);
     padding: 0.25rem 0.625rem;
     border-radius: 999px;
+}
+html[data-theme="dark"] .sat-domain-label {
+    color: rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.08);
 }
 /* ═══ ENHANCED ANSWER CHOICES ═══ */
 .sat-answer-list {
@@ -2238,6 +2264,21 @@ html[data-theme="light"] .q-nav-trigger.is-open {
   background: rgba(124, 58, 237, 0.08);
   border-color: var(--p5);
   box-shadow: 0 4px 12px rgba(124, 58, 237, 0.1);
+}
+
+html[data-theme="dark"] .q-nav-trigger {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  box-shadow: none;
+}
+
+html[data-theme="dark"] .q-nav-trigger:hover,
+html[data-theme="dark"] .q-nav-trigger.is-open {
+  background: rgba(255, 255, 255, 0.13);
+  border-color: rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+  box-shadow: none;
 }
 
 .q-nav-trigger:active {
