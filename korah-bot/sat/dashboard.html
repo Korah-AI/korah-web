@@ -38,41 +38,75 @@
 <style>
   .dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
   .dash-card {
-    background: var(--sf); border: 1px solid var(--bd);
-    border-radius: 14px; padding: 18px; backdrop-filter: blur(8px);
+    background: var(--sf);
+    border: 1px solid rgba(139,92,246,.22);
+    border-radius: 18px; padding: 20px;
+    backdrop-filter: blur(14px);
+    position: relative; overflow: hidden;
+    transition: border-color .25s, box-shadow .25s;
   }
-  .dash-card h3 { font-size: 13px; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 1.5px; color: var(--tx3); margin: 0 0 12px; }
-  .dash-stat { font-size: 28px; font-weight: 800; color: var(--tx); line-height: 1.1; }
-  .dash-stat-sub { font-size: 12px; color: var(--tx3); margin-top: 4px; }
-  .score-bar { height: 10px; background: var(--sf2); border-radius: 8px;
-    overflow: hidden; margin-top: 10px; }
-  .score-bar-fill { height: 100%; background: linear-gradient(90deg, #8b5cf6, #a78bfa);
-    transition: width .4s ease; }
+  .dash-card::before {
+    content: '';
+    position: absolute; inset: 0; border-radius: 18px;
+    background: linear-gradient(145deg, rgba(167,139,250,.06) 0%, transparent 55%);
+    pointer-events: none;
+  }
+  .dash-card:hover {
+    border-color: rgba(167,139,250,.45);
+    box-shadow: 0 6px 28px rgba(139,92,246,.13);
+  }
+  .dash-card h3 {
+    font-size: 10px; font-weight: 800; text-transform: uppercase;
+    letter-spacing: 2px; margin: 0 0 14px;
+    background: linear-gradient(90deg, #c4b5fd, #e879f9);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  [data-theme="light"] .dash-card h3 {
+    background: linear-gradient(90deg, #7c3aed, #a21caf);
+    -webkit-background-clip: text; background-clip: text;
+  }
+  .dash-stat { font-size: 32px; font-weight: 800; color: var(--tx); line-height: 1.1; }
+  .dash-stat-sub { font-size: 12px; color: var(--tx2); margin-top: 6px; }
+  .score-bar { height: 7px; background: rgba(139,92,246,.14); border-radius: 8px;
+    overflow: hidden; margin-top: 14px; }
+  .score-bar-fill { height: 100%;
+    background: linear-gradient(90deg, #7c3aed, #a78bfa, #e879f9);
+    box-shadow: 0 0 12px rgba(167,139,250,.5);
+    transition: width .6s cubic-bezier(.34,1.56,.64,1); }
   .skill-row { display: flex; align-items: center; gap: 10px; padding: 10px 0;
-    border-bottom: 1px solid var(--bd); }
+    border-bottom: 1px solid rgba(139,92,246,.1); }
   .skill-row:last-child { border-bottom: none; }
   .skill-meta { flex: 1; min-width: 0; }
   .skill-name { font-size: 13px; font-weight: 600; color: var(--tx);
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .skill-sub { font-size: 11px; color: var(--tx3); margin-top: 2px; }
-  .skill-acc { font-size: 13px; font-weight: 700; color: var(--p5);
+  .skill-sub { font-size: 11px; color: var(--tx2); margin-top: 2px; }
+  .skill-acc { font-size: 12px; font-weight: 600; color: var(--tx2);
     font-variant-numeric: tabular-nums; }
-  .domain-bar-row { margin-bottom: 12px; }
+  .domain-bar-row { margin-bottom: 14px; }
   .domain-bar-row:last-child { margin-bottom: 0; }
   .domain-bar-label { display: flex; justify-content: space-between;
-    font-size: 12px; font-weight: 600; color: var(--tx2); margin-bottom: 4px; }
-  .domain-bar { height: 8px; background: var(--sf2); border-radius: 6px; overflow: hidden; }
-  .domain-bar-fill { height: 100%; background: var(--p4); transition: width .4s ease; }
-  .empty-hint { color: var(--tx3); font-size: 13px; text-align: center; padding: 20px 0; }
+    font-size: 12px; font-weight: 600; color: var(--tx2); margin-bottom: 6px; }
+  .domain-bar { height: 6px; background: rgba(139,92,246,.12); border-radius: 6px; overflow: hidden; }
+  .domain-bar-fill { height: 100%;
+    background: linear-gradient(90deg, #7c3aed, #a78bfa, #c084fc);
+    box-shadow: 0 0 8px rgba(139,92,246,.3);
+    transition: width .4s ease; }
+  .empty-hint { color: var(--tx2); font-size: 13px; text-align: center; padding: 24px 0; }
   .practice-btn {
-    display: inline-flex; align-items: center; gap: 6px;
-    font-size: 12px; font-weight: 600; padding: 6px 10px;
-    border-radius: 8px; background: rgba(139,92,246,.12);
-    color: var(--p5); border: 1px solid rgba(139,92,246,.3);
-    text-decoration: none; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 700; padding: 5px 11px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, rgba(124,58,237,.2), rgba(167,139,250,.12));
+    color: #c4b5fd; border: 1px solid rgba(167,139,250,.4);
+    text-decoration: none; cursor: pointer; letter-spacing: .3px;
+    transition: all .2s;
   }
-  .practice-btn:hover { background: rgba(139,92,246,.2); }
+  .practice-btn:hover {
+    background: linear-gradient(135deg, rgba(124,58,237,.35), rgba(167,139,250,.22));
+    border-color: rgba(196,181,253,.65);
+    color: #ddd6fe;
+  }
 </style>
 </head>
 
@@ -303,24 +337,24 @@
         <div class="dash-card">
           <h3>Current → Goal</h3>
           <div id="scoreRow" style="display: flex; align-items: baseline; gap: 12px;">
-            <span class="dash-stat" id="currentScore">—</span>
-            <span style="color: var(--tx3);">→</span>
-            <span class="dash-stat" id="goalScore">—</span>
+            <span class="dash-stat skel skel-stat" id="currentScore" style="background:linear-gradient(135deg,#f0eaff,#c4b5fd);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;"></span>
+            <span style="color: var(--tx2); font-size: 18px;">→</span>
+            <span class="dash-stat skel skel-stat" id="goalScore" style="background:linear-gradient(135deg,#a78bfa,#e879f9);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;"></span>
           </div>
-          <div class="dash-stat-sub" id="scoreSub">Set a goal to track your progress.</div>
+          <div class="skel skel-stat-sub" id="scoreSub" style="margin-top:8px;"></div>
           <div class="score-bar"><div class="score-bar-fill" id="scoreBar" style="width: 0%;"></div></div>
         </div>
 
         <div class="dash-card">
           <h3>Activity</h3>
-          <div class="dash-stat" id="answeredCount">0</div>
-          <div class="dash-stat-sub">questions answered · <span id="accuracyText">0% accuracy</span></div>
+          <div class="dash-stat skel skel-stat" id="answeredCount" style="background:linear-gradient(135deg,#f0eaff,#c4b5fd);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;"></div>
+          <div class="skel skel-stat-sub" id="activitySub" style="margin-top:8px;"></div>
         </div>
 
         <div class="dash-card">
           <h3>XP &amp; Level</h3>
-          <div class="dash-stat"><span id="levelNum">0</span> <span style="font-size: 14px; color: var(--tx3); font-weight: 500;">level</span></div>
-          <div class="dash-stat-sub"><span id="xpNum">0</span> XP earned</div>
+          <div class="dash-stat skel skel-stat" id="levelNum" style="background:linear-gradient(135deg,#fbbf24,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;width:60px;"></div>
+          <div class="skel skel-stat-sub" id="xpSub" style="margin-top:8px;"></div>
         </div>
       </section>
 
@@ -328,21 +362,29 @@
         <div class="dash-card">
           <h3>Study these next</h3>
           <div id="suggestionList">
-            <div class="empty-hint">Loading…</div>
+            <div class="skel-skill-row"><div class="skel-skill-meta" style="flex:1"><span class="skel skel-skill-name"></span><span class="skel skel-skill-sub"></span></div><span class="skel skel-skill-badge"></span></div>
+            <div class="skel-skill-row"><div class="skel-skill-meta" style="flex:1"><span class="skel skel-skill-name" style="width:50%"></span><span class="skel skel-skill-sub" style="width:38%"></span></div><span class="skel skel-skill-badge"></span></div>
+            <div class="skel-skill-row"><div class="skel-skill-meta" style="flex:1"><span class="skel skel-skill-name" style="width:70%"></span><span class="skel skel-skill-sub" style="width:55%"></span></div><span class="skel skel-skill-badge"></span></div>
           </div>
         </div>
 
         <div class="dash-card">
           <h3>Accuracy by domain</h3>
           <div id="domainList">
-            <div class="empty-hint">Loading…</div>
+            <div class="skel-domain-row"><span class="skel skel-domain-label"></span><span class="skel skel-domain-bar" style="width:75%"></span></div>
+            <div class="skel-domain-row"><span class="skel skel-domain-label" style="width:42%"></span><span class="skel skel-domain-bar" style="width:55%"></span></div>
+            <div class="skel-domain-row"><span class="skel skel-domain-label" style="width:60%"></span><span class="skel skel-domain-bar" style="width:88%"></span></div>
+            <div class="skel-domain-row"><span class="skel skel-domain-label" style="width:35%"></span><span class="skel skel-domain-bar" style="width:40%"></span></div>
           </div>
         </div>
 
         <div class="dash-card">
           <h3>Recent activity</h3>
           <div id="recentList">
-            <div class="empty-hint">Loading…</div>
+            <div class="skel-skill-row"><span class="skel" style="width:20px;height:20px;border-radius:50%;flex-shrink:0"></span><div class="skel-skill-meta" style="flex:1"><span class="skel skel-skill-name"></span><span class="skel skel-skill-sub"></span></div><span class="skel skel-skill-badge"></span></div>
+            <div class="skel-skill-row"><span class="skel" style="width:20px;height:20px;border-radius:50%;flex-shrink:0"></span><div class="skel-skill-meta" style="flex:1"><span class="skel skel-skill-name" style="width:50%"></span><span class="skel skel-skill-sub" style="width:65%"></span></div><span class="skel skel-skill-badge"></span></div>
+            <div class="skel-skill-row"><span class="skel" style="width:20px;height:20px;border-radius:50%;flex-shrink:0"></span><div class="skel-skill-meta" style="flex:1"><span class="skel skel-skill-name" style="width:70%"></span><span class="skel skel-skill-sub" style="width:48%"></span></div><span class="skel skel-skill-badge"></span></div>
+            <div class="skel-skill-row"><span class="skel" style="width:20px;height:20px;border-radius:50%;flex-shrink:0"></span><div class="skel-skill-meta" style="flex:1"><span class="skel skel-skill-name" style="width:45%"></span><span class="skel skel-skill-sub" style="width:55%"></span></div><span class="skel skel-skill-badge"></span></div>
           </div>
         </div>
       </section>
@@ -424,6 +466,11 @@
     return `./questions.html?${params.toString()}`;
   }
 
+  function clearSkel(id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove("skel", "skel-stat", "skel-stat-sub", "skel-bar");
+  }
+
   async function renderSatDashboard() {
     const a = window.KorahSATAnalytics;
     if (!a) return;
@@ -436,26 +483,58 @@
       a.getRecentAttempts(8),
     ]);
 
+    // Clear top-row skeletons
+    ["currentScore", "goalScore", "scoreSub", "answeredCount", "activitySub", "levelNum", "xpSub"].forEach(clearSkel);
+
     if (profile?.goalScore) {
-      document.getElementById("goalScore").textContent = profile.goalScore;
+      const goalEl = document.getElementById("goalScore");
+      goalEl.style.cssText = "background:linear-gradient(135deg,#a78bfa,#e879f9);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;";
+      goalEl.textContent = profile.goalScore;
       const cur = profile.currentScore;
-      document.getElementById("currentScore").textContent = cur ?? "—";
-      document.getElementById("scoreSub").textContent = cur
+      const curEl = document.getElementById("currentScore");
+      curEl.style.cssText = "background:linear-gradient(135deg,#f0eaff,#c4b5fd);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;";
+      curEl.textContent = cur ?? "—";
+      const subEl = document.getElementById("scoreSub");
+      subEl.style.cssText = "";
+      subEl.className = "dash-stat-sub";
+      subEl.textContent = cur
         ? `${profile.goalScore - cur} points to go`
         : "Take a practice test to log your current score.";
       if (cur) {
         const pctDone = Math.max(0, Math.min(1, (cur - 400) / (profile.goalScore - 400)));
         document.getElementById("scoreBar").style.width = `${pctDone * 100}%`;
       }
+    } else {
+      const curEl = document.getElementById("currentScore");
+      curEl.style.cssText = "background:linear-gradient(135deg,#f0eaff,#c4b5fd);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;";
+      curEl.textContent = "—";
+      const goalEl = document.getElementById("goalScore");
+      goalEl.style.cssText = "background:linear-gradient(135deg,#a78bfa,#e879f9);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;";
+      goalEl.textContent = "—";
+      const subEl = document.getElementById("scoreSub");
+      subEl.style.cssText = "";
+      subEl.className = "dash-stat-sub";
+      subEl.textContent = "Set a goal to track your progress.";
     }
 
     const answered = totals.answered || 0;
-    document.getElementById("answeredCount").textContent = answered;
+    const countEl = document.getElementById("answeredCount");
+    countEl.style.cssText = "background:linear-gradient(135deg,#f0eaff,#c4b5fd);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;";
+    countEl.textContent = answered;
     const acc = answered > 0 ? totals.correct / answered : 0;
-    document.getElementById("accuracyText").textContent = `${pct(acc)}% accuracy`;
+    const actSub = document.getElementById("activitySub");
+    actSub.style.cssText = "";
+    actSub.className = "dash-stat-sub";
+    actSub.innerHTML = `questions answered · <span id="accuracyText">${pct(acc)}% accuracy</span>`;
 
-    document.getElementById("levelNum").textContent = totals.level || 0;
-    document.getElementById("xpNum").textContent = totals.totalXP || 0;
+    const lvlEl = document.getElementById("levelNum");
+    lvlEl.style.cssText = "";
+    lvlEl.className = "dash-stat";
+    lvlEl.innerHTML = `<span style="background:linear-gradient(135deg,#fbbf24,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">${totals.level || 0}</span> <span style="font-size:14px;color:var(--tx2);font-weight:500;">level</span>`;
+    const xpSub = document.getElementById("xpSub");
+    xpSub.style.cssText = "";
+    xpSub.className = "dash-stat-sub";
+    xpSub.innerHTML = `<span id="xpNum">${totals.totalXP || 0}</span> XP earned`;
 
     const suggEl = document.getElementById("suggestionList");
     if (!suggestions.length) {

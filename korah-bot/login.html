@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" x-data="{ tab: 'login' }" x-cloak>
+<html lang="en">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
@@ -9,217 +9,337 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
-<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
+
 <style>
+  [x-cloak] { display: none !important; }
+
   :root {
-    --bg: #06040f; --bg2: #0d0920; --sf: rgba(18, 12, 40, 0.7);
-    --bd: rgba(139, 92, 246, 0.2); --tx: #f0eaff; --tx2: #a89dc0; --tx3: #6b5f88;
-    --p4: #8b5cf6; --p5: #a78bfa; --ac: #f0abfc;
-    --glow: rgba(139, 92, 246, 0.35); --cb: rgba(15, 9, 35, 0.82); --cu: rgba(91, 33, 182, 0.25);
+    --bg: #04020c;
+    --sf: rgba(14, 8, 36, 0.72);
+    --bd: rgba(139, 92, 246, 0.18);
+    --bd-focus: rgba(139, 92, 246, 0.55);
+    --tx: #f0eaff;
+    --tx2: #a89dc0;
+    --tx3: #6b5f88;
+    --p4: #8b5cf6;
+    --p5: #a78bfa;
+    --ac: #f0abfc;
+    --glow: rgba(139, 92, 246, 0.4);
+    --cb: rgba(10, 5, 28, 0.2);
+    --cu: rgba(91, 33, 182, 0.28);
   }
 
   * { box-sizing: border-box; margin: 0; }
-  
+
   body {
     font-family: 'Plus Jakarta Sans', sans-serif;
     background: var(--bg);
     color: var(--tx);
     min-height: 100vh;
+    overflow: hidden;
   }
 
-  .bg-canvas {
+  /* ── Galaxy canvas ── */
+  #galaxy-bg {
     position: fixed; inset: 0; z-index: 0;
-    background: radial-gradient(circle at center, var(--bg2) 0%, var(--bg) 100%);
-    filter: blur(1px); opacity: 0.8;
+  }
+  #galaxy-bg canvas {
+    width: 100% !important; height: 100% !important;
+    display: block;
   }
 
+  /* ── Layout ── */
   .login-container {
     position: relative; z-index: 1;
     min-height: 100vh;
     display: flex; align-items: center; justify-content: center;
     padding: 16px;
+    overflow-y: auto;
   }
 
+  /* ── Card ── */
   .login-card {
-    background: var(--cb); backdrop-filter: blur(25px);
-    border: 1px solid var(--bd); border-radius: 20px;
-    padding: 32px 28px; width: 100%; max-width: 400px;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+    background: var(--cb);
+    backdrop-filter: blur(32px) saturate(1.4);
+    -webkit-backdrop-filter: blur(32px) saturate(1.4);
+    border: 1px solid var(--bd);
+    border-radius: 24px;
+    padding: 36px 32px;
+    width: 100%; max-width: 420px;
+    box-shadow:
+      0 0 0 1px rgba(139, 92, 246, 0.08),
+      0 30px 60px -12px rgba(0, 0, 0, 0.6),
+      0 0 80px -20px rgba(139, 92, 246, 0.2);
+    animation: cardIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
-  .login-logo { display: flex; justify-content: center; margin-bottom: 6px; }
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(24px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0)    scale(1); }
+  }
 
+  /* ── Logo ── */
+  .logo-wrap {
+    display: flex; justify-content: center; margin-bottom: 8px;
+  }
   .logo-icon {
-    width: 72px; height: 72px; border-radius: 12px;
-    background: #5a21b6a9; display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 0 30px var(--glow);
+    width: 68px; height: 68px; border-radius: 16px;
+    /* background: linear-gradient(135deg, rgba(91,33,182,0.7), rgba(139,92,246,0.5)); */
+    display: flex; align-items: center; justify-content: center;
+    /* box-shadow: 0 0 40px var(--glow), inset 0 1px 0 rgba(255,255,255,0.1);
+    border: 1px solid rgba(139,92,246,0.3); */
   }
+  .logo-icon img { width: 38px; height: 38px; object-fit: contain; }
 
-  .logo-icon img { width: 40px; height: 40px; object-fit: contain; }
-
+  /* ── Headline ── */
   .login-title {
-    font-size: 36px; font-weight: 900; text-align: center; margin: 0 0 6px;
-    background: linear-gradient(135deg, var(--p4), var(--ac));
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    font-size: 34px; font-weight: 900; text-align: center;
+    margin: 0 0 4px;
+    color: white;
+    letter-spacing: -0.5px;
+  }
+  .login-subtitle {
+    color: white; text-align: center; font-size: 14px;
+    margin-bottom: 26px; line-height: 1.5;
   }
 
-  .login-subtitle { color: var(--tx2); text-align: center; font-size: 15px; margin-bottom: 24px; }
+  /* ── Tabs ── */
+  .tabs {
+    display: flex; gap: 3px;
+    background: rgba(255,255,255,0.04);
+    padding: 3px; border-radius: 12px;
+    margin-bottom: 24px;
+    border: 1px solid var(--bd);
+  }
+  .tab {
+    flex: 1; padding: 9px 8px; border-radius: 9px;
+    font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: all 0.22s ease;
+    background: transparent; color: white;
+    border: 1px solid transparent; font-family: inherit;
+  }
+  .tab:hover:not(.active) { color: var(--tx2); background: rgba(255,255,255,0.04); }
+  .tab.active {
+    background: var(--cu); color: white);
+    border-color: var(--bd);
+    box-shadow: 0 2px 12px rgba(139,92,246,0.15);
+  }
 
-  .form-group { margin-bottom: 16px; }
+  /* ── Form ── */
+  .form-group { margin-bottom: 14px; }
   .form-row { display: flex; gap: 10px; }
-  .form-row > div { flex: 1; }
-
-  .form-label { display: block; font-size: 12px; font-weight: 600; color: var(--tx2); margin-bottom: 6px; }
-
-  .form-input {
-    width: 100%; padding: 12px 14px; border-radius: 10px;
-    border: 1px solid var(--bd); background: var(--sf); color: var(--tx);
-    font-size: 14px; font-family: inherit; transition: border-color 0.2s, box-shadow 0.2s;
+  .form-row > .form-group { flex: 1; margin-bottom: 14px; }
+  .form-label {
+    display: block; font-size: 11px; font-weight: 700;
+    color: var(--tx3); margin-bottom: 6px; letter-spacing: 0.05em; text-transform: uppercase;
   }
-
-  .form-input:focus { outline: none; border-color: var(--p4); box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15); }
+  .form-input {
+    width: 100%; padding: 11px 14px; border-radius: 10px;
+    border: 1px solid var(--bd);
+    background: rgba(255,255,255,0.04);
+    color: var(--tx); font-size: 14px; font-family: inherit;
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  }
+  .form-input:focus {
+    outline: none;
+    border-color: var(--bd-focus);
+    background: rgba(139,92,246,0.06);
+    box-shadow: 0 0 0 3px rgba(139,92,246,0.12);
+  }
   .form-input::placeholder { color: var(--tx3); }
+  .form-input:hover:not(:focus) { border-color: rgba(139,92,246,0.3); }
 
+  /* ── Buttons ── */
   .btn {
     width: 100%; padding: 12px 16px; border-radius: 10px;
-    font-size: 14px; font-weight: 600; font-family: inherit;
-    cursor: pointer; transition: all 0.2s; border: none;
+    font-size: 14px; font-weight: 700; font-family: inherit;
+    cursor: pointer; transition: all 0.22s; border: none;
+    letter-spacing: 0.01em;
   }
+  .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; filter: none !important; }
 
-  .btn-primary { color: white; }
-  .btn-google { background: var(--sf); color: var(--tx); border: 1px solid var(--bd); display: flex; align-items: center; justify-content: center; gap: 8px; }
-  .btn-google:hover { background: var(--bd); }
-
-  .divider { display: flex; align-items: center; gap: 14px; margin: 22px 0; color: var(--tx3); font-size: 12px; }
-  .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--bd); }
-
-  .tabs { display: flex; gap: 4px; background: var(--sf); padding: 3px; border-radius: 10px; margin-bottom: 22px; }
-  .tab {
-    flex: 1; padding: 9px; border-radius: 8px; font-size: 13px; font-weight: 600;
-    cursor: pointer; transition: all 0.2s; background: transparent;
-    color: var(--tx2); border: none; font-family: inherit;
+  .btn-primary {
+    background: linear-gradient(135deg, #5b21b6, var(--p4));
+    color: white;
+    box-shadow: 0 4px 20px rgba(91,33,182,0.4);
   }
-  .tab.active { background: var(--cu); color: var(--p5); border: 1px solid var(--bd); }
+  .btn-primary:not(:disabled):hover {
+    filter: brightness(1.15);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 28px rgba(91,33,182,0.5);
+  }
+  .btn-primary:not(:disabled):active { transform: translateY(0); }
 
+  .btn-google {
+    background: rgba(255,255,255,0.05);
+    color: var(--tx); border: 1px solid var(--bd);
+    display: flex; align-items: center; justify-content: center; gap: 9px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+  }
+  .btn-google:hover { background: rgba(255,255,255,0.09); border-color: rgba(139,92,246,0.35); }
+
+  /* ── Divider ── */
+  .divider {
+    display: flex; align-items: center; gap: 12px;
+    margin: 20px 0; color: white; font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .divider::before, .divider::after {
+    content: ''; flex: 1; height: 1px;
+    background: linear-gradient(to right, transparent, var(--bd));
+  }
+  .divider::after { background: linear-gradient(to left, transparent, var(--bd)); }
+
+  /* ── Error ── */
   .error-msg {
-    background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3);
-    color: #fca5a5; padding: 10px 14px; border-radius: 8px; font-size: 12px;
-    margin-bottom: 16px; display: none;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.28);
+    color: #fca5a5; padding: 10px 14px; border-radius: 8px;
+    font-size: 12px; margin-bottom: 14px;
   }
-  .error-msg.show { display: block; }
 
-  .grad-bg { background: linear-gradient(135deg, #5b21b6, var(--p4)); transition: filter .3s, transform .3s, box-shadow .3s; }
-  .grad-bg:hover { filter: brightness(1.15); transform: translateY(-1px); box-shadow: 0 0 20px var(--glow); }
+  /* ── Top logo ── */
+  .top-logo {
+    position: fixed; top: 18px; left: 18px; z-index: 20;
+    opacity: 0.9;
+  }
+  .top-logo img { height: 30px; width: auto; object-fit: contain; }
 
-  .hidden { display: none; }
+  /* ── Spinner ── */
+  .spinner {
+    width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white; border-radius: 50%;
+    animation: spin 0.7s linear infinite; display: inline-block;
+    vertical-align: middle; margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
 
-  .top-logo { position: fixed; top: 16px; left: 16px; z-index: 10; }
-  .top-logo img { height: 32px; width: auto; object-fit: contain; }
+  /* ── Slide transitions ── */
+  .form-slide-enter { animation: slideIn 0.25s ease both; }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(12px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
 
   @media (max-width: 480px) {
-    .login-card { padding: 24px 20px; border-radius: 16px; }
-    .logo-icon { width: 60px; height: 60px; border-radius: 10px; }
-    .logo-icon img { width: 32px; height: 32px; object-fit: contain; }
+    .login-card { padding: 28px 20px; border-radius: 18px; }
     .login-title { font-size: 28px; }
-    .login-subtitle { font-size: 14px; margin-bottom: 20px; }
     .form-row { flex-direction: column; gap: 0; }
-    .tabs { margin-bottom: 18px; }
-    .divider { margin: 18px 0; }
+    .form-row > .form-group { flex: unset; }
   }
 
   @media (min-width: 768px) {
-    .top-logo { top: 20px; left: 20px; }
-    .top-logo img { height: 40px; object-fit: contain; }
-    .login-card { padding: 40px 36px; }
-    .logo-icon { width: 84px; height: 84px; }
-    .logo-icon img { width: 48px; height: 48px; object-fit: contain; }
-    .login-title { font-size: 44px; }
-    .login-subtitle { font-size: 17px; margin-bottom: 28px; }
-    .form-input { padding: 14px 16px; font-size: 15px; }
-    .btn { padding: 14px 20px; font-size: 15px; }
+    .top-logo img { height: 36px; }
+    .login-card { padding: 44px 40px; }
+    .logo-icon { width: 76px; height: 76px; }
+    .logo-icon img { width: 110px; height: 110px; }
+    .login-title { font-size: 40px; }
+    .login-subtitle { font-size: 15px; }
+    .form-input { padding: 13px 16px; font-size: 15px; }
+    .btn { padding: 13px 20px; font-size: 15px; }
   }
 </style>
 </head>
 <body>
 
-<div class="bg-canvas"></div>
+<!-- Galaxy WebGL background -->
+<div id="galaxy-bg"></div>
 
-<!-- Top Left Logo -->
-<div style="position: fixed; top: 1.25rem; left: 1.25rem; z-index: 10;">
-  <img src="app/logo.png" alt="Korah Logo" style="height: 2.5rem; width: auto; object-fit: contain;">
+<!-- Top-left logo -->
+<div class="top-logo">
+  <img src="app/logo.png" alt="Korah Logo">
 </div>
 
+<!-- Login card -->
 <div class="login-container">
-  <div class="login-card">
-    <div class="login-logo">
+  <div class="login-card" x-data="loginApp" x-cloak>
+
+    <div class="logo-wrap">
       <div class="logo-icon">
         <img src="app/logo.png" alt="Korah"/>
       </div>
     </div>
+
     <h1 class="login-title">Korah A.I</h1>
     <p class="login-subtitle">Sign in to continue your learning journey</p>
 
+    <!-- Tabs -->
     <div class="tabs">
-      <button class="tab active" data-tab="login">Sign In</button>
-      <button class="tab" data-tab="register">Create Account</button>
+      <button class="tab" :class="{ active: tab === 'login' }" @click="switchTab('login')">Sign In</button>
+      <button class="tab" :class="{ active: tab === 'register' }" @click="switchTab('register')">Create Account</button>
     </div>
 
-    <div id="error-msg" class="error-msg"></div>
+    <!-- Error message -->
+    <div class="error-msg" x-show="error" x-text="error" x-transition></div>
 
-    <!-- Login Form -->
-    <form id="login-form">
+    <!-- Login form -->
+    <form x-show="tab === 'login'" @submit.prevent="handleLogin" class="form-slide-enter">
       <div class="form-group">
         <label class="form-label">Email</label>
-        <input type="email" class="form-input" id="login-email" placeholder="you@example.com" required>
+        <input type="email" class="form-input" x-model="loginEmail" placeholder="you@example.com" required :disabled="loading">
       </div>
       <div class="form-group">
         <label class="form-label">Password</label>
-        <input type="password" class="form-input" id="login-password" placeholder="Enter your password" required>
+        <input type="password" class="form-input" x-model="loginPassword" placeholder="Enter your password" required :disabled="loading">
       </div>
-      <button type="submit" class="btn btn-primary grad-bg">Sign In</button>
+      <button type="submit" class="btn btn-primary" :disabled="loading">
+        <span x-show="loading"><span class="spinner"></span>Signing in…</span>
+        <span x-show="!loading">Sign In</span>
+      </button>
     </form>
 
-    <!-- Register Form -->
-    <form id="register-form" class="hidden">
-      <div class="form-row form-group">
-        <div>
+    <!-- Register form -->
+    <form x-show="tab === 'register'" @submit.prevent="handleRegister" class="form-slide-enter">
+      <div class="form-row">
+        <div class="form-group">
           <label class="form-label">First Name</label>
-          <input type="text" class="form-input" id="register-firstname" placeholder="John" required>
+          <input type="text" class="form-input" x-model="regFirst" placeholder="John" required :disabled="loading">
         </div>
-        <div>
+        <div class="form-group">
           <label class="form-label">Last Name</label>
-          <input type="text" class="form-input" id="register-lastname" placeholder="Doe" required>
+          <input type="text" class="form-input" x-model="regLast" placeholder="Doe" required :disabled="loading">
         </div>
       </div>
       <div class="form-group">
         <label class="form-label">Email</label>
-        <input type="email" class="form-input" id="register-email" placeholder="you@example.com" required>
+        <input type="email" class="form-input" x-model="regEmail" placeholder="you@example.com" required :disabled="loading">
       </div>
       <div class="form-group">
         <label class="form-label">Password</label>
-        <input type="password" class="form-input" id="register-password" placeholder="Create a password" required minlength="6">
+        <input type="password" class="form-input" x-model="regPassword" placeholder="Create a password (6+ chars)" required minlength="6" :disabled="loading">
       </div>
-      <button type="submit" class="btn btn-primary grad-bg">Create Account</button>
+      <button type="submit" class="btn btn-primary" :disabled="loading">
+        <span x-show="loading"><span class="spinner"></span>Creating account…</span>
+        <span x-show="!loading">Create Account</span>
+      </button>
     </form>
 
     <div class="divider">or continue with</div>
 
-    <button id="google-btn" class="btn btn-google">
+    <button class="btn btn-google" @click="handleGoogle" :disabled="loading">
       <svg width="18" height="18" viewBox="0 0 24 24">
         <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
         <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
         <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
         <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
       </svg>
-      Google
+      Continue with Google
     </button>
+
   </div>
 </div>
 
 <script type="module">
+  /* ─────────────── Firebase Auth ─────────────── */
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
-  import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+  import {
+    getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword,
+    signInWithPopup, GoogleAuthProvider, onAuthStateChanged
+  } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+
+  /* ─────────────── Galaxy (OGL) ─────────────── */
+  import { Renderer, Program, Mesh, Color, Triangle } from 'https://esm.sh/ogl@1.0.7';
 
   const firebaseConfig = {
     apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
@@ -230,99 +350,19 @@
     appId: "1:226169460321:web:b166fc8260107c55dafc20"
   };
 
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const googleProvider = new GoogleAuthProvider();
+  const app   = initializeApp(firebaseConfig);
+  const auth  = getAuth(app);
+  const gProv = new GoogleAuthProvider();
 
-  const loginForm = document.getElementById('login-form');
-  const registerForm = document.getElementById('register-form');
-  const errorMsg = document.getElementById('error-msg');
-  const tabs = document.querySelectorAll('.tab');
-
-  function showError(msg) {
-    errorMsg.textContent = msg;
-    errorMsg.classList.add('show');
-  }
-
-  function clearError() {
-    errorMsg.classList.remove('show');
-  }
-
-  function redirectToApp() {
-    window.location.href = 'index.html';
-  }
-
-  onAuthStateChanged(auth, (user) => {
-    if (user) {
-      redirectToApp();
-    }
-  });
-
-  tabs.forEach(tab => {
-    tab.addEventListener('click', () => {
-      tabs.forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      clearError();
-      
-      if (tab.dataset.tab === 'login') {
-        loginForm.classList.remove('hidden');
-        registerForm.classList.add('hidden');
-      } else {
-        loginForm.classList.add('hidden');
-        registerForm.classList.remove('hidden');
-      }
-    });
-  });
-
-  loginForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    clearError();
-    
-    const email = document.getElementById('login-email').value;
-    const password = document.getElementById('login-password').value;
-
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-      localStorage.setItem('korah_first_name', email.split('@')[0]);
-    } catch (error) {
-      showError(getErrorMessage(error.code));
-    }
-  });
-
-  registerForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    clearError();
-    
-    const firstName = document.getElementById('register-firstname').value;
-    const lastName = document.getElementById('register-lastname').value;
-    const email = document.getElementById('register-email').value;
-    const password = document.getElementById('register-password').value;
-
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      localStorage.setItem('korah_first_name', firstName);
-    } catch (error) {
-      showError(getErrorMessage(error.code));
-    }
-  });
-
-  document.getElementById('google-btn').addEventListener('click', async () => {
-    clearError();
-    try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const name = result.user.displayName?.split(' ')[0] || 'there';
-      localStorage.setItem('korah_first_name', name);
-    } catch (error) {
-      showError(getErrorMessage(error.code));
-    }
-  });
+  function redirectToApp() { window.location.href = 'index.html'; }
+  onAuthStateChanged(auth, u => { if (u) redirectToApp(); });
 
   function getErrorMessage(code) {
-    const messages = {
+    const m = {
       'auth/email-already-in-use': 'This email is already registered.',
       'auth/invalid-email': 'Invalid email address.',
       'auth/operation-not-allowed': 'Operation not allowed.',
-      'auth/weak-password': 'Password should be at least 6 characters.',
+      'auth/weak-password': 'Password must be at least 6 characters.',
       'auth/user-disabled': 'This account has been disabled.',
       'auth/user-not-found': 'No account found with this email.',
       'auth/wrong-password': 'Incorrect password.',
@@ -330,9 +370,265 @@
       'auth/popup-closed-by-user': 'Sign-in was cancelled.',
       'auth/account-exists-with-different-credential': 'An account already exists with a different sign-in method.'
     };
-    return messages[code] || 'An error occurred. Please try again.';
+    return m[code] || 'An error occurred. Please try again.';
   }
+
+  /* ── Alpine component — registered before Alpine boots ── */
+  document.addEventListener('alpine:init', () => {
+    Alpine.data('loginApp', () => ({
+      tab: 'login',
+      error: '',
+      loading: false,
+      loginEmail: '', loginPassword: '',
+      regFirst: '', regLast: '', regEmail: '', regPassword: '',
+
+      switchTab(t) { this.tab = t; this.error = ''; },
+
+      async handleLogin() {
+        this.error = ''; this.loading = true;
+        try {
+          await signInWithEmailAndPassword(auth, this.loginEmail, this.loginPassword);
+          localStorage.setItem('korah_first_name', this.loginEmail.split('@')[0]);
+        } catch (e) { this.error = getErrorMessage(e.code); }
+        this.loading = false;
+      },
+
+      async handleRegister() {
+        this.error = ''; this.loading = true;
+        try {
+          await createUserWithEmailAndPassword(auth, this.regEmail, this.regPassword);
+          localStorage.setItem('korah_first_name', this.regFirst);
+        } catch (e) { this.error = getErrorMessage(e.code); }
+        this.loading = false;
+      },
+
+      async handleGoogle() {
+        this.error = ''; this.loading = true;
+        try {
+          const result = await signInWithPopup(auth, gProv);
+          const name = result.user.displayName?.split(' ')[0] || 'there';
+          localStorage.setItem('korah_first_name', name);
+        } catch (e) { this.error = getErrorMessage(e.code); }
+        this.loading = false;
+      }
+    }));
+  });
+
+  /* ─────────────── Galaxy WebGL ─────────────── */
+  const vertexShader = `
+    attribute vec2 uv;
+    attribute vec2 position;
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = vec4(position, 0, 1);
+    }
+  `;
+
+  const fragmentShader = `
+    precision highp float;
+
+    uniform float uTime;
+    uniform vec3 uResolution;
+    uniform vec2 uFocal;
+    uniform vec2 uRotation;
+    uniform float uStarSpeed;
+    uniform float uDensity;
+    uniform float uHueShift;
+    uniform float uSpeed;
+    uniform vec2 uMouse;
+    uniform float uGlowIntensity;
+    uniform float uSaturation;
+    uniform bool uMouseRepulsion;
+    uniform float uTwinkleIntensity;
+    uniform float uRotationSpeed;
+    uniform float uRepulsionStrength;
+    uniform float uMouseActiveFactor;
+    uniform float uAutoCenterRepulsion;
+
+    varying vec2 vUv;
+
+    #define NUM_LAYER 4.0
+    #define STAR_COLOR_CUTOFF 0.2
+    #define MAT45 mat2(0.7071,-0.7071,0.7071,0.7071)
+    #define PERIOD 3.0
+
+    float Hash21(vec2 p) {
+      p = fract(p * vec2(123.34, 456.21));
+      p += dot(p, p + 45.32);
+      return fract(p.x * p.y);
+    }
+    float tri(float x) { return abs(fract(x) * 2.0 - 1.0); }
+    float tris(float x) {
+      float t = fract(x);
+      return 1.0 - smoothstep(0.0, 1.0, abs(2.0 * t - 1.0));
+    }
+    float trisn(float x) {
+      float t = fract(x);
+      return 2.0 * (1.0 - smoothstep(0.0, 1.0, abs(2.0 * t - 1.0))) - 1.0;
+    }
+    vec3 hsv2rgb(vec3 c) {
+      vec4 K = vec4(1.0, 2.0/3.0, 1.0/3.0, 3.0);
+      vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+      return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+    }
+    float Star(vec2 uv, float flare) {
+      float d = length(uv);
+      float m = (0.05 * uGlowIntensity) / d;
+      float rays = smoothstep(0.0, 1.0, 1.0 - abs(uv.x * uv.y * 1000.0));
+      m += rays * flare * uGlowIntensity;
+      uv *= MAT45;
+      rays = smoothstep(0.0, 1.0, 1.0 - abs(uv.x * uv.y * 1000.0));
+      m += rays * 0.3 * flare * uGlowIntensity;
+      m *= smoothstep(1.0, 0.2, d);
+      return m;
+    }
+    vec3 StarLayer(vec2 uv) {
+      vec3 col = vec3(0.0);
+      vec2 gv = fract(uv) - 0.5;
+      vec2 id = floor(uv);
+      for (int y = -1; y <= 1; y++) {
+        for (int x = -1; x <= 1; x++) {
+          vec2 offset = vec2(float(x), float(y));
+          vec2 si = id + offset;
+          float seed = Hash21(si);
+          float size = fract(seed * 345.32);
+          float glossLocal = tri(uStarSpeed / (PERIOD * seed + 1.0));
+          float flareSize = smoothstep(0.9, 1.0, size) * glossLocal;
+          float red = smoothstep(STAR_COLOR_CUTOFF, 1.0, Hash21(si + 1.0)) + STAR_COLOR_CUTOFF;
+          float blu = smoothstep(STAR_COLOR_CUTOFF, 1.0, Hash21(si + 3.0)) + STAR_COLOR_CUTOFF;
+          float grn = min(red, blu) * seed;
+          vec3 base = vec3(red, grn, blu);
+          float hue = atan(base.g - base.r, base.b - base.r) / (2.0 * 3.14159) + 0.5;
+          hue = fract(hue + uHueShift / 360.0);
+          float sat = length(base - vec3(dot(base, vec3(0.299, 0.587, 0.114)))) * uSaturation;
+          float val = max(max(base.r, base.g), base.b);
+          base = hsv2rgb(vec3(hue, sat, val));
+          vec2 pad = vec2(tris(seed * 34.0 + uTime * uSpeed / 10.0), tris(seed * 38.0 + uTime * uSpeed / 30.0)) - 0.5;
+          float star = Star(gv - offset - pad, flareSize);
+          float twinkle = trisn(uTime * uSpeed + seed * 6.2831) * 0.5 + 1.0;
+          twinkle = mix(1.0, twinkle, uTwinkleIntensity);
+          star *= twinkle;
+          col += star * size * base;
+        }
+      }
+      return col;
+    }
+    void main() {
+      vec2 focalPx = uFocal * uResolution.xy;
+      vec2 uv = (vUv * uResolution.xy - focalPx) / uResolution.y;
+      vec2 mouseNorm = uMouse - vec2(0.5);
+      if (uAutoCenterRepulsion > 0.0) {
+        vec2 centerUV = vec2(0.0);
+        float centerDist = length(uv - centerUV);
+        vec2 repulsion = normalize(uv - centerUV) * (uAutoCenterRepulsion / (centerDist + 0.1));
+        uv += repulsion * 0.05;
+      } else if (uMouseRepulsion) {
+        vec2 mousePosUV = (uMouse * uResolution.xy - focalPx) / uResolution.y;
+        float mouseDist = length(uv - mousePosUV);
+        vec2 repulsion = normalize(uv - mousePosUV) * (uRepulsionStrength / (mouseDist + 0.1));
+        uv += repulsion * 0.05 * uMouseActiveFactor;
+      } else {
+        uv += mouseNorm * 0.1 * uMouseActiveFactor;
+      }
+      float autoRotAngle = uTime * uRotationSpeed;
+      mat2 autoRot = mat2(cos(autoRotAngle), -sin(autoRotAngle), sin(autoRotAngle), cos(autoRotAngle));
+      uv = autoRot * uv;
+      uv = mat2(uRotation.x, -uRotation.y, uRotation.y, uRotation.x) * uv;
+      vec3 col = vec3(0.0);
+      for (float i = 0.0; i < 1.0; i += 1.0 / NUM_LAYER) {
+        float depth = fract(i + uStarSpeed * uSpeed);
+        float scale = mix(20.0 * uDensity, 0.5 * uDensity, depth);
+        float fade = depth * smoothstep(1.0, 0.9, depth);
+        col += StarLayer(uv * scale + i * 453.32) * fade;
+      }
+      gl_FragColor = vec4(col, 1.0);
+    }
+  `;
+
+  function initGalaxy() {
+    const ctn = document.getElementById('galaxy-bg');
+    const renderer = new Renderer({ alpha: false });
+    const gl = renderer.gl;
+    gl.clearColor(0.016, 0.008, 0.047, 1);
+
+    let program;
+    function resize() {
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      if (program) {
+        program.uniforms.uResolution.value = new Color(
+          gl.canvas.width, gl.canvas.height, gl.canvas.width / gl.canvas.height
+        );
+      }
+    }
+    window.addEventListener('resize', resize);
+
+    const geometry = new Triangle(gl);
+    program = new Program(gl, {
+      vertex: vertexShader,
+      fragment: fragmentShader,
+      uniforms: {
+        uTime:               { value: 0 },
+        uResolution:         { value: new Color(1, 1, 1) },
+        uFocal:              { value: new Float32Array([0.5, 0.5]) },
+        uRotation:           { value: new Float32Array([1.0, 0.0]) },
+        uStarSpeed:          { value: 0.5 },
+        uDensity:            { value: 1.0 },
+        uHueShift:           { value: 140 },
+        uSpeed:              { value: 1.0 },
+        uMouse:              { value: new Float32Array([0.5, 0.5]) },
+        uGlowIntensity:      { value: 0.3 },
+        uSaturation:         { value: 0.0 },
+        uMouseRepulsion:     { value: true },
+        uTwinkleIntensity:   { value: 0.3 },
+        uRotationSpeed:      { value: 0.06 },
+        uRepulsionStrength:  { value: 2.0 },
+        uMouseActiveFactor:  { value: 0.0 },
+        uAutoCenterRepulsion:{ value: 0.0 },
+      }
+    });
+
+    resize();
+    const mesh = new Mesh(gl, { geometry, program });
+    ctn.appendChild(gl.canvas);
+
+    const targetMouse  = { x: 0.5, y: 0.5 };
+    const smoothMouse  = { x: 0.5, y: 0.5 };
+    let targetActive   = 0, smoothActive = 0;
+
+    window.addEventListener('mousemove', e => {
+      targetMouse.x = e.clientX / window.innerWidth;
+      targetMouse.y = 1 - e.clientY / window.innerHeight;
+      targetActive  = 1;
+    });
+    window.addEventListener('mouseleave', () => { targetActive = 0; });
+
+    const lerp = (a, b, t) => a + (b - a) * t;
+
+    function update(t) {
+      requestAnimationFrame(update);
+      const s = t * 0.001;
+      program.uniforms.uTime.value      = s;
+      program.uniforms.uStarSpeed.value = (s * 0.5) / 10.0;
+
+      smoothMouse.x = lerp(smoothMouse.x, targetMouse.x, 0.05);
+      smoothMouse.y = lerp(smoothMouse.y, targetMouse.y, 0.05);
+      smoothActive  = lerp(smoothActive, targetActive, 0.05);
+
+      program.uniforms.uMouse.value[0]         = smoothMouse.x;
+      program.uniforms.uMouse.value[1]         = smoothMouse.y;
+      program.uniforms.uMouseActiveFactor.value = smoothActive;
+
+      renderer.render({ scene: mesh });
+    }
+    requestAnimationFrame(update);
+  }
+
+  initGalaxy();
 </script>
+
+<!-- Alpine must appear AFTER the module so alpine:init fires after our data registration -->
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
 </body>
 </html>
