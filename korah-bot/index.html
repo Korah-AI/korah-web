@@ -42,9 +42,13 @@
 
   .home-topbar {
     display: flex; align-items: center; gap: 12px;
-    padding: 14px 28px;
-    border-bottom: 1px solid var(--bd, rgba(139,92,246,.18));
-    background: var(--sf); backdrop-filter: blur(14px);
+    padding: 0 1rem;
+    height: 4rem;
+    min-height: 4rem;
+    box-sizing: border-box;
+    border-bottom: 0.0625rem solid var(--bd);
+    background: var(--sf); backdrop-filter: blur(9.375px); -webkit-backdrop-filter: blur(9.375px);
+    opacity: 0.95;
   }
   .home-search {
     flex: 1; max-width: 420px; margin-left: auto;
@@ -106,9 +110,9 @@
     backdrop-filter: blur(14px);
   }
   .countdown-card .label { font-size: 13px; color: var(--tx2); margin-bottom: 14px; }
-  .countdown-grid { display: flex; gap: 22px; align-items: baseline; }
-  .countdown-num { font-size: 36px; font-weight: 800; color: var(--tx); line-height: 1; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
-  .countdown-unit { font-size: 13px; color: var(--tx2); margin-left: 4px; font-weight: 600; }
+  .countdown-grid { display: flex; gap: 10px; align-items: baseline; justify-content: flex-start; }
+  .countdown-num { font-size: 28px; font-weight: 800; color: var(--tx); line-height: 1; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+  .countdown-unit { font-size: 11px; color: var(--tx2); margin-left: 2px; font-weight: 600; }
   .countdown-date { margin-top: 16px; color: var(--tx2); font-size: 14px; }
 
   .score-banner {
@@ -403,6 +407,7 @@
           <div><span class="countdown-num" id="cd-days">—</span><span class="countdown-unit">days</span></div>
           <div><span class="countdown-num" id="cd-hours">—</span><span class="countdown-unit">hrs</span></div>
           <div><span class="countdown-num" id="cd-mins">—</span><span class="countdown-unit">min</span></div>
+          <div><span class="countdown-num" id="cd-secs">—</span><span class="countdown-unit">sec</span></div>
         </div>
         <div class="countdown-date" id="cd-date">Set an exam date</div>
       </div>
@@ -489,35 +494,67 @@
     if (el) el.textContent = g;
   })();
 
-  // SAT exam countdown — reads korah_sat_exam_date (ISO YYYY-MM-DD) from localStorage
+  // Rotating SAT exam countdown
   (function () {
-    const stored = localStorage.getItem('korah_sat_exam_date');
-    const target = stored ? new Date(stored + 'T08:00:00') : null;
+    const SAT_DATES = [
+      new Date('2026-06-06T08:00:00'),
+      new Date('2026-08-22T08:00:00'),
+      new Date('2026-09-12T08:00:00'),
+      new Date('2026-10-03T08:00:00'),
+      new Date('2026-11-07T08:00:00'),
+      new Date('2026-12-05T08:00:00'),
+      new Date('2027-03-06T08:00:00'),
+      new Date('2027-05-01T08:00:00'),
+      new Date('2027-06-05T08:00:00'),
+    ];
+
     const daysEl = document.getElementById('cd-days');
     const hrsEl = document.getElementById('cd-hours');
     const minsEl = document.getElementById('cd-mins');
+    const secsEl = document.getElementById('cd-secs');
     const dateEl = document.getElementById('cd-date');
     const planDaysEl = document.getElementById('plan-days-exam');
 
+    function getNextDate() {
+      const now = new Date();
+      for (const date of SAT_DATES) {
+        if (date.getTime() > now.getTime()) {
+          return date;
+        }
+      }
+      return null;
+    }
+
     function tick() {
-      if (!target || isNaN(target.getTime())) {
-        if (dateEl) dateEl.textContent = 'Set an exam date';
+      const target = getNextDate();
+      if (!target) {
+        if (dateEl) dateEl.textContent = 'No upcoming dates';
+        if (daysEl) daysEl.textContent = '—';
+        if (hrsEl) hrsEl.textContent = '—';
+        if (minsEl) minsEl.textContent = '—';
+        if (planDaysEl) planDaysEl.textContent = '—';
         return;
       }
+
       const now = new Date();
       let diff = target.getTime() - now.getTime();
       if (diff < 0) diff = 0;
+
       const day = Math.floor(diff / 86400000);
       const hr = Math.floor((diff % 86400000) / 3600000);
       const mn = Math.floor((diff % 3600000) / 60000);
+      const sec = Math.floor((diff % 60000) / 1000);
+
       if (daysEl) daysEl.textContent = day;
       if (hrsEl) hrsEl.textContent = hr;
       if (minsEl) minsEl.textContent = mn;
+      if (secsEl) secsEl.textContent = sec;
       if (planDaysEl) planDaysEl.textContent = day;
       if (dateEl) dateEl.textContent = target.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
     }
+
     tick();
-    if (target) setInterval(tick, 60000);
+    setInterval(tick, 1000);
   })();
 
   // Stat hydration from localStorage if SAT analytics has stashed values
