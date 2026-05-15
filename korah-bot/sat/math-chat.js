@@ -242,24 +242,32 @@ TEXT FORMATTING:
 
   // Phase 1 caller: non-streaming feel (small JSON output, parsed at the end).
   async function runPhase1Classification(problem) {
+    console.log('🔵 [Phase 1] classifier starting…');
+    const t0 = performance.now();
     let fullText = '';
     try {
       await callAPI(problem, (_chunk, full) => { fullText = full; }, {
         systemPrompt: (await buildPhase1SystemPrompt()),
         temperature: 0.1,
+        _phaseTag: 'Phase 1 (classify)',
       });
     } catch (e) {
-      console.error('Phase 1 API call failed:', e);
+      console.error('🔵 [Phase 1] API call failed:', e);
       return null;
     }
+    const dt = Math.round(performance.now() - t0);
+    console.log(`🔵 [Phase 1] raw response (${dt}ms, ${fullText.length} chars):`, fullText.slice(0, 300));
 
     let s = fullText.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
     const braceIdx = s.indexOf('{');
-    if (braceIdx === -1) return null;
+    if (braceIdx === -1) {
+      console.warn('🔵 [Phase 1] no JSON object found in response');
+      return null;
+    }
     s = s.substring(braceIdx);
 
     let parsed = null;
-    try { parsed = JSON.parse(s); } catch (_) {}
+    try { parsed = JSON.parse(s); } catch (e) { console.warn('🔵 [Phase 1] direct JSON.parse failed:', e.message); }
     if (!parsed) {
       // Last-resort: find balanced braces.
       let depth = 0, end = -1, inStr = false, esc = false;
@@ -273,14 +281,19 @@ TEXT FORMATTING:
         else if (ch === '}') { depth--; if (depth === 0) { end = i; break; } }
       }
       if (end !== -1) {
-        try { parsed = JSON.parse(s.substring(0, end + 1)); } catch (_) {}
+        try { parsed = JSON.parse(s.substring(0, end + 1)); } catch (e) { console.warn('🔵 [Phase 1] balanced-brace parse failed:', e.message); }
       }
     }
-    if (!parsed) return null;
-    return {
+    if (!parsed) {
+      console.warn('🔵 [Phase 1] could not parse JSON, returning null');
+      return null;
+    }
+    const out = {
       stateId: typeof parsed.stateId === 'string' ? parsed.stateId : null,
       strategy: typeof parsed.strategy === 'string' ? parsed.strategy : '',
     };
+    console.log('🔵 [Phase 1] parsed:', out);
+    return out;
   }
 
   function initializeSATGraph() {
@@ -439,11 +452,13 @@ TEXT FORMATTING:
   // Run Phase 2: hand the model the example + template + problem, ask it to adapt.
   // Returns a parsed Desmos state (or null on failure).
   async function runPhase2Adaptation(problem, stateId) {
+    console.log(`🟡 [Phase 2] adapting template "${stateId}"…`);
+    const t0 = performance.now();
     let example, template;
     try {
       [example, template] = await Promise.all([loadExample(stateId), loadTemplate(stateId)]);
     } catch (e) {
-      console.error(`Phase 2: failed to load example/template for ${stateId}:`, e);
+      console.error(`🟡 [Phase 2] failed to load example/template for ${stateId}:`, e);
       return null;
     }
 
@@ -464,11 +479,14 @@ Output the adapted Desmos state JSON ONLY (no commentary, no code fences).`;
       await callAPI(userContent, (_chunk, full) => { fullText = full; }, {
         systemPrompt: buildPhase2SystemPrompt(),
         temperature: 0.2,
+        _phaseTag: 'Phase 2 (adapt)',
       });
     } catch (e) {
-      console.error('Phase 2 API call failed:', e);
+      console.error('🟡 [Phase 2] API call failed:', e);
       return null;
     }
+    const dt = Math.round(performance.now() - t0);
+    console.log(`🟡 [Phase 2] raw response (${dt}ms, ${fullText.length} chars):`, fullText.slice(0, 200) + '…');
 
     // Strip code fences if present, then locate the JSON.
     let s = fullText.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
@@ -507,11 +525,10 @@ Output the adapted Desmos state JSON ONLY (no commentary, no code fences).`;
 
     const leftoverSlots = stripPlaceholders(parsed);
     if (leftoverSlots.length > 0) {
-      console.warn('Phase 2: model left unfilled placeholders:', leftoverSlots);
-      // Still attempt to load — leftover {{...}} in latex will visibly fail in Desmos,
-      // which is better than silently dropping the graph.
+      console.warn('🟡 [Phase 2] model left unfilled placeholders:', leftoverSlots);
     }
 
+    console.log('🟡 [Phase 2] parsed adapted state with', parsed?.expressions?.list?.length ?? 0, 'expressions');
     return parsed;
   }
 
@@ -1002,7 +1019,7 @@ Output the adapted Desmos state JSON ONLY (no commentary, no code fences).`;
     return out;
   };
 
-  console.log('Three-phase send for:', fullMessage.substring(0, 50));
+  console.log('═══ Three-phase send ═══ problem:', fullMessage.substring(0, 80));
   let phase3FullText = "";
 
   // Helper: replace the current indicator with a "Drawing graph…" indicator.
@@ -1037,32 +1054,36 @@ Output the adapted Desmos state JSON ONLY (no commentary, no code fences).`;
         const index = await loadTemplateIndex();
         const entry = index.find(e => e.id === stateId);
         if (!entry) {
-          console.warn(`Phase 1: stateId "${stateId}" not in template index`);
+          console.warn(`🔵 [Phase 1] stateId "${stateId}" not found in template index — skipping graph`);
         } else if (entry.type === 'visualizer') {
+          console.log(`🟡 [Phase 2] visualizer "${stateId}" — loading example as-is (no adaptation API call)`);
           const example = await loadExample(stateId);
           const result = loadDesmosState(example);
-          if (result.ok) loadedState = example;
-          else console.warn('Visualizer load failed:', result.errors);
+          if (result.ok) { loadedState = example; console.log('🟡 [Phase 2] visualizer loaded ✓'); }
+          else console.warn('🟡 [Phase 2] visualizer load failed:', result.errors);
         } else if (entry.type === 'problem-solver') {
           const adapted = await runPhase2Adaptation(userMessage, stateId);
           if (adapted) {
             const result = loadDesmosState(adapted);
             if (result.ok) {
               loadedState = adapted;
+              console.log('🟡 [Phase 2] adapted state loaded ✓');
             } else {
-              console.warn('Adapted state validation failed:', result.errors, adapted);
+              console.warn('🟡 [Phase 2] adapted state failed validation, falling back to verified example:', result.errors);
               const example = await loadExample(stateId);
-              if (loadDesmosState(example).ok) loadedState = example;
+              if (loadDesmosState(example).ok) { loadedState = example; console.log('🟡 [Phase 2] fallback example loaded ✓'); }
             }
           } else {
-            console.warn('Phase 2 returned null; falling back to verified example.');
+            console.warn('🟡 [Phase 2] returned null; falling back to verified example.');
             const example = await loadExample(stateId);
-            if (loadDesmosState(example).ok) loadedState = example;
+            if (loadDesmosState(example).ok) { loadedState = example; console.log('🟡 [Phase 2] fallback example loaded ✓'); }
           }
         }
       } catch (e) {
-        console.error('Failed to resolve/load template:', e);
+        console.error('🟡 [Phase 2] failed to resolve/load template:', e);
       }
+    } else {
+      console.log('⚪ [Phase 2] skipped (stateId is null — no template selected)');
     }
 
     // ── PHASE 3: streamed tutoring response, grounded in the loaded state ──
@@ -1073,6 +1094,8 @@ Output the adapted Desmos state JSON ONLY (no commentary, no code fences).`;
     currentTypedText = '';
     let firstChunkSeen = false;
 
+    console.log(`🟢 [Phase 3] streaming tutoring response (grounded=${!!loadedState})…`);
+    const phase3T0 = performance.now();
     await callAPI(userContent, (_chunk, fullText) => {
       phase3FullText = fullText;
       if (!firstChunkSeen && fullText.length > 0) {
@@ -1089,7 +1112,9 @@ Output the adapted Desmos state JSON ONLY (no commentary, no code fences).`;
     }, {
       systemPrompt: buildPhase3SystemPrompt(loadedState, classifierStrategy),
       temperature: 0.2,
+      _phaseTag: 'Phase 3 (respond)',
     });
+    console.log(`🟢 [Phase 3] done in ${Math.round(performance.now() - phase3T0)}ms (${phase3FullText.length} chars)`);
 
     typingIndicator?.classList.add('hidden');
 
@@ -1107,6 +1132,7 @@ Output the adapted Desmos state JSON ONLY (no commentary, no code fences).`;
     conversationHistory.push({ role: 'user', content: userMessage });
     conversationHistory.push({ role: 'assistant', content: phase3FullText });
     saveCurrentSession();
+    console.log('═══ Three-phase send complete ═══');
 
     } catch (error) {
       console.error('Error in sendMessage:', error);
@@ -1119,6 +1145,8 @@ Output the adapted Desmos state JSON ONLY (no commentary, no code fences).`;
     const systemPrompt = options.systemPrompt
       ?? (await buildPhase1SystemPrompt());
     const temperature = options.temperature ?? 0.2;
+    const phaseTag = options._phaseTag || 'callAPI';
+    console.log(`📡 [${phaseTag}] → POST ${API_ENDPOINT} (model=${MODEL}, temp=${temperature}, sysPromptLen=${systemPrompt.length})`);
 
     const messagesWithSystem = [
       { role: 'system', content: systemPrompt },
@@ -1140,7 +1168,10 @@ Output the adapted Desmos state JSON ONLY (no commentary, no code fences).`;
 
     const response = await fetch(API_ENDPOINT, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "X-Korah-Phase": phaseTag,
+      },
       body: bodyStr
     });
 
@@ -1150,8 +1181,10 @@ Output the adapted Desmos state JSON ONLY (no commentary, no code fences).`;
         const errorData = await response.json();
         errorMessage = errorData?.message || errorData?.error || errorMessage;
       } catch (_error) {}
+      console.error(`📡 [${phaseTag}] ← HTTP ${response.status}: ${errorMessage}`);
       throw new Error(errorMessage);
     }
+    console.log(`📡 [${phaseTag}] ← HTTP ${response.status} (streaming…)`);
 
     if (!response.body) {
       throw new Error("No response body received");
