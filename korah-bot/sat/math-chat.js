@@ -25,7 +25,107 @@ console.log('math-chat.js loading...');
   let currentSession   = null;
   let conversationHistory = []; // [{ role: 'user'|'assistant', content: string }]
 
-  const SAT_MATH_SYSTEM_PROMPT = `ABOUT KORAH: Created by Oscar Euceda, a high school programmer, Korah is a free academic resource designed to help students and communities receive quality education at the click of a button. Your mission is to make learning accessible, engaging, and effective for everyone.
+  // ─── Desmos Template Library ──────────────────────────────────────────────
+  let _templateIndex = null;
+  const _exampleCache = {};
+  const _templateCache = {};
+
+  async function loadTemplateIndex() {
+    if (_templateIndex) return _templateIndex;
+    try {
+      const res = await fetch('./template-index.json');
+      _templateIndex = await res.json();
+    } catch (e) {
+      console.error('Failed to load template-index.json:', e);
+      _templateIndex = [];
+    }
+    return _templateIndex;
+  }
+
+  async function loadExample(id) {
+    if (_exampleCache[id]) return _exampleCache[id];
+    const res = await fetch(`./desmos-json/${id}.json`);
+    _exampleCache[id] = await res.json();
+    return _exampleCache[id];
+  }
+
+  async function loadTemplate(id) {
+    if (_templateCache[id]) return _templateCache[id];
+    const res = await fetch(`./desmos-json/templates/${id}.json`);
+    _templateCache[id] = await res.json();
+    return _templateCache[id];
+  }
+
+  function buildTemplateIndexBlock(index) {
+    const lines = index.map(t =>
+      `  { "id": "${t.id}", "type": "${t.type}", "name": "${t.name}", "description": "${t.description.replace(/"/g, '\\"')}", "keywords": [${t.keywords.map(k => `"${k}"`).join(', ')}] }`
+    );
+    return `AVAILABLE TEMPLATES — pick the best match by id, or null if none fit:\n[\n${lines.join(',\n')}\n]`;
+  }
+
+  // Validate a Desmos state object before calling setState().
+  // Catches the common failure modes described in docs/desmos-template-library-plan.md.
+  function validateDesmosState(state) {
+    const errors = [];
+    if (!state || typeof state !== 'object') { errors.push('state is not an object'); return errors; }
+    if (!state.expressions || !Array.isArray(state.expressions.list)) {
+      errors.push('state.expressions.list is missing or not an array');
+      return errors;
+    }
+    const list = state.expressions.list;
+    const ids = new Set();
+    let seenTable = false;
+    let tableHasX1 = false;
+    let tableHasY1 = false;
+
+    list.forEach((expr, idx) => {
+      if (!expr || typeof expr !== 'object') { errors.push(`expr[${idx}] is not an object`); return; }
+      if (!expr.type) { errors.push(`expr[${idx}] missing "type"`); return; }
+      if (expr.id) {
+        if (ids.has(expr.id)) errors.push(`duplicate id "${expr.id}" at expr[${idx}]`);
+        ids.add(expr.id);
+      }
+      if (expr.type === 'text' && 'color' in expr) {
+        errors.push(`expr[${idx}] is a text node and must not have a "color" field`);
+      }
+      if (expr.type === 'table') {
+        seenTable = true;
+        const cols = expr.columns || [];
+        cols.forEach((c, ci) => {
+          const lx = (c.latex || '').replace(/\s/g, '');
+          if (lx === 'x_{1}' || lx === 'x_1') tableHasX1 = true;
+          if (lx === 'y_{1}' || lx === 'y_1') tableHasY1 = true;
+          if (lx === 'x' || lx === 'y') {
+            errors.push(`expr[${idx}] table column ${ci} uses bare "${lx}" — must use subscript (x_1 / y_1)`);
+          }
+        });
+      }
+      if (expr.type === 'expression' && typeof expr.latex === 'string') {
+        const lx = expr.latex;
+        // A regression with x_1 / y_1 that comes before any table is broken.
+        const hasTilde = lx.includes('\\sim') || /(?:^|[^\\])~/.test(lx);
+        const refsTableVar = /x_\{?1\}?|y_\{?1\}?/.test(lx);
+        if (hasTilde && refsTableVar && !seenTable) {
+          errors.push(`expr[${idx}] regression references x_1/y_1 but no preceding table found`);
+        }
+      }
+    });
+
+    if (seenTable && !(tableHasX1 && tableHasY1)) {
+      // not fatal — a table can use different subscripts (e.g. x_2/y_2) — only flag the common error
+    }
+    return errors;
+  }
+
+  function stripPlaceholders(raw) {
+    // Helper to detect any unfilled {{...}} placeholders in the model's adapted output.
+    if (raw == null) return [];
+    const text = typeof raw === 'string' ? raw : JSON.stringify(raw);
+    const matches = text.match(/\{\{[A-Z0-9_]+\}\}/g);
+    return matches || [];
+  }
+
+  const SAT_MATH_SYSTEM_PROMPT_BASE = `ABOUT KORAH: Created by Oscar Euceda, a high school programmer, Korah is a free academic resource designed to help students and communities receive quality education at the click of a button. Your mission is to make learning accessible, engaging, and effective for everyone.
 
 You are Korah, a specialized SAT Math tutor. You teach students how to solve SAT Math problems using three core strategies — choosing the fastest one for each problem:
 
@@ -108,110 +208,30 @@ Use standard algebra when the problem is purely symbolic:
 - After solving, graph the result on Desmos so the student can see it visually.
 
 ═══════════════════════════════════════════
-RESPONSE FORMAT (STRICT)
+RESPONSE FORMAT (STRICT) — PHASE 1 CLASSIFICATION
 ═══════════════════════════════════════════
 
-IMPORTANT: You MUST respond in JSON format with two fields: "graph" and "response".
-DO NOT include any markdown formatting like \`\`\`json outside the JSON itself.
-The response must be a single raw JSON object.
+You will NOT generate raw Desmos JSON yourself. The system has a library of human-verified Desmos templates.
+Your job in Phase 1 is to:
+1. Read the student's problem
+2. Pick the best matching template from the AVAILABLE TEMPLATES list (or null if none fit)
+3. Explain the solving strategy and walk the student through it in text
+
+You MUST respond with a single raw JSON object (no markdown code fences) with these fields:
 
 {
-  "graph": {
-    "expressions": [
-      {"latex": "y=x^2", "color": "#4285F4"}
-    ],
-    "viewport": {"xmin": -10, "xmax": 10, "ymin": -10, "ymax": 10}
-  },
-  "response": "Your explanation here using Markdown and KaTeX . . ."
+  "stateId": "id_from_the_template_list_or_null",
+  "strategy": "Brief reason for selecting this template — what about the problem matches",
+  "response": "Your full Markdown + KaTeX explanation for the student",
+  "suggestions": ["optional follow-up 1", "optional follow-up 2"]
 }
 
-═══════════════════════════════════════════
-DESMOS API SYNTAX REFERENCE
-═══════════════════════════════════════════
-
-EXPRESSION TYPES:
-- Function/equation: {"latex": "y=mx+b", "color": "#2d70b3"}
-- Point: {"latex": "(1,2)", "label": "Vertex", "showLabel": true, "color": "#c74440"}
-- Variable/constant: {"latex": "a=5"}
-- Inequality: {"latex": "y < 2x + 1", "color": "#388c46"}
-- Hidden (for helper expressions): {"latex": "f(x)=x^2", "color": "#2d70b3", "hidden": true}
-- Text note: {"type": "text", "text": "This is a note"} — do NOT include a latex or color field on text notes.
-
-TABLES:
-{
-  "type": "table",
-  "columns": [
-    {"latex": "x_1", "values": ["1", "2", "3", "4", "5"]},
-    {"latex": "y_1", "values": ["2.1", "3.9", "6.2", "8.1", "10.2"]}
-  ]
-}
-CRITICAL: Column headers MUST use underscores: $x_1$, $y_1$ (NOT $x$, $y$).
-CRITICAL: The table MUST appear BEFORE any regression expression that references its columns.
-
-REGRESSIONS:
-A regression uses the tilde (~) to fit parameters. It MUST reference the table columns ($x_1$, $y_1$).
-- Linear: {"latex": "y_1 ~ m x_1 + b"}
-- Quadratic: {"latex": "y_1 ~ a x_1^2 + b x_1 + c"}
-- Exponential: {"latex": "y_1 ~ a b^{x_1}"}
-- Power: {"latex": "y_1 ~ a x_1^b"}
-- Logarithmic: {"latex": "y_1 ~ a \\\\ln(x_1) + b"}
-
-REGRESSION TRICK (solving for unknowns without a table):
-When two expressions are equal and you need to find unknown parameters, replace the variable with $x_1$ (a subscript constant) and use tilde instead of equals:
-- Single parameter: {"latex": "\\\\frac{1}{3}x_1^2 - 2 \\\\sim \\\\frac{1}{3}(x_1 - k)(x_1 + k)"}
-- Multiple parameters: Always add $x_1 = [1, 2, 3]$ or an appropriate range FIRST, then the regression expression.
-
-For multiple unknowns, the x_1 data points anchor the fitting. Without them, Desmos cannot uniquely solve for 2+ parameters.
-
-COMPLETE EXAMPLES:
-
-Example 1 — Regression trick (no table):
-{
-  "expressions": [
-    {"latex": "\\\\frac{1}{3}x^{2}-2", "color": "#388c46", "hidden": true},
-    {"latex": "\\\\frac{1}{3}(x-k)(x+k)", "color": "#2d70b3", "hidden": true},
-    {"latex": "\\\\frac{1}{3}x_{1}^{2}-2\\\\sim\\\\frac{1}{3}\\\\left(x_{1}-k\\\\right)\\\\left(x_{1}+k\\\\right)", "color": "#388c46"}
-  ],
-  "viewport": {"xmin": -5, "xmax": 5, "ymin": -5, "ymax": 5}
-}
-
-Example 2 — Data table + linear regression + answer choices:
-{
-  "expressions": [
-    {
-      "type": "table",
-      "columns": [
-        {"latex": "x_1", "values": ["-1", "0", "1", "2"]},
-        {"latex": "y_1", "values": ["12", "15", "18", "21"]}
-      ]
-    },
-    {"latex": "y_1 ~ m x_1 + b", "color": "#388c46"},
-    {"latex": "3x+15", "color": "#c74440", "lineStyle": "DASHED"}
-  ],
-  "viewport": {"xmin": -3, "xmax": 4, "ymin": 5, "ymax": 25}
-}
-
-Example 3 — Regression trick with multiple parameters:
-{
-  "expressions": [
-    {"latex": "x_1 = [1, 2, 3, 4, 5]"},
-    {"latex": "2x_{1}^{2}-12x_{1}+10", "color": "#388c46", "hidden": true},
-    {"latex": "2(x_{1}-h)^{2}+k", "color": "#2d70b3", "hidden": true},
-    {"latex": "2x_{1}^{2}-12x_{1}+10\\\\sim 2(x_{1}-h)^{2}+k", "color": "#388c46"}
-  ],
-  "viewport": {"xmin": 0, "xmax": 6, "ymin": -15, "ymax": 15}
-}
-
-STYLING:
-- Colors: #c74440 (red), #2d70b3 (blue), #388c46 (green), #6042a6 (purple), #fa7e19 (orange), #000000 (black)
-- Line Styles: "SOLID", "DASHED", "DOTTED"
-- Use different colors for: original expression, answer choices, regression line, verification
-
-GRAPH FIELD RULES:
-- "expressions": array of expression objects. For tables, include "type": "table" and "columns".
-- "viewport": optional bounds {xmin, xmax, ymin, ymax}. ALWAYS set a viewport that frames the interesting region of the problem (don't leave everything at -10 to 10 if the data is clustered around 0-5).
-- To clear the graph: provide an empty expressions array.
-- If no graph update needed: set "graph": null.
+TEMPLATE SELECTION RULES:
+- "stateId" must exactly match an "id" from the AVAILABLE TEMPLATES list, or be null.
+- Set stateId to null when no template fits — the graph will not update, and you should explain in "response" why no graph is being shown.
+- "visualizer" templates load as-is for conceptual demonstrations (symmetry, unit circle, etc.).
+- "problem-solver" templates trigger a Phase 2 adaptation — the system will give you the example + template and ask you to fill in problem-specific values.
+- Pick the template whose description and keywords best match the problem at hand.
 
 ═══════════════════════════════════════════
 TEXT RESPONSE RULES
@@ -221,19 +241,69 @@ The "response" field contains your explanation using:
 - Markdown headings (## Step 1, ## Step 2, etc.), bold, italic
 - KaTeX for math: $inline$ or $$display$$
 - NEVER use \\\\(...\\\\), \\\\[...\\\\], or bare math outside dollar signs.
-- NEVER embed raw JSON objects, graph updates, or code blocks inside the response text. ALL Desmos graph updates go ONLY in the top-level "graph" field. The "response" field is text only.
+- NEVER embed raw JSON objects or code blocks inside the response text.
 - Reference the graph directly: "Look at the graph — the green regression line passes through all four data points."
 - Always number your steps and label them with the strategy name.
 
 OPTIONALLY include a "suggestions" field with 0-2 follow-up questions the user might ask next.
-Only include suggestions if genuinely useful. Max 2 items.
-Example: "suggestions": ["What if the data were exponential instead?", "How do I verify this on test day?"]`;
+Only include suggestions if genuinely useful. Max 2 items.`;
 
 function getFormatInstructions() {
   return `STRICT RESPONSE FORMAT: Output ONLY raw JSON. No code blocks.
-Fields: { "graph": {...}, "response": "...", "suggestions": [...] }
-KATEX: $...$ for inline, $$...$$ for display.
+Fields: { "stateId": "id_or_null", "strategy": "...", "response": "...", "suggestions": [...] }
+KATEX in "response": $...$ for inline, $$...$$ for display.
 OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
+}
+
+async function buildPhase1SystemPrompt() {
+  const index = await loadTemplateIndex();
+  const block = buildTemplateIndexBlock(index);
+  return SAT_MATH_SYSTEM_PROMPT_BASE + '\n\n' + block;
+}
+
+function buildPhase2SystemPrompt() {
+  return `You are adapting a Desmos calculator state to fit a specific SAT problem.
+
+You will receive:
+- The student's problem
+- A FULL WORKING EXAMPLE: real Desmos JSON that solves a similar problem of this type
+- A TEMPLATE: the same JSON structure with {{PLACEHOLDER}} slots indicating what to fill in
+
+YOUR JOB:
+1. Read the example to understand the syntax, structure, and reasoning style
+2. Use the template as your guide for what each slot should contain
+3. Output a complete Desmos state JSON that solves THE STUDENT'S problem
+4. Every {{PLACEHOLDER}} must be replaced with a real problem-specific value
+5. Rewrite text nodes to explain THIS specific problem (don't copy the example's text verbatim)
+
+CRITICAL DESMOS RULES (violations will break the graph):
+- Table data columns must use SUBSCRIPT notation: x_{1}, y_{1} (NOT bare x or y)
+- A table must appear BEFORE any expression that uses its columns
+- Regressions use TILDE (\\sim) not equals
+- Text nodes use ONLY {type, id, text}. NO color field on text nodes.
+- Every id must be unique within the expressions.list
+- LaTeX backslashes must be properly JSON-escaped (\\\\frac, \\\\sim, \\\\left, etc.)
+- Do NOT include "graph", "viewport", or other top-level fields beyond version/randomSeed/expressions
+
+WHAT YOU CAN DO:
+- Add new expressions or text nodes if the problem needs them
+- Omit template slots if they're not needed for this problem
+- Use the example's id values or generate new unique ones
+- Choose appropriate colors from the example's palette
+
+OUTPUT FORMAT:
+Output a single raw JSON object — the full Desmos state — with NO surrounding text, no code fences, no commentary.
+
+The object must have this shape:
+{
+  "version": 11,
+  "randomSeed": "32-char hex",
+  "expressions": {
+    "list": [ ...your adapted expressions... ]
+  }
+}
+
+If you cannot adapt the template (problem doesn't actually match), output exactly: null`;
 }
 
   function initializeSATGraph() {
@@ -357,35 +427,27 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
     return exprList ? `\n\n[Current Desmos State: ${exprList}]` : '';
   }
 
-  function updateSATGraph(data) {
-    if (!satMathCalculator) return;
-    if (!data || typeof data !== 'object') return;
+  // Load a complete Desmos state (from a verified template or an adapted state)
+  // and apply it via setState(). Returns { ok, errors } so callers can show diagnostics.
+  function loadDesmosState(state) {
+    if (!satMathCalculator) return { ok: false, errors: ['calculator not initialized'] };
+    if (!state || typeof state !== 'object') return { ok: false, errors: ['no state provided'] };
+
+    const errors = validateDesmosState(state);
+    if (errors.length > 0) {
+      console.warn('Desmos state validation failed:', errors, state);
+      return { ok: false, errors };
+    }
 
     const graphContainer = document.getElementById('sat-graph-container');
 
-    // To properly "update" we either clear and rebuild or surgically update.
-    // Given the prompt asks to "update existing", we'll clear first to ensure a clean state.
-    satMathCalculator.setBlank();
-
-    if (data.viewport) {
-      satMathCalculator.setMathBounds({
-        left: data.viewport.xmin ?? -10,
-        right: data.viewport.xmax ?? 10,
-        bottom: data.viewport.ymin ?? -10,
-        top: data.viewport.ymax ?? 10,
-      });
-    }
-
-    if (data.expressions && Array.isArray(data.expressions)) {
-      data.expressions.forEach((expr, idx) => {
-        const isTextNote = expr.type === 'text';
-        // Text notes don't accept a color property — spread everything except color.
-        // All other expression types get the default color fallback.
-        satMathCalculator.setExpression(isTextNote
-          ? { id: expr.id || 'expr_' + idx, ...expr }
-          : { id: expr.id || 'expr_' + idx, color: expr.color || '#4285F4', ...expr }
-        );
-      });
+    try {
+      // Defensive copy so we don't mutate the cached template/example.
+      const stateCopy = JSON.parse(JSON.stringify(state));
+      satMathCalculator.setState(stateCopy);
+    } catch (e) {
+      console.error('setState failed:', e);
+      return { ok: false, errors: ['setState failed: ' + e.message] };
     }
 
     if (graphContainer) {
@@ -394,6 +456,86 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
     }
 
     captureGraphState();
+    return { ok: true, errors: [] };
+  }
+
+  // Run Phase 2: hand the model the example + template + problem, ask it to adapt.
+  // Returns a parsed Desmos state (or null on failure).
+  async function runPhase2Adaptation(problem, stateId) {
+    let example, template;
+    try {
+      [example, template] = await Promise.all([loadExample(stateId), loadTemplate(stateId)]);
+    } catch (e) {
+      console.error(`Phase 2: failed to load example/template for ${stateId}:`, e);
+      return null;
+    }
+
+    const userContent =
+`PROBLEM:
+${problem}
+
+=== FULL WORKING EXAMPLE (real Desmos JSON for a similar problem of this type) ===
+${JSON.stringify(example, null, 2)}
+
+=== TEMPLATE (same structure with {{PLACEHOLDER}} slots to fill in) ===
+${JSON.stringify(template, null, 2)}
+
+Output the adapted Desmos state JSON ONLY (no commentary, no code fences).`;
+
+    let fullText = '';
+    try {
+      await callAPI(userContent, (_chunk, full) => { fullText = full; }, {
+        systemPrompt: buildPhase2SystemPrompt(),
+        temperature: 0.2,
+      });
+    } catch (e) {
+      console.error('Phase 2 API call failed:', e);
+      return null;
+    }
+
+    // Strip code fences if present, then locate the JSON.
+    let s = fullText.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+    if (s === 'null') return null;
+    const braceIdx = s.indexOf('{');
+    if (braceIdx === -1) {
+      console.warn('Phase 2: no JSON object found in response:', s.slice(0, 200));
+      return null;
+    }
+    s = s.substring(braceIdx);
+
+    // Try direct JSON.parse first (model usually outputs proper escapes for Desmos LaTeX).
+    let parsed = null;
+    try { parsed = JSON.parse(s); } catch (_) {}
+
+    if (!parsed) {
+      // Fallback: balanced brace extraction in case there's trailing junk.
+      let depth = 0, end = -1, inStr = false, esc = false;
+      for (let i = 0; i < s.length; i++) {
+        const ch = s[i];
+        if (esc) { esc = false; continue; }
+        if (ch === '\\') { esc = true; continue; }
+        if (ch === '"') { inStr = !inStr; continue; }
+        if (inStr) continue;
+        if (ch === '{') depth++;
+        else if (ch === '}') { depth--; if (depth === 0) { end = i; break; } }
+      }
+      if (end !== -1) {
+        try { parsed = JSON.parse(s.substring(0, end + 1)); } catch (e) {
+          console.warn('Phase 2: JSON.parse failed even after brace extraction:', e.message);
+        }
+      }
+    }
+
+    if (!parsed) return null;
+
+    const leftoverSlots = stripPlaceholders(parsed);
+    if (leftoverSlots.length > 0) {
+      console.warn('Phase 2: model left unfilled placeholders:', leftoverSlots);
+      // Still attempt to load — leftover {{...}} in latex will visibly fail in Desmos,
+      // which is better than silently dropping the graph.
+    }
+
+    return parsed;
   }
 
   function renderGraphUpdates(container) {
@@ -972,27 +1114,24 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
           // Fast path: try JSON.parse first (handles well-formed JSON)
           try {
             const p = JSON.parse(s);
-            if (p && (p.response || p.graph)) return p;
+            if (p && (p.response || 'stateId' in p)) return p;
           } catch (_) {}
 
           // Slow path: extract fields manually
-          const result = { graph: null, response: '', suggestions: [] };
+          const result = { stateId: null, strategy: '', response: '', suggestions: [] };
 
-          // ── Extract "response" string ──
           result.response = extractStringField(s, 'response') || '';
+          result.strategy = extractStringField(s, 'strategy') || '';
 
-          // ── Extract "graph" object or null ──
-          const graphStart = findFieldValueStart(s, 'graph');
-          if (graphStart !== -1) {
-            const after = s.substring(graphStart).trim();
+          // ── Extract "stateId" (string or null) ──
+          const idStart = findFieldValueStart(s, 'stateId');
+          if (idStart !== -1) {
+            const after = s.substring(idStart).trim();
             if (after.startsWith('null')) {
-              result.graph = null;
-            } else if (after.startsWith('{')) {
-              const obj = extractBraceBlock(after);
-              if (obj) {
-                try { result.graph = JSON.parse(fixEscapesForJSON(obj)); }
-                catch (e) { console.warn('Graph parse failed:', e.message); }
-              }
+              result.stateId = null;
+            } else if (after.startsWith('"')) {
+              const closeQuote = after.indexOf('"', 1);
+              if (closeQuote !== -1) result.stateId = after.substring(1, closeQuote);
             }
           }
 
@@ -1009,7 +1148,7 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
             }
           }
 
-          return (result.response || result.graph) ? result : null;
+          return (result.response || result.stateId) ? result : null;
         };
 
         // Find the index right after `"fieldName":` in text
@@ -1115,28 +1254,57 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
         };
 
         parsedResponse = parseAIResponse(finalRawText);
-        
-        if (parsedResponse && typeof parsedResponse === 'object' && (parsedResponse.graph || parsedResponse.response)) {
-          const graphData = parsedResponse.graph;
+
+        if (parsedResponse && typeof parsedResponse === 'object' && (parsedResponse.stateId || parsedResponse.response)) {
           const chatResponse = parsedResponse.response || '';
-          
-          if (graphData) {
-            console.log('Updating graph with data:', graphData);
-            updateSATGraph(graphData);
-          }
-          
+          const stateId = parsedResponse.stateId || null;
+
           contentElement.textContent = '';
           if (chatResponse) {
             renderMarkdownAndMath(contentElement, chatResponse);
-          } else if (graphData) {
-            renderMarkdownAndMath(contentElement, "_Graph updated._");
+          } else if (stateId) {
+            renderMarkdownAndMath(contentElement, "_Loading graph..._");
+          }
+          chatBody.scrollTop = chatBody.scrollHeight;
+
+          // Resolve and load the Desmos state for the chosen template.
+          if (stateId) {
+            try {
+              const index = await loadTemplateIndex();
+              const entry = index.find(e => e.id === stateId);
+              if (!entry) {
+                console.warn(`Phase 1: stateId "${stateId}" not in template index`);
+              } else if (entry.type === 'visualizer') {
+                const example = await loadExample(stateId);
+                const result = loadDesmosState(example);
+                if (!result.ok) console.warn('Visualizer load failed:', result.errors);
+              } else if (entry.type === 'problem-solver') {
+                // Phase 2: ask the model to adapt the template for this specific problem.
+                const adapted = await runPhase2Adaptation(userMessage, stateId);
+                if (adapted) {
+                  const result = loadDesmosState(adapted);
+                  if (!result.ok) {
+                    console.warn('Adapted state validation failed:', result.errors, adapted);
+                    // Fall back to the verified example so the student still sees something.
+                    const example = await loadExample(stateId);
+                    loadDesmosState(example);
+                  }
+                } else {
+                  console.warn('Phase 2 returned null; falling back to verified example.');
+                  const example = await loadExample(stateId);
+                  loadDesmosState(example);
+                }
+              }
+            } catch (e) {
+              console.error('Failed to resolve/load template:', e);
+            }
           }
         } else {
           // If not valid JSON or missing fields, fall back to rendering the whole text
           contentElement.textContent = '';
           renderMarkdownAndMath(contentElement, finalRawText);
         }
-        
+
         chatBody.scrollTop = chatBody.scrollHeight;
       }
 
@@ -1175,15 +1343,19 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
     }
   }
 
-  async function callAPI(userContent, onChunk = null) {
+  async function callAPI(userContent, onChunk = null, options = {}) {
+    const systemPrompt = options.systemPrompt
+      ?? ((await buildPhase1SystemPrompt()) + getFormatInstructions());
+    const temperature = options.temperature ?? 0.4;
+
     const messagesWithSystem = [
-      { role: 'system', content: SAT_MATH_SYSTEM_PROMPT + getFormatInstructions() },
+      { role: 'system', content: systemPrompt },
       { role: 'user', content: userContent }
     ];
 
     const bodyObj = {
       model: MODEL,
-      temperature: 0.4,
+      temperature,
       messages: messagesWithSystem,
       stream: true
     };
