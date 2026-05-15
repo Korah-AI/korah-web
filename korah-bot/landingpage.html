@@ -20,14 +20,49 @@
 
 <link rel="stylesheet" href="korah.css"/>
 <style>
-  .design-typing-cursor {
-    display: inline-block;
-    animation: design-cursor-blink 1s steps(1, end) infinite;
+  .stat-divider {
+    width: 1px;
+    height: 2.5rem;
+    background: var(--bd);
+    flex-shrink: 0;
   }
 
-  @keyframes design-cursor-blink {
-    0%, 49% { opacity: 1; }
-    50%, 100% { opacity: 0; }
+  .trusted-scroll {
+    display: flex;
+    gap: 2.5rem;
+    animation: trusted-marquee 18s linear infinite;
+  }
+
+  @keyframes trusted-marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  .download-card {
+    background: var(--bg2);
+    border: 0.09375rem solid rgba(139,92,246,0.35);
+    border-radius: 1.5rem;
+    padding: 2rem;
+    transition: transform 0.35s cubic-bezier(.23,1,.32,1), box-shadow 0.35s;
+  }
+  .download-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 0 2rem rgba(139,92,246,0.3);
+  }
+
+  .hero-stat-num {
+    font-size: clamp(1.5rem, 3vw, 2.25rem);
+    font-weight: 900;
+    line-height: 1;
+    color: var(--tx);
+  }
+  .hero-stat-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--tx2);
+    margin-top: 0.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
   }
 </style>
 </head>
@@ -51,13 +86,9 @@
   </a>
 
   <div class="nav-links hidden lg:flex items-center gap-0.5 bg-sf2 border bd2 rounded-full px-3 py-2 glass-sm t-theme" style="white-space:nowrap;">
-    <a href="#home"        class="nav-link text-[13.5px] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx hover:bg-[var(--bd)]">Home</a>
-    <a href="#how"         class="nav-link text-[13.5px] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx hover:bg-[var(--bd)]">How it Works</a>
-    <a href="#sat"         class="nav-link text-[13.5px] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx hover:bg-[var(--bd)]">SAT Prep</a>
-    <a href="#features"    class="nav-link text-[13.5px] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx hover:bg-[var(--bd)]">Features</a>
-    <a href="#study-tools" class="nav-link text-[13.5px] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx hover:bg-[var(--bd)]">Study Tools</a>
-    <a href="#chat"        class="nav-link text-[13.5px] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx hover:bg-[var(--bd)]">Korah AI</a>
-    <a href="#download"    class="nav-link text-[13.5px] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx hover:bg-[var(--bd)]">Download</a>
+    <a href="#home"     class="nav-link text-[13.5px] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx hover:bg-[var(--bd)]">Home</a>
+    <a href="#sat"      class="nav-link text-[13.5px] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx hover:bg-[var(--bd)]">SAT Prep</a>
+    <a href="#download" class="nav-link text-[13.5px] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx hover:bg-[var(--bd)]">Download</a>
     <a href="opportunities/opportunities.html" class="nav-link text-[13.5px] font-medium px-4 py-1.5 rounded-full t-btn" style="color:var(--p5); background:rgba(139,92,246,0.1); border: 1px solid rgba(139,92,246,0.25);">🚀 Opportunities</a>
   </div>
 
@@ -65,11 +96,9 @@
     <button @click="theme = theme==='dark' ? 'light' : 'dark'"
         class="flex items-center justify-center w-9 h-9 rounded-xl bg-sf2 border bd cursor-pointer t-btn hover:border-p4 hover:bg-[var(--bd2)] t-theme"
         aria-label="Toggle theme">
-  <!-- Moon (dark mode) -->
   <svg x-show="theme==='light'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" style="color:var(--p5)">
     <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/>
   </svg>
-  <!-- Sun (light mode) -->
   <svg x-show="theme==='dark'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--p4)">
     <circle cx="12" cy="12" r="5"/>
     <line x1="12" y1="1" x2="12" y2="3"/>
@@ -83,10 +112,10 @@
   </svg>
 </button>
     <button class="hidden lg:block text-[13px] font-semibold px-5 py-2.5 rounded-full cursor-pointer border bd tx2 bg-transparent t-btn hover:tx-p4 hover:border-p4 hover:bg-[var(--bd2)]"
-      onclick="window.location.href='index.html'">
+      onclick="window.location.href='chat.html'">
       Log in
     </button>
-    <button onclick="window.open('https://testflight.apple.com/join/kkxUsBqe','_blank')" class="hidden lg:block text-[13px] font-semibold px-5 py-2.5 rounded-full cursor-pointer border-none text-white grad-bg shadow-glow t-btn hover:-translate-y-px hover:shadow-glow-lg">Download Now</button>
+    <button onclick="window.open('https://testflight.apple.com/join/kkxUsBqe','_blank')" class="hidden lg:block text-[13px] font-semibold px-5 py-2.5 rounded-full cursor-pointer border-none text-white grad-bg shadow-glow t-btn hover:-translate-y-px hover:shadow-glow-lg">Download</button>
     <button @click="menuOpen=!menuOpen" :class="menuOpen && 'open'" class="hamburger lg:hidden flex flex-col gap-1.5 bg-transparent border-none cursor-pointer p-1.5" aria-label="Menu">
       <span class="block w-5.5 h-0.5 bg-p4 rounded transition-transform duration-300"></span>
       <span class="block w-5.5 h-0.5 bg-p4 rounded transition-all duration-300"></span>
@@ -95,67 +124,81 @@
   </div>
 </nav>
 
-<!-- Mobile menu — Alpine x-show replaces classList toggle -->
+<!-- Mobile menu -->
 <div class="fixed top-[82px] left-0 right-0 z-[999] bg-[var(--nb)] glass border-b bd px-6 pb-7 pt-5 t-theme"
      x-show="menuOpen" x-transition:enter="transition ease-smooth duration-350"
      x-transition:enter-start="opacity-0 -translate-y-[110%]" x-transition:enter-end="opacity-100 translate-y-0"
      x-transition:leave="transition ease-smooth duration-300" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
-  <template x-for="link in navLinks" :key="link.id">
-    <a :href="'#'+link.id" @click="menuOpen=false" class="block text-base font-medium tx2 no-underline py-3.5 px-2 border-b bd2 t-btn hover:tx-p4" x-text="link.label"></a>
-  </template>
+  <a href="#home"     @click="menuOpen=false" class="block text-base font-medium tx2 no-underline py-3.5 px-2 border-b bd2 t-btn hover:tx-p4">Home</a>
+  <a href="#sat"      @click="menuOpen=false" class="block text-base font-medium tx2 no-underline py-3.5 px-2 border-b bd2 t-btn hover:tx-p4">SAT Prep</a>
+  <a href="#download" @click="menuOpen=false" class="block text-base font-medium tx2 no-underline py-3.5 px-2 border-b bd2 t-btn hover:tx-p4">Download</a>
   <a href="opportunities/opportunities.html" class="block text-base font-medium no-underline py-3.5 px-2 border-b bd2 t-btn" style="color:var(--p5);">🚀 Opportunities</a>
   <div class="flex gap-2.5 mt-5">
-    <button onclick="window.location.href='index.html'" class="flex-1 py-3 text-[13px] font-semibold rounded-full border bd tx2 bg-transparent cursor-pointer">Log in</button>
-    <button class="flex-1 py-3 text-[13px] font-semibold rounded-full border-none text-white grad-bg cursor-pointer">iOS Version</button>
+    <button onclick="window.location.href='chat.html'" class="flex-1 py-3 text-[13px] font-semibold rounded-full border bd tx2 bg-transparent cursor-pointer">Log in</button>
+    <button onclick="window.open('https://testflight.apple.com/join/kkxUsBqe','_blank')" class="flex-1 py-3 text-[13px] font-semibold rounded-full border-none text-white grad-bg cursor-pointer">iOS Version</button>
   </div>
 </div>
 
-<!-- ── DESIGN SHOWCASE ── -->
-<section id="design-showcase" style="position:relative;min-height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;padding-top:clamp(5.125rem,10vw,7rem);">
+<!-- ═══ HERO ═══ -->
+<section id="home" style="position:relative;min-height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;padding-top:clamp(5.125rem,10vw,7rem);padding-bottom:4rem;">
   <canvas id="design-shader-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;display:block;-webkit-mask-image:linear-gradient(to bottom,transparent 0%,black 14%,black 86%,transparent 100%);mask-image:linear-gradient(to bottom,transparent 0%,black 14%,black 86%,transparent 100%);"></canvas>
 
-  <div class="t-theme" style="position:relative;z-index:10;border:0.0625rem solid var(--bd);padding:0.5rem;width:100%;max-width:48rem;margin:0 auto;">
-    <main class="t-theme" style="position:relative;border:0.0625rem solid var(--bd);padding:2.5rem 1.25rem;overflow:hidden;text-align:center;">
-      <h1 class="tx" style="margin-bottom:0.75rem;font-size:clamp(2rem,8vw,7rem);font-weight:900;letter-spacing:-0.01em;line-height:1;">
-        <span id="design-typed-korah" style="color:#a855f7;text-shadow:0 0 1.25rem rgba(168,85,247,0.75),0 0 1.375rem rgba(168,85,247,0.55);"></span><span id="design-typed-text"></span><span class="design-typing-cursor" aria-hidden="true">|</span>
-      </h1>
-      <p class="tx2" style="padding:0 1.5rem;font-size:clamp(0.75rem,1.5vw,1.125rem);margin:0;">AI chat, SAT Math with Desmos, flashcards, and focus sessions — all in one free app.</p>
+  <div style="position:relative;z-index:10;width:100%;max-width:56rem;margin:0 auto;padding:0 1.25rem;text-align:center;">
 
-      <div style="margin:2rem 0;display:flex;align-items:center;justify-content:center;gap:0.25rem;">
-        <span style="position:relative;display:flex;height:0.75rem;width:0.75rem;align-items:center;justify-content:center;">
-          <span class="animate-ping" style="position:absolute;display:inline-flex;height:100%;width:100%;border-radius:50%;background:#22c55e;opacity:0.75;"></span>
-          <span style="position:relative;display:inline-flex;height:0.5rem;width:0.5rem;border-radius:50%;background:#22c55e;"></span>
-        </span>
-        <p style="font-size:0.75rem;color:#22c55e;margin:0;">Available for iOS and Web</p>
+    <!-- Headline -->
+    <div class="t-theme" style="border:0.0625rem solid var(--bd);padding:0.375rem;border-radius:0.75rem;display:inline-block;margin-bottom:1.5rem;width:100%;background:color-mix(in srgb, var(--bg) 55%, transparent);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);">
+      <div style="border:0.0625rem solid var(--bd);border-radius:0.5rem;padding:2.5rem 1.5rem 2rem;">
+        <h1 class="tx" style="font-size:clamp(2.25rem,7vw,5.5rem);font-weight:900;letter-spacing:-0.02em;line-height:1.05;margin:0 0 0.5rem;">
+          The Most Goated
+        </h1>
+        <h1 style="font-size:clamp(2.25rem,7vw,5.5rem);font-weight:900;letter-spacing:-0.02em;line-height:1.05;margin:0 0 1.5rem;background:linear-gradient(135deg,#a855f7,#6366f1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-shadow:none;">
+          SAT Prep App
+        </h1>
+        <p class="tx2" style="font-size:clamp(0.9rem,1.8vw,1.125rem);line-height:1.65;max-width:36rem;margin:0 auto 2rem;">
+          Start cooking on the test today. Learn Desmos and track your progress with our adaptive study system.
+        </p>
+
+        <!-- CTA -->
+        <div style="display:flex;align-items:center;justify-content:center;gap:0.75rem;flex-wrap:wrap;margin-bottom:2.5rem;">
+          <a href="sat/index.html"
+            class="tx no-underline"
+            style="display:inline-flex;align-items:center;justify-content:center;height:3.25rem;padding:0 2rem;border-radius:9999px;background:linear-gradient(135deg,#a855f7,#6366f1);color:#fff;font-size:0.9375rem;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 0 1.5rem rgba(168,85,247,0.5);transition:transform 0.3s,box-shadow 0.3s;"
+            onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 0 2.5rem rgba(168,85,247,0.7)'" onmouseout="this.style.transform='';this.style.boxShadow='0 0 1.5rem rgba(168,85,247,0.5)'">
+            Try SAT Prep &nbsp;→
+          </a>
+          <a href="chat.html"
+            class="tx no-underline"
+            style="display:inline-flex;align-items:center;justify-content:center;height:3.25rem;padding:0 2rem;border-radius:9999px;border:1px solid var(--bd);background:transparent;font-size:0.9375rem;font-weight:600;cursor:pointer;font-family:inherit;transition:transform 0.3s,border-color 0.3s;"
+            onmouseover="this.style.transform='translateY(-2px)';this.style.borderColor='var(--p4)'" onmouseout="this.style.transform='';this.style.borderColor='var(--bd)'">
+            Open Web App
+          </a>
+        </div>
+
+        <!-- Stats -->
+        <div style="display:flex;align-items:center;justify-content:center;gap:1.5rem;flex-wrap:wrap;">
+          <div style="text-align:center;">
+            <div class="hero-stat-num">3500+</div>
+            <div class="hero-stat-label">Practice Questions</div>
+          </div>
+          <div class="stat-divider hidden sm:block"></div>
+          <div style="text-align:center;">
+            <div class="hero-stat-num">Live</div>
+            <div class="hero-stat-label">Desmos Integration</div>
+          </div>
+          <div class="stat-divider hidden sm:block"></div>
+          <div style="text-align:center;">
+            <div class="hero-stat-num">1600</div>
+            <div class="hero-stat-label">Points Possible</div>
+          </div>
+          <div class="stat-divider hidden sm:block"></div>
+          <div style="text-align:center;">
+            <div class="hero-stat-num">Free</div>
+            <div class="hero-stat-label">Always</div>
+          </div>
+        </div>
       </div>
+    </div>
 
-      <!-- Release path fixed: now points to index.html -->
-      <div style="display:flex;justify-content:center; gap: 0.75rem">
-        <a href="index.html"
-          class="tx no-underline"
-          style="position:relative;height:3rem;padding:0 2rem;border-radius:9999px;border:0.0625rem solid var(--bd);background:transparent;font-size:0.875rem;font-weight:500;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;justify-content:center;transition:transform 0.3s;"
-          onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-          <!-- glass shadow overlay -->
-          <div style="position:absolute;top:0;left:0;z-index:0;height:100%;width:100%;border-radius:9999px;box-shadow:0 0 0.5rem rgba(0,0,0,.03),0 0.125rem 0.375rem rgba(0,0,0,.08),inset 0.1875rem 0.1875rem .03125rem -0.21875rem rgba(255,255,255,.09),inset -0.1875rem -0.1875rem .03125rem -0.21875rem rgba(255,255,255,.85),inset 0.0625rem 0.0625rem 0.0625rem -0.03125rem rgba(255,255,255,.6),inset -0.0625rem -0.0625rem 0.0625rem -0.03125rem rgba(255,255,255,.6),inset 0 0 0.375rem 0.375rem rgba(255,255,255,.12),inset 0 0 0.125rem 0.125rem rgba(255,255,255,.06),0 0 0.75rem rgba(0,0,0,.15);transition:all 0.3s;"></div>
-          <!-- backdrop distortion using SVG filter -->
-          <div style="position:absolute;top:0;left:0;height:100%;width:100%;overflow:hidden;border-radius:1.25rem;backdrop-filter:url('#design-glass-filter');"></div>
-          <span style="pointer-events:none;position:relative;z-index:10;">Web Version</span>
-        </a>
-
-        <a
-          href="https://testflight.apple.com/join/kkxUsBqe"
-          class="tx no-underline"
-          style="position:relative;height:3rem;padding:0 2rem;border-radius:9999px;border:0.0625rem solid var(--bd);background:transparent;font-size:0.875rem;font-weight:500;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;justify-content:center;transition:transform 0.3s;"
-          onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-          <!-- glass shadow overlay -->
-          <div style="position:absolute;top:0;left:0;z-index:0;height:100%;width:100%;border-radius:9999px;box-shadow:0 0 0.5rem rgba(0,0,0,.03),0 0.125rem 0.375rem rgba(0,0,0,.08),inset 0.1875rem 0.1875rem .03125rem -0.21875rem rgba(255,255,255,.09),inset -0.1875rem -0.1875rem .03125rem -0.21875rem rgba(255,255,255,.85),inset 0.0625rem 0.0625rem 0.0625rem -0.03125rem rgba(255,255,255,.6),inset -0.0625rem -0.0625rem 0.0625rem -0.03125rem rgba(255,255,255,.6),inset 0 0 0.375rem 0.375rem rgba(255,255,255,.12),inset 0 0 0.125rem 0.125rem rgba(255,255,255,.06),0 0 0.75rem rgba(0,0,0,.15);transition:all 0.3s;"></div>
-          <!-- backdrop distortion using SVG filter -->
-          <div style="position:absolute;top:0;left:0;height:100%;width:100%;overflow:hidden;border-radius:1.25rem;backdrop-filter:url('#design-glass-filter');"></div>
-            <span style="pointer-events:none;position:relative;z-index:10;">Download For iOS</span>
-        </a>
-
-      </div>
-    </main>
   </div>
 
   <!-- SVG glass filter definition -->
@@ -204,7 +247,7 @@
     var canvas = document.getElementById('design-shader-canvas');
     if (!canvas || typeof THREE === 'undefined') return;
 
-    var section = document.getElementById('design-showcase');
+    var section = document.getElementById('home');
     var w = section.offsetWidth, h = section.offsetHeight;
 
     var scene    = new THREE.Scene();
@@ -265,115 +308,6 @@
 }());
 </script>
 
-<!-- ── HERO ── -->
-<section id="home" class="min-h-screen flex flex-col items-center justify-center pt-[calc(70px+60px)] pb-24 px-5 md:px-[clamp(20px,6vw,80px)]" style="position:relative;">
-  <div class="relative z-10 inline-flex items-center gap-2 bg-sf2 border bd px-4 py-2 rounded-full mb-7 text-[12.5px] font-semibold tx-p5 animate-fade-up t-theme">
-    <span class="w-2 h-2 rounded-full bg-[var(--grn)] shadow-[0_0_8px_var(--grn)] animate-pulse-dot"></span>
-    Now in Early Beta — Free to Try
-  </div>
-  <h1 class="anim-delay-100-fill relative z-10 font-display text-[clamp(3rem,8vw,7.5rem)] font-black leading-none text-center tx animate-fade-up opacity-0">
-    Study Smarter,<br/><span class="grad-text">Not Harder.</span>
-  </h1>
-  <p class="anim-delay-200-fill relative z-10 text-[clamp(15px,2vw,18px)] leading-relaxed tx2 max-w-xl text-center mt-6 mb-11 animate-fade-up opacity-0">
-    Korah is your personal AI study companion. Our app is everything you need to lock in, all in one place.
-  <div class="anim-delay-400-fill relative z-10 mt-[70px] w-full max-w-[780px] animate-fade-up opacity-0">
-    <div class="bg-card border bd rounded-3xl p-7 shadow-card glass relative overflow-hidden t-theme"
-         style="border:0.09375rem solid rgba(139,92,246,0.5); box-shadow:0 0 1.875rem rgba(139,92,246,0.2); transition:transform 0.4s cubic-bezier(.23,1,.32,1);"
-         @mousemove="
-           let r=$el.getBoundingClientRect(),x=($event.clientX-r.left)/r.width,y=($event.clientY-r.top)/r.height;
-           $el.style.transform='perspective(900px) rotateX('+(-(y-0.5)*5)+'deg) rotateY('+((x-0.5)*5)+'deg) translateY(-5px)';
-           $el.querySelector('.hero-chat-glow').style.background='radial-gradient(circle at '+(x*100)+'% '+(y*100)+'%, rgba(139,92,246,0.3) 0%, transparent 60%)';
-           $el.querySelector('.hero-chat-glow').style.opacity='1';
-         "
-         @mouseleave="
-           $el.style.transform='';
-           $el.querySelector('.hero-chat-glow').style.opacity='0';
-         ">
-      <div class="hero-chat-glow absolute inset-0 pointer-events-none rounded-3xl" style="opacity:0;transition:opacity 0.3s ease;z-index:1;"></div>
-      <div class="radial-glow-bg absolute -top-[60px] -right-[60px] w-[200px] h-[200px] rounded-full bg-radial-glow pointer-events-none"></div>
-      <div class="flex items-center gap-2 mb-5">
-        <div class="mdot w-2.5 h-2.5 rounded-full"></div><div class="mdot w-2.5 h-2.5 rounded-full"></div><div class="mdot w-2.5 h-2.5 rounded-full"></div>
-        <div class="flex-1 text-center text-[12px] font-medium tx3 bg-sf2 border bd2 px-4 py-1 rounded-lg mx-auto max-w-[200px]">Korah AI Chat</div>
-      </div>
-      <div class="flex flex-col gap-3" id="heroChatStream">
-        <div class="self-end max-w-[80%] px-4 py-3 rounded-[18px_18px_4px_18px] text-sm leading-relaxed bg-[var(--cu)] border bd tx">I have 3 assignments and a test tomorrow. I'm kinda burnt out.</div>
-        <div class="self-start max-w-[80%] px-4 py-3 rounded-[18px_18px_18px_4px] text-sm leading-relaxed bg-[var(--ca)] border bd tx">
-          <div class="flex items-center gap-1.5 text-[11px] font-bold tracking-[1px] tx-p4 uppercase mb-1.5"><span class="w-1.5 h-1.5 rounded-full bg-p4 animate-pulse-dot"></span>Korah AI</div>
-          Got it — sounds like a yellow focus day 🟡. Let's not overwhelm you. I'd suggest tackling your <strong>one easy task</strong> now to build momentum, and I'll remind you about the test in the morning. Want me to generate a quick study guide?
-        </div>
-        <div class="self-end max-w-[80%] px-4 py-3 rounded-[18px_18px_4px_18px] text-sm leading-relaxed bg-[var(--cu)] border bd tx">Yes, make a study guide for Chapter 5 — Photosynthesis.</div>
-        <div id="hero-typing" class="self-start flex gap-1 items-center px-4 py-3.5 bg-[var(--ca)] border bd rounded-[18px_18px_18px_4px]">
-          <span class="w-1.5 h-1.5 rounded-full bg-p4 animate-tbounce"></span>
-          <span class="anim-delay-200 w-1.5 h-1.5 rounded-full bg-p4 animate-tbounce"></span>
-          <span class="anim-delay-400 w-1.5 h-1.5 rounded-full bg-p4 animate-tbounce"></span>
-        </div>
-      </div>
-    </div>
-    <div class="hero-floats absolute inset-0 pointer-events-none hidden lg:block">
-       <div class="float-card float-card-1 absolute bg-card border bd rounded-2xl px-4 py-3.5 glass shadow-card flex items-center gap-3 text-[13px] font-medium tx whitespace-nowrap t-theme"
-           style="border:0.09375rem solid rgba(139,92,246,0.5);box-shadow:0 0 1.25rem rgba(139,92,246,0.25);transition:transform 0.3s cubic-bezier(.23,1,.32,1);"
-           @mousemove="
-             let r=$el.getBoundingClientRect(),x=($event.clientX-r.left)/r.width,y=($event.clientY-r.top)/r.height;
-             $el.style.transform='perspective(500px) rotateX('+(-(y-0.5)*8)+'deg) rotateY('+((x-0.5)*8)+'deg) translateY(-4px) scale(1.04)';
-           "
-           @mouseleave="$el.style.transform='';">
-        <span class="text-2xl">🔥</span>
-        <div><div class="text-[11px] tx3">Study Streak</div><div class="text-base font-bold tx-p5">14 days</div></div>
-      </div>
-
-      <div class="float-card float-card-2 absolute bg-card border bd rounded-2xl px-4 py-3.5 glass shadow-card flex items-center gap-3 text-[13px] font-medium tx whitespace-nowrap t-theme"
-           style="border:0.09375rem solid rgba(139,92,246,0.5);box-shadow:0 0 1.25rem rgba(139,92,246,0.25);transition:transform 0.3s cubic-bezier(.23,1,.32,1);"
-           @mousemove="
-             let r=$el.getBoundingClientRect(),x=($event.clientX-r.left)/r.width,y=($event.clientY-r.top)/r.height;
-             $el.style.transform='perspective(500px) rotateX('+(-(y-0.5)*8)+'deg) rotateY('+((x-0.5)*8)+'deg) translateY(-4px) scale(1.04)';
-           "
-           @mouseleave="$el.style.transform='';">
-        <span class="text-2xl">⚠️</span>
-        <div><div class="text-[11px] tx3">Overdue Tasks</div><div class="tx-mr text-base font-bold">2 tasks</div></div>
-      </div>
-    </div>
-  </div>
-  <div class="anim-delay-800-fill absolute bottom-9 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5 text-[11px] tracking-[2px] tx3 uppercase animate-fade-up opacity-0">
-    <div class="w-px h-10 bg-gradient-to-b from-p4 to-transparent scroll-line"></div>
-  </div>
-</section>
-
-<!-- ── HOW IT WORKS ── -->
-<section id="how" class="flex flex-col items-center py-24 px-5 md:px-[clamp(20px,6vw,80px)] bg-base2 t-theme">
-  <div class="inline-flex items-center gap-2 bg-sf2 border bd px-4 py-1.5 rounded-full text-[11px] font-bold tracking-[2.5px] uppercase tx-p4 mb-5 reveal t-theme"><span class="dot w-1.5 h-1.5 rounded-full bg-p4"></span>Simple Process</div>
-  <h2 class="font-display text-[clamp(2rem,5vw,3.6rem)] font-bold text-center tx leading-tight mb-3.5 reveal">Why Should I Use Korah?</h2>
-  <p class="text-base leading-relaxed tx2 text-center max-w-lg mx-auto mb-14 reveal">Stop using A.I. apps that don't help you learn. Korah's got you covered.</p>
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full max-w-[1020px]">
-    <div class="tilt-card step-card bg-card border bd2 rounded-3xl p-9 relative overflow-hidden t-hover t-theme reveal rd1">
-      <div class="step-num font-display text-6xl font-black leading-none mb-5">01</div>
-      <img src="assests/ai_effect.svg" alt="" class="w-10 h-10 mb-4 object-contain korah-icon"/>      <h3 class="text-lg font-bold mb-2.5 tx">Personalized Learning</h3>
-      <p class="text-sm tx2 leading-[1.7]">Get AI-powered explanations tailored to your questions, whether through text or voice conversations that adapt to your learning style.</p>
-    </div>
-    <div class="tilt-card step-card bg-card border bd2 rounded-3xl p-9 relative overflow-hidden t-hover t-theme reveal rd2">
-      <div class="step-num font-display text-6xl font-black leading-none mb-5">02</div>
-      <img src="assests/happy_face.svg" alt="" class="w-10 h-10 mb-4 object-contain korah-icon"/>
-      <h3 class="text-lg font-bold mb-2.5 tx">Smart Study Materials
-</h3>
-      <p class="text-sm tx2 leading-[1.7]">Instantly generate flashcards, study guides, and practice tests from your course content, or create them manually—saving you hours of preparation time.
-      </p>
-    </div>
-    <div class="tilt-card step-card bg-card border bd2 rounded-3xl p-9 relative overflow-hidden t-hover t-theme reveal rd3">
-      <div class="step-num font-display text-6xl font-black leading-none mb-5">03</div>
-      <img src="assests/3_dot.svg" alt="" class="w-10 h-10 mb-4 object-contain korah-icon"/>
-      <h3 class="text-lg font-bold mb-2.5 tx">All-in-One Study Hub </h3>
-      <p class="text-sm tx2 leading-[1.7]">Keep everything organized in one place—your tasks, study materials, scanned notes, and AI tutor—so you spend less time organizing and more time learning.
-    </p>
-    </div>
-    <div class="tilt-card step-card bg-card border bd2 rounded-3xl p-9 relative overflow-hidden t-hover t-theme reveal rd4">
-      <div class="step-num font-display text-6xl font-black leading-none mb-5">04</div>
-      <img src="assests/world.svg" alt="" class="w-10 h-10 mb-4 object-contain korah-icon"/>
-      <h3 class="text-lg font-bold mb-2.5 tx">SAT &amp; Test Prep</h3>
-      <p class="text-sm tx2 leading-[1.7]">Practice with a built-in SAT question bank and chat with Korah's SAT Math AI — complete with a live Desmos graph for regressions, graphing, and solving problems visually.
-      </p>
-    </div>
-  </div>
-</section>
-
 <!-- ── SAT PREP ── -->
 <section id="sat" class="flex flex-col items-center py-24 px-5 md:px-[clamp(20px,6vw,80px)] bg-base t-theme">
   <div class="inline-flex items-center gap-2 bg-sf2 border bd px-4 py-1.5 rounded-full text-[11px] font-bold tracking-[2.5px] uppercase tx-p4 mb-5 reveal t-theme"><span class="dot w-1.5 h-1.5 rounded-full bg-p4"></span>SAT Prep</div>
@@ -430,490 +364,143 @@
   </div>
 </section>
 
-<!-- ── FEATURES BENTO ── -->
-<section id="features" class="flex flex-col items-center py-24 px-5 md:px-[clamp(20px,6vw,80px)] bg-base t-theme">
-  <div class="inline-flex items-center gap-2 bg-sf2 border bd px-4 py-1.5 rounded-full text-[11px] font-bold tracking-[2.5px] uppercase tx-p4 mb-5 reveal t-theme"><span class="dot w-1.5 h-1.5 rounded-full bg-p4"></span>Features</div>
-  <h2 class="font-display text-[clamp(2rem,5vw,3.6rem)] font-bold text-center tx leading-tight mb-3.5 reveal">Built Around How You Actually Feel</h2>
-  <p class="text-base leading-relaxed tx2 text-center max-w-lg mx-auto mb-14 reveal">Korah doesn't just assign you tasks — it reads your energy and builds your day around it.</p>
-
-  <div class="grid grid-cols-12 gap-4 w-full max-w-[1060px]">
-
-    <!-- Mood — wide -->
-    <div class="tilt-card col-span-12 md:col-span-8 bg-card border bd2 rounded-3xl p-8 overflow-hidden relative t-hover t-theme reveal">
-      <div class="w-13 h-13 rounded-2xl grad-bg grid place-items-center text-2xl mb-5 shadow-glow">🎨</div>
-      <h3 class="text-[19px] font-bold mb-2.5 tx">Mood-Based Recommendations</h3>
-      <p class="text-sm tx2 leading-[1.7] mb-4">Three focus colors — green, yellow, red — tell Korah how much you can handle today. It filters and ranks your tasks accordingly.</p>
-      <div class="bg-sf2 border bd2 rounded-2xl p-4 t-theme">
-        <div class="text-xs tx3 mb-2.5">How are you feeling today?</div>
-        <div class="flex gap-2.5" x-data="moodWidget()">
-          <button @click="select('gm')" :class="active==='gm' && 'active'" class="mood-btn gm flex-1 p-3 rounded-xl border-2 cursor-pointer text-[13px] font-semibold bg-sf2 flex flex-col items-center gap-1 t-btn hover:-translate-y-0.5" style="border-color:var(--mg);color:var(--mg)">
-            <span class="text-xl">🟢</span><span>Full Focus</span>
-          </button>
-          <button @click="select('ym')" :class="active==='ym' && 'active'" class="mood-btn ym flex-1 p-3 rounded-xl border-2 cursor-pointer text-[13px] font-semibold bg-sf2 flex flex-col items-center gap-1 t-btn hover:-translate-y-0.5" style="border-color:var(--my);color:var(--my)">
-            <span class="text-xl">🟡</span><span>Moderate</span>
-          </button>
-          <button @click="select('rm')" :class="active==='rm' && 'active'" class="mood-btn rm flex-1 p-3 rounded-xl border-2 cursor-pointer text-[13px] font-semibold bg-sf2 flex flex-col items-center gap-1 t-btn hover:-translate-y-0.5" style="border-color:var(--mr);color:var(--mr)">
-            <span class="text-xl">🔴</span><span>Low Energy</span>
-          </button>
-        </div>
-        <div class="mt-3.5 text-[13px] font-semibold" :style="{color: moodColor}" x-text="moodMsg"></div>
-      </div>
-    </div>
-
-    <!-- Streaks -->
-    <div class="tilt-card col-span-12 md:col-span-4 bg-card border bd2 rounded-3xl p-8 overflow-hidden relative t-hover t-theme reveal rd1">
-      <div class="w-13 h-13 rounded-2xl grad-bg grid place-items-center text-2xl mb-5 shadow-glow">🔥</div>
-      <h3 class="text-[19px] font-bold mb-2.5 tx">Daily Streaks</h3>
-      <p class="text-sm tx2 leading-[1.7] mb-4">Study every day, no matter how little. Korah rewards consistency and builds your habits.</p>
-      <div class="bg-sf2 border bd2 rounded-2xl p-4 t-theme mb-3">
-        <div class="text-xs tx3 mb-2">This week</div>
-        <div class="flex gap-1.5" id="streakRow"></div>
-        <div class="text-xs tx-gold mt-2.5 font-semibold">🔥 14-day streak!</div>
-      </div>
-    </div>
-
-    <!-- Left column: Tasks + Timer stacked, Image on right -->
-    <div class="col-span-12 md:col-span-8 flex flex-col gap-4">
-
-      <!-- Tasks -->
-      <div class="tilt-card bg-card border bd2 rounded-3xl p-8 overflow-hidden relative t-hover t-theme reveal rd2">
-        <div class="w-13 h-13 rounded-2xl grad-bg grid place-items-center text-2xl mb-5 shadow-glow">📋</div>
-        <h3 class="text-[19px] font-bold mb-2.5 tx">Smart Task Manager</h3>
-        <p class="text-sm tx2 leading-[1.7] mb-4">Create tasks, pick difficulty, set a due date, and let Korah handle the rest — prioritization, overdue alerts, and daily suggestions included.</p>
-        <div class="bg-sf2 border bd2 rounded-2xl p-4 t-theme">
-          <div class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl mb-2 bg-sf border bd2 t-theme">
-            <div class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background:var(--mg)"></div>
-            <span class="flex-1 text-[13px] tx">Review Chapter 3 notes</span>
-            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-[1px] bg-[rgba(34,197,94,.18)] text-[#22c55e]">Easy</span>
-          </div>
-          <div class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl mb-2 bg-sf border bd2 t-theme">
-            <div class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background:var(--my)"></div>
-            <span class="flex-1 text-[13px] tx">Write essay outline — History</span>
-            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-[1px] bg-[rgba(234,179,8,.18)] text-[#eab308]">Medium</span>
-          </div>
-          <div class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl mb-2 overdue border t-theme">
-            <div class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background:var(--mr)"></div>
-            <span class="flex-1 text-[13px] tx">Submit Biology lab report</span>
-            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-[1px] bg-[rgba(239,68,68,.18)] text-[#ef4444]">Overdue ⚠️</span>
-          </div>
-          <div class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-sf border bd2 t-theme">
-            <div class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background:var(--mr)"></div>
-            <span class="flex-1 text-[13px] tx">Calculus problem set — Unit 5</span>
-            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-[1px] bg-[rgba(239,68,68,.18)] text-[#ef4444]">Hard</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Timer -->
-      <div class="tilt-card bg-card border bd2 rounded-3xl p-8 overflow-hidden relative t-hover t-theme reveal" x-data="timer()">
-        <div class="w-13 h-13 rounded-2xl grad-bg grid place-items-center text-2xl mb-5 shadow-glow">⏱️</div>
-        <h3 class="text-[19px] font-bold mb-2.5 tx">Custom Focus Sessions</h3>
-        <p class="text-sm tx2 leading-[1.7] mb-4">Pick any duration. Korah locks you in and tracks every session.</p>
-        <div class="bg-sf2 border bd2 rounded-2xl p-4 text-center t-theme">
-          <div class="text-xs tx3 mb-3">Current session</div>
-          <div class="timer-display text-5xl font-black tx" x-text="display"></div>
-          <div class="flex justify-center gap-2 mt-3.5 flex-wrap">
-            <template x-for="m in [10,25,45,90]" :key="m">
-              <button @click="setMin(m)" :class="curMin===m ? 'bg-p4 text-white border-p4' : 'bg-transparent tx2 bd'" class="text-xs font-semibold px-3.5 py-1.5 rounded-full border cursor-pointer t-btn" x-text="m+' min'"></button>
-            </template>
-          </div>
-          <div class="flex justify-center gap-2.5 mt-3">
-            <button @click="toggle()" class="text-[13px] font-semibold px-5 py-2 rounded-full border-none text-white grad-bg cursor-pointer shadow-glow t-btn" x-text="running ? '⏸ Pause' : '▶ Start'"></button>
-            <button @click="reset()" class="text-[13px] font-semibold px-5 py-2 rounded-full border bd tx2 bg-transparent cursor-pointer t-btn">↺ Reset</button>
-          </div>
-        </div>
-      </div>
-
-    </div><!-- /left column -->
-
-    <!-- Right column: Image -->
-    <div class="tilt-card col-span-12 md:col-span-4 bg-card border bd2 rounded-3xl overflow-hidden relative t-hover t-theme reveal rd1 flex items-center justify-center" style="min-height:31.25rem;">
-    <div class="absolute inset-0 pointer-events-none" style="background:radial-gradient(ellipse at 50% 50%,var(--glow),transparent 70%)"></div>
-    <div class="relative z-10 w-[75%]"
-        style="transition:transform 0.4s cubic-bezier(.23,1,.32,1);"
-        @mousemove="
-          let r=$el.getBoundingClientRect(),x=($event.clientX-r.left)/r.width,y=($event.clientY-r.top)/r.height;
-          $el.style.transform='perspective(700px) rotateX('+(-(y-0.5)*10)+'deg) rotateY('+((x-0.5)*10)+'deg) translateY(-6px)';
-        "
-        @mouseleave="$el.style.transform='perspective(700px) rotateX(0deg) rotateY(0deg) translateY(0)';">
-      <div class="rounded-2xl pointer-events-none" style="opacity:0;transition:opacity 0.3s ease;z-index:1;mix-blend-mode:normal;"></div>
-      <img src="assests/Hello user (Korah app).PNG" alt="A home screen of the korah app that welcomes the student, displays their daily streak, they're tasks and evn prompts them if they want to create a task or do a focus session" class="w-full h-auto max-h-full object-contain rounded-3xl animate-float rounded-[30px]" style="box-shadow:0 1.25rem 3.75rem rgba(0,0,0,.5),0 0 1.875rem var(--glow);"/>
-    </div>
-  </div>
-
-  </div>
-</section>
-
-<!-- ── STUDY TOOLS ── -->
-<section id="study-tools" class="flex flex-col items-center py-24 px-5 md:px-[clamp(20px,6vw,80px)] bg-base3 t-theme" x-data="studyTools()">
-  <div class="inline-flex items-center gap-2 bg-sf2 border bd px-4 py-1.5 rounded-full text-[11px] font-bold tracking-[2.5px] uppercase tx-p4 mb-5 reveal t-theme"><span class="dot w-1.5 h-1.5 rounded-full bg-p4"></span>Study Tools</div>
-  <h2 class="font-display text-[clamp(2rem,5vw,3.6rem)] font-bold text-center tx leading-tight mb-3.5 reveal">Flashcards, Study Guides &amp; Practice Tests</h2>
-  <p class="text-base leading-relaxed tx2 text-center max-w-lg mx-auto mb-9 reveal">Create them manually, or let Korah AI generate them in seconds (Manual or AI generated are only available if signed up in our website or in the beta app).</p>
-
-  <div class="flex gap-1.5 bg-sf2 border bd2 rounded-full p-1.5 mb-9 flex-wrap justify-center reveal">
-    <template x-for="tab in tabs" :key="tab.id">
-      <button @click="activeTab=tab.id" :class="activeTab===tab.id ? 'grad-bg text-white shadow-glow' : 'bg-transparent tx2 hover:bg-[var(--bd)] hover:tx-p4'"
-              class="text-[13.5px] font-semibold px-5 py-2.5 rounded-full border-none cursor-pointer t-btn whitespace-nowrap" x-text="tab.label"></button>
-    </template>
-  </div>
-
-  <!-- FLASHCARDS TAB -->
-  <div class="w-full max-w-[1060px]" x-show="activeTab==='flashcards'" x-transition:enter="animate-fade-up">
-    <div class="bg-card border bd rounded-3xl p-7 t-theme">
-      <h3 class="text-lg font-bold tx mb-6">Flashcard Deck — Photosynthesis</h3>
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
-        <template x-for="(card,i) in sampleCards" :key="i">
-          <div style="height:12.5rem; border:0.09375rem solid rgba(139,92,246,0.5); border-radius:1rem; position:relative; transition:transform 0.6s cubic-bezier(.23,1,.32,1);"
-              @mousemove="
-                let r = $el.getBoundingClientRect();
-                let x = (($event.clientX - r.left) / r.width);
-                let y = (($event.clientY - r.top) / r.height);
-                let rx = (y - 0.5) * -7;
-                let ry = (x - 0.5) * 7;
-                $el.style.transform = 'perspective(700px) rotateX(' + rx + 'deg) rotateY(' + ry + 'deg) translateY(-5px)';
-                $el.querySelector('.card-glow').style.background = 'radial-gradient(circle at ' + (x*100) + '% ' + (y*100) + '%, rgba(139,92,246,0.35) 0%, transparent 65%)';
-                $el.querySelector('.card-glow').style.opacity = '1';
-              "
-              @mouseleave="
-                $el.style.transform = 'perspective(700px) rotateX(0deg) rotateY(0deg) translateY(0)';
-                $el.querySelector('.card-glow').style.opacity = '0';
-              ">
-
-            <div class="card-glow absolute inset-0 rounded-2xl pointer-events-none" style="opacity:0; transition:opacity 0.3s ease; z-index:10; mix-blend-mode:normal;"></div>
-
-            <div @click="
-                  let inner = $el.querySelector('.flip-inner');
-                  let isFlipped = inner.dataset.flipped === 'true';
-                  let front = inner.querySelector('.flip-front');
-                  let back = inner.querySelector('.flip-back');
-
-                  if (!isFlipped) {
-                    // Phase 1: rotate front to 90deg (half flip)
-                    front.style.transition = 'transform 0.15s cubic-bezier(.4,0,1,1)';
-                    front.style.transform = 'perspective(700px) rotateY(90deg)';
-                    setTimeout(() => {
-                      front.style.display = 'none';
-                      back.style.display = 'flex';
-                      // Phase 2: start back from -90deg, rotate to 0
-                      back.style.transition = 'none';
-                      back.style.transform = 'perspective(700px) rotateY(-90deg)';
-                      requestAnimationFrame(() => {
-                        requestAnimationFrame(() => {
-                          back.style.transition = 'transform 0.15s cubic-bezier(0,0,.6,1)';
-                          back.style.transform = 'perspective(700px) rotateY(0deg)';
-                        });
-                      });
-                    }, 150);
-                  } else {
-                    // Phase 1: rotate back to 90deg
-                    back.style.transition = 'transform 0.3s cubic-bezier(.4,0,1,1)';
-                    back.style.transform = 'perspective(700px) rotateY(90deg)';
-                    setTimeout(() => {
-                      back.style.display = 'none';
-                      front.style.display = 'flex';
-                      front.style.transition = 'none';
-                      front.style.transform = 'perspective(700px) rotateY(-90deg)';
-                      requestAnimationFrame(() => {
-                        requestAnimationFrame(() => {
-                          front.style.transition = 'transform 0.3s cubic-bezier(0,0,.6,1)';
-                          front.style.transform = 'perspective(700px) rotateY(0deg)';
-                        });
-                      });
-                    }, 150);
-                  }
-
-                  inner.dataset.flipped = (!isFlipped).toString();
-                  sampleCards.splice(i,1,{...card,flipped:!card.flipped});
-                "
-                class="cursor-pointer relative w-full h-full rounded-2xl overflow-hidden">
-
-              <div class="flip-inner w-full h-full" data-flipped="false">
-
-                <!-- Front -->
-                <div class="flip-front absolute inset-0 px-8 py-7 flex flex-col justify-between"
-                    style="transform:perspective(700px) rotateY(0deg); background:linear-gradient(145deg,var(--bg2),var(--bg3));">
-                  <span class="text-[10px] font-bold tracking-[2px] uppercase tx-p4 flex items-center gap-1.5">
-                    <span class="w-1.5 h-1.5 rounded-full bg-p4"></span>Flashcard
-                  </span>
-                  <p class="text-[17px] font-bold tx text-center leading-snug" x-text="card.q"></p>
-                  <span class="text-[10px] tx3 text-center">Click to reveal answer</span>
-                </div>
-
-                <!-- Back (hidden initially) -->
-                <div class="flip-back absolute inset-0 px-8 py-7 flex-col justify-between t-theme"
-                    style="display:none; transform:perspective(700px) rotateY(-90deg); background:var(--bg2);">
-                  <span class="text-[10px] font-bold tracking-[2px] uppercase tx-p4 flex items-center gap-1.5">
-                    <span class="w-1.5 h-1.5 rounded-full bg-p4"></span>Answer
-                  </span>
-                  <p class="text-[15px] font-medium tx text-center leading-relaxed" x-html="card.a"></p>
-                  <span class="text-[10px] tx3 text-center">Click to flip back</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </template>
-      </div>
-    </div>
-  </div>
-
-<!-- STUDY GUIDE TAB -->
-<div class="w-full max-w-[860px]" x-show="activeTab==='studyguide'" x-transition:enter="animate-fade-up">
-  <div class="bg-card border bd rounded-3xl p-7 t-theme">
-    <h3 class="text-lg font-bold tx mb-5">Study Guide</h3>
-    <div class="flex flex-col gap-4">
-
-      <div class="relative rounded-2xl p-6 overflow-hidden cursor-default t-theme"
-           style="border:0.09375rem solid rgba(139,92,246,0.4); box-shadow:0 0 1.25rem rgba(139,92,246,0.15); transition:transform 0.4s cubic-bezier(.23,1,.32,1); background:var(--bg2);"
-           @mousemove="
-             let r=$el.getBoundingClientRect(),x=($event.clientX-r.left)/r.width,y=($event.clientY-r.top)/r.height;
-             $el.style.transform='perspective(700px) rotateX('+(-(y-0.5)*6)+'deg) rotateY('+((x-0.5)*6)+'deg) translateY(-4px)';
-             $el.querySelector('.sg-glow').style.background='radial-gradient(circle at '+(x*100)+'% '+(y*100)+'%, rgba(139,92,246,0.35) 0%, transparent 65%)';
-             $el.querySelector('.sg-glow').style.opacity='1';
-           "
-           @mouseleave="$el.style.transform='perspective(700px) rotateX(0deg) rotateY(0deg)';$el.querySelector('.sg-glow').style.opacity='0';">
-        <div class="sg-glow absolute inset-0 rounded-2xl pointer-events-none" style="opacity:0;transition:opacity 0.3s ease;z-index:0;mix-blend-mode:normal;"></div>
-        <div class="relative z-10">
-          <h4 class="text-[15px] font-bold tx-p4 mb-2">📌 Topic: Cell Biology — Mitosis</h4>
-          <p class="text-sm tx2 leading-relaxed">Mitosis is cell division producing two genetically identical daughter cells for growth, repair and asexual reproduction.</p>
-        </div>
-      </div>
-
-      <div class="relative rounded-2xl p-6 overflow-hidden cursor-default t-theme"
-           style="border:0.09375rem solid rgba(139,92,246,0.4); box-shadow:0 0 1.25rem rgba(139,92,246,0.15); transition:transform 0.4s cubic-bezier(.23,1,.32,1); background:var(--bg2);"
-           @mousemove="
-             let r=$el.getBoundingClientRect(),x=($event.clientX-r.left)/r.width,y=($event.clientY-r.top)/r.height;
-             $el.style.transform='perspective(700px) rotateX('+(-(y-0.5)*6)+'deg) rotateY('+((x-0.5)*6)+'deg) translateY(-4px)';
-             $el.querySelector('.sg-glow').style.background='radial-gradient(circle at '+(x*100)+'% '+(y*100)+'%, rgba(139,92,246,0.35) 0%, transparent 65%)';
-             $el.querySelector('.sg-glow').style.opacity='1';
-           "
-           @mouseleave="$el.style.transform='perspective(700px) rotateX(0deg) rotateY(0deg)';$el.querySelector('.sg-glow').style.opacity='0';">
-        <div class="sg-glow absolute inset-0 rounded-2xl pointer-events-none" style="opacity:0;transition:opacity 0.3s ease;z-index:0;mix-blend-mode:normal;"></div>
-        <div class="relative z-10">
-          <h4 class="text-[15px] font-bold tx-p4 mb-2">🔑 Key Stages (PMAT)</h4>
-          <ul class="pl-4 text-sm tx2 list-disc space-y-1">
-            <li><strong class="tx">Prophase</strong> — Chromosomes condense, spindle forms</li>
-            <li><strong class="tx">Metaphase</strong> — Chromosomes align at cell equator</li>
-            <li><strong class="tx">Anaphase</strong> — Chromatids pulled to opposite poles</li>
-            <li><strong class="tx">Telophase</strong> — Nuclear envelopes reform, cell divides</li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="relative rounded-2xl p-6 overflow-hidden cursor-default t-theme"
-           style="border:0.09375rem solid rgba(139,92,246,0.4); box-shadow:0 0 1.25rem rgba(139,92,246,0.15); transition:transform 0.4s cubic-bezier(.23,1,.32,1); background:var(--bg2);"
-           @mousemove="
-             let r=$el.getBoundingClientRect(),x=($event.clientX-r.left)/r.width,y=($event.clientY-r.top)/r.height;
-             $el.style.transform='perspective(700px) rotateX('+(-(y-0.5)*6)+'deg) rotateY('+((x-0.5)*6)+'deg) translateY(-4px)';
-             $el.querySelector('.sg-glow').style.background='radial-gradient(circle at '+(x*100)+'% '+(y*100)+'%, rgba(139,92,246,0.35) 0%, transparent 65%)';
-             $el.querySelector('.sg-glow').style.opacity='1';
-           "
-           @mouseleave="$el.style.transform='perspective(700px) rotateX(0deg) rotateY(0deg)';$el.querySelector('.sg-glow').style.opacity='0';">
-        <div class="sg-glow absolute inset-0 rounded-2xl pointer-events-none" style="opacity:0;transition:opacity 0.3s ease;z-index:0;mix-blend-mode:normal;"></div>
-        <div class="relative z-10">
-          <h4 class="text-[15px] font-bold tx-p4 mb-2">💡 Remember</h4>
-          <p class="text-sm tx2">Mnemonic: <strong class="tx">PMAT</strong> — "People Meet And Talk"</p>
-        </div>
-      </div>
-
-      <div class="relative rounded-2xl p-6 overflow-hidden cursor-default t-theme"
-           style="border:0.09375rem solid rgba(139,92,246,0.4); box-shadow:0 0 1.25rem rgba(139,92,246,0.15); transition:transform 0.4s cubic-bezier(.23,1,.32,1); background:var(--bg2);"
-           @mousemove="
-             let r=$el.getBoundingClientRect(),x=($event.clientX-r.left)/r.width,y=($event.clientY-r.top)/r.height;
-             $el.style.transform='perspective(700px) rotateX('+(-(y-0.5)*6)+'deg) rotateY('+((x-0.5)*6)+'deg) translateY(-4px)';
-             $el.querySelector('.sg-glow').style.background='radial-gradient(circle at '+(x*100)+'% '+(y*100)+'%, rgba(139,92,246,0.35) 0%, transparent 65%)';
-             $el.querySelector('.sg-glow').style.opacity='1';
-           "
-           @mouseleave="$el.style.transform='perspective(700px) rotateX(0deg) rotateY(0deg)';$el.querySelector('.sg-glow').style.opacity='0';">
-        <div class="sg-glow absolute inset-0 rounded-2xl pointer-events-none" style="opacity:0;transition:opacity 0.3s ease;z-index:0;mix-blend-mode:normal;"></div>
-        <div class="relative z-10">
-          <h4 class="text-[15px] font-bold tx-p4 mb-2">⚠️ Common Mistakes</h4>
-          <ul class="pl-4 text-sm tx2 list-disc space-y-1">
-            <li>Confusing <strong class="tx">mitosis</strong> (growth) with <strong class="tx">meiosis</strong> (reproduction)</li>
-            <li>Forgetting cytokinesis follows telophase</li>
-          </ul>
-        </div>
-      </div>
-
-    </div>
-  </div>
-</div>
-
-<!-- PRACTICE TEST TAB -->
-<div class="w-full max-w-[860px]" x-show="activeTab==='practicetest'" x-transition:enter="animate-fade-up">
-  <div class="bg-card border bd rounded-3xl p-7 t-theme">
-    <h3 class="text-lg font-bold tx mb-2">Practice Test</h3>
-    <div class="text-[13px] tx2 mb-5">Topic: <strong class="tx">Photosynthesis</strong> · Click an answer to check it.</div>
-    <template x-for="(q,qi) in sampleTest" :key="qi">
-      <div class="relative rounded-2xl p-5 mb-4 t-theme"
-           style="border:0.09375rem solid rgba(139,92,246,0.4); box-shadow:0 0 1.25rem rgba(139,92,246,0.15); background:var(--bg2);">
-        <div class="text-sm font-semibold tx mb-3" x-text="(qi+1)+'. '+q.q"></div>
-        <div class="flex flex-col gap-2">
-          <template x-for="(opt,oi) in q.opts" :key="oi">
-            <div @click="answerQ(q,oi)"
-                 :class="q.answered!=null ? (oi===q.c ? 'border-green-500 bg-green-500/10 text-green-500' : (oi===q.answered ? 'border-red-500 bg-red-500/10 text-red-400' : 'opacity-40')) : 'hover:border-p4 hover:tx-p4 hover:bg-[var(--bd2)]'"
-                 class="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border bd2 cursor-pointer tx2 text-[13.5px] t-btn transition-all duration-200">
-              <span class="w-6 h-6 rounded-full bg-[var(--bd)] grid place-items-center text-xs font-bold flex-shrink-0 tx" x-text="'ABCD'[oi]"></span>
-              <span x-text="opt"></span>
-            </div>
-          </template>
-        </div>
-      </div>
-    </template>
-  </div>
-</div>
-</section>
-
-<!-- ── CHAT ── -->
-<section id="chat" class="flex flex-col items-center py-24 px-5 md:px-[clamp(20px,6vw,80px)] bg-base2 t-theme" x-data="chatWidget()">
-  <div class="inline-flex items-center gap-2 bg-sf2 border bd px-4 py-1.5 rounded-full text-[11px] font-bold tracking-[2.5px] uppercase tx-p4 mb-5 reveal t-theme"><span class="dot w-1.5 h-1.5 rounded-full bg-p4"></span>Live Demo</div>
-  <h2 class="font-display text-[clamp(2rem,5vw,3.6rem)] font-bold text-center tx leading-tight mb-3.5 reveal">Chat with Korah AI — Right Now</h2>
-
-  <p class="text-base leading-relaxed tx2 text-center max-w-lg mx-auto mb-9 reveal">No sign-up needed. Ask anything, request a quiz, or get help planning your study day.</p>
-  <div class="w-full max-w-[1100px] mx-auto reveal">
-    <div class="flex flex-col lg:flex-row gap-10 items-center">
-
-      <!-- Phone mockup — swap src with your file -->
-      <div class="w-full lg:w-[280px] flex-shrink-0 flex justify-center relative">
-      <div class="absolute inset-0 rounded-3xl pointer-events-none" style="background:radial-gradient(ellipse at center,var(--glow) 0%,transparent 70%);filter:blur(1.25rem);transform:scale(1.1)"></div>
-      <div class="relative z-10 w-full max-w-[260px] lg:max-w-full"
-          style="transition:transform 0.4s cubic-bezier(.23,1,.32,1);"
-          @mousemove="
-          let r=$el.getBoundingClientRect(),x=($event.clientX-r.left)/r.width,y=($event.clientY-r.top)/r.height;
-          $el.style.transform='perspective(700px) rotateX('+(-(y-0.5)*10)+'deg) rotateY('+((x-0.5)*10)+'deg) translateY(-6px)';
-        "
-        @mouseleave="$el.style.transform='perspective(700px) rotateX(0deg) rotateY(0deg) translateY(0)';">
-        <div class="rounded-3xl pointer-events-none" style="opacity:0;transition:opacity 0.3s ease;z-index:1;mix-blend-mode:normal;"></div>
-        <img src="assests/Korah AI App.PNG" alt="Korah AI explaining to the user what circular motion is. " class="w-full rounded-3xl object-cover animate-float" style="box-shadow:0 1.875rem 5rem rgba(0,0,0,.5),0 0 2.5rem var(--glow);"/>
-      </div>
-    </div>
-
-      <div class="flex-1 min-w-0">
-    <div class="bg-card border bd rounded-3xl overflow-hidden t-theme"
-     style="border:0.09375rem solid rgba(139,92,246,0.5); box-shadow:0 0 1.25rem rgba(139,92,246,0.2); transition:transform 0.4s cubic-bezier(.23,1,.32,1); position:relative;"
-     @mousemove="
-       let r=$el.getBoundingClientRect(),x=($event.clientX-r.left)/r.width,y=($event.clientY-r.top)/r.height;
-       $el.style.transform='perspective(900px) rotateX('+(-(y-0.5)*4)+'deg) rotateY('+((x-0.5)*4)+'deg) translateY(-4px)';
-     "
-     @mouseleave="
-       $el.style.transform='perspective(900px) rotateX(0deg) rotateY(0deg) translateY(0)';
-       $el.querySelector('.chat-glow').style.opacity='0';
-     ">
-      <div class="px-6 py-5 border-b bd2 flex items-center gap-3 bg-sf2 t-theme relative z-[2]">
-        <div class="w-10 h-10 rounded-xl grad-bg flex items-center justify-center shadow-glow overflow-hidden flex-shrink-0">
-          <img src="logo.png" class="w-full h-full object-cover"/>
-        </div>
-          <div>
-          <!--Todo-->
-          <!--Need to add Korah image here-->
-          <div class="font-bold tx text-[15px]">Korah AI</div>
-          <div class="text-xs text-[var(--grn)] flex items-center gap-1.5 before:content-[''] before:w-1.5 before:h-1.5 before:rounded-full before:bg-[var(--grn)] before:inline-block">Online — Ready to help you study</div>
-        </div>
-      </div>
-      <div class="chat-body px-6 py-6 h-[380px] overflow-y-auto flex flex-col gap-3.5" x-ref="chatBody">
-        <template x-for="(msg,i) in messages" :key="i">
-          <div :class="msg.role==='user' ? 'self-end max-w-[80%] bg-[var(--cu)] border bd rounded-[18px_18px_4px_18px]' : 'self-start max-w-[80%] bg-[var(--ca)] border bd rounded-[18px_18px_18px_4px]'"
-              class="px-4 py-3 text-sm leading-relaxed tx">
-            <template x-if="msg.role==='ai'">
-              <div class="flex items-center gap-1.5 text-[11px] font-bold tracking-[1px] tx-p4 uppercase mb-1.5">
-                <span class="w-1.5 h-1.5 rounded-full bg-p4 animate-pulse-dot"></span>Korah AI
-              </div>
-            </template>
-            <span x-html="msg.html || msg.text"></span>
-            <template x-if="msg.typing">
-              <div class="mt-2 flex gap-1 items-center">
-                <div class="w-1.5 h-1.5 rounded-full bg-p4 animate-tbounce"></div>
-                <div class="w-1.5 h-1.5 rounded-full bg-p4 animate-tbounce" style="animation-delay: 0.2s"></div>
-                <div class="w-1.5 h-1.5 rounded-full bg-p4 animate-tbounce" style="animation-delay: 0.4s"></div>
-              </div>
-            </template>
-          </div>
-        </template>
-      </div>
-      <div class="px-5 py-4 border-t bd2 flex gap-2.5 items-end bg-sf2 t-theme relative z-[2]">
-        <textarea x-model="input" @keydown.enter.prevent="!$event.shiftKey && send()" @input="$el.style.height='auto';$el.style.height=$el.scrollHeight+'px'" class="flex-1 bg-sf border bd rounded-xl px-4 py-3 font-sans text-sm tx resize-none outline-none min-h-[44px] max-h-[100px] focus:border-p4 t-btn placeholder:tx3" placeholder="Ask anything — 'Explain osmosis', 'Quiz me on WW2'..." rows="1"></textarea>
-        <button @click="send()" class="w-11 h-11 rounded-xl grad-bg border-none cursor-pointer grid place-items-center text-lg shadow-glow t-btn hover:scale-[1.08]">➤</button>
-      </div>
-    </div>
-    <div class="flex flex-wrap gap-2 mt-4">
-      <button x-for="s in suggestions" :key="s.msg" @click="sendMsg(s.msg)" class="bg-sf2 border bd tx2 text-[13px] font-medium px-4 py-2 rounded-full cursor-pointer font-sans t-btn hover:bg-[var(--bd)] hover:border-p4 hover:tx-p5 hover:-translate-y-0.5" x-text="s.label"></button>
-      </div>
-    </div>
-  </div>
-</section>
-
 <!-- ── DOWNLOAD ── -->
-<section id="download" class="flex flex-col items-center py-24 px-5 md:px-[clamp(20px,6vw,80px)] bg-base3 t-theme relative overflow-hidden">
-  <div class="radial-glow-bg absolute -top-1/2 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full pointer-events-none"></div>
-  <div class="inline-flex items-center gap-2 bg-sf2 border bd px-4 py-1.5 rounded-full text-[11px] font-bold tracking-[2.5px] uppercase tx-p4 mb-5 reveal t-theme relative z-10"><span class="dot w-1.5 h-1.5 rounded-full bg-p4"></span>Get the App</div>
-  <h2 class="font-display text-[clamp(2rem,5vw,3.6rem)] font-bold text-center tx leading-tight mb-3.5 reveal relative z-10">Download Korah Beta</h2>
-  <div class="mb-10 reveal relative z-10 flex justify-center">
-    <div class="relative flex justify-center">
-    <div class="absolute inset-0 pointer-events-none" style="background:radial-gradient(ellipse at 50% 60%,var(--glow),transparent 70%);filter:blur(1.5rem);transform:scale(1.1)"></div>
-    <div class="relative z-10"
-        style="transition:transform 0.4s cubic-bezier(.23,1,.32,1);"
-        @mousemove="
-          let r=$el.getBoundingClientRect(),x=($event.clientX-r.left)/r.width,y=($event.clientY-r.top)/r.height;
-          $el.style.transform='perspective(700px) rotateX('+(-(y-0.5)*10)+'deg) rotateY('+((x-0.5)*10)+'deg) translateY(-6px)';
-        "
-        @mouseleave="$el.style.transform='perspective(700px) rotateX(0deg) rotateY(0deg) translateY(0)';">
-      <div class="rounded-3xl pointer-events-none" style="opacity:0;transition:opacity 0.3s ease;z-index:1;mix-blend-mode:normal;"></div>
-      <img src="assests/korah welcome page app.png" alt="Korah app preview" class="rounded-3xl object-contain border bd2 animate-float" style="height:380px;width:auto;box-shadow:0 30px 80px rgba(0,0,0,.5),0 0 40px var(--glow);"/>
+<section id="download" class="py-24 px-5 md:px-[clamp(20px,6vw,80px)] bg-base2 t-theme relative overflow-hidden">
+
+  <!-- Background glow -->
+  <div class="absolute inset-0 pointer-events-none" style="background:radial-gradient(ellipse at 50% 0%,rgba(139,92,246,0.12) 0%,transparent 65%);"></div>
+
+  <div class="relative z-10 max-w-[1060px] mx-auto">
+
+    <!-- Section label -->
+    <div class="flex justify-center mb-5 reveal">
+      <div class="inline-flex items-center gap-2 bg-sf2 border bd px-4 py-1.5 rounded-full text-[11px] font-bold tracking-[2.5px] uppercase tx-p4 t-theme">
+        <span class="dot w-1.5 h-1.5 rounded-full bg-p4"></span>Get the App
+      </div>
+    </div>
+
+    <h2 class="font-display text-[clamp(2rem,5vw,3.6rem)] font-bold text-center tx leading-tight mb-4 reveal">Start cooking today.</h2>
+    <p class="text-base leading-relaxed tx2 text-center max-w-xl mx-auto mb-16 reveal">Available free on iOS via TestFlight and instantly in your browser. No paywall, no excuses.</p>
+
+    <!-- Two-column layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+
+      <!-- Left: phone mockup -->
+      <div class="flex justify-center reveal">
+        <div style="position:relative;">
+          <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,rgba(139,92,246,0.35),transparent 65%);filter:blur(2rem);transform:scale(1.15);pointer-events:none;border-radius:50%;"></div>
+          <div style="position:relative;z-index:10;transition:transform 0.4s cubic-bezier(.23,1,.32,1);"
+              @mousemove="
+                let r=$el.getBoundingClientRect(),x=($event.clientX-r.left)/r.width,y=($event.clientY-r.top)/r.height;
+                $el.style.transform='perspective(700px) rotateX('+(-(y-0.5)*10)+'deg) rotateY('+((x-0.5)*10)+'deg) translateY(-8px)';
+              "
+              @mouseleave="$el.style.transform='';">
+            <img src="assests/korah welcome page app.png" alt="Korah app preview"
+                class="rounded-3xl object-contain animate-float"
+                style="height:420px;width:auto;box-shadow:0 2rem 5rem rgba(0,0,0,.55),0 0 2.5rem rgba(139,92,246,0.4);border:1px solid rgba(139,92,246,0.25);"/>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: download cards -->
+      <div class="flex flex-col gap-5 reveal rd1">
+
+        <!-- Feature list -->
+        <div class="flex flex-col gap-3 mb-2">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-xl grad-bg grid place-items-center text-sm flex-shrink-0 shadow-glow">📊</div>
+            <span class="text-[14px] tx font-medium">Live Desmos graphing calculator built in</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-xl grad-bg grid place-items-center text-sm flex-shrink-0 shadow-glow">🎯</div>
+            <span class="text-[14px] tx font-medium">Adaptive SAT question bank across all domains</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-xl grad-bg grid place-items-center text-sm flex-shrink-0 shadow-glow">📈</div>
+            <span class="text-[14px] tx font-medium">Track your progress and weak areas over time</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-xl grad-bg grid place-items-center text-sm flex-shrink-0 shadow-glow">🤖</div>
+            <span class="text-[14px] tx font-medium">Korah AI explains every problem step by step</span>
+          </div>
+        </div>
+
+        <!-- iOS Download Card -->
+        <a href="https://testflight.apple.com/join/kkxUsBqe" target="_blank" class="download-card flex items-center gap-5 no-underline group"
+            @mousemove="
+              let r=$el.getBoundingClientRect(),x=($event.clientX-r.left)/r.width,y=($event.clientY-r.top)/r.height;
+              $el.style.transform='perspective(600px) rotateX('+(-(y-0.5)*5)+'deg) rotateY('+((x-0.5)*5)+'deg) translateY(-6px)';
+              $el.style.boxShadow='0 0 2rem rgba(139,92,246,0.35)';
+            "
+            @mouseleave="$el.style.transform='';$el.style.boxShadow='';">
+          <img src="assests/test_flight.jpg" alt="TestFlight" class="w-16 h-16 rounded-2xl object-cover flex-shrink-0" style="box-shadow:0 0 1rem rgba(139,92,246,0.5);"/>
+          <div class="flex-1">
+            <div class="text-[10px] font-bold tracking-[2.5px] uppercase tx3 mb-0.5">Download on</div>
+            <div class="text-[22px] font-black tx leading-tight">TestFlight</div>
+            <div class="text-[12px] tx2 mt-0.5">iOS Beta · Free · No account needed</div>
+          </div>
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 tx3 group-hover:tx-p4 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+        </a>
+
+        <!-- Web App Card -->
+        <a href="chat.html" class="download-card flex items-center gap-5 no-underline group"
+            @mousemove="
+              let r=$el.getBoundingClientRect(),x=($event.clientX-r.left)/r.width,y=($event.clientY-r.top)/r.height;
+              $el.style.transform='perspective(600px) rotateX('+(-(y-0.5)*5)+'deg) rotateY('+((x-0.5)*5)+'deg) translateY(-6px)';
+              $el.style.boxShadow='0 0 2rem rgba(139,92,246,0.35)';
+            "
+            @mouseleave="$el.style.transform='';$el.style.boxShadow='';">
+          <div class="w-16 h-16 rounded-2xl grad-bg grid place-items-center text-2xl flex-shrink-0 shadow-glow">🌐</div>
+          <div class="flex-1">
+            <div class="text-[10px] font-bold tracking-[2.5px] uppercase tx3 mb-0.5">Open in</div>
+            <div class="text-[22px] font-black tx leading-tight">Web App</div>
+            <div class="text-[12px] tx2 mt-0.5">No download required · Works on any device</div>
+          </div>
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 tx3 group-hover:tx-p4 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+        </a>
+
+        <!-- Availability badge -->
+        <div class="flex items-center gap-2 px-4 py-3 rounded-2xl bg-sf2 border bd2 t-theme">
+          <span style="position:relative;display:flex;height:0.625rem;width:0.625rem;flex-shrink:0;">
+            <span class="animate-ping" style="position:absolute;display:inline-flex;height:100%;width:100%;border-radius:50%;background:#22c55e;opacity:0.75;"></span>
+            <span style="position:relative;display:inline-flex;height:0.625rem;width:0.625rem;border-radius:50%;background:#22c55e;"></span>
+          </span>
+          <span class="text-[12.5px] tx2">Available now — iOS &amp; Web</span>
+        </div>
+
+      </div>
     </div>
   </div>
-  </div>
-  <!-- TestFlight badge — swap link and icon -->
-  <div class="mt-1 reveal relative z-10 flex justify-center">
-    <a href="https://testflight.apple.com/join/kkxUsBqe" target="_blank"
-    class="inline-flex items-center gap-4 bg-card border bd2 rounded-2xl px-6 py-4 t-theme relative overflow-hidden"
-    style="min-width:16.25rem; box-shadow:0 0 1.25rem rgba(139,92,246,0.2); border:0.09375rem solid rgba(139,92,246,0.5); transition:transform 0.4s cubic-bezier(.23,1,.32,1);"
-    @mousemove="
-        let r=$el.getBoundingClientRect(),x=($event.clientX-r.left)/r.width,y=($event.clientY-r.top)/r.height;
-        $el.style.transform='perspective(700px) rotateX('+(-(y-0.5)*6)+'deg) rotateY('+((x-0.5)*6)+'deg) translateY(-4px)';
-      "
-      @mouseleave="$el.style.transform='perspective(700px) rotateX(0deg) rotateY(0deg) translateY(0)';">
-    <div class="pointer-events-none rounded-2xl" style="opacity:0;transition:opacity 0.3s ease;z-index:0;mix-blend-mode:normal;"></div>
-      <!-- swap src with your TestFlight icon -->
-      <img src="assests/test_flight.jpg" alt="" class="w-14 h-14 rounded-2xl object-cover flex-shrink-0" style="box-shadow:0 0 0.875rem var(--glow)"/>
-      <div class="flex flex-col leading-tight">
-        <span class="text-[10px] font-semibold tracking-[2.5px] uppercase tx3">Download on</span>
-        <span class="text-[22px] font-bold tx leading-tight">TestFlight</span>
-      </div>
-    </a>
-  </div>
-
-  <div class="mt-6 text-center text-sm tx2 reveal relative z-10">
-    Or use Korah instantly in your browser — no download needed <br/>
-    <a href="#chat" class="tx-p4 no-underline font-semibold hover:underline">Try the web app →</a>
-  </div>
-</div>
 </section>
-
-</div><!-- /page -->
 
 <footer class="relative z-10 bg-base border-t bd px-[clamp(20px,6vw,80px)] pt-[60px] pb-10 t-theme">
   <div class="max-w-[1100px] mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr] gap-12">
     <div>
       <div class="flex items-center gap-2.5">
         <div class="w-9 h-9 rounded-xl grad-bg flex items-center justify-center font-display text-base font-black text-white shadow-glow">
-          <img src = "app/logoresized.png">
+          <img src="app/logoresized.png">
         </div>
         <div class="flex flex-col leading-tight"><span class="font-display text-base font-bold tx">Korah</span><span class="text-[9px] font-semibold tracking-[2.5px] uppercase tx-p4">AI Study Companion</span></div>
       </div>
-      <p class="text-sm tx2 leading-[1.7] max-w-[280px] mt-3.5">Korah helps students study smarter with mood-aware recommendations, smart task management, focus sessions, and AI-powered study tools.</p>
+      <p class="text-sm tx2 leading-[1.7] max-w-[280px] mt-3.5">Korah helps students ace the SAT with AI-powered tutoring, live Desmos graphing, adaptive practice, and progress tracking.</p>
     </div>
-    <div><h4 class="text-xs font-bold tracking-[2px] uppercase tx-p5 mb-4">Product</h4><a href="#features" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Features</a><a href="#how" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">How it Works</a><a href="#study-tools" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Study Tools</a><a href="#sat" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">SAT Prep</a><a href="#download" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Download</a></div>
+    <div>
+      <h4 class="text-xs font-bold tracking-[2px] uppercase tx-p5 mb-4">Product</h4>
+      <a href="#sat"      class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">SAT Prep</a>
+      <a href="#download" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Download</a>
+      <a href="chat.html" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Web App</a>
+    </div>
     <div>
       <h4 class="text-xs font-bold tracking-[2px] uppercase tx-p5 mb-4">Support</h4>
       <a href="support/index.html#contact" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Contact Us</a>
     </div>
     <div>
       <h4 class="text-xs font-bold tracking-[2px] uppercase tx-p5 mb-4">Company</h4>
-      <!-- Need Link For About Korah -->
-      <a href="#" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">About Korah</a> 
+      <a href="#" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">About Korah</a>
       <a href="https://www.instagram.com/korah.app/" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Social Media</a>
       <a href="support/index.html#privacy" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Privacy Policy</a>
-      <a href="support/index.html#terms" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Terms</a></div>
-
+      <a href="support/index.html#terms" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Terms</a>
+    </div>
   </div>
   <div class="max-w-[1100px] mx-auto mt-10 pt-6 border-t bd2 flex flex-wrap items-center justify-between gap-3 text-[12.5px] tx3">
     <span>© 2025 Korah AI. All rights reserved.</span>
@@ -921,45 +508,6 @@
     <span>Beta v0.9.1</span>
   </div>
 </footer>
-
-<script>
-(function() {
-  function initDesignTyping() {
-    const typedKorah = document.getElementById('design-typed-korah');
-    const typedText = document.getElementById('design-typed-text');
-    if (!typedKorah || !typedText) return;
-
-    const korahText = 'Korah';
-    const suffixText = ' A.I';
-    const typingDelayMs = 75;
-    let korahIndex = 0;
-    let suffixIndex = 0;
-
-    function typeNext() {
-      if (korahIndex < korahText.length) {
-        korahIndex += 1;
-        typedKorah.textContent = korahText.slice(0, korahIndex);
-        setTimeout(typeNext, typingDelayMs);
-        return;
-      }
-
-      if (suffixIndex < suffixText.length) {
-        suffixIndex += 1;
-        typedText.textContent = suffixText.slice(0, suffixIndex);
-        setTimeout(typeNext, typingDelayMs);
-      }
-    }
-
-    typeNext();
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initDesignTyping);
-  } else {
-    initDesignTyping();
-  }
-})();
-</script>
 
 <script>
 window.addEventListener('load', function() {
