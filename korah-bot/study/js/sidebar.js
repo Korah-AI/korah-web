@@ -957,35 +957,24 @@ function showSidebarDeleteModal(name, onConfirm) {
           </button>
           <div class="timer-idle-panel" id="timer-idle-panel">
             <div class="timer-idle-panel-inner">
-              <div class="timer-idle-input-row">
-                <div class="timer-split-input">
-                  <input
-                    id="timer-custom-min"
-                    type="text"
-                    inputmode="numeric"
-                    pattern="[0-9]*"
-                    maxlength="3"
-                    placeholder="25"
-                    value=""
-                    class="timer-custom-input"
-                  />
-                  <span class="timer-input-label">min</span>
-                </div>
-                <div class="timer-split-divider">:</div>
-                <div class="timer-split-input">
-                  <input
-                    id="timer-custom-sec"
-                    type="text"
-                    inputmode="numeric"
-                    pattern="[0-9]*"
-                    maxlength="2"
-                    placeholder="00"
-                    class="timer-custom-input"
-                  />
-                  <span class="timer-input-label">sec</span>
-                </div>
+              <div class="timer-preset-grid">
+                <button class="timer-preset-pill" data-mins="5">5 min</button>
+                <button class="timer-preset-pill" data-mins="10">10 min</button>
+                <button class="timer-preset-pill" data-mins="25">25 min</button>
+                <button class="timer-preset-pill" data-mins="custom">Custom</button>
               </div>
-              <button class="timer-start-btn" id="timer-start-btn">▶ Start</button>
+              <div class="timer-custom-row" id="timer-custom-row" style="display:none;">
+                <input
+                  id="timer-custom-min"
+                  type="text"
+                  inputmode="numeric"
+                  pattern="[0-9]*"
+                  maxlength="3"
+                  placeholder="Minutes"
+                  class="timer-custom-input timer-custom-min-only"
+                />
+              </div>
+              <button class="timer-start-btn" id="timer-start-btn" disabled>▶ Start</button>
             </div>
           </div>
         </div>
@@ -1007,32 +996,47 @@ function showSidebarDeleteModal(name, onConfirm) {
         chevron.classList.toggle('open', nowOpen);
       });
 
-      // Custom start button
-      // Strip non-numeric characters as user types
+      const startBtn = container.querySelector('#timer-start-btn');
+      const customRow = container.querySelector('#timer-custom-row');
       const minInput = container.querySelector('#timer-custom-min');
-      const secInput = container.querySelector('#timer-custom-sec');
+      let selectedMins = null;
+
+      const enableStart = () => {
+        startBtn.disabled = false;
+        startBtn.removeAttribute('disabled');
+      };
+
+      // Preset pill selection
+      container.querySelectorAll('.timer-preset-pill').forEach(pill => {
+        pill.addEventListener('click', () => {
+          container.querySelectorAll('.timer-preset-pill').forEach(p => p.classList.remove('active'));
+          pill.classList.add('active');
+          const val = pill.getAttribute('data-mins');
+          if (val === 'custom') {
+            customRow.style.display = 'flex';
+            selectedMins = null;
+            minInput.focus();
+            startBtn.disabled = !(parseInt(minInput.value) > 0);
+          } else {
+            customRow.style.display = 'none';
+            selectedMins = parseFloat(val);
+            enableStart();
+          }
+        });
+      });
 
       minInput.addEventListener('input', (e) => {
         e.target.value = e.target.value.replace(/[^0-9]/g, '');
         if (e.target.value === '0') e.target.value = '';
+        startBtn.disabled = !(parseInt(minInput.value) > 0);
       });
 
-      secInput.addEventListener('input', (e) => {
-        e.target.value = e.target.value.replace(/[^0-9]/g, '');
-        if (parseInt(e.target.value) > 59) e.target.value = '59';
+      minInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') startBtn.click();
       });
 
-      [minInput, secInput].forEach(input => {
-        input.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter') e.target.blur();
-        });
-      });
-
-      // Custom start button
-      container.querySelector('#timer-start-btn').addEventListener('click', () => {
-        const mins = parseInt(minInput.value) || 0;
-        const secs = parseInt(secInput.value) || 0;
-        const totalMins = mins + secs / 60;
+      startBtn.addEventListener('click', () => {
+        const totalMins = selectedMins !== null ? selectedMins : (parseInt(minInput.value) || 0);
         if (totalMins > 0) window.KorahTimer.start(totalMins);
       });
     }
