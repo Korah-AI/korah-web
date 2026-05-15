@@ -16,6 +16,9 @@ html {
 ::-webkit-scrollbar-thumb { background: var(--p4) !important; border-radius: 0.1875rem }
 ::-webkit-scrollbar-thumb:hover { background: var(--p5) !important; }
 
+/* Firefox scrollbar */
+* { scrollbar-color: var(--p4) transparent; scrollbar-width: thin; }
+
 /* ── CSS Variables ── */
 [data-theme="dark"] {
     --bg:#06040f; --bg2:#0d0920; --bg3:#120c28;
@@ -351,12 +354,12 @@ body { display: flex; background: var(--bg) }
 
 .collapsed-more-wrapper {
   position: relative;
+  justify-content: center;
   bottom: 0;
   left: 50%;
   transform: translateX(-50%);
   padding: 0.5rem;
   z-index: 9999;
-  margin-top: auto;
 }
 
 .collapsed-more-btn {
@@ -545,6 +548,16 @@ html[data-theme="light"] .collapsed-more-dropdown .more-dropdown-item.danger:hov
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+.sidebar .opp-wrapper {
+    position: relative;
+    width: 100%;
+    overflow: visible;
+    flex-shrink: 0;
+    margin: 0;
+    padding: 0;
+    height: 2.5rem;
 }
 
 .sidebar.collapsed .sidebar-footer {
@@ -1886,7 +1899,7 @@ body.korah-home-chat .send-btn-circle {
 
 /* ── Scrollbar in sidebar ── */
 .chat-history::-webkit-scrollbar { width: 0.1875rem }
-.chat-history::-webkit-scrollbar-thumb { background: var(--bd); border-radius: 0.125rem }
+.chat-history::-webkit-scrollbar-thumb { background: var(--p4); border-radius: 0.125rem }
 
 /* ── Settings Modal ── */
 .settings-modal {
@@ -2065,6 +2078,7 @@ body.korah-home-chat .send-btn-circle {
 .settings-input {
     background-image: none;
     padding: 0.625rem 0.75rem;
+    cursor:text;
 }
 .settings-btn {
     padding: 0.625rem 1.25rem;
@@ -2691,7 +2705,7 @@ body.korah-home-chat .send-btn-circle {
   z-index: 1;
 }
 .study-feed-body::-webkit-scrollbar { width: 0.25rem }
-.study-feed-body::-webkit-scrollbar-thumb { background: var(--bd); border-radius: 0.125rem }
+.study-feed-body::-webkit-scrollbar-thumb { background: var(--p4); border-radius: 0.125rem }
 
 .study-feed-toolbar {
   display: flex;
@@ -2932,7 +2946,8 @@ body.korah-home-chat .send-btn-circle {
   margin-bottom: 1rem;
 }
 
-.delete-modal {
+.delete-modal,
+.goal-modal {
     position: fixed;
     inset: 0;
     background: rgba(0,0,0,.6);
@@ -2943,7 +2958,8 @@ body.korah-home-chat .send-btn-circle {
     z-index: 2000;
     padding: 1.25rem;
 }
-.delete-modal.show {
+.delete-modal.show,
+.goal-modal.show {
     display: flex;
     animation: fadeIn .2s ease both;
 }
@@ -3015,6 +3031,16 @@ body.korah-home-chat .send-btn-circle {
 .delete-modal-btn.confirm:hover {
     background: rgba(239,68,68,.22);
     border-color: var(--red);
+}
+
+.goal-modal .delete-modal-btn.confirm {
+    background: rgba(139,92,246,.12);
+    color: var(--p5);
+    border-color: rgba(139,92,246,.3);
+}
+.goal-modal .delete-modal-btn.confirm:hover {
+    background: rgba(139,92,246,.22);
+    border-color: var(--p4);
 }
 
 /* ── SAT Sub-Mode Modal ── */

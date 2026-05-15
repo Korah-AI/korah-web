@@ -16,7 +16,10 @@
   const limitInput = document.getElementById("limitInput");
   const startSelectedBtn = document.getElementById("startSelectedBtn");
   const clearFiltersBtn = document.getElementById("clearFiltersBtn");
-  const assessmentSelect = document.getElementById("assessmentSelect");
+  const assessmentTrigger = document.getElementById("assessmentTrigger");
+  const assessmentDropdown = document.getElementById("assessmentDropdown");
+  const assessmentLabel = document.getElementById("assessmentLabel");
+  const assessmentArrow = document.getElementById("assessmentArrow");
   const difficultyChips = document.getElementById("difficultyChips");
 
   const totalSections = OPENSAT_CATALOG.sections.length;
@@ -255,7 +258,13 @@
     state.assessment = "SAT";
     state.limit = null;
     limitInput.value = "";
-    if (assessmentSelect) assessmentSelect.value = "SAT";
+    if (assessmentLabel) {
+      assessmentLabel.textContent = "SAT";
+      assessmentDropdown.querySelectorAll(".more-dropdown-item").forEach((item) => {
+        const check = item.querySelector(".more-dropdown-check");
+        if (check) check.style.opacity = item.dataset.value === "SAT" ? "1" : "0";
+      });
+    }
     renderAll();
   }
 
@@ -341,12 +350,45 @@
     });
   }
 
-  if (assessmentSelect) {
-    assessmentSelect.addEventListener("change", () => {
-      state.assessment = assessmentSelect.value || "SAT";
-      // Stats are per-assessment; refetch so counts reflect the new context.
-      fetchGlobalStats();
-      renderAll();
+  function selectAssessment(value) {
+    state.assessment = value;
+    assessmentLabel.textContent = value;
+    assessmentDropdown.querySelectorAll(".more-dropdown-item").forEach((item) => {
+      const check = item.querySelector(".more-dropdown-check");
+      if (check) check.style.opacity = item.dataset.value === value ? "1" : "0";
+    });
+    closeAssessment();
+    fetchGlobalStats();
+    renderAll();
+  }
+
+  function toggleAssessment() {
+    const isOpen = assessmentDropdown.classList.contains("more-dropdown-open");
+    assessmentDropdown.classList.toggle("more-dropdown-open");
+    if (assessmentArrow) assessmentArrow.style.transform = isOpen ? "" : "rotate(180deg)";
+  }
+
+  function closeAssessment() {
+    assessmentDropdown.classList.remove("more-dropdown-open");
+    if (assessmentArrow) assessmentArrow.style.transform = "";
+  }
+
+  if (assessmentTrigger) {
+    assessmentTrigger.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleAssessment();
+    });
+
+    assessmentDropdown.addEventListener("click", (e) => {
+      const item = e.target.closest(".more-dropdown-item");
+      if (!item) return;
+      const value = item.dataset.value;
+      if (value) selectAssessment(value);
+    });
+
+    document.addEventListener("click", (e) => {
+      const wrapper = assessmentTrigger.closest(".sat-dropdown-wrapper");
+      if (wrapper && !wrapper.contains(e.target)) closeAssessment();
     });
   }
 

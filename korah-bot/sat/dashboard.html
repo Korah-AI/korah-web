@@ -150,7 +150,7 @@
     </div>
     <a href="index.html" class="sidebar-nav-link active t-btn" data-sat-link="true"><span class="material-icons-round" style="font-size: 1.25rem;">assignment</span> <span class="nav-text">SAT</span></a>
     <a href="../productivity.html" class="sidebar-nav-link productivity-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">timer</span> <span class="nav-text">Productivity</span></a>
-    <a href="../opportunities/opportunities.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">rocket_launch</span> <span class="nav-text">Opportunities</span></a>
+    <div class="opp-wrapper"><a href="../opportunities/opportunities.html" class="sidebar-nav-link opp-wrapper t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">rocket_launch</span> <span class="nav-text">Opportunities</span></a></div>
   </nav>
 
   <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 0.75rem 0 0.25rem;">
@@ -352,7 +352,7 @@
 </div><!-- end .main-area-wrapper -->
 
 <!-- Edit Goal Modal -->
-<div id="sat-onboarding-modal" class="delete-modal">
+<div id="sat-onboarding-modal" class="goal-modal">
   <div class="delete-modal-content" style="max-width: 440px;">
     <div class="delete-modal-icon">🎯</div>
     <h3 class="delete-modal-title">Update your SAT goal</h3>
@@ -369,7 +369,7 @@
     </div>
     <div class="delete-modal-actions">
       <button id="sat-onboarding-skip" class="delete-modal-btn cancel t-btn">Cancel</button>
-      <button id="sat-onboarding-save" class="delete-modal-btn confirm t-btn" style="background:rgba(139,92,246,.12); color:var(--p5); border-color:rgba(139,92,246,.3);">Save</button>
+      <button id="sat-onboarding-save" class="delete-modal-btn confirm t-btn">Save</button>
     </div>
   </div>
 </div>
@@ -532,6 +532,101 @@
     });
   })();
 </script>
+
+<!-- Settings Modal -->
+<div id="settings-modal" class="settings-modal">
+  <div class="settings-modal-content">
+    <div class="settings-header">
+      <h2 class="settings-title">Settings</h2>
+      <button class="settings-close" id="settings-close">&times;</button>
+    </div>
+    <div class="settings-body">
+      <div class="settings-section">
+        <h3 class="settings-section-title">Appearance</h3>
+        <div class="settings-item">
+          <div class="settings-item-label">Theme</div>
+          <div class="settings-item-control">
+            <div class="settings-custom-select" id="settings-theme-custom-select">
+              <div class="settings-select-trigger" id="settings-theme-trigger">
+                <div class="flex items-center gap-2">
+                  <span class="material-icons-round trigger-icon">dark_mode</span>
+                  <span class="trigger-text">Dark Mode</span>
+                </div>
+                <span class="material-icons-round">expand_more</span>
+              </div>
+              <div class="settings-select-menu" id="settings-theme-menu">
+                <div class="settings-select-option" data-value="dark">
+                  <span class="material-icons-round">dark_mode</span>
+                  <span>Dark Mode</span>
+                  <span class="material-icons-round check-icon">check</span>
+                </div>
+                <div class="settings-select-option" data-value="light">
+                  <span class="material-icons-round">light_mode</span>
+                  <span>Light Mode</span>
+                  <span class="material-icons-round check-icon">check</span>
+                </div>
+                <div class="settings-select-option" data-value="system">
+                  <span class="material-icons-round">settings_suggest</span>
+                  <span>System</span>
+                  <span class="material-icons-round check-icon">check</span>
+                </div>
+              </div>
+              <input type="hidden" id="settings-theme-select" value="dark">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3 class="settings-section-title">Profile</h3>
+        <div class="settings-item">
+          <div class="settings-item-label">Display Name</div>
+          <div class="settings-item-control">
+            <input type="text" id="settings-name-input" class="settings-input" placeholder="Your name">
+          </div>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3 class="settings-section-title">Data</h3>
+        <div class="settings-item">
+          <div class="settings-item-label">Clear All Data</div>
+          <div class="settings-item-control">
+            <button id="settings-clear-data" class="settings-btn danger">Clear Data</button>
+          </div>
+        </div>
+      </div>
+      <div class="settings-actions">
+        <button id="settings-save" class="settings-btn primary">Save Settings</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Rename Modal -->
+<div id="rename-modal" class="delete-modal">
+  <div class="delete-modal-content">
+    <div class="delete-modal-icon">✏️</div>
+    <h3 class="delete-modal-title">Rename</h3>
+    <p class="delete-modal-desc" id="rename-modal-desc">Enter a new name</p>
+    <input id="rename-modal-input" type="text" class="create-input" style="width:100%; margin-top:4px;" placeholder="New name&hellip;"/>
+    <div class="delete-modal-actions">
+      <button id="rename-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
+      <button id="rename-modal-confirm" class="delete-modal-btn confirm t-btn" style="background:rgba(139,92,246,.12); color:var(--p5); border-color:rgba(139,92,246,.3);">Rename</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div id="delete-modal" class="delete-modal">
+  <div class="delete-modal-content">
+    <div class="delete-modal-icon">🗑️</div>
+    <h3 class="delete-modal-title">Delete?</h3>
+    <p class="delete-modal-desc">This will permanently delete <span id="delete-modal-name"></span>. This cannot be undone.</p>
+    <div class="delete-modal-actions">
+      <button id="delete-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
+      <button id="delete-modal-confirm" class="delete-modal-btn confirm t-btn">Delete</button>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>

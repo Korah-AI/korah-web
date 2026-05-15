@@ -120,7 +120,7 @@
     </div>
     <a href="index.html" class="sidebar-nav-link t-btn" data-sat-link="true"><span class="material-icons-round" style="font-size: 1.25rem;">assignment</span> <span class="nav-text">SAT</span></a>
     <a href="../productivity.html" class="sidebar-nav-link productivity-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">timer</span> <span class="nav-text">Productivity</span></a>
-    <a href="../opportunities/opportunities.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">rocket_launch</span> <span class="nav-text">Opportunities</span></a>
+    <div class="opp-wrapper"><a href="../opportunities/opportunities.html" class="sidebar-nav-link opp-wrapper t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">rocket_launch</span> <span class="nav-text">Opportunities</span></a></div>
   </nav>
 
   <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 0.75rem 0 0.25rem;">
@@ -297,11 +297,19 @@
         <div class="sat-filter-row">
           <div class="sat-filter-group" role="group" aria-label="Assessment">
             <span class="sat-filter-label">Assessment</span>
-            <select id="assessmentSelect" class="sat-filter-select">
-              <option value="SAT">SAT</option>
-              <option value="PSAT/NMSQT">PSAT/NMSQT &amp; PSAT 10</option>
-              <option value="PSAT">PSAT 8/9</option>
-            </select>
+            <div class="sat-dropdown-wrapper">
+              <button class="sat-chip" id="assessmentTrigger" type="button" style="display: flex; align-items: center; gap: 0.5rem; width: 100%;">
+                <span id="assessmentLabel">SAT</span>
+                <span class="material-icons-round" id="assessmentArrow" style="font-size: 1.125rem; margin-left: auto; transition: transform 0.2s;">expand_more</span>
+              </button>
+              <div class="sat-more-dropdown" id="assessmentDropdown">
+                <ul class="more-dropdown-list">
+                  <li><button class="more-dropdown-item" data-value="SAT"><span>SAT</span><span class="more-dropdown-check material-icons-round" style="opacity: 1;">check</span></button></li>
+                  <li><button class="more-dropdown-item" data-value="PSAT/NMSQT"><span>PSAT/NMSQT &amp; PSAT 10</span><span class="more-dropdown-check material-icons-round">check</span></button></li>
+                  <li><button class="more-dropdown-item" data-value="PSAT"><span>PSAT 8/9</span><span class="more-dropdown-check material-icons-round">check</span></button></li>
+                </ul>
+              </div>
+            </div>
           </div>
           <div class="sat-filter-group" role="group" aria-label="Difficulty">
             <span class="sat-filter-label">Difficulty</span>
@@ -403,7 +411,7 @@
 </div>
 
 <!-- SAT Onboarding Modal -->
-<div id="sat-onboarding-modal" class="delete-modal">
+<div id="sat-onboarding-modal" class="goal-modal">
   <div class="delete-modal-content" style="max-width: 440px;">
     <div class="delete-modal-icon">🎯</div>
     <h3 class="delete-modal-title">Set your SAT goal</h3>
@@ -420,7 +428,7 @@
     </div>
     <div class="delete-modal-actions">
       <button id="sat-onboarding-skip" class="delete-modal-btn cancel t-btn">Skip</button>
-      <button id="sat-onboarding-save" class="delete-modal-btn confirm t-btn" style="background:rgba(139,92,246,.12); color:var(--p5); border-color:rgba(139,92,246,.3);">Save</button>
+      <button id="sat-onboarding-save" class="delete-modal-btn confirm t-btn">Save</button>
     </div>
   </div>
 </div>
