@@ -32,7 +32,7 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>Korah AI — Study Feed</title>
-  <link rel="icon" type="image/png" href="../app/logoresized.png">
+  <link rel="icon" type="image/png" href="../logo-images/newlogo0.png">
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
@@ -241,15 +241,410 @@
       .study-modern .feed-hero-title { font-size: 24px; }
       .study-modern .study-feed-toolbar { padding: 12px; gap: 10px; }
       .study-modern .feed-search,
-      .study-modern .feed-filter-select { 
-        min-height: 44px; 
-        font-size: 13px; 
+      .study-modern .feed-filter-select {
+        min-height: 44px;
+        font-size: 13px;
         border-radius: 10px;
         padding: 0 2.25rem 0 0.875rem;
         background-position: right 0.75rem center;
       }
       .study-modern .feed-cards { grid-template-columns: 1fr; }
     }
+
+    /* --- CREATE DROPDOWN --- */
+    .create-study-dropdown {
+      position: fixed;
+      min-width: 15rem;
+      background: var(--sf);
+      border-radius: 0.75rem;
+      box-shadow: 0 0.75rem 2rem rgba(0,0,0,0.35), 0 0.125rem 0.25rem rgba(0,0,0,0.15);
+      backdrop-filter: blur(1rem);
+      -webkit-backdrop-filter: blur(1rem);
+      padding: 0;
+      z-index: 9999;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-0.5rem) scale(0.96);
+      transform-origin: top right;
+      transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
+    }
+    .create-study-dropdown.open {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0) scale(1);
+    }
+    [data-theme="light"] .create-study-dropdown {
+      background: rgba(255,255,255,0.95);
+      box-shadow: 0 0.75rem 2rem rgba(109,40,217,0.15), 0 0.125rem 0.25rem rgba(109,40,217,0.08);
+    }
+    .create-dropdown-list {
+      list-style: none;
+      margin: 0;
+      padding: 0.375rem 0;
+    }
+    .create-dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      width: 100%;
+      padding: 0.625rem 1rem;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      text-align: left;
+      color: var(--tx);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.15s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .create-dropdown-item::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; right: 0; bottom: 0;
+      background: rgba(139,92,246,0.08);
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+    .create-dropdown-item:hover::before { opacity: 1; }
+    [data-theme="light"] .create-dropdown-item::before { background: rgba(109,40,217,0.07); }
+    .create-dropdown-emoji { font-size: 1.25rem; flex-shrink: 0; position: relative; z-index: 1; }
+    .dropdown-item-text { position: relative; z-index: 1; }
+    .dropdown-item-name { display: block; font-size: 0.875rem; font-weight: 600; color: var(--tx); }
+    .dropdown-item-desc { display: block; font-size: 0.75rem; color: var(--tx2); margin-top: 1px; line-height: 1.4; opacity: 0.8; }
+
+    /* --- CREATION MODAL --- */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(8px);
+      display: none; align-items: center; justify-content: center;
+      z-index: 2000;
+      padding: 1.25rem;
+    }
+    .modal-overlay.active { display: flex; animation: modalFadeIn 0.3s ease-out; }
+    [data-theme="light"] .modal-overlay {
+      background: rgba(109,40,217,0.2);
+      backdrop-filter: blur(0.75rem);
+    }
+    .creation-modal {
+      background: rgba(15, 9, 35, 0.85);
+      border: 1px solid var(--bd);
+      border-radius: 24px;
+      width: 95vw;
+      max-width: 700px;
+      display: none;
+      flex-direction: column;
+      box-shadow: 0 25px 60px rgba(0,0,0,.5), 0 0 40px rgba(139,92,246,.15);
+      overflow: hidden;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 2001;
+    }
+    .creation-modal.active { display: flex; animation: modalSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+    [data-theme="light"] .creation-modal { background: rgba(250, 248, 255, 0.95); }
+    @keyframes modalFadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes modalSlideUp { from { opacity: 0; transform: translate(-50%, -42%); } to { opacity: 1; transform: translate(-50%, -50%); } }
+    .modal-header {
+      padding: 1.25rem 3.5rem;
+      border-bottom: 1px solid var(--bd2);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .modal-title { font-size: 1.125rem; font-weight: 700; margin: 0; color: var(--tx); }
+    .modal-close {
+      position: absolute; right: 1.25rem; top: 50%; transform: translateY(-50%);
+      width: 2.25rem; height: 2.25rem; border-radius: 10px;
+      border: 1px solid var(--bd); background: var(--sf2); color: var(--tx2);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: all .2s;
+    }
+    .modal-close:hover { background: var(--cu); border-color: var(--p4); color: var(--p4); }
+    .modal-body { padding: 1.75rem; overflow-y: auto; flex: 1; }
+    .method-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;
+    }
+    @media (max-width: 600px) { .method-grid { grid-template-columns: 1fr; } }
+    .method-card {
+      background: var(--sf2); border: 1px solid var(--bd2); border-radius: 16px;
+      padding: 1.75rem 1.25rem; display: flex; flex-direction: column;
+      align-items: center; gap: 1rem; cursor: pointer;
+      transition: all 0.22s cubic-bezier(0.4,0,0.2,1); text-align: center;
+      min-height: 11rem; justify-content: center; font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .method-card:hover {
+      border-color: var(--p4); background: var(--cu);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 28px rgba(0,0,0,.2), 0 0 16px rgba(139,92,246,.15);
+    }
+    [data-theme="light"] .method-card { background: rgba(255,255,255,0.7); border-color: rgba(109,40,217,.15); }
+    [data-theme="light"] .method-card:hover { background: rgba(255,255,255,0.95); border-color: rgba(109,40,217,.4); }
+    .method-icon { font-size: 2.25rem; }
+    .method-name { font-size: 1rem; font-weight: 700; display: block; color: var(--tx); }
+    .method-desc { font-size: 0.8125rem; color: var(--tx2); line-height: 1.5; margin-top: 0.25rem; }
+
+    /* --- EMPTY STATE HERO (rotating image carousel) --- */
+    .feed-empty-hero {
+      position: relative;
+      width: 100%;
+      min-height: 640px;
+      border-radius: 20px;
+      border: 1px solid var(--bd);
+      background: var(--bg2);
+      overflow: hidden;
+      padding: 80px 20px 44px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+    @media (min-width: 640px) {
+      .feed-empty-hero { min-height: 760px; padding: 100px 24px 52px; }
+    }
+    .feed-empty-hero .empty-bg-glow {
+      position: absolute;
+      width: 18rem; height: 18rem;
+      border-radius: 9999px;
+      filter: blur(70px);
+      pointer-events: none;
+      animation: emptyPulse 4s ease-in-out infinite;
+    }
+    .feed-empty-hero .empty-bg-glow.tr { top: -5rem; right: -5rem; background: radial-gradient(circle, rgba(139,92,246,.22), transparent 70%); }
+    .feed-empty-hero .empty-bg-glow.bl { bottom: -5rem; left: -5rem; background: radial-gradient(circle, rgba(139,92,246,.16), transparent 70%); animation-delay: 1.5s; }
+    @keyframes emptyPulse { 0%,100% { opacity: .7; } 50% { opacity: 1; } }
+
+    .empty-carousel {
+      position: relative;
+      width: 100%;
+      max-width: 40rem;
+      height: 13rem;
+      margin-bottom: 2rem;
+      perspective: 1000px;
+    }
+    @media (min-width: 640px) {
+      .empty-carousel { margin-bottom: 2.75rem; }
+    }
+    .empty-carousel-inner {
+      position: absolute; inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .empty-card {
+      position: absolute;
+      width: 5rem;
+      height: 6.5rem;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 12px 28px rgba(0,0,0,.3), 0 0 18px rgba(139,92,246,.12);
+      transition: transform .3s ease, box-shadow .3s ease;
+      transform-style: preserve-3d;
+      border: 1px solid rgba(255,255,255,.08);
+    }
+    @media (min-width: 640px) {
+      .empty-card { width: 6.5rem; height: 8.25rem; }
+      .empty-carousel { height: 16rem; }
+    }
+    .empty-card img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform .5s ease;
+    }
+    .empty-card > div { font-size: 1.75rem !important; }
+    @media (min-width: 640px) { .empty-card > div { font-size: 2.25rem !important; } }
+    .empty-card::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,.18) 0%, transparent 50%);
+      opacity: 0;
+      transition: opacity .3s;
+      pointer-events: none;
+    }
+    .empty-card:hover { transform: scale(1.08) translateZ(20px) !important; box-shadow: 0 24px 52px rgba(0,0,0,.5), 0 0 32px rgba(139,92,246,.3); }
+    .empty-card:hover::after { opacity: 1; }
+    .empty-card:hover img { transform: scale(1.1); }
+
+    .feed-empty-hero .empty-title-new {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.4rem, 2.6vw, 1.85rem);
+      font-weight: 700;
+      color: var(--tx);
+      margin: 0 0 0.4rem;
+      line-height: 1.15;
+      max-width: 36rem;
+    }
+    .feed-empty-hero .empty-sub-new {
+      font-size: clamp(0.825rem, 1.2vw, 0.95rem);
+      color: var(--tx2);
+      max-width: 32rem;
+      line-height: 1.5;
+      margin: 0 0 1rem;
+    }
+    .empty-cta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      justify-content: center;
+      margin-bottom: 1.25rem;
+    }
+    .empty-cta-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.7rem 1.4rem;
+      border-radius: 9999px;
+      background: var(--sf2);
+      border: 1px solid var(--bd);
+      color: var(--tx);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 0.875rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all .25s ease;
+    }
+    .empty-cta-secondary:hover {
+      transform: translateY(-2px);
+      border-color: var(--p4);
+      background: var(--cu);
+      box-shadow: 0 8px 20px rgba(139,92,246,.18);
+    }
+    .empty-features {
+      width: 100%;
+      max-width: 48rem;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.65rem;
+    }
+    @media (max-width: 640px) { .empty-features { grid-template-columns: 1fr; gap: 0.5rem; } }
+    .empty-feature {
+      padding: 0.75rem 0.85rem;
+      border-radius: 12px;
+      background: rgba(255,255,255,.03);
+      border: 1px solid var(--bd);
+      transition: all .3s ease;
+      text-align: center;
+    }
+    [data-theme="light"] .empty-feature { background: rgba(109,40,217,.04); border-color: rgba(109,40,217,.15); }
+    .empty-feature:hover {
+      border-color: var(--p4);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 18px rgba(0,0,0,.12);
+    }
+    .empty-feature h4 {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--tx);
+      margin: 0 0 0.2rem;
+      transition: color .2s;
+    }
+    .empty-feature:hover h4 { color: var(--p5); }
+    .empty-feature p {
+      font-size: 0.72rem;
+      color: var(--tx2);
+      margin: 0;
+      line-height: 1.4;
+    }
+
+    /* --- IMPORT MODAL (files / drive) --- */
+    .import-modal {
+      background: rgba(15, 9, 35, 0.92);
+      border: 1px solid var(--bd);
+      border-radius: 24px;
+      width: 95vw;
+      max-width: 620px;
+      max-height: 90vh;
+      max-height: 90dvh;
+      display: none;
+      flex-direction: column;
+      box-shadow: 0 25px 60px rgba(0,0,0,.5), 0 0 40px rgba(139,92,246,.15);
+      overflow: hidden;
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 2001;
+    }
+    .import-modal.active { display: flex; animation: modalSlideUp .4s cubic-bezier(0.16, 1, 0.3, 1); }
+    [data-theme="light"] .import-modal { background: rgba(250, 248, 255, 0.97); }
+    .import-modal .modal-header { flex-shrink: 0; }
+    .import-modal .modal-body {
+      overflow-y: auto;
+      flex: 1 1 auto;
+      min-height: 0;
+      -webkit-overflow-scrolling: touch;
+    }
+    .import-modal .modal-body::-webkit-scrollbar { width: 8px; }
+    .import-modal .modal-body::-webkit-scrollbar-thumb {
+      background: rgba(139,92,246,.3);
+      border-radius: 4px;
+    }
+    .import-modal .modal-body::-webkit-scrollbar-thumb:hover { background: rgba(139,92,246,.5); }
+    .import-source-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.9rem;
+    }
+    @media (max-width: 540px) { .import-source-grid { grid-template-columns: 1fr; } }
+    .import-source-card {
+      background: var(--sf2);
+      border: 1px solid var(--bd2);
+      border-radius: 14px;
+      padding: 1.25rem 1rem;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 0.65rem;
+      cursor: pointer; text-align: center;
+      transition: all .22s cubic-bezier(0.4,0,0.2,1);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      color: var(--tx);
+    }
+    .import-source-card:hover {
+      border-color: var(--p4);
+      background: var(--cu);
+      transform: translateY(-3px);
+      box-shadow: 0 10px 24px rgba(0,0,0,.18), 0 0 14px rgba(139,92,246,.15);
+    }
+    .import-source-icon { font-size: 1.85rem; }
+    .import-source-name { font-size: 0.95rem; font-weight: 700; }
+    .import-source-desc { font-size: 0.75rem; color: var(--tx2); line-height: 1.4; }
+    .import-file-drop {
+      margin-top: 1rem;
+      border: 2px dashed var(--bd2);
+      border-radius: 14px;
+      padding: 1.5rem;
+      text-align: center;
+      color: var(--tx2);
+      font-size: 0.875rem;
+      transition: all .2s ease;
+      cursor: pointer;
+    }
+    .import-file-drop:hover, .import-file-drop.dragover {
+      border-color: var(--p4);
+      background: var(--cu);
+      color: var(--tx);
+    }
+    .import-file-drop .drop-emoji { font-size: 1.75rem; display: block; margin-bottom: 0.35rem; }
+    .import-input-row { margin-top: 1rem; display: flex; flex-direction: column; gap: 0.4rem; }
+    .import-input-row label { font-size: 0.8rem; font-weight: 600; color: var(--tx2); }
+    .import-input-row input, .import-input-row textarea, .import-input-row select {
+      width: 100%;
+      padding: 0.7rem 0.9rem;
+      border-radius: 10px;
+      background: var(--sf2);
+      border: 1px solid var(--bd2);
+      color: var(--tx);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 0.875rem;
+    }
+    .import-input-row input:focus, .import-input-row textarea:focus, .import-input-row select:focus {
+      outline: none; border-color: var(--p4);
+      box-shadow: 0 0 0 3px rgba(139,92,246,.18);
+    }
+    .import-submit-row { display: flex; justify-content: flex-end; margin-top: 1.25rem; }
   </style>
 </head>
 <body class="bg-base tx study-modern">
@@ -276,7 +671,7 @@
     <a href="../index.html" class="flex items-center gap-2.5 no-underline">
       <div class="w-12 h-12 rounded-xl flex items-center justify-center font-display text-xl">
         <span class="logo-letter">
-          <img src="../app/logo.png" alt="Korah"/>
+          <img src="../logo-images/newlogo0.png" alt="Korah"/>
         </span>
       </div>
       <div class="flex flex-col leading-tight">
@@ -290,8 +685,9 @@
   </div>
 
   <nav class="sidebar-nav">
+    <a href="../index.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">home</span> <span class="nav-text">Home</span></a>
     <div class="sidebar-nav-row">
-      <a href="../index.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">chat</span> <span class="nav-text">Chat</span></a>
+      <a href="../chat.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">chat</span> <span class="nav-text">Chat</span></a>
       <a href="feed.html" class="sidebar-nav-link active t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">school</span> <span class="nav-text">Study</span></a>
     </div>
     <a href="../sat/index.html" class="sidebar-nav-link t-btn" data-sat-link="true"><span class="material-icons-round" style="font-size: 1.25rem;">assignment</span> <span class="nav-text">SAT</span></a>
@@ -426,16 +822,17 @@
       </svg>
     </button>
     <div class="logo-container" style="display: flex; align-items: center; margin-right: 0.75rem;">
-      <img src="../app/logo.png" alt="Korah Logo" style="height: 2rem; width: auto;">
+      <img src="../logo-images/newlogo0.png" alt="Korah Logo" style="height: 2rem; width: auto;">
     </div>
     <div class="chat-title-area">
       <div class="korah-status-dot"></div>
       <span class="font-semibold tx text-sm">Study Feed</span>
     </div>
     <div class="topbar-actions">
-      <a href="new.html" class="new-chat-btn grad-bg text-white text-xs font-bold px-4 py-2 rounded-full no-underline border-none cursor-pointer shadow-glow t-btn inline-flex items-center">
+      <button id="create-study-btn" onclick="toggleCreateDropdown(this)" class="new-chat-btn grad-bg text-white text-xs font-bold px-4 py-2 rounded-full border-none cursor-pointer shadow-glow t-btn inline-flex items-center gap-2">
         + Create Study Item
-      </a>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" id="create-study-chevron" style="transition:transform .2s"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
     </div>
   </header>
 
@@ -468,16 +865,186 @@
       <!-- Cards rendered by JS -->
     </div>
     
-    <div id="feed-empty" class="feed-empty hidden">
-      <div class="empty-icon">📚</div>
-      <h2 class="empty-title">Your Study Feed is Empty</h2>
-      <p class="empty-sub">Korah can help you create flashcards, study guides, or practice tests in seconds. Try creating your first item!</p>
-      <a href="new.html" class="new-chat-btn grad-bg text-white text-sm font-bold px-6 py-3 rounded-full no-underline shadow-glow t-btn mt-2">
-        + Create Study Item
-      </a>
+    <div id="feed-empty" class="feed-empty-hero hidden">
+      <div class="empty-bg-glow tr"></div>
+      <div class="empty-bg-glow bl"></div>
+
+      <div class="empty-carousel" id="empty-carousel">
+        <div class="empty-carousel-inner" id="empty-carousel-inner">
+          <!-- Rotating placeholder cards injected by JS -->
+        </div>
+      </div>
+
+      <h2 class="empty-title-new">Turn anything into a study set</h2>
+      <p class="empty-sub-new">Upload files, pull from Google Drive, paste notes, or describe a topic — Korah builds flashcards, study guides, and practice tests for you in seconds.</p>
+
+      <div class="empty-cta-row">
+        <button onclick="toggleCreateDropdown(this)" class="new-chat-btn grad-bg text-white text-sm font-bold px-6 py-3 rounded-full border-none cursor-pointer shadow-glow t-btn inline-flex items-center gap-2">
+          + Create Study Item
+        </button>
+        <button id="open-import-modal-btn" class="empty-cta-secondary t-btn">
+          <span class="material-icons-round" style="font-size: 1.1rem;">cloud_upload</span>
+          Upload Files or Drive
+        </button>
+      </div>
+
+      <div class="empty-features">
+        <div class="empty-feature">
+          <h4>Realistic Results</h4>
+          <p>AI-crafted materials that look hand-made by a tutor.</p>
+        </div>
+        <div class="empty-feature">
+          <h4>Fast Generation</h4>
+          <p>Turn ideas, notes, or PDFs into study sets in seconds.</p>
+        </div>
+        <div class="empty-feature">
+          <h4>Diverse Sources</h4>
+          <p>Files, Google Drive, prompts — bring it all together.</p>
+        </div>
+      </div>
     </div>
   </div>
 </main>
+
+<!-- Create Study Dropdown (fixed, shared by all trigger buttons) -->
+<div id="create-study-dropdown" class="create-study-dropdown">
+  <ul class="create-dropdown-list">
+    <li>
+      <button class="create-dropdown-item" data-type="flashcards">
+        <span class="create-dropdown-emoji">🃏</span>
+        <span class="dropdown-item-text">
+          <span class="dropdown-item-name">Flashcard Set</span>
+          <span class="dropdown-item-desc">Front/back cards with rich text and math</span>
+        </span>
+      </button>
+    </li>
+    <li>
+      <button class="create-dropdown-item" data-type="studyGuide">
+        <span class="create-dropdown-emoji">📖</span>
+        <span class="dropdown-item-text">
+          <span class="dropdown-item-name">Study Guide</span>
+          <span class="dropdown-item-desc">Structured outline with sections and summaries</span>
+        </span>
+      </button>
+    </li>
+    <li>
+      <button class="create-dropdown-item" data-type="practiceTest">
+        <span class="create-dropdown-emoji">🎯</span>
+        <span class="dropdown-item-text">
+          <span class="dropdown-item-name">Practice Test</span>
+          <span class="dropdown-item-desc">Questions with answer keys and rationales</span>
+        </span>
+      </button>
+    </li>
+  </ul>
+</div>
+
+<!-- Creation Modal -->
+<div id="modal-backdrop" class="modal-overlay"></div>
+<div id="creation-modal" class="creation-modal">
+  <div class="modal-header">
+    <h2 class="modal-title" id="creation-modal-title">Create Study Item</h2>
+    <button class="modal-close" id="creation-modal-close">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="modal-body">
+    <p style="text-align:center; font-size:0.8125rem; color:var(--tx2); margin-bottom:1.25rem; font-weight:600;">How do you want to create it?</p>
+    <div class="method-grid">
+      <button type="button" class="method-card t-btn" data-method="manual">
+        <div class="method-icon">✏️</div>
+        <div>
+          <span class="method-name">Manual</span>
+          <span class="method-desc">Type or paste your content directly into the editor</span>
+        </div>
+      </button>
+      <button type="button" class="method-card t-btn" data-method="ai-prompt">
+        <div class="method-icon">💬</div>
+        <div>
+          <span class="method-name">AI from Prompt</span>
+          <span class="method-desc">Describe what you need and let Korah generate the rest</span>
+        </div>
+      </button>
+      <button type="button" class="method-card t-btn" data-method="ai-doc">
+        <div class="method-icon">📄</div>
+        <div>
+          <span class="method-name">AI from Documents</span>
+          <span class="method-desc">Upload PDFs or notes to generate focused materials</span>
+        </div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Import (Files / Drive) Modal -->
+<div id="import-modal-backdrop" class="modal-overlay"></div>
+<div id="import-modal" class="import-modal">
+  <div class="modal-header">
+    <h2 class="modal-title">Import Study Material</h2>
+    <button class="modal-close" id="import-modal-close">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="modal-body">
+    <p style="text-align:center; font-size:0.8125rem; color:var(--tx2); margin-bottom:1.1rem; font-weight:600;">Pick a source — Korah will generate a study set from it.</p>
+
+    <div class="import-source-grid">
+      <button type="button" class="import-source-card t-btn" data-import-source="files">
+        <span class="import-source-icon">📁</span>
+        <span class="import-source-name">Upload Files</span>
+        <span class="import-source-desc">PDFs, slides, notes, or images from your device</span>
+      </button>
+      <button type="button" class="import-source-card t-btn" data-import-source="drive">
+        <span class="import-source-icon">🟢</span>
+        <span class="import-source-name">Google Drive</span>
+        <span class="import-source-desc">Pick a doc, slide deck, or folder from Drive</span>
+      </button>
+      <button type="button" class="import-source-card t-btn" data-import-source="link">
+        <span class="import-source-icon">🔗</span>
+        <span class="import-source-name">Paste a Link</span>
+        <span class="import-source-desc">YouTube videos, articles, or shared documents</span>
+      </button>
+      <button type="button" class="import-source-card t-btn" data-import-source="text">
+        <span class="import-source-icon">📝</span>
+        <span class="import-source-name">Paste Text</span>
+        <span class="import-source-desc">Drop in raw notes or copy from your textbook</span>
+      </button>
+    </div>
+
+    <form id="import-form" onsubmit="return false;">
+      <div class="import-file-drop" id="import-file-drop">
+        <span class="drop-emoji">⬆️</span>
+        Drop files here or click to browse
+        <input type="file" id="import-file-input" multiple hidden />
+      </div>
+
+      <div class="import-input-row">
+        <label for="import-title">Title (optional)</label>
+        <input id="import-title" type="text" placeholder="e.g. Biology Chapter 4 — Cell Division" />
+      </div>
+
+      <div class="import-input-row">
+        <label for="import-target-type">Generate as</label>
+        <select id="import-target-type">
+          <option value="flashcards">🃏 Flashcards</option>
+          <option value="studyGuide">📖 Study Guide</option>
+          <option value="practiceTest">🎯 Practice Test</option>
+        </select>
+      </div>
+
+      <div class="import-input-row">
+        <label for="import-instructions">Instructions for Korah (optional)</label>
+        <textarea id="import-instructions" rows="3" placeholder="Focus on definitions and key formulas…"></textarea>
+      </div>
+
+      <div class="import-submit-row">
+        <button type="submit" id="import-submit" class="new-chat-btn grad-bg text-white text-sm font-bold px-6 py-3 rounded-full border-none cursor-pointer shadow-glow t-btn">
+          Generate Study Set
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
 
 <!-- Settings Modal -->
 <div id="settings-modal" class="settings-modal">
@@ -590,7 +1157,7 @@
   // Initialize sidebar
   window.addEventListener('korahReady', () => {
     if (window.KorahSidebar) {
-        window.KorahSidebar.initSidebar({ chatBaseUrl: "../index.html", itemPageUrl: "item.html" });
+        window.KorahSidebar.initSidebar({ chatBaseUrl: "../chat.html", itemPageUrl: "item.html" });
     }
 }, { once: true });
 
@@ -724,6 +1291,89 @@
 })();
 </script>
 
+<script>
+(function () {
+  var _selectedType = null;
+  var _activeTrigger = null;
+  var TYPE_LABELS = { flashcards: "Flashcard Set", studyGuide: "Study Guide", practiceTest: "Practice Test" };
+
+  var dropdown = document.getElementById("create-study-dropdown");
+  var chevron = document.getElementById("create-study-chevron");
+  var backdrop = document.getElementById("modal-backdrop");
+  var modal = document.getElementById("creation-modal");
+  var modalTitle = document.getElementById("creation-modal-title");
+  var modalClose = document.getElementById("creation-modal-close");
+
+  function positionDropdown(trigger) {
+    var rect = trigger.getBoundingClientRect();
+    var scrollY = window.scrollY;
+    dropdown.style.top = (rect.bottom + scrollY + 6) + "px";
+    // Align right edge to trigger's right edge
+    var right = window.innerWidth - rect.right;
+    dropdown.style.right = right + "px";
+    dropdown.style.left = "auto";
+  }
+
+  window.toggleCreateDropdown = function (trigger) {
+    if (dropdown.classList.contains("open") && _activeTrigger === trigger) {
+      closeDropdown();
+      return;
+    }
+    _activeTrigger = trigger;
+    positionDropdown(trigger);
+    dropdown.classList.add("open");
+    if (trigger === document.getElementById("create-study-btn")) {
+      chevron.style.transform = "rotate(180deg)";
+    }
+  };
+
+  function closeDropdown() {
+    dropdown.classList.remove("open");
+    chevron.style.transform = "";
+    _activeTrigger = null;
+  }
+
+  document.addEventListener("click", function (e) {
+    if (!dropdown.contains(e.target) && e.target !== _activeTrigger && !_activeTrigger?.contains(e.target)) {
+      closeDropdown();
+    }
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") closeDropdown();
+  });
+
+  dropdown.querySelectorAll(".create-dropdown-item").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      closeDropdown();
+      var type = btn.getAttribute("data-type");
+      _selectedType = type;
+      if (modalTitle) modalTitle.textContent = "Create " + (TYPE_LABELS[type] || type);
+      if (backdrop) backdrop.classList.add("active");
+      if (modal) modal.classList.add("active");
+    });
+  });
+
+  document.querySelectorAll(".method-card[data-method]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var method = btn.getAttribute("data-method");
+      var pageMap = { flashcards: "flashcards.html", studyGuide: "guide-create.html", practiceTest: "test-create.html" };
+      if (_selectedType && pageMap[_selectedType]) {
+        window.location.href = pageMap[_selectedType] + "?method=" + encodeURIComponent(method);
+      }
+    });
+  });
+
+  if (modalClose) modalClose.addEventListener("click", function () {
+    backdrop.classList.remove("active");
+    modal.classList.remove("active");
+  });
+  if (backdrop) backdrop.addEventListener("click", function () {
+    backdrop.classList.remove("active");
+    modal.classList.remove("active");
+  });
+})();
+</script>
+
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
   import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
@@ -739,6 +1389,132 @@
 
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
+
+  // ─── Empty state rotating carousel ───────────────────────────────────────
+  (function () {
+    const inner = document.getElementById("empty-carousel-inner");
+    if (!inner) return;
+
+    const placeholders = [
+      { emoji: "📘", bg: "linear-gradient(135deg,#7c3aed,#3b82f6)", rotation: -15 },
+      { emoji: "🧪", bg: "linear-gradient(135deg,#ec4899,#8b5cf6)", rotation: -8 },
+      { emoji: "📐", bg: "linear-gradient(135deg,#06b6d4,#3b82f6)", rotation: 5 },
+      { emoji: "🧠", bg: "linear-gradient(135deg,#f59e0b,#ef4444)", rotation: 12 },
+      { emoji: "📜", bg: "linear-gradient(135deg,#10b981,#06b6d4)", rotation: -12 },
+      { emoji: "🎨", bg: "linear-gradient(135deg,#8b5cf6,#ec4899)", rotation: 8 },
+      { emoji: "🔬", bg: "linear-gradient(135deg,#3b82f6,#10b981)", rotation: -6 },
+      { emoji: "🗺️", bg: "linear-gradient(135deg,#f97316,#ec4899)", rotation: 10 }
+    ];
+
+    const cards = placeholders.map((p, i) => {
+      const card = document.createElement("div");
+      card.className = "empty-card";
+      card.dataset.rotation = p.rotation;
+      card.style.background = p.bg;
+      card.innerHTML =
+        '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:2.75rem;">' +
+        p.emoji + '</div>';
+      inner.appendChild(card);
+      return card;
+    });
+
+    let angles = placeholders.map((_, i) => i * (360 / placeholders.length));
+    let mouseX = 0.5, mouseY = 0.5;
+
+    const carousel = document.getElementById("empty-carousel");
+    carousel.addEventListener("mousemove", function (e) {
+      const rect = carousel.getBoundingClientRect();
+      mouseX = (e.clientX - rect.left) / rect.width;
+      mouseY = (e.clientY - rect.top) / rect.height;
+    });
+    carousel.addEventListener("mouseleave", function () {
+      mouseX = 0.5; mouseY = 0.5;
+    });
+
+    function isCompactCard() { return window.innerWidth < 640; }
+
+    function tick() {
+      const radius = isCompactCard() ? 75 : 105;
+      const pX = (mouseX - 0.5) * 20;
+      const pY = (mouseY - 0.5) * 20;
+      angles = angles.map(a => (a + 0.5) % 360);
+      cards.forEach((card, i) => {
+        const rad = angles[i] * Math.PI / 180;
+        const x = Math.cos(rad) * radius;
+        const y = Math.sin(rad) * radius;
+        const rot = card.dataset.rotation || 0;
+        card.style.transform =
+          'translate(' + x + 'px, ' + y + 'px) ' +
+          'rotateX(' + pY + 'deg) rotateY(' + pX + 'deg) rotateZ(' + rot + 'deg)';
+      });
+    }
+    setInterval(tick, 50);
+    tick();
+  })();
+
+  // ─── Import (Files / Drive) modal ────────────────────────────────────────
+  (function () {
+    const openBtn = document.getElementById("open-import-modal-btn");
+    const backdrop = document.getElementById("import-modal-backdrop");
+    const modal = document.getElementById("import-modal");
+    const closeBtn = document.getElementById("import-modal-close");
+    const drop = document.getElementById("import-file-drop");
+    const fileInput = document.getElementById("import-file-input");
+    const submitBtn = document.getElementById("import-submit");
+
+    if (!openBtn || !modal) return;
+
+    function open() { backdrop.classList.add("active"); modal.classList.add("active"); }
+    function close() { backdrop.classList.remove("active"); modal.classList.remove("active"); }
+
+    openBtn.addEventListener("click", open);
+    closeBtn.addEventListener("click", close);
+    backdrop.addEventListener("click", close);
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && modal.classList.contains("active")) close();
+    });
+
+    drop.addEventListener("click", function () { fileInput.click(); });
+    ["dragover", "dragenter"].forEach(ev => drop.addEventListener(ev, function (e) {
+      e.preventDefault(); drop.classList.add("dragover");
+    }));
+    ["dragleave", "drop"].forEach(ev => drop.addEventListener(ev, function (e) {
+      e.preventDefault(); drop.classList.remove("dragover");
+    }));
+    drop.addEventListener("drop", function (e) {
+      const files = e.dataTransfer && e.dataTransfer.files;
+      if (files && files.length) {
+        drop.querySelector(".drop-emoji").textContent = "✅";
+        drop.childNodes[2 && drop.lastChild]; // no-op
+        drop.innerHTML = '<span class="drop-emoji">✅</span>' + files.length + ' file(s) ready';
+      }
+    });
+    fileInput.addEventListener("change", function () {
+      if (fileInput.files && fileInput.files.length) {
+        drop.innerHTML = '<span class="drop-emoji">✅</span>' + fileInput.files.length + ' file(s) selected';
+      }
+    });
+
+    document.querySelectorAll(".import-source-card[data-import-source]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        const src = btn.getAttribute("data-import-source");
+        if (src === "files") fileInput.click();
+        // drive/link/text wiring — to be implemented
+        document.querySelectorAll(".import-source-card").forEach(c => c.style.borderColor = "");
+        btn.style.borderColor = "var(--p4)";
+      });
+    });
+
+    submitBtn.addEventListener("click", function () {
+      // Stub — functionality coming soon
+      console.log("[import] submit", {
+        title: document.getElementById("import-title").value,
+        targetType: document.getElementById("import-target-type").value,
+        instructions: document.getElementById("import-instructions").value,
+        files: fileInput.files
+      });
+    });
+  })();
 
   document.getElementById('logout-btn').addEventListener('click', () => {
     window.confirmLogout(async () => {

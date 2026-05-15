@@ -313,7 +313,7 @@ function showSidebarDeleteModal(name, onConfirm) {
         link.innerHTML = "<span class='material-icons-round' style='font-size: 1.25rem;'>school</span> <span class='nav-text'>Study</span>";
         if (itemIds.length === 0) link.classList.add("nav-empty");
         else link.classList.remove("nav-empty");
-      } else if (href.includes("index.html")) {
+      } else if (href.includes("chat.html")) {
         link.innerHTML = "<span class='material-icons-round' style='font-size: 1.25rem;'>chat</span> <span class='nav-text'>Chat</span>";
       }
       // All other links (productivity) remain unchanged
@@ -1208,7 +1208,7 @@ function showSidebarDeleteModal(name, onConfirm) {
           localStorage.clear();
 
           // Redirect to index to ensure all in-memory states are reset
-          const resolvedBaseUrl = document.getElementById('new-chat-btn')?.getAttribute('data-base-url') || (window.location.pathname.includes('/study/') || window.location.pathname.includes('/sat/') ? '../index.html' : 'index.html');
+          const resolvedBaseUrl = document.getElementById('new-chat-btn')?.getAttribute('data-base-url') || (window.location.pathname.includes('/study/') || window.location.pathname.includes('/sat/') ? '../chat.html' : 'chat.html');
           window.location.href = resolvedBaseUrl;
 
         } catch (err) {
@@ -1236,14 +1236,14 @@ function showSidebarDeleteModal(name, onConfirm) {
     initActionModals();
     const chatEl = document.getElementById(chatHistoryId || "chat-history");
     const studyEl = document.getElementById(studyItemsId || "study-items-history");
-    const resolvedBaseUrl = chatBaseUrl || "../index.html";
+    const resolvedBaseUrl = chatBaseUrl || "../chat.html";
     const resolvedItemUrl = itemPageUrl || "item.html";
 
     const newChatBtn = document.getElementById("new-chat-btn");
     if (newChatBtn) {
       newChatBtn.addEventListener("click", () => {
         const currentPage = window.location.pathname;
-        const isMainChatPage = currentPage.includes("index.html") || currentPage.endsWith("/");
+        const isMainChatPage = currentPage.includes("chat.html") || currentPage.endsWith("/");
         const isSatPage = currentPage.includes("/sat/");
         
         // Redirect to main chat if not on main page or on SAT pages

@@ -24,7 +24,8 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Korah AI — Home</title>
-<link rel="icon" type="image/png" href="app/logoresized.png">
+<script>document.documentElement.setAttribute('data-theme', localStorage.getItem('korah_theme') || 'dark');</script>
+<link rel="icon" type="image/png" href="logo-images/newlogo0.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
@@ -34,6 +35,9 @@
 <script src="study/js/sidebar.js"></script>
 <link rel="stylesheet" href="app/korah-chat.css"/>
 <style>
+  /* Inner content area scrolls; topbar + sidebar stay fixed like other pages */
+  .home-scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; }
+
   .home-page { padding: 28px 36px 60px; max-width: 1240px; margin: 0 auto; }
 
   .home-topbar {
@@ -199,7 +203,7 @@
   .plan-card:hover { border-color: rgba(167,139,250,.45); }
   .plan-card .plan-icon {
     font-size: 52px; line-height: 1;
-    filter: drop-shadow(0 6px 14px rgba(167,139,250,.35));
+    filter: drop-shadow(0 6px 14px rgba(167,139,250,.25));
   }
   .plan-card h3 { font-size: 22px; font-weight: 800; color: var(--tx); margin: 14px 0 6px; letter-spacing: -0.01em; }
   .plan-card p { font-size: 14px; color: var(--tx2); margin: 0; max-width: 420px; margin-inline: auto; }
@@ -273,9 +277,9 @@
   @resize.window="if (window.innerWidth > 768) { mobileOpen = false; const overlay = document.querySelector('.sidebar-overlay'); if (overlay) overlay.classList.remove('show'); }">
   <div class="sidebar-header">
     <a href="index.html" class="flex items-center gap-2.5 no-underline">
-      <div class="w-12 h-12 rounded-xl flex items-center justify-center font-display text-xl">
-        <span class="logo-letter">
-          <img src="app/logo.png" alt="Korah"/>
+      <div class="w-16 h-16 rounded-xl flex items-center justify-center font-display text-xl">
+        <span class="logo-letter"></span>
+          <img src="logo-images/newlogo0.png" alt="Korah"/>
         </span>
       </div>
       <div class="flex flex-col leading-tight">
@@ -289,6 +293,7 @@
   </div>
 
   <nav class="sidebar-nav">
+    <a href="index.html" class="sidebar-nav-link active t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">home</span> <span class="nav-text">Home</span></a>
     <div class="sidebar-nav-row">
       <a href="chat.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">chat</span> <span class="nav-text">Chat</span></a>
       <a href="study/feed.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">school</span> <span class="nav-text">Study</span></a>
@@ -381,6 +386,7 @@
     </div>
   </header>
 
+  <div class="home-scroll">
   <div class="home-page">
 
     <!-- Hero -->
@@ -440,7 +446,11 @@
     <h2 class="home-section-head"><span class="material-icons-round">playlist_add_check</span> Today's Study Plan</h2>
     <section class="study-plan-grid">
       <a href="study/test-create.html" class="plan-card no-underline" style="display:block;">
-        <div class="plan-icon">🧠</div>
+        <div class="plan-icon">
+          <div style="display: flex; justify-content: center; align-items: center; height: 100%;">
+            <img src="logo-images/newlogo2.png" style="height: 10rem;">
+          </div>
+        </div>
         <h3>Create a study plan</h3>
         <p>Get a personalized study plan based on your test date and skill level.</p>
       </a>
@@ -463,6 +473,7 @@
       </div>
     </section>
 
+  </div>
   </div>
 </main>
 </div>

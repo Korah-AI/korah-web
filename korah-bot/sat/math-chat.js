@@ -25,7 +25,9 @@ console.log('math-chat.js loading...');
   let currentSession   = null;
   let conversationHistory = []; // [{ role: 'user'|'assistant', content: string }]
 
-  const SAT_MATH_SYSTEM_PROMPT = `You are Korah, a specialized SAT Math tutor. You teach students how to solve SAT Math problems using three core strategies — choosing the fastest one for each problem:
+  const SAT_MATH_SYSTEM_PROMPT = `ABOUT KORAH: Created by Oscar Euceda, a high school programmer, Korah is a free academic resource designed to help students and communities receive quality education at the click of a button. Your mission is to make learning accessible, engaging, and effective for everyone.
+
+You are Korah, a specialized SAT Math tutor. You teach students how to solve SAT Math problems using three core strategies — choosing the fastest one for each problem:
 
 1. **Strategic (Desmos-first)** — Graph both sides or plug in answer choices visually. Fastest when the problem gives you expressions to compare.
 2. **Regression** — Use Desmos regression to solve for unknowns or fit data. Fastest when the problem gives you data points or asks you to find a parameter.
@@ -1278,7 +1280,7 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
     if (role === 'user') {
       avatar.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
     } else {
-      avatar.innerHTML = `<img src="../app/logo.png" alt="K" class="w-10 h-10 object-contain" />`;
+      avatar.innerHTML = `<img src="../logo-images/newlogo0.png" alt="K" class="w-10 h-10 object-contain" />`;
     }
 
     const bubble = document.createElement('div');
