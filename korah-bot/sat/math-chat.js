@@ -102,10 +102,13 @@ console.log('math-chat.js loading...');
       }
       if (expr.type === 'expression' && typeof expr.latex === 'string') {
         const lx = expr.latex;
-        // A regression with x_1 / y_1 that comes before any table is broken.
+        // A regression with x_1 / y_1 that comes before any table is broken,
+        // UNLESS the expression declares its own regressionParameters (in which case
+        // x_{1} is a fitted parameter, not a table column reference).
         const hasTilde = lx.includes('\\sim') || /(?:^|[^\\])~/.test(lx);
         const refsTableVar = /x_\{?1\}?|y_\{?1\}?/.test(lx);
-        if (hasTilde && refsTableVar && !seenTable) {
+        const hasOwnRegParams = expr.regressionParameters && typeof expr.regressionParameters === 'object';
+        if (hasTilde && refsTableVar && !seenTable && !hasOwnRegParams) {
           errors.push(`expr[${idx}] regression references x_1/y_1 but no preceding table found`);
         }
       }
@@ -125,141 +128,29 @@ console.log('math-chat.js loading...');
     return matches || [];
   }
 
-  const SAT_MATH_SYSTEM_PROMPT_BASE = `ABOUT KORAH: Created by Oscar Euceda, a high school programmer, Korah is a free academic resource designed to help students and communities receive quality education at the click of a button. Your mission is to make learning accessible, engaging, and effective for everyone.
+  // ─── Phase 1 (classifier) ──────────────────────────────────────────────
+  // Pure template selection. Tiny output. Streams but feels instant.
+  const PHASE1_CLASSIFIER_PROMPT_BASE = `You are the classifier stage of Korah, an SAT Math tutor. Your ONLY job is to pick the best matching Desmos template id for the student's problem.
 
-You are Korah, a specialized SAT Math tutor. You teach students how to solve SAT Math problems using three core strategies — choosing the fastest one for each problem:
-
-1. **Strategic (Desmos-first)** — Graph both sides or plug in answer choices visually. Fastest when the problem gives you expressions to compare.
-2. **Regression** — Use Desmos regression to solve for unknowns or fit data. Fastest when the problem gives you data points or asks you to find a parameter.
-3. **Algebraic** — Solve by hand with clear steps. Use when the problem is purely symbolic or when you want to verify a Desmos answer.
-
-You cover all SAT Math domains:
-- Algebra (linear equations, systems, inequalities)
-- Advanced Math (quadratics, polynomials, exponential/rational functions)
-- Problem-Solving & Data Analysis (ratios, percentages, statistics, scatterplots)
-- Geometry & Trigonometry (area, volume, circles, right triangles, unit circle)
-
-═══════════════════════════════════════════
-TEACHING APPROACH — STEP-BY-STEP ALWAYS
-═══════════════════════════════════════════
-
-Every explanation MUST follow this structure:
-
-**Step 1 — Understand the problem.** Restate what is given and what is being asked. Identify the problem type (linear, quadratic, system, data/regression, geometry, etc.).
-
-**Step 2 — Choose a strategy.** Explicitly tell the student which approach you are using and WHY it is the fastest:
-- "This is a parameter-solving problem → **Regression trick** is fastest."
-- "We have answer choices with graphable expressions → **Graph-and-check** is fastest."
-- "This is a pure algebra manipulation → **Algebraic approach** is cleanest."
-
-**Step 3 — Execute step-by-step.** Show each substep clearly. When using Desmos, narrate what appears on the graph: "Notice on the graph that the two curves intersect at $x = 3$..."
-
-**Step 4 — Verify.** Always verify the answer using a second method or by plugging back in. Reference the graph: "As you can see on the graph, plugging $k = 2.45$ back in makes both expressions identical."
-
-**Step 5 — SAT Tip.** End with a brief, actionable test-day tip related to this problem type.
-
-═══════════════════════════════════════════
-SAT PROBLEM-SOLVING STRATEGIES (DETAILED)
-═══════════════════════════════════════════
-
-STRATEGY A — REGRESSION TRICK (for solving unknowns)
-When a problem says "Expression A can be rewritten as Expression B, find k" or "find h and k":
-1. Set the two expressions equal to each other.
-2. Replace every variable (like $x$) with a subscript constant ($x_1$). This tells Desmos to treat it as data, not a variable.
-3. Replace the equals sign ($=$) with a tilde ($\\sim$). This tells Desmos to run a regression.
-4. **If solving for ONE parameter:** Desmos will compute it automatically from context.
-5. **If solving for MULTIPLE parameters (h, k, etc.):** First add $x_1 = [1, 2, 3]$ (or an appropriate range like [0, 5]) to define data points for fitting. This gives Desmos concrete values to regress against.
-6. Read the fitted values from the graph panel.
-
-EXAMPLE (single parameter) — "$(1/3)x^2 - 2$ can be rewritten as $(1/3)(x-k)(x+k)$. Find $k$."
-→ Type: $\\frac{1}{3}x_{1}^{2}-2 \\sim \\frac{1}{3}(x_{1}-k)(x_{1}+k)$
-→ Desmos outputs $k \\approx 2.449$, which is $\\sqrt{6}$.
-→ Verify: plug $k = \\sqrt{6}$ back in and graph both — they overlap perfectly.
-
-EXAMPLE (multiple parameters) — "$2x^2 - 12x + 10$ can be rewritten as $2(x-h)^2 + k$. Find $h$ and $k$."
-→ First set $x_1 = [1, 2, 3, 4, 5]$ to define test points.
-→ Then type the regression: $2x_{1}^{2}-12x_{1}+10 \\sim 2(x_{1}-h)^{2}+k$
-→ Desmos fits both $h$ and $k$ simultaneously using the $x_1$ values as anchors.
-→ Read: $h \\approx 3$, $k \\approx -8$. Verify by substituting back.
-
-STRATEGY B — DATA TABLE + REGRESSION (for data/scatterplot problems)
-When a problem gives you a table of values or data points:
-1. Enter the data as a table with columns $x_1$ and $y_1$.
-2. Run the appropriate regression (linear, quadratic, exponential, etc.).
-3. Read the equation from the regression output.
-4. If the problem gives answer choices, also graph each choice and see which one passes through all the points.
-
-EXAMPLE — "A linear function contains the points (-1,12), (0,15), (1,18), (2,21). Which expression represents it?"
-→ Enter the table, run linear regression $y_1 \\sim mx_1 + b$.
-→ Desmos outputs $m=3$, $b=15$, so the function is $3x+15$.
-→ Alternatively: graph each answer choice ($3x+12$, $15x+12$, $15x+15$, $3x+15$) and see which line hits every data point. Only $3x+15$ passes through all four.
-
-STRATEGY C — GRAPH-AND-CHECK (for multiple choice with graphable expressions)
-When the problem gives you answer choices that are equations/functions:
-1. Graph the constraint or original equation.
-2. Graph each answer choice in a different color.
-3. The correct answer is the one that matches, intersects at the right point, or passes through the data.
-
-STRATEGY D — ALGEBRAIC (traditional solving)
-Use standard algebra when the problem is purely symbolic:
-- Show each manipulation step clearly.
-- Use KaTeX display math ($$...$$) for important equations.
-- Always state what operation you are performing: "Subtract 3 from both sides..."
-- After solving, graph the result on Desmos so the student can see it visually.
-
-═══════════════════════════════════════════
-RESPONSE FORMAT (STRICT) — PHASE 1 CLASSIFICATION
-═══════════════════════════════════════════
-
-You will NOT generate raw Desmos JSON yourself. The system has a library of human-verified Desmos templates.
-Your job in Phase 1 is to:
-1. Read the student's problem
-2. Pick the best matching template from the AVAILABLE TEMPLATES list (or null if none fit)
-3. Explain the solving strategy and walk the student through it in text
-
-You MUST respond with a single raw JSON object (no markdown code fences) with these fields:
+Output a single raw JSON object — NO code fences, NO commentary, NO extra fields:
 
 {
-  "stateId": "id_from_the_template_list_or_null",
-  "strategy": "Brief reason for selecting this template — what about the problem matches",
-  "response": "Your full Markdown + KaTeX explanation for the student",
-  "suggestions": ["optional follow-up 1", "optional follow-up 2"]
+  "stateId": "id_from_template_list_or_null",
+  "strategy": "one short sentence (max 20 words) on which template fits and why"
 }
 
-TEMPLATE SELECTION RULES:
-- "stateId" must exactly match an "id" from the AVAILABLE TEMPLATES list, or be null.
-- Set stateId to null when no template fits — the graph will not update, and you should explain in "response" why no graph is being shown.
-- "visualizer" templates load as-is for conceptual demonstrations (symmetry, unit circle, etc.).
-- "problem-solver" templates trigger a Phase 2 adaptation — the system will give you the example + template and ask you to fill in problem-specific values.
-- Pick the template whose description and keywords best match the problem at hand.
+RULES:
+- stateId must be EXACTLY an "id" from the AVAILABLE TEMPLATES list below, or null.
+- "visualizer" templates are for conceptual demonstrations (symmetry, unit circle, sinusoids).
+- "problem-solver" templates are for solving concrete SAT problems matching the description+keywords.
+- If no template fits, return stateId: null.
+- Do NOT explain the math. Do NOT write a tutoring response. Just classify.`;
 
-═══════════════════════════════════════════
-TEXT RESPONSE RULES
-═══════════════════════════════════════════
-
-The "response" field contains your explanation using:
-- Markdown headings (## Step 1, ## Step 2, etc.), bold, italic
-- KaTeX for math: $inline$ or $$display$$
-- NEVER use \\\\(...\\\\), \\\\[...\\\\], or bare math outside dollar signs.
-- NEVER embed raw JSON objects or code blocks inside the response text.
-- Reference the graph directly: "Look at the graph — the green regression line passes through all four data points."
-- Always number your steps and label them with the strategy name.
-
-OPTIONALLY include a "suggestions" field with 0-2 follow-up questions the user might ask next.
-Only include suggestions if genuinely useful. Max 2 items.`;
-
-function getFormatInstructions() {
-  return `STRICT RESPONSE FORMAT: Output ONLY raw JSON. No code blocks.
-Fields: { "stateId": "id_or_null", "strategy": "...", "response": "...", "suggestions": [...] }
-KATEX in "response": $...$ for inline, $$...$$ for display.
-OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
-}
-
-async function buildPhase1SystemPrompt() {
-  const index = await loadTemplateIndex();
-  const block = buildTemplateIndexBlock(index);
-  return SAT_MATH_SYSTEM_PROMPT_BASE + '\n\n' + block;
-}
+  async function buildPhase1SystemPrompt() {
+    const index = await loadTemplateIndex();
+    const block = buildTemplateIndexBlock(index);
+    return PHASE1_CLASSIFIER_PROMPT_BASE + '\n\n' + block;
+  }
 
 function buildPhase2SystemPrompt() {
   return `You are adapting a Desmos calculator state to fit a specific SAT problem.
@@ -305,6 +196,92 @@ The object must have this shape:
 
 If you cannot adapt the template (problem doesn't actually match), output exactly: null`;
 }
+
+  // ─── Phase 3 (tutoring response) ────────────────────────────────────────
+  // Streams a chat-facing markdown explanation. Grounded in the loaded Desmos
+  // state when one was loaded, so the model can reference exact values.
+  function buildPhase3SystemPrompt(adaptedState, classifierStrategy) {
+    const base = `You are Korah, an SAT Math tutor created by Oscar Euceda. The system has already loaded a Desmos graph for the student (or determined no graph was needed). Your job: explain the solution, referencing what is visible on the graph.
+
+OUTPUT FORMAT:
+Output ONLY the explanation text — pure Markdown + KaTeX. NO JSON, NO code fences, NO field names.
+
+STYLE:
+- Confident, finished walkthrough. Do NOT think out loud. Do NOT show "let me re-check" moments.
+- If you need to verify, do it silently. Only the final clean explanation appears in your output.
+- Do NOT type Desmos commands or instruct the student to "type $x_1 = [1,2,3]$". The graph is already on screen — reference what it shows.
+- Be concise. Clarity over length.
+
+STRUCTURE:
+**Step 1 — Understand the problem.** Restate what is given and what is being asked.
+**Step 2 — Strategy.** One sentence on the approach (e.g., "Read m and b from the regression on the graph").
+**Step 3 — Solve.** Walk through the math, referencing what the graph shows ("The regression line fits m = -4 and b = 30…"). Use the EXACT values that appear in the loaded state below.
+**Step 4 — Answer.** State the final answer clearly.
+**Step 5 — SAT Tip.** One short test-day tip.
+
+TEXT FORMATTING:
+- Markdown headings, **bold**, *italic*
+- KaTeX for math: $inline$ or $$display$$. Every variable, coefficient, equation goes in dollar signs.
+- NEVER use \\\\(...\\\\) or \\\\[...\\\\]
+- NEVER include raw JSON, code blocks, or Desmos input syntax`;
+
+    let context = '';
+    if (classifierStrategy) {
+      context += `\n\n=== CLASSIFIER NOTE ===\n${classifierStrategy}`;
+    }
+    if (adaptedState) {
+      // Trim the state to just the expressions so the model focuses on math content,
+      // not the boilerplate randomSeed/version.
+      const slim = { expressions: adaptedState.expressions };
+      context += `\n\n=== LOADED GRAPH STATE (ground your explanation in these exact values) ===\n${JSON.stringify(slim, null, 2)}\n\nThe text nodes above already contain the algebraic reasoning written by the system. Rewrite that reasoning as a flowing student-facing explanation — do NOT just copy the text nodes verbatim, but use their numbers and steps as ground truth.`;
+    } else {
+      context += `\n\n=== NO GRAPH LOADED ===\nNo Desmos graph was loaded for this problem. Solve it algebraically with clear steps.`;
+    }
+    return base + context;
+  }
+
+  // Phase 1 caller: non-streaming feel (small JSON output, parsed at the end).
+  async function runPhase1Classification(problem) {
+    let fullText = '';
+    try {
+      await callAPI(problem, (_chunk, full) => { fullText = full; }, {
+        systemPrompt: (await buildPhase1SystemPrompt()),
+        temperature: 0.1,
+      });
+    } catch (e) {
+      console.error('Phase 1 API call failed:', e);
+      return null;
+    }
+
+    let s = fullText.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+    const braceIdx = s.indexOf('{');
+    if (braceIdx === -1) return null;
+    s = s.substring(braceIdx);
+
+    let parsed = null;
+    try { parsed = JSON.parse(s); } catch (_) {}
+    if (!parsed) {
+      // Last-resort: find balanced braces.
+      let depth = 0, end = -1, inStr = false, esc = false;
+      for (let i = 0; i < s.length; i++) {
+        const ch = s[i];
+        if (esc) { esc = false; continue; }
+        if (ch === '\\') { esc = true; continue; }
+        if (ch === '"') { inStr = !inStr; continue; }
+        if (inStr) continue;
+        if (ch === '{') depth++;
+        else if (ch === '}') { depth--; if (depth === 0) { end = i; break; } }
+      }
+      if (end !== -1) {
+        try { parsed = JSON.parse(s.substring(0, end + 1)); } catch (_) {}
+      }
+    }
+    if (!parsed) return null;
+    return {
+      stateId: typeof parsed.stateId === 'string' ? parsed.stateId : null,
+      strategy: typeof parsed.strategy === 'string' ? parsed.strategy : '',
+    };
+  }
 
   function initializeSATGraph() {
     const container = document.getElementById('sat-graph-container');
@@ -983,8 +960,18 @@ Output the adapted Desmos state JSON ONLY (no commentary, no code fences).`;
 
       let delay = 5;
       if (charBuffer.length > 50) delay = 0;
-      
+
       setTimeout(typeNextChar, delay);
+    };
+
+    // Animate already-buffered text into the content element using the same
+    // typewriter as live streaming. Used after the graph has loaded so the
+    // chat narration flows in over the (already-visible) graph.
+    const animateResponseText = (el, text) => {
+      if (!el || !text) return;
+      currentTypedText = '';
+      charBuffer = text.split('');
+      if (!typewriterActive) typeNextChar();
     };
 
   // Unescape a JSON string value, preserving LaTeX backslashes.
@@ -1015,326 +1002,111 @@ Output the adapted Desmos state JSON ONLY (no commentary, no code fences).`;
     return out;
   };
 
-  console.log('Calling API with message:', fullMessage.substring(0, 50));
-  let parsedResponse = null;
-  let isJSONMode = false;
-  let fullReplyFromAPI = "";
+  console.log('Three-phase send for:', fullMessage.substring(0, 50));
+  let phase3FullText = "";
+
+  // Helper: replace the current indicator with a "Drawing graph…" indicator.
+  const showDrawingIndicator = () => {
+    if (!contentElement) return;
+    contentElement.innerHTML = '';
+    const ind = document.createElement('div');
+    ind.className = 'thinking-indicator graph-loading-indicator';
+    ind.innerHTML = `
+      <span style="font-size: 0.8125rem; font-weight: 600; margin-right: 0.5rem;">Drawing graph…</span>
+      <div class="thinking-dot"></div>
+      <div class="thinking-dot"></div>
+      <div class="thinking-dot"></div>
+    `;
+    contentElement.appendChild(ind);
+    thinkingIndicator = ind;
+  };
 
   try {
     const userContent = buildUserContent(fullMessage, pendingFiles);
-    await callAPI(userContent, (chunk, fullText) => {
-      // Remove thinking indicator when first chunk arrives
-      if (thinkingIndicator && fullText.length > 0) {
-        thinkingIndicator.remove();
+
+    // ── PHASE 1: silent classification ──
+    const classification = await runPhase1Classification(userContent);
+    const stateId = classification?.stateId || null;
+    const classifierStrategy = classification?.strategy || '';
+
+    // ── PHASE 2: graph loading (silent, shows "Drawing graph…" indicator) ──
+    let loadedState = null;
+    if (stateId) {
+      showDrawingIndicator();
+      try {
+        const index = await loadTemplateIndex();
+        const entry = index.find(e => e.id === stateId);
+        if (!entry) {
+          console.warn(`Phase 1: stateId "${stateId}" not in template index`);
+        } else if (entry.type === 'visualizer') {
+          const example = await loadExample(stateId);
+          const result = loadDesmosState(example);
+          if (result.ok) loadedState = example;
+          else console.warn('Visualizer load failed:', result.errors);
+        } else if (entry.type === 'problem-solver') {
+          const adapted = await runPhase2Adaptation(userMessage, stateId);
+          if (adapted) {
+            const result = loadDesmosState(adapted);
+            if (result.ok) {
+              loadedState = adapted;
+            } else {
+              console.warn('Adapted state validation failed:', result.errors, adapted);
+              const example = await loadExample(stateId);
+              if (loadDesmosState(example).ok) loadedState = example;
+            }
+          } else {
+            console.warn('Phase 2 returned null; falling back to verified example.');
+            const example = await loadExample(stateId);
+            if (loadDesmosState(example).ok) loadedState = example;
+          }
+        }
+      } catch (e) {
+        console.error('Failed to resolve/load template:', e);
+      }
+    }
+
+    // ── PHASE 3: streamed tutoring response, grounded in the loaded state ──
+    // Keep the existing indicator visible until Phase 3 produces its first chunk.
+    charBuffer = [];
+    typewriterActive = false;
+    lastBufferedLength = 0;
+    currentTypedText = '';
+    let firstChunkSeen = false;
+
+    await callAPI(userContent, (_chunk, fullText) => {
+      phase3FullText = fullText;
+      if (!firstChunkSeen && fullText.length > 0) {
+        firstChunkSeen = true;
+        if (contentElement) contentElement.innerHTML = '';
         thinkingIndicator = null;
       }
-      
-      fullReplyFromAPI = fullText;
       if (contentElement && fullText) {
         const delta = fullText.slice(lastBufferedLength);
         lastBufferedLength = fullText.length;
-        
-        if (!isJSONMode && (fullText.trim().startsWith('{') || fullText.trim().startsWith('```json'))) {
-          isJSONMode = true;
-          charBuffer = []; 
-        }
-        
-        if (!isJSONMode) {
-          charBuffer.push(...delta.split(''));
-          if (!typewriterActive) {
-            typeNextChar();
-          }
-        } else {
-          // While streaming JSON, try to extract and show the response field
-          // Use more robust parsing - try to find the response value by counting braces
-          const responseKey = '"response":';
-          const responseStart = fullText.indexOf(responseKey);
-          if (responseStart !== -1) {
-            let inString = false;
-            let escapeNext = false;
-            let quoteStart = -1;
-            // Start scanning right after `"response":` (skip optional whitespace to find opening quote)
-            for (let i = responseStart + responseKey.length; i < fullText.length; i++) {
-              const char = fullText[i];
-              if (escapeNext) {
-                escapeNext = false;
-                continue;
-              }
-              if (char === '\\') {
-                escapeNext = true;
-                continue;
-              }
-              if (char === '"') {
-                if (!inString) {
-                  inString = true;
-                  quoteStart = i;
-                } else {
-                  // End of string - we have the full response value so far
-                  const responseValue = unescapeJSONString(fullText.substring(quoteStart + 1, i));
-                  renderMarkdownAndMath(contentElement, responseValue + "▊");
-                  break;
-                }
-              }
-            }
-            // If we found the opening quote but not the closing one yet (still streaming), render partial
-            if (quoteStart !== -1 && inString === true) {
-              const partial = unescapeJSONString(fullText.substring(quoteStart + 1));
-              if (partial.length > 0) {
-                renderMarkdownAndMath(contentElement, partial + "▊");
-              }
-            }
-          } else if (!contentElement.textContent || contentElement.textContent === "Korah is thinking...") {
-            contentElement.textContent = "Korah is thinking...";
-          }
-        }
+        charBuffer.push(...delta.split(''));
+        if (!typewriterActive) typeNextChar();
       }
+    }, {
+      systemPrompt: buildPhase3SystemPrompt(loadedState, classifierStrategy),
+      temperature: 0.2,
     });
 
-      typingIndicator?.classList.add('hidden');
-      
+    typingIndicator?.classList.add('hidden');
+
+    // Wait for the typewriter to drain so the final render reflects the full text.
+    // (Cheap busy-wait alternative would be ugly; instead, force one final render.)
+    if (contentElement && phase3FullText) {
+      renderMarkdownAndMath(contentElement, phase3FullText);
       charBuffer = [];
       typewriterActive = false;
-      
-      if (contentElement) {
-        const finalRawText = fullReplyFromAPI.trim();
-        
-        // ── Manual field extraction ──────────────────────────────
-        // Instead of JSON.parse (which breaks on unescaped LaTeX
-        // backslashes like \frac, \sim, \text), we extract each
-        // field directly from the raw text.
+    }
 
-        const parseAIResponse = (raw) => {
-          let s = raw.trim();
-          // Strip ```json ... ``` wrappers
-          s = s.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
-          const braceIdx = s.indexOf('{');
-          if (braceIdx === -1) return null;
-          s = s.substring(braceIdx);
+    chatBody.scrollTop = chatBody.scrollHeight;
 
-          // Fast path: try JSON.parse first (handles well-formed JSON)
-          try {
-            const p = JSON.parse(s);
-            if (p && (p.response || 'stateId' in p)) return p;
-          } catch (_) {}
-
-          // Slow path: extract fields manually
-          const result = { stateId: null, strategy: '', response: '', suggestions: [] };
-
-          result.response = extractStringField(s, 'response') || '';
-          result.strategy = extractStringField(s, 'strategy') || '';
-
-          // ── Extract "stateId" (string or null) ──
-          const idStart = findFieldValueStart(s, 'stateId');
-          if (idStart !== -1) {
-            const after = s.substring(idStart).trim();
-            if (after.startsWith('null')) {
-              result.stateId = null;
-            } else if (after.startsWith('"')) {
-              const closeQuote = after.indexOf('"', 1);
-              if (closeQuote !== -1) result.stateId = after.substring(1, closeQuote);
-            }
-          }
-
-          // ── Extract "suggestions" array ──
-          const sugStart = findFieldValueStart(s, 'suggestions');
-          if (sugStart !== -1) {
-            const after = s.substring(sugStart).trim();
-            if (after.startsWith('[')) {
-              const end = after.indexOf(']');
-              if (end !== -1) {
-                try { result.suggestions = JSON.parse(after.substring(0, end + 1)); }
-                catch (_) {}
-              }
-            }
-          }
-
-          return (result.response || result.stateId) ? result : null;
-        };
-
-        // Find the index right after `"fieldName":` in text
-        const findFieldValueStart = (text, name) => {
-          const key = '"' + name + '"';
-          const idx = text.indexOf(key);
-          if (idx === -1) return -1;
-          let i = idx + key.length;
-          while (i < text.length && text[i] !== ':') i++;
-          return i < text.length ? i + 1 : -1;
-        };
-
-        // Extract a JSON string value, properly unescaping while
-        // preserving LaTeX backslashes (\frac → \frac, not form-feed + rac)
-        const extractStringField = (text, name) => {
-          const start = findFieldValueStart(text, name);
-          if (start === -1) return null;
-          let i = start;
-          while (i < text.length && /\s/.test(text[i])) i++;
-          if (text[i] !== '"') return null;
-          i++; // skip opening quote
-
-          let value = '';
-          let esc = false;
-          while (i < text.length) {
-            const ch = text[i];
-            if (esc) {
-              switch (ch) {
-                case '"':  value += '"'; break;
-                case '\\': value += '\\'; break;
-                case '/':  value += '/'; break;
-                case 'n': case 'r': case 't': case 'b': case 'f':
-                  // If next char is also a letter → LaTeX (\frac, \nabla, \text …)
-                  if (i + 1 < text.length && /[a-z]/.test(text[i + 1])) {
-                    value += '\\' + ch;           // keep as literal backslash + letter
-                  } else {
-                    value += ({ n: '\n', r: '\r', t: '\t', b: '', f: '' })[ch];
-                  }
-                  break;
-                case 'u':
-                  if (i + 4 < text.length && /^[0-9a-fA-F]{4}$/.test(text.substring(i + 1, i + 5))) {
-                    value += String.fromCharCode(parseInt(text.substring(i + 1, i + 5), 16));
-                    i += 4;
-                  } else {
-                    value += '\\u';
-                  }
-                  break;
-                default:
-                  // Any other \X → keep as LaTeX (\sim, \left, \cdot …)
-                  value += '\\' + ch;
-              }
-              esc = false; i++; continue;
-            }
-            if (ch === '\\') { esc = true; i++; continue; }
-            if (ch === '"') break; // closing quote
-            value += ch; i++;
-          }
-          return value;
-        };
-
-        // Extract a balanced { … } block from the start of text
-        const extractBraceBlock = (text) => {
-          if (text[0] !== '{') return null;
-          let depth = 0, inStr = false, esc = false;
-          for (let i = 0; i < text.length; i++) {
-            const ch = text[i];
-            if (esc) { esc = false; continue; }
-            if (ch === '\\') { esc = true; continue; }
-            if (ch === '"') { inStr = !inStr; continue; }
-            if (inStr) continue;
-            if (ch === '{') depth++;
-            else if (ch === '}') { depth--; if (depth === 0) return text.substring(0, i + 1); }
-          }
-          return null;
-        };
-
-        // Fix LaTeX backslashes inside JSON strings so JSON.parse works
-        // (used only for the graph/suggestions objects, not the response text)
-        const fixEscapesForJSON = (jsonStr) => {
-          let out = '', inStr = false, esc = false;
-          for (let i = 0; i < jsonStr.length; i++) {
-            const ch = jsonStr[i];
-            if (esc) {
-              if (inStr) {
-                if (!'"\\/bfnrtu'.includes(ch)) {
-                  out += '\\';
-                } else if ('bfnrt'.includes(ch) && i + 1 < jsonStr.length && /[a-z]/.test(jsonStr[i + 1])) {
-                  out += '\\';
-                }
-              }
-              out += ch; esc = false; continue;
-            }
-            if (ch === '\\') { esc = true; out += ch; continue; }
-            if (ch === '"') inStr = !inStr;
-            if (inStr) {
-              if (ch === '\n') { out += '\\n'; continue; }
-              if (ch === '\r') { out += '\\r'; continue; }
-              if (ch === '\t') { out += '\\t'; continue; }
-            }
-            out += ch;
-          }
-          return out;
-        };
-
-        parsedResponse = parseAIResponse(finalRawText);
-
-        if (parsedResponse && typeof parsedResponse === 'object' && (parsedResponse.stateId || parsedResponse.response)) {
-          const chatResponse = parsedResponse.response || '';
-          const stateId = parsedResponse.stateId || null;
-
-          contentElement.textContent = '';
-          if (chatResponse) {
-            renderMarkdownAndMath(contentElement, chatResponse);
-          } else if (stateId) {
-            renderMarkdownAndMath(contentElement, "_Loading graph..._");
-          }
-          chatBody.scrollTop = chatBody.scrollHeight;
-
-          // Resolve and load the Desmos state for the chosen template.
-          if (stateId) {
-            try {
-              const index = await loadTemplateIndex();
-              const entry = index.find(e => e.id === stateId);
-              if (!entry) {
-                console.warn(`Phase 1: stateId "${stateId}" not in template index`);
-              } else if (entry.type === 'visualizer') {
-                const example = await loadExample(stateId);
-                const result = loadDesmosState(example);
-                if (!result.ok) console.warn('Visualizer load failed:', result.errors);
-              } else if (entry.type === 'problem-solver') {
-                // Phase 2: ask the model to adapt the template for this specific problem.
-                const adapted = await runPhase2Adaptation(userMessage, stateId);
-                if (adapted) {
-                  const result = loadDesmosState(adapted);
-                  if (!result.ok) {
-                    console.warn('Adapted state validation failed:', result.errors, adapted);
-                    // Fall back to the verified example so the student still sees something.
-                    const example = await loadExample(stateId);
-                    loadDesmosState(example);
-                  }
-                } else {
-                  console.warn('Phase 2 returned null; falling back to verified example.');
-                  const example = await loadExample(stateId);
-                  loadDesmosState(example);
-                }
-              }
-            } catch (e) {
-              console.error('Failed to resolve/load template:', e);
-            }
-          }
-        } else {
-          // If not valid JSON or missing fields, fall back to rendering the whole text
-          contentElement.textContent = '';
-          renderMarkdownAndMath(contentElement, finalRawText);
-        }
-
-        chatBody.scrollTop = chatBody.scrollHeight;
-      }
-
-      // ── Persist conversation history ──
-      conversationHistory.push({ role: 'user', content: userMessage });
-      conversationHistory.push({ role: 'assistant', content: fullReplyFromAPI });
-      saveCurrentSession();
-
-      if (parsedResponse?.suggestions && Array.isArray(parsedResponse.suggestions)) {
-        aiSuggestions = parsedResponse.suggestions.slice(0, 2);
-      }
-
-      if (aiSuggestions.length > 0 && streamingRow) {
-        const bubble = streamingRow.querySelector('.msg-bubble');
-        if (bubble) {
-          const existingSuggestions = bubble.querySelector('.inline-suggestions');
-          if (!existingSuggestions) {
-            const suggestionsDiv = document.createElement('div');
-            suggestionsDiv.className = 'inline-suggestions';
-            aiSuggestions.forEach((suggestion) => {
-              const btn = document.createElement('button');
-              btn.className = 'inline-suggestion-btn t-btn';
-              btn.textContent = suggestion;
-              btn.addEventListener('click', () => sendMessage(suggestion));
-              suggestionsDiv.appendChild(btn);
-            });
-            bubble.appendChild(suggestionsDiv);
-          }
-        }
-      }
+    // ── Persist conversation history ──
+    conversationHistory.push({ role: 'user', content: userMessage });
+    conversationHistory.push({ role: 'assistant', content: phase3FullText });
+    saveCurrentSession();
 
     } catch (error) {
       console.error('Error in sendMessage:', error);
@@ -1345,8 +1117,8 @@ Output the adapted Desmos state JSON ONLY (no commentary, no code fences).`;
 
   async function callAPI(userContent, onChunk = null, options = {}) {
     const systemPrompt = options.systemPrompt
-      ?? ((await buildPhase1SystemPrompt()) + getFormatInstructions());
-    const temperature = options.temperature ?? 0.4;
+      ?? (await buildPhase1SystemPrompt());
+    const temperature = options.temperature ?? 0.2;
 
     const messagesWithSystem = [
       { role: 'system', content: systemPrompt },
