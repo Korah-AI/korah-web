@@ -124,6 +124,7 @@ export default async function handler(req, res) {
   }
 
   // Resolve target domain codes across ALL requested sections
+  const targetCodes = resolveDomainCodes({ sections, domains });
 
   if (targetCodes.length === 0) {
     return res.status(200).json({
