@@ -42,7 +42,7 @@
 
   .home-hero {
     display: grid; grid-template-columns: 1fr minmax(280px, 360px); gap: 24px;
-    align-items: start; margin-bottom: 22px;
+    align-items: start; margin-bottom: 8px;
   }
   @media (max-width: 880px) { .home-hero { grid-template-columns: 1fr; } }
 
@@ -54,27 +54,7 @@
   .greeting-title .name { color: var(--tx2); font-weight: 700; }
   .greeting-sub { color: var(--tx2); font-size: 15px; margin: 10px 0 22px; }
 
-  .study-plan-banner {
-    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
-    background: rgba(0, 128, 128, 0.183);
-    border: 1px solid rgba(167,139,250,.32);
-    border-radius: 16px; padding: 14px 18px;
-    margin-bottom: 22px;
-  }
-  .study-plan-banner .plan-banner-icon {
-    width: 36px; height: 36px; flex-shrink: 0;
-    border-radius: 10px;
-    background: linear-gradient(135deg, rgba(167,139,250,.18), rgba(232,121,249,.12));
-    display: flex; align-items: center; justify-content: center;
-    font-size: 18px;
-  }
-  .study-plan-banner .plan-banner-text { flex: 1; min-width: 240px; font-size: 14px; color: var(--tx); display: flex; flex-direction: column; gap: 2px; }
-  .study-plan-banner .plan-banner-text strong { font-weight: 700; }
-  .study-plan-banner .plan-banner-text span { font-size: 13px; color: var(--tx2); }
-  .study-plan-banner .banner-cta { background: rgba(167,139,250,.16); color: #ffffff; font-weight: 700; font-size: 13px; padding: 10px 18px; border-radius: 999px; border: none; cursor: pointer; text-decoration: none; transition: background .2s; }
-  .study-plan-banner .banner-cta:hover { background: rgba(167,139,250,.28); }
-
-  .cta-primary {
+.cta-primary {
     display: inline-flex; align-items: center; gap: 8px;
     background: linear-gradient(135deg, #7c3aed, #a78bfa);
     color: #fff; font-weight: 700; font-size: 14px;
@@ -88,8 +68,9 @@
   .countdown-card {
   background: linear-gradient(135deg, rgba(251,191,36,.1), rgba(251,191,36,.03));
     border: 1px solid rgba(251,191,36,.3);
-    border-radius: 18px; padding: 22px 24px;
+    border-radius: 18px; padding: 22px 24px 32px;
     backdrop-filter: blur(14px);
+    display: flex; flex-direction: column; justify-content: space-between; min-height: 172px;
   }
   .countdown-card .label { font-size: 13px; color: var(--tx2); margin-bottom: 14px; }
   .countdown-grid { display: flex; gap: 10px; align-items: baseline; justify-content: flex-start; }
@@ -132,6 +113,29 @@
     transition: background .2s;
   }
   .banner-cta:hover { background: rgba(56,189,248,.28); }
+
+  .opportunities-banner {
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    background: linear-gradient(135deg, rgba(16,185,129,.08), rgba(16,185,129,.02));
+    border: 1px solid rgba(16,185,129,.32);
+    border-radius: 16px; padding: 14px 18px;
+    margin-bottom: 36px;
+  }
+  .opportunities-banner .banner-icon {
+    width: 36px; height: 36px; flex-shrink: 0;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(16,185,129,.18), rgba(52,211,153,.12));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .opportunities-banner .banner-text { flex: 1; min-width: 140px; font-size: 14px; color: var(--tx); }
+  .opportunities-banner .banner-text strong { font-weight: 700; }
+  .opportunities-banner .banner-text span { color: var(--tx2); }
+  .opportunities-cta {
+    background: rgba(16,185,129,.16);
+    color: #10b981; font-weight: 700; font-size: 13px;
+  }
+  .opportunities-cta:hover { background: rgba(16,185,129,.28); }
 
   .home-section-head {
     display: flex; align-items: center; gap: 8px;
@@ -204,7 +208,7 @@
   .plan-side {
     background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(16,185,129,0.03));
     border: 1px solid rgba(16,185,129,.32);
-    border-radius: 18px; padding: 24px 26px;
+    border-radius: 18px; padding: 40px 26px;
     display: flex; flex-direction: column; align-items: center;
   }
   .plan-side .plan-stat-label { font-size: 13px; font-weight: 700; color: var(--tx2); margin-bottom: 16px; }
@@ -331,6 +335,112 @@
   .fc-btn { font-size: 11px; font-weight: 700; padding: 7px 16px; border-radius: 999px; border: 1px solid rgba(56,189,248,.3); background: rgba(56,189,248,.08); color: #38bdf8; cursor: pointer; transition: background .2s; }
   .fc-btn:hover { background: rgba(56,189,248,.2); }
   .fc-counter { font-size: 12px; color: var(--tx2); flex: 1; text-align: center; font-variant-numeric: tabular-nums; }
+
+  /* ── Onboarding Modal ── */
+  .onboard-modal {
+    position: fixed; inset: 0; z-index: 9999;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .onboard-modal.show { opacity: 1; pointer-events: auto; }
+  .onboard-backdrop {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0.65); backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .onboard-content {
+    position: relative;
+    background: var(--sf);
+    border: 1px solid var(--bd);
+    border-radius: 20px;
+    padding: 44px 48px 36px;
+    max-width: 680px; width: calc(100% - 32px);
+    max-height: calc(100vh - 48px); overflow-y: auto;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.4), 0 0 32px rgba(139,92,246,.15);
+    transform: translateY(24px) scale(0.95);
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    text-align: center;
+  }
+  .onboard-modal.show .onboard-content { transform: translateY(0) scale(1); }
+  .onboard-close {
+    position: absolute; top: 12px; right: 12px;
+    width: 32px; height: 32px; border: none; background: transparent;
+    color: var(--tx3); font-size: 20px; cursor: pointer;
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    transition: all .2s;
+  }
+  .onboard-close:hover { background: rgba(139,92,246,.15); color: var(--tx); }
+  .onboard-slides { position: relative; min-height: 320px; display: flex; align-items: center; justify-content: center; }
+  .onboard-slide { display: none; flex-direction: column; align-items: center; gap: 14px; animation: obSlideIn .3s ease; width: 100%; }
+  .onboard-slide.active { display: flex; }
+  @keyframes obSlideIn { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: translateX(0); } }
+  .onboard-logo { width: 72px; height: 72px; margin-bottom: 4px; filter: drop-shadow(0 6px 16px rgba(139,92,246,.3)); }
+  .onboard-icon-large { font-size: 56px; line-height: 1; margin-bottom: 4px; filter: drop-shadow(0 0 12px rgba(139,92,246,.25)); }
+  .onboard-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 26px; font-weight: 800; color: var(--tx); margin: 0; line-height: 1.25; }
+  .onboard-desc { font-size: 16px; line-height: 1.65; color: white; margin: 0; }
+
+  /* Welcome / All Set hero layout */
+  .onboard-hero-layout {
+    display: grid; grid-template-columns: 1fr auto;
+    gap: 36px; align-items: center; width: 100%; text-align: left;
+  }
+  .onboard-hero-text { display: flex; flex-direction: column; gap: 14px; }
+  .onboard-hero-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 38px; font-weight: 800; color: var(--tx); margin: 0; line-height: 1.15; letter-spacing: -0.02em; }
+  .onboard-hero-img { width: 170px; height: 170px; object-fit: contain; filter: drop-shadow(0 10px 28px rgba(139,92,246,.4)); flex-shrink: 0; }
+  @media (max-width: 580px) {
+    .onboard-hero-layout { grid-template-columns: 1fr; text-align: center; }
+    .onboard-hero-img { display: none; }
+    .onboard-hero-title { font-size: 28px; }
+  }
+
+  .onboard-img-placeholder {
+    width: 100%; aspect-ratio: 16 / 9;
+    border-radius: 14px; border: 2px dashed var(--bd2);
+    background: var(--sf2); display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 8px;
+    color: var(--tx3); font-size: 13px; font-weight: 500;
+  }
+  .onboard-img-placeholder .ob-ph-icon { font-size: 36px; opacity: .35; }
+
+  /* Score form */
+  .onboard-form { width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 14px; text-align: left; }
+  .onboard-field { display: flex; flex-direction: column; gap: 5px; }
+  .onboard-field label { font-size: 12px; font-weight: 700; color: white; text-transform: uppercase; letter-spacing: .7px; }
+  .onboard-field input {
+    background: var(--bg); border: 1px solid var(--bd2);
+    border-radius: 10px; padding: 10px 14px;
+    font-size: 15px; font-weight: 600; color: var(--tx);
+    outline: none; transition: border-color .2s, box-shadow .2s;
+    font-variant-numeric: tabular-nums; width: 100%; box-sizing: border-box;
+  }
+  .onboard-field input:focus { border-color: rgba(167,139,250,.6); box-shadow: 0 0 0 3px rgba(167,139,250,.12); }
+  .onboard-field input.ob-error { border-color: rgba(239,68,68,.6); box-shadow: 0 0 0 3px rgba(239,68,68,.1); }
+  .onboard-field input::placeholder { color: var(--tx3); font-weight: 400; }
+  .ob-field-error { font-size: 11px; color: #ef4444; font-weight: 600; margin-top: 2px; display: none; }
+  .ob-field-error.show { display: block; }
+  .onboard-total-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-radius: 10px; background: rgba(139,92,246,.08); border: 1px solid rgba(139,92,246,.2); }
+  .onboard-total-label { font-size: 13px; font-weight: 700; color: white; }
+  .onboard-total-value { font-size: 20px; font-weight: 800; color: var(--tx); font-variant-numeric: tabular-nums; }
+  .onboard-divider { height: 1px; background: var(--bd2); width: 100%; }
+  .onboard-skip { font-size: 12px; color: var(--tx3); cursor: pointer; margin-top: 2px; text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 3px; transition: color .2s; align-self: center; }
+  .onboard-skip:hover { color: var(--tx2); text-decoration-color: var(--tx2); }
+
+  /* Dots */
+  .onboard-dots { display: flex; justify-content: center; gap: 8px; margin: 20px 0 16px; }
+  .onboard-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--bd2); cursor: pointer; transition: all .25s; }
+  .onboard-dot.active { background: #a78bfa; transform: scale(1.3); box-shadow: 0 0 8px rgba(167,139,250,.5); }
+
+  /* Actions */
+  .onboard-actions { display: flex; justify-content: space-between; gap: 12px; }
+  .onboard-btn { flex: 1; padding: 10px 20px; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; border: 1px solid transparent; transition: all .2s; }
+  .onboard-btn.primary { background: linear-gradient(135deg, #7c3aed, #a78bfa); color: #fff; border-color: #a78bfa; }
+  .onboard-btn.primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
+  .onboard-btn.secondary { background: transparent; color: var(--tx2); border-color: var(--bd); }
+  .onboard-btn.secondary:hover { background: var(--sf2); color: var(--tx); }
+  [data-theme="light"] .onboard-content { box-shadow: 0 24px 64px rgba(0,0,0,.15), 0 0 24px rgba(139,92,246,.08); }
+  [data-theme="light"] .onboard-backdrop { background: rgba(0,0,0,.4); }
+  @media (max-width: 600px) { .onboard-content { padding: 32px 22px 28px; } .onboard-title { font-size: 22px; } }
 </style>
 </head>
 
@@ -409,7 +519,7 @@
       <a href="study/feed.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">school</span> <span class="nav-text">Study</span></a>
     </div>
     <a href="sat/index.html" class="sidebar-nav-link t-btn" data-sat-link="true"><span class="material-icons-round" style="font-size: 1.25rem;">assignment</span> <span class="nav-text">SAT</span></a>
-    <a href="productivity.html" class="sidebar-nav-link productivity-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">timer</span> <span class="nav-text">Productivity</span></a>
+    <!-- PRODUCTIVITY PAGE TEMPORARILY REMOVED - restore when ready to re-enable -->
     <div class="opp-wrapper"><a href="opportunities/opportunities.html" class="sidebar-nav-link opp-wrapper t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">rocket_launch</span> <span class="nav-text">Opportunities</span></a></div>
   </nav>
 
@@ -494,15 +604,13 @@
       <div>
         <h1 class="greeting-title"><span id="greeting-prefix">Good morning,</span> <span class="name" id="greeting-name">friend</span></h1>
         <p class="greeting-sub"> <strong> "Is it better to cook, or to get cooked?" </strong> - Korah, 2026</p>
-        <div class="study-plan-banner">
-          <div class="plan-banner-icon">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:white;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        <!-- Opportunities Banner -->
+        <div class="opportunities-banner" style="margin-top: 14px;">
+          <div class="banner-icon">🚀</div>
+          <div class="banner-text">
+            <strong>Explore STEM Opportunities:</strong> <span>Programs, internships, scholarships, and competitions in your area</span>
           </div>
-          <div class="plan-banner-text">
-        <strong>Check out our new Questionbank</strong>
-        <span><strong> 3500+ practice problems </strong> sourced from <strong> CollegeBoard </strong> !</span>
-          </div>
-          <a href="sat/index.html" class="banner-cta">Start Practicing →</a>
+          <a href="opportunities/opportunities.html" class="banner-cta opportunities-cta">Discover Opportunities</a>
         </div>
       </div>
 
@@ -517,6 +625,7 @@
         <div class="countdown-date" id="cd-date">Set an exam date</div>
       </div>
     </section>
+
 
     <!-- My Stats -->
 
@@ -543,6 +652,8 @@
         <a class="stat-action danger" href="sat/dashboard.html">Start Review</a>
       </div>
     </section>
+
+
 
 <section class="study-plan-grid">
       <a href="sat/math-chat.html" class="plan-card no-underline" style="display:block;">
@@ -652,6 +763,140 @@
   </div>
   </div>
 </main>
+</div>
+
+<!-- ── Onboarding Modal ── -->
+<div id="home-onboard-modal" class="onboard-modal">
+  <div class="onboard-backdrop"></div>
+  <div class="onboard-content">
+    <button class="onboard-close" id="onboard-close-btn">&times;</button>
+
+    <div class="onboard-slides" id="onboard-slides">
+
+      <!-- Slide 0: Welcome -->
+      <div class="onboard-slide active" data-slide="0">
+        <div class="onboard-hero-layout">
+          <div class="onboard-hero-text">
+            <h2 class="onboard-hero-title">Welcome to Korah!</h2>
+            <p class="onboard-desc" style = "color: white">Your personal SAT coach — AI tutoring, 3,500+ College Board questions, and analytics that keep your score moving up.</p>
+            <p class="onboard-desc" style="font-size:14px; margin-top:2px;"> <strong>Let's get you set up. This only takes a minute. </strong></p>
+          </div>
+          <img src="logo-images/newlogo11.png" class="onboard-hero-img" alt="Korah"/>
+        </div>
+      </div>
+
+      <!-- Slide 1: SAT Goals -->
+      <div class="onboard-slide" data-slide="1">
+        <img src="logo-images/newlogo0.png" class="onboard-logo" alt="Korah"/>
+        <h2 class="onboard-title">Set Your SAT Goals</h2>
+        <p class="onboard-desc">This powers your Score Journey ring. Everything is optional — you can set or update these anytime.</p>
+        <div class="onboard-form" id="onboard-score-form">
+          <div class="onboard-field">
+            <label>Math Score (200–800)</label>
+            <input id="ob-math-score" type="number" min="200" max="800" step="10" placeholder="e.g. 620"/>
+            <span class="ob-field-error" id="ob-math-err">Must be 200–800 in increments of 10</span>
+          </div>
+          <div class="onboard-field">
+            <label>Reading &amp; Writing Score (200–800)</label>
+            <input id="ob-rw-score" type="number" min="200" max="800" step="10" placeholder="e.g. 660"/>
+            <span class="ob-field-error" id="ob-rw-err">Must be 200–800 in increments of 10</span>
+          </div>
+          <div class="onboard-total-row">
+            <span class="onboard-total-label">Current Total</span>
+            <span class="onboard-total-value" id="ob-total">— / 1600</span>
+          </div>
+          <div class="onboard-divider"></div>
+          <div class="onboard-field">
+            <label>Goal Score (400–1600)</label>
+            <input id="ob-goal-score" type="number" min="400" max="1600" step="10" placeholder="e.g. 1400"/>
+            <span class="ob-field-error" id="ob-goal-err">Must be 400–1600 in increments of 10</span>
+          </div>
+        </div>
+        <span class="onboard-skip" style = "color: whitesmoke;" id="onboard-skip-scores"> <strong>Skip for now</strong></span>
+      </div>
+
+      <!-- Slide 2: Question Bank -->
+      <div class="onboard-slide" data-slide="2">
+        <div class="onboard-img-placeholder">
+          <span class="ob-ph-icon">📋</span>
+          <span>Question Bank screenshot</span>
+        </div>
+        <h2 class="onboard-title">3,500+ Practice Questions</h2>
+        <p class="onboard-desc">College Board-sourced questions across Math and Reading &amp; Writing. Every answer is tracked, so Korah always knows where you stand.</p>
+      </div>
+
+      <!-- Slide 3: Math Chat -->
+      <div class="onboard-slide" data-slide="3">
+        <div class="onboard-img-placeholder">
+          <span class="ob-ph-icon">📊</span>
+          <span>Math Chat screenshot</span>
+        </div>
+        <h2 class="onboard-title">SAT Math Chat</h2>
+        <p class="onboard-desc">Korah actively updates the Desmos graph to teach you how to use it. Learn regression tricks, visualize functions, and solve problems faster than ever.</p>
+      </div>
+
+      <!-- Slide 4: Weakness Tracking -->
+      <div class="onboard-slide" data-slide="4">
+        <div class="onboard-img-placeholder">
+          <span class="ob-ph-icon">🎯</span>
+          <span>Weakness tracker screenshot</span>
+        </div>
+        <h2 class="onboard-title">Korah Finds Your Weak Spots</h2>
+        <p class="onboard-desc">After you practice, Korah identifies your lowest-accuracy skills and surfaces targeted drills on your home page every single day.</p>
+      </div>
+
+      <!-- Slide 5: All Set -->
+      <div class="onboard-slide" data-slide="5">
+        <div class="onboard-hero-layout">
+          <div class="onboard-hero-text">
+            <h2 class="onboard-hero-title">You're All Set! 🎉</h2>
+            <p class="onboard-desc">Start practicing to build your momentum. Your first question is waiting — let's get that score moving.</p>
+            <!-- temporary comment out, i don't like the button -->
+            <!-- <a href="sat/index.html" class="cta-primary" style="margin-top:4px; align-self:flex-start;" id="onboard-cta-btn">
+              <span class="material-icons-round" style="font-size:16px;">assignment</span>
+              Start Practicing
+            </a> -->
+          </div>
+          <img src="logo-images/newlogo3.png" class="onboard-hero-img" alt="Korah" style = "width: 14rem; height:14rem"/>
+        </div>
+      </div>
+    </div>
+
+    <div class="onboard-dots" id="onboard-dots">
+      <span class="onboard-dot active" data-dot="0"></span>
+      <span class="onboard-dot" data-dot="1"></span>
+      <span class="onboard-dot" data-dot="2"></span>
+      <span class="onboard-dot" data-dot="3"></span>
+      <span class="onboard-dot" data-dot="4"></span>
+      <span class="onboard-dot" data-dot="5"></span>
+    </div>
+
+    <div class="onboard-actions">
+      <button class="onboard-btn secondary" id="onboard-prev-btn" style="visibility:hidden;">Back</button>
+      <button class="onboard-btn primary" id="onboard-next-btn">Next</button>
+    </div>
+  </div>
+</div>
+
+<!-- SAT Sub-Mode Modal -->
+<div id="sat-sub-modal" class="delete-modal">
+  <div class="delete-modal-content" style="max-width: 420px;">
+    <div class="delete-modal-icon">📝</div>
+    <h3 class="delete-modal-title">SAT Mode</h3>
+    <p class="delete-modal-desc" style="margin-bottom: 1rem;">Which section are you working on?</p>
+    <div style="display: flex; gap: 0.75rem; width: 100%;">
+      <button id="sat-math-btn" class="sat-sub-btn" style="flex:1; padding: 1rem; border-radius: 12px; border: 2px solid rgba(245,158,11,0.3); background: rgba(245,158,11,0.08); cursor: pointer; text-align: center; transition: all 0.2s;">
+        <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">📝</div>
+        <div style="font-weight: 700; font-size: 0.95rem; color: var(--tx);">Math</div>
+        <div style="font-size: 0.75rem; color: var(--tx3); margin-top: 0.25rem;">Regressions, algebra, geometry</div>
+      </button>
+      <button id="sat-english-btn" class="sat-sub-btn" style="flex:1; padding: 1rem; border-radius: 12px; border: 2px solid rgba(99,102,241,0.3); background: rgba(99,102,241,0.08); cursor: pointer; text-align: center; transition: all 0.2s;">
+        <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">📖</div>
+        <div style="font-weight: 700; font-size: 0.95rem; color: var(--tx);">English</div>
+        <div style="font-size: 0.75rem; color: var(--tx3); margin-top: 0.25rem;">Reading & Writing</div>
+      </button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -780,20 +1025,30 @@
       // Weakness card
       const top = suggestions?.[0];
       if (top) {
+        const SECTION_LABEL = { english: 'Reading & Writing', math: 'Math' };
+        const sectionStr = SECTION_LABEL[top.section] || top.section || '';
         document.getElementById('weakness-skill').textContent = top.skillName;
         if (top.attempts > 0) {
           document.getElementById('weakness-acc').textContent =
-            `${pct(top.accuracy)}% accuracy · ${top.attempts} attempt${top.attempts === 1 ? '' : 's'} · ${top.domain}`;
+            `${pct(top.accuracy)}% accuracy · ${top.attempts} attempt${top.attempts === 1 ? '' : 's'} · ${sectionStr}`;
         } else {
-          document.getElementById('weakness-acc').textContent = `Not yet practiced · ${top.domain}`;
+          document.getElementById('weakness-acc').textContent = `Not yet practiced · ${sectionStr}`;
         }
         const weakBtn = document.getElementById('weakness-btn');
-        const wp = new URLSearchParams();
-        if (top.domain) wp.set('domains', top.domain);
-        if (top.skillCd) wp.set('skills', top.skillCd);
-        wp.set('limit', '10');
-        weakBtn.href = `sat/questions.html?${wp.toString()}`;
-        weakBtn.textContent = top.attempts > 0 ? 'Fix This →' : 'Start Practicing →';
+        const skillMissed = recent.filter(r => !r.correct && r.skillCd === top.skillCd).map(r => r.questionId);
+        if (skillMissed.length > 0) {
+          const params = new URLSearchParams();
+          params.set('questionIds', skillMissed.join(','));
+          weakBtn.href = `sat/questions.html?${params.toString()}`;
+          weakBtn.textContent = 'Review Mistakes →';
+        } else {
+          const wp = new URLSearchParams();
+          if (top.domain) wp.set('domains', top.domain);
+          if (top.skillCd) wp.set('skills', top.skillCd);
+          wp.set('limit', '10');
+          weakBtn.href = `sat/questions.html?${wp.toString()}`;
+          weakBtn.textContent = top.attempts > 0 ? 'Fix This →' : 'Start Practicing →';
+        }
       }
 
       // Today's Momentum
@@ -895,6 +1150,11 @@
     { word: 'Equivocal', pos: 'adjective', def: 'Open to more than one interpretation; ambiguous, often intentionally so.', ex: '"His equivocal answer satisfied neither side of the debate."' },
   ];
 
+  // Redirect SAT Math button to SAT Math chat page
+  document.getElementById('sat-math-btn').addEventListener('click', () => {
+    window.location.href = 'sat/math-chat.html';
+  });
+
   let fcIdx = 0;
   let fcFlipped = false;
 
@@ -918,5 +1178,140 @@
   renderCard();
 </script>
 
+<script>
+  // ── Home Onboarding Carousel ──
+  (function () {
+    const ONBOARD_KEY = 'korah_home_onboard_v1';
+    if (localStorage.getItem(ONBOARD_KEY)) return;
+
+    const modal = document.getElementById('home-onboard-modal');
+    if (!modal) return;
+
+    const TOTAL_SLIDES = 6;
+    let current = 0;
+    let pendingProfile = null; // { currentScore, goalScore } to save once analytics ready
+
+    const slides = modal.querySelectorAll('.onboard-slide');
+    const dots   = modal.querySelectorAll('.onboard-dot');
+    const prevBtn = document.getElementById('onboard-prev-btn');
+    const nextBtn = document.getElementById('onboard-next-btn');
+    const closeBtn = document.getElementById('onboard-close-btn');
+    const skipScoresBtn = document.getElementById('onboard-skip-scores');
+    const mathInput = document.getElementById('ob-math-score');
+    const rwInput   = document.getElementById('ob-rw-score');
+    const totalEl   = document.getElementById('ob-total');
+    const goalInput = document.getElementById('ob-goal-score');
+    const mathErr   = document.getElementById('ob-math-err');
+    const rwErr     = document.getElementById('ob-rw-err');
+    const goalErr   = document.getElementById('ob-goal-err');
+
+    function isValidModuleScore(v) { return v === '' || (v >= 200 && v <= 800 && v % 10 === 0); }
+    function isValidGoalScore(v)   { return v === '' || (v >= 400 && v <= 1600 && v % 10 === 0); }
+
+    function validateInput(input, errEl, validFn) {
+      const raw = input.value.trim();
+      const valid = raw === '' || validFn(Number(raw));
+      input.classList.toggle('ob-error', !valid && raw !== '');
+      errEl.classList.toggle('show', !valid && raw !== '');
+      return valid || raw === '';
+    }
+
+    function snapToTen(input) {
+      const v = parseInt(input.value);
+      if (!isNaN(v)) input.value = Math.round(v / 10) * 10;
+    }
+
+    function updateTotal() {
+      const m  = parseInt(mathInput.value) || 0;
+      const rw = parseInt(rwInput.value)   || 0;
+      const sum = m + rw;
+      if (m || rw) {
+        totalEl.textContent = Math.min(sum, 1600) + ' / 1600';
+        totalEl.style.color = sum > 1600 ? '#ef4444' : 'var(--tx)';
+      } else {
+        totalEl.textContent = '— / 1600';
+        totalEl.style.color = 'var(--tx)';
+      }
+    }
+
+    mathInput.addEventListener('input', () => { validateInput(mathInput, mathErr, isValidModuleScore); updateTotal(); });
+    rwInput.addEventListener('input',   () => { validateInput(rwInput,   rwErr,   isValidModuleScore); updateTotal(); });
+    goalInput.addEventListener('input', () => { validateInput(goalInput, goalErr, isValidGoalScore); });
+
+    mathInput.addEventListener('blur', () => { snapToTen(mathInput); validateInput(mathInput, mathErr, isValidModuleScore); updateTotal(); });
+    rwInput.addEventListener('blur',   () => { snapToTen(rwInput);   validateInput(rwInput,   rwErr,   isValidModuleScore); updateTotal(); });
+    goalInput.addEventListener('blur', () => { snapToTen(goalInput); validateInput(goalInput, goalErr, isValidGoalScore); });
+
+    function goTo(idx) {
+      current = Math.max(0, Math.min(idx, TOTAL_SLIDES - 1));
+      slides.forEach((s, i) => s.classList.toggle('active', i === current));
+      dots.forEach((d, i)   => d.classList.toggle('active', i === current));
+      prevBtn.style.visibility = current === 0 ? 'hidden' : 'visible';
+      nextBtn.textContent = current === TOTAL_SLIDES - 1 ? 'Done' : 'Next';
+    }
+
+    function scoreFormValid() {
+      const allOk = [
+        validateInput(mathInput, mathErr, isValidModuleScore),
+        validateInput(rwInput,   rwErr,   isValidModuleScore),
+        validateInput(goalInput, goalErr, isValidGoalScore),
+      ];
+      return allOk.every(Boolean);
+    }
+
+    function collectAndSaveScores() {
+      const m   = parseInt(mathInput.value) || null;
+      const rw  = parseInt(rwInput.value)   || null;
+      const raw = m && rw ? m + rw : (m || rw || null);
+      const currentScore = raw ? Math.min(raw, 1600) : null;
+      const goalScore    = parseInt(goalInput.value)  || null;
+      if (currentScore || goalScore) {
+        pendingProfile = { currentScore, goalScore };
+        trySaveProfile();
+      }
+    }
+
+    function trySaveProfile() {
+      if (!pendingProfile) return;
+      const a = window.KorahSATAnalytics;
+      if (a?.saveProfile) {
+        a.saveProfile(pendingProfile).catch(() => {});
+        pendingProfile = null;
+      }
+    }
+
+    function closeModal() {
+      modal.classList.remove('show');
+      localStorage.setItem(ONBOARD_KEY, 'true');
+    }
+
+    nextBtn.addEventListener('click', () => {
+      if (current === 1) {
+        if (!scoreFormValid()) return; // block if validation errors
+        collectAndSaveScores();
+      }
+      if (current < TOTAL_SLIDES - 1) {
+        goTo(current + 1);
+      } else {
+        closeModal();
+      }
+    });
+
+    prevBtn.addEventListener('click', () => goTo(current - 1));
+    closeBtn.addEventListener('click', closeModal);
+    modal.querySelector('.onboard-backdrop').addEventListener('click', closeModal);
+    skipScoresBtn.addEventListener('click', () => goTo(current + 1));
+
+    dots.forEach(d => d.addEventListener('click', () => goTo(parseInt(d.dataset.dot))));
+
+    document.getElementById('onboard-cta-btn')?.addEventListener('click', closeModal);
+
+    // Save queued profile once analytics load
+    window.addEventListener('korahSATAnalyticsReady', trySaveProfile, { once: true });
+
+    // Show after a short delay
+    setTimeout(() => modal.classList.add('show'), 700);
+  })();
+</script>
 </body>
 </html>

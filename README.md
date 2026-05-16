@@ -1,3 +1,6 @@
+# Temporarily Removed
+* **Productivity page** (`korah-bot/productivity.html`) — sidebar links commented out in all 13 pages with `<!-- PRODUCTIVITY PAGE TEMPORARILY REMOVED - restore when ready to re-enable -->`. The page file itself is intact. To restore: uncomment those lines and add back the nav link: `<a href="[../]productivity.html" class="sidebar-nav-link productivity-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">timer</span> <span class="nav-text">Productivity</span></a>`
+
 # Next Updates
 * Need to add Google Drive API for document creation
 * Need to add "Import from Quizlet" option for study items
