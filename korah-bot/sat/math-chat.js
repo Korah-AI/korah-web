@@ -139,12 +139,36 @@ Output a single raw JSON object — NO code fences, NO commentary, NO extra fiel
   "strategy": "one short sentence (max 20 words) on which template fits and why"
 }
 
-RULES:
+═══════════════════════════════════════════
+BIAS STRONGLY TOWARD PICKING A TEMPLATE
+═══════════════════════════════════════════
+
+Korah's whole value is teaching SAT math through Desmos. ALMOST EVERY SAT MATH PROBLEM maps to one of the templates below. Default to picking a template. Only return null as an absolute last resort.
+
+Concretely, you SHOULD pick a template whenever ANY of these apply:
+- The problem involves a linear function, line, slope, y-intercept → linear-functions / linear-equations-in-two-variables
+- The problem involves an equation in one variable with unknown constants and asks about "infinitely many solutions" or "no solutions" → linear-equations-in-one-variable
+- The problem gives an inequality and asks which (x,y) pairs satisfy it → linear-equalities-in-one-or-two-variables
+- The problem gives a system of two equations and asks for a value at the intersection → system-of-two-linear-equations
+- The problem is a polynomial identity like (ax+...)(...) = ... where the equation holds "for all x" → equivalent-expressions
+- The problem is a quadratic in vertex form, or asks about vertex/parabola shape → quadratic-from-vertex-point
+- The problem involves symmetry, even/odd functions, reflection → 3-types-of-symmetry
+- The problem involves the unit circle, sin θ, cos θ, angles, radians → unit-circle
+- The problem involves sine/cosine waves, period, amplitude, phase → sine-cosine-sinuoids-graphs
+- The problem involves dilations, vertical/horizontal stretches → nonrigid-transformations-dilations
+- The problem mentions concavity, concave up/down, rate of change → concavity-discovery / concavity-rate-of-change
+
+Only return stateId: null if the problem is COMPLETELY non-mathematical (e.g., "hi" or "what is Korah?") or if it's a math problem in a category clearly outside the template list (e.g., a 3D geometry problem about volumes, or a probability/statistics question with no graph utility). When in doubt — PICK A TEMPLATE.
+
+═══════════════════════════════════════════
+RULES
+═══════════════════════════════════════════
+
 - stateId must be EXACTLY an "id" from the AVAILABLE TEMPLATES list below, or null.
-- "visualizer" templates are for conceptual demonstrations (symmetry, unit circle, sinusoids).
-- "problem-solver" templates are for solving concrete SAT problems matching the description+keywords.
-- If no template fits, return stateId: null.
-- Do NOT explain the math. Do NOT write a tutoring response. Just classify.`;
+- "visualizer" templates are for conceptual questions (e.g., "what is concavity?", "show me the unit circle"). Pick these when the student asks to UNDERSTAND a concept rather than solve a specific problem.
+- "problem-solver" templates are for actual SAT problems with concrete numbers/equations to solve. Prefer these when the student pastes or describes an SAT-style problem.
+- Do NOT explain the math. Do NOT write a tutoring response. Just classify.
+- Output ONLY the JSON object. Nothing else.`;
 
   async function buildPhase1SystemPrompt() {
     const index = await loadTemplateIndex();
