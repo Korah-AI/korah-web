@@ -1261,12 +1261,15 @@
 
       <!-- Text Paste Panel -->
       <div id="import-text-panel" class="import-source-panel import-text-panel">
-        <textarea id="import-text-input" placeholder="Paste your raw notes, text content, or copied material here…"></textarea>
+        <div class="import-url-input-group">
+          <textarea id="import-text-input" placeholder="Paste your raw notes, text content, or copied material here…" style="resize: vertical; min-height: 100px;"></textarea>
+          <button type="button" id="import-text-add-btn">Add Document</button>
+        </div>
+        <div id="import-text-error" style="color: #ef4444; font-size: 0.75rem; display: none;"></div>
       </div>
 
       <!-- Google Drive Panel -->
       <div id="import-drive-panel" class="import-source-panel import-drive-panel">
-        <button type="button" id="import-drive-connect-btn">Connect Google Drive</button>
         <div id="import-drive-status" class="import-drive-status">
           <span id="import-drive-status-text"></span>
         </div>
@@ -1781,7 +1784,7 @@
 
     // State for all import sources
     let addedUrls = [];
-    let pastedText = "";
+    let pastedTexts = [];
     let driveFiles = [];
 
     function open() { backdrop.classList.add("active"); modal.classList.add("active"); }
@@ -1817,6 +1820,17 @@
           document.getElementById("import-text-input").focus();
         } else if (src === "drive") {
           document.getElementById("import-drive-panel").classList.add("active");
+          // Directly initiate Google Drive picker
+          const apiKey = window.GOOGLE_PICKER_API_KEY;
+          const clientId = window.GOOGLE_OAUTH_CLIENT_ID;
+          if (!apiKey || !clientId) {
+            driveStatusText.textContent = "Google Drive keys not configured";
+            driveStatus.classList.add("active");
+            return;
+          }
+          driveStatusText.textContent = "Opening Google Drive…";
+          driveStatus.classList.add("active");
+          loadGoogleApis(apiKey, clientId);
         }
       });
     });
@@ -1870,84 +1884,125 @@
 
     // ─── Text Paste Handler ──────────────────────────────────────────────────
     const textInput = document.getElementById("import-text-input");
-    textInput.addEventListener("input", function () {
-      pastedText = textInput.value;
+    const textAddBtn = document.getElementById("import-text-add-btn");
+    const textError = document.getElementById("import-text-error");
+
+    textAddBtn.addEventListener("click", function (e) {
+      e.preventDefault();
+      const text = textInput.value.trim();
+      if (!text) {
+        textError.textContent = "Please paste some text first";
+        textError.style.display = "block";
+        return;
+      }
+      pastedTexts.push({ text: text, label: "Text: " + text.slice(0, 30) + (text.length > 30 ? "…" : "") });
+      textInput.value = "";
+      textError.style.display = "none";
       renderImportChips();
+      textInput.focus();
     });
 
-    // ─── Google Drive OAuth Picker (Placeholder) ────────────────────────────
-    const driveConnectBtn = document.getElementById("import-drive-connect-btn");
+    textInput.addEventListener("keypress", function (e) {
+      if (e.key === "Enter" && e.ctrlKey) {
+        e.preventDefault();
+        textAddBtn.click();
+      }
+    });
+
+    // ─── Google Drive OAuth Picker ────────────────────────────────────────
     const driveStatus = document.getElementById("import-drive-status");
     const driveStatusText = document.getElementById("import-drive-status-text");
+    let driveScriptsLoaded = false;
 
-    driveConnectBtn.addEventListener("click", function (e) {
-      e.preventDefault();
-      // Check for credentials
-      const apiKey = window.GOOGLE_PICKER_API_KEY;
-      const clientId = window.GOOGLE_OAUTH_CLIENT_ID;
-
-      if (!apiKey || !clientId) {
-        alert("Google Drive integration requires GOOGLE_PICKER_API_KEY and GOOGLE_OAUTH_CLIENT_ID to be set. Please check your configuration.");
+    function loadGoogleApis(apiKey, clientId) {
+      if (driveScriptsLoaded) {
+        initGoogleDrivePicker(apiKey, clientId);
         return;
       }
 
-      // Lazy load Google API client and GIS
-      loadGoogleApis(apiKey, clientId);
-    });
-
-    function loadGoogleApis(apiKey, clientId) {
       // Load Google API client
       const script1 = document.createElement("script");
       script1.src = "https://apis.google.com/js/api.js";
       script1.onload = function () {
-        google.load('picker', '1', { callback: function () {
-          // Load Google Identity Services
-          const script2 = document.createElement("script");
-          script2.src = "https://accounts.google.com/gsi/client";
-          script2.onload = function () {
-            initGoogleDrivePicker(apiKey, clientId);
-          };
-          document.head.appendChild(script2);
-        }});
+        console.log("[Drive] Google API loaded");
+        google.load('picker', '1', {
+          callback: function () {
+            console.log("[Drive] Picker library loaded");
+            // Load Google Identity Services
+            const script2 = document.createElement("script");
+            script2.src = "https://accounts.google.com/gsi/client";
+            script2.onload = function () {
+              console.log("[Drive] GSI client loaded");
+              driveScriptsLoaded = true;
+              initGoogleDrivePicker(apiKey, clientId);
+            };
+            script2.onerror = function () {
+              console.error("[Drive] Failed to load GSI client");
+              driveStatusText.textContent = "Failed to load Google auth";
+              driveStatus.classList.add("active");
+            };
+            document.head.appendChild(script2);
+          }
+        });
+      };
+      script1.onerror = function () {
+        console.error("[Drive] Failed to load Google API");
+        driveStatusText.textContent = "Failed to load Google Drive API";
+        driveStatus.classList.add("active");
       };
       document.head.appendChild(script1);
     }
 
     function initGoogleDrivePicker(apiKey, clientId) {
+      if (!window.google || !window.google.accounts || !window.google.picker) {
+        console.error("[Drive] Google APIs not ready");
+        driveStatusText.textContent = "Google APIs not ready";
+        driveStatus.classList.add("active");
+        return;
+      }
+
       const tokenClient = google.accounts.oauth2.initTokenClient({
         client_id: clientId,
         scope: 'https://www.googleapis.com/auth/drive.readonly',
         callback: (response) => {
+          console.log("[Drive] OAuth callback", response.access_token ? "token received" : "no token");
           if (response.access_token) {
+            driveStatusText.textContent = "Opening Google Drive…";
             const picker = new google.picker.PickerBuilder()
               .enableFeature(google.picker.Feature.SUPPORT_DRIVES)
               .setOAuthToken(response.access_token)
               .addView(google.picker.ViewId.DOCS)
               .addView(google.picker.ViewId.PDFS)
               .setCallback((data) => {
+                console.log("[Drive] Picker callback", data);
                 if (data[google.picker.Response.ACTION] === google.picker.Action.PICKED) {
                   const doc = data[google.picker.Response.DOCUMENTS][0];
                   downloadDriveFile(doc, response.access_token);
+                } else if (data[google.picker.Response.ACTION] === google.picker.Action.CANCEL) {
+                  driveStatusText.textContent = "";
+                  driveStatus.classList.remove("active");
                 }
               })
               .build();
             picker.setVisible(true);
+          } else {
+            console.error("[Drive] No access token in response");
+            driveStatusText.textContent = "Failed to authenticate";
+            driveStatus.classList.add("active");
           }
         }
       });
 
-      driveConnectBtn.textContent = "Connecting to Google…";
+      driveStatusText.textContent = "Authenticating…";
       tokenClient.requestAccessToken();
     }
 
     function downloadDriveFile(doc, accessToken) {
-      // Download file from Google Drive
       const fileId = doc.id;
       const fileName = doc.name;
       const mimeType = doc.mimeType || "";
 
-      driveConnectBtn.disabled = true;
-      driveConnectBtn.textContent = "Downloading…";
+      driveStatusText.textContent = "Downloading: " + fileName;
 
       let exportUrl;
       if (mimeType.includes("google-apps.document")) {
@@ -1959,29 +2014,23 @@
       }
 
       fetch(exportUrl)
-        .then(r => r.blob())
+        .then(r => {
+          if (!r.ok) throw new Error("HTTP " + r.status);
+          return r.blob();
+        })
         .then(blob => {
-          // Create a File object from the blob
           const file = new File([blob], fileName, { type: mimeType || "application/octet-stream" });
-
-          // Add to files list
           const dt = new DataTransfer();
           Array.from(fileInput.files || []).forEach(f => dt.items.add(f));
           dt.items.add(file);
           fileInput.files = dt.files;
 
-          driveConnectBtn.disabled = false;
-          driveConnectBtn.textContent = "Connect Google Drive";
           driveStatusText.textContent = `Added: ${fileName}`;
-          driveStatus.classList.add("active");
-
           renderImportChips();
         })
         .catch(err => {
-          console.error("Drive download failed:", err);
-          alert("Failed to download file from Google Drive.");
-          driveConnectBtn.disabled = false;
-          driveConnectBtn.textContent = "Connect Google Drive";
+          console.error("[Drive] Download failed:", err);
+          driveStatusText.textContent = "Failed to download: " + err.message;
         });
     }
 
@@ -2026,24 +2075,22 @@
         chipsContainer.appendChild(chip);
       });
 
-      // Pasted text chip
-      if (pastedText.trim()) {
+      // Pasted text chips
+      pastedTexts.forEach((item, idx) => {
         hasContent = true;
-        const preview = pastedText.slice(0, 40) + (pastedText.length > 40 ? "…" : "");
         const chip = document.createElement("div");
         chip.className = "import-chip";
         chip.innerHTML = `
           <span class="import-chip-icon">📝</span>
-          <span class="import-chip-label" title="${pastedText}">${preview}</span>
+          <span class="import-chip-label" title="${item.text}">${item.label}</span>
           <span class="import-chip-remove" onclick="event.stopPropagation();">✕</span>
         `;
         chip.querySelector(".import-chip-remove").addEventListener("click", function () {
-          pastedText = "";
-          textInput.value = "";
+          pastedTexts.splice(idx, 1);
           renderImportChips();
         });
         chipsContainer.appendChild(chip);
-      }
+      });
 
       // Show/hide summary
       if (hasContent) {
@@ -2081,7 +2128,7 @@
 
       const title = titleInput.value.trim();
       const instructions = instructionsInput.value.trim();
-      const hasSources = fileInput.files.length > 0 || addedUrls.length > 0 || pastedText.trim();
+      const hasSources = fileInput.files.length > 0 || addedUrls.length > 0 || pastedTexts.length > 0;
 
       if (!title) {
         setFieldError("import-title-row", "Title is required");
@@ -2127,7 +2174,7 @@
       const instructions = instructionsInput.value.trim();
       const files = Array.from(fileInput.files || []);
       const urls = addedUrls.map(u => u.url);
-      const pastedTexts = pastedText.trim() ? [pastedText] : [];
+      const texts = pastedTexts.map(t => t.text);
 
       const originalLabel = submitBtn.innerHTML;
       submitBtn.disabled = true;
@@ -2141,16 +2188,22 @@
           subject: "general",
           files: files,
           urls: urls,
-          pastedTexts: pastedTexts
+          pastedTexts: texts
         });
         if (!result || !result.content) throw new Error("No content returned.");
 
         const id = "si_" + Date.now();
+        const descParts = [];
+        if (files.length) descParts.push(files.length + " file(s)");
+        if (urls.length) descParts.push(urls.length + " URL(s)");
+        if (pastedTexts.length) descParts.push(pastedTexts.length + " text document(s)");
+        const description = "Generated from " + descParts.join(", ") + " on " + new Date().toLocaleDateString();
+
         const newItem = {
           id: id,
           type: type,
           title: title,
-          description: "Generated from " + (files.length ? files.length + " file(s)" : "") + (urls.length ? (files.length ? ", " : "") + urls.length + " URL(s)" : "") + (pastedText ? (files.length || urls.length ? ", " : "") + "text" : "") + " on " + new Date().toLocaleDateString(),
+          description: description,
           content: result.content,
           source: "ai-doc",
           subject: "general",
