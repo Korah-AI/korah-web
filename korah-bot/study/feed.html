@@ -1268,12 +1268,6 @@
         <div id="import-text-error" style="color: #ef4444; font-size: 0.75rem; display: none;"></div>
       </div>
 
-      <!-- Google Drive Panel -->
-      <div id="import-drive-panel" class="import-source-panel import-drive-panel">
-        <div id="import-drive-status" class="import-drive-status">
-          <span id="import-drive-status-text"></span>
-        </div>
-      </div>
 
       <div id="import-title-row" class="import-input-row">
         <label for="import-title">Title</label>
@@ -1819,17 +1813,13 @@
           document.getElementById("import-text-panel").classList.add("active");
           document.getElementById("import-text-input").focus();
         } else if (src === "drive") {
-          document.getElementById("import-drive-panel").classList.add("active");
           // Directly initiate Google Drive picker
           const apiKey = window.GOOGLE_PICKER_API_KEY;
           const clientId = window.GOOGLE_OAUTH_CLIENT_ID;
           if (!apiKey || !clientId) {
-            driveStatusText.textContent = "Google Drive keys not configured";
-            driveStatus.classList.add("active");
+            alert("Google Drive integration not configured");
             return;
           }
-          driveStatusText.textContent = "Opening Google Drive…";
-          driveStatus.classList.add("active");
           loadGoogleApis(apiKey, clientId);
         }
       });
@@ -1910,8 +1900,6 @@
     });
 
     // ─── Google Drive OAuth Picker ────────────────────────────────────────
-    const driveStatus = document.getElementById("import-drive-status");
-    const driveStatusText = document.getElementById("import-drive-status-text");
     let driveScriptsLoaded = false;
 
     function loadGoogleApis(apiKey, clientId) {
@@ -1920,80 +1908,89 @@
         return;
       }
 
-      // Load Google API client
+      // Load Google Identity Services first
       const script1 = document.createElement("script");
-      script1.src = "https://apis.google.com/js/api.js";
+      script1.src = "https://accounts.google.com/gsi/client";
       script1.onload = function () {
-        console.log("[Drive] Google API loaded");
-        google.load('picker', '1', {
-          callback: function () {
-            console.log("[Drive] Picker library loaded");
-            // Load Google Identity Services
-            const script2 = document.createElement("script");
-            script2.src = "https://accounts.google.com/gsi/client";
-            script2.onload = function () {
-              console.log("[Drive] GSI client loaded");
-              driveScriptsLoaded = true;
-              initGoogleDrivePicker(apiKey, clientId);
-            };
-            script2.onerror = function () {
-              console.error("[Drive] Failed to load GSI client");
-              driveStatusText.textContent = "Failed to load Google auth";
-              driveStatus.classList.add("active");
-            };
-            document.head.appendChild(script2);
+        console.log("[Drive] GSI client loaded");
+        // Then load Google API client
+        const script2 = document.createElement("script");
+        script2.src = "https://apis.google.com/js/api.js";
+        script2.onload = function () {
+          console.log("[Drive] Google API loaded");
+          // Check that google object exists
+          if (!window.google) {
+            console.error("[Drive] Google object not available");
+            alert("Failed to load Google APIs");
+            return;
           }
-        });
+          // Load picker library
+          if (window.gapi && window.gapi.load) {
+            window.gapi.load('picker', {
+              callback: function () {
+                console.log("[Drive] Picker library loaded");
+                driveScriptsLoaded = true;
+                initGoogleDrivePicker(apiKey, clientId);
+              }
+            });
+          } else {
+            console.error("[Drive] gapi not available");
+            alert("Failed to load Google Picker");
+          }
+        };
+        script2.onerror = function () {
+          console.error("[Drive] Failed to load Google API");
+          alert("Failed to load Google Drive API");
+        };
+        document.head.appendChild(script2);
       };
       script1.onerror = function () {
-        console.error("[Drive] Failed to load Google API");
-        driveStatusText.textContent = "Failed to load Google Drive API";
-        driveStatus.classList.add("active");
+        console.error("[Drive] Failed to load GSI client");
+        alert("Failed to load Google authentication");
       };
       document.head.appendChild(script1);
     }
 
     function initGoogleDrivePicker(apiKey, clientId) {
-      if (!window.google || !window.google.accounts || !window.google.picker) {
-        console.error("[Drive] Google APIs not ready");
-        driveStatusText.textContent = "Google APIs not ready";
-        driveStatus.classList.add("active");
+      if (!window.google || !window.google.accounts) {
+        console.error("[Drive] google.accounts not ready");
+        alert("Google authentication not ready");
+        return;
+      }
+      if (!window.google.picker) {
+        console.error("[Drive] google.picker not ready");
+        alert("Google Picker not ready");
         return;
       }
 
-      const tokenClient = google.accounts.oauth2.initTokenClient({
+      const tokenClient = window.google.accounts.oauth2.initTokenClient({
         client_id: clientId,
         scope: 'https://www.googleapis.com/auth/drive.readonly',
         callback: (response) => {
           console.log("[Drive] OAuth callback", response.access_token ? "token received" : "no token");
           if (response.access_token) {
-            driveStatusText.textContent = "Opening Google Drive…";
-            const picker = new google.picker.PickerBuilder()
-              .enableFeature(google.picker.Feature.SUPPORT_DRIVES)
+            const picker = new window.google.picker.PickerBuilder()
+              .enableFeature(window.google.picker.Feature.SUPPORT_DRIVES)
               .setOAuthToken(response.access_token)
-              .addView(google.picker.ViewId.DOCS)
-              .addView(google.picker.ViewId.PDFS)
+              .addView(window.google.picker.ViewId.DOCS)
+              .addView(window.google.picker.ViewId.PDFS)
               .setCallback((data) => {
                 console.log("[Drive] Picker callback", data);
-                if (data[google.picker.Response.ACTION] === google.picker.Action.PICKED) {
-                  const doc = data[google.picker.Response.DOCUMENTS][0];
+                if (data[window.google.picker.Response.ACTION] === window.google.picker.Action.PICKED) {
+                  const doc = data[window.google.picker.Response.DOCUMENTS][0];
                   downloadDriveFile(doc, response.access_token);
-                } else if (data[google.picker.Response.ACTION] === google.picker.Action.CANCEL) {
-                  driveStatusText.textContent = "";
-                  driveStatus.classList.remove("active");
                 }
               })
               .build();
             picker.setVisible(true);
           } else {
             console.error("[Drive] No access token in response");
-            driveStatusText.textContent = "Failed to authenticate";
-            driveStatus.classList.add("active");
+            alert("Failed to authenticate with Google");
           }
         }
       });
 
-      driveStatusText.textContent = "Authenticating…";
+      console.log("[Drive] Requesting access token...");
       tokenClient.requestAccessToken();
     }
 
@@ -2002,7 +1999,7 @@
       const fileName = doc.name;
       const mimeType = doc.mimeType || "";
 
-      driveStatusText.textContent = "Downloading: " + fileName;
+      console.log("[Drive] Downloading:", fileName, mimeType);
 
       let exportUrl;
       if (mimeType.includes("google-apps.document")) {
@@ -2025,12 +2022,12 @@
           dt.items.add(file);
           fileInput.files = dt.files;
 
-          driveStatusText.textContent = `Added: ${fileName}`;
+          console.log("[Drive] File added:", fileName);
           renderImportChips();
         })
         .catch(err => {
           console.error("[Drive] Download failed:", err);
-          driveStatusText.textContent = "Failed to download: " + err.message;
+          alert("Failed to download file: " + err.message);
         });
     }
 
