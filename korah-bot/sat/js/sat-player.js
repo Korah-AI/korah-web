@@ -1004,6 +1004,7 @@
         : selected === current.correctAnswer;
       window.KorahSATAnalytics.recordAttempt({
         questionId: current.id,
+        type: current.type || "",
         skillCd: current.skillCd || "",
         domain: current.domain || "",
         section: current.section || "",

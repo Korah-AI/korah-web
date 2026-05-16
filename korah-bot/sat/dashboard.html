@@ -1027,7 +1027,7 @@
         const params = new URLSearchParams();
         params.set("questionIds", allMissedIds.slice(0, 20).join(","));
         reviewLink.href = `./questions.html?${params.toString()}`;
-        reviewLink.textContent = `Review ${missedCount} Errors`;
+        reviewLink.textContent = `Review ${allMissedIds.length} Errors`;
       }
     } else {
       answeredSub.textContent = "Start practicing";
@@ -1046,8 +1046,8 @@
     document.getElementById("stat-time-sub").textContent = "All-time";
 
     // Section breakdown
-    const readingDomains = domains.filter(d => ["reading", "writing", "grammar", "rhetoric", "information", "craft", "expression", "standard english"].some(s => d.domain.toLowerCase().includes(s)));
-    const mathDomains = domains.filter(d => !readingDomains.includes(d));
+    const readingDomains = domains.filter(d => d.section === "english");
+    const mathDomains = domains.filter(d => d.section === "math");
 
     const totalAttemptsSum = (arr) => arr.reduce((s, d) => s + d.attempts, 0);
     const weightedAcc = (arr) => {

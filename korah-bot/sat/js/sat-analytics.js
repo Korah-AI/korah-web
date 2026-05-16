@@ -109,6 +109,7 @@ export async function initSatAnalytics(app, uid) {
    *
    * @param {object} a
    * @param {string} a.questionId
+   * @param {string} a.type         — "mcq" | "spr"
    * @param {string} a.skillCd      — e.g. "H.A."
    * @param {string} a.domain       — e.g. "Algebra"
    * @param {string} a.section      — "english" | "math"
@@ -135,6 +136,7 @@ export async function initSatAnalytics(app, uid) {
     const attemptRef = doc(attemptsCol);
     batch.set(attemptRef, {
       questionId: a.questionId,
+      type: a.type || "",
       skillCd,
       domain: a.domain || "",
       section: a.section || "",
@@ -197,14 +199,19 @@ export async function initSatAnalytics(app, uid) {
   async function getMissedQuestionIds(limitCount = 50) {
     const q = query(attemptsCol, orderBy("ts", "desc"));
     const snap = await getDocs(q);
-    const missed = new Set();
+    // Track latest-attempt result per question (descending order means first seen = most recent).
+    const latestStatus = new Map(); // questionId → boolean (correct)
     snap.forEach(d => {
       const data = d.data();
-      if (!data.correct && data.questionId) missed.add(data.questionId);
-      // If they later got it right, should we remove it? 
-      // For an "early version", just getting the most recently missed is fine.
+      if (data.questionId && !latestStatus.has(data.questionId)) {
+        latestStatus.set(data.questionId, data.correct);
+      }
     });
-    return Array.from(missed).slice(0, limitCount);
+    const missed = [];
+    for (const [qId, wasCorrect] of latestStatus) {
+      if (!wasCorrect) missed.push(qId);
+    }
+    return missed.slice(0, limitCount);
   }
 
   async function getAllSkillStats() {
