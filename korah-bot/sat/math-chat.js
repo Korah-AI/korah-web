@@ -177,21 +177,46 @@ RULES
   }
 
 function buildPhase2SystemPrompt() {
-  return `You are adapting a Desmos calculator state to fit a specific SAT problem.
+  return `You are adapting a Desmos calculator state to fit a SPECIFIC STUDENT PROBLEM.
 
-You will receive:
-- The student's problem
-- A FULL WORKING EXAMPLE: real Desmos JSON that solves a similar problem of this type
-- A TEMPLATE: the same JSON structure with {{PLACEHOLDER}} slots indicating what to fill in
+═══════════════════════════════════════════
+CRITICAL: YOU MUST ADAPT, NOT COPY
+═══════════════════════════════════════════
 
-YOUR JOB:
-1. Read the example to understand the syntax, structure, and reasoning style
-2. Use the template as your guide for what each slot should contain
-3. Output a complete Desmos state JSON that solves THE STUDENT'S problem
-4. Every {{PLACEHOLDER}} must be replaced with a real problem-specific value
-5. Rewrite text nodes to explain THIS specific problem (don't copy the example's text verbatim)
+You are NOT allowed to output the example verbatim. The example uses ITS OWN numbers and ITS OWN problem text — none of that is the student's problem. You MUST:
 
-CRITICAL DESMOS RULES (violations will break the graph):
+1. Read the student's actual problem (numbers, equations, coefficients, constraints).
+2. Use the TEMPLATE as your structural guide — same expression types in the same order.
+3. Fill EVERY {{PLACEHOLDER}} with values from the STUDENT'S problem (not from the example).
+4. Rewrite EVERY text node so it describes the STUDENT'S problem (not the example's). Use the student's numbers, the student's variable names, the student's question.
+5. Replace the example's numeric values in tables/expressions with the student's numeric values.
+
+If your output is byte-for-byte the same as the example, you have FAILED THIS TASK.
+
+═══════════════════════════════════════════
+INPUTS YOU WILL RECEIVE
+═══════════════════════════════════════════
+
+- PROBLEM: the student's actual SAT problem
+- FULL WORKING EXAMPLE: real Desmos JSON for a DIFFERENT problem of the same type — use ONLY for syntax/structure reference
+- TEMPLATE: the structural skeleton with {{PLACEHOLDER}} slots showing where to put the student's values
+
+The example exists so you can see what valid Desmos JSON looks like — NOT for you to copy. The template tells you the shape; the STUDENT'S PROBLEM provides the content.
+
+═══════════════════════════════════════════
+HOW TO ADAPT, STEP BY STEP
+═══════════════════════════════════════════
+
+For each expression in the template:
+- If it's a text node: rewrite the text to describe the student's specific problem (use their numbers, their setup, their question). Do NOT carry over the example's text.
+- If it's a table: replace ALL values with the student's data. Keep the same column structure (x_{1}, y_{1}) and order.
+- If it's a regression/equation: substitute the student's coefficients, constants, and unknowns. Use the example's syntax (tilde, subscripts) but the student's numbers.
+- If it has regressionParameters: keep the parameter list but use the student's unknown letters.
+
+═══════════════════════════════════════════
+CRITICAL DESMOS RULES (violations will break the graph)
+═══════════════════════════════════════════
+
 - Table data columns must use SUBSCRIPT notation: x_{1}, y_{1} (NOT bare x or y)
 - A table must appear BEFORE any expression that uses its columns
 - Regressions use TILDE (\\sim) not equals
@@ -201,24 +226,29 @@ CRITICAL DESMOS RULES (violations will break the graph):
 - Do NOT include "graph", "viewport", or other top-level fields beyond version/randomSeed/expressions
 
 WHAT YOU CAN DO:
-- Add new expressions or text nodes if the problem needs them
-- Omit template slots if they're not needed for this problem
+- Add new expressions or text nodes if the student's problem needs them
+- Omit template slots if they're not needed
 - Use the example's id values or generate new unique ones
 - Choose appropriate colors from the example's palette
 
-OUTPUT FORMAT:
+═══════════════════════════════════════════
+OUTPUT FORMAT
+═══════════════════════════════════════════
+
 Output a single raw JSON object — the full Desmos state — with NO surrounding text, no code fences, no commentary.
 
-The object must have this shape:
+Shape:
 {
   "version": 11,
   "randomSeed": "32-char hex",
   "expressions": {
-    "list": [ ...your adapted expressions... ]
+    "list": [ ...your adapted expressions for THE STUDENT'S problem... ]
   }
 }
 
-If you cannot adapt the template (problem doesn't actually match), output exactly: null`;
+REMINDER: every text node, every numeric value, every coefficient must reflect the STUDENT'S problem — not the example's. If unsure, prefer the student's data over the example's.
+
+If the template genuinely cannot represent the student's problem (very rare — only if the classifier picked wrong), output exactly: null`;
 }
 
   // ─── Phase 3 (tutoring response) ────────────────────────────────────────
@@ -557,7 +587,18 @@ Output the adapted Desmos state JSON ONLY (no commentary, no code fences).`;
       console.warn('🟡 [Phase 2] model left unfilled placeholders:', leftoverSlots);
     }
 
-    console.log('🟡 [Phase 2] parsed adapted state with', parsed?.expressions?.list?.length ?? 0, 'expressions');
+    // Detect the failure mode where the model just copied the example verbatim
+    // (a common shortcut). Compare expressions.list as JSON.
+    try {
+      const adaptedExprs = JSON.stringify(parsed?.expressions?.list ?? []);
+      const exampleExprs = JSON.stringify(example?.expressions?.list ?? []);
+      if (adaptedExprs === exampleExprs) {
+        console.warn('🟡 [Phase 2] ⚠️ model returned the example VERBATIM — no adaptation happened. Treating as failure so the fallback uses the example anyway (same outcome, but flagged).');
+        return null;
+      }
+    } catch (_) {}
+
+    console.log('🟡 [Phase 2] parsed adapted state with', parsed?.expressions?.list?.length ?? 0, 'expressions ✓');
     return parsed;
   }
 
