@@ -211,7 +211,7 @@
     border-radius: 18px; padding: 40px 26px;
     display: flex; flex-direction: column; align-items: center;
   }
-  .plan-side .plan-stat-label { font-size: 13px; font-weight: 700; color: var(--tx2); margin-bottom: 16px; }
+  .plan-side .plan-stat-label { font-size: 30px; font-weight: 700; color: var(--tx2); margin-bottom: 16px; }
   .plan-progress-ring { position: relative; width: 130px; height: 130px; margin: 0 auto; }
   .plan-progress-svg { width: 100%; height: 100%; }
   .plan-progress-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
@@ -441,6 +441,11 @@
   [data-theme="light"] .onboard-content { box-shadow: 0 24px 64px rgba(0,0,0,.15), 0 0 24px rgba(139,92,246,.08); }
   [data-theme="light"] .onboard-backdrop { background: rgba(0,0,0,.4); }
   @media (max-width: 600px) { .onboard-content { padding: 32px 22px 28px; } .onboard-title { font-size: 22px; } }
+
+  @keyframes bar-flow {
+    0% { left: -100%; }
+    100% { left: 100%; }
+  }
 </style>
 </head>
 
@@ -465,7 +470,7 @@
   const auth = getAuth(app);
 
   onAuthStateChanged(auth, async (user) => {
-    if (!user) { window.location.href = 'login.html'; return; }
+    if (!user) { window.location.href = 'landing/index.html'; return; }
     await setupKorahDB(app, user.uid);
     await initSatAnalytics(app, user.uid);
     const detail = { uid: user.uid };
@@ -666,25 +671,33 @@
         <p>Get started in <strong>Math Chat</strong> to get that math score up, fast. </p>
       </a>
 
-      <div class="plan-side">
+      <div class="plan-side" style="gap: 18px;">
         <div class="plan-stat-label">Score Journey</div>
-        <div class="plan-progress-ring">
-          <svg class="plan-progress-svg" viewBox="0 0 130 130" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="65" cy="65" r="58" fill="none" stroke="rgba(16,185,129,.12)" stroke-width="8"/>
-            <circle id="plan-progress-fill" cx="65" cy="65" r="58" fill="none" stroke="url(#planGrad)" stroke-width="8" stroke-linecap="round" stroke-dasharray="0 364" transform="rotate(-90 65 65)" style="transition: stroke-dasharray 0.6s ease;"/>
-            <defs>
-              <linearGradient id="planGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#10b981"/>
-                <stop offset="100%" stop-color="#34d399"/>
-              </linearGradient>
-            </defs>
-          </svg>
-          <div class="plan-progress-center">
-            <div class="plan-score-num" id="plan-current-score">—</div>
-            <div class="plan-score-goal" id="plan-goal-label">of —</div>
+        <div style="width:100%; display:flex; flex-direction:column; gap:16px;">
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px;">
+              <span style="font-size:12px; font-weight:700; color:rgba(56,189,248,.9); text-transform:uppercase; letter-spacing:.8px;">Reading &amp; Writing</span>
+              <span style="font-size:13px; font-weight:700; color:var(--tx); font-variant-numeric:tabular-nums;" id="plan-english-label">— / —</span>
+            </div>
+            <div style="height:28px; background:rgba(56,189,248,.12); border-radius:12px; overflow:hidden; position:relative;">
+              <div id="plan-english-bar" style="height:100%; width:100%; border-radius:12px; background:linear-gradient(90deg,#0ea5e9,#38bdf8,#7dd3fc); box-shadow:0 0 20px rgba(56,189,248,.6); position:relative; overflow:hidden;">
+                <span style="position:absolute; top:0; left:-100%; width:60%; height:100%; background:linear-gradient(90deg,transparent,rgba(255,255,255,.4),transparent); animation:bar-flow 2.5s linear infinite;"></span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px;">
+              <span style="font-size:12px; font-weight:700; color:rgba(16,185,129,.9); text-transform:uppercase; letter-spacing:.8px;">Math</span>
+              <span style="font-size:13px; font-weight:700; color:var(--tx); font-variant-numeric:tabular-nums;" id="plan-math-label">— / —</span>
+            </div>
+            <div style="height:28px; background:rgba(16,185,129,.12); border-radius:12px; overflow:hidden; position:relative;">
+              <div id="plan-math-bar" style="height:100%; width:100%; border-radius:12px; background:linear-gradient(90deg,#10b981,#34d399,#6ee7b7); box-shadow:0 0 20px rgba(16,185,129,.6); position:relative; overflow:hidden;">
+                <span style="position:absolute; top:0; left:-100%; width:60%; height:100%; background:linear-gradient(90deg,transparent,rgba(255,255,255,.4),transparent); animation:bar-flow 2.5s linear infinite; animation-delay:.8s;"></span>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="score-sub" id="plan-score-sub">Set a goal to track your progress.</div>
+        <div class="score-sub" id="plan-score-sub" style="margin-top:0;">Set a goal to track your progress.</div>
       </div>
     </section>
 
@@ -798,30 +811,38 @@
       <div class="onboard-slide" data-slide="1">
         <img src="logo-images/newlogo0.png" class="onboard-logo" alt="Korah"/>
         <h2 class="onboard-title">Set Your SAT Goals</h2>
-        <p class="onboard-desc">This powers your Score Journey ring. You can set or update these anytime.</p>
+        <p class="onboard-desc">Set your current and goal scores by section. You can update these anytime.</p>
         <div class="onboard-form" id="onboard-score-form">
-          <div class="onboard-field">
-            <label>Math Score (200–800)</label>
-            <input id="ob-math-score" type="number" min="200" max="800" step="10" placeholder="e.g. 620"/>
-            <span class="ob-field-error" id="ob-math-err">Must be 200–800 in increments of 10</span>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+            <div class="onboard-field">
+              <label>Math — Current</label>
+              <input id="ob-math-score" type="number" min="200" max="800" step="10" placeholder="e.g. 620"/>
+              <span class="ob-field-error" id="ob-math-err">200–800, multiples of 10</span>
+            </div>
+            <div class="onboard-field">
+              <label>Math — Goal</label>
+              <input id="ob-math-goal" type="number" min="200" max="800" step="10" placeholder="e.g. 750"/>
+              <span class="ob-field-error" id="ob-math-goal-err">200–800, multiples of 10</span>
+            </div>
           </div>
-          <div class="onboard-field">
-            <label>Reading &amp; Writing Score (200–800)</label>
-            <input id="ob-rw-score" type="number" min="200" max="800" step="10" placeholder="e.g. 660"/>
-            <span class="ob-field-error" id="ob-rw-err">Must be 200–800 in increments of 10</span>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+            <div class="onboard-field">
+              <label>R&amp;W — Current</label>
+              <input id="ob-rw-score" type="number" min="200" max="800" step="10" placeholder="e.g. 660"/>
+              <span class="ob-field-error" id="ob-rw-err">200–800, multiples of 10</span>
+            </div>
+            <div class="onboard-field">
+              <label>R&amp;W — Goal</label>
+              <input id="ob-rw-goal" type="number" min="200" max="800" step="10" placeholder="e.g. 750"/>
+              <span class="ob-field-error" id="ob-rw-goal-err">200–800, multiples of 10</span>
+            </div>
           </div>
           <div class="onboard-total-row">
             <span class="onboard-total-label">Current Total</span>
             <span class="onboard-total-value" id="ob-total">— / 1600</span>
           </div>
-          <div class="onboard-divider"></div>
-          <div class="onboard-field">
-            <label>Goal Score (400–1600)</label>
-            <input id="ob-goal-score" type="number" min="400" max="1600" step="10" placeholder="e.g. 1400"/>
-            <span class="ob-field-error" id="ob-goal-err">Must be 400–1600 in increments of 10</span>
-          </div>
         </div>
-        <span class="onboard-skip" style = "color: whitesmoke;" id="onboard-skip-scores"> <strong>Skip for now</strong></span>
+        <span class="onboard-skip" style="color: whitesmoke;" id="onboard-skip-scores"><strong>Skip for now</strong></span>
       </div>
 
       <!-- Slide 2: Question Bank -->
@@ -1082,23 +1103,41 @@
       const streakIcon = todayQCount === 0 ? '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#3b82f6;"><circle cx="12" cy="12" r="9"/><polyline points="12 6 12 12 16 14"/></svg>' : todayQCount < 5 ? '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="color:#3b82f6;"><path d="M12 1c.8 0 1.6.4 2 1l7 11c.4.6.4 1.4 0 2l-7 11c-.4.6-1.2 1-2 1s-1.6-.4-2-1l-7-11c-.4-.6-.4-1.4 0-2l7-11c.4-.6 1.2-1 2-1zm0 3.5L6.5 13l5.5 8.5 5.5-8.5-5.5-8.5z"/></svg>' : '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#3b82f6;"><path d="M12 2c1.6 1.5 2 3 2 5 0 2-1 4-3 5 1 .5 2 1 2.5 2 1 2 .5 4-.5 6-1 2-3 3-5 3s-4-1-5-3c-1-2-1.5-4-.5-6 .5-1 1.5-1.5 2.5-2-2-1-3-3-3-5 0-2 .4-3.5 2-5z"/></svg>';
       document.getElementById('streak-emoji').innerHTML = streakIcon;
 
-      // Score Progress (Plan-side)
-      const cur = profile?.currentScore ?? null;
-      const goal = profile?.goalScore ?? null;
-      document.getElementById('plan-current-score').textContent = cur ?? '—';
-      document.getElementById('plan-goal-label').textContent = goal ? `of ${goal}` : 'of —';
+      // Score Progress (Plan-side — two section bars)
+      const enCur  = profile?.englishScore ?? null;
+      const enGoal = profile?.englishGoal  ?? null;
+      const maCur  = profile?.mathScore    ?? null;
+      const maGoal = profile?.mathGoal     ?? null;
 
-      if (cur && goal) {
-        const pctDone = Math.max(0, Math.min(1, (cur - 400) / (goal - 400)));
-        const circumference = 2 * Math.PI * 58;
-        const dasharray = pctDone * circumference;
-        document.getElementById('plan-progress-fill').setAttribute('stroke-dasharray', `${dasharray.toFixed(1)} ${circumference.toFixed(1)}`);
-        const diff = goal - cur;
-        document.getElementById('plan-score-sub').textContent = diff > 0 ? `${diff} points to reach your goal` : "You've hit your goal! Set a new one.";
-      } else if (goal) {
-        document.getElementById('plan-score-sub').textContent = `Goal: ${goal} · Take a practice test to log your score`;
+      const enBar   = document.getElementById('plan-english-bar');
+      const enLabel = document.getElementById('plan-english-label');
+      const maBar   = document.getElementById('plan-math-bar');
+      const maLabel = document.getElementById('plan-math-label');
+      const subEl2  = document.getElementById('plan-score-sub');
+
+      if (enCur && enGoal && enBar) {
+        enLabel.textContent = `${enCur} / ${enGoal}`;
       } else {
-        document.getElementById('plan-score-sub').textContent = "Set a goal to track your progress.";
+        enLabel.textContent = enGoal ? `— / ${enGoal}` : '— / —';
+      }
+      if (maCur && maGoal && maBar) {
+        maLabel.textContent = `${maCur} / ${maGoal}`;
+      } else {
+        maLabel.textContent = maGoal ? `— / ${maGoal}` : '— / —';
+      }
+
+      const bothSet = enCur && enGoal && maCur && maGoal;
+      if (bothSet) {
+        const enLeft = enGoal - enCur;
+        const maLeft = maGoal - maCur;
+        const total  = enLeft + maLeft;
+        subEl2.textContent = total > 0
+          ? `${enLeft > 0 ? `+${enLeft} R&W` : ''}${enLeft > 0 && maLeft > 0 ? ' · ' : ''}${maLeft > 0 ? `+${maLeft} Math` : ''} to go`
+          : "Both goals reached! Set new ones.";
+      } else if (enGoal || maGoal) {
+        subEl2.textContent = "Log a score to track section progress.";
+      } else {
+        subEl2.textContent = "Set a goal to track your progress.";
       }
 
     } catch (e) {
@@ -1206,16 +1245,17 @@
     const nextBtn = document.getElementById('onboard-next-btn');
     const closeBtn = document.getElementById('onboard-close-btn');
     const skipScoresBtn = document.getElementById('onboard-skip-scores');
-    const mathInput = document.getElementById('ob-math-score');
-    const rwInput   = document.getElementById('ob-rw-score');
-    const totalEl   = document.getElementById('ob-total');
-    const goalInput = document.getElementById('ob-goal-score');
-    const mathErr   = document.getElementById('ob-math-err');
-    const rwErr     = document.getElementById('ob-rw-err');
-    const goalErr   = document.getElementById('ob-goal-err');
+    const mathInput    = document.getElementById('ob-math-score');
+    const rwInput      = document.getElementById('ob-rw-score');
+    const mathGoalInput = document.getElementById('ob-math-goal');
+    const rwGoalInput   = document.getElementById('ob-rw-goal');
+    const totalEl      = document.getElementById('ob-total');
+    const mathErr      = document.getElementById('ob-math-err');
+    const rwErr        = document.getElementById('ob-rw-err');
+    const mathGoalErr  = document.getElementById('ob-math-goal-err');
+    const rwGoalErr    = document.getElementById('ob-rw-goal-err');
 
     function isValidModuleScore(v) { return v === '' || (v >= 200 && v <= 800 && v % 10 === 0); }
-    function isValidGoalScore(v)   { return v === '' || (v >= 400 && v <= 1600 && v % 10 === 0); }
 
     function validateInput(input, errEl, validFn) {
       const raw = input.value.trim();
@@ -1243,13 +1283,15 @@
       }
     }
 
-    mathInput.addEventListener('input', () => { validateInput(mathInput, mathErr, isValidModuleScore); updateTotal(); });
-    rwInput.addEventListener('input',   () => { validateInput(rwInput,   rwErr,   isValidModuleScore); updateTotal(); });
-    goalInput.addEventListener('input', () => { validateInput(goalInput, goalErr, isValidGoalScore); });
+    mathInput.addEventListener('input',    () => { validateInput(mathInput,    mathErr,     isValidModuleScore); updateTotal(); });
+    rwInput.addEventListener('input',      () => { validateInput(rwInput,      rwErr,       isValidModuleScore); updateTotal(); });
+    mathGoalInput.addEventListener('input',() => { validateInput(mathGoalInput,mathGoalErr, isValidModuleScore); });
+    rwGoalInput.addEventListener('input',  () => { validateInput(rwGoalInput,  rwGoalErr,   isValidModuleScore); });
 
-    mathInput.addEventListener('blur', () => { snapToTen(mathInput); validateInput(mathInput, mathErr, isValidModuleScore); updateTotal(); });
-    rwInput.addEventListener('blur',   () => { snapToTen(rwInput);   validateInput(rwInput,   rwErr,   isValidModuleScore); updateTotal(); });
-    goalInput.addEventListener('blur', () => { snapToTen(goalInput); validateInput(goalInput, goalErr, isValidGoalScore); });
+    mathInput.addEventListener('blur',    () => { snapToTen(mathInput);    validateInput(mathInput,    mathErr,     isValidModuleScore); updateTotal(); });
+    rwInput.addEventListener('blur',      () => { snapToTen(rwInput);      validateInput(rwInput,      rwErr,       isValidModuleScore); updateTotal(); });
+    mathGoalInput.addEventListener('blur',() => { snapToTen(mathGoalInput);validateInput(mathGoalInput,mathGoalErr, isValidModuleScore); });
+    rwGoalInput.addEventListener('blur',  () => { snapToTen(rwGoalInput);  validateInput(rwGoalInput,  rwGoalErr,   isValidModuleScore); });
 
     function goTo(idx) {
       current = Math.max(0, Math.min(idx, TOTAL_SLIDES - 1));
@@ -1261,21 +1303,21 @@
 
     function scoreFormValid() {
       const allOk = [
-        validateInput(mathInput, mathErr, isValidModuleScore),
-        validateInput(rwInput,   rwErr,   isValidModuleScore),
-        validateInput(goalInput, goalErr, isValidGoalScore),
+        validateInput(mathInput,    mathErr,     isValidModuleScore),
+        validateInput(rwInput,      rwErr,       isValidModuleScore),
+        validateInput(mathGoalInput,mathGoalErr, isValidModuleScore),
+        validateInput(rwGoalInput,  rwGoalErr,   isValidModuleScore),
       ];
       return allOk.every(Boolean);
     }
 
     function collectAndSaveScores() {
-      const m   = parseInt(mathInput.value) || null;
-      const rw  = parseInt(rwInput.value)   || null;
-      const raw = m && rw ? m + rw : (m || rw || null);
-      const currentScore = raw ? Math.min(raw, 1600) : null;
-      const goalScore    = parseInt(goalInput.value)  || null;
-      if (currentScore || goalScore) {
-        pendingProfile = { currentScore, goalScore };
+      const mathScore    = parseInt(mathInput.value)    || null;
+      const englishScore = parseInt(rwInput.value)      || null;
+      const mathGoal     = parseInt(mathGoalInput.value)|| null;
+      const englishGoal  = parseInt(rwGoalInput.value)  || null;
+      if (mathScore || englishScore || mathGoal || englishGoal) {
+        pendingProfile = { mathScore, englishScore, mathGoal, englishGoal };
         trySaveProfile();
       }
     }

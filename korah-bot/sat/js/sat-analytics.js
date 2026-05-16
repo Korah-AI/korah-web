@@ -63,12 +63,30 @@ export async function initSatAnalytics(app, uid) {
     return snap.exists() ? snap.data() : null;
   }
 
-  async function saveProfile({ currentScore, goalScore }) {
+  async function saveProfile({ currentScore, goalScore, mathScore, englishScore, mathGoal, englishGoal }) {
     const now = new Date().toISOString();
     const existing = await getProfile();
+
+    // Derive combined totals from section scores when available
+    const resolvedMathScore    = mathScore    != null ? Number(mathScore)    : (existing?.mathScore    ?? null);
+    const resolvedEnglishScore = englishScore != null ? Number(englishScore) : (existing?.englishScore ?? null);
+    const resolvedMathGoal     = mathGoal     != null ? Number(mathGoal)     : (existing?.mathGoal     ?? null);
+    const resolvedEnglishGoal  = englishGoal  != null ? Number(englishGoal)  : (existing?.englishGoal  ?? null);
+
+    const combinedCurrent = (resolvedMathScore && resolvedEnglishScore)
+      ? resolvedMathScore + resolvedEnglishScore
+      : (currentScore ? Number(currentScore) : (existing?.currentScore ?? null));
+    const combinedGoal = (resolvedMathGoal && resolvedEnglishGoal)
+      ? resolvedMathGoal + resolvedEnglishGoal
+      : (goalScore ? Number(goalScore) : (existing?.goalScore ?? null));
+
     const payload = {
-      currentScore: Number(currentScore) || null,
-      goalScore: Number(goalScore) || null,
+      currentScore:  combinedCurrent,
+      goalScore:     combinedGoal,
+      mathScore:     resolvedMathScore,
+      englishScore:  resolvedEnglishScore,
+      mathGoal:      resolvedMathGoal,
+      englishGoal:   resolvedEnglishGoal,
       updatedAt: now,
       createdAt: existing?.createdAt || now,
     };

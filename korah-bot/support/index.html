@@ -1,317 +1,386 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" x-data="{ theme: localStorage.getItem('korah_theme') || 'dark', menuOpen: false }" :data-theme="theme">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Korah — Support</title>
     <link rel="icon" type="image/png" href="../logo-images/newlogo0.png">
     <meta name="description" content="Get help with Korah AI Study Companion. Contact support, find answers to common questions, and get assistance from our team.">
-    
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="../korah.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <link rel="stylesheet" href="support.css">
+
+    <link rel="stylesheet" href="../korah.css"/>
+    <link rel="stylesheet" href="support.css"/>
+    <style>
+      html { scroll-behavior: smooth; }
+    </style>
 </head>
-<body x-data="{ theme: localStorage.getItem('korah_theme') || 'dark' }" :data-theme="theme" x-cloak>
-    <!-- Shooting Stars Background -->
-    <div class="stars-container" id="starField"></div>
-    
-    <!-- Navigation -->
-    <nav class="navbar">
-        <a href="#faq" class="logo-link">
-            <div class="logo">
-                <img src="../logo-images/newlogo0.png" alt="Korah" class="logo-img">
-            </div>
-            <div class="logo-text">
-                <span class="logo-title">Korah</span>
-                <span class="logo-subtitle">Support Center</span>
-            </div>
+<body class="bg-base tx" x-cloak style="overflow-x:hidden;">
+
+<!-- Stars Background -->
+<div class="stars-container" id="starField" :style="theme === 'light' ? 'opacity:0;pointer-events:none' : 'opacity:1'" style="transition:opacity 0.4s"></div>
+
+<!-- ═══ NAVBAR ═══ -->
+<nav id="navbar" class="fixed top-0 left-0 right-0 h-[82px] z-[1000] px-6 md:px-[clamp(28px,5.5vw,96px)]" style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;background:var(--nb);border-bottom:1px solid var(--bd);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);">
+  <a href="../landing/" class="flex items-center gap-2.5 no-underline shrink-0 z-10">
+    <div class="w-10 h-10 rounded-xl flex items-center justify-center font-display text-xl font-black text-white shadow-glow relative overflow-hidden" style="transition:transform 0.2s,box-shadow 0.2s;" onmouseover="this.style.transform='rotate(-5deg) scale(1.08)'" onmouseout="this.style.transform=''">
+      <img src="../logo-images/newlogo0.png" style="height:2.5rem;">
+    </div>
+    <div class="flex flex-col leading-tight">
+      <span class="font-display text-[19px] font-bold tx">Korah</span>
+      <span class="text-[9px] font-semibold tracking-[2.5px] uppercase tx-p4">Support Center</span>
+    </div>
+  </a>
+
+  <div class="hidden lg:flex items-center gap-0.5 bg-sf2 border bd2 rounded-full px-3 py-2" style="white-space:nowrap;backdrop-filter:blur(12px);">
+    <a href="#faq"     class="text-[13.5px] font-medium tx2 px-4 py-1.5 rounded-full no-underline" style="transition:color 0.2s,background 0.2s;" onmouseover="this.style.color='var(--tx)';this.style.background='var(--bd)'" onmouseout="this.style.color='';this.style.background=''">FAQ</a>
+    <a href="#contact" class="text-[13.5px] font-medium tx2 px-4 py-1.5 rounded-full no-underline" style="transition:color 0.2s,background 0.2s;" onmouseover="this.style.color='var(--tx)';this.style.background='var(--bd)'" onmouseout="this.style.color='';this.style.background=''">Contact</a>
+    <a href="#privacy" class="text-[13.5px] font-medium tx2 px-4 py-1.5 rounded-full no-underline" style="transition:color 0.2s,background 0.2s;" onmouseover="this.style.color='var(--tx)';this.style.background='var(--bd)'" onmouseout="this.style.color='';this.style.background=''">Privacy</a>
+    <a href="#terms"   class="text-[13.5px] font-medium tx2 px-4 py-1.5 rounded-full no-underline" style="transition:color 0.2s,background 0.2s;" onmouseover="this.style.color='var(--tx)';this.style.background='var(--bd)'" onmouseout="this.style.color='';this.style.background=''">Terms</a>
+    <a href="../landing/" class="text-[13.5px] font-medium tx2 px-4 py-1.5 rounded-full no-underline" style="transition:color 0.2s,background 0.2s;" onmouseover="this.style.color='var(--tx)';this.style.background='var(--bd)'" onmouseout="this.style.color='';this.style.background=''">← Home</a>
+  </div>
+
+  <div class="flex items-center gap-2.5 z-10 justify-self-end">
+    <button @click="theme = theme==='dark' ? 'light' : 'dark'; localStorage.setItem('korah_theme', theme)"
+        class="flex items-center justify-center w-9 h-9 rounded-xl bg-sf2 border bd cursor-pointer"
+        style="transition:border-color 0.2s,background 0.2s;" aria-label="Toggle theme"
+        onmouseover="this.style.borderColor='var(--p4)';this.style.background='var(--bd2)'" onmouseout="this.style.borderColor='';this.style.background=''">
+      <svg x-show="theme==='light'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" style="color:var(--p5)">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/>
+      </svg>
+      <svg x-show="theme==='dark'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--p4)">
+        <circle cx="12" cy="12" r="5"/>
+        <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+        <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+      </svg>
+    </button>
+    <button @click="menuOpen=!menuOpen" class="lg:hidden flex flex-col gap-1.5 bg-transparent border-none cursor-pointer p-1.5" aria-label="Menu">
+      <span class="block w-5 h-0.5 bg-p4 rounded" style="transition:transform 0.3s;"></span>
+      <span class="block w-5 h-0.5 bg-p4 rounded" style="transition:all 0.3s;"></span>
+      <span class="block w-5 h-0.5 bg-p4 rounded" style="transition:transform 0.3s;"></span>
+    </button>
+  </div>
+</nav>
+
+<!-- Mobile menu -->
+<div class="fixed top-[82px] left-0 right-0 z-[999] px-6 pb-7 pt-5 border-b bd"
+     style="background:var(--nb);backdrop-filter:blur(20px);"
+     x-show="menuOpen"
+     x-transition:enter="transition ease-out duration-300"
+     x-transition:enter-start="opacity-0 -translate-y-4"
+     x-transition:enter-end="opacity-100 translate-y-0"
+     x-transition:leave="transition ease-in duration-200"
+     x-transition:leave-start="opacity-100"
+     x-transition:leave-end="opacity-0">
+  <a href="#faq"     @click="menuOpen=false" class="block text-base font-medium tx2 no-underline py-3.5 px-2 border-b bd2" style="transition:color 0.2s;" onmouseover="this.style.color='var(--p4)'" onmouseout="this.style.color=''">FAQ</a>
+  <a href="#contact" @click="menuOpen=false" class="block text-base font-medium tx2 no-underline py-3.5 px-2 border-b bd2" style="transition:color 0.2s;" onmouseover="this.style.color='var(--p4)'" onmouseout="this.style.color=''">Contact</a>
+  <a href="#privacy" @click="menuOpen=false" class="block text-base font-medium tx2 no-underline py-3.5 px-2 border-b bd2" style="transition:color 0.2s;" onmouseover="this.style.color='var(--p4)'" onmouseout="this.style.color=''">Privacy</a>
+  <a href="#terms"   @click="menuOpen=false" class="block text-base font-medium tx2 no-underline py-3.5 px-2 border-b bd2" style="transition:color 0.2s;" onmouseover="this.style.color='var(--p4)'" onmouseout="this.style.color=''">Terms</a>
+  <a href="../landing/" class="block text-base font-medium tx2 no-underline py-3.5 px-2" style="transition:color 0.2s;" onmouseover="this.style.color='var(--p4)'" onmouseout="this.style.color=''">← Back to Home</a>
+</div>
+
+<!-- ═══ HERO ═══ -->
+<section style="position:relative;min-height:56vh;display:flex;align-items:center;justify-content:center;overflow:hidden;padding-top:clamp(5.5rem,10vw,7rem);padding-bottom:5rem;">
+  <div style="position:absolute;top:-20%;left:50%;transform:translateX(-50%);width:600px;height:600px;background:radial-gradient(circle,var(--glow),transparent 70%);pointer-events:none;opacity:0.4;"></div>
+
+  <div style="position:relative;z-index:10;width:100%;max-width:48rem;margin:0 auto;padding:0 1.25rem;text-align:center;">
+    <div class="inline-flex items-center gap-2 bg-sf2 border bd px-4 py-1.5 rounded-full text-[11px] font-bold tracking-[2.5px] uppercase tx-p4 mb-6">
+      <span class="w-1.5 h-1.5 rounded-full bg-p4"></span>Support Center
+    </div>
+    <h1 class="font-display tx mb-4" style="font-size:clamp(2.5rem,7vw,4.5rem);font-weight:900;letter-spacing:-0.02em;line-height:1.08;margin-bottom:1.25rem;">
+      How can we <span style="background:linear-gradient(135deg,#a855f7,#6366f1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">help</span> you?
+    </h1>
+    <p class="tx2" style="font-size:clamp(0.95rem,1.8vw,1.125rem);line-height:1.7;max-width:34rem;margin:0 auto;">
+      Find answers, get support, and connect with our team. We're here to help you succeed with Korah.
+    </p>
+
+    <!-- Quick nav pills -->
+    <div class="flex flex-wrap items-center justify-center gap-3 mt-8">
+      <a href="#faq" class="no-underline text-[13px] font-semibold px-5 py-2 rounded-full border bd tx2" style="transition:color 0.2s,border-color 0.2s,background 0.2s;" onmouseover="this.style.color='var(--p4)';this.style.borderColor='var(--p4)'" onmouseout="this.style.color='';this.style.borderColor=''">📋 FAQ</a>
+      <a href="#contact" class="no-underline text-[13px] font-semibold px-5 py-2 rounded-full border-none text-white grad-bg shadow-glow" style="transition:transform 0.2s,box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 0 2rem rgba(139,92,246,0.6)'" onmouseout="this.style.transform='';this.style.boxShadow=''">📧 Contact Us</a>
+      <a href="#privacy" class="no-underline text-[13px] font-semibold px-5 py-2 rounded-full border bd tx2" style="transition:color 0.2s,border-color 0.2s;" onmouseover="this.style.color='var(--p4)';this.style.borderColor='var(--p4)'" onmouseout="this.style.color='';this.style.borderColor=''">🔒 Privacy</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ FAQ ═══ -->
+<section id="faq" class="py-24 px-5 md:px-[clamp(20px,6vw,80px)] bg-base2" style="transition:background 0.4s;">
+  <div class="max-w-[1060px] mx-auto">
+    <div class="flex justify-center mb-5">
+      <div class="inline-flex items-center gap-2 bg-sf2 border bd px-4 py-1.5 rounded-full text-[11px] font-bold tracking-[2.5px] uppercase tx-p4">
+        <span class="w-1.5 h-1.5 rounded-full bg-p4"></span>FAQ
+      </div>
+    </div>
+    <h2 class="font-display text-[clamp(2rem,5vw,3.2rem)] font-bold text-center tx leading-tight mb-3">Frequently Asked Questions</h2>
+    <p class="text-base tx2 text-center max-w-lg mx-auto mb-12" style="line-height:1.7;">Everything you need to know about Korah.</p>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+      <div class="bg-card border bd2 rounded-3xl p-7 faq-card-hover" style="border:0.09375rem solid rgba(139,92,246,0.25);transition:transform 0.3s cubic-bezier(.23,1,.32,1),box-shadow 0.3s,border-color 0.3s;" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 20px 50px rgba(0,0,0,0.3),0 0 20px rgba(139,92,246,0.15)';this.style.borderColor='rgba(139,92,246,0.5)'" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='rgba(139,92,246,0.25)'">
+        <div class="w-11 h-11 rounded-2xl grad-bg grid place-items-center text-xl mb-4 shadow-glow">📱</div>
+        <h3 class="text-[17px] font-bold tx mb-2">Is Korah free to use?</h3>
+        <p class="text-sm tx2" style="line-height:1.7;">Yes! Korah Beta is completely free for all users. We believe quality study tools should be accessible to everyone.</p>
+      </div>
+
+      <div class="bg-card border bd2 rounded-3xl p-7" style="border:0.09375rem solid rgba(139,92,246,0.25);transition:transform 0.3s cubic-bezier(.23,1,.32,1),box-shadow 0.3s,border-color 0.3s;" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 20px 50px rgba(0,0,0,0.3),0 0 20px rgba(139,92,246,0.15)';this.style.borderColor='rgba(139,92,246,0.5)'" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='rgba(139,92,246,0.25)'">
+        <div class="w-11 h-11 rounded-2xl grad-bg grid place-items-center text-xl mb-4 shadow-glow">🔒</div>
+        <h3 class="text-[17px] font-bold tx mb-2">Is my data safe?</h3>
+        <p class="text-sm tx2" style="line-height:1.7;">Absolutely. Korah uses cloud-based data management developed by Google to keep your information safe. We will never sell your data to third parties.</p>
+      </div>
+
+      <div class="bg-card border bd2 rounded-3xl p-7" style="border:0.09375rem solid rgba(139,92,246,0.25);transition:transform 0.3s cubic-bezier(.23,1,.32,1),box-shadow 0.3s,border-color 0.3s;" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 20px 50px rgba(0,0,0,0.3),0 0 20px rgba(139,92,246,0.15)';this.style.borderColor='rgba(139,92,246,0.5)'" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='rgba(139,92,246,0.25)'">
+        <div class="w-11 h-11 rounded-2xl grad-bg grid place-items-center text-xl mb-4 shadow-glow">🍎</div>
+        <h3 class="text-[17px] font-bold tx mb-2">What platforms are supported?</h3>
+        <p class="text-sm tx2" style="line-height:1.7;">Currently available on the App Store and web browsers. Android support is coming in the future.</p>
+      </div>
+
+      <div class="bg-card border bd2 rounded-3xl p-7" style="border:0.09375rem solid rgba(139,92,246,0.25);transition:transform 0.3s cubic-bezier(.23,1,.32,1),box-shadow 0.3s,border-color 0.3s;" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 20px 50px rgba(0,0,0,0.3),0 0 20px rgba(139,92,246,0.15)';this.style.borderColor='rgba(139,92,246,0.5)'" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='rgba(139,92,246,0.25)'">
+        <div class="w-11 h-11 rounded-2xl grad-bg grid place-items-center text-xl mb-4 shadow-glow">🤖</div>
+        <h3 class="text-[17px] font-bold tx mb-2">How does the AI study assistant work?</h3>
+        <p class="text-sm tx2" style="line-height:1.7;">Korah AI uses advanced language models to provide personalized explanations, generate study materials, and adapt to your learning style.</p>
+      </div>
+
+      <div class="bg-card border bd2 rounded-3xl p-7" style="border:0.09375rem solid rgba(139,92,246,0.25);transition:transform 0.3s cubic-bezier(.23,1,.32,1),box-shadow 0.3s,border-color 0.3s;" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 20px 50px rgba(0,0,0,0.3),0 0 20px rgba(139,92,246,0.15)';this.style.borderColor='rgba(139,92,246,0.5)'" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='rgba(139,92,246,0.25)'">
+        <div class="w-11 h-11 rounded-2xl grad-bg grid place-items-center text-xl mb-4 shadow-glow">📊</div>
+        <h3 class="text-[17px] font-bold tx mb-2">Can I track my study progress?</h3>
+        <p class="text-sm tx2" style="line-height:1.7;">Yes! Korah includes daily streaks, task management with priority levels, and mood-based recommendations to optimize your study sessions.</p>
+      </div>
+
+      <div class="bg-card border bd2 rounded-3xl p-7" style="border:0.09375rem solid rgba(139,92,246,0.25);transition:transform 0.3s cubic-bezier(.23,1,.32,1),box-shadow 0.3s,border-color 0.3s;" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 20px 50px rgba(0,0,0,0.3),0 0 20px rgba(139,92,246,0.15)';this.style.borderColor='rgba(139,92,246,0.5)'" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='rgba(139,92,246,0.25)'">
+        <div class="w-11 h-11 rounded-2xl grad-bg grid place-items-center text-xl mb-4 shadow-glow">🔄</div>
+        <h3 class="text-[17px] font-bold tx mb-2">How often is Korah updated?</h3>
+        <p class="text-sm tx2" style="line-height:1.7;">We release updates regularly based on user feedback. Please reach out if you have any suggestions!</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══ CONTACT ═══ -->
+<section id="contact" class="py-24 px-5 md:px-[clamp(20px,6vw,80px)] bg-base relative overflow-hidden" style="transition:background 0.4s;">
+  <div class="absolute inset-0 pointer-events-none" style="background:radial-gradient(ellipse at 50% 0%,rgba(139,92,246,0.1) 0%,transparent 65%);"></div>
+
+  <div class="relative z-10 max-w-[1060px] mx-auto">
+    <div class="flex justify-center mb-5">
+      <div class="inline-flex items-center gap-2 bg-sf2 border bd px-4 py-1.5 rounded-full text-[11px] font-bold tracking-[2.5px] uppercase tx-p4">
+        <span class="w-1.5 h-1.5 rounded-full bg-p4"></span>Contact
+      </div>
+    </div>
+    <h2 class="font-display text-[clamp(2rem,5vw,3.2rem)] font-bold text-center tx leading-tight mb-3">Get in Touch</h2>
+    <p class="text-base tx2 text-center max-w-lg mx-auto mb-12" style="line-height:1.7;">Have a question, suggestion, or need assistance? We'd love to hear from you.</p>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+      <!-- Email Support -->
+      <div class="bg-card border bd2 rounded-3xl p-8 text-center" style="border:0.09375rem solid rgba(139,92,246,0.25);transition:transform 0.3s cubic-bezier(.23,1,.32,1),box-shadow 0.3s,border-color 0.3s;" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 20px 50px rgba(0,0,0,0.3),0 0 20px rgba(139,92,246,0.15)';this.style.borderColor='rgba(139,92,246,0.5)'" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='rgba(139,92,246,0.25)'">
+        <div class="w-14 h-14 rounded-2xl grad-bg grid place-items-center text-2xl mb-5 shadow-glow mx-auto">📧</div>
+        <h3 class="text-[18px] font-bold tx mb-3">Email Support</h3>
+        <p class="text-sm tx2 mb-6" style="line-height:1.7;">Get help from our support team within 24 hours.</p>
+        <a href="mailto:oscareucedaf1@gmail.com?subject=Korah%20Support%20Inquiry&body=Hi%20Korah%20Team,"
+           class="inline-block no-underline text-[13px] font-semibold px-6 py-2.5 rounded-full border bd tx"
+           style="transition:color 0.2s,border-color 0.2s,background 0.2s;" onmouseover="this.style.color='var(--p4)';this.style.borderColor='var(--p4)';this.style.background='var(--bd2)'" onmouseout="this.style.color='';this.style.borderColor='';this.style.background=''">
+          Contact Support
         </a>
-        
-        <div class="nav-links">
-            <a href="#faq" class="nav-link">FAQ</a>
-            <a href="#contact" class="nav-link">Contact</a>
-            <a href="#privacy" class="nav-link">Privacy</a>
-            <a href="#terms" class="nav-link">Terms</a>
-            <a href="../landing/" class="nav-link">Back to Home</a>
+      </div>
+
+      <!-- CEO / Featured -->
+      <div class="relative bg-card border rounded-3xl p-8 text-center" style="border:0.09375rem solid rgba(139,92,246,0.5);box-shadow:0 0 2rem rgba(139,92,246,0.2);background:linear-gradient(180deg,rgba(139,92,246,0.1) 0%,var(--cb) 100%);transition:transform 0.3s cubic-bezier(.23,1,.32,1),box-shadow 0.3s;" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 20px 50px rgba(0,0,0,0.35),0 0 2.5rem rgba(139,92,246,0.35)'" onmouseout="this.style.transform='';this.style.boxShadow='0 0 2rem rgba(139,92,246,0.2)'">
+        <div class="absolute -top-3.5 left-1/2 -translate-x-1/2">
+          <span class="text-[11px] font-bold tracking-[1px] uppercase text-white px-4 py-1.5 rounded-full grad-bg shadow-glow whitespace-nowrap">Direct Line</span>
         </div>
-        
-        <div class="nav-actions">
-            <button @click="theme = theme === 'dark' ? 'light' : 'dark'; localStorage.setItem('korah_theme', theme)" class="theme-toggle" aria-label="Toggle theme">
-                <svg x-show="theme==='light'" xmlns="http://www.w3.org/2000/svg" class="theme-icon-svg" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/>
-                </svg>
-                <svg x-show="theme==='dark'" xmlns="http://www.w3.org/2000/svg" class="theme-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="5"/>
-                    <line x1="12" y1="1" x2="12" y2="3"/>
-                    <line x1="12" y1="21" x2="12" y2="23"/>
-                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-                    <line x1="1" y1="12" x2="3" y2="12"/>
-                    <line x1="21" y1="12" x2="23" y2="12"/>
-                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-                </svg>
-            </button>
+        <div class="w-14 h-14 rounded-2xl grad-bg grid place-items-center text-2xl mb-5 shadow-glow mx-auto mt-2">👨‍💼</div>
+        <h3 class="text-[18px] font-bold tx mb-3">Message the CEO</h3>
+        <p class="text-sm tx2 mb-6" style="line-height:1.7;">Have important feedback or a partnership inquiry? Reach out directly to Oscar.</p>
+        <a href="mailto:oscareucedaf1@gmail.com?subject=Korah%20Creator%20Inquiry&body=Hi%20Oscar,"
+           class="inline-block no-underline text-[13px] font-semibold px-6 py-2.5 rounded-full border-none text-white grad-bg shadow-glow"
+           style="transition:transform 0.2s,box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 0 2rem rgba(139,92,246,0.6)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+          Email CEO
+        </a>
+      </div>
+
+      <!-- Live Chat -->
+      <div class="bg-card border bd2 rounded-3xl p-8 text-center" style="border:0.09375rem solid rgba(139,92,246,0.25);transition:transform 0.3s cubic-bezier(.23,1,.32,1),box-shadow 0.3s,border-color 0.3s;" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 20px 50px rgba(0,0,0,0.3),0 0 20px rgba(139,92,246,0.15)';this.style.borderColor='rgba(139,92,246,0.5)'" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='rgba(139,92,246,0.25)'">
+        <div class="w-14 h-14 rounded-2xl grad-bg grid place-items-center text-2xl mb-5 shadow-glow mx-auto">💬</div>
+        <h3 class="text-[18px] font-bold tx mb-3">Live Chat</h3>
+        <p class="text-sm tx2 mb-6" style="line-height:1.7;">Chat with Korah AI for instant answers to your questions.</p>
+        <a href="../landing/#chat"
+           class="inline-block no-underline text-[13px] font-semibold px-6 py-2.5 rounded-full border bd tx"
+           style="transition:color 0.2s,border-color 0.2s,background 0.2s;" onmouseover="this.style.color='var(--p4)';this.style.borderColor='var(--p4)';this.style.background='var(--bd2)'" onmouseout="this.style.color='';this.style.borderColor='';this.style.background=''">
+          Start Chat
+        </a>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══ QUICK LINKS ═══ -->
+<section class="py-20 px-5 md:px-[clamp(20px,6vw,80px)] bg-base2" style="transition:background 0.4s;">
+  <div class="max-w-[1060px] mx-auto">
+    <h2 class="font-display text-[clamp(1.75rem,4vw,2.8rem)] font-bold text-center tx leading-tight mb-10">Explore Korah</h2>
+
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 max-w-[900px] mx-auto">
+      <a href="../landing/#how" class="flex flex-col items-center gap-2 no-underline bg-card border bd2 rounded-2xl p-5 text-center" style="border:0.09375rem solid rgba(139,92,246,0.2);transition:transform 0.2s,border-color 0.2s,box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-3px)';this.style.borderColor='rgba(139,92,246,0.5)';this.style.boxShadow='0 0 1.25rem rgba(139,92,246,0.15)'" onmouseout="this.style.transform='';this.style.borderColor='rgba(139,92,246,0.2)';this.style.boxShadow=''">
+        <span class="text-2xl">🎯</span>
+        <span class="text-[12px] font-semibold tx">How it Works</span>
+      </a>
+      <a href="../landing/#features" class="flex flex-col items-center gap-2 no-underline bg-card border bd2 rounded-2xl p-5 text-center" style="border:0.09375rem solid rgba(139,92,246,0.2);transition:transform 0.2s,border-color 0.2s,box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-3px)';this.style.borderColor='rgba(139,92,246,0.5)';this.style.boxShadow='0 0 1.25rem rgba(139,92,246,0.15)'" onmouseout="this.style.transform='';this.style.borderColor='rgba(139,92,246,0.2)';this.style.boxShadow=''">
+        <span class="text-2xl">✨</span>
+        <span class="text-[12px] font-semibold tx">Features</span>
+      </a>
+      <a href="../landing/#study-tools" class="flex flex-col items-center gap-2 no-underline bg-card border bd2 rounded-2xl p-5 text-center" style="border:0.09375rem solid rgba(139,92,246,0.2);transition:transform 0.2s,border-color 0.2s,box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-3px)';this.style.borderColor='rgba(139,92,246,0.5)';this.style.boxShadow='0 0 1.25rem rgba(139,92,246,0.15)'" onmouseout="this.style.transform='';this.style.borderColor='rgba(139,92,246,0.2)';this.style.boxShadow=''">
+        <span class="text-2xl">📚</span>
+        <span class="text-[12px] font-semibold tx">Study Tools</span>
+      </a>
+      <a href="../landing/#chat" class="flex flex-col items-center gap-2 no-underline bg-card border bd2 rounded-2xl p-5 text-center" style="border:0.09375rem solid rgba(139,92,246,0.2);transition:transform 0.2s,border-color 0.2s,box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-3px)';this.style.borderColor='rgba(139,92,246,0.5)';this.style.boxShadow='0 0 1.25rem rgba(139,92,246,0.15)'" onmouseout="this.style.transform='';this.style.borderColor='rgba(139,92,246,0.2)';this.style.boxShadow=''">
+        <span class="text-2xl">🤖</span>
+        <span class="text-[12px] font-semibold tx">Korah AI</span>
+      </a>
+      <a href="../landing/#downloads" class="flex flex-col items-center gap-2 no-underline bg-card border bd2 rounded-2xl p-5 text-center" style="border:0.09375rem solid rgba(139,92,246,0.2);transition:transform 0.2s,border-color 0.2s,box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-3px)';this.style.borderColor='rgba(139,92,246,0.5)';this.style.boxShadow='0 0 1.25rem rgba(139,92,246,0.15)'" onmouseout="this.style.transform='';this.style.borderColor='rgba(139,92,246,0.2)';this.style.boxShadow=''">
+        <span class="text-2xl">📲</span>
+        <span class="text-[12px] font-semibold tx">Download</span>
+      </a>
+      <a href="https://mail.google.com/mail/?view=cm&to=oscareucedaf1@gmail.com&su=Hello from Korah" class="flex flex-col items-center gap-2 no-underline bg-card border bd2 rounded-2xl p-5 text-center" style="border:0.09375rem solid rgba(139,92,246,0.2);transition:transform 0.2s,border-color 0.2s,box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-3px)';this.style.borderColor='rgba(139,92,246,0.5)';this.style.boxShadow='0 0 1.25rem rgba(139,92,246,0.15)'" onmouseout="this.style.transform='';this.style.borderColor='rgba(139,92,246,0.2)';this.style.boxShadow=''">
+        <span class="text-2xl">📧</span>
+        <span class="text-[12px] font-semibold tx">Contact</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ PRIVACY POLICY ═══ -->
+<section id="privacy" class="py-24 px-5 md:px-[clamp(20px,6vw,80px)] bg-base" style="transition:background 0.4s;">
+  <div class="max-w-[1060px] mx-auto">
+    <div class="flex justify-center mb-5">
+      <div class="inline-flex items-center gap-2 bg-sf2 border bd px-4 py-1.5 rounded-full text-[11px] font-bold tracking-[2.5px] uppercase tx-p4">
+        <span class="w-1.5 h-1.5 rounded-full bg-p4"></span>Legal
+      </div>
+    </div>
+    <h2 class="font-display text-[clamp(2rem,5vw,3.2rem)] font-bold text-center tx leading-tight mb-3">Privacy Policy</h2>
+    <p class="text-base tx2 text-center max-w-lg mx-auto mb-12" style="line-height:1.7;">Your privacy is important to us. Learn how we handle your data.</p>
+
+    <div class="bg-card border bd2 rounded-3xl p-8 md:p-10 max-w-[800px] mx-auto" style="border:0.09375rem solid rgba(139,92,246,0.2);">
+      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">This privacy policy applies to the Korah app (hereby referred to as "Application") for mobile devices that was created by Oscar Euceda (hereby referred to as "Service Provider") as an Open Source service. This service is intended for use "AS IS".</p>
+      <h3 class="text-[18px] font-bold tx mt-8 mb-3">Information Collection and Use</h3>
+      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">The Application collects information when you download and use it. This information may include:</p>
+      <ul class="list-disc pl-6 mb-4 space-y-1.5">
+        <li class="text-[15px] tx2" style="line-height:1.6;">Your device's Internet Protocol address (e.g. IP address)</li>
+        <li class="text-[15px] tx2" style="line-height:1.6;">The pages of the Application that you visit, the time and date of your visit, the time spent on those pages</li>
+        <li class="text-[15px] tx2" style="line-height:1.6;">The time spent on the Application</li>
+        <li class="text-[15px] tx2" style="line-height:1.6;">The operating system you use on your mobile device</li>
+      </ul>
+      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">The Application does not gather precise information about the location of your mobile device.</p>
+      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">The Application uses Artificial Intelligence (AI) technologies to enhance user experience and provide certain features. The AI components may process user data to deliver personalized content, recommendations, or automated functionalities. All AI processing is performed in accordance with this privacy policy and applicable laws.</p>
+      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">The Service Provider may use the information you provided to contact you from time to time to provide you with important information, required notices and marketing promotions.</p>
+      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">For a better experience, while using the Application, the Service Provider may require you to provide us with certain personally identifiable information, including but not limited to First name, last name, Email, password, AI chats, study items. The information that the Service Provider request will be retained by them and used as described in this privacy policy.</p>
+      <h3 class="text-[18px] font-bold tx mt-8 mb-3">Third Party Access</h3>
+      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">Only aggregated, anonymized data is periodically transmitted to external services to aid the Service Provider in improving the Application and their service. The Service Provider may share your information with third parties in the ways that are described in this privacy statement.</p>
+      <p class="text-[15px] tx2 mb-2" style="line-height:1.8;">Third-party service providers used by the Application:</p>
+      <ul class="list-disc pl-6 mb-4 space-y-1.5">
+        <li class="text-[15px] tx2"><a href="https://firebase.google.com/support/privacy" target="_blank" rel="noopener noreferrer" class="tx-p4 no-underline" style="transition:color 0.2s;" onmouseover="this.style.color='var(--p5)'" onmouseout="this.style.color=''">Google Analytics for Firebase</a></li>
+      </ul>
+      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">The Service Provider may disclose information as required by law, to protect rights or safety, investigate fraud, or to respond to a government request.</p>
+      <h3 class="text-[18px] font-bold tx mt-8 mb-3">Opt-Out Rights</h3>
+      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">You can stop all collection of information by the Application easily by uninstalling it. You may use the standard uninstall processes as may be available as part of your mobile device or via the mobile application marketplace or network.</p>
+      <h3 class="text-[18px] font-bold tx mt-8 mb-3">Data Retention Policy</h3>
+      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">The Service Provider will retain User Provided data for as long as you use the Application and for a reasonable time thereafter. If you'd like them to delete User Provided Data that you have provided via the Application, please contact them at <a href="mailto:oscareucedaf1@gmail.com" class="tx-p4 no-underline">oscareucedaf1@gmail.com</a>.</p>
+      <h3 class="text-[18px] font-bold tx mt-8 mb-3">Children</h3>
+      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">The Service Provider does not use the Application to knowingly solicit data from or market to children under the age of 13. In the case the Service Provider discover that a child under 13 has provided personal information, it will be immediately deleted. If you are a parent or guardian aware that your child has provided personal information, please contact <a href="mailto:oscareucedaf1@gmail.com" class="tx-p4 no-underline">oscareucedaf1@gmail.com</a>.</p>
+      <h3 class="text-[18px] font-bold tx mt-8 mb-3">Security</h3>
+      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">The Service Provider is concerned about safeguarding the confidentiality of your information. The Service Provider provides physical, electronic, and procedural safeguards to protect information the Service Provider processes and maintains.</p>
+      <h3 class="text-[18px] font-bold tx mt-8 mb-3">Changes</h3>
+      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">This Privacy Policy may be updated from time to time. You are advised to consult this Privacy Policy regularly for any changes, as continued use is deemed approval of all changes.</p>
+      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">This privacy policy is effective as of 2026-03-25</p>
+      <h3 class="text-[18px] font-bold tx mt-8 mb-3">Your Consent</h3>
+      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">By using the Application, you are consenting to the processing of your information as set forth in this Privacy Policy now and as amended by us.</p>
+      <h3 class="text-[18px] font-bold tx mt-8 mb-3">Contact Us</h3>
+      <p class="text-[15px] tx2" style="line-height:1.8;">If you have any questions regarding privacy while using the Application, please contact the Service Provider via email at <a href="mailto:oscareucedaf1@gmail.com" class="tx-p4 no-underline">oscareucedaf1@gmail.com</a>.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ TERMS AND CONDITIONS ═══ -->
+<section id="terms" class="py-24 px-5 md:px-[clamp(20px,6vw,80px)] bg-base2" style="transition:background 0.4s;">
+  <div class="max-w-[1060px] mx-auto">
+    <div class="flex justify-center mb-5">
+      <div class="inline-flex items-center gap-2 bg-sf2 border bd px-4 py-1.5 rounded-full text-[11px] font-bold tracking-[2.5px] uppercase tx-p4">
+        <span class="w-1.5 h-1.5 rounded-full bg-p4"></span>Legal
+      </div>
+    </div>
+    <h2 class="font-display text-[clamp(2rem,5vw,3.2rem)] font-bold text-center tx leading-tight mb-3">Terms and Conditions</h2>
+    <p class="text-base tx2 text-center max-w-lg mx-auto mb-12" style="line-height:1.7;">Please read these terms carefully before using Korah.</p>
+
+    <div class="bg-card border bd2 rounded-3xl p-8 md:p-10 max-w-[800px] mx-auto" style="border:0.09375rem solid rgba(139,92,246,0.2);">
+      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">These terms and conditions apply to the Korah app (hereby referred to as "Application") for mobile devices that was created by Oscar Euceda (hereby referred to as "Service Provider") as an Open Source service.</p>
+      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">Upon downloading or utilizing the Application, you are automatically agreeing to the following terms. It is strongly advised that you thoroughly read and understand these terms prior to using the Application.</p>
+      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">The Service Provider is dedicated to ensuring that the Application is as beneficial and efficient as possible. As such, they reserve the right to modify the Application or charge for their services at any time and for any reason. Any charges will be clearly communicated to you.</p>
+      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">The Application stores and processes personal data that you have provided to the Service Provider in order to provide the Service. It is your responsibility to maintain the security of your phone and access to the Application. The Service Provider strongly advises against jailbreaking or rooting your phone, as such actions could expose your phone to malware, viruses, and may result in the Application not functioning correctly or at all.</p>
+      <p class="text-[15px] tx2 mb-2" style="line-height:1.8;">Third-party services used by the Application:</p>
+      <ul class="list-disc pl-6 mb-4 space-y-1.5">
+        <li class="text-[15px] tx2"><a href="https://www.google.com/analytics/terms/" target="_blank" rel="noopener noreferrer" class="tx-p4 no-underline" style="transition:color 0.2s;" onmouseover="this.style.color='var(--p5)'" onmouseout="this.style.color=''">Google Analytics for Firebase</a></li>
+      </ul>
+      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">Some functions of the Application require an active internet connection. The Service Provider cannot be held responsible if the Application does not function at full capacity due to lack of access to Wi-Fi or if you have exhausted your data allowance.</p>
+      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">If you are using the application outside of a Wi-Fi area, please be aware that your mobile network provider's agreement terms still apply. By using the application, you accept responsibility for any data charges, including roaming charges.</p>
+      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">The Application incorporates Artificial Intelligence (AI) technologies to provide certain features or services. By using the Application, you acknowledge and agree that AI may be used to process data and deliver functionalities. The Service Provider ensures that all AI usage complies with applicable laws and is designed to benefit the user experience.</p>
+      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">The Service Provider may wish to update the application at some point. You agree to always accept updates to the application when offered to you. The Service Provider may also cease providing the application at any time without notice.</p>
+      <h3 class="text-[18px] font-bold tx mt-8 mb-3">Changes to These Terms</h3>
+      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">The Service Provider may periodically update their Terms and Conditions. You are advised to review this page regularly for any changes.</p>
+      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">These terms and conditions are effective as of 2026-03-25</p>
+      <h3 class="text-[18px] font-bold tx mt-8 mb-3">Contact Us</h3>
+      <p class="text-[15px] tx2" style="line-height:1.8;">If you have any questions or suggestions about the Terms and Conditions, please contact the Service Provider at <a href="mailto:oscareucedaf1@gmail.com" class="tx-p4 no-underline">oscareucedaf1@gmail.com</a>.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ FOOTER ═══ -->
+<footer class="relative z-10 bg-base border-t bd px-[clamp(20px,6vw,80px)] pt-[60px] pb-10" style="transition:background 0.4s,border-color 0.4s;">
+  <div class="max-w-[1100px] mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr] gap-12">
+    <div>
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-xl grad-bg flex items-center justify-center font-display text-base font-black text-white shadow-glow">
+          <img src="../logo-images/newlogo0.png">
         </div>
-    </nav>
-    
-    <!-- Hero Section -->
-    <section class="hero">
-        <div class="hero-content">
-            <h1 class="hero-title">How can we <span class="highlight">help</span> you?</h1>
-            <p class="hero-subtitle">Find answers, get support, and connect with our team. We're here to help you succeed with Korah.</p>
+        <div class="flex flex-col leading-tight">
+          <span class="font-display text-base font-bold tx">Korah</span>
+          <span class="text-[9px] font-semibold tracking-[2.5px] uppercase tx-p4">AI Study Companion</span>
         </div>
-    </section>
-    
-    <!-- FAQ Section -->
-    <section id="faq" class="section">
-        <div class="container">
-            <h2 class="section-title">Frequently Asked Questions</h2>
-            
-            <div class="faq-grid">
-                <div class="faq-card">
-                    <div class="faq-icon">📱</div>
-                    <h3 class="faq-question">Is Korah free to use?</h3>
-                    <p class="faq-answer">Yes! Korah Beta is completely free for all users. We believe quality study tools should be accessible to everyone.</p>
-                </div>
-                
-                <div class="faq-card">
-                    <div class="faq-icon">🔒</div>
-                    <h3 class="faq-question">Is my data safe?</h3>
-                    <p class="faq-answer">Absolutely. Korah uses cloud-based data management developed by Google to keep your information safe. We will never sell your data to third parties.</p>
-                </div>
-                
-                <div class="faq-card">
-                    <div class="faq-icon">🍎</div>
-                    <h3 class="faq-question">What platforms are supported?</h3>
-                    <p class="faq-answer">Currently available on App Store and web browsers. Will be on Android in the future./p>
-                </div>
-                
-                <div class="faq-card">
-                    <div class="faq-icon">🤖</div>
-                    <h3 class="faq-question">How does the AI study assistant work?</h3>
-                    <p class="faq-answer">Korah AI uses advanced language models to provide personalized explanations, generate study materials, and adapt to your learning style.</p>
-                </div>
-                
-                <div class="faq-card">
-                    <div class="faq-icon">📊</div>
-                    <h3 class="faq-question">Can I track my study progress?</h3>
-                    <p class="faq-answer">Yes! Korah includes daily streaks, task management with priority levels, and mood-based recommendations to optimize your study sessions.</p>
-                </div>
-                
-                <div class="faq-card">
-                    <div class="faq-icon">🔄</div>
-                    <h3 class="faq-question">How often is Korah updated?</h3>
-                    <p class="faq-answer">We release updates regularly based on user feedback. Please reach out if you have any suggestions!</p>
-                </div>
-            </div>
-        </div>
-    </section>
-    
-    <!-- Contact Section -->
-    <section id="contact" class="section section-alt">
-        <div class="container">
-            <h2 class="section-title">Get in Touch</h2>
-            <p class="section-subtitle">Have a question, suggestion, or need assistance? We'd love to hear from you.</p>
-            
-            <div class="contact-grid">
-                <div class="contact-card">
-                    <div class="contact-icon">📧</div>
-                    <h3 class="contact-title">Email Support</h3>
-                    <p class="contact-desc">Get help from our support team within 24 hours. Contact Support: oscareucedaf1@gmail.com</p>
-                    <a href="mailto:oscareucedaf1@gmail.com?subject=Korah%20Support%20Inquiry&body=Hi%20Korah%20Team," class="contact-btn">Contact Support</a>
-                </div>
-                
-                <div class="contact-card contact-card-featured">
-                    <div class="contact-badge">Direct Line</div>
-                    <div class="contact-icon">👨‍💼</div>
-                    <h3 class="contact-title">Message the CEO</h3>
-                    <p class="contact-desc">Have important feedback or a partnership inquiry? Reach out directly to Oscar Euceda: oscareucedaf1@gmail.com</p>
-                    <a href="mailto:oscareucedaf1@gmail.com?subject=Korah%Creator%20Inquiry&body=Hi%20Oscar," class="contact-btn contact-btn-primary">Email CEO</a>
-                </div>
-                
-                <div class="contact-card">
-                    <div class="contact-icon">💬</div>
-                    <h3 class="contact-title">Live Chat</h3>
-                    <p class="contact-desc">Chat with Korah AI for instant answers to your questions.</p>
-                    <a href="../landing/#chat" class="contact-btn">Start Chat</a>
-                </div>
-            </div>
-        </div>
-    </section>
-    
-    <!-- Quick Links Section -->
-    <section class="section">
-        <div class="container">
-            <h2 class="section-title">Explore Korah</h2>
-            
-            <div class="links-grid">
-                <a href="../landing/#how" class="link-card">
-                    <span class="link-icon">🎯</span>
-                    <span class="link-text">How it Works</span>
-                </a>
-                <a href="../landing/#features" class="link-card">
-                    <span class="link-icon">✨</span>
-                    <span class="link-text">Features</span>
-                </a>
-                <a href="../landing/#study-tools" class="link-card">
-                    <span class="link-icon">📚</span>
-                    <span class="link-text">Study Tools</span>
-                </a>
-                <a href="../landing/#chat" class="link-card">
-                    <span class="link-icon">🤖</span>
-                    <span class="link-text">Korah AI</span>
-                </a>
-                <a href="../landing/#downloads" class="link-card">
-                    <span class="link-icon">📲</span>
-                    <span class="link-text">Download</span>
-                </a>
-                <a href="https://mail.google.com/mail/?view=cm&to=oscareucedaf1@gmail.com&su=Hello from Korah" class="link-card">
-                    <span class="link-icon">📧</span>
-                    <span class="link-text">Contact The Creator</span>
-                </a>
-            </div>
-        </div>
-    </section>
-    
-    <!-- Privacy Policy Section -->
-    <section id="privacy" class="section section-alt">
-        <div class="container">
-            <h2 class="section-title">Privacy Policy</h2>
-            <p class="section-subtitle">Your privacy is important to us. Learn how we handle your data.</p>
-            
-            <div class="legal-content">
-                <p>This privacy policy applies to the Korah app (hereby referred to as "Application") for mobile devices that was created by Oscar Euceda (hereby referred to as "Service Provider") as an Open Source service. This service is intended for use "AS IS".</p>
-                <h3>Information Collection and Use</h3>
-                <p>The Application collects information when you download and use it. This information may include information such as</p>
-                <ul>
-                    <li>Your device's Internet Protocol address (e.g. IP address)</li>
-                    <li>The pages of the Application that you visit, the time and date of your visit, the time spent on those pages</li>
-                    <li>The time spent on the Application</li>
-                    <li>The operating system you use on your mobile device</li>
-                </ul>
-                <p>The Application does not gather precise information about the location of your mobile device.</p>
-                <p>The Application uses Artificial Intelligence (AI) technologies to enhance user experience and provide certain features. The AI components may process user data to deliver personalized content, recommendations, or automated functionalities. All AI processing is performed in accordance with this privacy policy and applicable laws. If you have questions about the AI features or data processing, please contact the Service Provider.</p>
-                <p>The Service Provider may use the information you provided to contact you from time to time to provide you with important information, required notices and marketing promotions.</p>
-                <p>For a better experience, while using the Application, the Service Provider may require you to provide us with certain personally identifiable information, including but not limited to First name, last name, Email, password, AI chats, study items. The information that the Service Provider request will be retained by them and used as described in this privacy policy.</p>
-                <h3>Third Party Access</h3>
-                <p>Only aggregated, anonymized data is periodically transmitted to external services to aid the Service Provider in improving the Application and their service. The Service Provider may share your information with third parties in the ways that are described in this privacy statement.</p>
-                <p>Please note that the Application utilizes third-party services that have their own Privacy Policy about handling data. Below are the links to the Privacy Policy of the third-party service providers used by the Application:</p>
-                <ul>
-                    <li><a href="https://firebase.google.com/support/privacy" target="_blank" rel="noopener noreferrer">Google Analytics for Firebase</a></li>
-                </ul>
-                <p>The Service Provider may disclose User Provided and Automatically Collected Information:</p>
-                <ul>
-                    <li>as required by law, such as to comply with a subpoena, or similar legal process;</li>
-                    <li>when they believe in good faith that disclosure is necessary to protect their rights, protect your safety or the safety of others, investigate fraud, or respond to a government request;</li>
-                    <li>with their trusted services providers who work on their behalf, do not have an independent use of the information we disclose to them, and have agreed to adhere to the rules set forth in this privacy statement.</li>
-                </ul>
-                <h3>Opt-Out Rights</h3>
-                <p>You can stop all collection of information by the Application easily by uninstalling it. You may use the standard uninstall processes as may be available as part of your mobile device or via the mobile application marketplace or network.</p>
-                <h3>Data Retention Policy</h3>
-                <p>The Service Provider will retain User Provided data for as long as you use the Application and for a reasonable time thereafter. If you'd like them to delete User Provided Data that you have provided via the Application, please contact them at oscareucedaf1@gmail.com and they will respond in a reasonable time.</p>
-                <h3>Children</h3>
-                <p>The Service Provider does not use the Application to knowingly solicit data from or market to children under the age of 13.</p>
-                <p>The Application does not address anyone under the age of 13. The Service Provider does not knowingly collect personally identifiable information from children under 13 years of age. In the case the Service Provider discover that a child under 13 has provided personal information, the Service Provider will immediately delete this from their servers. If you are a parent or guardian and you are aware that your child has provided us with personal information, please contact the Service Provider (oscareucedaf1@gmail.com) so that they will be able to take the necessary actions.</p>
-                <h3>Security</h3>
-                <p>The Service Provider is concerned about safeguarding the confidentiality of your information. The Service Provider provides physical, electronic, and procedural safeguards to protect information the Service Provider processes and maintains.</p>
-                <h3>Changes</h3>
-                <p>This Privacy Policy may be updated from time to time for any reason. The Service Provider will notify you of any changes to the Privacy Policy by updating this page with the new Privacy Policy. You are advised to consult this Privacy Policy regularly for any changes, as continued use is deemed approval of all changes.</p>
-                <p>This privacy policy is effective as of 2026-03-25</p>
-                <h3>Your Consent</h3>
-                <p>By using the Application, you are consenting to the processing of your information as set forth in this Privacy Policy now and as amended by us.</p>
-                <h3>Contact Us</h3>
-                <p>If you have any questions regarding privacy while using the Application, or have questions about the practices, please contact the Service Provider via email at oscareucedaf1@gmail.com.</p>
-                <hr>
-            </div>
-        </div>
-    </section>
-    
-    <!-- Terms and Conditions Section -->
-    <section id="terms" class="section">
-        <div class="container">
-            <h2 class="section-title">Terms and Conditions</h2>
-            <p class="section-subtitle">Please read these terms carefully before using Korah.</p>
-            
-            <div class="legal-content">
-                <p>These terms and conditions apply to the Korah app (hereby referred to as "Application") for mobile devices that was created by Oscar Euceda (hereby referred to as "Service Provider") as an Open Source service.</p>
-                <p>Upon downloading or utilizing the Application, you are automatically agreeing to the following terms. It is strongly advised that you thoroughly read and understand these terms prior to using the Application.</p>
-                <p>The Service Provider is dedicated to ensuring that the Application is as beneficial and efficient as possible. As such, they reserve the right to modify the Application or charge for their services at any time and for any reason. The Service Provider assures you that any charges for the Application or its services will be clearly communicated to you.</p>
-                <p>The Application stores and processes personal data that you have provided to the Service Provider in order to provide the Service. It is your responsibility to maintain the security of your phone and access to the Application. The Service Provider strongly advise against jailbreaking or rooting your phone, which involves removing software restrictions and limitations imposed by the official operating system of your device. Such actions could expose your phone to malware, viruses, malicious programs, compromise your phone's security features, and may result in the Application not functioning correctly or at all.</p>
-                <div>
-                    <p>Please note that the Application utilizes third-party services that have their own Terms and Conditions. Below are the links to the Terms and Conditions of the third-party service providers used by the Application:</p>
-                    <ul>
-                        <li><a href="https://www.google.com/analytics/terms/" target="_blank" rel="noopener noreferrer">Google Analytics for Firebase</a></li>
-                    </ul>
-                </div>
-                <p>Please be aware that the Service Provider does not assume responsibility for certain aspects. Some functions of the Application require an active internet connection, which can be Wi-Fi or provided by your mobile network provider. The Service Provider cannot be held responsible if the Application does not function at full capacity due to lack of access to Wi-Fi or if you have exhausted your data allowance.</p>
-                <p>If you are using the application outside of a Wi-Fi area, please be aware that your mobile network provider's agreement terms still apply. Consequently, you may incur charges from your mobile provider for data usage during the connection to the application, or other third-party charges. By using the application, you accept responsibility for any such charges, including roaming data charges if you use the application outside of your home territory (i.e., region or country) without disabling data roaming. If you are not the bill payer for the device on which you are using the application, they assume that you have obtained permission from the bill payer.</p>
-                <p>Similarly, the Service Provider cannot always assume responsibility for your usage of the application. For instance, it is your responsibility to ensure that your device remains charged. If your device runs out of battery and you are unable to access the Service, the Service Provider cannot be held responsible.</p>
-                <p>In terms of the Service Provider's responsibility for your use of the application, it is important to note that while they strive to ensure that it is updated and accurate at all times, they do rely on third parties to provide information to them so that they can make it available to you. The Service Provider accepts no liability for any loss, direct or indirect, that you experience as a result of relying entirely on this functionality of the application.</p>
-                <div>
-                    <p>The Application incorporates Artificial Intelligence (AI) technologies to provide certain features or services. By using the Application, you acknowledge and agree that AI may be used to process data and deliver functionalities. The Service Provider ensures that all AI usage complies with applicable laws and is designed to benefit the user experience.</p>
-                </div>
-                <p>The Service Provider may wish to update the application at some point. The application is currently available as per the requirements for the operating system (and for any additional systems they decide to extend the availability of the application to) may change, and you will need to download the updates if you want to continue using the application. The Service Provider does not guarantee that it will always update the application so that it is relevant to you and/or compatible with the particular operating system version installed on your device. However, you agree to always accept updates to the application when offered to you. The Service Provider may also wish to cease providing the application and may terminate its use at any time without providing termination notice to you. Unless they inform you otherwise, upon any termination, (a) the rights and licenses granted to you in these terms will end; (b) you must cease using the application, and (if necessary) delete it from your device.</p>
-                <h3>Changes to These Terms and Conditions</h3>
-                <p>The Service Provider may periodically update their Terms and Conditions. Therefore, you are advised to review this page regularly for any changes. The Service Provider will notify you of any changes by posting the new Terms and Conditions on this page.</p>
-                <p>These terms and conditions are effective as of 2026-03-25</p>
-                <h3>Contact Us</h3>
-                <p>If you have any questions or suggestions about the Terms and Conditions, please do not hesitate to contact the Service Provider at oscareucedaf1@gmail.com.</p>
-                <hr>
-            </div>
-        </div>
-    </section>
-    
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="footer-grid">
-            <div>
-                <div class="footer-brand">
-                    <div class="logo logo-small">
-                        <img src="../logo-images/newlogo0.png" alt="Korah" class="logo-img logo-img-small">
-                    </div>
-                    <div class="footer-brand-text">
-                        <span class="footer-title">Korah</span>
-                        <span class="footer-tagline">AI Study Companion</span>
-                    </div>
-                </div>
-                <p class="footer-desc">Korah helps students study smarter with mood-aware recommendations, smart task management, focus sessions, and AI-powered study tools.</p>
-            </div>
-            
-            <div>
-                <h4 class="footer-heading">Product</h4>
-                <a href="../landing/#features" class="footer-link">Features</a>
-                <a href="../landing/#how" class="footer-link">How it Works</a>
-                <a href="../landing/#study-tools" class="footer-link">Study Tools</a>
-                <a href="../landing/#download" class="footer-link">Download</a>
-            </div>
-            
-            <div>
-                <h4 class="footer-heading">Support</h4>
-                <a href="#contact" class="footer-link">Contact Us</a>
-            </div>
-            
-            <div>
-                <h4 class="footer-heading">Company</h4>
-                <!-- Needs Links -->
-                <a href="#" class="footer-link">About Korah</a>
-                <a href="#" class="footer-link">Blog</a>
-                <!-- Needs links -->
-                <a href="#privacy" class="footer-link">Privacy Policy</a>
-                <a href="#terms" class="footer-link">Terms</a>
-            </div>
-        </div>
-        
-        <div class="footer-bottom">
-            <span>&copy; 2026 Korah AI. All rights reserved.</span>
-            <span>Made for students, by students</span>
-            <span>Beta v0.9.1</span>
-        </div>
-    </footer>
-    
-    <script src="support.js"></script>
+      </div>
+      <p class="text-sm tx2 max-w-[280px] mt-3.5" style="line-height:1.7;">Korah helps students ace the SAT with AI-powered tutoring, live Desmos graphing, adaptive practice, and progress tracking.</p>
+    </div>
+    <div>
+      <h4 class="text-xs font-bold tracking-[2px] uppercase tx-p5 mb-4">Product</h4>
+      <a href="../landing/#sat"      class="block text-sm tx2 no-underline py-1" style="transition:color 0.2s;" onmouseover="this.style.color='var(--p4)'" onmouseout="this.style.color=''">SAT Prep</a>
+      <a href="../landing/#download" class="block text-sm tx2 no-underline py-1" style="transition:color 0.2s;" onmouseover="this.style.color='var(--p4)'" onmouseout="this.style.color=''">Download</a>
+      <a href="../index.html"        class="block text-sm tx2 no-underline py-1" style="transition:color 0.2s;" onmouseover="this.style.color='var(--p4)'" onmouseout="this.style.color=''">Web App</a>
+    </div>
+    <div>
+      <h4 class="text-xs font-bold tracking-[2px] uppercase tx-p5 mb-4">Support</h4>
+      <a href="#contact" class="block text-sm tx2 no-underline py-1" style="transition:color 0.2s;" onmouseover="this.style.color='var(--p4)'" onmouseout="this.style.color=''">Contact Us</a>
+      <a href="#faq"     class="block text-sm tx2 no-underline py-1" style="transition:color 0.2s;" onmouseover="this.style.color='var(--p4)'" onmouseout="this.style.color=''">FAQ</a>
+    </div>
+    <div>
+      <h4 class="text-xs font-bold tracking-[2px] uppercase tx-p5 mb-4">Company</h4>
+      <a href="#"               class="block text-sm tx2 no-underline py-1" style="transition:color 0.2s;" onmouseover="this.style.color='var(--p4)'" onmouseout="this.style.color=''">About Korah</a>
+      <a href="https://www.instagram.com/korah.app/" class="block text-sm tx2 no-underline py-1" style="transition:color 0.2s;" onmouseover="this.style.color='var(--p4)'" onmouseout="this.style.color=''">Social Media</a>
+      <a href="#privacy"        class="block text-sm tx2 no-underline py-1" style="transition:color 0.2s;" onmouseover="this.style.color='var(--p4)'" onmouseout="this.style.color=''">Privacy Policy</a>
+      <a href="#terms"          class="block text-sm tx2 no-underline py-1" style="transition:color 0.2s;" onmouseover="this.style.color='var(--p4)'" onmouseout="this.style.color=''">Terms</a>
+    </div>
+  </div>
+  <div class="max-w-[1100px] mx-auto mt-10 pt-6 border-t bd2 flex flex-wrap items-center justify-between gap-3 text-[12.5px] tx3">
+    <span>© 2026 Korah AI. All rights reserved.</span>
+    <span>Made for students, by students</span>
+    <span>Beta v0.9.1</span>
+  </div>
+</footer>
+
+<script src="support.js"></script>
 </body>
 </html>
