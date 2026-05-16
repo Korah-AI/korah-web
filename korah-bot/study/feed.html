@@ -52,7 +52,7 @@
       gap: 18px;
     }
     .study-modern .feed-hero {
-      padding: 22px 24px;
+      padding: 20px 24px;
       border: 1px solid var(--bd);
       margin-bottom: 0.5rem;
     }
@@ -423,6 +423,7 @@
       width: 100%;
       max-width: 40rem;
       height: 13rem;
+      margin-top: -2.5rem;
       margin-bottom: 2rem;
       perspective: 1000px;
     }
@@ -471,7 +472,7 @@
     .empty-card:hover img { transform: scale(1.1); }
 
     .feed-empty-hero .empty-title-new {
-      font-family: 'Playfair Display', serif;
+      font-family: 'Plus Jakarta Sans', sans-serif;
       font-size: clamp(1.4rem, 2.6vw, 1.85rem);
       font-weight: 700;
       color: var(--tx);
@@ -645,6 +646,54 @@
       box-shadow: 0 0 0 3px rgba(139,92,246,.18);
     }
     .import-submit-row { display: flex; justify-content: flex-end; margin-top: 1.25rem; }
+
+    .import-input-row { position: relative; }
+    .import-target-type-trigger {
+      width: 100%;
+      padding: 0.7rem 0.9rem;
+      border-radius: 10px;
+      background: var(--sf2);
+      border: 1px solid var(--bd2);
+      color: var(--tx);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      transition: all 0.2s ease;
+    }
+    .import-target-type-trigger:hover,
+    .import-target-type-trigger.open {
+      border-color: var(--p4);
+      box-shadow: 0 0 0 3px rgba(139,92,246,.18);
+    }
+    .import-target-type-trigger-inner {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .import-target-type-trigger-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--p5);
+    }
+    .import-target-type-trigger svg:last-child {
+      color: var(--p5);
+      transition: transform 0.2s ease;
+    }
+    .import-target-type-trigger.open svg:last-child { transform: rotate(180deg); }
+    #import-target-type-dropdown {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 100%;
+      margin-top: 0.4rem;
+      min-width: 0;
+    }
   </style>
 </head>
 <body class="bg-base tx study-modern">
@@ -872,7 +921,7 @@
         </div>
       </div>
 
-      <h2 class="empty-title-new">Turn anything into a study set</h2>
+      <h2 class="empty-title-new" style = "margin-top: 15px;">Turn anything into a study set</h2>
       <p class="empty-sub-new">Upload files, pull from Google Drive, paste notes, or describe a topic — Korah builds flashcards, study guides, and practice tests for you in seconds.</p>
 
       <div class="empty-cta-row">
@@ -908,7 +957,9 @@
   <ul class="create-dropdown-list">
     <li>
       <button class="create-dropdown-item" data-type="flashcards">
-        <span class="create-dropdown-emoji">🃏</span>
+        <span class="create-dropdown-emoji">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="14" height="14" rx="2"/><path d="M7 6V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-2"/></svg>
+        </span>
         <span class="dropdown-item-text">
           <span class="dropdown-item-name">Flashcard Set</span>
           <span class="dropdown-item-desc">Front/back cards with rich text and math</span>
@@ -917,7 +968,9 @@
     </li>
     <li>
       <button class="create-dropdown-item" data-type="studyGuide">
-        <span class="create-dropdown-emoji">📖</span>
+        <span class="create-dropdown-emoji">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        </span>
         <span class="dropdown-item-text">
           <span class="dropdown-item-name">Study Guide</span>
           <span class="dropdown-item-desc">Structured outline with sections and summaries</span>
@@ -926,7 +979,9 @@
     </li>
     <li>
       <button class="create-dropdown-item" data-type="practiceTest">
-        <span class="create-dropdown-emoji">🎯</span>
+        <span class="create-dropdown-emoji">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+        </span>
         <span class="dropdown-item-text">
           <span class="dropdown-item-name">Practice Test</span>
           <span class="dropdown-item-desc">Questions with answer keys and rationales</span>
@@ -949,21 +1004,27 @@
     <p style="text-align:center; font-size:0.8125rem; color:var(--tx2); margin-bottom:1.25rem; font-weight:600;">How do you want to create it?</p>
     <div class="method-grid">
       <button type="button" class="method-card t-btn" data-method="manual">
-        <div class="method-icon">✏️</div>
+        <div class="method-icon">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </div>
         <div>
           <span class="method-name">Manual</span>
           <span class="method-desc">Type or paste your content directly into the editor</span>
         </div>
       </button>
       <button type="button" class="method-card t-btn" data-method="ai-prompt">
-        <div class="method-icon">💬</div>
+        <div class="method-icon">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </div>
         <div>
           <span class="method-name">AI from Prompt</span>
           <span class="method-desc">Describe what you need and let Korah generate the rest</span>
         </div>
       </button>
       <button type="button" class="method-card t-btn" data-method="ai-doc">
-        <div class="method-icon">📄</div>
+        <div class="method-icon">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        </div>
         <div>
           <span class="method-name">AI from Documents</span>
           <span class="method-desc">Upload PDFs or notes to generate focused materials</span>
@@ -987,22 +1048,30 @@
 
     <div class="import-source-grid">
       <button type="button" class="import-source-card t-btn" data-import-source="files">
-        <span class="import-source-icon">📁</span>
+        <span class="import-source-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        </span>
         <span class="import-source-name">Upload Files</span>
         <span class="import-source-desc">PDFs, slides, notes, or images from your device</span>
       </button>
       <button type="button" class="import-source-card t-btn" data-import-source="drive">
-        <span class="import-source-icon">🟢</span>
+        <span class="import-source-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.71 3.5l9 15.5"/><path d="M2.21 13.5h9"/><path d="M16.29 3.5l-4.5 7.79"/><path d="M21.79 13.5l-4.5 7.79"/><path d="M6.71 21.29l9-15.5"/></svg>
+        </span>
         <span class="import-source-name">Google Drive</span>
         <span class="import-source-desc">Pick a doc, slide deck, or folder from Drive</span>
       </button>
       <button type="button" class="import-source-card t-btn" data-import-source="link">
-        <span class="import-source-icon">🔗</span>
+        <span class="import-source-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        </span>
         <span class="import-source-name">Paste a Link</span>
         <span class="import-source-desc">YouTube videos, articles, or shared documents</span>
       </button>
       <button type="button" class="import-source-card t-btn" data-import-source="text">
-        <span class="import-source-icon">📝</span>
+        <span class="import-source-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        </span>
         <span class="import-source-name">Paste Text</span>
         <span class="import-source-desc">Drop in raw notes or copy from your textbook</span>
       </button>
@@ -1010,7 +1079,9 @@
 
     <form id="import-form" onsubmit="return false;">
       <div class="import-file-drop" id="import-file-drop">
-        <span class="drop-emoji">⬆️</span>
+        <span class="drop-emoji">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        </span>
         Drop files here or click to browse
         <input type="file" id="import-file-input" multiple hidden />
       </div>
@@ -1021,12 +1092,54 @@
       </div>
 
       <div class="import-input-row">
-        <label for="import-target-type">Generate as</label>
-        <select id="import-target-type">
-          <option value="flashcards">🃏 Flashcards</option>
-          <option value="studyGuide">📖 Study Guide</option>
-          <option value="practiceTest">🎯 Practice Test</option>
-        </select>
+        <label for="import-target-type-trigger">Generate as</label>
+        <button type="button" id="import-target-type-trigger" class="import-target-type-trigger">
+          <span class="import-target-type-trigger-inner">
+            <span class="import-target-type-trigger-icon" id="import-target-type-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="14" height="14" rx="2"/><path d="M7 6V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-2"/></svg>
+            </span>
+            <span id="import-target-type-label">Flashcards</span>
+          </span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <input type="hidden" id="import-target-type" value="flashcards"/>
+        <div id="import-target-type-dropdown" class="create-study-dropdown" style="position:absolute;">
+          <ul class="create-dropdown-list">
+            <li>
+              <button type="button" class="create-dropdown-item" data-target-type="flashcards">
+                <span class="create-dropdown-emoji">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="14" height="14" rx="2"/><path d="M7 6V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-2"/></svg>
+                </span>
+                <span class="dropdown-item-text">
+                  <span class="dropdown-item-name">Flashcards</span>
+                  <span class="dropdown-item-desc">Front/back cards with rich text and math</span>
+                </span>
+              </button>
+            </li>
+            <li>
+              <button type="button" class="create-dropdown-item" data-target-type="studyGuide">
+                <span class="create-dropdown-emoji">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                </span>
+                <span class="dropdown-item-text">
+                  <span class="dropdown-item-name">Study Guide</span>
+                  <span class="dropdown-item-desc">Structured outline with sections and summaries</span>
+                </span>
+              </button>
+            </li>
+            <li>
+              <button type="button" class="create-dropdown-item" data-target-type="practiceTest">
+                <span class="create-dropdown-emoji">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+                </span>
+                <span class="dropdown-item-text">
+                  <span class="dropdown-item-name">Practice Test</span>
+                  <span class="dropdown-item-desc">Questions with answer keys and rationales</span>
+                </span>
+              </button>
+            </li>
+          </ul>
+        </div>
       </div>
 
       <div class="import-input-row">
@@ -1146,6 +1259,7 @@
 <script type="module" src="js/study-firebase-init.js"></script>
 <script src="../app/timer-manager.js"></script>
 <script src="js/sidebar.js"></script>
+<script src="js/study-api.js"></script>
 <script>
 (function () {
   // ─── Feed-local in-memory cache, populated by Firestore listener ─────────────
@@ -1478,17 +1592,22 @@
     ["dragleave", "drop"].forEach(ev => drop.addEventListener(ev, function (e) {
       e.preventDefault(); drop.classList.remove("dragover");
     }));
+    const CHECK_SVG = '<span class="drop-emoji"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--p5);"><polyline points="20 6 9 17 4 12"/></svg></span>';
     drop.addEventListener("drop", function (e) {
       const files = e.dataTransfer && e.dataTransfer.files;
       if (files && files.length) {
-        drop.querySelector(".drop-emoji").textContent = "✅";
-        drop.childNodes[2 && drop.lastChild]; // no-op
-        drop.innerHTML = '<span class="drop-emoji">✅</span>' + files.length + ' file(s) ready';
+        // Forward dropped files into the input so the rest of the flow picks them up
+        try {
+          const dt = new DataTransfer();
+          Array.from(files).forEach(f => dt.items.add(f));
+          fileInput.files = dt.files;
+        } catch (_) {}
+        drop.innerHTML = CHECK_SVG + files.length + ' file(s) ready';
       }
     });
     fileInput.addEventListener("change", function () {
       if (fileInput.files && fileInput.files.length) {
-        drop.innerHTML = '<span class="drop-emoji">✅</span>' + fileInput.files.length + ' file(s) selected';
+        drop.innerHTML = CHECK_SVG + fileInput.files.length + ' file(s) selected';
       }
     });
 
@@ -1502,14 +1621,105 @@
       });
     });
 
-    submitBtn.addEventListener("click", function () {
-      // Stub — functionality coming soon
-      console.log("[import] submit", {
-        title: document.getElementById("import-title").value,
-        targetType: document.getElementById("import-target-type").value,
-        instructions: document.getElementById("import-instructions").value,
-        files: fileInput.files
+    // ─── Generate-as custom dropdown ─────────────────────────────────────────
+    (function () {
+      const trigger = document.getElementById("import-target-type-trigger");
+      const dropdown = document.getElementById("import-target-type-dropdown");
+      const hidden = document.getElementById("import-target-type");
+      const label = document.getElementById("import-target-type-label");
+      const iconWrap = document.getElementById("import-target-type-icon");
+      if (!trigger || !dropdown) return;
+
+      function close() {
+        dropdown.classList.remove("open");
+        trigger.classList.remove("open");
+      }
+      function open() {
+        dropdown.classList.add("open");
+        trigger.classList.add("open");
+      }
+      trigger.addEventListener("click", function (e) {
+        e.stopPropagation();
+        if (dropdown.classList.contains("open")) close(); else open();
       });
+      document.addEventListener("click", function (e) {
+        if (!dropdown.contains(e.target) && e.target !== trigger && !trigger.contains(e.target)) close();
+      });
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") close();
+      });
+      dropdown.querySelectorAll(".create-dropdown-item").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          const value = btn.getAttribute("data-target-type");
+          hidden.value = value;
+          const name = btn.querySelector(".dropdown-item-name");
+          const iconSvg = btn.querySelector(".create-dropdown-emoji svg");
+          if (label && name) label.textContent = name.textContent;
+          if (iconWrap && iconSvg) iconWrap.innerHTML = iconSvg.outerHTML;
+          close();
+        });
+      });
+    })();
+
+    // ─── AI generate study set from import form ──────────────────────────────
+    async function generateFromImport() {
+      if (!window.KorahStudyAPI || !window.KorahDB) {
+        alert("Korah isn't ready yet — please wait a moment and try again.");
+        return;
+      }
+      const title = document.getElementById("import-title").value.trim();
+      const type = document.getElementById("import-target-type").value;
+      const instructions = document.getElementById("import-instructions").value.trim();
+      const files = Array.from(fileInput.files || []);
+
+      if (!title && !instructions && files.length === 0) {
+        alert("Please provide a title, instructions, or files so Korah knows what to generate.");
+        return;
+      }
+
+      const originalLabel = submitBtn.innerHTML;
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = "Generating…";
+
+      try {
+        const prompt = instructions || "Generate study material based on the provided files and title.";
+        const result = await window.KorahStudyAPI.generateStudyContent({
+          type: type,
+          prompt: prompt,
+          title: title,
+          subject: "general",
+          files: files
+        });
+        if (!result || !result.content) throw new Error("No content returned.");
+
+        const id = "si_" + Date.now();
+        const newItem = {
+          id: id,
+          type: type,
+          title: title || "Untitled",
+          description: "Generated from " + (files.length ? files.length + " file(s)" : "import form") + " on " + new Date().toLocaleDateString(),
+          content: result.content,
+          source: "ai-doc",
+          subject: "general",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        await window.KorahDB.setStudyItem(id, newItem);
+
+        const itemPage = type === "studyGuide" ? "guide.html" : (type === "practiceTest" ? "test.html" : "item.html");
+        window.location.href = itemPage + "?id=" + encodeURIComponent(id);
+      } catch (error) {
+        console.error("[import] generation failed:", error);
+        alert("Oops! There was an error generating your study set. " + (error && error.message ? error.message : ""));
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalLabel;
+      }
+    }
+
+    submitBtn.addEventListener("click", generateFromImport);
+    document.getElementById("import-form").addEventListener("submit", function (e) {
+      e.preventDefault();
+      generateFromImport();
     });
   })();
 

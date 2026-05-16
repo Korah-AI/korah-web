@@ -20,6 +20,7 @@ import {
   getDoc,
   getDocs,
   setDoc,
+  deleteDoc,
   query,
   orderBy,
   limit as fsLimit,
@@ -96,6 +97,7 @@ export async function initSatAnalytics(app, uid) {
    * @param {string} a.difficulty   — "E" | "M" | "H"
    * @param {string} a.assessment   — "SAT" | "PSAT/NMSQT" | "PSAT"
    * @param {boolean} a.correct
+   * @param {number} a.timeSpent    — in seconds
    */
   async function recordAttempt(a) {
     if (!a || !a.questionId) return;
@@ -104,14 +106,14 @@ export async function initSatAnalytics(app, uid) {
     const xp = correct ? xpForCorrect(diff) : -xpForIncorrect(diff);
     const nowIso = new Date().toISOString();
     const skillCd = a.skillCd || "_unknown";
+    const timeSpent = Number(a.timeSpent) || 0;
 
     const totals = await getTotals();
     const newXP = Math.max(0, (totals.totalXP || 0) + xp);
 
     const batch = writeBatch(db);
 
-    // Attempts log — addDoc returns a ref, but we want it inside the batch.
-    // batch.set on a new doc(ref) works:
+    // Attempts log
     const attemptRef = doc(attemptsCol);
     batch.set(attemptRef, {
       questionId: a.questionId,
@@ -123,6 +125,7 @@ export async function initSatAnalytics(app, uid) {
       correct,
       xp,
       ts: nowIso,
+      timeSpent,
     });
 
     // Skill aggregate
@@ -144,11 +147,46 @@ export async function initSatAnalytics(app, uid) {
       answered: increment(1),
       correct: increment(correct ? 1 : 0),
       incorrect: increment(correct ? 0 : 1),
+      practiceTime: increment(timeSpent),
       lastActivity: nowIso,
     }, { merge: true });
 
     await batch.commit();
     return { xp, newXP };
+  }
+
+  async function saveBookmark(questionId, bookmarked, meta = {}) {
+    const ref = doc(db, `users/${uid}/satBookmarks`, questionId);
+    if (bookmarked) {
+      await setDoc(ref, {
+        questionId,
+        ...meta,
+        ts: new Date().toISOString(),
+      });
+    } else {
+      await deleteDoc(ref);
+    }
+  }
+
+  async function getBookmarks() {
+    const col = collection(db, `users/${uid}/satBookmarks`);
+    const snap = await getDocs(col);
+    const out = [];
+    snap.forEach(d => out.push(d.data()));
+    return out;
+  }
+
+  async function getMissedQuestionIds(limitCount = 50) {
+    const q = query(attemptsCol, orderBy("ts", "desc"));
+    const snap = await getDocs(q);
+    const missed = new Set();
+    snap.forEach(d => {
+      const data = d.data();
+      if (!data.correct && data.questionId) missed.add(data.questionId);
+      // If they later got it right, should we remove it? 
+      // For an "early version", just getting the most recently missed is fine.
+    });
+    return Array.from(missed).slice(0, limitCount);
   }
 
   async function getAllSkillStats() {
@@ -245,11 +283,15 @@ export async function initSatAnalytics(app, uid) {
     saveProfile,
     getTotals,
     recordAttempt,
+    saveBookmark,
+    getBookmarks,
+    getMissedQuestionIds,
     getAllSkillStats,
     getRecentAttempts,
     suggestSkills,
     getDomainBreakdown,
   };
+
 
   window.KorahSATAnalytics = api;
   window.dispatchEvent(new CustomEvent("korahSATAnalyticsReady"));

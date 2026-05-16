@@ -903,6 +903,30 @@
     console.log("SAT Player: Resize handle initialized");
   }
 
+  // Hydrate state.reviewed from Firestore bookmarks so a previously saved question
+  // shows the Save button as active even in a fresh session.
+  async function syncBookmarksToState() {
+    const a = window.KorahSATAnalytics;
+    if (!a || !questions.length) return;
+    try {
+      const bookmarks = await a.getBookmarks();
+      const savedIds = new Set(bookmarks.map(b => b.questionId));
+      let changed = false;
+      questions.forEach(q => {
+        if (q.id && savedIds.has(q.id) && !state.reviewed[q.id]) {
+          state.reviewed[q.id] = true;
+          changed = true;
+        }
+      });
+      if (changed) {
+        renderQuestion();
+        if (window.qNav) window.qNav.refresh();
+      }
+    } catch (e) {
+      console.warn("[SAT] bookmark sync failed", e);
+    }
+  }
+
   // Event Listeners
   answerChoices.addEventListener("click", (event) => {
     // Retry button logic
@@ -986,6 +1010,7 @@
         difficulty: current.difficulty || "",
         assessment: query.assessment || "SAT",
         correct: isCorrect,
+        timeSpent: state.stopwatchElapsed,
       }).catch((e) => console.warn("[SAT] recordAttempt failed", e));
     }
   });
@@ -1000,10 +1025,21 @@
     if (!current) {
       return;
     }
-    state.reviewed[current.id] = !state.reviewed[current.id];
+    const newState = !state.reviewed[current.id];
+    state.reviewed[current.id] = newState;
+
+    if (window.KorahSATAnalytics) {
+      window.KorahSATAnalytics.saveBookmark(current.id, newState, {
+        section: current.section || "",
+        domain: current.domain || "",
+        skillCd: current.skillCd || "",
+      }).catch((e) => console.warn("[SAT] saveBookmark failed", e));
+    }
+
     renderQuestion();
     if (window.qNav) window.qNav.refresh();
   });
+
 
   // Reference panel toggle
   referenceBtn.addEventListener("click", () => {
@@ -1090,9 +1126,13 @@
     if (query.assessment && query.assessment !== "SAT") {
       params.set("assessment", query.assessment);
     }
+    if (query.questionIds && query.questionIds.length > 0) {
+      params.set("questionIds", query.questionIds.join(","));
+    }
     if (query.limit !== null && query.limit !== undefined) {
       params.set("limit", String(query.limit));
     }
+
 
     let response;
     try {
@@ -1170,6 +1210,10 @@
       ensureDetail(0);
       prefetchAround(0, 5);
     }
+
+    // Sync saved state — runs immediately if analytics is ready, otherwise
+    // the korahSATAnalyticsReady listener below will pick it up.
+    syncBookmarksToState();
   }
 
 /**
@@ -1583,6 +1627,9 @@
 
   renderHeader();
   renderQuestion();
+
+  // If analytics wasn't ready when questions loaded, sync bookmarks now.
+  window.addEventListener('korahSATAnalyticsReady', () => syncBookmarksToState(), { once: true });
 
   void loadQuestions();
 })();

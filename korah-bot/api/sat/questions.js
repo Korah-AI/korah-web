@@ -97,17 +97,34 @@ export default async function handler(req, res) {
   const assessmentKey = String(req.query?.assessment || "SAT").toUpperCase();
   const asmtEventId = ASSESSMENTS[assessmentKey] ?? ASSESSMENTS.SAT;
 
-  // Resolve target domain codes across ALL requested sections, then issue ONE
-  // combined POST against CB (matches the call shape that already works for
-  // /api/sat/stats).
-  const allCodes = new Set();
-  for (const sec of sections) {
-    const codes = resolveDomainCodes({ sections: [sec], domains });
-    for (const c of codes) {
-      if ((SECTION_DOMAIN_CODES[sec] || []).includes(c)) allCodes.add(c);
-    }
+  // New: Handle explicit question IDs
+  const questionIdsParam = req.query?.questionIds || req.query?.ids;
+  if (questionIdsParam) {
+    const ids = String(questionIdsParam).split(",").map(id => id.trim()).filter(Boolean);
+    const details = await pooledMap(ids, DETAIL_CONCURRENCY, async (id) => {
+      try {
+        const dc = new AbortController();
+        const dt = setTimeout(() => dc.abort(), 10_000);
+        const detail = await fetchQuestionDetail(id, dc.signal);
+        clearTimeout(dt);
+        if (!detail) return null;
+        // Mock a meta object for normalizeQuestion
+        return normalizeQuestion({ external_id: id, difficulty: "M" }, detail);
+      } catch (e) {
+        console.warn(`Failed to fetch detail for ${id}`, e);
+        return null;
+      }
+    });
+    const questions = details.filter(Boolean);
+    return res.status(200).json({
+      count: questions.length,
+      questions,
+      batchSize: INITIAL_BATCH,
+    });
   }
-  const targetCodes = [...allCodes];
+
+  // Resolve target domain codes across ALL requested sections
+
   if (targetCodes.length === 0) {
     return res.status(200).json({
       sections, domains, skills, difficulties, count: 0, questions: [],

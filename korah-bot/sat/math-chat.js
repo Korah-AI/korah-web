@@ -208,7 +208,7 @@ HOW TO ADAPT, STEP BY STEP
 ═══════════════════════════════════════════
 
 For each expression in the template:
-- If it's a text node: rewrite the text to describe the student's specific problem (use their numbers, their setup, their question). Do NOT carry over the example's text.
+- If it's a text node: rewrite the text to describe the student's specific problem using PLAIN TEXT ONLY (use their numbers, their setup, their question). Do NOT carry over the example's text. Do NOT include any LaTeX, backslashes, or math syntax — plain English sentences only. If the template text node contains LaTeX or math, convert it to a readable English sentence instead.
 - If it's a table: replace ALL values with the student's data. Keep the same column structure (x_{1}, y_{1}) and order.
 - If it's a regression/equation: substitute the student's coefficients, constants, and unknowns. Use the example's syntax (tilde, subscripts) but the student's numbers.
 - If it has regressionParameters: keep the parameter list but use the student's unknown letters.
@@ -224,6 +224,14 @@ CRITICAL DESMOS RULES (violations will break the graph)
 - Every id must be unique within the expressions.list
 - LaTeX backslashes must be properly JSON-escaped (\\\\frac, \\\\sim, \\\\left, etc.)
 - Do NOT include "graph", "viewport", or other top-level fields beyond version/randomSeed/expressions
+
+TEXT NODES VS EXPRESSION NODES — THIS IS CRITICAL:
+- A { "type": "text" } node MUST contain ONLY plain human-readable text in the "text" field.
+  - NO LaTeX, NO backslashes, NO $...$, NO \\frac, NO \\sim, NO subscripts like x_{1}.
+  - Plain English sentences only. Example: "The slope is -4 and the y-intercept is 30."
+- If you need to display a mathematical formula or equation, use a { "type": "expression" } node with a "latex" key instead.
+  - Example: { "type": "expression", "id": "5", "color": "#000000", "latex": "y=-4x+30" }
+- NEVER put LaTeX syntax inside a "text" node. The Desmos text widget renders plain text only — LaTeX in a text node will display as raw garbled characters, not formatted math.
 
 WHAT YOU CAN DO:
 - Add new expressions or text nodes if the student's problem needs them
@@ -860,10 +868,44 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
     window.KorahDB.setConversation(currentSessionId, currentSession).catch(console.error);
   }
 
-  function autoTitleFromMessage(text) {
+  async function generateAutoTitle() {
     if (!currentSession || currentSession.autoTitleGenerated || currentSession.userRenamed) return;
-    currentSession.title = text.slice(0, 50) + (text.length > 50 ? '…' : '');
-    currentSession.autoTitleGenerated = true;
+    const firstUser = conversationHistory.find(m => m.role === 'user');
+    const lastAI = [...conversationHistory].reverse().find(m => m.role === 'assistant');
+    if (!firstUser) return;
+    const parts = [
+      "You generate short, clear titles for SAT Math tutoring chats.",
+      "Write a 3–6 word title a student would use to find this conversation later.",
+      "No quotes or punctuation at the end. Respond with ONLY the title.",
+      "",
+      "Student message:",
+      firstUser.content.slice(0, 400),
+    ];
+    if (lastAI) {
+      parts.push("", "AI reply (context):", lastAI.content.slice(0, 300));
+    }
+    try {
+      const reply = await callAPI(parts.join('\n'), null, {
+        systemPrompt: "You generate concise, descriptive titles for SAT Math tutoring conversations.",
+        temperature: 0.3,
+        _phaseTag: 'auto-title',
+      });
+      if (!reply) return;
+      let title = reply.split('\n')[0].trim().replace(/^["']+|["']+$/g, '');
+      if (!title) return;
+      currentSession.title = title;
+      currentSession.autoTitleGenerated = true;
+      saveCurrentSession();
+      const chatTitleEl = document.getElementById('chat-title');
+      if (chatTitleEl) chatTitleEl.textContent = title;
+      if (window.KorahSidebar) {
+        window.KorahSidebar.renderChatHistory(
+          document.getElementById('chat-history'), 'math-chat.html'
+        );
+      }
+    } catch (e) {
+      console.warn('Auto-title generation failed:', e);
+    }
   }
 
   // Extract the value of a JSON string field without using JSON.parse,
@@ -931,10 +973,14 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
       }
     });
 
-    // Restore graph state from session (persisted separately from messages)
+    // Restore graph state from session
     if (currentSession?.graphState && satMathCalculator) {
       try {
-        satMathCalculator.setState(currentSession.graphState);
+        const stateCopy = JSON.parse(JSON.stringify(currentSession.graphState));
+        if (!stateCopy.graph || !stateCopy.graph.viewport) {
+          stateCopy.graph = { viewport: { xmin: -10, xmax: 10, ymin: -10, ymax: 10 } };
+        }
+        satMathCalculator.setState(stateCopy);
         captureGraphState();
       } catch (e) {
         console.warn('Failed to restore graph state:', e);
@@ -944,6 +990,12 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
     welcomeScreen?.classList.add('hidden');
     document.getElementById('chat-input-area')?.classList.remove('hidden');
     chatBody.scrollTop = chatBody.scrollHeight;
+
+    // Update topbar title to reflect the session's title
+    const chatTitleEl = document.getElementById('chat-title');
+    if (chatTitleEl && currentSession?.title) {
+      chatTitleEl.textContent = currentSession.title;
+    }
   }
 
   async function switchToSession(id) {
@@ -970,6 +1022,8 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
     welcomeScreen?.classList.remove('hidden');
     document.getElementById('chat-input-area')?.classList.add('hidden');
     if (satMathCalculator) { satMathCalculator.setBlank(); graphExpressions = []; updateGraphContextIndicator(); }
+    const chatTitleEl = document.getElementById('chat-title');
+    if (chatTitleEl) chatTitleEl.textContent = 'SAT Math';
     createNewSession();
   }
 
@@ -1010,8 +1064,6 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
     const pendingFiles = [...attachedFiles];
     clearAttachedFiles();
 
-    // Auto-title from first message
-    if (conversationHistory.length === 0) autoTitleFromMessage(userMessage);
 
     console.log('Adding user message to chat');
     addMessage('user', userMessage, false, null, [], pendingFiles);
@@ -1222,6 +1274,8 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
     conversationHistory.push({ role: 'user', content: userMessage });
     conversationHistory.push({ role: 'assistant', content: phase3FullText });
     saveCurrentSession();
+    // Generate AI title after first exchange
+    if (conversationHistory.length <= 2) generateAutoTitle();
     console.log('═══ Three-phase send complete ═══');
 
     } catch (error) {

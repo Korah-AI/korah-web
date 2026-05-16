@@ -204,6 +204,7 @@ function showSidebarDeleteModal(name, onConfirm) {
   const MODE_EMOJI = {
     general: "✨", math: "🧮", physics: "⚛️",
     chemistry: "⚗️", biology: "🧬", history: "📜", literature: "📚",
+    "sat-math": "📊", sat: "📝",
   };
   function getModeEmoji(mode) { return MODE_EMOJI[mode] || "📚"; }
 
@@ -1228,6 +1229,81 @@ function showSidebarDeleteModal(name, onConfirm) {
     }
   };
 
+  // ── Mood Widget ──
+  const MOOD_LEVELS = [
+    { key: 'red',    label: 'Low Focus',    color: '#ef4444' },
+    { key: 'yellow', label: 'Medium Focus', color: '#eab308' },
+    { key: 'green',  label: 'High Focus',   color: '#22c55e' },
+  ];
+
+  function initMoodWidget() {
+    const container = document.getElementById('sidebar-mood');
+    if (!container || container._moodInit) return;
+    container._moodInit = true;
+
+    const savedMood = localStorage.getItem('korah_mood') || null;
+
+    const dot = container.querySelector('.mood-dot') || container.querySelector('span');
+    const labelEl = container.querySelectorAll('span')[1] || null;
+
+    container.style.cursor = 'pointer';
+    container.setAttribute('role', 'button');
+    container.setAttribute('title', 'Set focus level');
+    container.setAttribute('aria-label', 'Set focus level');
+
+    function applyMood(key) {
+      const m = MOOD_LEVELS.find(x => x.key === key);
+      if (m) {
+        if (dot) { dot.style.background = m.color; dot.style.boxShadow = `0 0 6px ${m.color}88`; dot.textContent = ''; }
+        if (labelEl) labelEl.textContent = m.label;
+        container.setAttribute('data-mood', key);
+      } else {
+        if (dot) { dot.style.background = 'var(--border)'; dot.style.boxShadow = 'none'; }
+        if (labelEl) labelEl.textContent = 'Focus Level';
+        container.removeAttribute('data-mood');
+      }
+    }
+
+    applyMood(savedMood);
+
+    const dropdown = document.createElement('div');
+    dropdown.className = 'mood-dropdown';
+    dropdown.innerHTML = MOOD_LEVELS.map(m => `
+      <button type="button" class="mood-option" data-key="${m.key}">
+        <span class="mood-option-dot" style="background:${m.color};box-shadow:0 0 5px ${m.color}88"></span>
+        <span>${m.label}</span>
+      </button>
+    `).join('');
+    container.appendChild(dropdown);
+
+    const close = () => {
+      dropdown.classList.remove('mood-dropdown-open');
+      container.classList.remove('is-active');
+    };
+
+    container.addEventListener('click', (e) => {
+      if (e.target.closest('.mood-option')) return;
+      e.stopPropagation();
+      dropdown.classList.toggle('mood-dropdown-open');
+      container.classList.toggle('is-active');
+    });
+
+    dropdown.querySelectorAll('.mood-option').forEach(opt => {
+      opt.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const key = opt.getAttribute('data-key');
+        localStorage.setItem('korah_mood', key);
+        applyMood(key);
+        close();
+        window.dispatchEvent(new CustomEvent('korahMoodChange', { detail: { mood: key } }));
+      });
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!container.contains(e.target)) close();
+    });
+  }
+
   // Initialize timer widget when sidebar is ready
   function initSidebar(options) {
     const { chatHistoryId, studyItemsId, chatBaseUrl, itemPageUrl, onItemClick, activeId } = options || {};
@@ -1543,8 +1619,9 @@ function showSidebarDeleteModal(name, onConfirm) {
       // Initialize settings modal
       initSettingsModal();
 
-      // Initialize rename/delete modals
-      initRenameDeleteModals();
+
+      // Initialize mood widget
+      initMoodWidget();
     }
 
     if (window._korahReadyFired) startWithDB();

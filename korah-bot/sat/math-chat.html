@@ -101,12 +101,14 @@
   </div>
 
   <nav class="sidebar-nav">
-    <a href="../index.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">home</span> <span class="nav-text">Home</span></a>
+    <div class="sidebar-nav-row">
+      <a href="../index.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">home</span> <span class="nav-text">Home</span></a>
+      <a href="index.html" class="sidebar-nav-link t-btn" data-sat-link="true"><span class="material-icons-round" style="font-size: 1.25rem;">assignment</span> <span class="nav-text">SAT</span></a>
+    </div>
     <div class="sidebar-nav-row">
       <a href="../chat.html" class="sidebar-nav-link nav-empty t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">chat</span> <span class="nav-text">Chat</span></a>
       <a href="../study/feed.html" class="sidebar-nav-link  t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">school</span> <span class="nav-text">Study</span></a>
     </div>
-    <a href="index.html" class="sidebar-nav-link t-btn" data-sat-link="true"><span class="material-icons-round" style="font-size: 1.25rem;">assignment</span> <span class="nav-text">SAT</span></a>
     <a href="../productivity.html" class="sidebar-nav-link productivity-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">timer</span> <span class="nav-text">Productivity</span></a>
     <div class="opp-wrapper"><a href="../opportunities/opportunities.html" class="sidebar-nav-link opp-wrapper t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">rocket_launch</span> <span class="nav-text">Opportunities</span></a></div>
   </nav>
@@ -244,7 +246,7 @@
 
       <div class="chat-title-area">
         <span class="korah-status-dot"></span>
-        <span class="font-semibold tx text-sm">SAT Math</span>
+        <span class="font-semibold tx text-sm" id="chat-title">SAT Math</span>
       </div>
 
       <div class="mode-indicator">
@@ -463,6 +465,20 @@
   <button class="pro-tip-toast-close" id="pro-tip-close" title="Dismiss">&times;</button>
 </div>
 
+<!-- Early Development Warning Toast -->
+<div id="early-dev-toast" class="pro-tip-toast" style="
+  border-color: rgba(245,158,11,0.55);
+  box-shadow: 0 0.75rem 2.5rem rgba(0,0,0,.55), 0 0 1.5rem rgba(245,158,11,0.25), inset 0 1px 0 rgba(245,158,11,0.15);
+  max-width: 24rem;
+">
+  <span class="pro-tip-toast-icon" style="filter: drop-shadow(0 0 0.375rem rgba(245,158,11,0.7));">⚠️</span>
+  <div class="pro-tip-toast-content">
+    <div class="pro-tip-toast-label" style="color: #f59e0b; text-shadow: 0 0 0.5rem rgba(245,158,11,0.4);">Early Development</div>
+    <div class="pro-tip-toast-text">SAT Math Chat is still in early development and may return broken or incorrect outputs. Always double-check responses.</div>
+  </div>
+  <button class="pro-tip-toast-close" id="early-dev-toast-close" title="Dismiss" style="color: #f59e0b;">×</button>
+</div>
+
 <!-- Feature Intro Carousel Modal -->
 <div id="feature-intro-modal" class="feature-intro-modal">
   <div class="feature-intro-backdrop"></div>
@@ -588,7 +604,6 @@
       textEl.textContent = SAT_MATH_TIPS[Math.floor(Math.random() * SAT_MATH_TIPS.length)];
       if (satTipTimeout) clearTimeout(satTipTimeout);
       toast.classList.add('show');
-      satTipTimeout = setTimeout(() => toast.classList.remove('show'), 6000);
     }
 
     function dismissSatProTip() {
@@ -601,22 +616,38 @@
     document.getElementById('pro-tip-close')?.addEventListener('click', dismissSatProTip);
 
     // Hook into message sends — show a tip every other message
-    const origAppendChild = HTMLElement.prototype.appendChild;
+    const EARLY_DEV_KEY = 'korah_sat_math_early_dev_warned';
+    let earlyDevWarned = !!localStorage.getItem(EARLY_DEV_KEY);
     const messagesList = document.getElementById('messages-list');
     if (messagesList) {
       new MutationObserver((mutations) => {
         for (const m of mutations) {
           for (const node of m.addedNodes) {
-            if (node.nodeType === 1 && node.classList?.contains('msg-row') && node.classList?.contains('user')) {
+            if (node.nodeType !== 1) continue;
+            if (node.classList?.contains('msg-row') && node.classList?.contains('user')) {
               satMessageCount++;
               if (satMessageCount % 2 === 1) {
                 setTimeout(() => showSatProTip(), 1500);
               }
             }
+            // Show early-dev warning after the first AI response
+            if (!earlyDevWarned && node.classList?.contains('msg-row') && !node.classList?.contains('user')) {
+              earlyDevWarned = true;
+              localStorage.setItem(EARLY_DEV_KEY, 'true');
+              setTimeout(() => {
+                const toast = document.getElementById('early-dev-toast');
+                if (toast) toast.classList.add('show');
+              }, 800);
+            }
           }
         }
       }).observe(messagesList, { childList: true });
     }
+
+    document.getElementById('early-dev-toast-close')?.addEventListener('click', () => {
+      const toast = document.getElementById('early-dev-toast');
+      if (toast) toast.classList.remove('show');
+    });
   })();
 
   // ── Feature Intro Carousel ──

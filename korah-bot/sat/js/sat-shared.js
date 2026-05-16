@@ -124,6 +124,10 @@
     const limit = limitRaw === null || limitRaw === "" ? null : (limitRaw.toLowerCase() === "none" ? null : Number(limitRaw));
     const effectiveLimit = (limit === null || (Number.isFinite(limit) && limit > 0)) ? limit : null;
 
+    // Handle explicit question IDs
+    const questionIdsRaw = params.get("questionIds") || params.get("ids");
+    const questionIds = questionIdsRaw ? questionIdsRaw.split(",").map(id => id.trim()).filter(Boolean) : [];
+
     return {
       sections: sections.length > 0 ? sections : ["english", "math"],
       domains: domains.length > 0 ? domains : ["any"],
@@ -131,27 +135,34 @@
       difficulties: difficulties.length > 0 ? difficulties : ["any"],
       assessment,
       limit: effectiveLimit,
+      questionIds,
     };
   }
 
   function buildOpenSatV1QuestionUrl(state) {
     const params = new URLSearchParams();
-    const sectionValue = state.sections && state.sections.length > 0 && !(state.sections.length === 2 && state.sections.includes("english") && state.sections.includes("math"))
-      ? state.sections.join(",")
-      : "any";
-    params.set("sections", sectionValue);
-    const domainValue = state.domains && state.domains.length > 0 && !state.domains.includes("any")
-      ? state.domains.join(",")
-      : "any";
-    params.set("domains", domainValue);
-    const skillValue = state.skills && state.skills.length > 0 && !state.skills.includes("any")
-      ? state.skills.join(",")
-      : "any";
-    params.set("skills", skillValue);
-    const difficultyValue = state.difficulties && state.difficulties.length > 0 && !state.difficulties.includes("any")
-      ? state.difficulties.join(",")
-      : "any";
-    params.set("difficulties", difficultyValue);
+
+    if (state.questionIds && state.questionIds.length > 0) {
+      params.set("questionIds", state.questionIds.join(","));
+    } else {
+      const sectionValue = state.sections && state.sections.length > 0 && !(state.sections.length === 2 && state.sections.includes("english") && state.sections.includes("math"))
+        ? state.sections.join(",")
+        : "any";
+      params.set("sections", sectionValue);
+      const domainValue = state.domains && state.domains.length > 0 && !state.domains.includes("any")
+        ? state.domains.join(",")
+        : "any";
+      params.set("domains", domainValue);
+      const skillValue = state.skills && state.skills.length > 0 && !state.skills.includes("any")
+        ? state.skills.join(",")
+        : "any";
+      params.set("skills", skillValue);
+      const difficultyValue = state.difficulties && state.difficulties.length > 0 && !state.difficulties.includes("any")
+        ? state.difficulties.join(",")
+        : "any";
+      params.set("difficulties", difficultyValue);
+    }
+
     if (state.assessment && state.assessment !== "SAT") {
       params.set("assessment", state.assessment);
     }
@@ -160,6 +171,7 @@
     }
     return `./questions.html?${params.toString()}`;
   }
+
 
   function getOpenSatDomainsBySection(sectionKey) {
     const section = OPENSAT_CATALOG.sections.find((s) => s.key === sectionKey);
