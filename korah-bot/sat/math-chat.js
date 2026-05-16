@@ -522,16 +522,36 @@ TEXT FORMATTING:
     }
 
     const userContent =
-`PROBLEM:
+`═══════════════════════════════════════════
+STUDENT'S PROBLEM — this is what you must solve
+═══════════════════════════════════════════
 ${problem}
 
-=== FULL WORKING EXAMPLE (real Desmos JSON for a similar problem of this type) ===
-${JSON.stringify(example, null, 2)}
+═══════════════════════════════════════════
+TEMPLATE — YOUR WORKING FILE. Adapt this.
+═══════════════════════════════════════════
+This is the file you must fill in. Replace EVERY {{PLACEHOLDER}} with a value from the STUDENT'S PROBLEM above. Rewrite EVERY text node so it describes the student's problem (using their numbers, their variables, their question).
 
-=== TEMPLATE (same structure with {{PLACEHOLDER}} slots to fill in) ===
 ${JSON.stringify(template, null, 2)}
 
-Output the adapted Desmos state JSON ONLY (no commentary, no code fences).`;
+═══════════════════════════════════════════
+REFERENCE EXAMPLE — for syntax only. DO NOT copy.
+═══════════════════════════════════════════
+This is a FULLY-FILLED-IN version of the template, but for a DIFFERENT problem (not the student's). Use it ONLY to see what valid Desmos JSON looks like — what fields exist, how subscripts are written, how regressions are formatted. The numbers, variables, and text in the example belong to a DIFFERENT problem and must NOT appear in your output.
+
+${JSON.stringify(example, null, 2)}
+
+═══════════════════════════════════════════
+YOUR TASK
+═══════════════════════════════════════════
+1. Start with the TEMPLATE.
+2. For each {{PLACEHOLDER}}, look at the STUDENT'S PROBLEM and write the correct value there.
+3. For each text node in the template, write text that explains the STUDENT'S PROBLEM (not the example's).
+4. Keep the same expression types, ordering, and structure as the template.
+5. Use the REFERENCE EXAMPLE only to confirm Desmos syntax — never copy its content.
+6. Output the completed JSON. Nothing else.
+
+If your output looks anything like the REFERENCE EXAMPLE's content, you have failed. Your output should reflect the STUDENT'S PROBLEM.`;
 
     let fullText = '';
     try {
