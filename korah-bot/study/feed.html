@@ -563,6 +563,7 @@
       max-height: 90dvh;
       display: none;
       flex-direction: column;
+      position: relative;
       box-shadow: 0 25px 60px rgba(0,0,0,.5), 0 0 40px rgba(139,92,246,.15);
       overflow: hidden;
       position: fixed;
@@ -612,23 +613,6 @@
     .import-source-icon { font-size: 1.85rem; }
     .import-source-name { font-size: 0.95rem; font-weight: 700; }
     .import-source-desc { font-size: 0.75rem; color: var(--tx2); line-height: 1.4; }
-    .import-file-drop {
-      margin-top: 1rem;
-      border: 2px dashed var(--bd2);
-      border-radius: 14px;
-      padding: 1.5rem;
-      text-align: center;
-      color: var(--tx2);
-      font-size: 0.875rem;
-      transition: all .2s ease;
-      cursor: pointer;
-    }
-    .import-file-drop:hover, .import-file-drop.dragover {
-      border-color: var(--p4);
-      background: var(--cu);
-      color: var(--tx);
-    }
-    .import-file-drop .drop-emoji { font-size: 1.75rem; display: block; margin-bottom: 0.35rem; }
     .import-input-row { margin-top: 1rem; display: flex; flex-direction: column; gap: 0.4rem; }
     .import-input-row label { font-size: 0.8rem; font-weight: 600; color: var(--tx2); }
     .import-input-row input, .import-input-row textarea, .import-input-row select {
@@ -693,6 +677,188 @@
       top: 100%;
       margin-top: 0.4rem;
       min-width: 0;
+    }
+
+    /* Import Error States */
+    .import-input-row.error input,
+    .import-input-row.error textarea {
+      border-color: #ef4444;
+      background: rgba(239,68,68,0.06);
+    }
+    .import-input-row.error input:focus,
+    .import-input-row.error textarea:focus {
+      border-color: #ef4444;
+      box-shadow: 0 0 0 3px rgba(239,68,68,0.18);
+    }
+    .import-input-row .field-error {
+      display: none;
+      color: #ef4444;
+      font-size: 0.72rem;
+      font-weight: 500;
+      margin-top: 0.25rem;
+    }
+    .import-input-row.error .field-error {
+      display: block;
+    }
+    #import-form-error {
+      display: none;
+      padding: 0.75rem 0.9rem;
+      background: rgba(239,68,68,0.1);
+      border: 1px solid #ef4444;
+      border-radius: 8px;
+      color: #ef4444;
+      font-size: 0.8rem;
+      font-weight: 500;
+      margin-bottom: 1rem;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    #import-form-error.show {
+      display: flex;
+    }
+
+    /* Import Chips */
+    .import-contents-summary {
+      padding: 0.75rem 0;
+      margin-bottom: 1.25rem;
+    }
+    .import-contents-summary-header {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--tx2);
+      margin-bottom: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .import-chips-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .import-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: var(--sf3);
+      border: 1px solid var(--bd2);
+      border-radius: 20px;
+      padding: 0.4rem 0.7rem;
+      font-size: 0.75rem;
+      color: var(--tx);
+      max-width: 100%;
+      word-break: break-word;
+    }
+    .import-chip-icon {
+      font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+    .import-chip-label {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .import-chip-remove {
+      cursor: pointer;
+      opacity: 0.6;
+      transition: opacity 0.15s ease;
+      flex-shrink: 0;
+      margin-left: 0.2rem;
+    }
+    .import-chip-remove:hover {
+      opacity: 1;
+    }
+
+    /* Source Input Panels */
+    .import-source-panel {
+      display: none;
+      margin-top: 1rem;
+      padding: 1rem;
+      background: var(--sf2);
+      border: 1px solid var(--bd2);
+      border-radius: 10px;
+    }
+    .import-source-panel.active {
+      display: block;
+    }
+    .import-url-input-group {
+      display: flex;
+      gap: 0.6rem;
+      margin-bottom: 0.6rem;
+    }
+    .import-url-input-group input {
+      flex: 1;
+      padding: 0.6rem 0.8rem;
+      border-radius: 8px;
+      border: 1px solid var(--bd2);
+      background: var(--sf);
+      color: var(--tx);
+      font-size: 0.85rem;
+    }
+    .import-url-input-group input:focus {
+      outline: none;
+      border-color: var(--p4);
+      box-shadow: 0 0 0 2px rgba(139,92,246,0.18);
+    }
+    .import-url-input-group button {
+      padding: 0.6rem 1rem;
+      background: var(--p5);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s ease;
+      white-space: nowrap;
+    }
+    .import-url-input-group button:hover {
+      background: var(--p4);
+    }
+    .import-text-panel textarea {
+      width: 100%;
+      min-height: 80px;
+      padding: 0.7rem 0.9rem;
+      border-radius: 8px;
+      border: 1px solid var(--bd2);
+      background: var(--sf);
+      color: var(--tx);
+      font-size: 0.85rem;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      resize: vertical;
+    }
+    .import-text-panel textarea:focus {
+      outline: none;
+      border-color: var(--p4);
+      box-shadow: 0 0 0 2px rgba(139,92,246,0.18);
+    }
+    .import-drive-panel button {
+      width: 100%;
+      padding: 0.8rem 1rem;
+      background: linear-gradient(135deg, #4285F4 0%, #34A853 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s ease;
+    }
+    .import-drive-panel button:hover {
+      transform: translateY(-2px);
+    }
+    .import-drive-status {
+      margin-top: 0.6rem;
+      padding: 0.6rem;
+      background: rgba(52, 168, 83, 0.1);
+      border-radius: 6px;
+      font-size: 0.75rem;
+      color: #34A853;
+      display: none;
+    }
+    .import-drive-status.active {
+      display: block;
     }
   </style>
 </head>
@@ -875,7 +1041,7 @@
       <span class="font-semibold tx text-sm">Study Feed</span>
     </div>
     <div class="topbar-actions">
-      <button id="create-study-btn" onclick="toggleCreateDropdown(this)" class="new-chat-btn grad-bg text-white text-xs font-bold px-4 py-2 rounded-full border-none cursor-pointer shadow-glow t-btn inline-flex items-center gap-2">
+      <button id="create-study-btn" onclick="toggleCreateDropdown(this)" class="new-chat-btn text-white text-xs font-bold px-4 py-2 rounded-full border-none cursor-pointer shadow-glow t-btn inline-flex items-center gap-2" style = "background-color: rgb(18, 192, 192);">
         + Create Study Item
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" id="create-study-chevron" style="transition:transform .2s"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
@@ -922,10 +1088,10 @@
       </div>
 
       <h2 class="empty-title-new" style = "margin-top: 15px;">Turn anything into a study set</h2>
-      <p class="empty-sub-new">Upload files, pull from Google Drive, paste notes, or describe a topic — Korah builds flashcards, study guides, and practice tests for you in seconds.</p>
+      <p class="empty-sub-new">Upload files, pull from Google Drive, paste notes, or describe a topic. Korah builds flashcards, study guides, and practice tests for you in seconds!</p>
 
       <div class="empty-cta-row">
-        <button onclick="toggleCreateDropdown(this)" class="new-chat-btn grad-bg text-white text-sm font-bold px-6 py-3 rounded-full border-none cursor-pointer shadow-glow t-btn inline-flex items-center gap-2">
+        <button onclick="toggleCreateDropdown(this)" class="new-chat-btn grad-bg text-white text-sm font-bold px-6 py-3 rounded-full border-none cursor-pointer shadow-glow t-btn inline-flex items-center gap-2" style = "background-color: rgb(18, 192, 192);">
           + Create Study Item
         </button>
         <button id="open-import-modal-btn" class="empty-cta-secondary t-btn">
@@ -1044,8 +1210,6 @@
     </button>
   </div>
   <div class="modal-body">
-    <p style="text-align:center; font-size:0.8125rem; color:var(--tx2); margin-bottom:1.1rem; font-weight:600;">Pick a source — Korah will generate a study set from it.</p>
-
     <div class="import-source-grid">
       <button type="button" class="import-source-card t-btn" data-import-source="files">
         <span class="import-source-icon">
@@ -1056,14 +1220,14 @@
       </button>
       <button type="button" class="import-source-card t-btn" data-import-source="drive">
         <span class="import-source-icon">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.71 3.5l9 15.5"/><path d="M2.21 13.5h9"/><path d="M16.29 3.5l-4.5 7.79"/><path d="M21.79 13.5l-4.5 7.79"/><path d="M6.71 21.29l9-15.5"/></svg>
+          <img src="../logo-images/googledrive.png" alt="Link" style="width:28px;height:28px;object-fit:contain;display:block;" />
         </span>
         <span class="import-source-name">Google Drive</span>
         <span class="import-source-desc">Pick a doc, slide deck, or folder from Drive</span>
       </button>
       <button type="button" class="import-source-card t-btn" data-import-source="link">
         <span class="import-source-icon">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          <img src="../logo-images/youtube.png" alt="Link" style="width:28px;height:28px;object-fit:contain;display:block;" />
         </span>
         <span class="import-source-name">Paste a Link</span>
         <span class="import-source-desc">YouTube videos, articles, or shared documents</span>
@@ -1077,18 +1241,41 @@
       </button>
     </div>
 
+    <!-- Content Summary Chips -->
+    <div id="import-contents-summary" class="import-contents-summary" style="display: none;">
+      <div class="import-contents-summary-header">What Korah will receive:</div>
+      <div id="import-chips-container" class="import-chips-container"></div>
+    </div>
+
     <form id="import-form" onsubmit="return false;">
-      <div class="import-file-drop" id="import-file-drop">
-        <span class="drop-emoji">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        </span>
-        Drop files here or click to browse
-        <input type="file" id="import-file-input" multiple hidden />
+      <input type="file" id="import-file-input" multiple hidden />
+
+      <!-- Link Input Panel -->
+      <div id="import-link-panel" class="import-source-panel">
+        <div class="import-url-input-group">
+          <input type="url" id="import-url-input" placeholder="https://youtube.com/watch?v=... or any web link" />
+          <button type="button" id="import-url-add-btn">Add URL</button>
+        </div>
+        <div id="import-url-error" style="color: #ef4444; font-size: 0.75rem; display: none;"></div>
       </div>
 
-      <div class="import-input-row">
-        <label for="import-title">Title (optional)</label>
+      <!-- Text Paste Panel -->
+      <div id="import-text-panel" class="import-source-panel import-text-panel">
+        <textarea id="import-text-input" placeholder="Paste your raw notes, text content, or copied material here…"></textarea>
+      </div>
+
+      <!-- Google Drive Panel -->
+      <div id="import-drive-panel" class="import-source-panel import-drive-panel">
+        <button type="button" id="import-drive-connect-btn">Connect Google Drive</button>
+        <div id="import-drive-status" class="import-drive-status">
+          <span id="import-drive-status-text"></span>
+        </div>
+      </div>
+
+      <div id="import-title-row" class="import-input-row">
+        <label for="import-title">Title</label>
         <input id="import-title" type="text" placeholder="e.g. Biology Chapter 4 — Cell Division" />
+        <span class="field-error"></span>
       </div>
 
       <div class="import-input-row">
@@ -1142,10 +1329,13 @@
         </div>
       </div>
 
-      <div class="import-input-row">
-        <label for="import-instructions">Instructions for Korah (optional)</label>
+      <div id="import-instructions-row" class="import-input-row">
+        <label for="import-instructions">Instructions for Korah</label>
         <textarea id="import-instructions" rows="3" placeholder="Focus on definitions and key formulas…"></textarea>
+        <span class="field-error"></span>
       </div>
+
+      <div id="import-form-error"></div>
 
       <div class="import-submit-row">
         <button type="submit" id="import-submit" class="new-chat-btn grad-bg text-white text-sm font-bold px-6 py-3 rounded-full border-none cursor-pointer shadow-glow t-btn">
@@ -1153,6 +1343,15 @@
         </button>
       </div>
     </form>
+
+    <!-- Drag & Drop Overlay -->
+    <div id="drag-overlay" class="drag-overlay">
+      <div class="drag-overlay-inner">
+        <span class="drag-overlay-icon">📄</span>
+        <span class="drag-overlay-text">Drop files here</span>
+        <span class="drag-overlay-hint">Images, PDFs, text files</span>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1569,11 +1768,21 @@
     const backdrop = document.getElementById("import-modal-backdrop");
     const modal = document.getElementById("import-modal");
     const closeBtn = document.getElementById("import-modal-close");
-    const drop = document.getElementById("import-file-drop");
     const fileInput = document.getElementById("import-file-input");
     const submitBtn = document.getElementById("import-submit");
+    const titleInput = document.getElementById("import-title");
+    const instructionsInput = document.getElementById("import-instructions");
+    const form = document.getElementById("import-form");
+    const formError = document.getElementById("import-form-error");
+    const summarySection = document.getElementById("import-contents-summary");
+    const chipsContainer = document.getElementById("import-chips-container");
 
     if (!openBtn || !modal) return;
+
+    // State for all import sources
+    let addedUrls = [];
+    let pastedText = "";
+    let driveFiles = [];
 
     function open() { backdrop.classList.add("active"); modal.classList.add("active"); }
     function close() { backdrop.classList.remove("active"); modal.classList.remove("active"); }
@@ -1585,40 +1794,385 @@
       if (e.key === "Escape" && modal.classList.contains("active")) close();
     });
 
-    drop.addEventListener("click", function () { fileInput.click(); });
-    ["dragover", "dragenter"].forEach(ev => drop.addEventListener(ev, function (e) {
-      e.preventDefault(); drop.classList.add("dragover");
-    }));
-    ["dragleave", "drop"].forEach(ev => drop.addEventListener(ev, function (e) {
-      e.preventDefault(); drop.classList.remove("dragover");
-    }));
-    const CHECK_SVG = '<span class="drop-emoji"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--p5);"><polyline points="20 6 9 17 4 12"/></svg></span>';
-    drop.addEventListener("drop", function (e) {
-      const files = e.dataTransfer && e.dataTransfer.files;
-      if (files && files.length) {
-        // Forward dropped files into the input so the rest of the flow picks them up
-        try {
-          const dt = new DataTransfer();
-          Array.from(files).forEach(f => dt.items.add(f));
-          fileInput.files = dt.files;
-        } catch (_) {}
-        drop.innerHTML = CHECK_SVG + files.length + ' file(s) ready';
-      }
+    // ─── Source Card Wiring ──────────────────────────────────────────────────
+    document.querySelectorAll(".import-source-card[data-import-source]").forEach(function (btn) {
+      btn.addEventListener("click", function (e) {
+        e.preventDefault();
+        const src = btn.getAttribute("data-import-source");
+
+        // Hide all panels first
+        document.querySelectorAll(".import-source-panel").forEach(p => p.classList.remove("active"));
+
+        // Highlight the selected card
+        document.querySelectorAll(".import-source-card").forEach(c => c.style.borderColor = "");
+        btn.style.borderColor = "var(--p4)";
+
+        // Show relevant panel and trigger action
+        if (src === "files") {
+          fileInput.click();
+        } else if (src === "link") {
+          document.getElementById("import-link-panel").classList.add("active");
+        } else if (src === "text") {
+          document.getElementById("import-text-panel").classList.add("active");
+          document.getElementById("import-text-input").focus();
+        } else if (src === "drive") {
+          document.getElementById("import-drive-panel").classList.add("active");
+        }
+      });
     });
+
+    // File input change handler - render chips
     fileInput.addEventListener("change", function () {
-      if (fileInput.files && fileInput.files.length) {
-        drop.innerHTML = CHECK_SVG + fileInput.files.length + ' file(s) selected';
+      renderImportChips();
+    });
+
+    // ─── URL Input Handler ───────────────────────────────────────────────────
+    const urlInput = document.getElementById("import-url-input");
+    const urlAddBtn = document.getElementById("import-url-add-btn");
+    const urlError = document.getElementById("import-url-error");
+
+    urlAddBtn.addEventListener("click", function (e) {
+      e.preventDefault();
+      const url = urlInput.value.trim();
+      if (!url) return;
+
+      try {
+        new URL(url);
+        addedUrls.push({ url: url, label: getLinkLabel(url) });
+        urlInput.value = "";
+        urlError.style.display = "none";
+        renderImportChips();
+      } catch {
+        urlError.textContent = "Invalid URL format";
+        urlError.style.display = "block";
       }
     });
 
-    document.querySelectorAll(".import-source-card[data-import-source]").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        const src = btn.getAttribute("data-import-source");
-        if (src === "files") fileInput.click();
-        // drive/link/text wiring — to be implemented
-        document.querySelectorAll(".import-source-card").forEach(c => c.style.borderColor = "");
-        btn.style.borderColor = "var(--p4)";
+    urlInput.addEventListener("keypress", function (e) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        urlAddBtn.click();
+      }
+    });
+
+    function getLinkLabel(url) {
+      if (/youtube\.com|youtu\.be/.test(url)) {
+        const videoId = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s?]+)/);
+        return videoId ? "YouTube: " + videoId[1].slice(0, 6) + "…" : "YouTube link";
+      }
+      try {
+        const u = new URL(url);
+        return u.hostname.replace("www.", "").slice(0, 20);
+      } catch {
+        return url.slice(0, 30) + "…";
+      }
+    }
+
+    // ─── Text Paste Handler ──────────────────────────────────────────────────
+    const textInput = document.getElementById("import-text-input");
+    textInput.addEventListener("input", function () {
+      pastedText = textInput.value;
+      renderImportChips();
+    });
+
+    // ─── Google Drive OAuth Picker (Placeholder) ────────────────────────────
+    const driveConnectBtn = document.getElementById("import-drive-connect-btn");
+    const driveStatus = document.getElementById("import-drive-status");
+    const driveStatusText = document.getElementById("import-drive-status-text");
+
+    driveConnectBtn.addEventListener("click", function (e) {
+      e.preventDefault();
+      // Check for credentials
+      const apiKey = window.GOOGLE_PICKER_API_KEY;
+      const clientId = window.GOOGLE_OAUTH_CLIENT_ID;
+
+      if (!apiKey || !clientId) {
+        alert("Google Drive integration requires GOOGLE_PICKER_API_KEY and GOOGLE_OAUTH_CLIENT_ID to be set. Please check your configuration.");
+        return;
+      }
+
+      // Lazy load Google API client and GIS
+      loadGoogleApis(apiKey, clientId);
+    });
+
+    function loadGoogleApis(apiKey, clientId) {
+      // Load Google API client
+      const script1 = document.createElement("script");
+      script1.src = "https://apis.google.com/js/api.js";
+      script1.onload = function () {
+        google.load('picker', '1', { callback: function () {
+          // Load Google Identity Services
+          const script2 = document.createElement("script");
+          script2.src = "https://accounts.google.com/gsi/client";
+          script2.onload = function () {
+            initGoogleDrivePicker(apiKey, clientId);
+          };
+          document.head.appendChild(script2);
+        }});
+      };
+      document.head.appendChild(script1);
+    }
+
+    function initGoogleDrivePicker(apiKey, clientId) {
+      const tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: clientId,
+        scope: 'https://www.googleapis.com/auth/drive.readonly',
+        callback: (response) => {
+          if (response.access_token) {
+            const picker = new google.picker.PickerBuilder()
+              .enableFeature(google.picker.Feature.SUPPORT_DRIVES)
+              .setOAuthToken(response.access_token)
+              .addView(google.picker.ViewId.DOCS)
+              .addView(google.picker.ViewId.PDFS)
+              .setCallback((data) => {
+                if (data[google.picker.Response.ACTION] === google.picker.Action.PICKED) {
+                  const doc = data[google.picker.Response.DOCUMENTS][0];
+                  downloadDriveFile(doc, response.access_token);
+                }
+              })
+              .build();
+            picker.setVisible(true);
+          }
+        }
       });
+
+      driveConnectBtn.textContent = "Connecting to Google…";
+      tokenClient.requestAccessToken();
+    }
+
+    function downloadDriveFile(doc, accessToken) {
+      // Download file from Google Drive
+      const fileId = doc.id;
+      const fileName = doc.name;
+      const mimeType = doc.mimeType || "";
+
+      driveConnectBtn.disabled = true;
+      driveConnectBtn.textContent = "Downloading…";
+
+      let exportUrl;
+      if (mimeType.includes("google-apps.document")) {
+        exportUrl = `https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=text/plain&access_token=${accessToken}`;
+      } else if (mimeType.includes("google-apps.presentation")) {
+        exportUrl = `https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=text/plain&access_token=${accessToken}`;
+      } else {
+        exportUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&access_token=${accessToken}`;
+      }
+
+      fetch(exportUrl)
+        .then(r => r.blob())
+        .then(blob => {
+          // Create a File object from the blob
+          const file = new File([blob], fileName, { type: mimeType || "application/octet-stream" });
+
+          // Add to files list
+          const dt = new DataTransfer();
+          Array.from(fileInput.files || []).forEach(f => dt.items.add(f));
+          dt.items.add(file);
+          fileInput.files = dt.files;
+
+          driveConnectBtn.disabled = false;
+          driveConnectBtn.textContent = "Connect Google Drive";
+          driveStatusText.textContent = `Added: ${fileName}`;
+          driveStatus.classList.add("active");
+
+          renderImportChips();
+        })
+        .catch(err => {
+          console.error("Drive download failed:", err);
+          alert("Failed to download file from Google Drive.");
+          driveConnectBtn.disabled = false;
+          driveConnectBtn.textContent = "Connect Google Drive";
+        });
+    }
+
+    // ─── Chips Rendering ────────────────────────────────────────────────────
+    function renderImportChips() {
+      chipsContainer.innerHTML = "";
+      let hasContent = false;
+
+      // File chips
+      Array.from(fileInput.files || []).forEach((file, idx) => {
+        hasContent = true;
+        const chip = document.createElement("div");
+        chip.className = "import-chip";
+        chip.innerHTML = `
+          <span class="import-chip-icon">📄</span>
+          <span class="import-chip-label" title="${file.name}">${file.name}</span>
+          <span class="import-chip-remove" onclick="event.stopPropagation();">✕</span>
+        `;
+        chip.querySelector(".import-chip-remove").addEventListener("click", function () {
+          const dt = new DataTransfer();
+          Array.from(fileInput.files).forEach((f, i) => { if (i !== idx) dt.items.add(f); });
+          fileInput.files = dt.files;
+          renderImportChips();
+        });
+        chipsContainer.appendChild(chip);
+      });
+
+      // URL chips
+      addedUrls.forEach((item, idx) => {
+        hasContent = true;
+        const chip = document.createElement("div");
+        chip.className = "import-chip";
+        chip.innerHTML = `
+          <span class="import-chip-icon">🔗</span>
+          <span class="import-chip-label" title="${item.url}">${item.label}</span>
+          <span class="import-chip-remove" onclick="event.stopPropagation();">✕</span>
+        `;
+        chip.querySelector(".import-chip-remove").addEventListener("click", function () {
+          addedUrls.splice(idx, 1);
+          renderImportChips();
+        });
+        chipsContainer.appendChild(chip);
+      });
+
+      // Pasted text chip
+      if (pastedText.trim()) {
+        hasContent = true;
+        const preview = pastedText.slice(0, 40) + (pastedText.length > 40 ? "…" : "");
+        const chip = document.createElement("div");
+        chip.className = "import-chip";
+        chip.innerHTML = `
+          <span class="import-chip-icon">📝</span>
+          <span class="import-chip-label" title="${pastedText}">${preview}</span>
+          <span class="import-chip-remove" onclick="event.stopPropagation();">✕</span>
+        `;
+        chip.querySelector(".import-chip-remove").addEventListener("click", function () {
+          pastedText = "";
+          textInput.value = "";
+          renderImportChips();
+        });
+        chipsContainer.appendChild(chip);
+      }
+
+      // Show/hide summary
+      if (hasContent) {
+        summarySection.style.display = "block";
+      } else {
+        summarySection.style.display = "none";
+      }
+    }
+
+    // ─── Validation and Error Handling ───────────────────────────────────────
+    function clearImportErrors() {
+      document.querySelectorAll(".import-input-row.error").forEach(el => el.classList.remove("error"));
+      document.querySelectorAll(".import-input-row .field-error").forEach(el => el.textContent = "");
+      formError.classList.remove("show");
+      formError.textContent = "";
+    }
+
+    function setFieldError(fieldId, message) {
+      const row = document.getElementById(fieldId);
+      if (row) {
+        row.classList.add("error");
+        const errorSpan = row.querySelector(".field-error");
+        if (errorSpan) errorSpan.textContent = message;
+      }
+    }
+
+    function showFormError(message) {
+      formError.classList.add("show");
+      formError.innerHTML = `<span style="flex-grow: 1;">${message}</span>`;
+    }
+
+    function validateImportForm() {
+      clearImportErrors();
+      let valid = true;
+
+      const title = titleInput.value.trim();
+      const instructions = instructionsInput.value.trim();
+      const hasSources = fileInput.files.length > 0 || addedUrls.length > 0 || pastedText.trim();
+
+      if (!title) {
+        setFieldError("import-title-row", "Title is required");
+        valid = false;
+      }
+      if (!instructions) {
+        setFieldError("import-instructions-row", "Instructions are required");
+        valid = false;
+      }
+      if (!hasSources) {
+        showFormError("Add at least one source — upload a file, paste a link, or paste text.");
+        valid = false;
+      }
+
+      return valid;
+    }
+
+    // Real-time error clearing
+    titleInput.addEventListener("input", function () {
+      if (titleInput.parentElement.classList.contains("error")) {
+        titleInput.parentElement.classList.remove("error");
+      }
+    });
+    instructionsInput.addEventListener("input", function () {
+      if (instructionsInput.parentElement.classList.contains("error")) {
+        instructionsInput.parentElement.classList.remove("error");
+      }
+    });
+
+    // ─── AI generate study set from import form ──────────────────────────────
+    async function generateFromImport() {
+      if (!window.KorahStudyAPI || !window.KorahDB) {
+        alert("Korah isn't ready yet — please wait a moment and try again.");
+        return;
+      }
+
+      if (!validateImportForm()) {
+        return;
+      }
+
+      const title = titleInput.value.trim();
+      const type = document.getElementById("import-target-type").value;
+      const instructions = instructionsInput.value.trim();
+      const files = Array.from(fileInput.files || []);
+      const urls = addedUrls.map(u => u.url);
+      const pastedTexts = pastedText.trim() ? [pastedText] : [];
+
+      const originalLabel = submitBtn.innerHTML;
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = "Generating…";
+
+      try {
+        const result = await window.KorahStudyAPI.generateStudyContent({
+          type: type,
+          prompt: instructions,
+          title: title,
+          subject: "general",
+          files: files,
+          urls: urls,
+          pastedTexts: pastedTexts
+        });
+        if (!result || !result.content) throw new Error("No content returned.");
+
+        const id = "si_" + Date.now();
+        const newItem = {
+          id: id,
+          type: type,
+          title: title,
+          description: "Generated from " + (files.length ? files.length + " file(s)" : "") + (urls.length ? (files.length ? ", " : "") + urls.length + " URL(s)" : "") + (pastedText ? (files.length || urls.length ? ", " : "") + "text" : "") + " on " + new Date().toLocaleDateString(),
+          content: result.content,
+          source: "ai-doc",
+          subject: "general",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        await window.KorahDB.setStudyItem(id, newItem);
+
+        const itemPage = type === "studyGuide" ? "guide.html" : (type === "practiceTest" ? "test.html" : "item.html");
+        window.location.href = itemPage + "?id=" + encodeURIComponent(id);
+      } catch (error) {
+        console.error("[import] generation failed:", error);
+        alert("Oops! There was an error generating your study set. " + (error && error.message ? error.message : ""));
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalLabel;
+      }
+    }
+
+    submitBtn.addEventListener("click", generateFromImport);
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      generateFromImport();
     });
 
     // ─── Generate-as custom dropdown ─────────────────────────────────────────
@@ -1660,66 +2214,59 @@
         });
       });
     })();
+  })();
 
-    // ─── AI generate study set from import form ──────────────────────────────
-    async function generateFromImport() {
-      if (!window.KorahStudyAPI || !window.KorahDB) {
-        alert("Korah isn't ready yet — please wait a moment and try again.");
-        return;
-      }
-      const title = document.getElementById("import-title").value.trim();
-      const type = document.getElementById("import-target-type").value;
-      const instructions = document.getElementById("import-instructions").value.trim();
-      const files = Array.from(fileInput.files || []);
+  // ── Drag & Drop Overlay (Import Modal) ──
+  (function() {
+    const dragOverlay = document.getElementById('drag-overlay');
+    const importModal = document.getElementById('import-modal');
+    const fileInput = document.getElementById('import-file-input');
+    const importModalElement = document.getElementById('import-modal');
+    const importBackdrop = document.getElementById('import-modal-backdrop');
 
-      if (!title && !instructions && files.length === 0) {
-        alert("Please provide a title, instructions, or files so Korah knows what to generate.");
-        return;
-      }
+    if (!dragOverlay || !importModal) return;
 
-      const originalLabel = submitBtn.innerHTML;
-      submitBtn.disabled = true;
-      submitBtn.innerHTML = "Generating…";
-
-      try {
-        const prompt = instructions || "Generate study material based on the provided files and title.";
-        const result = await window.KorahStudyAPI.generateStudyContent({
-          type: type,
-          prompt: prompt,
-          title: title,
-          subject: "general",
-          files: files
-        });
-        if (!result || !result.content) throw new Error("No content returned.");
-
-        const id = "si_" + Date.now();
-        const newItem = {
-          id: id,
-          type: type,
-          title: title || "Untitled",
-          description: "Generated from " + (files.length ? files.length + " file(s)" : "import form") + " on " + new Date().toLocaleDateString(),
-          content: result.content,
-          source: "ai-doc",
-          subject: "general",
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-        await window.KorahDB.setStudyItem(id, newItem);
-
-        const itemPage = type === "studyGuide" ? "guide.html" : (type === "practiceTest" ? "test.html" : "item.html");
-        window.location.href = itemPage + "?id=" + encodeURIComponent(id);
-      } catch (error) {
-        console.error("[import] generation failed:", error);
-        alert("Oops! There was an error generating your study set. " + (error && error.message ? error.message : ""));
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = originalLabel;
-      }
-    }
-
-    submitBtn.addEventListener("click", generateFromImport);
-    document.getElementById("import-form").addEventListener("submit", function (e) {
+    importModal.addEventListener('dragover', (e) => {
       e.preventDefault();
-      generateFromImport();
+      dragOverlay.classList.add('active');
+    });
+
+    importModal.addEventListener('dragleave', (e) => {
+      if (!importModal.contains(e.relatedTarget)) {
+        dragOverlay.classList.remove('active');
+      }
+    });
+
+    importModal.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dragOverlay.classList.remove('active');
+      if (e.dataTransfer.files?.length) {
+        try {
+          const dt = new DataTransfer();
+          Array.from(e.dataTransfer.files).forEach(f => dt.items.add(f));
+          fileInput.files = dt.files;
+          // Trigger chips update
+          fileInput.dispatchEvent(new Event('change'));
+        } catch (_) {}
+      }
+    });
+
+    dragOverlay.addEventListener('dragleave', () => {
+      dragOverlay.classList.remove('active');
+    });
+
+    dragOverlay.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dragOverlay.classList.remove('active');
+      if (e.dataTransfer.files?.length) {
+        try {
+          const dt = new DataTransfer();
+          Array.from(e.dataTransfer.files).forEach(f => dt.items.add(f));
+          fileInput.files = dt.files;
+          // Trigger chips update
+          fileInput.dispatchEvent(new Event('change'));
+        } catch (_) {}
+      }
     });
   })();
 
@@ -1730,6 +2277,10 @@
       window.location.href = '../login.html';
     });
   });
+
+  // Google Drive Picker Credentials
+  window.GOOGLE_PICKER_API_KEY = "AIzaSyBAxNUwKHJU1I3aUPcaqqhfrJ9gL75Ot1w";
+  window.GOOGLE_OAUTH_CLIENT_ID = "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";
 </script>
 </body>
 </html>

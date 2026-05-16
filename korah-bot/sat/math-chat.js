@@ -811,7 +811,6 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
     const attachBtn = document.getElementById('attach-file-btn');
     const welcomeAttachBtn = document.getElementById('welcome-attach-btn');
     const dragOverlay = document.getElementById('drag-overlay');
-    const mainContent = document.getElementById('main-content');
 
     attachBtn?.addEventListener('click', () => fileInput?.click());
     welcomeAttachBtn?.addEventListener('click', () => fileInput?.click());
@@ -820,13 +819,9 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
       if (e.target.files?.length) { handleNewFiles(e.target.files); e.target.value = ''; }
     });
 
-    if (mainContent) {
-      mainContent.addEventListener('dragover', (e) => { e.preventDefault(); dragOverlay?.classList.add('show'); });
-      mainContent.addEventListener('dragleave', (e) => { if (!mainContent.contains(e.relatedTarget)) dragOverlay?.classList.remove('show'); });
-      mainContent.addEventListener('drop', (e) => { e.preventDefault(); dragOverlay?.classList.remove('show'); if (e.dataTransfer.files?.length) handleNewFiles(e.dataTransfer.files); });
-    }
-    dragOverlay?.addEventListener('dragleave', () => dragOverlay.classList.remove('show'));
-    dragOverlay?.addEventListener('drop', (e) => { e.preventDefault(); dragOverlay.classList.remove('show'); if (e.dataTransfer.files?.length) handleNewFiles(e.dataTransfer.files); });
+    document.addEventListener('dragover', (e) => { e.preventDefault(); dragOverlay?.classList.add('active'); }, true);
+    document.addEventListener('dragleave', (e) => { if (e.clientX === 0 && e.clientY === 0) dragOverlay?.classList.remove('active'); }, true);
+    document.addEventListener('drop', (e) => { e.preventDefault(); dragOverlay?.classList.remove('active'); if (e.dataTransfer.files?.length) handleNewFiles(e.dataTransfer.files); }, true);
   }
 
   // ─── Session Management ────────────────────────────────────────────────────
