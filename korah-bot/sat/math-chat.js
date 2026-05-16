@@ -434,6 +434,11 @@ TEXT FORMATTING:
     try {
       // Defensive copy so we don't mutate the cached template/example.
       const stateCopy = JSON.parse(JSON.stringify(state));
+      // Desmos setState requires state.graph.viewport. We strip viewport from
+      // stored states (per the library plan), so inject a sensible default here.
+      if (!stateCopy.graph || !stateCopy.graph.viewport) {
+        stateCopy.graph = { viewport: { xmin: -10, xmax: 10, ymin: -10, ymax: 10 } };
+      }
       satMathCalculator.setState(stateCopy);
     } catch (e) {
       console.error('setState failed:', e);
