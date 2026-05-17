@@ -44,19 +44,159 @@
   <!-- Scripts -->
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   
   <!-- Styles -->
   <link rel="stylesheet" href="../app/korah-chat.css"/>
   <style>
-    .react-container { height: 100%; display: flex; flex-direction: column; }
-    .glass-card { background: var(--sf); backdrop-filter: blur(20px); border: 1px solid var(--bd); border-radius: 24px; }
-    .input-field { background: var(--bg2); border: 1px solid var(--bd); border-radius: 14px; color: var(--tx); transition: all 0.2s; }
+    .glass-card { background: var(--sf); backdrop-filter: blur(20px); border: 1px solid var(--bd); border-radius: 24px; box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18); }
+    .input-field { width: 100%; background: var(--bg2); border: 1px solid var(--bd); border-radius: 14px; color: var(--tx); transition: all 0.2s; }
     .input-field:focus { border-color: var(--p4); box-shadow: 0 0 0 4px var(--glow); outline: none; }
-    .tab-btn { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
     .loading-spinner { border: 3px solid rgba(139, 92, 246, 0.1); border-top: 3px solid var(--p4); border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+    .create-page-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 28px 24px 48px; }
+    .create-page-shell { max-width: 1160px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+    .create-hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(280px, 360px);
+      gap: 18px;
+      padding: 28px;
+      background:
+        radial-gradient(circle at top left, rgba(92, 107, 192, 0.22), transparent 42%),
+        linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+    }
+    .create-hero-copy { display: flex; flex-direction: column; gap: 14px; }
+    .create-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      width: fit-content;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      font-weight: 800;
+      color: #c7d2fe;
+      background: rgba(92, 107, 192, 0.16);
+      border: 1px solid rgba(129, 140, 248, 0.26);
+    }
+    .create-hero-title { font-size: clamp(2rem, 4.4vw, 3.35rem); line-height: 1.02; letter-spacing: -0.04em; font-weight: 900; color: var(--tx); margin: 0; }
+    .create-hero-sub { color: var(--tx2); font-size: 15px; line-height: 1.7; max-width: 650px; margin: 0; }
+    .create-hero-points { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
+    .create-hero-point {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.18);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      color: var(--tx);
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .create-hero-aside {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 22px;
+      border-radius: 22px;
+      border: 1px solid rgba(129, 140, 248, 0.22);
+      background: rgba(15, 23, 42, 0.2);
+    }
+    .create-aside-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--tx3); font-weight: 800; }
+    .create-aside-value { font-size: 28px; font-weight: 800; line-height: 1.05; color: var(--tx); letter-spacing: -0.03em; }
+    .create-aside-copy { font-size: 13px; color: var(--tx2); line-height: 1.6; }
+    .create-panel { padding: 26px; display: flex; flex-direction: column; gap: 22px; }
+    .create-method-switch { display: inline-flex; gap: 8px; flex-wrap: wrap; padding: 8px; border-radius: 18px; background: var(--bg2); border: 1px solid var(--bd); }
+    .method-pill {
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--tx2);
+      border-radius: 14px;
+      padding: 11px 16px;
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      font-size: 13px;
+      font-weight: 800;
+      transition: all 0.2s ease;
+    }
+    .method-pill.is-active { background: linear-gradient(135deg, var(--p4), var(--p5)); color: #fff; box-shadow: 0 14px 32px rgba(124, 58, 237, 0.28); }
+    .create-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.9fr); gap: 18px; }
+    .create-card { padding: 22px; background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02)); border: 1px solid var(--bd); border-radius: 22px; }
+    .create-card-title { margin: 0 0 6px; font-size: 18px; font-weight: 800; color: var(--tx); letter-spacing: -0.02em; }
+    .create-card-sub { margin: 0 0 18px; color: var(--tx2); font-size: 14px; line-height: 1.6; }
+    .field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .field-block { display: flex; flex-direction: column; gap: 8px; }
+    .field-block.is-full { grid-column: 1 / -1; }
+    .field-label { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.16em; color: var(--tx3); }
+    .field-help-list { display: grid; gap: 12px; }
+    .field-help-item { padding: 14px 16px; border-radius: 16px; background: rgba(92, 107, 192, 0.08); border: 1px solid rgba(129, 140, 248, 0.2); }
+    .field-help-item strong { display: block; font-size: 13px; color: var(--tx); margin-bottom: 4px; }
+    .field-help-item span { color: var(--tx2); font-size: 13px; line-height: 1.55; }
+    .section-card { padding: 24px; border-radius: 24px; border: 1px solid var(--bd); background: rgba(255,255,255,0.04); }
+    .section-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+    .section-title { margin: 0; font-size: 18px; font-weight: 800; color: var(--tx); }
+    .section-copy { margin: 4px 0 0; color: var(--tx2); font-size: 14px; line-height: 1.6; }
+    .upload-zone {
+      border: 1.5px dashed rgba(129, 140, 248, 0.34);
+      border-radius: 22px;
+      padding: 32px 22px;
+      background:
+        radial-gradient(circle at top, rgba(92, 107, 192, 0.16), transparent 55%),
+        rgba(15, 23, 42, 0.14);
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .upload-zone:hover, .upload-zone.drag-active { border-color: var(--p4); transform: translateY(-1px); box-shadow: 0 18px 32px rgba(92, 107, 192, 0.18); }
+    .upload-files { display: grid; gap: 10px; margin-top: 16px; }
+    .upload-file {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 13px 15px;
+      border-radius: 16px;
+      border: 1px solid var(--bd);
+      background: var(--bg2);
+    }
+    .upload-file-copy { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+    .upload-file-name { color: var(--tx); font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .upload-file-meta { color: var(--tx3); font-size: 12px; }
+    .upload-file-remove { width: 34px; height: 34px; border-radius: 999px; border: 1px solid rgba(239, 68, 68, 0.26); background: rgba(239, 68, 68, 0.1); color: #fca5a5; display: inline-flex; align-items: center; justify-content: center; }
+    .create-actions { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding-top: 8px; }
+    .create-error { color: #fca5a5; font-size: 14px; font-weight: 600; min-height: 20px; }
+    .create-submit {
+      min-width: 230px;
+      min-height: 56px;
+      padding: 0 24px;
+      border: none;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #5C6BC0, #8B5CF6);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 800;
+      box-shadow: 0 18px 36px rgba(92, 107, 192, 0.28);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+    }
+    .create-submit:hover { transform: translateY(-1px); box-shadow: 0 22px 40px rgba(92, 107, 192, 0.34); }
+    .create-submit:disabled { opacity: 0.65; cursor: wait; transform: none; }
+    @media (max-width: 960px) {
+      .create-hero, .create-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 768px) {
+      .create-page-scroll { padding: 18px 14px 28px; }
+      .create-hero, .create-panel, .create-card, .section-card { padding: 18px; }
+      .field-grid { grid-template-columns: 1fr; }
+      .create-actions { align-items: stretch; }
+      .create-submit { width: 100%; }
+    }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
   </style>
 </head>
@@ -295,222 +435,332 @@
       <a href="feed.html" class="tx2 hover:tx transition-colors text-sm font-medium">Cancel</a>
     </header>
 
-    <div id="react-root" class="flex-1 overflow-y-auto p-6 md:p-10"></div>
+    <div class="create-page-scroll">
+      <div class="create-page-shell">
+        <section class="create-hero glass-card">
+          <div class="create-hero-copy">
+            <span class="create-badge"><span class="material-icons-round" style="font-size: 14px;">auto_stories</span>Study Guide Studio</span>
+            <h1 class="create-hero-title">Build polished guides that feel intentional, not auto-generated.</h1>
+            <p class="create-hero-sub">Use a clean manual editor, prompt Korah with a specific brief, or turn source documents into a structured learning guide. The layout mirrors the rest of the study experience instead of mounting a separate framework runtime.</p>
+            <div class="create-hero-points">
+              <span class="create-hero-point"><span class="material-icons-round" style="font-size: 16px;">check_circle</span>Markdown-first authoring</span>
+              <span class="create-hero-point"><span class="material-icons-round" style="font-size: 16px;">check_circle</span>Prompt or document generation</span>
+              <span class="create-hero-point"><span class="material-icons-round" style="font-size: 16px;">check_circle</span>Same Korah study styling</span>
+            </div>
+          </div>
+          <aside class="create-hero-aside">
+            <div>
+              <div class="create-aside-label">Best For</div>
+              <div class="create-aside-value">Structured review</div>
+            </div>
+            <p class="create-aside-copy">Great when you want clean sectioning, summaries, and a strong sequence from concept foundations to exam-ready takeaways.</p>
+          </aside>
+        </section>
+
+        <section class="create-panel glass-card">
+          <div class="create-method-switch" role="tablist" aria-label="Guide creation method">
+            <button type="button" class="method-pill" data-method="manual"><span class="material-icons-round" style="font-size: 16px;">edit</span>Manual</button>
+            <button type="button" class="method-pill" data-method="prompt"><span class="material-icons-round" style="font-size: 16px;">chat</span>AI Prompt</button>
+            <button type="button" class="method-pill" data-method="docs"><span class="material-icons-round" style="font-size: 16px;">article</span>From Docs</button>
+          </div>
+
+          <div class="create-grid">
+            <section class="create-card">
+              <h2 class="create-card-title">Guide details</h2>
+              <p class="create-card-sub">Set the title, subject, and short context first. This metadata is reused on the study feed and the final guide page.</p>
+              <div class="field-grid">
+                <label class="field-block">
+                  <span class="field-label">Title</span>
+                  <input id="guide-title" type="text" class="input-field px-4 py-3.5" placeholder="e.g., French Revolution Crash Guide">
+                </label>
+                <label class="field-block">
+                  <span class="field-label">Subject</span>
+                  <input id="guide-subject" type="text" class="input-field px-4 py-3.5" placeholder="e.g., World History">
+                </label>
+                <label class="field-block is-full">
+                  <span class="field-label">Description</span>
+                  <textarea id="guide-description" class="input-field px-4 py-3.5 h-24 resize-none" placeholder="What should this guide focus on? Scope, unit, difficulty, or audience."></textarea>
+                </label>
+                <label class="field-block is-full">
+                  <span class="field-label">Tags</span>
+                  <input id="guide-tags" type="text" class="input-field px-4 py-3.5" placeholder="revolution, europe, causation">
+                </label>
+              </div>
+            </section>
+
+            <aside class="create-card">
+              <h2 class="create-card-title">How this page works</h2>
+              <p class="create-card-sub">The method switch only changes the content source. The finished guide still lands in the same study feed and guide viewer.</p>
+              <div class="field-help-list">
+                <div class="field-help-item">
+                  <strong>Manual</strong>
+                  <span>Write or paste your full guide directly in Markdown.</span>
+                </div>
+                <div class="field-help-item">
+                  <strong>AI Prompt</strong>
+                  <span>Describe the sections, tone, and depth you want Korah to generate.</span>
+                </div>
+                <div class="field-help-item">
+                  <strong>From Docs</strong>
+                  <span>Upload notes, PDFs, or screenshots and let Korah synthesize them into a clean outline.</span>
+                </div>
+              </div>
+            </aside>
+          </div>
+
+          <section id="guide-manual-section" class="section-card">
+            <div class="section-head">
+              <div>
+                <h2 class="section-title">Guide content</h2>
+                <p class="section-copy">Markdown is supported. Start with headings, key ideas, worked examples, or exam takeaways.</p>
+              </div>
+            </div>
+            <textarea id="guide-markdown" class="input-field px-5 py-4 h-[28rem] resize-none font-mono text-sm" placeholder="# Causes of the French Revolution&#10;&#10;## Economic pressure&#10;- Rising debt&#10;- Tax inequity&#10;&#10;## Political consequences&#10;..."></textarea>
+          </section>
+
+          <section id="guide-prompt-section" class="section-card hidden">
+            <div class="section-head">
+              <div>
+                <h2 class="section-title">Generation brief</h2>
+                <p class="section-copy">Be explicit about scope, structure, voice, and exam level. Better prompts produce cleaner guide sections.</p>
+              </div>
+            </div>
+            <textarea id="guide-prompt" class="input-field px-5 py-4 h-48 resize-none" placeholder="Create a concise but detailed AP World History study guide on the French Revolution. Use major causes, timeline, key figures, and long-term impacts. End each section with a short exam takeaway."></textarea>
+          </section>
+
+          <section id="guide-docs-section" class="section-card hidden">
+            <div class="section-head">
+              <div>
+                <h2 class="section-title">Source documents</h2>
+                <p class="section-copy">Upload up to 5 source files. Korah will use them as grounding material for the guide structure.</p>
+              </div>
+            </div>
+            <div id="guide-upload-zone" class="upload-zone">
+              <input id="guide-file-upload" type="file" class="hidden" multiple>
+              <div class="mb-3"><span class="material-icons-round" style="font-size: 34px; color: #c7d2fe;">upload_file</span></div>
+              <div class="tx font-semibold">Drop materials here or click to upload</div>
+              <div class="tx3 text-sm mt-1">PDF, TXT, MD, CSV, or images. Maximum 5 files.</div>
+            </div>
+            <div id="guide-files-list" class="upload-files"></div>
+          </section>
+
+          <div class="create-actions">
+            <div id="guide-error" class="create-error"></div>
+            <button id="guide-submit" class="create-submit">
+              <span class="material-icons-round" style="font-size: 18px;">auto_stories</span>
+              <span id="guide-submit-label">Create Guide</span>
+            </button>
+          </div>
+        </section>
+      </div>
+    </div>
   </main>
 
 <script type="module" src="js/study-firebase-init.js"></script>
 <script src="../app/timer-manager.js"></script>
 <script src="js/sidebar.js"></script>
-  <script src="js/study-api.js"></script>
+<script src="js/study-api.js"></script>
+<script>
+  (function () {
+    KorahSidebar.initSidebar({ chatBaseUrl: "../chat.html", itemPageUrl: "item.html" });
 
-  <script type="text/babel">
-    const { useState, useEffect } = React;
-
-    const GuideCreator = () => {
-      const [method, setMethod] = useState('manual');
-      const [title, setTitle] = useState('');
-      const [subject, setSubject] = useState('');
-      const [description, setDescription] = useState('');
-      const [tags, setTags] = useState('');
-      const [markdown, setMarkdown] = useState('');
-      const [prompt, setPrompt] = useState('');
-      const [files, setFiles] = useState([]);
-      const [loading, setLoading] = useState(false);
-      const [error, setError] = useState('');
-
-      useEffect(() => {
-        if (typeof KorahSidebar !== 'undefined') {
-          KorahSidebar.initSidebar({ chatBaseUrl: "../chat.html", itemPageUrl: "item.html" });
-        }
-      }, []);
-
-      const handleFileChange = (e) => {
-        const newFiles = Array.from(e.target.files).slice(0, 5 - files.length);
-        setFiles([...files, ...newFiles]);
-      };
-
-      const validate = () => {
-        if (!title.trim()) return "Title is required";
-        if (!subject.trim()) return "Subject is required";
-        if (method === 'manual' && !markdown.trim()) return "Content is required";
-        if (method === 'prompt' && !prompt.trim()) return "AI prompt is required";
-        if (method === 'docs' && files.length === 0) return "At least one document is required";
-        return null;
-      };
-
-      const saveItem = (content) => {
-        const id = "study_" + Date.now();
-        const item = {
-          id,
-          type: "studyGuide",
-          title,
-          description,
-          subject,
-          tags: tags.split(',').map(t => t.trim()).filter(Boolean),
-          content: content || { title, markdown: "" },
-          source: method === 'manual' ? 'manual' : (method === 'prompt' ? 'ai-prompt' : 'ai-doc'),
-          createdBy: "cloud",
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-        if (window.KorahDB) window.KorahDB.setStudyItem(id, item);
-        window.location.href = "guide.html?id=" + encodeURIComponent(id);
-      };
-
-      const handleCreate = async () => {
-        const err = validate();
-        if (err) { setError(err); return; }
-        setError('');
-        
-        if (method === 'manual') {
-          saveItem({ title, markdown });
-          return;
-        }
-
-        setLoading(true);
-        try {
-          const result = await KorahStudyAPI.generateStudyContent({
-            type: "studyGuide",
-            prompt: method === 'prompt' ? prompt : `Create a study guide from the uploaded documents for ${subject}`,
-            title,
-            subject,
-            files: method === 'docs' ? files : []
-          });
-
-          if (result && result.content && result.content.markdown) {
-            saveItem(result.content);
-          } else {
-            throw new Error("Invalid content generated by AI");
-          }
-        } catch (err) {
-          setError(err.message || "AI generation failed. Please try again.");
-        } finally {
-          setLoading(false);
-        }
-      };
-
-      return (
-        <div className="max-w-4xl mx-auto space-y-8 pb-20">
-          <div className="text-center space-y-2">
-            <h1 className="text-4xl font-display font-black grad-text">Create Study Guide</h1>
-            <p className="tx2">Synthesize complex topics into elegant, structured learning guides.</p>
-          </div>
-
-          <div className="flex p-1 bg-sf2 glass-sm bd rounded-2xl w-fit mx-auto">
-            {['manual', 'prompt', 'docs'].map(m => (
-              <button
-                key={m}
-                onClick={() => setMethod(m)}
-                className={`px-6 py-2.5 rounded-xl text-sm font-bold tab-btn ${method === m ? 'bg-p4 text-white shadow-glow' : 'tx3 hover:tx2'}`}
-              >
-                {m === 'manual' ? <><span class="material-icons-round" style="color: var(--gold); font-size: 16px;" aria-label="pencil">edit</span> Manual</> : m === 'prompt' ? <><span class="material-icons-round" style="color: var(--p4); font-size: 16px;" aria-label="chat">chat</span> AI Prompt</> : <><span class="material-icons-round" style="color: var(--tx2); font-size: 16px;" aria-label="document">article</span> From Docs</>}
-              </button>
-            ))}
-          </div>
-
-          <div className="glass-card p-8 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider tx3">Title *</label>
-                <input 
-                  type="text" 
-                  value={title} 
-                  onChange={e => setTitle(e.target.value)}
-                  placeholder="e.g., Quantum Mechanics Masterclass"
-                  className="w-100 p-3.5 input-field w-full"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider tx3">Subject *</label>
-                <input 
-                  type="text" 
-                  value={subject} 
-                  onChange={e => setSubject(e.target.value)}
-                  placeholder="e.g., Physics"
-                  className="w-100 p-3.5 input-field w-full"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-wider tx3">Description</label>
-              <textarea 
-                value={description} 
-                onChange={e => setDescription(e.target.value)}
-                placeholder="Briefly describe what this guide covers..."
-                className="w-full p-3.5 input-field h-20 resize-none"
-              />
-            </div>
-
-            {method === 'manual' && (
-              <div className="space-y-4 pt-4">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold uppercase tracking-wider tx3">Guide Content (Markdown) *</label>
-                  <span className="text-[10px] tx3 font-bold opacity-50 uppercase tracking-widest">Supports Markdown</span>
-                </div>
-                <textarea 
-                  value={markdown} 
-                  onChange={e => setMarkdown(e.target.value)}
-                  placeholder="# Section 1: Introduction\n\nExplain key concepts here..."
-                  className="w-full p-6 input-field h-96 font-mono text-sm resize-none"
-                />
-              </div>
-            )}
-
-            {method === 'prompt' && (
-              <div className="space-y-2 pt-4">
-                <label className="text-xs font-bold uppercase tracking-wider tx3">AI Generation Prompt *</label>
-                <textarea 
-                  value={prompt} 
-                  onChange={e => setPrompt(e.target.value)}
-                  placeholder="e.g., Generate a detailed study guide for the French Revolution, covering key figures, major events from 1789 to 1799, and long-term societal impacts."
-                  className="w-full p-3.5 input-field h-40 resize-none"
-                />
-              </div>
-            )}
-
-            {method === 'docs' && (
-              <div className="space-y-4 pt-4">
-                <label className="text-xs font-bold uppercase tracking-wider tx3">Upload Documents</label>
-                <div 
-                  className="upload-zone border-2 border-dashed border-bd rounded-2xl p-10 text-center hover:border-p4 transition-all cursor-pointer bg-base2/30"
-                  onClick={() => document.getElementById('file-upload').click()}
-                >
-                  <input id="file-upload" type="file" multiple className="hidden" onChange={handleFileChange} />
-                  <span className="text-3xl mb-2 block"><span class="material-icons-round" style="color: var(--tx2); font-size: 30px;" aria-label="document">article</span></span>
-                  <p className="tx">Drop study materials here or click to upload</p>
-                  <p className="tx3 text-xs mt-1">PDF, TXT, or images (Max 5)</p>
-                </div>
-                {files.length > 0 && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {files.map((file, i) => (
-                      <div key={i} className="flex items-center justify-between p-3 bg-base2 bd rounded-xl">
-                        <span className="text-xs tx truncate max-w-[200px]">{file.name}</span>
-                        <button onClick={(e) => {e.stopPropagation(); setFiles(files.filter((_, idx) => idx !== i))}} className="tx-red hover:text-red-400 material-icons-round" style="font-size:16px;" aria-label="close">close</button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div className="pt-6 border-t bd flex flex-col items-center gap-4">
-              {error && <p className="text-red-400 text-sm font-medium"><span class="material-icons-round" style="color: var(--red); font-size: 16px; vertical-align: middle; margin-right: 4px;" aria-label="warning">warning</span>{error}</p>}
-              <button 
-                onClick={handleCreate}
-                disabled={loading}
-                className="w-full md:w-64 py-4 rounded-2xl grad-bg text-white font-black shadow-glow hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
-              >
-                {loading ? <div className="loading-spinner"></div> : (method === 'manual' ? 'Create Guide' : 'Generate with AI')}
-              </button>
-            </div>
-          </div>
-        </div>
-      );
+    var validMethods = ["manual", "prompt", "docs"];
+    var state = {
+      method: validMethods.includes(new URLSearchParams(window.location.search).get("method")) ? new URLSearchParams(window.location.search).get("method") : "manual",
+      files: [],
+      loading: false
     };
 
-    const root = ReactDOM.createRoot(document.getElementById('react-root'));
-    root.render(<GuideCreator />);
-  </script>
+    var methodButtons = Array.from(document.querySelectorAll(".method-pill"));
+    var sections = {
+      manual: document.getElementById("guide-manual-section"),
+      prompt: document.getElementById("guide-prompt-section"),
+      docs: document.getElementById("guide-docs-section")
+    };
+    var titleInput = document.getElementById("guide-title");
+    var subjectInput = document.getElementById("guide-subject");
+    var descriptionInput = document.getElementById("guide-description");
+    var tagsInput = document.getElementById("guide-tags");
+    var markdownInput = document.getElementById("guide-markdown");
+    var promptInput = document.getElementById("guide-prompt");
+    var uploadZone = document.getElementById("guide-upload-zone");
+    var fileInput = document.getElementById("guide-file-upload");
+    var filesList = document.getElementById("guide-files-list");
+    var errorEl = document.getElementById("guide-error");
+    var submitBtn = document.getElementById("guide-submit");
+    var submitLabel = document.getElementById("guide-submit-label");
+
+    function setMethod(method) {
+      state.method = method;
+      methodButtons.forEach(function (btn) {
+        btn.classList.toggle("is-active", btn.getAttribute("data-method") === method);
+      });
+      Object.keys(sections).forEach(function (key) {
+        sections[key].classList.toggle("hidden", key !== method);
+      });
+      submitLabel.textContent = method === "manual" ? "Create Guide" : "Generate Guide";
+      errorEl.textContent = "";
+    }
+
+    function setLoading(loading) {
+      state.loading = loading;
+      submitBtn.disabled = loading;
+      submitLabel.textContent = loading ? "Generating..." : (state.method === "manual" ? "Create Guide" : "Generate Guide");
+      var spinner = submitBtn.querySelector(".loading-spinner");
+      if (loading && !spinner) {
+        submitBtn.insertAdjacentHTML("afterbegin", '<span class="loading-spinner"></span>');
+      }
+      if (!loading && spinner) spinner.remove();
+    }
+
+    function renderFiles() {
+      filesList.innerHTML = "";
+      state.files.forEach(function (file, index) {
+        var row = document.createElement("div");
+        row.className = "upload-file";
+        row.innerHTML = `
+          <div class="upload-file-copy">
+            <span class="upload-file-name">${file.name}</span>
+            <span class="upload-file-meta">${(file.size / 1024).toFixed(1)} KB</span>
+          </div>
+          <button type="button" class="upload-file-remove" data-index="${index}" aria-label="Remove file">
+            <span class="material-icons-round" style="font-size: 16px;">close</span>
+          </button>
+        `;
+        filesList.appendChild(row);
+      });
+    }
+
+    function addFiles(fileList) {
+      Array.from(fileList).slice(0, Math.max(0, 5 - state.files.length)).forEach(function (file) {
+        state.files.push(file);
+      });
+      renderFiles();
+      errorEl.textContent = "";
+    }
+
+    function validate() {
+      if (!titleInput.value.trim()) return "Title is required.";
+      if (!subjectInput.value.trim()) return "Subject is required.";
+      if (state.method === "manual" && !markdownInput.value.trim()) return "Guide content is required.";
+      if (state.method === "prompt" && !promptInput.value.trim()) return "AI prompt is required.";
+      if (state.method === "docs" && state.files.length === 0) return "Upload at least one document.";
+      return "";
+    }
+
+    function saveItem(content) {
+      var id = "study_" + Date.now();
+      var item = {
+        id: id,
+        type: "studyGuide",
+        title: titleInput.value.trim(),
+        description: descriptionInput.value.trim(),
+        subject: subjectInput.value.trim(),
+        tags: tagsInput.value.split(",").map(function (tag) { return tag.trim(); }).filter(Boolean),
+        content: content,
+        source: state.method === "manual" ? "manual" : state.method === "prompt" ? "ai-prompt" : "ai-doc",
+        createdBy: "cloud",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      if (window.KorahDB) window.KorahDB.setStudyItem(id, item);
+      window.location.href = "guide.html?id=" + encodeURIComponent(id);
+    }
+
+    methodButtons.forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        setMethod(btn.getAttribute("data-method"));
+      });
+    });
+
+    uploadZone.addEventListener("click", function () { fileInput.click(); });
+    uploadZone.addEventListener("dragover", function (event) {
+      event.preventDefault();
+      uploadZone.classList.add("drag-active");
+    });
+    uploadZone.addEventListener("dragleave", function () {
+      uploadZone.classList.remove("drag-active");
+    });
+    uploadZone.addEventListener("drop", function (event) {
+      event.preventDefault();
+      uploadZone.classList.remove("drag-active");
+      addFiles(event.dataTransfer.files);
+    });
+    fileInput.addEventListener("change", function (event) {
+      addFiles(event.target.files);
+      event.target.value = "";
+    });
+    filesList.addEventListener("click", function (event) {
+      var button = event.target.closest(".upload-file-remove");
+      if (!button) return;
+      state.files.splice(Number(button.getAttribute("data-index")), 1);
+      renderFiles();
+    });
+
+    submitBtn.addEventListener("click", async function () {
+      var validationMessage = validate();
+      errorEl.textContent = validationMessage;
+      if (validationMessage) return;
+
+      if (state.method === "manual") {
+        saveItem({
+          title: titleInput.value.trim(),
+          markdown: markdownInput.value.trim()
+        });
+        return;
+      }
+
+      setLoading(true);
+      try {
+        var result = await KorahStudyAPI.generateStudyContent({
+          type: "studyGuide",
+          prompt: state.method === "prompt" ? promptInput.value.trim() : "Create a study guide from the uploaded documents for " + subjectInput.value.trim(),
+          title: titleInput.value.trim(),
+          subject: subjectInput.value.trim(),
+          files: state.method === "docs" ? state.files : []
+        });
+
+        if (!result || !result.content || !result.content.markdown) {
+          throw new Error("Invalid content generated by AI.");
+        }
+
+        saveItem({
+          title: result.content.title || titleInput.value.trim() || "Study Guide",
+          markdown: result.content.markdown
+        });
+      } catch (error) {
+        errorEl.textContent = error && error.message ? error.message : "AI generation failed. Please try again.";
+      } finally {
+        setLoading(false);
+      }
+    });
+
+    setMethod(state.method);
+  })();
+</script>
+<script type="module">
+  import { getApps, initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+  import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
+    authDomain: "korah-app.firebaseapp.com",
+    projectId: "korah-app",
+    storageBucket: "korah-app.firebasestorage.app",
+    messagingSenderId: "226169460321",
+    appId: "1:226169460321:web:b166fc8260107c55dafc20"
+  };
+
+  const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  document.getElementById("logout-btn")?.addEventListener("click", () => {
+    window.confirmLogout(async () => {
+      await signOut(auth);
+      localStorage.removeItem("korah_first_name");
+      window.location.href = "../login.html";
+    });
+  });
+</script>
 </body>
 </html>

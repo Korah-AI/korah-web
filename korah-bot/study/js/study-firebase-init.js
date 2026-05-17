@@ -30,7 +30,7 @@ const auth = getAuth(app);
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     // Redirect unauthenticated visitors to the login page.
-    window.location.href = "../../login.html";
+    window.location.href = "../login.html";
     return;
   }
 

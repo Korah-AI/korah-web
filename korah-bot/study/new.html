@@ -39,9 +39,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="../app/korah-chat.css"/>
   <style>
@@ -686,7 +683,32 @@
   </header>
 
   <div class="create-flow-body">
-    <div id="react-step-1" class="w-full max-w-7xl mx-auto"></div>
+    <div class="w-full max-w-7xl mx-auto">
+      <div class="bg-sf glass-sm t-theme border border-[var(--bd)] rounded-[32px] p-8 md:p-12 flex flex-col items-center shadow-2xl">
+        <header class="text-center mb-8 md:mb-12">
+          <h1 class="text-3xl md:text-5xl font-black mb-3 tracking-tight" style="color: var(--p5);">Create Study Item</h1>
+          <p class="text-base md:text-lg tx2 max-w-xl mx-auto opacity-70 leading-relaxed font-medium">Select a study mode below to generate personalized materials with Korah AI.</p>
+        </header>
+
+        <div class="create-type-grid w-full max-w-5xl">
+          <button type="button" class="create-type-card t-btn" data-type="flashcards">
+            <span class="create-type-emoji"><span class="material-icons-round" style="font-size: 3rem; color: #78909C;" aria-label="Flashcard Set">style</span></span>
+            <span class="create-type-name">Flashcard Set</span>
+            <span class="create-type-desc tx2">Front/back cards with rich text and math</span>
+          </button>
+          <button type="button" class="create-type-card t-btn" data-type="studyGuide">
+            <span class="create-type-emoji"><span class="material-icons-round" style="font-size: 3rem; color: #5C6BC0;" aria-label="Study Guide">auto_stories</span></span>
+            <span class="create-type-name">Study Guide</span>
+            <span class="create-type-desc tx2">Structured outline with sections and summaries</span>
+          </button>
+          <button type="button" class="create-type-card t-btn" data-type="practiceTest">
+            <span class="create-type-emoji"><span class="material-icons-round" style="font-size: 3rem; color: #EF5350;" aria-label="Practice Test">gps_fixed</span></span>
+            <span class="create-type-name">Practice Test</span>
+            <span class="create-type-desc tx2">Questions with answer keys and rationales</span>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </main>
 
@@ -866,6 +888,12 @@
     if (creationModal) creationModal.classList.add("active");
   }
   window.openCreationModal = openCreationModal;
+
+  document.querySelectorAll(".create-type-card").forEach(function (card) {
+    card.addEventListener("click", function () {
+      openCreationModal(card.getAttribute("data-type"));
+    });
+  });
 
   function closeCreationModal() {
     if (backdrop) backdrop.classList.remove("active");
@@ -1236,7 +1264,7 @@
 </script>
 
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+  import { getApps, initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
   import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
 
   const firebaseConfig = {
@@ -1248,7 +1276,7 @@
     appId: "1:226169460321:web:b166fc8260107c55dafc20"
   };
 
-  const app = initializeApp(firebaseConfig);
+  const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
   const auth = getAuth(app);
 
   document.getElementById('logout-btn').addEventListener('click', () => {
@@ -1258,60 +1286,6 @@
       window.location.href = '../login.html';
     });
   });
-</script>
-<script type="text/babel">
-  const { useRef } = React;
-  const typeData = [
-    { id: 'flashcards', icon: 'style', name: 'Flashcard Set', desc: 'Front/back cards with rich text and math', color: '#78909C' },
-    { id: 'studyGuide', icon: 'auto_stories', name: 'Study Guide', desc: 'Structured outline with sections and summaries', color: '#5C6BC0' },
-    { id: 'practiceTest', icon: 'gps_fixed', name: 'Practice Test', desc: 'Questions with answer keys and rationales', color: '#EF5350' }
-  ];
-
-  function TypeCard({ type }) {
-    const buttonRef = useRef(null);
-    const handleMouseMove = (e) => {
-      const rect = buttonRef.current.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      buttonRef.current.style.setProperty('--mouse-x', `${x}px`);
-      buttonRef.current.style.setProperty('--mouse-y', `${y}px`);
-    };
-    return (
-      <button
-        ref={buttonRef}
-        type="button"
-        className="create-type-card t-btn spotlight-effect"
-        data-type={type.id}
-        onClick={() => window.openCreationModal(type.id)}
-        onMouseMove={handleMouseMove}
-      >
-        <span className="create-type-emoji"><span className="material-icons-round" style={{fontSize: '3rem', color: type.color}} aria-label={type.name}>{type.icon}</span></span>
-        <span className="create-type-name">{type.name}</span>
-        <span className="create-type-desc tx2">{type.desc}</span>
-      </button>
-    );
-  }
-
-  function App() {
-    return (
-      <div className="bg-sf glass-sm t-theme border border-[var(--bd)] rounded-[32px] p-8 md:p-12 flex flex-col items-center shadow-2xl">
-        <header className="text-center mb-8 md:mb-12">
-          <h1 className="text-3xl md:text-5xl font-black mb-3 tracking-tight" style={{ color: 'var(--p5)' }}>Create Study Item</h1>
-          <p className="text-base md:text-lg tx2 max-w-xl mx-auto opacity-70 leading-relaxed font-medium">Select a study mode below to generate personalized materials with Korah AI.</p>
-        </header>
-
-        <div className="create-type-grid w-full max-w-5xl">
-          {typeData.map(type => (
-            <TypeCard key={type.id} type={type} />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  const container = document.getElementById('react-step-1');
-  const root = ReactDOM.createRoot(container);
-  root.render(<App />);
 </script>
 </body>
 </html>
