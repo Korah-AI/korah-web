@@ -20,6 +20,116 @@
     <link rel="stylesheet" href="support.css"/>
     <style>
       html { scroll-behavior: smooth; }
+
+      #scroll-progress {
+        position: fixed; top: 0; left: 0;
+        height: 2px; width: 0%;
+        background: linear-gradient(90deg, #7c3aed, #a855f7, #6366f1);
+        z-index: 9999;
+        transition: width 0.1s linear;
+        pointer-events: none;
+      }
+
+      .nav-indicator {
+        position: absolute;
+        inset-block: 6px;
+        left: 0;
+        border-radius: 9999px;
+        background: rgba(139,92,246,0.15);
+        border: 1px solid rgba(139,92,246,0.3);
+        transition: transform 0.35s cubic-bezier(.23,1,.32,1),
+                    width 0.35s cubic-bezier(.23,1,.32,1),
+                    opacity 0.2s;
+        pointer-events: none;
+        opacity: 0;
+      }
+
+      .nav-pill-active {
+        color: var(--tx) !important;
+        font-weight: 600 !important;
+      }
+
+      #back-to-top {
+        position: fixed; bottom: 2rem; right: 2rem; z-index: 999;
+        width: 3rem; height: 3rem; border-radius: 9999px;
+        background: var(--sf); border: 1px solid var(--bd);
+        backdrop-filter: blur(20px); cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        opacity: 0; transform: translateY(1rem); pointer-events: none;
+        transition: opacity 0.3s, transform 0.3s, border-color 0.2s, background 0.2s;
+        color: var(--p4);
+      }
+      #back-to-top.show {
+        opacity: 1; transform: translateY(0); pointer-events: auto;
+      }
+      #back-to-top:hover {
+        border-color: var(--p4); background: var(--cu);
+      }
+
+      .explore-card:hover {
+        transform: translateY(-3px) !important;
+        border-color: rgba(139,92,246,0.5) !important;
+        box-shadow: 0 12px 30px rgba(0,0,0,0.12), 0 0 12px rgba(139,92,246,0.1);
+      }
+
+      .accordion-content {
+        overflow: hidden;
+        transition: max-height 0.5s cubic-bezier(.23,1,.32,1), opacity 0.4s ease;
+      }
+      .accordion-header:hover {
+        background: var(--cu);
+      }
+      .accordion-chevron {
+        transition: transform 0.3s cubic-bezier(.23,1,.32,1);
+      }
+      .accordion-chevron.open {
+        transform: rotate(180deg);
+      }
+
+      .section-divider {
+        height: 1px;
+        background: linear-gradient(90deg, transparent, var(--bd), transparent);
+      }
+
+      .hero-glass {
+        background: var(--sf);
+        border: 1px solid var(--bd);
+        border-radius: 1rem;
+      }
+
+      .stat-divider {
+        width: 1px; height: 2.5rem;
+        background: var(--bd); flex-shrink: 0;
+      }
+
+      #constellation-canvas {
+        position: fixed; top: 0; left: 0;
+        width: 100%; height: 100%;
+        pointer-events: none; opacity: 0;
+        transition: opacity 0.5s; z-index: -1;
+      }
+
+      @keyframes purple-pulse {
+        0%, 100% { filter: drop-shadow(0 0 15px rgba(139,92,246,0.4)); transform: scale(1); }
+        50% { filter: drop-shadow(0 0 35px rgba(139,92,246,0.9)) drop-shadow(0 0 60px rgba(139,92,246,0.3)); transform: scale(1.03); }
+      }
+      .pulse-purple {
+        animation: purple-pulse 3s ease-in-out infinite;
+      }
+
+      @keyframes aurora {
+        0%, 100% { background-position: 0% 50%; }
+        50%       { background-position: 100% 50%; }
+      }
+      .help-word {
+        display: inline-block;
+        background-image: linear-gradient(135deg, #9333ea, #6366f1, #a855f7, #7c3aed, #818cf8, #a855f7);
+        background-size: 300% 300%;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        animation: aurora 5s ease-in-out infinite;
+      }
     </style>
 </head>
 <body class="bg-base tx" x-cloak style="overflow-x:hidden;">
@@ -27,10 +137,18 @@
 <!-- Stars Background -->
 <div class="stars-container" id="starField" :style="theme === 'light' ? 'opacity:0;pointer-events:none' : 'opacity:1'" style="transition:opacity 0.4s"></div>
 
+<!-- Constellation Canvas (light mode) -->
+<canvas id="constellation-canvas"></canvas>
+
+<!-- Back to Top -->
+<button id="back-to-top" aria-label="Back to top">
+  <span class="material-icons-round" style="font-size:1.25rem;">expand_less</span>
+</button>
+
 <!-- ═══ NAVBAR ═══ -->
-<nav id="navbar" class="fixed top-0 left-0 right-0 h-[82px] z-[1000] px-6 md:px-[clamp(28px,5.5vw,96px)]" style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;background:var(--nb);border-bottom:1px solid var(--bd);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);">
+<nav id="navbar" class="fixed top-0 left-0 right-0 h-[82px] z-[1000] px-6 md:px-[clamp(28px,5.5vw,96px)] bg-[var(--nb)]" style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--bd);">
   <a href="../landing/" class="flex items-center gap-2.5 no-underline shrink-0 z-10">
-    <div class="w-10 h-10 rounded-xl flex items-center justify-center font-display text-xl font-black text-white shadow-glow relative overflow-hidden" style="transition:transform 0.2s,box-shadow 0.2s;" onmouseover="this.style.transform='rotate(-5deg) scale(1.08)'" onmouseout="this.style.transform=''">
+    <div class="w-10 h-10 rounded-xl flex items-center justify-center font-display text-xl font-black text-white shadow-glow relative overflow-hidden t-btn hover:rotate-[-5deg] hover:scale-[1.08] hover:shadow-glow-lg">
       <img src="../logo-images/newlogo0.png" style="height:2.5rem;">
     </div>
     <div class="flex flex-col leading-tight">
@@ -39,20 +157,24 @@
     </div>
   </a>
 
-  <div class="hidden lg:flex items-center gap-0.5 bg-sf2 border bd2 rounded-full px-3 py-2" style="white-space:nowrap;backdrop-filter:blur(12px);">
-    <a href="#faq"     class="text-[13.5px] font-medium tx2 px-4 py-1.5 rounded-full no-underline" style="transition:color 0.2s,background 0.2s;" onmouseover="this.style.color='var(--tx)';this.style.background='var(--bd)'" onmouseout="this.style.color='';this.style.background=''">FAQ</a>
-    <a href="#contact" class="text-[13.5px] font-medium tx2 px-4 py-1.5 rounded-full no-underline" style="transition:color 0.2s,background 0.2s;" onmouseover="this.style.color='var(--tx)';this.style.background='var(--bd)'" onmouseout="this.style.color='';this.style.background=''">Contact</a>
-    <a href="#privacy" class="text-[13.5px] font-medium tx2 px-4 py-1.5 rounded-full no-underline" style="transition:color 0.2s,background 0.2s;" onmouseover="this.style.color='var(--tx)';this.style.background='var(--bd)'" onmouseout="this.style.color='';this.style.background=''">Privacy</a>
-    <a href="#terms"   class="text-[13.5px] font-medium tx2 px-4 py-1.5 rounded-full no-underline" style="transition:color 0.2s,background 0.2s;" onmouseover="this.style.color='var(--tx)';this.style.background='var(--bd)'" onmouseout="this.style.color='';this.style.background=''">Terms</a>
-    <a href="../landing/" class="text-[13.5px] font-medium tx2 px-4 py-1.5 rounded-full no-underline" style="transition:color 0.2s,background 0.2s;" onmouseover="this.style.color='var(--tx)';this.style.background='var(--bd)'" onmouseout="this.style.color='';this.style.background=''">← Home</a>
-    <a href="../index.html" class="text-[13.5px] font-semibold px-4 py-1.5 rounded-full no-underline" style="color:var(--p5);background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.25);transition:background 0.2s;" onmouseover="this.style.background='rgba(139,92,246,0.2)'" onmouseout="this.style.background='rgba(139,92,246,0.1)'">Open App</a>
+  <div class="nav-links hidden lg:flex items-center gap-0.5 bg-sf2 border bd2 rounded-full px-3 py-2 glass-sm t-theme" style="white-space:nowrap;position:relative;">
+    <div class="nav-indicator" id="navIndicator"></div>
+    <a href="#faq"     class="nav-pill text-[13.5px] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx hover:bg-[var(--bd)] no-underline">FAQ</a>
+    <a href="#contact" class="nav-pill text-[13.5px] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx hover:bg-[var(--bd)] no-underline">Contact</a>
+    <a href="#privacy" class="nav-pill text-[13.5px] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx hover:bg-[var(--bd)] no-underline">Privacy</a>
+    <a href="#terms"   class="nav-pill text-[13.5px] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx hover:bg-[var(--bd)] no-underline">Terms</a>
+    <a href="../landing/" class="flex items-center gap-1 text-[13.5px] font-medium no-underline t-btn px-3 py-1.5 rounded-full"     style="color:var(--tx3);border-left:1px solid var(--bd);padding-left:0.85rem;margin-left:0.25rem;" onmouseover="this.style.color='var(--tx)'" onmouseout="this.style.color='var(--tx3)'">
+      Home
+    </a>
+    <a href="../index.html" class="text-[13.5px] font-semibold px-4 py-1.5 rounded-full no-underline t-btn"
+       style="color:var(--p5);background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.25);"
+       onmouseover="this.style.background='rgba(139,92,246,0.2)'" onmouseout="this.style.background='rgba(139,92,246,0.1)'">Open App</a>
   </div>
 
   <div class="flex items-center gap-2.5 z-10 justify-self-end">
     <button @click="theme = theme==='dark' ? 'light' : 'dark'; localStorage.setItem('korah_theme', theme)"
-        class="flex items-center justify-center w-9 h-9 rounded-xl bg-sf2 border bd cursor-pointer"
-        style="transition:border-color 0.2s,background 0.2s;" aria-label="Toggle theme"
-        onmouseover="this.style.borderColor='var(--p4)';this.style.background='var(--bd2)'" onmouseout="this.style.borderColor='';this.style.background=''">
+        class="flex items-center justify-center w-9 h-9 rounded-xl bg-sf2 border bd cursor-pointer t-btn hover:border-p4 hover:bg-[var(--bd2)]"
+        aria-label="Toggle theme">
       <svg x-show="theme==='light'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" style="color:var(--p5)">
         <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/>
       </svg>
@@ -64,287 +186,583 @@
         <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
       </svg>
     </button>
-    <button @click="menuOpen=!menuOpen" class="lg:hidden flex flex-col gap-1.5 bg-transparent border-none cursor-pointer p-1.5" aria-label="Menu">
-      <span class="block w-5 h-0.5 bg-p4 rounded" style="transition:transform 0.3s;"></span>
-      <span class="block w-5 h-0.5 bg-p4 rounded" style="transition:all 0.3s;"></span>
-      <span class="block w-5 h-0.5 bg-p4 rounded" style="transition:transform 0.3s;"></span>
+    <button @click="menuOpen=!menuOpen" :class="menuOpen && 'open'" class="hamburger lg:hidden flex flex-col gap-1.5 bg-transparent border-none cursor-pointer p-1.5" aria-label="Menu">
+      <span class="block w-5.5 h-0.5 bg-p4 rounded transition-transform duration-300"></span>
+      <span class="block w-5.5 h-0.5 bg-p4 rounded transition-all duration-300"></span>
+      <span class="block w-5.5 h-0.5 bg-p4 rounded transition-transform duration-300"></span>
     </button>
   </div>
 </nav>
 
 <!-- Mobile menu -->
-<div class="fixed top-[82px] left-0 right-0 z-[999] px-6 pb-7 pt-5 border-b bd"
-     style="background:var(--nb);backdrop-filter:blur(20px);"
+<div class="fixed top-[82px] left-0 right-0 z-[999] bg-[var(--nb)] glass border-b bd px-6 pb-7 pt-5 t-theme"
      x-show="menuOpen"
-     x-transition:enter="transition ease-out duration-300"
-     x-transition:enter-start="opacity-0 -translate-y-4"
+     x-transition:enter="transition ease-smooth duration-350"
+     x-transition:enter-start="opacity-0 -translate-y-[110%]"
      x-transition:enter-end="opacity-100 translate-y-0"
-     x-transition:leave="transition ease-in duration-200"
+     x-transition:leave="transition ease-smooth duration-300"
      x-transition:leave-start="opacity-100"
      x-transition:leave-end="opacity-0">
-  <a href="#faq"     @click="menuOpen=false" class="block text-base font-medium tx2 no-underline py-3.5 px-2 border-b bd2" style="transition:color 0.2s;" onmouseover="this.style.color='var(--p4)'" onmouseout="this.style.color=''">FAQ</a>
-  <a href="#contact" @click="menuOpen=false" class="block text-base font-medium tx2 no-underline py-3.5 px-2 border-b bd2" style="transition:color 0.2s;" onmouseover="this.style.color='var(--p4)'" onmouseout="this.style.color=''">Contact</a>
-  <a href="#privacy" @click="menuOpen=false" class="block text-base font-medium tx2 no-underline py-3.5 px-2 border-b bd2" style="transition:color 0.2s;" onmouseover="this.style.color='var(--p4)'" onmouseout="this.style.color=''">Privacy</a>
-  <a href="#terms"   @click="menuOpen=false" class="block text-base font-medium tx2 no-underline py-3.5 px-2 border-b bd2" style="transition:color 0.2s;" onmouseover="this.style.color='var(--p4)'" onmouseout="this.style.color=''">Terms</a>
-  <a href="../landing/" @click="menuOpen=false" class="block text-base font-medium tx2 no-underline py-3.5 px-2 border-b bd2" style="transition:color 0.2s;" onmouseover="this.style.color='var(--p4)'" onmouseout="this.style.color=''">← Back to Home</a>
-  <a href="../index.html" @click="menuOpen=false" class="block text-base font-semibold no-underline py-3.5 px-2" style="color:var(--p5);transition:color 0.2s;" onmouseover="this.style.color='var(--p4)'" onmouseout="this.style.color='var(--p5)'">Open App →</a>
+  <a href="#faq"     @click="menuOpen=false" class="block text-base font-medium tx2 no-underline py-3.5 px-2 border-b bd2 t-btn hover:tx-p4">FAQ</a>
+  <a href="#contact" @click="menuOpen=false" class="block text-base font-medium tx2 no-underline py-3.5 px-2 border-b bd2 t-btn hover:tx-p4">Contact</a>
+  <a href="#privacy" @click="menuOpen=false" class="block text-base font-medium tx2 no-underline py-3.5 px-2 border-b bd2 t-btn hover:tx-p4">Privacy</a>
+  <a href="#terms"   @click="menuOpen=false" class="block text-base font-medium tx2 no-underline py-3.5 px-2 border-b bd2 t-btn hover:tx-p4">Terms</a>
+  <a href="../landing/" @click="menuOpen=false" class="block text-base font-medium no-underline py-3.5 px-2 border-b bd2 t-btn hover:tx-p4">← Home</a>
+  <div class="flex gap-2.5 mt-5">
+    <a href="../index.html" @click="menuOpen=false" class="flex-1 py-3 text-[13px] font-semibold rounded-full border-none text-white grad-bg cursor-pointer no-underline text-center t-btn">Open App</a>
+  </div>
 </div>
 
 <!-- ═══ HERO ═══ -->
-<section style="position:relative;min-height:56vh;display:flex;align-items:center;justify-content:center;overflow:hidden;padding-top:clamp(5.5rem,10vw,7rem);padding-bottom:5rem;">
-  <div style="position:absolute;top:-20%;left:50%;transform:translateX(-50%);width:600px;height:600px;background:radial-gradient(circle,var(--glow),transparent 70%);pointer-events:none;opacity:0.4;"></div>
+<section style="position:relative;min-height:70vh;display:flex;align-items:center;justify-content:center;overflow:hidden;padding-top:clamp(5.5rem,10vw,7rem);padding-bottom:4rem;">
+  <div style="position:absolute;top:-20%;left:50%;transform:translateX(-50%);width:min(800px,90vw);height:min(800px,90vw);background:radial-gradient(circle,var(--glow),transparent 70%);pointer-events:none;opacity:0.4;"></div>
 
-  <div style="position:relative;z-index:10;width:100%;max-width:48rem;margin:0 auto;padding:0 1.25rem;text-align:center;">
-    <div class="inline-flex items-center gap-2 bg-sf2 border bd px-4 py-1.5 rounded-full text-[11px] font-bold tracking-[2.5px] uppercase tx-p4 mb-6">
-      <span class="w-1.5 h-1.5 rounded-full bg-p4"></span>Support Center
-    </div>
-    <h1 class="font-display tx mb-4" style="font-size:clamp(2.5rem,7vw,4.5rem);font-weight:900;letter-spacing:-0.02em;line-height:1.08;margin-bottom:1.25rem;">
-      How can we <span style="background:linear-gradient(135deg,#a855f7,#6366f1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">help</span> you?
-    </h1>
-    <p class="tx2" style="font-size:clamp(0.95rem,1.8vw,1.125rem);line-height:1.7;max-width:34rem;margin:0 auto;">
-      Find answers, get support, and connect with our team. We're here to help you succeed with Korah.
-    </p>
+  <div style="position:relative;z-index:10;width:100%;max-width:52rem;margin:0 auto;padding:0 1.25rem;text-align:center;">
 
-    <!-- Quick nav pills -->
-    <div class="flex flex-wrap items-center justify-center gap-3 mt-8">
-      <a href="#faq" class="no-underline text-[13px] font-semibold px-5 py-2 rounded-full border bd tx2" style="transition:color 0.2s,border-color 0.2s,background 0.2s;" onmouseover="this.style.color='var(--p4)';this.style.borderColor='var(--p4)'" onmouseout="this.style.color='';this.style.borderColor=''"><span class="material-icons-round" style="color: var(--tx2); font-size: 16px; vertical-align: middle; margin-right: 4px;" aria-label="clipboard">assignment</span>FAQ</a>
-      <a href="#contact" class="no-underline text-[13px] font-semibold px-5 py-2 rounded-full border-none text-white grad-bg shadow-glow" style="transition:transform 0.2s,box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 0 2rem rgba(139,92,246,0.6)'" onmouseout="this.style.transform='';this.style.boxShadow=''"><span class="material-icons-round" style="color: #fff; font-size: 16px; vertical-align: middle; margin-right: 4px;" aria-label="email">email</span>Contact Us</a>
-      <a href="#privacy" class="no-underline text-[13px] font-semibold px-5 py-2 rounded-full border bd tx2" style="transition:color 0.2s,border-color 0.2s;" onmouseover="this.style.color='var(--p4)';this.style.borderColor='var(--p4)'" onmouseout="this.style.color='';this.style.borderColor=''"><span class="material-icons-round" style="color: var(--tx2); font-size: 16px; vertical-align: middle; margin-right: 4px;" aria-label="lock">lock</span>Privacy</a>
+    <div class="hero-glass p-8 md:p-10 lg:p-12" style="width:100%;">
+      <div class="inline-flex items-center gap-2 bg-sf2 border bd px-4 py-1.5 rounded-full text-[11px] font-bold tracking-[2.5px] uppercase tx-p4 mb-6">
+        <span class="w-1.5 h-1.5 rounded-full bg-p4"></span>Support Center
+      </div>
+
+      <h1 class="font-display tx" style="font-size:clamp(2.5rem,7vw,4.5rem);font-weight:900;letter-spacing:-0.02em;line-height:1.08;margin-bottom:1.25rem;">
+        How can we&nbsp;<span class="help-word">help</span>&nbsp;you?
+      </h1>
+
+      <p class="tx2" style="font-size:clamp(0.95rem,1.8vw,1.125rem);line-height:1.7;max-width:34rem;margin:0 auto 1.5rem;">
+        Find answers, get support, and connect with our team. We're here to help you succeed with Korah.
+      </p>
+
+      <!-- Stat row -->
+      <div class="flex items-center justify-center gap-4 flex-wrap mb-8">
+        <div style="text-align:center;">
+          <div style="font-size:clamp(1rem,2vw,1.25rem);font-weight:800;color:var(--p4);font-variant-numeric:tabular-nums;">24h</div>
+          <div class="text-[11px] font-semibold uppercase tracking-[0.06em] tx2">Response Time</div>
+        </div>
+        <div class="stat-divider hidden sm:block"></div>
+        <div style="text-align:center;">
+          <div style="font-size:clamp(1rem,2vw,1.25rem);font-weight:800;color:var(--p4);font-variant-numeric:tabular-nums;">Free</div>
+          <div class="text-[11px] font-semibold uppercase tracking-[0.06em] tx2">Forever</div>
+        </div>
+        <div class="stat-divider hidden sm:block"></div>
+        <div style="text-align:center;">
+          <div style="font-size:clamp(1rem,2vw,1.25rem);font-weight:800;color:var(--p4);font-variant-numeric:tabular-nums;">AI</div>
+          <div class="text-[11px] font-semibold uppercase tracking-[0.06em] tx2">Powered</div>
+        </div>
+      </div>
+
+      <!-- Quick nav pills -->
+      <div class="flex flex-wrap items-center justify-center gap-3">
+        <a href="#faq" class="no-underline text-[13px] font-semibold px-5 py-2 rounded-full border bd tx2 t-btn hover:border-p4 hover:tx-p4">
+          <span class="material-icons-round" style="color:var(--tx2);font-size:16px;vertical-align:middle;margin-right:4px;">assignment</span>FAQ
+        </a>
+        <a href="#contact" class="no-underline text-[13px] font-semibold px-5 py-2 rounded-full border-none text-white grad-bg shadow-glow t-btn hover:-translate-y-px hover:shadow-glow-lg">
+          <span class="material-icons-round" style="color:#fff;font-size:16px;vertical-align:middle;margin-right:4px;">email</span>Contact Us
+        </a>
+        <a href="#privacy" class="no-underline text-[13px] font-semibold px-5 py-2 rounded-full border bd tx2 t-btn hover:border-p4 hover:tx-p4">
+          <span class="material-icons-round" style="color:var(--tx2);font-size:16px;vertical-align:middle;margin-right:4px;">lock</span>Privacy
+        </a>
+      </div>
     </div>
+
   </div>
 </section>
 
 <!-- ═══ FAQ ═══ -->
-<section id="faq" class="py-24 px-5 md:px-[clamp(20px,6vw,80px)] bg-base2" style="transition:background 0.4s;">
+<section id="faq" class="py-24 px-5 md:px-[clamp(20px,6vw,80px)] bg-base2 t-theme">
   <div class="max-w-[1060px] mx-auto">
     <div class="flex justify-center mb-5">
       <div class="inline-flex items-center gap-2 bg-sf2 border bd px-4 py-1.5 rounded-full text-[11px] font-bold tracking-[2.5px] uppercase tx-p4">
         <span class="w-1.5 h-1.5 rounded-full bg-p4"></span>FAQ
       </div>
     </div>
-    <h2 class="font-display text-[clamp(2rem,5vw,3.2rem)] font-bold text-center tx leading-tight mb-3">Frequently Asked Questions</h2>
-    <p class="text-base tx2 text-center max-w-lg mx-auto mb-12" style="line-height:1.7;">Everything you need to know about Korah.</p>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-
-      <div class="bg-card border bd2 rounded-3xl p-7 faq-card-hover" style="border:0.09375rem solid rgba(139,92,246,0.25);transition:transform 0.3s cubic-bezier(.23,1,.32,1),box-shadow 0.3s,border-color 0.3s;" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 20px 50px rgba(0,0,0,0.3),0 0 20px rgba(139,92,246,0.15)';this.style.borderColor='rgba(139,92,246,0.5)'" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='rgba(139,92,246,0.25)'">
-        <div class="w-11 h-11 rounded-2xl grad-bg grid place-items-center text-xl mb-4 shadow-glow"><span class="material-icons-round" style="color: #fff; font-size: 20px;" aria-label="mobile">smartphone</span></div>
-        <h3 class="text-[17px] font-bold tx mb-2">Is Korah free to use?</h3>
-        <p class="text-sm tx2" style="line-height:1.7;">Yes! Korah Beta is completely free for all users. We believe quality study tools should be accessible to everyone.</p>
+      <!-- FAQ Search -->
+      <div class="max-w-md mx-auto mb-10">
+        <div class="relative">
+          <span class="material-icons-round absolute left-4 top-1/2 -translate-y-1/2 text-[1.125rem] tx3 pointer-events-none">search</span>
+          <input type="text" id="faqSearch" placeholder="Search FAQs..."
+            class="w-full h-11 pl-10 pr-9 text-sm bg-sf2 border bd2 rounded-full tx outline-none t-theme"
+            style="transition:border-color 0.2s,background 0.2s;"
+            onfocus="this.style.borderColor='var(--p4)';this.style.background='var(--bg3)'"
+            onblur="this.style.borderColor='';this.style.background=''">
+          <button id="faqClear" type="button" aria-label="Clear search"
+            class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center
+                   w-5 h-5 rounded-full text-[1rem] tx3 t-btn hover:tx hover:bg-[var(--bd2)]
+                   transition-all duration-150 hidden">
+            <span class="material-icons-round" style="font-size:16px;">close</span>
+          </button>
+        </div>
       </div>
 
-      <div class="bg-card border bd2 rounded-3xl p-7" style="border:0.09375rem solid rgba(139,92,246,0.25);transition:transform 0.3s cubic-bezier(.23,1,.32,1),box-shadow 0.3s,border-color 0.3s;" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 20px 50px rgba(0,0,0,0.3),0 0 20px rgba(139,92,246,0.15)';this.style.borderColor='rgba(139,92,246,0.5)'" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='rgba(139,92,246,0.25)'">
-        <div class="w-11 h-11 rounded-2xl grad-bg grid place-items-center text-xl mb-4 shadow-glow"><span class="material-icons-round" style="color: #fff; font-size: 20px;" aria-label="lock">lock</span></div>
-        <h3 class="text-[17px] font-bold tx mb-2">Is my data safe?</h3>
-        <p class="text-sm tx2" style="line-height:1.7;">Absolutely. Korah uses cloud-based data management developed by Google to keep your information safe. We will never sell your data to third parties.</p>
+      <!-- FAQ cards -->
+      <div class="faq-scroll-container" style="overflow-x: hidden; overflow-y: scroll; max-height: 680px;">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Is Korah free? -->
+        <div class="faq-card bg-card rounded-3xl p-7" style="border:0.09375rem solid rgba(139,92,246,0.25);transition:transform 0.3s cubic-bezier(.23,1,.32,1),box-shadow 0.3s,border-color 0.3s;" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 20px 50px rgba(0,0,0,0.3),0 0 20px rgba(139,92,246,0.15)';this.style.borderColor='rgba(139,92,246,0.5)'" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='rgba(139,92,246,0.25)'">
+          <div class="w-11 h-11 rounded-2xl grad-bg grid place-items-center text-xl mb-4 shadow-glow"><span class="material-icons-round" style="color: #fff; font-size: 20px;">smartphone</span></div>
+          <h3 class="text-[17px] font-bold tx mb-2">Is Korah free to use?</h3>
+          <p class="text-sm tx2" style="line-height:1.7;">Yes! Korah Beta is completely free for all users. We believe quality study tools should be accessible to everyone.</p>
+        </div>
+
+        <!-- Is my data safe? -->
+        <div class="faq-card bg-card rounded-3xl p-7" style="border:0.09375rem solid rgba(139,92,246,0.25);transition:transform 0.3s cubic-bezier(.23,1,.32,1),box-shadow 0.3s,border-color 0.3s;" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 20px 50px rgba(0,0,0,0.3),0 0 20px rgba(139,92,246,0.15)';this.style.borderColor='rgba(139,92,246,0.5)'" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='rgba(139,92,246,0.25)'">
+          <div class="w-11 h-11 rounded-2xl grad-bg grid place-items-center text-xl mb-4 shadow-glow"><span class="material-icons-round" style="color: #fff; font-size: 20px;">lock</span></div>
+          <h3 class="text-[17px] font-bold tx mb-2">Is my data safe?</h3>
+          <p class="text-sm tx2" style="line-height:1.7;">Absolutely. Korah uses cloud-based data management developed by Google to keep your information safe. We will never sell your data to third parties.</p>
+        </div>
+
+        <!-- What platforms? -->
+        <div class="faq-card bg-card rounded-3xl p-7" style="border:0.09375rem solid rgba(139,92,246,0.25);transition:transform 0.3s cubic-bezier(.23,1,.32,1),box-shadow 0.3s,border-color 0.3s;" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 20px 50px rgba(0,0,0,0.3),0 0 20px rgba(139,92,246,0.15)';this.style.borderColor='rgba(139,92,246,0.5)'" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='rgba(139,92,246,0.25)'">
+          <div class="w-11 h-11 rounded-2xl grad-bg grid place-items-center text-xl mb-4 shadow-glow"><span class="material-icons-round" style="color: #fff; font-size: 20px;">storefront</span></div>
+          <h3 class="text-[17px] font-bold tx mb-2">What platforms are supported?</h3>
+          <p class="text-sm tx2" style="line-height:1.7;">Currently available on the App Store and web browsers. Android support is coming in the future.</p>
+        </div>
+
+        <!-- How does the AI work? -->
+        <div class="faq-card bg-card rounded-3xl p-7" style="border:0.09375rem solid rgba(139,92,246,0.25);transition:transform 0.3s cubic-bezier(.23,1,.32,1),box-shadow 0.3s,border-color 0.3s;" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 20px 50px rgba(0,0,0,0.3),0 0 20px rgba(139,92,246,0.15)';this.style.borderColor='rgba(139,92,246,0.5)'" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='rgba(139,92,246,0.25)'">
+          <div class="w-11 h-11 rounded-2xl grad-bg grid place-items-center text-xl mb-4 shadow-glow"><span class="material-icons-round" style="color: #fff; font-size: 20px;">smart_toy</span></div>
+          <h3 class="text-[17px] font-bold tx mb-2">How does the AI study assistant work?</h3>
+          <p class="text-sm tx2" style="line-height:1.7;">Korah AI uses advanced language models to provide personalized explanations, generate study materials, and adapt to your learning style.</p>
+        </div>
+
+        <!-- Can I track progress? -->
+        <div class="faq-card bg-card rounded-3xl p-7" style="border:0.09375rem solid rgba(139,92,246,0.25);transition:transform 0.3s cubic-bezier(.23,1,.32,1),box-shadow 0.3s,border-color 0.3s;" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 20px 50px rgba(0,0,0,0.3),0 0 20px rgba(139,92,246,0.15)';this.style.borderColor='rgba(139,92,246,0.5)'" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='rgba(139,92,246,0.25)'">
+          <div class="w-11 h-11 rounded-2xl grad-bg grid place-items-center text-xl mb-4 shadow-glow"><span class="material-icons-round" style="color: #fff; font-size: 20px;">bar_chart</span></div>
+          <h3 class="text-[17px] font-bold tx mb-2">Can I track my study progress?</h3>
+          <p class="text-sm tx2" style="line-height:1.7;">Yes! Korah includes daily streaks, task management with priority levels, and mood-based recommendations to optimize your study sessions.</p>
+        </div>
+
+        <!-- How often updated? -->
+        <div class="faq-card bg-card rounded-3xl p-7" style="border:0.09375rem solid rgba(139,92,246,0.25);transition:transform 0.3s cubic-bezier(.23,1,.32,1),box-shadow 0.3s,border-color 0.3s;" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 20px 50px rgba(0,0,0,0.3),0 0 20px rgba(139,92,246,0.15)';this.style.borderColor='rgba(139,92,246,0.5)'" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='rgba(139,92,246,0.25)'">
+          <div class="w-11 h-11 rounded-2xl grad-bg grid place-items-center text-xl mb-4 shadow-glow"><span class="material-icons-round" style="color: #fff; font-size: 20px;">sync</span></div>
+          <h3 class="text-[17px] font-bold tx mb-2">How often is Korah updated?</h3>
+          <p class="text-sm tx2" style="line-height:1.7;">We release updates regularly based on user feedback. Please reach out if you have any suggestions!</p>
+        </div>
+
+
+      </div>
       </div>
 
-      <div class="bg-card border bd2 rounded-3xl p-7" style="border:0.09375rem solid rgba(139,92,246,0.25);transition:transform 0.3s cubic-bezier(.23,1,.32,1),box-shadow 0.3s,border-color 0.3s;" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 20px 50px rgba(0,0,0,0.3),0 0 20px rgba(139,92,246,0.15)';this.style.borderColor='rgba(139,92,246,0.5)'" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='rgba(139,92,246,0.25)'">
-        <div class="w-11 h-11 rounded-2xl grad-bg grid place-items-center text-xl mb-4 shadow-glow"><span class="material-icons-round" style="color: #fff; font-size: 20px;" aria-label="app store">storefront</span></div>
-        <h3 class="text-[17px] font-bold tx mb-2">What platforms are supported?</h3>
-        <p class="text-sm tx2" style="line-height:1.7;">Currently available on the App Store and web browsers. Android support is coming in the future.</p>
+      <!-- Empty state -->
+      <div id="faqEmpty" class="text-center py-16" style="display:none;">
+        <span class="material-icons-round text-4xl tx3 mb-4 block">search_off</span>
+        <p class="text-lg font-semibold tx2 mb-2">No matching questions</p>
+        <p class="text-sm tx3">Try a different keyword or <a href="#contact" class="tx-p4 no-underline t-btn hover:tx-p5">contact us</a> directly.</p>
       </div>
-
-      <div class="bg-card border bd2 rounded-3xl p-7" style="border:0.09375rem solid rgba(139,92,246,0.25);transition:transform 0.3s cubic-bezier(.23,1,.32,1),box-shadow 0.3s,border-color 0.3s;" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 20px 50px rgba(0,0,0,0.3),0 0 20px rgba(139,92,246,0.15)';this.style.borderColor='rgba(139,92,246,0.5)'" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='rgba(139,92,246,0.25)'">
-        <div class="w-11 h-11 rounded-2xl grad-bg grid place-items-center text-xl mb-4 shadow-glow"><span class="material-icons-round" style="color: #fff; font-size: 20px;" aria-label="robot">smart_toy</span></div>
-        <h3 class="text-[17px] font-bold tx mb-2">How does the AI study assistant work?</h3>
-        <p class="text-sm tx2" style="line-height:1.7;">Korah AI uses advanced language models to provide personalized explanations, generate study materials, and adapt to your learning style.</p>
-      </div>
-
-      <div class="bg-card border bd2 rounded-3xl p-7" style="border:0.09375rem solid rgba(139,92,246,0.25);transition:transform 0.3s cubic-bezier(.23,1,.32,1),box-shadow 0.3s,border-color 0.3s;" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 20px 50px rgba(0,0,0,0.3),0 0 20px rgba(139,92,246,0.15)';this.style.borderColor='rgba(139,92,246,0.5)'" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='rgba(139,92,246,0.25)'">
-        <div class="w-11 h-11 rounded-2xl grad-bg grid place-items-center text-xl mb-4 shadow-glow"><span class="material-icons-round" style="color: #fff; font-size: 20px;" aria-label="bar chart">bar_chart</span></div>
-        <h3 class="text-[17px] font-bold tx mb-2">Can I track my study progress?</h3>
-        <p class="text-sm tx2" style="line-height:1.7;">Yes! Korah includes daily streaks, task management with priority levels, and mood-based recommendations to optimize your study sessions.</p>
-      </div>
-
-      <div class="bg-card border bd2 rounded-3xl p-7" style="border:0.09375rem solid rgba(139,92,246,0.25);transition:transform 0.3s cubic-bezier(.23,1,.32,1),box-shadow 0.3s,border-color 0.3s;" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 20px 50px rgba(0,0,0,0.3),0 0 20px rgba(139,92,246,0.15)';this.style.borderColor='rgba(139,92,246,0.5)'" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='rgba(139,92,246,0.25)'">
-        <div class="w-11 h-11 rounded-2xl grad-bg grid place-items-center text-xl mb-4 shadow-glow"><span class="material-icons-round" style="color: #fff; font-size: 20px;" aria-label="refresh">sync</span></div>
-        <h3 class="text-[17px] font-bold tx mb-2">How often is Korah updated?</h3>
-        <p class="text-sm tx2" style="line-height:1.7;">We release updates regularly based on user feedback. Please reach out if you have any suggestions!</p>
-      </div>
-
-    </div>
   </div>
 </section>
 
 <!-- ═══ CONTACT ═══ -->
-<section id="contact" class="py-24 px-5 md:px-[clamp(20px,6vw,80px)] bg-base relative overflow-hidden" style="transition:background 0.4s;">
+<section id="contact" class="py-24 px-5 md:px-[clamp(20px,6vw,80px)] bg-base relative overflow-hidden t-theme">
   <div class="absolute inset-0 pointer-events-none" style="background:radial-gradient(ellipse at 50% 0%,rgba(139,92,246,0.1) 0%,transparent 65%);"></div>
 
   <div class="relative z-10 max-w-[1060px] mx-auto">
-    <div class="flex justify-center mb-5">
+    <div class="flex justify-center mb-5 reveal rd1">
       <div class="inline-flex items-center gap-2 bg-sf2 border bd px-4 py-1.5 rounded-full text-[11px] font-bold tracking-[2.5px] uppercase tx-p4">
         <span class="w-1.5 h-1.5 rounded-full bg-p4"></span>Contact
       </div>
     </div>
-    <h2 class="font-display text-[clamp(2rem,5vw,3.2rem)] font-bold text-center tx leading-tight mb-3">Get in Touch</h2>
-    <p class="text-base tx2 text-center max-w-lg mx-auto mb-12" style="line-height:1.7;">Have a question, suggestion, or need assistance? We'd love to hear from you.</p>
+    <h2 class="font-display text-[clamp(2rem,5vw,3.2rem)] font-bold text-center tx leading-tight mb-3 reveal rd2">Get in Touch</h2>
+    <p class="text-base tx2 text-center max-w-lg mx-auto mb-12 reveal rd3" style="line-height:1.7;">Have a question, suggestion, or need assistance? We'd love to hear from you.</p>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-
       <!-- Email Support -->
-      <div class="bg-card border bd2 rounded-3xl p-8 text-center" style="border:0.09375rem solid rgba(139,92,246,0.25);transition:transform 0.3s cubic-bezier(.23,1,.32,1),box-shadow 0.3s,border-color 0.3s;" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 20px 50px rgba(0,0,0,0.3),0 0 20px rgba(139,92,246,0.15)';this.style.borderColor='rgba(139,92,246,0.5)'" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='rgba(139,92,246,0.25)'">
-        <div class="w-14 h-14 rounded-2xl grad-bg grid place-items-center text-2xl mb-5 shadow-glow mx-auto"><span class="material-icons-round" style="color: #fff; font-size: 24px;" aria-label="email">email</span></div>
+      <div class="bg-card border bd2 rounded-3xl p-8 text-center t-hover reveal rd1"
+           :style="'border:0.09375rem solid rgba(139,92,246,0.25)'"
+           x-data="{ tapped: false }"
+           @click="tapped = true; setTimeout(() => tapped = false, 400)"
+           :class="tapped && 'shadow-glow'">
+        <div class="w-14 h-14 rounded-2xl grad-bg grid place-items-center text-2xl mb-5 shadow-glow mx-auto">
+          <span class="material-icons-round" style="color:#fff;font-size:24px;">email</span>
+        </div>
         <h3 class="text-[18px] font-bold tx mb-3">Email Support</h3>
         <p class="text-sm tx2 mb-6" style="line-height:1.7;">Get help from our support team within 24 hours.</p>
         <a href="mailto:oscareucedaf1@gmail.com?subject=Korah%20Support%20Inquiry&body=Hi%20Korah%20Team,"
-           class="inline-block no-underline text-[13px] font-semibold px-6 py-2.5 rounded-full border bd tx"
-           style="transition:color 0.2s,border-color 0.2s,background 0.2s;" onmouseover="this.style.color='var(--p4)';this.style.borderColor='var(--p4)';this.style.background='var(--bd2)'" onmouseout="this.style.color='';this.style.borderColor='';this.style.background=''">
+           class="inline-block no-underline text-[13px] font-semibold px-6 py-2.5 rounded-full border bd tx t-btn hover:border-p4 hover:tx-p4 hover:bg-[var(--bd2)]">
           Contact Support
         </a>
       </div>
 
-      <!-- CEO / Featured -->
-      <div class="relative bg-card border rounded-3xl p-8 text-center" style="border:0.09375rem solid rgba(139,92,246,0.5);box-shadow:0 0 2rem rgba(139,92,246,0.2);background:linear-gradient(180deg,rgba(139,92,246,0.1) 0%,var(--cb) 100%);transition:transform 0.3s cubic-bezier(.23,1,.32,1),box-shadow 0.3s;" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 20px 50px rgba(0,0,0,0.35),0 0 2.5rem rgba(139,92,246,0.35)'" onmouseout="this.style.transform='';this.style.boxShadow='0 0 2rem rgba(139,92,246,0.2)'">
+      <!-- CEO -->
+      <div class="relative bg-card border rounded-3xl p-8 text-center reveal rd2 t-hover"
+           :style="'border:0.09375rem solid rgba(139,92,246,0.5);background:linear-gradient(180deg,rgba(139,92,246,0.1) 0%,var(--cb) 100%)'"
+           x-data="{ tapped: false }"
+           @click="tapped = true; setTimeout(() => tapped = false, 400)"
+           :class="tapped && 'shadow-glow-lg'">
         <div class="absolute -top-3.5 left-1/2 -translate-x-1/2">
           <span class="text-[11px] font-bold tracking-[1px] uppercase text-white px-4 py-1.5 rounded-full grad-bg shadow-glow whitespace-nowrap">Direct Line</span>
         </div>
-        <div class="w-14 h-14 rounded-2xl grad-bg grid place-items-center text-2xl mb-5 shadow-glow mx-auto mt-2"><span class="material-icons-round" style="color: #fff; font-size: 24px;" aria-label="CEO">badge</span></div>
+        <div class="w-14 h-14 rounded-2xl grad-bg grid place-items-center text-2xl mb-5 shadow-glow mx-auto mt-2">
+          <span class="material-icons-round" style="color:#fff;font-size:24px;">badge</span>
+        </div>
         <h3 class="text-[18px] font-bold tx mb-3">Message the CEO</h3>
         <p class="text-sm tx2 mb-6" style="line-height:1.7;">Have important feedback or a partnership inquiry? Reach out directly to Oscar.</p>
         <a href="mailto:oscareucedaf1@gmail.com?subject=Korah%20Creator%20Inquiry&body=Hi%20Oscar,"
-           class="inline-block no-underline text-[13px] font-semibold px-6 py-2.5 rounded-full border-none text-white grad-bg shadow-glow"
-           style="transition:transform 0.2s,box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 0 2rem rgba(139,92,246,0.6)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+           class="inline-block no-underline text-[13px] font-semibold px-6 py-2.5 rounded-full border-none text-white grad-bg shadow-glow t-btn hover:-translate-y-px hover:shadow-glow-lg">
           Email CEO
         </a>
       </div>
 
       <!-- Live Chat -->
-      <div class="bg-card border bd2 rounded-3xl p-8 text-center" style="border:0.09375rem solid rgba(139,92,246,0.25);transition:transform 0.3s cubic-bezier(.23,1,.32,1),box-shadow 0.3s,border-color 0.3s;" onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 20px 50px rgba(0,0,0,0.3),0 0 20px rgba(139,92,246,0.15)';this.style.borderColor='rgba(139,92,246,0.5)'" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='rgba(139,92,246,0.25)'">
-        <div class="w-14 h-14 rounded-2xl grad-bg grid place-items-center text-2xl mb-5 shadow-glow mx-auto"><span class="material-icons-round" style="color: #fff; font-size: 24px;" aria-label="chat">chat</span></div>
+      <div class="bg-card border bd2 rounded-3xl p-8 text-center t-hover reveal rd3"
+           :style="'border:0.09375rem solid rgba(139,92,246,0.25)'"
+           x-data="{ tapped: false }"
+           @click="tapped = true; setTimeout(() => tapped = false, 400)"
+           :class="tapped && 'shadow-glow'">
+        <div class="w-14 h-14 rounded-2xl grad-bg grid place-items-center text-2xl mb-5 shadow-glow mx-auto">
+          <span class="material-icons-round" style="color:#fff;font-size:24px;">chat</span>
+        </div>
         <h3 class="text-[18px] font-bold tx mb-3">Live Chat</h3>
         <p class="text-sm tx2 mb-6" style="line-height:1.7;">Chat with Korah AI for instant answers to your questions.</p>
         <a href="../landing/#chat"
-           class="inline-block no-underline text-[13px] font-semibold px-6 py-2.5 rounded-full border bd tx"
-           style="transition:color 0.2s,border-color 0.2s,background 0.2s;" onmouseover="this.style.color='var(--p4)';this.style.borderColor='var(--p4)';this.style.background='var(--bd2)'" onmouseout="this.style.color='';this.style.borderColor='';this.style.background=''">
+           class="inline-block no-underline text-[13px] font-semibold px-6 py-2.5 rounded-full border bd tx t-btn hover:border-p4 hover:tx-p4 hover:bg-[var(--bd2)]">
           Start Chat
         </a>
       </div>
-
     </div>
+
+    <!-- Feedback form placeholder -->
+    <!--
+      TODO: Firebase Anonymous Auth Feedback Form
+      ─────────────────────────────────────────────
+      Location: Insert a 4th column or a standalone section below the contact cards.
+      Setup:
+        1. Import Firebase modules (anon auth + Firestore) in support.js:
+           import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+           import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+           import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
+        2. Use the same FIREBASE_CONFIG from study-firebase-init.js
+        3. On form submit: signInAnonymously(auth) → addDoc(collection(db, "feedback"), { name, email, subject, message, timestamp })
+        4. Firestore security rule for "feedback" collection:
+           allow create: if request.auth != null;
+           allow read: if request.auth.token.email == "oscareucedaf1@gmail.com";
+      UI:
+        - Title: "Send Us Feedback"
+        - Fields: Name, Email, Subject, Message (textarea)
+        - Submit button with loading state
+        - Success/error toast after submission
+    -->
   </div>
 </section>
 
 <!-- ═══ QUICK LINKS ═══ -->
-<section class="py-20 px-5 md:px-[clamp(20px,6vw,80px)] bg-base2" style="transition:background 0.4s;">
+<section class="py-20 px-5 md:px-[clamp(20px,6vw,80px)] bg-base2 t-theme">
   <div class="max-w-[1060px] mx-auto">
-    <h2 class="font-display text-[clamp(1.75rem,4vw,2.8rem)] font-bold text-center tx leading-tight mb-10">Explore Korah</h2>
+    <h2 class="font-display text-[clamp(1.75rem,4vw,2.8rem)] font-bold text-center tx leading-tight mb-3 reveal">Explore Korah</h2>
+    <p class="text-sm tx2 text-center max-w-md mx-auto mb-10 reveal rd1" style="line-height:1.7;">Discover everything Korah has to offer.</p>
 
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 max-w-[900px] mx-auto">
-      <a href="../landing/#how" class="flex flex-col items-center gap-2 no-underline bg-card border bd2 rounded-2xl p-5 text-center" style="border:0.09375rem solid rgba(139,92,246,0.2);transition:transform 0.2s,border-color 0.2s,box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-3px)';this.style.borderColor='rgba(139,92,246,0.5)';this.style.boxShadow='0 0 1.25rem rgba(139,92,246,0.15)'" onmouseout="this.style.transform='';this.style.borderColor='rgba(139,92,246,0.2)';this.style.boxShadow=''">
-        <span class="text-2xl"><span class="material-icons-round" style="color: var(--p5); font-size: 24px;" aria-label="target">gps_fixed</span></span>
-        <span class="text-[12px] font-semibold tx">How it Works</span>
+      <!-- How it Works -->
+      <a href="../landing/#how" class="explore-card flex flex-col items-center gap-3 no-underline bg-card border bd2 rounded-2xl p-6 text-center t-hover reveal rd1"
+         :style="'border:0.09375rem solid rgba(139,92,246,0.2)'">
+        <span class="text-3xl"><span class="material-icons-round" style="color:var(--p5);font-size:28px;">gps_fixed</span></span>
+        <span class="text-[13px] font-semibold tx">How it Works</span>
+        <span class="text-[11px] tx3 leading-tight">Learn the basics</span>
       </a>
-      <a href="../landing/#features" class="flex flex-col items-center gap-2 no-underline bg-card border bd2 rounded-2xl p-5 text-center" style="border:0.09375rem solid rgba(139,92,246,0.2);transition:transform 0.2s,border-color 0.2s,box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-3px)';this.style.borderColor='rgba(139,92,246,0.5)';this.style.boxShadow='0 0 1.25rem rgba(139,92,246,0.15)'" onmouseout="this.style.transform='';this.style.borderColor='rgba(139,92,246,0.2)';this.style.boxShadow=''">
-        <span class="text-2xl"><span class="material-icons-round" style="color: var(--gold); font-size: 24px;" aria-label="sparkles">auto_awesome</span></span>
-        <span class="text-[12px] font-semibold tx">Features</span>
+      <!-- Features -->
+      <a href="../landing/#features" class="explore-card flex flex-col items-center gap-3 no-underline bg-card border bd2 rounded-2xl p-6 text-center t-hover reveal rd2"
+         :style="'border:0.09375rem solid rgba(139,92,246,0.2)'">
+        <span class="text-3xl"><span class="material-icons-round" style="color:var(--gold);font-size:28px;">auto_awesome</span></span>
+        <span class="text-[13px] font-semibold tx">Features</span>
+        <span class="text-[11px] tx3 leading-tight">Explore capabilities</span>
       </a>
-      <a href="../landing/#study-tools" class="flex flex-col items-center gap-2 no-underline bg-card border bd2 rounded-2xl p-5 text-center" style="border:0.09375rem solid rgba(139,92,246,0.2);transition:transform 0.2s,border-color 0.2s,box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-3px)';this.style.borderColor='rgba(139,92,246,0.5)';this.style.boxShadow='0 0 1.25rem rgba(139,92,246,0.15)'" onmouseout="this.style.transform='';this.style.borderColor='rgba(139,92,246,0.2)';this.style.boxShadow=''">
-        <span class="text-2xl"><span class="material-icons-round" style="color: var(--p4); font-size: 24px;" aria-label="books">menu_book</span></span>
-        <span class="text-[12px] font-semibold tx">Study Tools</span>
+      <!-- Study Tools -->
+      <a href="../study/feed.html" class="explore-card flex flex-col items-center gap-3 no-underline bg-card border bd2 rounded-2xl p-6 text-center t-hover reveal rd3"
+         :style="'border:0.09375rem solid rgba(139,92,246,0.2)'">
+        <span class="text-3xl"><span class="material-icons-round" style="color:var(--grn);font-size:28px;">menu_book</span></span>
+        <span class="text-[13px] font-semibold tx">Study Tools</span>
+        <span class="text-[11px] tx3 leading-tight">Flashcards & guides</span>
       </a>
-      <a href="../landing/#chat" class="flex flex-col items-center gap-2 no-underline bg-card border bd2 rounded-2xl p-5 text-center" style="border:0.09375rem solid rgba(139,92,246,0.2);transition:transform 0.2s,border-color 0.2s,box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-3px)';this.style.borderColor='rgba(139,92,246,0.5)';this.style.boxShadow='0 0 1.25rem rgba(139,92,246,0.15)'" onmouseout="this.style.transform='';this.style.borderColor='rgba(139,92,246,0.2)';this.style.boxShadow=''">
-        <span class="text-2xl"><span class="material-icons-round" style="color: var(--tx2); font-size: 24px;" aria-label="robot">smart_toy</span></span>
-        <span class="text-[12px] font-semibold tx">Korah AI</span>
+      <!-- Korah AI -->
+      <a href="../chat.html" class="explore-card flex flex-col items-center gap-3 no-underline bg-card border bd2 rounded-2xl p-6 text-center t-hover reveal rd1"
+         :style="'border:0.09375rem solid rgba(139,92,246,0.2)'">
+        <span class="text-3xl"><span class="material-icons-round" style="color:var(--tx2);font-size:28px;">smart_toy</span></span>
+        <span class="text-[13px] font-semibold tx">Korah AI</span>
+        <span class="text-[11px] tx3 leading-tight">Ask anything</span>
       </a>
-      <a href="../landing/#downloads" class="flex flex-col items-center gap-2 no-underline bg-card border bd2 rounded-2xl p-5 text-center" style="border:0.09375rem solid rgba(139,92,246,0.2);transition:transform 0.2s,border-color 0.2s,box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-3px)';this.style.borderColor='rgba(139,92,246,0.5)';this.style.boxShadow='0 0 1.25rem rgba(139,92,246,0.15)'" onmouseout="this.style.transform='';this.style.borderColor='rgba(139,92,246,0.2)';this.style.boxShadow=''">
-        <span class="text-2xl"><span class="material-icons-round" style="color: var(--p5); font-size: 24px;" aria-label="download">smartphone</span></span>
-        <span class="text-[12px] font-semibold tx">Download</span>
+      <!-- Download -->
+      <a href="../landing/#downloads" class="explore-card flex flex-col items-center gap-3 no-underline bg-card border bd2 rounded-2xl p-6 text-center t-hover reveal rd2"
+         :style="'border:0.09375rem solid rgba(139,92,246,0.2)'">
+        <span class="text-3xl"><span class="material-icons-round" style="color:var(--ac);font-size:28px;">smartphone</span></span>
+        <span class="text-[13px] font-semibold tx">Download</span>
+        <span class="text-[11px] tx3 leading-tight">Get the app</span>
       </a>
-      <a href="https://mail.google.com/mail/?view=cm&to=oscareucedaf1@gmail.com&su=Hello from Korah" class="flex flex-col items-center gap-2 no-underline bg-card border bd2 rounded-2xl p-5 text-center" style="border:0.09375rem solid rgba(139,92,246,0.2);transition:transform 0.2s,border-color 0.2s,box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-3px)';this.style.borderColor='rgba(139,92,246,0.5)';this.style.boxShadow='0 0 1.25rem rgba(139,92,246,0.15)'" onmouseout="this.style.transform='';this.style.borderColor='rgba(139,92,246,0.2)';this.style.boxShadow=''">
-        <span class="text-2xl"><span class="material-icons-round" style="color: var(--p4); font-size: 24px;" aria-label="email">email</span></span>
-        <span class="text-[12px] font-semibold tx">Contact</span>
+      <!-- Contact -->
+      <a href="https://mail.google.com/mail/?view=cm&to=oscareucedaf1@gmail.com&su=Hello from Korah" class="explore-card flex flex-col items-center gap-3 no-underline bg-card border bd2 rounded-2xl p-6 text-center t-hover reveal rd3"
+         :style="'border:0.09375rem solid rgba(139,92,246,0.2)'">
+        <span class="text-3xl"><span class="material-icons-round" style="color:var(--p4);font-size:28px;">email</span></span>
+        <span class="text-[13px] font-semibold tx">Contact</span>
+        <span class="text-[11px] tx3 leading-tight">Send us a message</span>
       </a>
     </div>
   </div>
 </section>
 
 <!-- ═══ PRIVACY POLICY ═══ -->
-<section id="privacy" class="py-24 px-5 md:px-[clamp(20px,6vw,80px)] bg-base" style="transition:background 0.4s;">
+<section id="privacy" class="py-24 px-5 md:px-[clamp(20px,6vw,80px)] bg-base t-theme">
   <div class="max-w-[1060px] mx-auto">
-    <div class="flex justify-center mb-5">
+    <div class="flex justify-center mb-5 reveal">
       <div class="inline-flex items-center gap-2 bg-sf2 border bd px-4 py-1.5 rounded-full text-[11px] font-bold tracking-[2.5px] uppercase tx-p4">
         <span class="w-1.5 h-1.5 rounded-full bg-p4"></span>Legal
       </div>
     </div>
-    <h2 class="font-display text-[clamp(2rem,5vw,3.2rem)] font-bold text-center tx leading-tight mb-3">Privacy Policy</h2>
-    <p class="text-base tx2 text-center max-w-lg mx-auto mb-12" style="line-height:1.7;">Your privacy is important to us. Learn how we handle your data.</p>
+    <h2 class="font-display text-[clamp(2rem,5vw,3.2rem)] font-bold text-center tx leading-tight mb-2 reveal rd1">Privacy Policy</h2>
+    <p class="text-base tx2 text-center max-w-lg mx-auto mb-4 reveal rd2" style="line-height:1.7;">Your privacy is important to us. Learn how we handle your data.</p>
 
-    <div class="bg-card border bd2 rounded-3xl p-8 md:p-10 max-w-[800px] mx-auto" style="border:0.09375rem solid rgba(139,92,246,0.2);">
-      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">This privacy policy applies to the Korah app (hereby referred to as "Application") for mobile devices that was created by Oscar Euceda (hereby referred to as "Service Provider") as an Open Source service. This service is intended for use "AS IS".</p>
-      <h3 class="text-[18px] font-bold tx mt-8 mb-3">Information Collection and Use</h3>
-      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">The Application collects information when you download and use it. This information may include:</p>
-      <ul class="list-disc pl-6 mb-4 space-y-1.5">
-        <li class="text-[15px] tx2" style="line-height:1.6;">Your device's Internet Protocol address (e.g. IP address)</li>
-        <li class="text-[15px] tx2" style="line-height:1.6;">The pages of the Application that you visit, the time and date of your visit, the time spent on those pages</li>
-        <li class="text-[15px] tx2" style="line-height:1.6;">The time spent on the Application</li>
-        <li class="text-[15px] tx2" style="line-height:1.6;">The operating system you use on your mobile device</li>
-      </ul>
-      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">The Application does not gather precise information about the location of your mobile device.</p>
-      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">The Application uses Artificial Intelligence (AI) technologies to enhance user experience and provide certain features. The AI components may process user data to deliver personalized content, recommendations, or automated functionalities. All AI processing is performed in accordance with this privacy policy and applicable laws.</p>
-      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">The Service Provider may use the information you provided to contact you from time to time to provide you with important information, required notices and marketing promotions.</p>
-      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">For a better experience, while using the Application, the Service Provider may require you to provide us with certain personally identifiable information, including but not limited to First name, last name, Email, password, AI chats, study items. The information that the Service Provider request will be retained by them and used as described in this privacy policy.</p>
-      <h3 class="text-[18px] font-bold tx mt-8 mb-3">Third Party Access</h3>
-      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">Only aggregated, anonymized data is periodically transmitted to external services to aid the Service Provider in improving the Application and their service. The Service Provider may share your information with third parties in the ways that are described in this privacy statement.</p>
-      <p class="text-[15px] tx2 mb-2" style="line-height:1.8;">Third-party service providers used by the Application:</p>
-      <ul class="list-disc pl-6 mb-4 space-y-1.5">
-        <li class="text-[15px] tx2"><a href="https://firebase.google.com/support/privacy" target="_blank" rel="noopener noreferrer" class="tx-p4 no-underline" style="transition:color 0.2s;" onmouseover="this.style.color='var(--p5)'" onmouseout="this.style.color=''">Google Analytics for Firebase</a></li>
-      </ul>
-      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">The Service Provider may disclose information as required by law, to protect rights or safety, investigate fraud, or to respond to a government request.</p>
-      <h3 class="text-[18px] font-bold tx mt-8 mb-3">Opt-Out Rights</h3>
-      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">You can stop all collection of information by the Application easily by uninstalling it. You may use the standard uninstall processes as may be available as part of your mobile device or via the mobile application marketplace or network.</p>
-      <h3 class="text-[18px] font-bold tx mt-8 mb-3">Data Retention Policy</h3>
-      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">The Service Provider will retain User Provided data for as long as you use the Application and for a reasonable time thereafter. If you'd like them to delete User Provided Data that you have provided via the Application, please contact them at <a href="mailto:oscareucedaf1@gmail.com" class="tx-p4 no-underline">oscareucedaf1@gmail.com</a>.</p>
-      <h3 class="text-[18px] font-bold tx mt-8 mb-3">Children</h3>
-      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">The Service Provider does not use the Application to knowingly solicit data from or market to children under the age of 13. In the case the Service Provider discover that a child under 13 has provided personal information, it will be immediately deleted. If you are a parent or guardian aware that your child has provided personal information, please contact <a href="mailto:oscareucedaf1@gmail.com" class="tx-p4 no-underline">oscareucedaf1@gmail.com</a>.</p>
-      <h3 class="text-[18px] font-bold tx mt-8 mb-3">Security</h3>
-      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">The Service Provider is concerned about safeguarding the confidentiality of your information. The Service Provider provides physical, electronic, and procedural safeguards to protect information the Service Provider processes and maintains.</p>
-      <h3 class="text-[18px] font-bold tx mt-8 mb-3">Changes</h3>
-      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">This Privacy Policy may be updated from time to time. You are advised to consult this Privacy Policy regularly for any changes, as continued use is deemed approval of all changes.</p>
-      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">This privacy policy is effective as of 2026-03-25</p>
-      <h3 class="text-[18px] font-bold tx mt-8 mb-3">Your Consent</h3>
-      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">By using the Application, you are consenting to the processing of your information as set forth in this Privacy Policy now and as amended by us.</p>
-      <h3 class="text-[18px] font-bold tx mt-8 mb-3">Contact Us</h3>
-      <p class="text-[15px] tx2" style="line-height:1.8;">If you have any questions regarding privacy while using the Application, please contact the Service Provider via email at <a href="mailto:oscareucedaf1@gmail.com" class="tx-p4 no-underline">oscareucedaf1@gmail.com</a>.</p>
+    <!-- Last updated pill -->
+    <div class="flex justify-center mb-12 reveal rd2">
+      <span class="text-[11px] font-semibold tracking-[1px] uppercase text-white px-3 py-1 rounded-full grad-bg">Effective 2026-03-25</span>
+    </div>
+
+    <div class="bg-card border bd2 rounded-3xl p-8 md:p-10 max-w-[800px] mx-auto reveal rd3"
+         :style="'border:0.09375rem solid rgba(139,92,246,0.2)'">
+
+      <p class="text-[15px] tx2 mb-6" style="line-height:1.8;">This privacy policy applies to the Korah app (hereby referred to as "Application") for mobile devices that was created by Oscar Euceda (hereby referred to as "Service Provider") as an Open Source service. This service is intended for use "AS IS".</p>
+
+      <!-- Accordion sections -->
+      <div x-data="{ open: false }" class="border-b bd2 pb-2 mb-2">
+        <div @click="open = !open" class="accordion-header flex items-center justify-between cursor-pointer rounded-lg px-1 -mx-1 py-3 t-btn">
+          <h3 class="text-[18px] font-bold tx" style="border-left:3px solid var(--p4);padding-left:0.75rem;">Information Collection and Use</h3>
+          <span class="material-icons-round tx3 accordion-chevron" :class="open && 'open'">expand_more</span>
+        </div>
+        <div class="accordion-content" :style="'max-height: ' + (open ? '2000px' : '0') + '; opacity: ' + (open ? '1' : '0')">
+          <div class="px-1 pb-3">
+            <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">The Application collects information when you download and use it. This information may include:</p>
+            <ul class="list-disc pl-6 mb-4 space-y-1.5">
+              <li class="text-[15px] tx2" style="line-height:1.6;">Your device's Internet Protocol address (e.g. IP address)</li>
+              <li class="text-[15px] tx2" style="line-height:1.6;">The pages of the Application that you visit, the time and date of your visit, the time spent on those pages</li>
+              <li class="text-[15px] tx2" style="line-height:1.6;">The time spent on the Application</li>
+              <li class="text-[15px] tx2" style="line-height:1.6;">The operating system you use on your mobile device</li>
+            </ul>
+            <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">The Application does not gather precise information about the location of your mobile device.</p>
+            <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">The Application uses Artificial Intelligence (AI) technologies to enhance user experience and provide certain features. The AI components may process user data to deliver personalized content, recommendations, or automated functionalities. All AI processing is performed in accordance with this privacy policy and applicable laws.</p>
+            <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">The Service Provider may use the information you provided to contact you from time to time to provide you with important information, required notices and marketing promotions.</p>
+            <p class="text-[15px] tx2" style="line-height:1.8;">For a better experience, while using the Application, the Service Provider may require you to provide us with certain personally identifiable information, including but not limited to First name, last name, Email, password, AI chats, study items. The information that the Service Provider request will be retained by them and used as described in this privacy policy.</p>
+          </div>
+        </div>
+      </div>
+
+      <div x-data="{ open: false }" class="border-b bd2 pb-2 mb-2">
+        <div @click="open = !open" class="accordion-header flex items-center justify-between cursor-pointer rounded-lg px-1 -mx-1 py-3 t-btn">
+          <h3 class="text-[18px] font-bold tx" style="border-left:3px solid var(--p4);padding-left:0.75rem;">Third Party Access</h3>
+          <span class="material-icons-round tx3 accordion-chevron" :class="open && 'open'">expand_more</span>
+        </div>
+        <div class="accordion-content" :style="'max-height: ' + (open ? '2000px' : '0') + '; opacity: ' + (open ? '1' : '0')">
+          <div class="px-1 pb-3">
+            <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">Only aggregated, anonymized data is periodically transmitted to external services to aid the Service Provider in improving the Application and their service. The Service Provider may share your information with third parties in the ways that are described in this privacy statement.</p>
+            <p class="text-[15px] tx2 mb-2" style="line-height:1.8;">Third-party service providers used by the Application:</p>
+            <ul class="list-disc pl-6 mb-4 space-y-1.5">
+              <li class="text-[15px] tx2"><a href="https://firebase.google.com/support/privacy" target="_blank" rel="noopener noreferrer" class="tx-p4 no-underline t-btn hover:tx-p5">Google Analytics for Firebase</a></li>
+            </ul>
+            <p class="text-[15px] tx2" style="line-height:1.8;">The Service Provider may disclose information as required by law, to protect rights or safety, investigate fraud, or to respond to a government request.</p>
+          </div>
+        </div>
+      </div>
+
+      <div x-data="{ open: false }" class="border-b bd2 pb-2 mb-2">
+        <div @click="open = !open" class="accordion-header flex items-center justify-between cursor-pointer rounded-lg px-1 -mx-1 py-3 t-btn">
+          <h3 class="text-[18px] font-bold tx" style="border-left:3px solid var(--p4);padding-left:0.75rem;">Opt-Out Rights</h3>
+          <span class="material-icons-round tx3 accordion-chevron" :class="open && 'open'">expand_more</span>
+        </div>
+        <div class="accordion-content" :style="'max-height: ' + (open ? '2000px' : '0') + '; opacity: ' + (open ? '1' : '0')">
+          <div class="px-1 pb-3">
+            <p class="text-[15px] tx2" style="line-height:1.8;">You can stop all collection of information by the Application easily by uninstalling it. You may use the standard uninstall processes as may be available as part of your mobile device or via the mobile application marketplace or network.</p>
+          </div>
+        </div>
+      </div>
+
+      <div x-data="{ open: false }" class="border-b bd2 pb-2 mb-2">
+        <div @click="open = !open" class="accordion-header flex items-center justify-between cursor-pointer rounded-lg px-1 -mx-1 py-3 t-btn">
+          <h3 class="text-[18px] font-bold tx" style="border-left:3px solid var(--p4);padding-left:0.75rem;">Data Retention Policy</h3>
+          <span class="material-icons-round tx3 accordion-chevron" :class="open && 'open'">expand_more</span>
+        </div>
+        <div class="accordion-content" :style="'max-height: ' + (open ? '2000px' : '0') + '; opacity: ' + (open ? '1' : '0')">
+          <div class="px-1 pb-3">
+            <p class="text-[15px] tx2" style="line-height:1.8;">The Service Provider will retain User Provided data for as long as you use the Application and for a reasonable time thereafter. If you'd like them to delete User Provided Data that you have provided via the Application, please contact them at <a href="mailto:oscareucedaf1@gmail.com" class="tx-p4 no-underline t-btn hover:tx-p5 email-tooltip-trigger" data-email="oscareucedaf1@gmail.com">oscareucedaf1@gmail.com</a>.</p>
+          </div>
+        </div>
+      </div>
+
+      <div x-data="{ open: false }" class="border-b bd2 pb-2 mb-2">
+        <div @click="open = !open" class="accordion-header flex items-center justify-between cursor-pointer rounded-lg px-1 -mx-1 py-3 t-btn">
+          <h3 class="text-[18px] font-bold tx" style="border-left:3px solid var(--p4);padding-left:0.75rem;">Children</h3>
+          <span class="material-icons-round tx3 accordion-chevron" :class="open && 'open'">expand_more</span>
+        </div>
+        <div class="accordion-content" :style="'max-height: ' + (open ? '2000px' : '0') + '; opacity: ' + (open ? '1' : '0')">
+          <div class="px-1 pb-3">
+            <p class="text-[15px] tx2" style="line-height:1.8;">The Service Provider does not use the Application to knowingly solicit data from or market to children under the age of 13. In the case the Service Provider discover that a child under 13 has provided personal information, it will be immediately deleted. If you are a parent or guardian aware that your child has provided personal information, please contact <a href="mailto:oscareucedaf1@gmail.com" class="tx-p4 no-underline t-btn hover:tx-p5 email-tooltip-trigger" data-email="oscareucedaf1@gmail.com">oscareucedaf1@gmail.com</a>.</p>
+          </div>
+        </div>
+      </div>
+
+      <div x-data="{ open: false }" class="border-b bd2 pb-2 mb-2">
+        <div @click="open = !open" class="accordion-header flex items-center justify-between cursor-pointer rounded-lg px-1 -mx-1 py-3 t-btn">
+          <h3 class="text-[18px] font-bold tx" style="border-left:3px solid var(--p4);padding-left:0.75rem;">Security</h3>
+          <span class="material-icons-round tx3 accordion-chevron" :class="open && 'open'">expand_more</span>
+        </div>
+        <div class="accordion-content" :style="'max-height: ' + (open ? '2000px' : '0') + '; opacity: ' + (open ? '1' : '0')">
+          <div class="px-1 pb-3">
+            <p class="text-[15px] tx2" style="line-height:1.8;">The Service Provider is concerned about safeguarding the confidentiality of your information. The Service Provider provides physical, electronic, and procedural safeguards to protect information the Service Provider processes and maintains.</p>
+          </div>
+        </div>
+      </div>
+
+      <div x-data="{ open: false }" class="border-b bd2 pb-2 mb-2">
+        <div @click="open = !open" class="accordion-header flex items-center justify-between cursor-pointer rounded-lg px-1 -mx-1 py-3 t-btn">
+          <h3 class="text-[18px] font-bold tx" style="border-left:3px solid var(--p4);padding-left:0.75rem;">Changes</h3>
+          <span class="material-icons-round tx3 accordion-chevron" :class="open && 'open'">expand_more</span>
+        </div>
+        <div class="accordion-content" :style="'max-height: ' + (open ? '2000px' : '0') + '; opacity: ' + (open ? '1' : '0')">
+          <div class="px-1 pb-3">
+            <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">This Privacy Policy may be updated from time to time. You are advised to consult this Privacy Policy regularly for any changes, as continued use is deemed approval of all changes.</p>
+            <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">This privacy policy is effective as of 2026-03-25</p>
+          </div>
+        </div>
+      </div>
+
+      <div x-data="{ open: false }" class="border-b bd2 pb-2 mb-2">
+        <div @click="open = !open" class="accordion-header flex items-center justify-between cursor-pointer rounded-lg px-1 -mx-1 py-3 t-btn">
+          <h3 class="text-[18px] font-bold tx" style="border-left:3px solid var(--p4);padding-left:0.75rem;">Your Consent</h3>
+          <span class="material-icons-round tx3 accordion-chevron" :class="open && 'open'">expand_more</span>
+        </div>
+        <div class="accordion-content" :style="'max-height: ' + (open ? '2000px' : '0') + '; opacity: ' + (open ? '1' : '0')">
+          <div class="px-1 pb-3">
+            <p class="text-[15px] tx2" style="line-height:1.8;">By using the Application, you are consenting to the processing of your information as set forth in this Privacy Policy now and as amended by us.</p>
+          </div>
+        </div>
+      </div>
+
+      <div x-data="{ open: false }" class="pb-2">
+        <div @click="open = !open" class="accordion-header flex items-center justify-between cursor-pointer rounded-lg px-1 -mx-1 py-3 t-btn">
+          <h3 class="text-[18px] font-bold tx" style="border-left:3px solid var(--p4);padding-left:0.75rem;">Contact Us</h3>
+          <span class="material-icons-round tx3 accordion-chevron" :class="open && 'open'">expand_more</span>
+        </div>
+        <div class="accordion-content" :style="'max-height: ' + (open ? '2000px' : '0') + '; opacity: ' + (open ? '1' : '0')">
+          <div class="px-1 pb-3">
+            <p class="text-[15px] tx2" style="line-height:1.8;">If you have any questions regarding privacy while using the Application, please contact the Service Provider via email at <a href="mailto:oscareucedaf1@gmail.com" class="tx-p4 no-underline t-btn hover:tx-p5 email-tooltip-trigger" data-email="oscareucedaf1@gmail.com">oscareucedaf1@gmail.com</a>.</p>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </section>
 
 <!-- ═══ TERMS AND CONDITIONS ═══ -->
-<section id="terms" class="py-24 px-5 md:px-[clamp(20px,6vw,80px)] bg-base2" style="transition:background 0.4s;">
+<section id="terms" class="py-24 px-5 md:px-[clamp(20px,6vw,80px)] bg-base2 t-theme">
   <div class="max-w-[1060px] mx-auto">
-    <div class="flex justify-center mb-5">
+    <div class="flex justify-center mb-5 reveal">
       <div class="inline-flex items-center gap-2 bg-sf2 border bd px-4 py-1.5 rounded-full text-[11px] font-bold tracking-[2.5px] uppercase tx-p4">
         <span class="w-1.5 h-1.5 rounded-full bg-p4"></span>Legal
       </div>
     </div>
-    <h2 class="font-display text-[clamp(2rem,5vw,3.2rem)] font-bold text-center tx leading-tight mb-3">Terms and Conditions</h2>
-    <p class="text-base tx2 text-center max-w-lg mx-auto mb-12" style="line-height:1.7;">Please read these terms carefully before using Korah.</p>
+    <h2 class="font-display text-[clamp(2rem,5vw,3.2rem)] font-bold text-center tx leading-tight mb-2 reveal rd1">Terms and Conditions</h2>
+    <p class="text-base tx2 text-center max-w-lg mx-auto mb-4 reveal rd2" style="line-height:1.7;">Please read these terms carefully before using Korah.</p>
 
-    <div class="bg-card border bd2 rounded-3xl p-8 md:p-10 max-w-[800px] mx-auto" style="border:0.09375rem solid rgba(139,92,246,0.2);">
-      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">These terms and conditions apply to the Korah app (hereby referred to as "Application") for mobile devices that was created by Oscar Euceda (hereby referred to as "Service Provider") as an Open Source service.</p>
-      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">Upon downloading or utilizing the Application, you are automatically agreeing to the following terms. It is strongly advised that you thoroughly read and understand these terms prior to using the Application.</p>
-      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">The Service Provider is dedicated to ensuring that the Application is as beneficial and efficient as possible. As such, they reserve the right to modify the Application or charge for their services at any time and for any reason. Any charges will be clearly communicated to you.</p>
-      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">The Application stores and processes personal data that you have provided to the Service Provider in order to provide the Service. It is your responsibility to maintain the security of your phone and access to the Application. The Service Provider strongly advises against jailbreaking or rooting your phone, as such actions could expose your phone to malware, viruses, and may result in the Application not functioning correctly or at all.</p>
-      <p class="text-[15px] tx2 mb-2" style="line-height:1.8;">Third-party services used by the Application:</p>
-      <ul class="list-disc pl-6 mb-4 space-y-1.5">
-        <li class="text-[15px] tx2"><a href="https://www.google.com/analytics/terms/" target="_blank" rel="noopener noreferrer" class="tx-p4 no-underline" style="transition:color 0.2s;" onmouseover="this.style.color='var(--p5)'" onmouseout="this.style.color=''">Google Analytics for Firebase</a></li>
-      </ul>
-      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">Some functions of the Application require an active internet connection. The Service Provider cannot be held responsible if the Application does not function at full capacity due to lack of access to Wi-Fi or if you have exhausted your data allowance.</p>
-      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">If you are using the application outside of a Wi-Fi area, please be aware that your mobile network provider's agreement terms still apply. By using the application, you accept responsibility for any data charges, including roaming charges.</p>
-      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">The Application incorporates Artificial Intelligence (AI) technologies to provide certain features or services. By using the Application, you acknowledge and agree that AI may be used to process data and deliver functionalities. The Service Provider ensures that all AI usage complies with applicable laws and is designed to benefit the user experience.</p>
-      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">The Service Provider may wish to update the application at some point. You agree to always accept updates to the application when offered to you. The Service Provider may also cease providing the application at any time without notice.</p>
-      <h3 class="text-[18px] font-bold tx mt-8 mb-3">Changes to These Terms</h3>
-      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">The Service Provider may periodically update their Terms and Conditions. You are advised to review this page regularly for any changes.</p>
-      <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">These terms and conditions are effective as of 2026-03-25</p>
-      <h3 class="text-[18px] font-bold tx mt-8 mb-3">Contact Us</h3>
-      <p class="text-[15px] tx2" style="line-height:1.8;">If you have any questions or suggestions about the Terms and Conditions, please contact the Service Provider at <a href="mailto:oscareucedaf1@gmail.com" class="tx-p4 no-underline">oscareucedaf1@gmail.com</a>.</p>
+    <div class="flex justify-center mb-12 reveal rd2">
+      <span class="text-[11px] font-semibold tracking-[1px] uppercase text-white px-3 py-1 rounded-full grad-bg">Effective 2026-03-25</span>
+    </div>
+
+    <div class="bg-card border bd2 rounded-3xl p-8 md:p-10 max-w-[800px] mx-auto reveal rd3"
+         :style="'border:0.09375rem solid rgba(139,92,246,0.2)'">
+
+      <p class="text-[15px] tx2 mb-6" style="line-height:1.8;">These terms and conditions apply to the Korah app (hereby referred to as "Application") for mobile devices that was created by Oscar Euceda (hereby referred to as "Service Provider") as an Open Source service.</p>
+
+      <div x-data="{ open: false }" class="border-b bd2 pb-2 mb-2">
+        <div @click="open = !open" class="accordion-header flex items-center justify-between cursor-pointer rounded-lg px-1 -mx-1 py-3 t-btn">
+          <h3 class="text-[18px] font-bold tx" style="border-left:3px solid var(--p4);padding-left:0.75rem;">Terms of Use</h3>
+          <span class="material-icons-round tx3 accordion-chevron" :class="open && 'open'">expand_more</span>
+        </div>
+        <div class="accordion-content" :style="'max-height: ' + (open ? '2000px' : '0') + '; opacity: ' + (open ? '1' : '0')">
+          <div class="px-1 pb-3">
+            <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">Upon downloading or utilizing the Application, you are automatically agreeing to the following terms. It is strongly advised that you thoroughly read and understand these terms prior to using the Application.</p>
+            <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">The Service Provider is dedicated to ensuring that the Application is as beneficial and efficient as possible. As such, they reserve the right to modify the Application or charge for their services at any time and for any reason. Any charges will be clearly communicated to you.</p>
+          </div>
+        </div>
+      </div>
+
+      <div x-data="{ open: false }" class="border-b bd2 pb-2 mb-2">
+        <div @click="open = !open" class="accordion-header flex items-center justify-between cursor-pointer rounded-lg px-1 -mx-1 py-3 t-btn">
+          <h3 class="text-[18px] font-bold tx" style="border-left:3px solid var(--p4);padding-left:0.75rem;">Data & Device Responsibility</h3>
+          <span class="material-icons-round tx3 accordion-chevron" :class="open && 'open'">expand_more</span>
+        </div>
+        <div class="accordion-content" :style="'max-height: ' + (open ? '2000px' : '0') + '; opacity: ' + (open ? '1' : '0')">
+          <div class="px-1 pb-3">
+            <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">The Application stores and processes personal data that you have provided to the Service Provider in order to provide the Service. It is your responsibility to maintain the security of your phone and access to the Application. The Service Provider strongly advises against jailbreaking or rooting your phone, as such actions could expose your phone to malware, viruses, and may result in the Application not functioning correctly or at all.</p>
+            <p class="text-[15px] tx2" style="line-height:1.8;">Some functions of the Application require an active internet connection. The Service Provider cannot be held responsible if the Application does not function at full capacity due to lack of access to Wi-Fi or if you have exhausted your data allowance.</p>
+          </div>
+        </div>
+      </div>
+
+      <div x-data="{ open: false }" class="border-b bd2 pb-2 mb-2">
+        <div @click="open = !open" class="accordion-header flex items-center justify-between cursor-pointer rounded-lg px-1 -mx-1 py-3 t-btn">
+          <h3 class="text-[18px] font-bold tx" style="border-left:3px solid var(--p4);padding-left:0.75rem;">Third-Party Services</h3>
+          <span class="material-icons-round tx3 accordion-chevron" :class="open && 'open'">expand_more</span>
+        </div>
+        <div class="accordion-content" :style="'max-height: ' + (open ? '2000px' : '0') + '; opacity: ' + (open ? '1' : '0')">
+          <div class="px-1 pb-3">
+            <p class="text-[15px] tx2 mb-2" style="line-height:1.8;">Third-party services used by the Application:</p>
+            <ul class="list-disc pl-6 mb-4 space-y-1.5">
+              <li class="text-[15px] tx2"><a href="https://www.google.com/analytics/terms/" target="_blank" rel="noopener noreferrer" class="tx-p4 no-underline t-btn hover:tx-p5">Google Analytics for Firebase</a></li>
+            </ul>
+            <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">If you are using the application outside of a Wi-Fi area, please be aware that your mobile network provider's agreement terms still apply. By using the application, you accept responsibility for any data charges, including roaming charges.</p>
+          </div>
+        </div>
+      </div>
+
+      <div x-data="{ open: false }" class="border-b bd2 pb-2 mb-2">
+        <div @click="open = !open" class="accordion-header flex items-center justify-between cursor-pointer rounded-lg px-1 -mx-1 py-3 t-btn">
+          <h3 class="text-[18px] font-bold tx" style="border-left:3px solid var(--p4);padding-left:0.75rem;">AI Features</h3>
+          <span class="material-icons-round tx3 accordion-chevron" :class="open && 'open'">expand_more</span>
+        </div>
+        <div class="accordion-content" :style="'max-height: ' + (open ? '2000px' : '0') + '; opacity: ' + (open ? '1' : '0')">
+          <div class="px-1 pb-3">
+            <p class="text-[15px] tx2" style="line-height:1.8;">The Application incorporates Artificial Intelligence (AI) technologies to provide certain features or services. By using the Application, you acknowledge and agree that AI may be used to process data and deliver functionalities. The Service Provider ensures that all AI usage complies with applicable laws and is designed to benefit the user experience.</p>
+          </div>
+        </div>
+      </div>
+
+      <div x-data="{ open: false }" class="border-b bd2 pb-2 mb-2">
+        <div @click="open = !open" class="accordion-header flex items-center justify-between cursor-pointer rounded-lg px-1 -mx-1 py-3 t-btn">
+          <h3 class="text-[18px] font-bold tx" style="border-left:3px solid var(--p4);padding-left:0.75rem;">Updates & Availability</h3>
+          <span class="material-icons-round tx3 accordion-chevron" :class="open && 'open'">expand_more</span>
+        </div>
+        <div class="accordion-content" :style="'max-height: ' + (open ? '2000px' : '0') + '; opacity: ' + (open ? '1' : '0')">
+          <div class="px-1 pb-3">
+            <p class="text-[15px] tx2" style="line-height:1.8;">The Service Provider may wish to update the application at some point. You agree to always accept updates to the application when offered to you. The Service Provider may also cease providing the application at any time without notice.</p>
+          </div>
+        </div>
+      </div>
+
+      <div x-data="{ open: false }" class="border-b bd2 pb-2 mb-2">
+        <div @click="open = !open" class="accordion-header flex items-center justify-between cursor-pointer rounded-lg px-1 -mx-1 py-3 t-btn">
+          <h3 class="text-[18px] font-bold tx" style="border-left:3px solid var(--p4);padding-left:0.75rem;">Changes to These Terms</h3>
+          <span class="material-icons-round tx3 accordion-chevron" :class="open && 'open'">expand_more</span>
+        </div>
+        <div class="accordion-content" :style="'max-height: ' + (open ? '2000px' : '0') + '; opacity: ' + (open ? '1' : '0')">
+          <div class="px-1 pb-3">
+            <p class="text-[15px] tx2 mb-4" style="line-height:1.8;">The Service Provider may periodically update their Terms and Conditions. You are advised to review this page regularly for any changes.</p>
+            <p class="text-[15px] tx2" style="line-height:1.8;">These terms and conditions are effective as of 2026-03-25</p>
+          </div>
+        </div>
+      </div>
+
+      <div x-data="{ open: false }" class="pb-2">
+        <div @click="open = !open" class="accordion-header flex items-center justify-between cursor-pointer rounded-lg px-1 -mx-1 py-3 t-btn">
+          <h3 class="text-[18px] font-bold tx" style="border-left:3px solid var(--p4);padding-left:0.75rem;">Contact Us</h3>
+          <span class="material-icons-round tx3 accordion-chevron" :class="open && 'open'">expand_more</span>
+        </div>
+        <div class="accordion-content" :style="'max-height: ' + (open ? '2000px' : '0') + '; opacity: ' + (open ? '1' : '0')">
+          <div class="px-1 pb-3">
+            <p class="text-[15px] tx2" style="line-height:1.8;">If you have any questions or suggestions about the Terms and Conditions, please contact the Service Provider at <a href="mailto:oscareucedaf1@gmail.com" class="tx-p4 no-underline t-btn hover:tx-p5 email-tooltip-trigger" data-email="oscareucedaf1@gmail.com">oscareucedaf1@gmail.com</a>.</p>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </section>
 
 <!-- ═══ FOOTER ═══ -->
-<footer class="relative z-10 bg-base border-t bd px-[clamp(20px,6vw,80px)] pt-[60px] pb-10" style="transition:background 0.4s,border-color 0.4s;">
+<footer class="relative z-10 bg-base border-t bd px-[clamp(20px,6vw,80px)] pt-[60px] pb-10 t-theme">
   <div class="max-w-[1100px] mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr] gap-12">
     <div>
       <div class="flex items-center gap-2.5">
@@ -360,21 +778,21 @@
     </div>
     <div>
       <h4 class="text-xs font-bold tracking-[2px] uppercase tx-p5 mb-4">Product</h4>
-      <a href="../landing/#sat"      class="block text-sm tx2 no-underline py-1" style="transition:color 0.2s;" onmouseover="this.style.color='var(--p4)'" onmouseout="this.style.color=''">SAT Prep</a>
-      <a href="../landing/#download" class="block text-sm tx2 no-underline py-1" style="transition:color 0.2s;" onmouseover="this.style.color='var(--p4)'" onmouseout="this.style.color=''">Download</a>
-      <a href="../index.html"        class="block text-sm tx2 no-underline py-1" style="transition:color 0.2s;" onmouseover="this.style.color='var(--p4)'" onmouseout="this.style.color=''">Web App</a>
+      <a href="../landing/#sat"      class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">SAT Prep</a>
+      <a href="../landing/#download" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Download</a>
+      <a href="../index.html"        class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Web App</a>
     </div>
     <div>
       <h4 class="text-xs font-bold tracking-[2px] uppercase tx-p5 mb-4">Support</h4>
-      <a href="#contact" class="block text-sm tx2 no-underline py-1" style="transition:color 0.2s;" onmouseover="this.style.color='var(--p4)'" onmouseout="this.style.color=''">Contact Us</a>
-      <a href="#faq"     class="block text-sm tx2 no-underline py-1" style="transition:color 0.2s;" onmouseover="this.style.color='var(--p4)'" onmouseout="this.style.color=''">FAQ</a>
+      <a href="#contact" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Contact Us</a>
+      <a href="#faq"     class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">FAQ</a>
     </div>
     <div>
       <h4 class="text-xs font-bold tracking-[2px] uppercase tx-p5 mb-4">Company</h4>
-      <a href="#"               class="block text-sm tx2 no-underline py-1" style="transition:color 0.2s;" onmouseover="this.style.color='var(--p4)'" onmouseout="this.style.color=''">About Korah</a>
-      <a href="https://www.instagram.com/korah.app/" class="block text-sm tx2 no-underline py-1" style="transition:color 0.2s;" onmouseover="this.style.color='var(--p4)'" onmouseout="this.style.color=''">Social Media</a>
-      <a href="#privacy"        class="block text-sm tx2 no-underline py-1" style="transition:color 0.2s;" onmouseover="this.style.color='var(--p4)'" onmouseout="this.style.color=''">Privacy Policy</a>
-      <a href="#terms"          class="block text-sm tx2 no-underline py-1" style="transition:color 0.2s;" onmouseover="this.style.color='var(--p4)'" onmouseout="this.style.color=''">Terms</a>
+      <a href="#"               class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">About Korah</a>
+      <a href="https://www.instagram.com/korah.app/" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Social Media</a>
+      <a href="#privacy"        class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Privacy Policy</a>
+      <a href="#terms"          class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Terms</a>
     </div>
   </div>
   <div class="max-w-[1100px] mx-auto mt-10 pt-6 border-t bd2 flex flex-wrap items-center justify-between gap-3 text-[12.5px] tx3">
