@@ -269,7 +269,7 @@ function fixImageUrls(html) {
 export function findCachedQuestionMeta(id) {
   for (const { items } of listCache.values()) {
     const found = items.find(
-      (item) => item.external_id === id || item.ibn === id
+      (item) => item.external_id === id || item.ibn === id || item.questionId === id
     );
     if (found) return found;
   }

@@ -37,6 +37,7 @@ async function buildQuestionMetaLookup(asmtEventId) {
     for (const item of items) {
       if (item?.external_id) byId.set(String(item.external_id), item);
       if (item?.ibn) byId.set(String(item.ibn), item);
+      if (item?.questionId) byId.set(String(item.questionId), item);
     }
     return byId;
   } finally {

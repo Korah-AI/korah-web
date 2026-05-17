@@ -44,21 +44,177 @@
   <!-- Scripts -->
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   
   <!-- Styles -->
   <link rel="stylesheet" href="../app/korah-chat.css"/>
   <style>
-    .react-container { height: 100%; display: flex; flex-direction: column; }
-    .glass-card { background: var(--sf); backdrop-filter: blur(20px); border: 1px solid var(--bd); border-radius: 24px; }
-    .input-field { background: var(--bg2); border: 1px solid var(--bd); border-radius: 14px; color: var(--tx); transition: all 0.2s; }
+    .glass-card { background: var(--sf); backdrop-filter: blur(20px); border: 1px solid var(--bd); border-radius: 24px; box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18); }
+    .input-field { width: 100%; background: var(--bg2); border: 1px solid var(--bd); border-radius: 14px; color: var(--tx); transition: all 0.2s; }
     .input-field:focus { border-color: var(--p4); box-shadow: 0 0 0 4px var(--glow); outline: none; }
-    .tab-btn { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-    .card-item { background: var(--bg2); border: 1px solid var(--bd); border-radius: 18px; transition: all 0.2s; }
-    .card-item:hover { border-color: var(--p4); transform: translateY(-2px); }
     .loading-spinner { border: 3px solid rgba(139, 92, 246, 0.1); border-top: 3px solid var(--p4); border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+    .create-page-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 28px 24px 48px; }
+    .create-page-shell { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+    .create-hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(280px, 360px);
+      gap: 18px;
+      padding: 28px;
+      background:
+        radial-gradient(circle at top left, rgba(120, 144, 156, 0.24), transparent 42%),
+        linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+    }
+    .create-hero-copy { display: flex; flex-direction: column; gap: 14px; }
+    .create-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      width: fit-content;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      font-weight: 800;
+      color: #d6e0e4;
+      background: rgba(120, 144, 156, 0.16);
+      border: 1px solid rgba(148, 163, 184, 0.22);
+    }
+    .create-hero-title { font-size: clamp(2rem, 4.4vw, 3.35rem); line-height: 1.02; letter-spacing: -0.04em; font-weight: 900; color: var(--tx); margin: 0; }
+    .create-hero-sub { color: var(--tx2); font-size: 15px; line-height: 1.7; max-width: 650px; margin: 0; }
+    .create-hero-points { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
+    .create-hero-point {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.18);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      color: var(--tx);
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .create-hero-aside {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 22px;
+      border-radius: 22px;
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      background: rgba(15, 23, 42, 0.2);
+    }
+    .create-aside-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--tx3); font-weight: 800; }
+    .create-aside-value { font-size: 28px; font-weight: 800; line-height: 1.05; color: var(--tx); letter-spacing: -0.03em; }
+    .create-aside-copy { font-size: 13px; color: var(--tx2); line-height: 1.6; }
+    .create-panel { padding: 26px; display: flex; flex-direction: column; gap: 22px; }
+    .create-method-switch { display: inline-flex; gap: 8px; flex-wrap: wrap; padding: 8px; border-radius: 18px; background: var(--bg2); border: 1px solid var(--bd); }
+    .method-pill {
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--tx2);
+      border-radius: 14px;
+      padding: 11px 16px;
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      font-size: 13px;
+      font-weight: 800;
+      transition: all 0.2s ease;
+    }
+    .method-pill.is-active { background: linear-gradient(135deg, #78909C, #9AAAB4); color: #fff; box-shadow: 0 14px 32px rgba(120, 144, 156, 0.28); }
+    .create-grid { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(300px, 0.95fr); gap: 18px; }
+    .create-card { padding: 22px; background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02)); border: 1px solid var(--bd); border-radius: 22px; }
+    .create-card-title { margin: 0 0 6px; font-size: 18px; font-weight: 800; color: var(--tx); letter-spacing: -0.02em; }
+    .create-card-sub { margin: 0 0 18px; color: var(--tx2); font-size: 14px; line-height: 1.6; }
+    .field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .field-block { display: flex; flex-direction: column; gap: 8px; }
+    .field-block.is-full { grid-column: 1 / -1; }
+    .field-label { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.16em; color: var(--tx3); }
+    .field-help-list { display: grid; gap: 12px; }
+    .field-help-item { padding: 14px 16px; border-radius: 16px; background: rgba(120, 144, 156, 0.08); border: 1px solid rgba(148, 163, 184, 0.18); }
+    .field-help-item strong { display: block; font-size: 13px; color: var(--tx); margin-bottom: 4px; }
+    .field-help-item span { color: var(--tx2); font-size: 13px; line-height: 1.55; }
+    .section-card { padding: 24px; border-radius: 24px; border: 1px solid var(--bd); background: rgba(255,255,255,0.04); }
+    .section-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+    .section-title { margin: 0; font-size: 18px; font-weight: 800; color: var(--tx); }
+    .section-copy { margin: 4px 0 0; color: var(--tx2); font-size: 14px; line-height: 1.6; }
+    .card-list { display: grid; gap: 14px; }
+    .card-item {
+      padding: 18px;
+      border-radius: 22px;
+      border: 1px solid var(--bd);
+      background: var(--bg2);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .card-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+    .card-eyebrow { font-size: 12px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: #cbd5e1; }
+    .card-remove { width: 36px; height: 36px; border-radius: 999px; border: 1px solid rgba(239, 68, 68, 0.28); background: rgba(239, 68, 68, 0.1); color: #fca5a5; display: inline-flex; align-items: center; justify-content: center; }
+    .card-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .upload-zone {
+      border: 1.5px dashed rgba(148, 163, 184, 0.3);
+      border-radius: 22px;
+      padding: 32px 22px;
+      background:
+        radial-gradient(circle at top, rgba(120, 144, 156, 0.14), transparent 55%),
+        rgba(15, 23, 42, 0.14);
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .upload-zone:hover, .upload-zone.drag-active { border-color: #94a3b8; transform: translateY(-1px); box-shadow: 0 18px 32px rgba(120, 144, 156, 0.18); }
+    .upload-files { display: grid; gap: 10px; margin-top: 16px; }
+    .upload-file { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 15px; border-radius: 16px; border: 1px solid var(--bd); background: var(--bg2); }
+    .upload-file-copy { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+    .upload-file-name { color: var(--tx); font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .upload-file-meta { color: var(--tx3); font-size: 12px; }
+    .upload-file-remove { width: 34px; height: 34px; border-radius: 999px; border: 1px solid rgba(239, 68, 68, 0.26); background: rgba(239, 68, 68, 0.1); color: #fca5a5; display: inline-flex; align-items: center; justify-content: center; }
+    .ghost-action {
+      min-height: 44px;
+      padding: 0 16px;
+      border-radius: 14px;
+      border: 1px solid rgba(148, 163, 184, 0.24);
+      background: rgba(120, 144, 156, 0.08);
+      color: #d6e0e4;
+      font-size: 13px;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .create-actions { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding-top: 8px; }
+    .create-error { color: #fca5a5; font-size: 14px; font-weight: 600; min-height: 20px; }
+    .create-submit {
+      min-width: 240px;
+      min-height: 56px;
+      padding: 0 24px;
+      border: none;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #78909C, #9AAAB4);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 800;
+      box-shadow: 0 18px 36px rgba(120, 144, 156, 0.28);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+    }
+    .create-submit:hover { transform: translateY(-1px); box-shadow: 0 22px 40px rgba(120, 144, 156, 0.34); }
+    .create-submit:disabled { opacity: 0.65; cursor: wait; transform: none; }
+    @media (max-width: 960px) {
+      .create-hero, .create-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 768px) {
+      .create-page-scroll { padding: 18px 14px 28px; }
+      .create-hero, .create-panel, .create-card, .section-card, .card-item { padding: 18px; }
+      .field-grid, .card-grid { grid-template-columns: 1fr; }
+      .create-actions { align-items: stretch; }
+      .create-submit { width: 100%; }
+    }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
   </style>
 </head>
@@ -298,258 +454,390 @@
       <a href="feed.html" class="tx2 hover:tx transition-colors text-sm font-medium">Cancel</a>
     </header>
 
-    <div id="react-root" class="flex-1 overflow-y-auto p-6 md:p-10"></div>
+    <div class="create-page-scroll">
+      <div class="create-page-shell">
+        <section class="create-hero glass-card">
+          <div class="create-hero-copy">
+            <span class="create-badge"><span class="material-icons-round" style="font-size: 14px;">style</span>Flashcard Workshop</span>
+            <h1 class="create-hero-title">Build sharper flashcards without a separate framework runtime.</h1>
+            <p class="create-hero-sub">Create cards manually, generate them from a targeted prompt, or upload source material and let Korah turn it into a clean study deck. This now uses the same vanilla study-page pattern as the other creation forms.</p>
+            <div class="create-hero-points">
+              <span class="create-hero-point"><span class="material-icons-round" style="font-size: 16px;">check_circle</span>Manual or AI workflow</span>
+              <span class="create-hero-point"><span class="material-icons-round" style="font-size: 16px;">check_circle</span>Document-based generation</span>
+              <span class="create-hero-point"><span class="material-icons-round" style="font-size: 16px;">check_circle</span>Same Korah study styling</span>
+            </div>
+          </div>
+          <aside class="create-hero-aside">
+            <div>
+              <div class="create-aside-label">Best For</div>
+              <div class="create-aside-value">Fast recall</div>
+            </div>
+            <p class="create-aside-copy">Ideal for vocabulary, formulas, key facts, and compact question-answer drills that reward repetition.</p>
+          </aside>
+        </section>
+
+        <section class="create-panel glass-card">
+          <div class="create-method-switch" role="tablist" aria-label="Flashcard creation method">
+            <button type="button" class="method-pill" data-method="manual"><span class="material-icons-round" style="font-size: 16px;">edit</span>Manual</button>
+            <button type="button" class="method-pill" data-method="prompt"><span class="material-icons-round" style="font-size: 16px;">chat</span>AI Prompt</button>
+            <button type="button" class="method-pill" data-method="docs"><span class="material-icons-round" style="font-size: 16px;">article</span>From Docs</button>
+          </div>
+
+          <div class="create-grid">
+            <section class="create-card">
+              <h2 class="create-card-title">Deck details</h2>
+              <p class="create-card-sub">Set the deck title, subject, and short context first. These fields flow into the study feed and the flashcard viewer.</p>
+              <div class="field-grid">
+                <label class="field-block">
+                  <span class="field-label">Title</span>
+                  <input id="flashcards-title" type="text" class="input-field px-4 py-3.5" placeholder="e.g., Cellular Biology 101">
+                </label>
+                <label class="field-block">
+                  <span class="field-label">Subject</span>
+                  <input id="flashcards-subject" type="text" class="input-field px-4 py-3.5" placeholder="e.g., Biology">
+                </label>
+                <label class="field-block is-full">
+                  <span class="field-label">Description</span>
+                  <textarea id="flashcards-description" class="input-field px-4 py-3.5 h-24 resize-none" placeholder="What should this deck help you memorize or practice?"></textarea>
+                </label>
+                <label class="field-block is-full">
+                  <span class="field-label">Tags</span>
+                  <input id="flashcards-tags" type="text" class="input-field px-4 py-3.5" placeholder="mitosis, vocab, bio-unit-3">
+                </label>
+              </div>
+            </section>
+
+            <aside class="create-card">
+              <h2 class="create-card-title">How this page works</h2>
+              <p class="create-card-sub">Choose the content source, then create a recall-friendly deck. Manual mode is best for precise pairs; AI modes are best for coverage.</p>
+              <div class="field-help-list">
+                <div class="field-help-item">
+                  <strong>Manual</strong>
+                  <span>Write front and back content card by card.</span>
+                </div>
+                <div class="field-help-item">
+                  <strong>AI Prompt</strong>
+                  <span>Describe the topic, depth, and number of cards you want.</span>
+                </div>
+                <div class="field-help-item">
+                  <strong>From Docs</strong>
+                  <span>Upload notes or source files and let Korah extract the deck.</span>
+                </div>
+              </div>
+            </aside>
+          </div>
+
+          <section id="flashcards-manual-section" class="section-card">
+            <div class="section-head">
+              <div>
+                <h2 class="section-title">Manual cards</h2>
+                <p class="section-copy">Add at least two complete cards. Keep fronts short and backs focused so review stays fast.</p>
+              </div>
+              <button id="add-card-btn" type="button" class="ghost-action"><span class="material-icons-round" style="font-size: 16px;">add</span>Add Card</button>
+            </div>
+            <div id="card-list" class="card-list"></div>
+          </section>
+
+          <section id="flashcards-prompt-section" class="section-card hidden">
+            <div class="section-head">
+              <div>
+                <h2 class="section-title">Generation brief</h2>
+                <p class="section-copy">Tell Korah what to cover, the card count, and whether you want definitions, question-answer pairs, or concept checks.</p>
+              </div>
+            </div>
+            <textarea id="flashcards-prompt" class="input-field px-5 py-4 h-48 resize-none" placeholder="Create 18 flashcards on the Krebs cycle focused on major intermediates, enzymes, and outputs. Keep each front concise and each back exam-ready."></textarea>
+          </section>
+
+          <section id="flashcards-docs-section" class="section-card hidden">
+            <div class="section-head">
+              <div>
+                <h2 class="section-title">Source documents</h2>
+                <p class="section-copy">Upload the material Korah should turn into a deck. Up to 5 files.</p>
+              </div>
+            </div>
+            <div id="flashcards-upload-zone" class="upload-zone">
+              <input id="flashcards-file-upload" type="file" class="hidden" multiple>
+              <div class="mb-3"><span class="material-icons-round" style="font-size: 34px; color: #d6e0e4;">upload_file</span></div>
+              <div class="tx font-semibold">Drop files here or click to upload</div>
+              <div class="tx3 text-sm mt-1">PDF, TXT, MD, CSV, or images. Maximum 5 files.</div>
+            </div>
+            <div id="flashcards-files-list" class="upload-files"></div>
+          </section>
+
+          <div class="create-actions">
+            <div id="flashcards-error" class="create-error"></div>
+            <button id="flashcards-submit" class="create-submit">
+              <span class="material-icons-round" style="font-size: 18px;">style</span>
+              <span id="flashcards-submit-label">Create Set</span>
+            </button>
+          </div>
+        </section>
+      </div>
+    </div>
   </main>
 
-  <!-- Scripts -->
 <script type="module" src="js/study-firebase-init.js"></script>
 <script src="../app/timer-manager.js"></script>
 <script src="js/sidebar.js"></script>
-  <script src="js/study-api.js"></script>
+<script src="js/study-api.js"></script>
+<script>
+  (function () {
+    KorahSidebar.initSidebar({ chatBaseUrl: "../chat.html", itemPageUrl: "item.html" });
 
-  <script type="text/babel">
-    const { useState, useEffect, useRef } = React;
-
-    const FlashcardCreator = () => {
-      const [method, setMethod] = useState('manual'); // 'manual', 'prompt', 'docs'
-      const [title, setTitle] = useState('');
-      const [subject, setSubject] = useState('');
-      const [description, setDescription] = useState('');
-      const [tags, setTags] = useState('');
-      const [cards, setCards] = useState([{ id: Date.now(), front: '', back: '' }]);
-      const [prompt, setPrompt] = useState('');
-      const [files, setFiles] = useState([]);
-      const [loading, setLoading] = useState(false);
-      const [error, setError] = useState('');
-
-      useEffect(() => {
-        if (typeof KorahSidebar !== 'undefined') {
-          KorahSidebar.initSidebar({ chatBaseUrl: "../chat.html", itemPageUrl: "item.html" });
-        }
-      }, []);
-
-      const addCard = () => setCards([...cards, { id: Date.now(), front: '', back: '' }]);
-      const removeCard = (id) => setCards(cards.filter(c => c.id !== id));
-      const updateCard = (id, field, value) => {
-        setCards(cards.map(c => c.id === id ? { ...c, [field]: value } : c));
-      };
-
-      const handleFileChange = (e) => {
-        const newFiles = Array.from(e.target.files).slice(0, 5 - files.length);
-        setFiles([...files, ...newFiles]);
-      };
-
-      const removeFile = (index) => setFiles(files.filter((_, i) => i !== index));
-
-      const validate = () => {
-        if (!title.trim()) return "Title is required";
-        if (!subject.trim()) return "Subject is required";
-        if (method === 'manual') {
-          const validCards = cards.filter(c => c.front.trim() && c.back.trim());
-          if (validCards.length < 2) return "At least 2 complete cards are required";
-        }
-        if (method === 'prompt' && !prompt.trim()) return "AI prompt is required";
-        if (method === 'docs' && files.length === 0) return "At least one document is required";
-        return null;
-      };
-
-      const saveItem = (content) => {
-        const id = "study_" + Date.now();
-        const item = {
-          id,
-          type: "flashcards",
-          title,
-          description,
-          subject,
-          tags: tags.split(',').map(t => t.trim()).filter(Boolean),
-          content: content || { cards: [] },
-          source: method === 'manual' ? 'manual' : (method === 'prompt' ? 'ai-prompt' : 'ai-doc'),
-          createdBy: "cloud",
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-        if (window.KorahDB) window.KorahDB.setStudyItem(id, item);
-        window.location.href = "item.html?id=" + encodeURIComponent(id);
-      };
-
-      const handleCreate = async () => {
-        const err = validate();
-        if (err) { setError(err); return; }
-        setError('');
-        
-        if (method === 'manual') {
-          const validCards = cards.filter(c => c.front.trim() && c.back.trim()).map(({front, back}) => ({front, back}));
-          saveItem({ cards: validCards });
-          return;
-        }
-
-        setLoading(true);
-        try {
-          const result = await KorahStudyAPI.generateStudyContent({
-            type: "flashcards",
-            prompt: method === 'prompt' ? prompt : `Create flashcards based on the uploaded documents about ${subject}`,
-            title,
-            subject,
-            files: method === 'docs' ? files : []
-          });
-
-          if (result && result.content && result.content.cards) {
-            saveItem(result.content);
-          } else {
-            throw new Error("Invalid content generated by AI");
-          }
-        } catch (err) {
-          setError(err.message || "AI generation failed. Please try again.");
-        } finally {
-          setLoading(false);
-        }
-      };
-
-      return (
-        <div className="max-w-4xl mx-auto space-y-8 pb-20">
-          <div className="text-center space-y-2">
-            <h1 className="text-4xl font-display font-black grad-text">Create Flashcards</h1>
-            <p className="tx2">Master any subject with personalized AI-powered flashcards.</p>
-          </div>
-
-          <div className="flex p-1 bg-sf2 glass-sm bd rounded-2xl w-fit mx-auto">
-            {['manual', 'prompt', 'docs'].map(m => (
-              <button
-                key={m}
-                onClick={() => setMethod(m)}
-                className={`px-6 py-2.5 rounded-xl text-sm font-bold tab-btn ${method === m ? 'bg-p4 text-white shadow-glow' : 'tx3 hover:tx2'}`}
-              >
-                {m === 'manual' ? <><span class="material-icons-round" style="color: var(--gold); font-size: 16px;" aria-label="pencil">edit</span> Manual</> : m === 'prompt' ? <><span class="material-icons-round" style="color: var(--p4); font-size: 16px;" aria-label="chat">chat</span> AI Prompt</> : <><span class="material-icons-round" style="color: var(--tx2); font-size: 16px;" aria-label="document">article</span> From Docs</>}
-              </button>
-            ))}
-          </div>
-
-          <div className="glass-card p-8 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider tx3">Title *</label>
-                <input 
-                  type="text" 
-                  value={title} 
-                  onChange={e => setTitle(e.target.value)}
-                  placeholder="e.g., Cellular Biology 101"
-                  className="w-100 p-3.5 input-field w-full"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider tx3">Subject *</label>
-                <input 
-                  type="text" 
-                  value={subject} 
-                  onChange={e => setSubject(e.target.value)}
-                  placeholder="e.g., Biology"
-                  className="w-100 p-3.5 input-field w-full"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-wider tx3">Description</label>
-              <textarea 
-                value={description} 
-                onChange={e => setDescription(e.target.value)}
-                placeholder="What are these flashcards for?"
-                className="w-full p-3.5 input-field h-20 resize-none"
-              />
-            </div>
-
-            {method === 'manual' && (
-              <div className="space-y-4 pt-4">
-                <label className="text-xs font-bold uppercase tracking-wider tx3">Cards</label>
-                <div className="space-y-4">
-                  {cards.map((card, index) => (
-                    <div key={card.id} className="card-item p-4 relative group">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <textarea 
-                          placeholder="Front Side"
-                          value={card.front}
-                          onChange={e => updateCard(card.id, 'front', e.target.value)}
-                          className="w-full p-3 bg-base bd rounded-xl tx text-sm h-24 resize-none border focus:border-p4 outline-none transition-all"
-                        />
-                        <textarea 
-                          placeholder="Back Side"
-                          value={card.back}
-                          onChange={e => updateCard(card.id, 'back', e.target.value)}
-                          className="w-full p-3 bg-base bd rounded-xl tx text-sm h-24 resize-none border focus:border-p4 outline-none transition-all"
-                        />
-                      </div>
-                      <button 
-                        onClick={() => removeCard(card.id)}
-                        className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        &times;
-                      </button>
-                    </div>
-                  ))}
-                </div>
-                <button 
-                  onClick={addCard}
-                  className="w-full p-3 rounded-xl bd border-dashed border-2 tx3 hover:border-p4 hover:tx-p4 transition-all font-bold text-sm"
-                >
-                  + Add New Card
-                </button>
-              </div>
-            )}
-
-            {method === 'prompt' && (
-              <div className="space-y-2 pt-4">
-                <label className="text-xs font-bold uppercase tracking-wider tx3">AI Generation Prompt *</label>
-                <textarea 
-                  value={prompt} 
-                  onChange={e => setPrompt(e.target.value)}
-                  placeholder="e.g., Create 15 flashcards about the Krebs cycle, focusing on key enzymes and products."
-                  className="w-full p-3.5 input-field h-32 resize-none"
-                />
-              </div>
-            )}
-
-            {method === 'docs' && (
-              <div className="space-y-4 pt-4">
-                <label className="text-xs font-bold uppercase tracking-wider tx3">Upload Documents</label>
-                <div 
-                  className="upload-zone border-2 border-dashed border-bd rounded-2xl p-8 text-center hover:border-p4 transition-all cursor-pointer bg-base2/30"
-                  onClick={() => document.getElementById('file-upload').click()}
-                >
-                  <input id="file-upload" type="file" multiple className="hidden" onChange={handleFileChange} />
-                  <span className="text-3xl mb-2 block"><span class="material-icons-round" style="color: var(--tx2); font-size: 30px;" aria-label="document">article</span></span>
-                  <p className="tx">Drop files here or click to upload</p>
-                  <p className="tx3 text-xs mt-1">PDF, TXT, or images (Max 5)</p>
-                </div>
-                {files.length > 0 && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {files.map((file, i) => (
-                      <div key={i} className="flex items-center justify-between p-3 bg-base2 bd rounded-xl">
-                        <span className="text-xs tx truncate max-w-[200px]">{file.name}</span>
-                        <button onClick={(e) => {e.stopPropagation(); removeFile(i)}} className="tx-red hover:text-red-400 material-icons-round" style="font-size:16px;" aria-label="close">close</button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div className="pt-6 border-t bd flex flex-col items-center gap-4">
-              {error && <p className="text-red-400 text-sm font-medium"><span class="material-icons-round" style="color: var(--red); font-size: 16px; vertical-align: middle; margin-right: 4px;" aria-label="warning">warning</span>{error}</p>}
-              <button 
-                onClick={handleCreate}
-                disabled={loading}
-                className="w-full md:w-64 py-4 rounded-2xl grad-bg text-white font-black shadow-glow hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
-              >
-                {loading ? <div className="loading-spinner"></div> : (method === 'manual' ? 'Create Set' : 'Generate with AI')}
-              </button>
-            </div>
-          </div>
-        </div>
-      );
+    var validMethods = ["manual", "prompt", "docs"];
+    var urlMethod = new URLSearchParams(window.location.search).get("method");
+    var state = {
+      method: validMethods.includes(urlMethod) ? urlMethod : "manual",
+      files: [],
+      cards: [],
+      loading: false
     };
 
-    const root = ReactDOM.createRoot(document.getElementById('react-root'));
-    root.render(<FlashcardCreator />);
-  </script>
+    var methodButtons = Array.from(document.querySelectorAll(".method-pill"));
+    var sections = {
+      manual: document.getElementById("flashcards-manual-section"),
+      prompt: document.getElementById("flashcards-prompt-section"),
+      docs: document.getElementById("flashcards-docs-section")
+    };
+    var titleInput = document.getElementById("flashcards-title");
+    var subjectInput = document.getElementById("flashcards-subject");
+    var descriptionInput = document.getElementById("flashcards-description");
+    var tagsInput = document.getElementById("flashcards-tags");
+    var promptInput = document.getElementById("flashcards-prompt");
+    var uploadZone = document.getElementById("flashcards-upload-zone");
+    var fileInput = document.getElementById("flashcards-file-upload");
+    var filesList = document.getElementById("flashcards-files-list");
+    var cardList = document.getElementById("card-list");
+    var addCardBtn = document.getElementById("add-card-btn");
+    var errorEl = document.getElementById("flashcards-error");
+    var submitBtn = document.getElementById("flashcards-submit");
+    var submitLabel = document.getElementById("flashcards-submit-label");
+
+    function createCard() {
+      return {
+        id: "card_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7),
+        front: "",
+        back: ""
+      };
+    }
+
+    function setMethod(method) {
+      state.method = method;
+      methodButtons.forEach(function (btn) {
+        btn.classList.toggle("is-active", btn.getAttribute("data-method") === method);
+      });
+      Object.keys(sections).forEach(function (key) {
+        sections[key].classList.toggle("hidden", key !== method);
+      });
+      submitLabel.textContent = method === "manual" ? "Create Set" : "Generate Set";
+      errorEl.textContent = "";
+    }
+
+    function setLoading(loading) {
+      state.loading = loading;
+      submitBtn.disabled = loading;
+      submitLabel.textContent = loading ? "Generating..." : (state.method === "manual" ? "Create Set" : "Generate Set");
+      var spinner = submitBtn.querySelector(".loading-spinner");
+      if (loading && !spinner) submitBtn.insertAdjacentHTML("afterbegin", '<span class="loading-spinner"></span>');
+      if (!loading && spinner) spinner.remove();
+    }
+
+    function renderCards() {
+      cardList.innerHTML = "";
+      state.cards.forEach(function (card, index) {
+        var item = document.createElement("div");
+        item.className = "card-item";
+        item.innerHTML = `
+          <div class="card-head">
+            <div class="card-eyebrow">Card ${index + 1}</div>
+            <button type="button" class="card-remove" data-action="remove-card" data-card-id="${card.id}" aria-label="Remove card">
+              <span class="material-icons-round" style="font-size: 18px;">close</span>
+            </button>
+          </div>
+          <div class="card-grid">
+            <textarea class="input-field px-4 py-3.5 h-28 resize-none" data-field="front" data-card-id="${card.id}" placeholder="Front side...">${card.front}</textarea>
+            <textarea class="input-field px-4 py-3.5 h-28 resize-none" data-field="back" data-card-id="${card.id}" placeholder="Back side...">${card.back}</textarea>
+          </div>
+        `;
+        cardList.appendChild(item);
+      });
+    }
+
+    function renderFiles() {
+      filesList.innerHTML = "";
+      state.files.forEach(function (file, index) {
+        var row = document.createElement("div");
+        row.className = "upload-file";
+        row.innerHTML = `
+          <div class="upload-file-copy">
+            <span class="upload-file-name">${file.name}</span>
+            <span class="upload-file-meta">${(file.size / 1024).toFixed(1)} KB</span>
+          </div>
+          <button type="button" class="upload-file-remove" data-index="${index}" aria-label="Remove file">
+            <span class="material-icons-round" style="font-size: 16px;">close</span>
+          </button>
+        `;
+        filesList.appendChild(row);
+      });
+    }
+
+    function addFiles(fileList) {
+      Array.from(fileList).slice(0, Math.max(0, 5 - state.files.length)).forEach(function (file) {
+        state.files.push(file);
+      });
+      renderFiles();
+      errorEl.textContent = "";
+    }
+
+    function getManualCards() {
+      return state.cards
+        .filter(function (card) { return card.front.trim() && card.back.trim(); })
+        .map(function (card) {
+          return { front: card.front.trim(), back: card.back.trim() };
+        });
+    }
+
+    function validate() {
+      if (!titleInput.value.trim()) return "Title is required.";
+      if (!subjectInput.value.trim()) return "Subject is required.";
+      if (state.method === "manual" && getManualCards().length < 2) return "At least 2 complete cards are required.";
+      if (state.method === "prompt" && !promptInput.value.trim()) return "AI prompt is required.";
+      if (state.method === "docs" && state.files.length === 0) return "Upload at least one document.";
+      return "";
+    }
+
+    function saveItem(content) {
+      var id = "study_" + Date.now();
+      var item = {
+        id: id,
+        type: "flashcards",
+        title: titleInput.value.trim(),
+        description: descriptionInput.value.trim(),
+        subject: subjectInput.value.trim(),
+        tags: tagsInput.value.split(",").map(function (tag) { return tag.trim(); }).filter(Boolean),
+        content: content,
+        source: state.method === "manual" ? "manual" : state.method === "prompt" ? "ai-prompt" : "ai-doc",
+        createdBy: "cloud",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      if (window.KorahDB) window.KorahDB.setStudyItem(id, item);
+      window.location.href = "item.html?id=" + encodeURIComponent(id);
+    }
+
+    methodButtons.forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        setMethod(btn.getAttribute("data-method"));
+      });
+    });
+
+    addCardBtn.addEventListener("click", function () {
+      state.cards.push(createCard());
+      renderCards();
+    });
+
+    cardList.addEventListener("click", function (event) {
+      var removeButton = event.target.closest('[data-action="remove-card"]');
+      if (!removeButton) return;
+      var cardId = removeButton.getAttribute("data-card-id");
+      state.cards = state.cards.filter(function (card) { return card.id !== cardId; });
+      if (!state.cards.length) state.cards.push(createCard());
+      renderCards();
+    });
+
+    cardList.addEventListener("input", function (event) {
+      var field = event.target.getAttribute("data-field");
+      var cardId = event.target.getAttribute("data-card-id");
+      if (!field || !cardId) return;
+      var card = state.cards.find(function (item) { return item.id === cardId; });
+      if (!card) return;
+      card[field] = event.target.value;
+    });
+
+    uploadZone.addEventListener("click", function () { fileInput.click(); });
+    uploadZone.addEventListener("dragover", function (event) {
+      event.preventDefault();
+      uploadZone.classList.add("drag-active");
+    });
+    uploadZone.addEventListener("dragleave", function () {
+      uploadZone.classList.remove("drag-active");
+    });
+    uploadZone.addEventListener("drop", function (event) {
+      event.preventDefault();
+      uploadZone.classList.remove("drag-active");
+      addFiles(event.dataTransfer.files);
+    });
+    fileInput.addEventListener("change", function (event) {
+      addFiles(event.target.files);
+      event.target.value = "";
+    });
+    filesList.addEventListener("click", function (event) {
+      var button = event.target.closest(".upload-file-remove");
+      if (!button) return;
+      state.files.splice(Number(button.getAttribute("data-index")), 1);
+      renderFiles();
+    });
+
+    submitBtn.addEventListener("click", async function () {
+      var validationMessage = validate();
+      errorEl.textContent = validationMessage;
+      if (validationMessage) return;
+
+      if (state.method === "manual") {
+        saveItem({ cards: getManualCards() });
+        return;
+      }
+
+      setLoading(true);
+      try {
+        var result = await KorahStudyAPI.generateStudyContent({
+          type: "flashcards",
+          prompt: state.method === "prompt" ? promptInput.value.trim() : "Create flashcards based on the uploaded documents about " + subjectInput.value.trim(),
+          title: titleInput.value.trim(),
+          subject: subjectInput.value.trim(),
+          files: state.method === "docs" ? state.files : []
+        });
+
+        if (!result || !result.content || !Array.isArray(result.content.cards) || result.content.cards.length < 2) {
+          throw new Error("Invalid content generated by AI.");
+        }
+
+        saveItem(result.content);
+      } catch (error) {
+        errorEl.textContent = error && error.message ? error.message : "AI generation failed. Please try again.";
+      } finally {
+        setLoading(false);
+      }
+    });
+
+    state.cards.push(createCard(), createCard());
+    renderCards();
+    setMethod(state.method);
+  })();
+</script>
+<script type="module">
+  import { getApps, initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+  import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
+    authDomain: "korah-app.firebaseapp.com",
+    projectId: "korah-app",
+    storageBucket: "korah-app.firebasestorage.app",
+    messagingSenderId: "226169460321",
+    appId: "1:226169460321:web:b166fc8260107c55dafc20"
+  };
+
+  const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  document.getElementById("logout-btn")?.addEventListener("click", () => {
+    window.confirmLogout(async () => {
+      await signOut(auth);
+      localStorage.removeItem("korah_first_name");
+      window.location.href = "../login.html";
+    });
+  });
+</script>
 </body>
 </html>
