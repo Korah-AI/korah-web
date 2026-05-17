@@ -1019,7 +1019,9 @@
         ? normalizeSprAnswer(selected) === normalizeSprAnswer(current.correctAnswer)
         : selected === current.correctAnswer;
       window.KorahSATAnalytics.recordAttempt({
-        questionId: current.id,
+        questionId: current.detailKey || current.id,
+        legacyQuestionId: current.id,
+        detailKey: current.detailKey || current.id,
         type: current.type || "",
         skillCd: current.skillCd || "",
         domain: current.domain || "",
@@ -1046,7 +1048,9 @@
     state.reviewed[current.id] = newState;
 
     if (window.KorahSATAnalytics) {
-      window.KorahSATAnalytics.saveBookmark(current.id, newState, {
+      window.KorahSATAnalytics.saveBookmark(current.detailKey || current.id, newState, {
+        legacyQuestionId: current.id,
+        detailKey: current.detailKey || current.id,
         section: current.section || "",
         domain: current.domain || "",
         skillCd: current.skillCd || "",

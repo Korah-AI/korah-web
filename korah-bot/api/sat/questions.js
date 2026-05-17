@@ -1,5 +1,6 @@
 import {
   ASSESSMENTS,
+  ALL_DOMAIN_CODES,
   SECTION_DOMAIN_CODES,
   fetchQuestionList,
   fetchQuestionDetail,
@@ -22,6 +23,26 @@ const INITIAL_BATCH = 20;
 
 // Bound on simultaneous open detail fetches to CB during the initial batch.
 const DETAIL_CONCURRENCY = 5;
+
+async function buildQuestionMetaLookup(asmtEventId) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30_000);
+  try {
+    const items = await fetchQuestionList({
+      asmtEventId,
+      domainCodes: ALL_DOMAIN_CODES,
+      signal: controller.signal,
+    });
+    const byId = new Map();
+    for (const item of items) {
+      if (item?.external_id) byId.set(String(item.external_id), item);
+      if (item?.ibn) byId.set(String(item.ibn), item);
+    }
+    return byId;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
 
 function parseLimit(value) {
   if (value === undefined || value === null || value === "") return null;
@@ -101,22 +122,28 @@ export default async function handler(req, res) {
   // Handle explicit question IDs (review errors, saved questions, etc.)
   const questionIdsParam = req.query?.questionIds || req.query?.ids;
   if (questionIdsParam) {
-    const ids = String(questionIdsParam).split(",").map(id => id.trim()).filter(Boolean);
+    const ids = [...new Set(String(questionIdsParam).split(",").map(id => id.trim()).filter(Boolean))];
+    let metaLookup = null;
+    try {
+      metaLookup = await buildQuestionMetaLookup(asmtEventId);
+    } catch (e) {
+      console.warn("Failed to preload question metadata lookup", e);
+    }
     const details = await pooledMap(ids, DETAIL_CONCURRENCY, async (id) => {
       try {
+        const cachedMeta = findCachedQuestionMeta(id);
+        const resolvedMeta = cachedMeta || metaLookup?.get(id) || null;
+        const fetchId = resolvedMeta?.external_id || resolvedMeta?.ibn || id;
         const dc = new AbortController();
         const dt = setTimeout(() => dc.abort(), 10_000);
-        const detail = await fetchQuestionDetail(id, dc.signal);
+        const detail = await fetchQuestionDetail(fetchId, dc.signal);
         clearTimeout(dt);
         if (!detail) return null;
-        // Use cached list metadata for correct section/domain/difficulty when
-        // available (same function instance). Falls back to a minimal stub so
-        // the question is still shown even if cache is cold.
-        const cachedMeta = findCachedQuestionMeta(id) || {
-          external_id: id,
+        const meta = resolvedMeta || {
+          external_id: fetchId,
           difficulty: "M",
         };
-        return normalizeQuestion(cachedMeta, detail);
+        return normalizeQuestion(meta, detail);
       } catch (e) {
         console.warn(`Failed to fetch detail for ${id}`, e);
         return null;

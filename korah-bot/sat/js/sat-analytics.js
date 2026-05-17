@@ -44,6 +44,10 @@ function xpForIncorrect(difficulty) {
   return Math.floor(xpForCorrect(difficulty) / 2);
 }
 
+function resolveStoredQuestionId(entry) {
+  return entry?.detailKey || entry?.questionId || "";
+}
+
 export async function initSatAnalytics(app, uid) {
   let db;
   try {
@@ -115,6 +119,8 @@ export async function initSatAnalytics(app, uid) {
    * @param {string} a.section      — "english" | "math"
    * @param {string} a.difficulty   — "E" | "M" | "H"
    * @param {string} a.assessment   — "SAT" | "PSAT/NMSQT" | "PSAT"
+   * @param {string} [a.detailKey]  — canonical fetchable CB external_id
+   * @param {string} [a.legacyQuestionId] — prior frontend/question id for compatibility
    * @param {boolean} a.correct
    * @param {number} a.timeSpent    — in seconds
    */
@@ -136,6 +142,8 @@ export async function initSatAnalytics(app, uid) {
     const attemptRef = doc(attemptsCol);
     batch.set(attemptRef, {
       questionId: a.questionId,
+      detailKey: a.detailKey || a.questionId,
+      legacyQuestionId: a.legacyQuestionId || "",
       type: a.type || "",
       skillCd,
       domain: a.domain || "",
@@ -191,8 +199,9 @@ export async function initSatAnalytics(app, uid) {
   async function saveBookmark(questionId, bookmarked, meta = {}) {
     const ref = doc(db, `users/${uid}/satBookmarks`, questionId);
     if (bookmarked) {
+      const resolvedQuestionId = meta?.detailKey || questionId;
       await setDoc(ref, {
-        questionId,
+        questionId: resolvedQuestionId,
         ...meta,
         ts: new Date().toISOString(),
       });
@@ -205,7 +214,13 @@ export async function initSatAnalytics(app, uid) {
     const col = collection(db, `users/${uid}/satBookmarks`);
     const snap = await getDocs(col);
     const out = [];
-    snap.forEach(d => out.push(d.data()));
+    snap.forEach(d => {
+      const data = d.data();
+      out.push({
+        ...data,
+        questionId: resolveStoredQuestionId(data),
+      });
+    });
     return out;
   }
 
@@ -216,8 +231,9 @@ export async function initSatAnalytics(app, uid) {
     const latestStatus = new Map(); // questionId → boolean (correct)
     snap.forEach(d => {
       const data = d.data();
-      if (data.questionId && !latestStatus.has(data.questionId)) {
-        latestStatus.set(data.questionId, data.correct);
+      const questionId = resolveStoredQuestionId(data);
+      if (questionId && !latestStatus.has(questionId)) {
+        latestStatus.set(questionId, data.correct);
       }
     });
     const missed = [];
@@ -238,7 +254,13 @@ export async function initSatAnalytics(app, uid) {
     const q = query(attemptsCol, orderBy("ts", "desc"), fsLimit(n));
     const snap = await getDocs(q);
     const out = [];
-    snap.forEach((d) => out.push(d.data()));
+    snap.forEach((d) => {
+      const data = d.data();
+      out.push({
+        ...data,
+        questionId: resolveStoredQuestionId(data),
+      });
+    });
     return out;
   }
 
