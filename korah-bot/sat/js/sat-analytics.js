@@ -245,6 +245,32 @@ export async function initSatAnalytics(app, uid) {
     return missed.slice(0, limitCount);
   }
 
+  /**
+   * Returns missed question IDs grouped by section.
+   * Uses the most recent attempt per question to determine if it was missed.
+   * @returns {{ english: string[], math: string[] }}
+   */
+  async function getMissedBySection(limitPerSection = 50) {
+    const q = query(attemptsCol, orderBy("ts", "desc"));
+    const snap = await getDocs(q);
+    const latestStatus = new Map(); // questionId → { correct, section }
+    snap.forEach(d => {
+      const data = d.data();
+      const questionId = resolveStoredQuestionId(data);
+      if (questionId && !latestStatus.has(questionId)) {
+        latestStatus.set(questionId, { correct: data.correct, section: data.section || "" });
+      }
+    });
+    const result = { english: [], math: [] };
+    for (const [qId, { correct, section }] of latestStatus) {
+      if (!correct) {
+        if (section === "english" && result.english.length < limitPerSection) result.english.push(qId);
+        else if (section === "math" && result.math.length < limitPerSection) result.math.push(qId);
+      }
+    }
+    return result;
+  }
+
   async function getAllSkillStats() {
     const snap = await getDocs(skillsCol);
     const out = [];
@@ -349,6 +375,7 @@ export async function initSatAnalytics(app, uid) {
     saveBookmark,
     getBookmarks,
     getMissedQuestionIds,
+    getMissedBySection,
     getAllSkillStats,
     getRecentAttempts,
     suggestSkills,

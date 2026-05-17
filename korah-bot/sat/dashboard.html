@@ -725,7 +725,7 @@
             <div class="sec-value" id="readingScore">—</div>
             <div class="sec-sub" id="readingSub">Not yet practiced</div>
           </div>
-          <a href="./questions.html?sections=english" class="sec-btn">Practice</a>
+          <a id="readingPracticeBtn" href="./questions.html?sections=english" class="sec-btn">Practice</a>
         </div>
         <div class="section-card math">
           <div>
@@ -733,7 +733,7 @@
             <div class="sec-value" id="mathScore">—</div>
             <div class="sec-sub" id="mathSub">Not yet practiced</div>
           </div>
-          <a href="./questions.html?sections=math" class="sec-btn">Practice</a>
+          <a id="mathPracticeBtn" href="./questions.html?sections=math" class="sec-btn">Practice</a>
         </div>
       </div>
     </section>
@@ -1022,7 +1022,7 @@
     const a = window.KorahSATAnalytics;
     if (!a) return;
 
-    const [profile, totals, suggestions, domains, recent, allMissedIds, bookmarks] = await Promise.all([
+    const [profile, totals, suggestions, domains, recent, allMissedIds, bookmarks, missedBySection] = await Promise.all([
       a.getProfile(),
       a.getTotals(),
       a.suggestSkills(6),
@@ -1030,6 +1030,7 @@
       a.getRecentAttempts(8),
       a.getMissedQuestionIds(100),
       a.getBookmarks(),
+      a.getMissedBySection(50),
     ]);
 
     // Helper to filter missed IDs by domain/skill (requires metadata which we have in 'recent' or would need to fetch)
@@ -1153,6 +1154,26 @@
     document.getElementById("mathSub").textContent = mAttempts > 0
       ? `${mAttempts} question${mAttempts === 1 ? "" : "s"}`
       : "Not yet practiced";
+
+    // Section card practice buttons — link to missed questions if any, else full section
+    const readingBtn = document.getElementById("readingPracticeBtn");
+    const mathBtn    = document.getElementById("mathPracticeBtn");
+    const enMissed = missedBySection?.english || [];
+    const maMissed = missedBySection?.math    || [];
+    if (enMissed.length > 0) {
+      readingBtn.href = `./questions.html?questionIds=${enMissed.map(encodeURIComponent).join(",")}`;
+      readingBtn.textContent = `Review ${enMissed.length} Missed`;
+    } else {
+      readingBtn.href = "./questions.html?sections=english";
+      readingBtn.textContent = "Practice";
+    }
+    if (maMissed.length > 0) {
+      mathBtn.href = `./questions.html?questionIds=${maMissed.map(encodeURIComponent).join(",")}`;
+      mathBtn.textContent = `Review ${maMissed.length} Missed`;
+    } else {
+      mathBtn.href = "./questions.html?sections=math";
+      mathBtn.textContent = "Practice";
+    }
 
     // Focus banner — top suggestion
     const top = suggestions[0];
