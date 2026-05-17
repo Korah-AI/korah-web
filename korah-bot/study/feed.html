@@ -367,22 +367,33 @@
     .modal-close:hover { background: var(--cu); border-color: var(--p4); color: var(--p4); }
     .modal-body { padding: 1.75rem; overflow-y: auto; flex: 1; }
     .method-grid {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;
     }
     @media (max-width: 600px) { .method-grid { grid-template-columns: 1fr; } }
     .method-card {
-      background: var(--sf2); border: 1px solid var(--bd2); border-radius: 16px;
+      background: var(--sf2); border: 2px solid var(--bd2); border-radius: 16px;
       padding: 1.75rem 1.25rem; display: flex; flex-direction: column;
       align-items: center; gap: 1rem; cursor: pointer;
       transition: all 0.22s cubic-bezier(0.4,0,0.2,1); text-align: center;
       min-height: 11rem; justify-content: center; font-family: 'Plus Jakarta Sans', sans-serif;
     }
-    .method-card:hover {
-      border-color: var(--p4); background: var(--cu);
-      transform: translateY(-4px);
-      box-shadow: 0 12px 28px rgba(0,0,0,.2), 0 0 16px rgba(139,92,246,.15);
+    .method-card[data-method="manual"] {
+      border-color: rgba(99,102,241,0.3); background: rgba(99,102,241,0.08);
+    }
+    .method-card[data-method="manual"]:hover {
+      border-color: rgba(99,102,241,0.6); background: rgba(99,102,241,0.15);
+      transform: translateY(-4px); box-shadow: 0 12px 28px rgba(99,102,241,0.15);
+    }
+    .method-card[data-method="ai-prompt"] {
+      border-color: rgba(139,92,246,0.3); background: rgba(139,92,246,0.08);
+    }
+    .method-card[data-method="ai-prompt"]:hover {
+      border-color: rgba(139,92,246,0.6); background: rgba(139,92,246,0.15);
+      transform: translateY(-4px); box-shadow: 0 12px 28px rgba(139,92,246,0.15);
     }
     [data-theme="light"] .method-card { background: rgba(255,255,255,0.7); border-color: rgba(109,40,217,.15); }
+    [data-theme="light"] .method-card[data-method="manual"] { border-color: rgba(99,102,241,0.4); background: rgba(99,102,241,0.12); }
+    [data-theme="light"] .method-card[data-method="ai-prompt"] { border-color: rgba(139,92,246,0.4); background: rgba(139,92,246,0.12); }
     [data-theme="light"] .method-card:hover { background: rgba(255,255,255,0.95); border-color: rgba(109,40,217,.4); }
     .method-icon { font-size: 2.25rem; }
     .method-name { font-size: 1rem; font-weight: 700; display: block; color: var(--tx); }
@@ -960,7 +971,7 @@
 
     <div class="sidebar-footer">
     <div class="mood-indicator" id="sidebar-mood">
-      <span class="mood-dot" id="mood-dot"><span class="material-icons-round" style="font-size: 12px; color: var(--grn);" aria-label="online">circle</span>
+      <span class="mood-dot" id="mood-dot"><span class="material-icons-round" style="font-size: 12px; color: var(--grn);" aria-label="online">circle</span></span>
       <span class="text-xs tx2 font-medium">Full Focus Mode</span>
     </div>
     <div class="sidebar-footer-actions">
@@ -1060,9 +1071,42 @@
       <p class="empty-sub-new">Upload files, pull from Google Drive, paste notes, or describe a topic. Korah builds flashcards, study guides, and practice tests for you in seconds!</p>
 
       <div class="empty-cta-row">
-        <button onclick="toggleCreateDropdown(this)" class="new-chat-btn grad-bg text-white text-sm font-bold px-6 py-3 rounded-full border-none cursor-pointer shadow-glow t-btn inline-flex items-center gap-2" style = "background-color: rgb(18, 192, 192);">
-          + Create Study Item
-        </button>
+        <div style="position:relative;display:inline-block;">
+          <button id="empty-create-btn" onclick="toggleEmptyCreateDropdown()" class="new-chat-btn grad-bg text-white text-sm font-bold px-6 py-3 rounded-full border-none cursor-pointer shadow-glow t-btn inline-flex items-center gap-2" style="background-color: rgb(18, 192, 192);">
+            + Create Study Item
+          </button>
+          <div id="empty-create-dropdown" class="create-study-dropdown" style="position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);right:auto;">
+            <ul class="create-dropdown-list">
+              <li>
+                <button class="create-dropdown-item empty-dropdown-item" data-type="flashcards">
+                  <span class="create-dropdown-emoji"><span class="material-icons-round" style="color: #78909C; font-size: 20px;">style</span></span>
+                  <span class="dropdown-item-text">
+                    <span class="dropdown-item-name">Flashcard Set</span>
+                    <span class="dropdown-item-desc">Front/back cards with rich text and math</span>
+                  </span>
+                </button>
+              </li>
+              <li>
+                <button class="create-dropdown-item empty-dropdown-item" data-type="studyGuide">
+                  <span class="create-dropdown-emoji"><span class="material-icons-round" style="color: #5C6BC0; font-size: 20px;">auto_stories</span></span>
+                  <span class="dropdown-item-text">
+                    <span class="dropdown-item-name">Study Guide</span>
+                    <span class="dropdown-item-desc">Structured outline with sections and summaries</span>
+                  </span>
+                </button>
+              </li>
+              <li>
+                <button class="create-dropdown-item empty-dropdown-item" data-type="practiceTest">
+                  <span class="create-dropdown-emoji"><span class="material-icons-round" style="color: #EF5350; font-size: 20px;">gps_fixed</span></span>
+                  <span class="dropdown-item-text">
+                    <span class="dropdown-item-name">Practice Test</span>
+                    <span class="dropdown-item-desc">Questions with answer keys and rationales</span>
+                  </span>
+                </button>
+              </li>
+            </ul>
+          </div>
+        </div>
         <button id="open-import-modal-btn" class="empty-cta-secondary t-btn">
           <span class="material-icons-round" style="font-size: 1.1rem;">cloud_upload</span>
           Upload Files or Drive
@@ -1152,15 +1196,6 @@
         <div>
           <span class="method-name">AI from Prompt</span>
           <span class="method-desc">Describe what you need and let Korah generate the rest</span>
-        </div>
-      </button>
-      <button type="button" class="method-card t-btn" data-method="ai-doc">
-        <div class="method-icon">
-          <span class="material-icons-round" style="color: var(--tx); font-size: 36px;" aria-label="documents">article</span>
-        </div>
-        <div>
-          <span class="method-name">AI from Documents</span>
-          <span class="method-desc">Upload PDFs or notes to generate focused materials</span>
         </div>
       </button>
     </div>
@@ -1563,8 +1598,9 @@
 </script>
 
 <script>
+window._selectedType = null;
+
 (function () {
-  var _selectedType = null;
   var _activeTrigger = null;
   var TYPE_LABELS = { flashcards: "Flashcard Set", studyGuide: "Study Guide", practiceTest: "Practice Test" };
 
@@ -1577,9 +1613,7 @@
 
   function positionDropdown(trigger) {
     var rect = trigger.getBoundingClientRect();
-    var scrollY = window.scrollY;
-    dropdown.style.top = (rect.bottom + scrollY + 6) + "px";
-    // Align right edge to trigger's right edge
+    dropdown.style.top = (rect.bottom + 6) + "px";
     var right = window.innerWidth - rect.right;
     dropdown.style.right = right + "px";
     dropdown.style.left = "auto";
@@ -1612,12 +1646,11 @@
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape") closeDropdown();
   });
-
   dropdown.querySelectorAll(".create-dropdown-item").forEach(function (btn) {
     btn.addEventListener("click", function () {
       closeDropdown();
       var type = btn.getAttribute("data-type");
-      _selectedType = type;
+      window._selectedType = type;
       if (modalTitle) modalTitle.textContent = "Create " + (TYPE_LABELS[type] || type);
       if (backdrop) backdrop.classList.add("active");
       if (modal) modal.classList.add("active");
@@ -1628,8 +1661,8 @@
     btn.addEventListener("click", function () {
       var method = btn.getAttribute("data-method");
       var pageMap = { flashcards: "flashcards.html", studyGuide: "guide-create.html", practiceTest: "test-create.html" };
-      if (_selectedType && pageMap[_selectedType]) {
-        window.location.href = pageMap[_selectedType] + "?method=" + encodeURIComponent(method);
+      if (window._selectedType && pageMap[window._selectedType]) {
+        window.location.href = pageMap[window._selectedType] + "?method=" + encodeURIComponent(method);
       }
     });
   });
@@ -1641,6 +1674,43 @@
   if (backdrop) backdrop.addEventListener("click", function () {
     backdrop.classList.remove("active");
     modal.classList.remove("active");
+  });
+})();
+</script>
+
+<script>
+(function () {
+  var emptyDropdown = document.getElementById("empty-create-dropdown");
+  if (!emptyDropdown) return;
+
+  var TYPE_LABELS = { flashcards: "Flashcard Set", studyGuide: "Study Guide", practiceTest: "Practice Test" };
+  var backdrop = document.getElementById("modal-backdrop");
+  var modal = document.getElementById("creation-modal");
+  var modalTitle = document.getElementById("creation-modal-title");
+  var modalClose = document.getElementById("creation-modal-close");
+
+  window.toggleEmptyCreateDropdown = function () {
+    emptyDropdown.classList.toggle("open");
+  };
+
+  document.addEventListener("click", function (e) {
+    var btn = document.getElementById("empty-create-btn");
+    if (!emptyDropdown.contains(e.target) && e.target !== btn && !btn?.contains(e.target)) {
+      emptyDropdown.classList.remove("open");
+    }
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") emptyDropdown.classList.remove("open");
+  });
+
+  emptyDropdown.querySelectorAll(".empty-dropdown-item").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      emptyDropdown.classList.remove("open");
+      window._selectedType = btn.getAttribute("data-type");
+      if (modalTitle) modalTitle.textContent = "Create " + (TYPE_LABELS[window._selectedType] || window._selectedType);
+      if (backdrop) backdrop.classList.add("active");
+      if (modal) modal.classList.add("active");
+    });
   });
 })();
 </script>

@@ -631,7 +631,7 @@
 
     <div class="sidebar-footer">
     <div class="mood-indicator" id="sidebar-mood">
-      <span class="mood-dot" id="mood-dot"><span class="material-icons-round" style="font-size: 12px; color: var(--grn);" aria-label="online">circle</span>
+      <span class="mood-dot" id="mood-dot"><span class="material-icons-round" style="font-size: 12px; color: var(--grn);" aria-label="online">circle</span></span>
       <span class="text-xs tx2 font-medium">Full Focus Mode</span>
     </div>
     <div class="sidebar-footer-actions">
@@ -1083,7 +1083,7 @@
 
   // updateManualContentUI removed - no longer needed since we redirect to dedicated pages
 
-  function saveItem(content) {
+  async function saveItem(content) {
     var title = document.getElementById("create-title").value.trim() || "Untitled";
     var description = document.getElementById("create-description").value.trim();
     var subject = document.getElementById("create-subject").value.trim();
@@ -1102,7 +1102,7 @@
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-    if (window.KorahDB) window.KorahDB.setStudyItem(id, item);
+    if (window.KorahDB) await window.KorahDB.setStudyItem(id, item);
     var redirectPage = state.type === "studyGuide" ? "guide.html" : state.type === "practiceTest" ? "test.html" : "item.html";
     window.location.href = redirectPage + "?id=" + encodeURIComponent(id);
   }

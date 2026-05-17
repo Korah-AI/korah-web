@@ -4345,6 +4345,11 @@ html {
     50% { opacity: 0.5; }
 }
 
+@keyframes pulse-dot {
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--mood-color) 70%, transparent); }
+    50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--mood-color) 0%, transparent); }
+}
+
 .timer-widget-icon.pulse {
     animation: icon-pulse 1.5s ease-in-out infinite;
 }
@@ -4656,11 +4661,19 @@ html {
     opacity: 0.85;
 }
 .mood-indicator .mood-dot {
-    width: 10px;
-    height: 10px;
+    width: 14px;
+    height: 14px;
     border-radius: 50%;
-    display: inline-block;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--grn);
+    flex-shrink: 0;
+    animation: pulse-dot 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     transition: background 0.2s, box-shadow 0.2s;
+}
+.mood-indicator .mood-dot span {
+    font-size: 10px !important;
 }
 .mood-dropdown {
     position: absolute;

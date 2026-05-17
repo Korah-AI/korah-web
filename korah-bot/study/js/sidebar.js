@@ -358,7 +358,7 @@ function showSidebarDeleteModal(name, onConfirm) {
         link.innerHTML = "<span class='material-icons-round' style='font-size: 1.25rem;'>school</span> <span class='nav-text'>Study</span>";
         if (itemIds.length === 0) link.classList.add("nav-empty");
         else link.classList.remove("nav-empty");
-      } else if (href.includes("chat.html")) {
+      } else if (href.includes("chat.html") && !href.includes("math-chat")) {
         link.innerHTML = "<span class='material-icons-round' style='font-size: 1.25rem;'>chat</span> <span class='nav-text'>Chat</span>";
       }
       // All other links (productivity) remain unchanged
@@ -1302,8 +1302,9 @@ function showSidebarDeleteModal(name, onConfirm) {
 
     const savedMood = localStorage.getItem('korah_mood') || null;
 
-    const dot = container.querySelector('.mood-dot') || container.querySelector('span');
-    const labelEl = container.querySelectorAll('span')[1] || null;
+    const dot = container.querySelector('.mood-dot') || container.querySelector(':scope > span');
+    const directSpans = container.querySelectorAll(':scope > span');
+    const labelEl = directSpans[1] || null;
 
     container.style.cursor = 'pointer';
     container.setAttribute('role', 'button');
@@ -1313,11 +1314,11 @@ function showSidebarDeleteModal(name, onConfirm) {
     function applyMood(key) {
       const m = MOOD_LEVELS.find(x => x.key === key);
       if (m) {
-        if (dot) { dot.style.background = m.color; dot.style.boxShadow = `0 0 6px ${m.color}88`; dot.textContent = ''; }
+        if (dot) { dot.style.background = m.color; dot.style.setProperty('--mood-color', m.color); dot.style.boxShadow = `0 0 6px ${m.color}88`; dot.textContent = ''; }
         if (labelEl) labelEl.textContent = m.label;
         container.setAttribute('data-mood', key);
       } else {
-        if (dot) { dot.style.background = 'var(--border)'; dot.style.boxShadow = 'none'; }
+        if (dot) { dot.style.background = 'var(--border)'; dot.style.setProperty('--mood-color', 'var(--grn)'); dot.style.boxShadow = 'none'; dot.textContent = ''; }
         if (labelEl) labelEl.textContent = 'Focus Level';
         container.removeAttribute('data-mood');
       }
