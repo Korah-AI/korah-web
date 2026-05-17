@@ -126,6 +126,7 @@ export async function initSatAnalytics(app, uid) {
    */
   async function recordAttempt(a) {
     if (!a || !a.questionId) return;
+    if (!/^[\w-]{1,64}$/.test(a.questionId)) throw new Error("Invalid questionId format");
     const diff = ["E", "M", "H"].includes(a.difficulty) ? a.difficulty : "E";
     const correct = Boolean(a.correct);
     const xp = correct ? xpForCorrect(diff) : -xpForIncorrect(diff);
@@ -197,6 +198,7 @@ export async function initSatAnalytics(app, uid) {
   }
 
   async function saveBookmark(questionId, bookmarked, meta = {}) {
+    if (!/^[\w-]{1,64}$/.test(questionId)) throw new Error("Invalid questionId format");
     const ref = doc(db, `users/${uid}/satBookmarks`, questionId);
     if (bookmarked) {
       const resolvedQuestionId = meta?.detailKey || questionId;

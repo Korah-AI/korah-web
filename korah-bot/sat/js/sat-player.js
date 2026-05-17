@@ -562,13 +562,13 @@
       questionStemTitle.classList.add("is-hidden");
     }
     if (current.paragraph) {
-      questionParagraph.innerHTML = current.paragraph;
+      questionParagraph.innerHTML = DOMPurify.sanitize(current.paragraph);
       questionParagraph.classList.remove("is-hidden");
     } else {
       questionParagraph.innerHTML = "";
       questionParagraph.classList.add("is-hidden");
     }
-    questionStem.innerHTML = current.stem;
+    questionStem.innerHTML = DOMPurify.sanitize(current.stem);
     syncReviewState(!!state.reviewed[current.id]);
 
     // Toggle calc button text + visibility
@@ -633,7 +633,7 @@
           return `
             <div class="sat-answer-row">
               <button class="${classNames.join(" ")}" type="button" data-answer="${option.key}">
-                <span class="sat-answer-key">${option.key}</span>${option.text}
+                <span class="sat-answer-key">${option.key}</span>${DOMPurify.sanitize(option.text)}
               </button>
               <button class="sat-elim-btn${isEliminated ? " is-active" : ""}" type="button" data-elim="${option.key}" title="Eliminate this choice">
                 <span class="sat-elim-letter">${option.key}</span>

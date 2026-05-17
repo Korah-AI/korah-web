@@ -902,6 +902,9 @@
       html = normalizedMarkdown.replace(/\n/g, "<br/>");
     }
 
+    if (window.DOMPurify) {
+      html = DOMPurify.sanitize(html, { USE_PROFILES: { html: true } });
+    }
     targetEl.innerHTML = html;
 
     if (window.renderMathInElement && typeof window.renderMathInElement === "function") {

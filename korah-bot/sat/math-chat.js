@@ -1531,8 +1531,11 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
       html = normalizedMarkdown.replace(/\n/g, "<br/>");
     }
     
+    if (window.DOMPurify) {
+      html = DOMPurify.sanitize(html, { USE_PROFILES: { html: true } });
+    }
     container.innerHTML = html;
-    
+
     container.querySelectorAll('pre code').forEach(block => {
       if (block.classList.contains('language-graph-update') || block.classList.contains('lang-graph-update')) {
         return;

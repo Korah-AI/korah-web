@@ -248,6 +248,14 @@ export default async function handler(req, res) {
   }
 
   // Handle URLs: YouTube → fileData, others → fetch & extract text
+  const SSRF_BLOCKED = /^(127\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|169\.254\.|::1|metadata\.google\.internal)/;
+  function isSafeUrl(raw) {
+    try {
+      const { protocol, hostname } = new URL(raw);
+      return protocol === 'https:' && !SSRF_BLOCKED.test(hostname);
+    } catch { return false; }
+  }
+
   if (Array.isArray(urls) && urls.length > 0) {
     for (const url of urls) {
       const isYouTube = /youtube\.com|youtu\.be/.test(url);
@@ -256,7 +264,7 @@ export default async function handler(req, res) {
         contents[0].parts.push({
           fileData: { fileUri: url }
         });
-      } else {
+      } else if (isSafeUrl(url)) {
         // Fetch non-YouTube URLs server-side, extract text
         try {
           const controller = new AbortController();

@@ -32,6 +32,7 @@
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
 <script src="../study/js/sidebar.js"></script>
 <link rel="stylesheet" href="../app/korah-chat.css"/>
 <link rel="stylesheet" href="./sat.css"/>
@@ -973,6 +974,17 @@
 
   function pct(x) { return Math.round(x * 100); }
 
+  function escHtml(str) {
+    if (str == null) return "";
+    return String(str)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+
+  function safeQuestionId(id) {
+    return /^[\w-]{1,64}$/.test(id) ? id : "";
+  }
+
   function findSectionForDomain(domainName) {
     const cat = window.KorahSAT?.OPENSAT_CATALOG;
     if (!cat) return null;
@@ -1148,7 +1160,15 @@
     const bannerLink = document.getElementById("focusBannerLink");
     if (top) {
       const accBit = top.attempts > 0 ? `${pct(top.accuracy)}% accuracy over ${top.attempts} attempt${top.attempts === 1 ? "" : "s"}` : "not yet practiced";
-      bannerSkill.innerHTML = `<strong>${top.skillName}</strong> <span style="color:var(--tx2)">— ${top.domain} · ${accBit}</span>`;
+      bannerSkill.innerHTML = "";
+      const _bsStrong = document.createElement("strong");
+      _bsStrong.textContent = top.skillName;
+      const _bsSpan = document.createElement("span");
+      _bsSpan.style.color = "var(--tx2)";
+      _bsSpan.textContent = `— ${top.domain} · ${accBit}`;
+      bannerSkill.appendChild(_bsStrong);
+      bannerSkill.append(" ");
+      bannerSkill.appendChild(_bsSpan);
       
       // If there are missed IDs for this specific skill, use them
       const skillMissed = missedAttempts.filter(m => m.skillCd === top.skillCd).map(m => m.questionId);
@@ -1168,8 +1188,8 @@
         <div class="skill-row">
           <span class="rank">${i + 1}</span>
           <div class="skill-meta">
-            <div class="skill-name">${s.skillName}</div>
-            <div class="skill-sub">${s.domain} · ${SECTION_LABEL[s.section] || s.section}</div>
+            <div class="skill-name">${escHtml(s.skillName)}</div>
+            <div class="skill-sub">${escHtml(s.domain)} · ${escHtml(SECTION_LABEL[s.section] || s.section)}</div>
           </div>
           <div class="skill-acc">${accStr}</div>
           <a class="practice-btn" href="${practiceHrefForSkill(s.skillCd, s.domain, skillMissed)}">
@@ -1192,8 +1212,8 @@
         return `
           <div class="skill-row">
             <div class="skill-meta">
-              <div class="skill-name">${s.skillName}</div>
-              <div class="skill-sub">${s.domain}</div>
+              <div class="skill-name">${escHtml(s.skillName)}</div>
+              <div class="skill-sub">${escHtml(s.domain)}</div>
             </div>
             <div class="skill-acc">${accStr}</div>
             <a class="practice-btn" href="${practiceHrefForSkill(s.skillCd, s.domain, skillMissed)}">
@@ -1220,7 +1240,7 @@
       domEl.innerHTML = sorted.map((d) => `
         <div class="domain-bar-row">
           <div class="domain-bar-label">
-            <span>${d.domain}</span>
+            <span>${escHtml(d.domain)}</span>
             <span>${pct(d.accuracy)}% · ${d.attempts}</span>
           </div>
           <div class="domain-bar"><div class="domain-bar-fill" style="width: ${pct(d.accuracy)}%;"></div></div>
@@ -1240,8 +1260,8 @@
     } else {
       if (savedBadge) { savedBadge.textContent = sortedBookmarks.length; savedBadge.style.display = ""; }
       if (practiceAllLink) {
-        const allIds = sortedBookmarks.map(b => b.questionId).slice(0, 50);
-        practiceAllLink.href = `./questions.html?questionIds=${allIds.join(",")}`;
+        const allIds = sortedBookmarks.map(b => safeQuestionId(b.questionId)).filter(Boolean).slice(0, 50);
+        practiceAllLink.href = `./questions.html?questionIds=${allIds.map(encodeURIComponent).join(",")}`;
         practiceAllLink.style.display = "";
       }
       savedEl.innerHTML = sortedBookmarks.slice(0, 10).map((b) => {
@@ -1252,10 +1272,10 @@
           <div class="recent-row">
             <div class="recent-icon"><span class="material-icons-round" style="color: var(--p5); font-size: 16px;" aria-label="bookmark">bookmark</span></div>
             <div class="skill-meta">
-              <div class="skill-name">${b.domain || "—"}</div>
-              <div class="skill-sub">${sectionLabel} · Saved ${timeStr}</div>
+              <div class="skill-name">${escHtml(b.domain) || "—"}</div>
+              <div class="skill-sub">${escHtml(sectionLabel)} · Saved ${escHtml(timeStr)}</div>
             </div>
-            <a class="practice-btn" href="./questions.html?questionIds=${b.questionId}">Practice</a>
+            <a class="practice-btn" href="./questions.html?questionIds=${encodeURIComponent(safeQuestionId(b.questionId))}">Practice</a>
           </div>`;
       }).join("");
     }
@@ -1273,8 +1293,8 @@
           <div class="recent-row">
             <div class="recent-icon">${icon}</div>
             <div class="skill-meta">
-              <div class="skill-name">${r.domain || "—"}</div>
-              <div class="skill-sub">${DIFFICULTY_LABEL[r.difficulty] || r.difficulty} · ${timeStr}</div>
+              <div class="skill-name">${escHtml(r.domain) || "—"}</div>
+              <div class="skill-sub">${escHtml(DIFFICULTY_LABEL[r.difficulty] || r.difficulty)} · ${escHtml(timeStr)}</div>
             </div>
             <div class="skill-acc" style="color: ${r.correct ? "#22c55e" : "#ef4444"};">${r.correct ? "+" : ""}${r.xp} XP</div>
           </div>`;
