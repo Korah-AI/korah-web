@@ -676,7 +676,9 @@
   function flushPracticeTime() {
     const elapsed = state.stopwatchElapsed;
     if (elapsed > 0 && window.KorahSATAnalytics?.recordPracticeTime) {
+      console.log("[SAT player] flushing", elapsed, "seconds of practice time");
       window.KorahSATAnalytics.recordPracticeTime(elapsed)
+        .then(() => console.log("[SAT player] practice time write OK"))
         .catch((e) => console.warn("[SAT] recordPracticeTime failed", e));
     }
     state.stopwatchElapsed = 0;

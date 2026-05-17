@@ -840,9 +840,8 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
       userRenamed: false,
     };
     conversationHistory = [];
-    if (window.KorahDB) {
-      window.KorahDB.setConversation(id, currentSession).catch(console.error);
-    }
+    // Don't persist to Firestore yet — saveCurrentSession() runs after the
+    // first user message, so empty sessions never appear in the sidebar.
     window.location.hash = id;
   }
 

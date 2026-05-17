@@ -1073,6 +1073,7 @@
     const level = Math.floor(totalXP / 1000);
     const practiceSec = totals?.practiceTime || 0;
     const practiceMin = Math.floor(practiceSec / 60);
+    console.log("[SAT dashboard] totals.practiceTime =", practiceSec, "seconds");
 
     document.getElementById("stat-answered").textContent = answered;
     const answeredSub = document.getElementById("stat-answered-sub");
@@ -1109,7 +1110,11 @@
     document.getElementById("stat-xp").textContent = totalXP.toLocaleString();
     document.getElementById("stat-xp-sub").textContent = `Level ${level}`;
 
-    document.getElementById("stat-time").innerHTML = `${practiceMin}<span style="font-size:18px; color:var(--tx2); margin-left:4px;">min</span>`;
+    if (practiceSec > 0 && practiceSec < 60) {
+      document.getElementById("stat-time").innerHTML = `${practiceSec}<span style="font-size:18px; color:var(--tx2); margin-left:4px;">sec</span>`;
+    } else {
+      document.getElementById("stat-time").innerHTML = `${practiceMin}<span style="font-size:18px; color:var(--tx2); margin-left:4px;">min</span>`;
+    }
     document.getElementById("stat-time-sub").textContent = "All-time";
 
     // Section breakdown

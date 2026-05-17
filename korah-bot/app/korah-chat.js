@@ -564,7 +564,9 @@
         autoTitleGenerated: false,
         userRenamed: false,
       };
-      this.saveSession(id, session);
+      // Keep in-memory only; persist to storage once the first message is sent
+      // (via saveCurrentSession) so empty sessions don't pollute the sidebar.
+      sessionsCache[id] = session;
       return id;
     },
 
@@ -2287,9 +2289,15 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     if (!chatHistoryContainer) return;
     
     const sessions = Storage.getSessions();
-    const sessionIds = Object.keys(sessions).sort((a, b) => {
-      return new Date(sessions[b].updatedAt) - new Date(sessions[a].updatedAt);
-    });
+    const sessionIds = Object.keys(sessions)
+      .filter((id) => {
+        const s = sessions[id];
+        // Hide sessions with no messages unless the user explicitly renamed them.
+        return (s.messages && s.messages.length > 0) || s.userRenamed;
+      })
+      .sort((a, b) => {
+        return new Date(sessions[b].updatedAt) - new Date(sessions[a].updatedAt);
+      });
 
     chatHistoryContainer.innerHTML = "";
 
