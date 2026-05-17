@@ -1121,9 +1121,9 @@
 
   function getFollowUpActionsForMode(mode) {
     const commonActions = [
-      { icon: "🃏", label: "Generate Flashcards", prompt: "Create flashcards based on what you just explained" },
-      { icon: "🎯", label: "Generate Practice Test", prompt: "Create a practice test based on what you just explained" },
-      { icon: "📄", label: "Generate Study Guide", prompt: "Create a study guide based on what you just explained" },
+      { icon: "style", label: "Generate Flashcards", prompt: "Create flashcards based on what you just explained" },
+      { icon: "quiz", label: "Generate Practice Test", prompt: "Create a practice test based on what you just explained" },
+      { icon: "auto_stories", label: "Generate Study Guide", prompt: "Create a study guide based on what you just explained" },
     ];
 
     return commonActions;
@@ -1137,10 +1137,16 @@
     return row;
   }
 
-  function getStudyItemIcon(type) {
-    const icons = { flashcards: "🃏", studyGuide: "📖", practiceTest: "🎯" };
-    return icons[type] || "📄";
+  function getStudyItemIconHtml(type) {
+    const icons = {
+      flashcards:   { icon: "style",        color: "ic-flash" },
+      studyGuide:   { icon: "auto_stories", color: "ic-guide" },
+      practiceTest: { icon: "quiz",         color: "ic-quiz" }
+    };
+    const item = icons[type] || { icon: "description", color: "ic-gen" };
+    return `<span class="m-icon ${item.color}">${item.icon}</span>`;
   }
+  window.getStudyItemIconHtml = getStudyItemIconHtml;
 
   const selectedStudy = new Set();
 
@@ -1217,10 +1223,10 @@
     navLinks.forEach(link => {
       if (link.getAttribute("href").indexOf("feed.html") !== -1) {
         if (itemIds.length === 0) {
-          link.innerHTML = "📚 Study";
+          link.innerHTML = `<span class="m-icon ic-lit" style="margin-right:0.5rem">library_books</span> Study`;
           link.classList.add("nav-empty");
         } else {
-          link.innerHTML = "📚 Study";
+          link.innerHTML = `<span class="m-icon ic-lit" style="margin-right:0.5rem">library_books</span> Study`;
           link.classList.remove("nav-empty");
         }
       }
@@ -1256,7 +1262,7 @@
 
       const icon = document.createElement("span");
       icon.className = "history-icon";
-      icon.textContent = getStudyItemIcon(item.type);
+      icon.innerHTML = getStudyItemIconHtml(item.type);
 
       const text = document.createElement("span");
       text.className = "history-text";
@@ -1706,7 +1712,7 @@
 
   // Expose for study pages that may load this script
   window.KorahStorage = Storage;
-  window.getStudyItemIcon = getStudyItemIcon;
+  window.getStudyItemIconHtml = getStudyItemIconHtml;
   window.renderStudyItemsHistory = renderStudyItemsHistory;
 
   // Expose KorahChat API for sidebar.js integration
@@ -1716,7 +1722,8 @@
       if (window.KorahSidebar) {
         window.KorahSidebar.updateActiveItem(id);
       }
-    }
+    },
+    getCurrentSessionId: () => currentSessionId,
   };
 
   function isPlaceholderTitle(title) {
@@ -2077,14 +2084,23 @@ Always format your responses using GitHub-flavored Markdown. Use:
 
   function getModeConfig(mode) {
     const modes = {
-      general: { name: "General", emoji: "✨" },
-      math: { name: "Math", emoji: "🧮" },
-      sat: { name: "SAT", emoji: "📝" },
-      science: { name: "Science", emoji: "🔬" },
-      history: { name: "History", emoji: "📜" },
-      literature: { name: "Literature", emoji: "📚" },
+      general:    { name: "General",    icon: "auto_awesome",    colorClass: "ic-gen" },
+      math:       { name: "Math",       icon: "calculate",       colorClass: "ic-math" },
+      sat:        { name: "SAT",        icon: "analytics",       colorClass: "ic-sat-m" },
+      science:    { name: "Science",    icon: "science",         colorClass: "ic-sci" },
+      history:    { name: "History",    icon: "library_books",   colorClass: "ic-hist" },
+      literature: { name: "Literature", icon: "menu_book",       colorClass: "ic-lit" },
     };
-    return modes[mode] || modes.general;
+    const config = modes[mode] || modes.general;
+    if (mode === 'sat' && typeof satSubMode !== 'undefined' && satSubMode === 'english') {
+      return { name: "SAT English", icon: "spellcheck", colorClass: "ic-sat-e" };
+    }
+    return config;
+  }
+
+  function getModeIcon(mode) {
+    const cfg = getModeConfig(mode);
+    return `<span class="m-icon ${cfg.colorClass}">${cfg.icon}</span>`;
   }
 
   function getModeDisplayName(mode) {
@@ -2106,9 +2122,7 @@ ${concisenessPrompt}
 ${FORMAT_INSTRUCTIONS}`.trim();
   }
 
-  function getModeEmoji(mode) {
-    return getModeConfig(mode).emoji;
-  }
+
 
   function applyModeTheme(mode) {
     const themeVars = {
@@ -2136,14 +2150,14 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     const container = document.getElementById("mode-pills-container");
     if (!container) return;
     
-    const modes = ["general", "math", "sat", "science", "history", "literature"];
+    const modes = ["general", "math", "science", "history", "literature"];
     container.innerHTML = "";
     
     modes.forEach(mode => {
       const config = getModeConfig(mode);
       const pill = document.createElement("button");
       pill.className = `mode-pill t-btn ${currentSession.mode === mode ? "active" : ""}`;
-      pill.innerHTML = `<span>${config.emoji}</span><span>${config.name}</span>`;
+      pill.innerHTML = `${getModeIcon(mode)}<span>${config.name}</span>`;
       
       pill.addEventListener("click", () => {
         if (mode === "sat") {
@@ -2169,7 +2183,7 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     const modeIcon = document.getElementById("mode-icon");
     const modeName = document.getElementById("mode-name");
     const modeNameMini = document.getElementById("mode-name-mini");
-    if (modeIcon) modeIcon.textContent = config.emoji;
+    if (modeIcon) modeIcon.innerHTML = getModeIcon(mode);
     if (modeName) modeName.textContent = displayName;
     if (modeNameMini) modeNameMini.textContent = displayName + " Mode";
   }
@@ -2197,7 +2211,7 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     const modal = document.getElementById("sat-sub-modal");
     if (!modal) return;
     modal.classList.add("show");
-    const onMath = () => { cleanup(); setSATSubMode("math"); changeMode("sat"); };
+    const onMath = () => { cleanup(); setSATSubMode("math"); changeMode("sat"); window.location.href = 'sat/math-chat.html' + (currentSessionId ? '#' + currentSessionId : ''); };
     const onEnglish = () => { cleanup(); setSATSubMode("english"); changeMode("sat"); };
     const onOutside = (e) => { if (e.target === modal) cleanup(); };
     const onEsc = (e) => { if (e.key === "Escape") cleanup(); };
@@ -2287,7 +2301,7 @@ ${FORMAT_INSTRUCTIONS}`.trim();
       
       const icon = document.createElement("span");
       icon.className = "history-icon";
-      icon.textContent = getModeEmoji(session.mode);
+      icon.innerHTML = getModeIcon(session.mode);
       
       const text = document.createElement("span");
       text.className = "history-text";
@@ -2404,13 +2418,13 @@ ${FORMAT_INSTRUCTIONS}`.trim();
       studyGuide: "Study Guide",
       practiceTest: "Practice Test"
     };
-    const typeEmojis = {
-      flashcards: "🃏",
-      studyGuide: "📖",
-      practiceTest: "🎯"
+    const typeIcons = {
+      flashcards:   `<span class="m-icon ic-flash">style</span>`,
+      studyGuide:   `<span class="m-icon ic-guide">auto_stories</span>`,
+      practiceTest: `<span class="m-icon ic-quiz">quiz</span>`
     };
     const typeLabel = typeLabels[type] || "Study Item";
-    const typeEmoji = typeEmojis[type] || "✨";
+    const typeIconHtml = typeIcons[type] || `<span class="m-icon ic-gen">description</span>`;
 
     // Create message with loading bar
     const msgId = `study-gen-${Date.now()}`;
@@ -2421,7 +2435,7 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     content.innerHTML = `
       <div class="study-gen-bubble">
         <div class="study-gen-status">
-          <span class="animate-pulse">${typeEmoji}</span>
+          <span class="animate-pulse">${typeIconHtml}</span>
           <span>Generating ${typeLabel}...</span>
         </div>
         <div class="study-gen-progress-container">

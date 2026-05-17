@@ -168,7 +168,7 @@
     <div id="study-items-history" class="chat-history">
     </div>
     <div id="study-items-empty" class="study-items-empty hidden">
-      <span class="study-items-empty-icon" aria-hidden="true">📚</span>
+      <span class="study-items-empty-icon" aria-hidden="true"><span class="m-icon ic-gen">school</span></span>
       <div class="study-items-empty-title">No study items yet</div>
       <div class="study-items-empty-sub">Create one to see it here.</div>
     </div>
@@ -176,7 +176,7 @@
 
   <div class="sidebar-footer">
     <div class="mood-indicator" id="sidebar-mood">
-      <span class="mood-dot" id="mood-dot">🟢</span>
+      <span class="mood-dot" id="mood-dot"><span class="material-icons-round" style="font-size: 12px; color: var(--grn);" aria-label="online">circle</span></span>
       <span class="text-xs tx2 font-medium">Full Focus Mode</span>
     </div>
     <div class="sidebar-footer-actions">
@@ -289,7 +289,7 @@
 <!-- Rename Modal -->
 <div id="rename-modal" class="delete-modal">
   <div class="delete-modal-content">
-    <div class="delete-modal-icon">✏️</div>
+    <div class="delete-modal-icon"><span class="material-icons-round" style="color: #FFA726; font-size: 20px;" aria-label="rename">edit</span></div>
     <h3 class="delete-modal-title">Rename</h3>
     <p class="delete-modal-desc" id="rename-modal-desc">Enter a new name</p>
     <input id="rename-modal-input" type="text" class="create-input" style="width:100%; margin-top:0.25rem;" placeholder="New name…"/>
@@ -303,7 +303,7 @@
 <!-- Delete Confirm Modal -->
 <div id="delete-modal" class="delete-modal">
   <div class="delete-modal-content">
-    <div class="delete-modal-icon">🗑️</div>
+    <div class="delete-modal-icon"><span class="material-icons-round" style="color: var(--red); font-size: 20px;" aria-label="delete">delete</span></div>
     <h3 class="delete-modal-title">Delete?</h3>
     <p class="delete-modal-desc">This will permanently delete <span id="delete-modal-name"></span>. This cannot be undone.</p>
     <div class="delete-modal-actions">
@@ -435,7 +435,7 @@
                 onClick={() => setMethod(m)}
                 className={`px-6 py-2.5 rounded-xl text-sm font-bold tab-btn ${method === m ? 'bg-p4 text-white shadow-glow' : 'tx3 hover:tx2'}`}
               >
-                {m === 'manual' ? '✏️ Manual' : m === 'prompt' ? '💬 AI Prompt' : '📄 From Docs'}
+                {m === 'manual' ? <><span class="material-icons-round" style="color: var(--gold); font-size: 16px;" aria-label="pencil">edit</span> Manual</> : m === 'prompt' ? <><span class="material-icons-round" style="color: var(--p4); font-size: 16px;" aria-label="chat">chat</span> AI Prompt</> : <><span class="material-icons-round" style="color: var(--tx2); font-size: 16px;" aria-label="document">article</span> From Docs</>}
               </button>
             ))}
           </div>
@@ -509,7 +509,7 @@
                   onClick={() => document.getElementById('file-upload').click()}
                 >
                   <input id="file-upload" type="file" multiple className="hidden" onChange={handleFileChange} />
-                  <span className="text-3xl mb-2 block">📄</span>
+                  <span className="text-3xl mb-2 block"><span class="material-icons-round" style="color: var(--tx2); font-size: 30px;" aria-label="document">article</span></span>
                   <p className="tx">Drop study materials here or click to upload</p>
                   <p className="tx3 text-xs mt-1">PDF, TXT, or images (Max 5)</p>
                 </div>
@@ -518,7 +518,7 @@
                     {files.map((file, i) => (
                       <div key={i} className="flex items-center justify-between p-3 bg-base2 bd rounded-xl">
                         <span className="text-xs tx truncate max-w-[200px]">{file.name}</span>
-                        <button onClick={(e) => {e.stopPropagation(); setFiles(files.filter((_, idx) => idx !== i))}} className="tx-red hover:text-red-400">✕</button>
+                        <button onClick={(e) => {e.stopPropagation(); setFiles(files.filter((_, idx) => idx !== i))}} className="tx-red hover:text-red-400 material-icons-round" style="font-size:16px;" aria-label="close">close</button>
                       </div>
                     ))}
                   </div>
@@ -527,7 +527,7 @@
             )}
 
             <div className="pt-6 border-t bd flex flex-col items-center gap-4">
-              {error && <p className="text-red-400 text-sm font-medium">⚠️ {error}</p>}
+              {error && <p className="text-red-400 text-sm font-medium"><span class="material-icons-round" style="color: var(--red); font-size: 16px; vertical-align: middle; margin-right: 4px;" aria-label="warning">warning</span>{error}</p>}
               <button 
                 onClick={handleCreate}
                 disabled={loading}

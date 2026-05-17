@@ -184,7 +184,7 @@
     <div id="study-items-history" class="chat-history">
     </div>
     <div id="study-items-empty" class="study-items-empty hidden">
-      <span class="study-items-empty-icon" aria-hidden="true">📚</span>
+      <span class="study-items-empty-icon" aria-hidden="true"><span class="m-icon ic-gen">school</span></span>
       <div class="study-items-empty-title">No study items yet</div>
       <div class="study-items-empty-sub">Create one to see it here.</div>
     </div>
@@ -192,7 +192,7 @@
 
   <div class="sidebar-footer">
     <div class="mood-indicator" id="sidebar-mood">
-      <span class="mood-dot" id="mood-dot">🟢</span>
+      <span class="mood-dot" id="mood-dot"><span class="m-icon" style="font-size:0.75rem;color:var(--grn)">fiber_manual_record</span></span>
       <span class="text-xs tx2 font-medium">Full Focus Mode</span>
     </div>
     <div class="sidebar-footer-actions">
@@ -248,7 +248,7 @@
       </div>
 
       <div class="mode-indicator">
-        <span class="sat-math-badge">📊 SAT Math</span>
+        <span class="sat-math-badge"><span class="m-icon ic-sat-m" style="font-size:0.875rem;vertical-align:middle">analytics</span> SAT Math</span>
       </div>
 
       <div class="topbar-actions">
@@ -343,7 +343,7 @@
     <!-- Drag & Drop Overlay -->
     <div id="drag-overlay" class="drag-overlay">
       <div class="drag-overlay-inner">
-        <span class="drag-overlay-icon">📄</span>
+        <span class="drag-overlay-icon"><span class="m-icon ic-gen">description</span></span>
         <span class="drag-overlay-text">Drop files here</span>
         <span class="drag-overlay-hint">Images, PDFs, text files</span>
       </div>
@@ -429,7 +429,7 @@
 <!-- Rename Modal -->
 <div id="rename-modal" class="delete-modal">
   <div class="delete-modal-content">
-    <div class="delete-modal-icon">✏️</div>
+    <div class="delete-modal-icon"><span class="material-icons-round" style="color: #FFA726; font-size: 20px;" aria-label="rename">edit</span></div>
     <h3 class="delete-modal-title">Rename</h3>
     <p class="delete-modal-desc" id="rename-modal-desc">Enter a new name</p>
     <input id="rename-modal-input" type="text" class="create-input" style="width:100%; margin-top:0.25rem;" placeholder="New name..."/>
@@ -443,7 +443,7 @@
 <!-- Delete Confirm Modal -->
 <div id="delete-modal" class="delete-modal">
   <div class="delete-modal-content">
-    <div class="delete-modal-icon">🗑️</div>
+    <div class="delete-modal-icon"><span class="material-icons-round" style="color: var(--red); font-size: 20px;" aria-label="delete">delete</span></div>
     <h3 class="delete-modal-title">Delete?</h3>
     <p class="delete-modal-desc">This will permanently delete <span id="delete-modal-name"></span>. This cannot be undone.</p>
     <div class="delete-modal-actions">
@@ -455,7 +455,7 @@
 
 <!-- Pro Tip Toast Notification -->
 <div id="pro-tip-toast" class="pro-tip-toast">
-  <span class="pro-tip-toast-icon">💡</span>
+  <span class="pro-tip-toast-icon"><span class="material-icons-round" style="color: #FFC107; font-size: 20px;" aria-label="light bulb">lightbulb</span></span>
   <div class="pro-tip-toast-content">
     <div class="pro-tip-toast-label">Pro Tip</div>
     <div class="pro-tip-toast-text" id="pro-tip-text"></div>
@@ -469,7 +469,7 @@
   box-shadow: 0 0.75rem 2.5rem rgba(0,0,0,.55), 0 0 1.5rem rgba(245,158,11,0.25), inset 0 1px 0 rgba(245,158,11,0.15);
   max-width: 24rem;
 ">
-  <span class="pro-tip-toast-icon" style="filter: drop-shadow(0 0 0.375rem rgba(245,158,11,0.7));">⚠️</span>
+  <span class="pro-tip-toast-icon"><span class="material-icons-round" style="color: var(--red); font-size: 20px; filter: drop-shadow(0 0 0.375rem rgba(248,113,113,0.7));" aria-label="warning">warning</span></span>
   <div class="pro-tip-toast-content">
     <div class="pro-tip-toast-label" style="color: #f59e0b; text-shadow: 0 0 0.5rem rgba(245,158,11,0.4);">Early Development</div>
     <div class="pro-tip-toast-text">SAT Math Chat is still in early development and may return broken or incorrect outputs. Always double-check responses.</div>
@@ -703,7 +703,7 @@
         onItemClick: (id) => {
           const sessions = window.KorahSidebar.getSessions() || {};
           const session = sessions[id];
-          if (session && session.mode !== 'sat-math') {
+          if (session && session.mode !== 'sat-math' && !(session.mode === 'sat' && session.satSubMode === 'math')) {
             // Regular chat — navigate to main chat page
             window.location.href = "../chat.html#" + id;
             return;

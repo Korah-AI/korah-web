@@ -208,8 +208,51 @@ function showSidebarDeleteModal(name, onConfirm) {
   };
   function getModeEmoji(mode) { return MODE_EMOJI[mode] || "📚"; }
 
+  const MODE_ICON = {
+    general: "auto_awesome", math: "calculate", physics: "science",
+    chemistry: "science", biology: "science", science: "science", history: "library_books", literature: "menu_book",
+    sat: "analytics", "sat-math": "analytics",
+  };
+  const MODE_ICON_COLOR = {
+    general: "ic-gen", math: "ic-math", physics: "ic-sci",
+    chemistry: "ic-sci", biology: "ic-sci", science: "ic-sci", history: "ic-hist", literature: "ic-lit",
+    sat: "ic-sat-m", "sat-math": "ic-sat-m",
+  };
+  function getModeIconHtml(mode) {
+    const icon = MODE_ICON[mode] || "menu_book";
+    const color = MODE_ICON_COLOR[mode] || "ic-lit";
+    return `<span class="m-icon ${color}">${icon}</span>`;
+  }
+
   const TYPE_EMOJI = { flashcards: "🃏", studyGuide: "📖", practiceTest: "🎯" };
   function getTypeEmoji(type) { return TYPE_EMOJI[type] || "📄"; }
+
+  const TYPE_ICON = { flashcards: "style", studyGuide: "auto_stories", practiceTest: "gps_fixed" };
+  const TYPE_ICON_COLOR = { flashcards: "ic-flash", studyGuide: "ic-guide", practiceTest: "ic-quiz" };
+  function getTypeIconHtml(type) {
+    const icon = TYPE_ICON[type] || "description";
+    const color = TYPE_ICON_COLOR[type] || "ic-gen";
+    return `<span class="m-icon ${color}">${icon}</span>`;
+  }
+
+  /**
+   * Standardizes sidebar section labels with material icons
+   */
+  function standardizeSidebarLabels() {
+    const labels = document.querySelectorAll(".sidebar-section-label");
+    labels.forEach(label => {
+      const text = label.textContent.trim();
+      if (text === "Recent Chats" && !label.querySelector(".material-icons-round")) {
+        label.innerHTML = `<span class="material-icons-round" style="font-size: 1.1rem; opacity: 0.7; margin-right: 8px;">chat</span><span>Recent Chats</span>`;
+        label.style.display = "flex";
+        label.style.alignItems = "center";
+      } else if (text === "Recent Study Items" && !label.querySelector(".material-icons-round")) {
+        label.innerHTML = `<span class="material-icons-round" style="font-size: 1.1rem; opacity: 0.7; margin-right: 8px;">school</span><span>Recent Study Items</span>`;
+        label.style.display = "flex";
+        label.style.alignItems = "center";
+      }
+    });
+  }
 
   // ── Render Chat History ──
   function renderChatHistory(container, baseUrl) {
@@ -234,7 +277,7 @@ function showSidebarDeleteModal(name, onConfirm) {
 
       const icon = document.createElement("span");
       icon.className = "history-icon";
-      icon.textContent = getModeEmoji(s.mode);
+      icon.innerHTML = getModeIconHtml(s.mode);
 
       const text = document.createElement("span");
       text.className = "history-text";
@@ -321,7 +364,22 @@ function showSidebarDeleteModal(name, onConfirm) {
     });
 
     if (!container) return;
+    
+    // Standardize empty state UI
     const emptyEl = document.getElementById("study-items-empty");
+    if (emptyEl) {
+      emptyEl.innerHTML = `
+        <span class="study-items-empty-icon" aria-hidden="true"><span class="m-icon" style="font-size: 2rem; margin-top:2rem;">school</span></span>
+        <div class="study-items-empty-title" style="font-size: 0.85rem; font-weight: 600; color: var(--tx2);">No study items yet</div>
+        <div class="study-items-empty-sub" style="font-size: 0.75rem; color: var(--tx3);">Create one to see it here.</div>
+      `;
+      emptyEl.style.padding = "20px 10px";
+      emptyEl.style.textAlign = "center";
+      emptyEl.style.display = "flex";
+      emptyEl.style.flexDirection = "column";
+      emptyEl.style.alignItems = "center";
+    }
+
     const list = itemIds
       .map((id) => ({ id, ...items[id] }))
       .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
@@ -352,7 +410,7 @@ function showSidebarDeleteModal(name, onConfirm) {
 
       const icon = document.createElement("span");
       icon.className = "history-icon";
-      icon.textContent = getTypeEmoji(item.type);
+      icon.innerHTML = getTypeIconHtml(item.type);
 
       const text = document.createElement("span");
       text.className = "history-text";
@@ -1310,6 +1368,10 @@ function showSidebarDeleteModal(name, onConfirm) {
 
     // 0. Action Modals (Rename, Delete, Clear, Logout)
     initActionModals();
+    
+    // Standardize sidebar labels (Recent Chats, Recent Study Items)
+    standardizeSidebarLabels();
+
     const chatEl = document.getElementById(chatHistoryId || "chat-history");
     const studyEl = document.getElementById(studyItemsId || "study-items-history");
     const resolvedBaseUrl = chatBaseUrl || "../chat.html";
@@ -1629,8 +1691,8 @@ function showSidebarDeleteModal(name, onConfirm) {
   }
 
   window.KorahSidebar = {
-    getSessions, getStudyItems, getTypeEmoji, renderChatHistory,
-    renderStudyItemsHistory, updateActiveItem, initSidebar,
+    getSessions, getStudyItems, getTypeEmoji, getModeIconHtml, getTypeIconHtml,
+    renderChatHistory, renderStudyItemsHistory, updateActiveItem, initSidebar,
     initTimerWidget, updateTimerWidget,
     onCollapseChange: null,
   };

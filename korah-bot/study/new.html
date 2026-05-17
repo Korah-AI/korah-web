@@ -658,7 +658,7 @@
     <div id="study-items-history" class="chat-history">
     </div>
     <div id="study-items-empty" class="study-items-empty hidden">
-      <span class="study-items-empty-icon" aria-hidden="true">📚</span>
+      <span class="study-items-empty-icon" aria-hidden="true"><span class="material-icons-round" style="color: #7E57C2; font-size: 20px;" aria-label="school">school</span></span>
       <div class="study-items-empty-title">No study items yet</div>
       <div class="study-items-empty-sub">Create one to see it here.</div>
     </div>
@@ -666,7 +666,7 @@
 
     <div class="sidebar-footer">
     <div class="mood-indicator" id="sidebar-mood">
-      <span class="mood-dot" id="mood-dot">🟢</span>
+      <span class="mood-dot" id="mood-dot"><span class="material-icons-round" style="font-size: 12px; color: var(--grn);" aria-label="online">circle</span></span>
       <span class="text-xs tx2 font-medium">Full Focus Mode</span>
     </div>
     <div class="sidebar-footer-actions">
@@ -738,21 +738,21 @@
       <h3 class="modal-step-title">How do you want to create it?</h3>
       <div class="method-grid">
         <button type="button" class="method-card t-btn" data-method="manual">
-          <div class="method-icon">✏️</div>
+          <div class="method-icon"><span class="material-icons-round" style="color: var(--gold); font-size: 20px;" aria-label="pencil">edit</span></div>
           <div class="method-info">
             <span class="method-name">Manual</span>
             <span class="method-desc tx2">Type or paste your content directly into the editor</span>
           </div>
         </button>
         <button type="button" class="method-card t-btn" data-method="ai-prompt">
-          <div class="method-icon">💬</div>
+          <div class="method-icon"><span class="material-icons-round" style="color: var(--p4); font-size: 20px;" aria-label="chat">chat</span></div>
           <div class="method-info">
             <span class="method-name">AI from Prompt</span>
             <span class="method-desc tx2">Describe what you need and let Korah generate the rest</span>
           </div>
         </button>
         <button type="button" class="method-card t-btn" data-method="ai-doc">
-          <div class="method-icon">📄</div>
+          <div class="method-icon"><span class="material-icons-round" style="color: var(--tx2); font-size: 20px;" aria-label="document">article</span></div>
           <div class="method-info">
             <span class="method-name">AI from Documents</span>
             <span class="method-desc tx2">Upload PDFs or notes to generate focused materials</span>
@@ -767,7 +767,7 @@
 <!-- Rename Modal -->
 <div id="rename-modal" class="delete-modal">
   <div class="delete-modal-content">
-    <div class="delete-modal-icon">✏️</div>
+    <div class="delete-modal-icon"><span class="m-icon ic-gen">edit</span></div>
     <h3 class="delete-modal-title">Rename</h3>
     <p class="delete-modal-desc" id="rename-modal-desc">Enter a new name</p>
     <input id="rename-modal-input" type="text" class="create-input" style="width:100%; margin-top:0.25rem;" placeholder="New name…"/>
@@ -781,7 +781,7 @@
 <!-- Delete Confirm Modal -->
 <div id="delete-modal" class="delete-modal">
   <div class="delete-modal-content">
-    <div class="delete-modal-icon">🗑️</div>
+    <div class="delete-modal-icon"><span class="material-icons-round" style="color: var(--red); font-size: 20px;" aria-label="delete">delete</span></div>
     <h3 class="delete-modal-title">Delete?</h3>
     <p class="delete-modal-desc">This will permanently delete "<span id="delete-modal-name"></span>". This cannot be undone.</p>
     <div class="delete-modal-actions">
@@ -968,8 +968,8 @@
 
       const isImage = file.type.startsWith("image/");
       const ext = file.name.split(".").pop().toUpperCase();
-      const icon = file.type === "application/pdf" ? "📕"
-        : (file.type === "text/plain" || ["TXT","MD","CSV"].includes(ext)) ? "📄" : "📎";
+      const icon = file.type === "application/pdf" ? '<span class="material-icons-round" style="color: var(--tx2); font-size: 22px;" aria-label="book">book</span>'
+        : (file.type === "text/plain" || ["TXT","MD","CSV"].includes(ext)) ? '<span class="material-icons-round" style="color: var(--tx2); font-size: 22px;" aria-label="document">article</span>' : '<span class="material-icons-round" style="color: var(--tx2); font-size: 22px;" aria-label="attachment">attach_file</span>';
 
       const thumbHtml = isImage
         ? `<div class="doc-thumb"><img class="doc-preview-img" src="" alt="${file.name}"/></div>`
@@ -1294,9 +1294,9 @@
 <script type="text/babel">
   const { useRef } = React;
   const typeData = [
-    { id: 'flashcards', emoji: '🃏', name: 'Flashcard Set', desc: 'Front/back cards with rich text and math' },
-    { id: 'studyGuide', emoji: '📖', name: 'Study Guide', desc: 'Structured outline with sections and summaries' },
-    { id: 'practiceTest', emoji: '🎯', name: 'Practice Test', desc: 'Questions with answer keys and rationales' }
+    { id: 'flashcards', icon: 'style', name: 'Flashcard Set', desc: 'Front/back cards with rich text and math', color: '#78909C' },
+    { id: 'studyGuide', icon: 'auto_stories', name: 'Study Guide', desc: 'Structured outline with sections and summaries', color: '#5C6BC0' },
+    { id: 'practiceTest', icon: 'gps_fixed', name: 'Practice Test', desc: 'Questions with answer keys and rationales', color: '#EF5350' }
   ];
 
   function TypeCard({ type }) {
@@ -1317,7 +1317,7 @@
         onClick={() => window.openCreationModal(type.id)}
         onMouseMove={handleMouseMove}
       >
-        <span className="create-type-emoji">{type.emoji}</span>
+        <span className="create-type-emoji"><span className="material-icons-round" style={{fontSize: '3rem', color: type.color}} aria-label={type.name}>{type.icon}</span></span>
         <span className="create-type-name">{type.name}</span>
         <span className="create-type-desc tx2">{type.desc}</span>
       </button>

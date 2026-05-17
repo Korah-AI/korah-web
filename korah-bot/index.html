@@ -130,7 +130,7 @@
   }
   .opportunities-banner .banner-text { flex: 1; min-width: 140px; font-size: 14px; color: var(--tx); }
   .opportunities-banner .banner-text strong { font-weight: 700; }
-  .opportunities-banner .banner-text span { color: white); }
+  .opportunities-banner .banner-text span { color: white; }
   .opportunities-cta {
     background: rgba(16,185,129,.16);
     color: #10b981; font-weight: 700; font-size: 13px;
@@ -545,7 +545,7 @@
   <div class="sidebar-middle">
     <div id="study-items-history" class="chat-history"></div>
     <div id="study-items-empty" class="study-items-empty hidden">
-      <span class="study-items-empty-icon" aria-hidden="true">📚</span>
+      <span class="study-items-empty-icon" aria-hidden="true"><span class="m-icon ic-gen">school</span></span>
       <div class="study-items-empty-title">No study items yet</div>
       <div class="study-items-empty-sub">Create one to see it here.</div>
     </div>
@@ -553,7 +553,7 @@
 
   <div class="sidebar-footer">
     <div class="mood-indicator" id="sidebar-mood">
-      <span class="mood-dot" id="mood-dot">🟢</span>
+      <span class="mood-dot" id="mood-dot"><span class="material-icons-round" style="font-size: 12px; color: var(--grn);" aria-label="online">circle</span></span>
       <span class="text-xs tx2 font-medium">Full Focus Mode</span>
     </div>
     <div class="sidebar-footer-actions">
@@ -562,6 +562,12 @@
           <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
           <polyline points="16 17 21 12 16 7"/>
           <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+      </button>
+      <button id="settings-btn" class="theme-toggle-small t-btn" title="Settings">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
         </svg>
       </button>
       <button @click="theme = theme === 'dark' ? 'light' : 'dark'; localStorage.setItem('korah_theme', theme)" class="theme-toggle-small t-btn" title="Toggle theme">
@@ -583,6 +589,79 @@
     </div>
   </div>
 </aside>
+
+<!-- Settings Modal -->
+<div id="settings-modal" class="settings-modal">
+  <div class="settings-modal-content">
+    <div class="settings-header">
+      <h2 class="settings-title">Settings</h2>
+      <button class="settings-close" id="settings-close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="settings-body">
+      <div class="settings-section">
+        <h3 class="settings-section-title">Appearance</h3>
+        <div class="settings-item">
+          <div class="settings-item-label">Theme</div>
+          <div class="settings-item-control">
+            <div class="settings-custom-select" id="settings-theme-custom-select">
+              <div class="settings-select-trigger" id="settings-theme-trigger">
+                <div class="flex items-center gap-2">
+                  <span class="material-icons-round trigger-icon">dark_mode</span>
+                  <span class="trigger-text">Dark Mode</span>
+                </div>
+                <span class="material-icons-round">expand_more</span>
+              </div>
+              <div class="settings-select-menu" id="settings-theme-menu">
+                <div class="settings-select-option" data-value="dark">
+                  <span class="material-icons-round">dark_mode</span>
+                  <span>Dark Mode</span>
+                  <span class="material-icons-round check-icon">check</span>
+                </div>
+                <div class="settings-select-option" data-value="light">
+                  <span class="material-icons-round">light_mode</span>
+                  <span>Light Mode</span>
+                  <span class="material-icons-round check-icon">check</span>
+                </div>
+                <div class="settings-select-option" data-value="system">
+                  <span class="material-icons-round">settings_suggest</span>
+                  <span>System</span>
+                  <span class="material-icons-round check-icon">check</span>
+                </div>
+              </div>
+              <input type="hidden" id="settings-theme-select" value="dark">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3 class="settings-section-title">Profile</h3>
+        <div class="settings-item">
+          <div class="settings-item-label">Display Name</div>
+          <div class="settings-item-control">
+            <input type="text" id="settings-name-input" class="settings-input" placeholder="Your name">
+          </div>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3 class="settings-section-title">Data</h3>
+        <div class="settings-item">
+          <div class="settings-item-label">Clear All Data</div>
+          <div class="settings-item-control">
+            <button id="settings-clear-data" class="settings-btn danger">Clear Data</button>
+          </div>
+        </div>
+      </div>
+      <div class="settings-actions">
+        <button id="settings-save" class="settings-btn primary">Save Settings</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ═══ MAIN AREA ═══ -->
 <div id="main-area-wrapper" class="main-area-wrapper">
@@ -740,7 +819,7 @@
     <section class="two-col-grid">
       <!-- SAT Strategy Tip -->
       <div class="tip-card" id="tipCard">
-        <div class="tip-icon" id="tipIcon">📐</div>
+        <div class="tip-icon" id="tipIcon"><span class="material-icons-round" style="color: var(--tx2); font-size: 20px;" aria-label="ruler">straighten</span></div>
         <div class="tip-label" id="tipLabel">Math Strategy</div>
         <div class="tip-text" id="tipText">If a problem has variables in both the question and answers, try plugging in simple numbers like 2 or 3.</div>
         <div class="tip-nav">
@@ -779,7 +858,7 @@
   <!-- Drag & Drop Overlay -->
   <div id="drag-overlay" class="drag-overlay">
     <div class="drag-overlay-inner">
-      <span class="drag-overlay-icon">📄</span>
+      <span class="drag-overlay-icon"><span class="material-icons-round" style="color: var(--tx3); font-size: 20px;" aria-label="document">article</span></span>
       <span class="drag-overlay-text">Drop files here</span>
       <span class="drag-overlay-hint">Images, PDFs, text files</span>
     </div>
@@ -848,7 +927,7 @@
       <!-- Slide 2: Question Bank -->
       <div class="onboard-slide" data-slide="2">
         <div class="onboard-img-placeholder">
-          <span class="ob-ph-icon">📋</span>
+          <span class="ob-ph-icon"><span class="material-icons-round" style="color: var(--tx2); font-size: 20px;" aria-label="clipboard">assignment</span></span>
           <span>Question Bank screenshot</span>
         </div>
         <h2 class="onboard-title">3,500+ Practice Questions</h2>
@@ -858,7 +937,7 @@
       <!-- Slide 3: Math Chat -->
       <div class="onboard-slide" data-slide="3">
         <div class="onboard-img-placeholder">
-          <span class="ob-ph-icon">📊</span>
+          <span class="ob-ph-icon"><span class="material-icons-round" style="color: var(--p4); font-size: 20px;" aria-label="bar chart">bar_chart</span></span>
           <span>Math Chat screenshot</span>
         </div>
         <h2 class="onboard-title">SAT Math Chat</h2>
@@ -868,7 +947,7 @@
       <!-- Slide 4: Weakness Tracking -->
       <div class="onboard-slide" data-slide="4">
         <div class="onboard-img-placeholder">
-          <span class="ob-ph-icon">🎯</span>
+          <span class="ob-ph-icon"><span class="material-icons-round" style="color: #EF5350; font-size: 20px;" aria-label="target">gps_fixed</span></span>
           <span>Weakness tracker screenshot</span>
         </div>
         <h2 class="onboard-title">Korah Finds Your Weak Spots</h2>
@@ -879,7 +958,7 @@
       <div class="onboard-slide" data-slide="5">
         <div class="onboard-hero-layout">
           <div class="onboard-hero-text">
-            <h2 class="onboard-hero-title">You're All Set! 🎉</h2>
+            <h2 class="onboard-hero-title">You're All Set! <span class="material-icons-round" style="color: var(--ac); font-size: 24px; vertical-align: middle;" aria-label="celebration">celebration</span></h2>
             <p class="onboard-desc">Start practicing to build your momentum. Your first question is waiting, let's get that score moving!</p>
             <!-- temporary comment out, i don't like the button -->
             <!-- <a href="sat/index.html" class="cta-primary" style="margin-top:4px; align-self:flex-start;" id="onboard-cta-btn">
@@ -911,17 +990,17 @@
 <!-- SAT Sub-Mode Modal -->
 <div id="sat-sub-modal" class="delete-modal">
   <div class="delete-modal-content" style="max-width: 420px;">
-    <div class="delete-modal-icon">📝</div>
+    <div class="delete-modal-icon"><span class="material-icons-round" style="color: var(--p4); font-size: 20px;" aria-label="memo">description</span></div>
     <h3 class="delete-modal-title">SAT Mode</h3>
     <p class="delete-modal-desc" style="margin-bottom: 1rem;">Which section are you working on?</p>
     <div style="display: flex; gap: 0.75rem; width: 100%;">
       <button id="sat-math-btn" class="sat-sub-btn" style="flex:1; padding: 1rem; border-radius: 12px; border: 2px solid rgba(245,158,11,0.3); background: rgba(245,158,11,0.08); cursor: pointer; text-align: center; transition: all 0.2s;">
-        <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">📝</div>
+        <div style="font-size: 1.5rem; margin-bottom: 0.25rem;"><span class="material-icons-round" style="color: var(--p4); font-size: 24px;" aria-label="memo">description</span></div>
         <div style="font-weight: 700; font-size: 0.95rem; color: var(--tx);">Math</div>
         <div style="font-size: 0.75rem; color: var(--tx3); margin-top: 0.25rem;">Regressions, algebra, geometry</div>
       </button>
       <button id="sat-english-btn" class="sat-sub-btn" style="flex:1; padding: 1rem; border-radius: 12px; border: 2px solid rgba(99,102,241,0.3); background: rgba(99,102,241,0.08); cursor: pointer; text-align: center; transition: all 0.2s;">
-        <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">📖</div>
+        <div style="font-size: 1.5rem; margin-bottom: 0.25rem;"><span class="material-icons-round" style="color: var(--p4); font-size: 24px;" aria-label="book">auto_stories</span></div>
         <div style="font-weight: 700; font-size: 0.95rem; color: var(--tx);">English</div>
         <div style="font-size: 0.75rem; color: var(--tx3); margin-top: 0.25rem;">Reading & Writing</div>
       </button>
@@ -1098,7 +1177,7 @@
       document.getElementById('momentum-fill').style.width = `${momentumPct * 100}%`;
       const momentumMsg = todayQCount === 0 ? "Start practicing to build momentum!"
         : todayQCount < momentumGoal ? `${momentumGoal - todayQCount} more to daily goal`
-        : "Daily goal crushed! 🎉";
+        : "Daily goal crushed! <span class=\"material-icons-round\" style=\"color: var(--ac); font-size: 18px; vertical-align: middle;\" aria-label=\"celebration\">celebration</span>";
       document.getElementById('gauge-sub').textContent = momentumMsg;
       const streakIcon = todayQCount === 0 ? '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#3b82f6;"><circle cx="12" cy="12" r="9"/><polyline points="12 6 12 12 16 14"/></svg>' : todayQCount < 5 ? '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="color:#3b82f6;"><path d="M12 1c.8 0 1.6.4 2 1l7 11c.4.6.4 1.4 0 2l-7 11c-.4.6-1.2 1-2 1s-1.6-.4-2-1l-7-11c-.4-.6-.4-1.4 0-2l7-11c.4-.6 1.2-1 2-1zm0 3.5L6.5 13l5.5 8.5 5.5-8.5-5.5-8.5z"/></svg>' : '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#3b82f6;"><path d="M12 2c1.6 1.5 2 3 2 5 0 2-1 4-3 5 1 .5 2 1 2.5 2 1 2 .5 4-.5 6-1 2-3 3-5 3s-4-1-5-3c-1-2-1.5-4-.5-6 .5-1 1.5-1.5 2.5-2-2-1-3-3-3-5 0-2 .4-3.5 2-5z"/></svg>';
       document.getElementById('streak-emoji').innerHTML = streakIcon;

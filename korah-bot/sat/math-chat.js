@@ -1026,9 +1026,10 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
     const hash = window.location.hash.slice(1);
     if (hash && window.KorahDB) {
       const session = await window.KorahDB.getConversation(hash);
-      if (session && session.mode === 'sat-math') {
+      if (session && (session.mode === 'sat-math' || (session.mode === 'sat' && session.satSubMode === 'math'))) {
         currentSessionId = hash;
         currentSession = session;
+        if (currentSession.mode === 'sat') currentSession.mode = 'sat-math';
         conversationHistory = session.messages || [];
         renderSavedMessages();
         if (window.KorahSidebar) window.KorahSidebar.updateActiveItem(hash);

@@ -21,6 +21,12 @@
 # rBUGs.md
 * Do all these I guess :(
 
+# dashboard.html
+* The multi select for the multi delete isn;t working and i don;t know if its delete it working
+
+# sat/math-chat.html
+* It's multiple delete modal doesn;t appear when doing recent study items.
+
 # sat/index.html
 * Theres like an invisible footer like this at the bottom of the main content area (leaving it alone for now)
 
