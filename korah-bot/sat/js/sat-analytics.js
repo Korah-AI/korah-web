@@ -167,12 +167,25 @@ export async function initSatAnalytics(app, uid) {
       answered: increment(1),
       correct: increment(correct ? 1 : 0),
       incorrect: increment(correct ? 0 : 1),
-      practiceTime: increment(timeSpent),
       lastActivity: nowIso,
     }, { merge: true });
 
     await batch.commit();
     return { xp, newXP };
+  }
+
+  /**
+   * Increment the user's all-time practice time. Use this for time the user
+   * spent on a question regardless of whether they ever clicked "Check Answer"
+   * (e.g. skipped, reviewed, or navigated away). Safe to call with 0; it no-ops.
+   */
+  async function recordPracticeTime(seconds) {
+    const s = Math.max(0, Math.floor(Number(seconds) || 0));
+    if (!s) return;
+    await setDoc(totalsRef, {
+      practiceTime: increment(s),
+      lastActivity: new Date().toISOString(),
+    }, { merge: true });
   }
 
   async function saveBookmark(questionId, bookmarked, meta = {}) {
@@ -308,6 +321,7 @@ export async function initSatAnalytics(app, uid) {
     saveProfile,
     getTotals,
     recordAttempt,
+    recordPracticeTime,
     saveBookmark,
     getBookmarks,
     getMissedQuestionIds,

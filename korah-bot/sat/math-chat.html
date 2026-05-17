@@ -21,6 +21,7 @@
   }
 }" :data-theme="getEffectiveTheme()" x-cloak>
 <head>
+<head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Korah AI — SAT Math</title>
@@ -101,14 +102,14 @@
   </div>
 
   <nav class="sidebar-nav">
+    <span class="sidebar-section-label">HOME</span>
     <a href="../index.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">home</span> <span class="nav-text">Home</span></a>
-    <div class="sidebar-nav-row">
-      <a href="../chat.html" class="sidebar-nav-link nav-empty t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">chat</span> <span class="nav-text">Chat</span></a>
-      <a href="../study/feed.html" class="sidebar-nav-link  t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">school</span> <span class="nav-text">Study</span></a>
-    </div>
-    <a href="index.html" class="sidebar-nav-link t-btn" data-sat-link="true"><span class="material-icons-round" style="font-size: 1.25rem;">assignment</span> <span class="nav-text">SAT</span></a>
-    <!-- PRODUCTIVITY PAGE TEMPORARILY REMOVED - restore when ready to re-enable -->
-    <div class="opp-wrapper"><a href="../opportunities/opportunities.html" class="sidebar-nav-link opp-wrapper t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">rocket_launch</span> <span class="nav-text">Opportunities</span></a></div>
+    <a href="../chat.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">chat</span> <span class="nav-text">Chat</span></a>
+    <a href="../study/feed.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">school</span> <span class="nav-text">Study</span></a>
+    <span class="sidebar-section-label">SAT</span>
+    <a href="index.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">assignment</span> <span class="nav-text">Question Bank</span></a>
+    <a href="math-chat.html" class="sidebar-nav-link active t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">calculate</span> <span class="nav-text">Math Chat</span></a>
+    <a href="dashboard.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">insights</span> <span class="nav-text">Dashboard</span></a>
   </nav>
 
   <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 0.75rem 0 0.25rem;">
@@ -158,41 +159,9 @@
     </div>
   </div>
 
-  <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 0.75rem 0 0.25rem;">
-    <span class="sidebar-section-label" style="margin:0">Recent Study Items</span>
-  </div>
-  <div class="sidebar-middle">
-    <div class="select-bar-wrapper">
-      <div id="study-select-bar" class="select-bar">
-        <span class="select-bar-count" id="study-select-count">0 selected</span>
-        <div class="select-bar-actions">
-          <button class="select-bar-btn" id="study-select-all" title="Select all">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <polyline points="20 6 9 17 4 12"/>
-            </svg>
-          </button>
-          <button class="select-bar-btn" id="study-deselect-all" title="Deselect all">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <line x1="18" y1="6" x2="6" y2="18"/>
-              <line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
-          <button class="select-bar-btn danger" id="study-delete-selected" title="Delete selected"></button>
-        </div>
-      </div>
-    </div>
-    <div id="study-items-history" class="chat-history">
-    </div>
-    <div id="study-items-empty" class="study-items-empty hidden">
-      <span class="study-items-empty-icon" aria-hidden="true"><span class="m-icon ic-gen">school</span></span>
-      <div class="study-items-empty-title">No study items yet</div>
-      <div class="study-items-empty-sub">Create one to see it here.</div>
-    </div>
-  </div>
-
   <div class="sidebar-footer">
     <div class="mood-indicator" id="sidebar-mood">
-      <span class="mood-dot" id="mood-dot"><span class="m-icon" style="font-size:0.75rem;color:var(--grn)">fiber_manual_record</span></span>
+      <span class="mood-dot" id="mood-dot"><span class="m-icon" style="font-size:0.75rem;color:var(--grn)">fiber_manual_record</span>
       <span class="text-xs tx2 font-medium">Full Focus Mode</span>
     </div>
     <div class="sidebar-footer-actions">
@@ -486,68 +455,75 @@
     <div class="feature-intro-slides" id="feature-intro-slides">
       <!-- Slide 1 -->
       <div class="feature-intro-slide active" data-slide="0">
-        <div class="feature-intro-icon-large"><img src="../logo-images/newlogo0.png" alt="SAT Math Chat" style="width: 100%; height: 100%; object-fit: contain;"/></div>
-        <h2 class="feature-intro-title">Welcome to SAT Math Chat</h2>
-        <p class="feature-intro-desc">
-          A brand-new interactive math environment designed to help you ace the SAT.
-          Combine AI-powered tutoring with a live Desmos graphing calculator to visualize
-          and solve problems in real time.
-        </p>
-        <div class="feature-intro-badge-new">NEW</div>
+        <div style="display:grid; grid-template-columns:1fr auto; gap:28px; align-items:center; width:100%; text-align:left;">
+          <div style="display:flex; flex-direction:column; gap:12px;">
+            <h2 class="feature-intro-title" style="text-align:left;">Welcome to Math Chat</h2>
+            <p class="feature-intro-desc" style="text-align:left;">
+              Here, you'll learn SAT math with an AI powered Desmos graph;
+              tricks, tips, and visualizers will all help you ace your next exam.
+            </p>
+            <p class="feature-intro-desc" style="text-align:left; font-size:13px; margin-top:2px;"><strong>Here's a quick look at what you can do.</strong></p>
+          </div>
+          <img src="../logo-images/newlogo10.png" alt="SAT Math Chat" style="width:160px; height:160px; object-fit:contain; filter:drop-shadow(0 10px 28px rgba(139,92,246,.4)); flex-shrink:0;"/>
+        </div>
       </div>
 
       <!-- Slide 2 -->
       <div class="feature-intro-slide" data-slide="1">
-        <div class="feature-intro-icon-large"><img src="../logo-images/newlogo2.png" alt="Desmos Calculator" style="width: 100%; height: 100%; object-fit: contain;"/></div>
+        <div class="feature-intro-icon-large"><img src="../logo-images/newlogo2.png" alt="Desmos Calculator" style="width: 56px; height: 56px; object-fit: contain;"/></div>
         <h2 class="feature-intro-title">Interactive Desmos Calculator</h2>
         <p class="feature-intro-desc">
           Ask Korah about any function, equation, or dataset and watch it appear on the
           Desmos graph instantly. Zoom, pan, and interact with your graphs to build
           deeper understanding of mathematical relationships.
         </p>
-        <div class="feature-intro-img-placeholder">
-          <img src="desmos1.png" alt="Desmos calculator demo" class="feature-intro-img"/>
+        <div class="feature-intro-img-placeholder" style="background: rgba(139,92,246,0.08); border: 2px dashed rgba(139,92,246,0.3); border-radius: 12px; display: flex; align-items: center; justify-content: center; min-height: 140px; color: var(--p4); font-size: 0.8rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; opacity: 0.6;">
+          Image coming soon
         </div>
       </div>
 
       <!-- Slide 3 -->
       <div class="feature-intro-slide" data-slide="2">
-        <div class="feature-intro-icon-large"><img src="../logo-images/newlogo5.png" alt="Regressions" style="width: 100%; height: 100%; object-fit: contain;"/></div>
+        <div class="feature-intro-icon-large"><img src="../logo-images/newlogo5.png" alt="Regressions" style="width: 56px; height: 56px; object-fit: contain;"/></div>
         <h2 class="feature-intro-title">Regressions & Desmos Tricks</h2>
         <p class="feature-intro-desc">
           Learn how to use linear, quadratic, exponential, and power regressions to
           solve SAT problems faster. Korah will show you data tables and best-fit curves
           directly on the graph &mdash; the same Desmos tricks top scorers use on test day.
         </p>
-        <div class="feature-intro-img-placeholder">
-          <img src="desmos3.png" alt="Regression demo" class="feature-intro-img"/>
+        <div class="feature-intro-img-placeholder" style="background: rgba(139,92,246,0.08); border: 2px dashed rgba(139,92,246,0.3); border-radius: 12px; display: flex; align-items: center; justify-content: center; min-height: 140px; color: var(--p4); font-size: 0.8rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; opacity: 0.6;">
+          Image coming soon
         </div>
       </div>
 
       <!-- Slide 4 -->
       <div class="feature-intro-slide" data-slide="3">
-        <div class="feature-intro-icon-large"><img src="../logo-images/newlogo11.png" alt="Solve Problems" style="width: 100%; height: 100%; object-fit: contain;"/></div>
+        <div class="feature-intro-icon-large"><img src="../logo-images/newlogo11.png" alt="Solve Problems" style="width: 56px; height: 56px; object-fit: contain;"/></div>
         <h2 class="feature-intro-title">Solve SAT Problems Faster</h2>
         <p class="feature-intro-desc">
           Instead of solving algebraically, plug data into Desmos and let regression find
           the answer. Learn strategies like graphing both sides of an equation to find
           intersections, or using sliders to match function parameters.
         </p>
-        <div class="feature-intro-img-placeholder">
-          <img src="desmos2.png" alt="Regression demo" class="feature-intro-img"/>
+        <div class="feature-intro-img-placeholder" style="background: rgba(139,92,246,0.08); border: 2px dashed rgba(139,92,246,0.3); border-radius: 12px; display: flex; align-items: center; justify-content: center; min-height: 140px; color: var(--p4); font-size: 0.8rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; opacity: 0.6;">
+          Image coming soon
         </div>
       </div>
 
       <!-- Slide 5 -->
       <div class="feature-intro-slide" data-slide="4">
-        <div class="feature-intro-icon-large"><img src="../logo-images/newlogo12.png" alt="Help Improve" style="width: 100%; height: 100%; object-fit: contain;"/></div>
-        <h2 class="feature-intro-title">Help Us Improve</h2>
-        <p class="feature-intro-desc">
-          SAT Math Chat is new and still in active development. Some features may not
-          work perfectly yet. If you encounter any bugs or have feedback, please
-          report them to:
-        </p>
-        <a href="mailto:oscareucedaf1@gmail.com" class="feature-intro-email">oscareucedaf1@gmail.com</a>
+        <div style="display:grid; grid-template-columns:1fr auto; gap:28px; align-items:center; width:100%; text-align:left;">
+          <div style="display:flex; flex-direction:column; gap:12px;">
+            <h2 class="feature-intro-title" style="text-align:left;">Help Us Improve</h2>
+            <p class="feature-intro-desc" style="text-align:left;">
+              SAT Math Chat is new and still in active development. Some features may not
+              work perfectly yet. If you encounter any bugs or have feedback, please
+              report them to:
+            </p>
+            <a href="mailto:oscareucedaf1@gmail.com" class="feature-intro-email" style="align-self:flex-start;">oscareucedaf1@gmail.com</a>
+          </div>
+          <img src="../logo-images/newlogo12.png" alt="Help Improve" style="width:130px; height:130px; object-fit:contain; filter:drop-shadow(0 10px 28px rgba(139,92,246,.4)); flex-shrink:0;"/>
+        </div>
       </div>
     </div>
 

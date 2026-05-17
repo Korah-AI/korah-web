@@ -670,12 +670,24 @@
     if (window.qNav) window.qNav.refresh();
   }
 
+  // Flush the current question's elapsed time into the all-time practice
+  // total before the stopwatch is reset or the page is unloaded. Without
+  // this, time spent on skipped/reviewed questions is silently dropped.
+  function flushPracticeTime() {
+    const elapsed = state.stopwatchElapsed;
+    if (elapsed > 0 && window.KorahSATAnalytics?.recordPracticeTime) {
+      window.KorahSATAnalytics.recordPracticeTime(elapsed)
+        .catch((e) => console.warn("[SAT] recordPracticeTime failed", e));
+    }
+    state.stopwatchElapsed = 0;
+  }
+
   // NEW: Stopwatch functions (replaces old 32min timer)
   function startStopwatch() {
-    state.stopwatchElapsed = 0;
+    flushPracticeTime();
     updateStopwatchDisplay();
     if (stopwatchInterval) clearInterval(stopwatchInterval);
-    
+
     stopwatchInterval = setInterval(() => {
       if (!state.isPaused) {
         state.stopwatchElapsed++;
@@ -683,6 +695,8 @@
       }
     }, 1000);
   }
+
+  window.addEventListener("pagehide", flushPracticeTime);
 
   function updateStopwatchDisplay() {
     if (!playerTimer || !clockIcon) return;

@@ -518,14 +518,14 @@
   </div>
 
   <nav class="sidebar-nav">
+    <span class="sidebar-section-label">HOME</span>
     <a href="index.html" class="sidebar-nav-link active t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">home</span> <span class="nav-text">Home</span></a>
-    <div class="sidebar-nav-row">
-      <a href="chat.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">chat</span> <span class="nav-text">Chat</span></a>
-      <a href="study/feed.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">school</span> <span class="nav-text">Study</span></a>
-    </div>
-    <a href="sat/index.html" class="sidebar-nav-link t-btn" data-sat-link="true"><span class="material-icons-round" style="font-size: 1.25rem;">assignment</span> <span class="nav-text">SAT</span></a>
-    <!-- PRODUCTIVITY PAGE TEMPORARILY REMOVED - restore when ready to re-enable -->
-    <div class="opp-wrapper"><a href="opportunities/opportunities.html" class="sidebar-nav-link opp-wrapper t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">rocket_launch</span> <span class="nav-text">Opportunities</span></a></div>
+    <a href="chat.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">chat</span> <span class="nav-text">Chat</span></a>
+    <a href="study/feed.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">school</span> <span class="nav-text">Study</span></a>
+    <span class="sidebar-section-label">SAT</span>
+    <a href="sat/index.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">assignment</span> <span class="nav-text">Question Bank</span></a>
+    <a href="sat/math-chat.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">calculate</span> <span class="nav-text">Math Chat</span></a>
+    <a href="sat/dashboard.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">insights</span> <span class="nav-text">Dashboard</span></a>
   </nav>
 
   <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 0.75rem 0 0.25rem;">
@@ -539,21 +539,10 @@
     </div>
   </div>
 
-  <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 0.75rem 0 0.25rem;">
-    <span class="sidebar-section-label" style="margin:0">Recent Study Items</span>
-  </div>
-  <div class="sidebar-middle">
-    <div id="study-items-history" class="chat-history"></div>
-    <div id="study-items-empty" class="study-items-empty hidden">
-      <span class="study-items-empty-icon" aria-hidden="true"><span class="m-icon ic-gen">school</span></span>
-      <div class="study-items-empty-title">No study items yet</div>
-      <div class="study-items-empty-sub">Create one to see it here.</div>
-    </div>
-  </div>
 
   <div class="sidebar-footer">
     <div class="mood-indicator" id="sidebar-mood">
-      <span class="mood-dot" id="mood-dot"><span class="material-icons-round" style="font-size: 12px; color: var(--grn);" aria-label="online">circle</span></span>
+      <span class="mood-dot" id="mood-dot"><span class="material-icons-round" style="font-size: 12px; color: var(--grn);" aria-label="online">circle</span>
       <span class="text-xs tx2 font-medium">Full Focus Mode</span>
     </div>
     <div class="sidebar-footer-actions">
@@ -759,7 +748,7 @@
               <span style="font-size:13px; font-weight:700; color:var(--tx); font-variant-numeric:tabular-nums;" id="plan-english-label">— / —</span>
             </div>
             <div style="height:28px; background:rgba(56,189,248,.12); border-radius:12px; overflow:hidden; position:relative;">
-              <div id="plan-english-bar" style="height:100%; width:100%; border-radius:12px; background:linear-gradient(90deg,#0ea5e9,#38bdf8,#7dd3fc); box-shadow:0 0 20px rgba(56,189,248,.6); position:relative; overflow:hidden;">
+              <div id="plan-english-bar" style="height:100%; width:0%; border-radius:12px; background:linear-gradient(90deg,#0ea5e9,#38bdf8,#7dd3fc); box-shadow:0 0 20px rgba(56,189,248,.6); position:relative; overflow:hidden; transition:width .5s ease;">
                 <span style="position:absolute; top:0; left:-100%; width:60%; height:100%; background:linear-gradient(90deg,transparent,rgba(255,255,255,.4),transparent); animation:bar-flow 2.5s linear infinite;"></span>
               </div>
             </div>
@@ -770,7 +759,7 @@
               <span style="font-size:13px; font-weight:700; color:var(--tx); font-variant-numeric:tabular-nums;" id="plan-math-label">— / —</span>
             </div>
             <div style="height:28px; background:rgba(16,185,129,.12); border-radius:12px; overflow:hidden; position:relative;">
-              <div id="plan-math-bar" style="height:100%; width:100%; border-radius:12px; background:linear-gradient(90deg,#10b981,#34d399,#6ee7b7); box-shadow:0 0 20px rgba(16,185,129,.6); position:relative; overflow:hidden;">
+              <div id="plan-math-bar" style="height:100%; width:0%; border-radius:12px; background:linear-gradient(90deg,#10b981,#34d399,#6ee7b7); box-shadow:0 0 20px rgba(16,185,129,.6); position:relative; overflow:hidden; transition:width .5s ease;">
                 <span style="position:absolute; top:0; left:-100%; width:60%; height:100%; background:linear-gradient(90deg,transparent,rgba(255,255,255,.4),transparent); animation:bar-flow 2.5s linear infinite; animation-delay:.8s;"></span>
               </div>
             </div>
@@ -1196,13 +1185,17 @@
 
       if (enCur && enGoal && enBar) {
         enLabel.textContent = `${enCur} / ${enGoal}`;
+        enBar.style.width = `${Math.round(Math.max(0, Math.min(1, (enCur - 200) / (enGoal - 200))) * 100)}%`;
       } else {
         enLabel.textContent = enGoal ? `— / ${enGoal}` : '— / —';
+        if (enBar) enBar.style.width = '0%';
       }
       if (maCur && maGoal && maBar) {
         maLabel.textContent = `${maCur} / ${maGoal}`;
+        maBar.style.width = `${Math.round(Math.max(0, Math.min(1, (maCur - 200) / (maGoal - 200))) * 100)}%`;
       } else {
         maLabel.textContent = maGoal ? `— / ${maGoal}` : '— / —';
+        if (maBar) maBar.style.width = '0%';
       }
 
       const bothSet = enCur && enGoal && maCur && maGoal;

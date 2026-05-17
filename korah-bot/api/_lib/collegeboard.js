@@ -264,6 +264,18 @@ function fixImageUrls(html) {
   return typeof html === "string" ? html : "";
 }
 
+// Search the in-process list cache for a question's metadata by its external_id
+// or ibn. Used by the questionIds fetch path to recover section/domain/difficulty.
+export function findCachedQuestionMeta(id) {
+  for (const { items } of listCache.values()) {
+    const found = items.find(
+      (item) => item.external_id === id || item.ibn === id
+    );
+    if (found) return found;
+  }
+  return null;
+}
+
 export function normalizeQuestion(meta, detail) {
   const domainCode = meta?.primary_class_cd;
   const domainName =
@@ -273,12 +285,12 @@ export function normalizeQuestion(meta, detail) {
     "";
   const section = sectionForDomainCode(domainCode) || "english";
   const loaded = Boolean(detail);
+  // external_id / ibn are what the CB detail API accepts — use them as the
+  // canonical id so that stored analytics IDs can always be re-fetched.
   const detailKey = meta?.external_id || meta?.ibn || "";
 
   return {
-    id: meta?.questionId || meta?.external_id || meta?.ibn || "",
-    // The upstream identifier the frontend hands back when requesting on-demand
-    // detail via /api/sat/question?id=…
+    id: meta?.external_id || meta?.ibn || meta?.questionId || "",
     detailKey,
     section,
     domain: domainName,

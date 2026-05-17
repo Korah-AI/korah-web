@@ -3,6 +3,7 @@ import {
   SECTION_DOMAIN_CODES,
   fetchQuestionList,
   fetchQuestionDetail,
+  findCachedQuestionMeta,
   normalizeQuestion,
   resolveDomainCodes,
   shuffleArray,
@@ -97,7 +98,7 @@ export default async function handler(req, res) {
   const assessmentKey = String(req.query?.assessment || "SAT").toUpperCase();
   const asmtEventId = ASSESSMENTS[assessmentKey] ?? ASSESSMENTS.SAT;
 
-  // New: Handle explicit question IDs
+  // Handle explicit question IDs (review errors, saved questions, etc.)
   const questionIdsParam = req.query?.questionIds || req.query?.ids;
   if (questionIdsParam) {
     const ids = String(questionIdsParam).split(",").map(id => id.trim()).filter(Boolean);
@@ -108,8 +109,14 @@ export default async function handler(req, res) {
         const detail = await fetchQuestionDetail(id, dc.signal);
         clearTimeout(dt);
         if (!detail) return null;
-        // Mock a meta object for normalizeQuestion
-        return normalizeQuestion({ external_id: id, difficulty: "M" }, detail);
+        // Use cached list metadata for correct section/domain/difficulty when
+        // available (same function instance). Falls back to a minimal stub so
+        // the question is still shown even if cache is cold.
+        const cachedMeta = findCachedQuestionMeta(id) || {
+          external_id: id,
+          difficulty: "M",
+        };
+        return normalizeQuestion(cachedMeta, detail);
       } catch (e) {
         console.warn(`Failed to fetch detail for ${id}`, e);
         return null;

@@ -353,6 +353,7 @@ function showSidebarDeleteModal(name, onConfirm) {
     navLinks.forEach(link => {
       if (link.hasAttribute('data-sat-link')) return; // Skip SAT links
       const href = link.getAttribute("href");
+      if (href.includes("sat/")) return; // Skip SAT section links
       if (href.includes("feed.html")) {
         link.innerHTML = "<span class='material-icons-round' style='font-size: 1.25rem;'>school</span> <span class='nav-text'>Study</span>";
         if (itemIds.length === 0) link.classList.add("nav-empty");
