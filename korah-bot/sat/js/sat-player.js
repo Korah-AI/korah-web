@@ -228,6 +228,7 @@
     answers: {},
     checked: {},
     reviewed: {},
+    eliminated: {},
     // Stopwatch state
     stopwatchElapsed: 0,
     isPaused: false,
@@ -257,7 +258,8 @@
   const questionStem = document.getElementById("questionStem");
   const answerChoices = document.getElementById("answerChoices");
   const feedbackPanel = document.getElementById("feedbackPanel");
-  const reviewBadge = document.getElementById("reviewBadge");
+  const inlineReviewBtn = document.getElementById("inlineReviewBtn");
+  const inlineReviewIcon = document.getElementById("inlineReviewIcon");
   
   const prevQuestionBtn = document.getElementById("prevQuestionBtn");
   const nextQuestionBtn = document.getElementById("nextQuestionBtn");
@@ -410,6 +412,12 @@
     }
   }
 
+  function syncReviewState(isReviewed) {
+    if (inlineReviewBtn) inlineReviewBtn.classList.toggle("is-active", isReviewed);
+    if (inlineReviewIcon) inlineReviewIcon.setAttribute("fill", isReviewed ? "currentColor" : "none");
+    if (markReviewBtn) markReviewBtn.classList.toggle("is-active", isReviewed);
+  }
+
   function renderQuestion() {
     const current = getCurrentQuestion();
 
@@ -427,7 +435,7 @@
       answerChoices.innerHTML = "";
       feedbackPanel.className = "sat-feedback-panel is-hidden";
       feedbackPanel.innerHTML = "";
-      reviewBadge.classList.add("is-hidden");
+      if (inlineReviewBtn) { inlineReviewBtn.classList.remove("is-active"); inlineReviewBtn.disabled = true; }
       // RESTORED: Button disabled states
       if (prevQuestionBtn) prevQuestionBtn.disabled = true;
       if (nextQuestionBtn) nextQuestionBtn.disabled = true;
@@ -455,7 +463,7 @@
       `;
       feedbackPanel.className = "sat-feedback-panel is-hidden";
       feedbackPanel.innerHTML = "";
-      reviewBadge.classList.add("is-hidden");
+      if (inlineReviewBtn) { inlineReviewBtn.classList.remove("is-active"); inlineReviewBtn.disabled = true; }
       // RESTORED: Button disabled states
       if (prevQuestionBtn) prevQuestionBtn.disabled = true;
       if (nextQuestionBtn) nextQuestionBtn.disabled = true;
@@ -480,7 +488,7 @@
       answerChoices.innerHTML = `<a class="sat-button sat-button-primary" href="./index.html">Back to bank</a>`;
       feedbackPanel.className = "sat-feedback-panel is-hidden";
       feedbackPanel.innerHTML = "";
-      reviewBadge.classList.add("is-hidden");
+      if (inlineReviewBtn) { inlineReviewBtn.classList.remove("is-active"); inlineReviewBtn.disabled = true; }
       // RESTORED: Button disabled states
       if (prevQuestionBtn) prevQuestionBtn.disabled = true;
       if (nextQuestionBtn) nextQuestionBtn.disabled = true;
@@ -518,7 +526,7 @@
         : "";
       feedbackPanel.className = "sat-feedback-panel is-hidden";
       feedbackPanel.innerHTML = "";
-      reviewBadge.classList.add("is-hidden");
+      if (inlineReviewBtn) { inlineReviewBtn.classList.remove("is-active"); inlineReviewBtn.disabled = true; }
       if (prevQuestionBtn) prevQuestionBtn.disabled = state.currentIndex === 0;
       if (nextQuestionBtn) nextQuestionBtn.disabled = false;
       if (checkAnswerBtn) checkAnswerBtn.disabled = true;
@@ -561,7 +569,7 @@
       questionParagraph.classList.add("is-hidden");
     }
     questionStem.innerHTML = current.stem;
-    reviewBadge.classList.toggle("is-hidden", !state.reviewed[current.id]);
+    syncReviewState(!!state.reviewed[current.id]);
 
     // Toggle calc button text + visibility
     if (toggleCalcBtn) {
@@ -608,9 +616,12 @@
         </div>
       `;
     } else {
+      const eliminated = state.eliminated[current.id] || {};
       answerChoices.innerHTML = current.options
         .map((option) => {
           const classNames = ["sat-answer-choice"];
+          const isEliminated = !!eliminated[option.key];
+          if (isEliminated) classNames.push("is-eliminated");
           if (selectedAnswer === option.key) {
             classNames.push("is-selected");
           }
@@ -620,9 +631,14 @@
             classNames.push("is-incorrect");
           }
           return `
-            <button class="${classNames.join(" ")}" type="button" data-answer="${option.key}">
-              <span class="sat-answer-key">${option.key}</span>${option.text}
-            </button>
+            <div class="sat-answer-row">
+              <button class="${classNames.join(" ")}" type="button" data-answer="${option.key}">
+                <span class="sat-answer-key">${option.key}</span>${option.text}
+              </button>
+              <button class="sat-elim-btn${isEliminated ? " is-active" : ""}" type="button" data-elim="${option.key}" title="Eliminate this choice">
+                <span class="sat-elim-letter">${option.key}</span>
+              </button>
+            </div>
           `;
         })
         .join("");
@@ -666,6 +682,7 @@
       showExplanationBtn.classList.toggle("is-active", explanationForcedOpen);
     }
     if (markReviewBtn) markReviewBtn.classList.toggle("is-active", !!state.reviewed[current.id]);
+    if (inlineReviewBtn) inlineReviewBtn.disabled = false;
 
     if (window.qNav) window.qNav.refresh();
   }
@@ -964,6 +981,17 @@
       return;
     }
 
+    const elimBtn = event.target.closest("[data-elim]");
+    if (elimBtn) {
+      const current = getCurrentQuestion();
+      if (!current) return;
+      if (!state.eliminated[current.id]) state.eliminated[current.id] = {};
+      const key = elimBtn.dataset.elim;
+      state.eliminated[current.id][key] = !state.eliminated[current.id][key];
+      renderQuestion();
+      return;
+    }
+
     const choice = event.target.closest("[data-answer]");
     if (!choice) {
       return;
@@ -1039,11 +1067,9 @@
     renderQuestion();
   });
 
-  markReviewBtn.addEventListener("click", () => {
+  function toggleReview() {
     const current = getCurrentQuestion();
-    if (!current) {
-      return;
-    }
+    if (!current) return;
     const newState = !state.reviewed[current.id];
     state.reviewed[current.id] = newState;
 
@@ -1059,7 +1085,10 @@
 
     renderQuestion();
     if (window.qNav) window.qNav.refresh();
-  });
+  }
+
+  markReviewBtn.addEventListener("click", toggleReview);
+  if (inlineReviewBtn) inlineReviewBtn.addEventListener("click", toggleReview);
 
 
   // Reference panel toggle
