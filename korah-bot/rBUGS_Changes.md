@@ -4,39 +4,54 @@
 # landing/index.html
 
 * on mobile there is no nav bar for navagation 
-**NEW**
+**DONE**
 
 # Index.html
 
+
 **NEW**
+--------------------------------
 * when on ANY page (chat, index, etc) - when you already have the side bar open and select to go into a different page, then close the side bar, the "more / option" (div.collapsed-more-wrapper) button is not appearing
 
-* when you first load up the page the "how to" pictures / screenshots dont pop up
-**NEW**
-
-* when the "select all" is selected (when getting rid of chats) then unselect a chat, it gets rid of all
+ALSO SAID AS 
 
 when in a different page, and the side bar fully open, selecing the chat page to go into, then closing the side bar, the more options does not show (refreshing does make it show) (DOES NOT SHOW FOR ALL PAGES) * Probably add a js function that lets it load
 
 Also, need to add a function for all pages wheen changing themes, for a smooth transition from dark --> Light b/c it's like a blocky load
+--------------------------------
+
+* when you first load up the page the "how to" pictures / screenshots dont pop up
+**DONE**
+
+* when the "select all" is selected (when getting rid of chats) then unselect a chat, it gets rid of all
+
+
 
 **NEW**
 # sat/dashboard.html
 
 * (mobile) scroll down to the "skill insight" section, the math is not shown (div.panel-card math-skills-panel)
+**DONE**
 
 # sat/math-chat.html
-
-* (mobile) not able to resize the desmos graph using resize handler (div.resize-handle)
 **NEW**
+--------------------------------
+* (mobile) not able to resize the desmos graph using resize handler (div.resize-handle)
+
+ALSO SAID AS 
+
+* when in vertical / touch screen, your not able to move the desmos graph. Resize handler not resizing on mobile (maybe problem is with touch screen since there is no mouse or maybe just doesn't work at the breakpoint/not allowed)
+--------------------------------
+**DONE**
 
 
 # sat/Index.html
 
-* when in vertical / touch screen, your not able to move the desmos graph. Resize handler not resizing on mobile (maybe problem is with touch screen since there is no mouse or maybe just doesn't work at the breakpoint/not allowed)
+**NEW**
+when entering the page and going to click "start practice" (div#startSelectedBtn) even though has the basic selection ("All sections · Any domain · Any difficulty · No limit" IN (div.selectionSummary)) it does not go onto the next page
+**DONE**
 
-# Collapsed Sidebar
-* Make a rendering function for the collapsed "more" icon button because sometimes it doesn't load but when the page is refeshed it pops up for some odd reason. This function needs to affect all HTML's with collapsed sidebar. Sidebar.js
+
 
 # CHANGES FROM A CONSUMER THOUGHT
 # Index.html
