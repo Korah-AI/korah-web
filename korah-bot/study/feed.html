@@ -1247,6 +1247,7 @@
         </span>
         <span class="import-source-name">Google Drive</span>
         <span class="import-source-desc">Pick a doc, slide deck, or folder from Drive</span>
+        <span style="font-size:10px;font-weight:600;color:#888;letter-spacing:0.05em;margin-top:4px;display:block;">Coming Soon...</span>
       </button>
       <button type="button" class="import-source-card t-btn" data-import-source="link">
         <span class="import-source-icon">
@@ -2214,7 +2215,8 @@ window._selectedType = null;
     // ─── AI generate study set from import form ──────────────────────────────
     async function generateFromImport() {
       if (!window.KorahStudyAPI || !window.KorahDB) {
-        alert("Korah isn't ready yet — please wait a moment and try again.");
+        showFormError("Korah isn't ready yet — please wait a moment and try again.");
+        formError.scrollIntoView({ behavior: "smooth", block: "nearest" });
         return;
       }
 
@@ -2269,7 +2271,9 @@ window._selectedType = null;
         window.KorahTransitions.go(itemPage + "?id=" + encodeURIComponent(id));
       } catch (error) {
         console.error("[import] generation failed:", error);
-        alert("Oops! There was an error generating your study set. " + (error && error.message ? error.message : ""));
+        const msg = error && error.message ? error.message : "Something went wrong.";
+        showFormError("Korah couldn't generate your study set. " + msg + " Please try again.");
+        formError.scrollIntoView({ behavior: "smooth", block: "nearest" });
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalLabel;
       }
