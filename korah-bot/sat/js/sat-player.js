@@ -6,6 +6,21 @@
   const { parseOpenSatV1Query, buildOpenSatV1QuestionUrl, OPENSAT_CATALOG } = window.KorahSAT;
   const query = parseOpenSatV1Query();
 
+  // Allow <use xlink:href="#id"> glyph references from matplotlib-generated SVGs.
+  // Only fragment-only (#...) hrefs are permitted — external URLs are stripped.
+  const SVG_PURIFY_CONFIG = { ADD_ATTR: ['xlink:href'] };
+  DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+    if (node.tagName === 'use') {
+      for (const attr of ['xlink:href', 'href']) {
+        const val = node.getAttribute(attr);
+        if (val !== null && !val.startsWith('#')) node.removeAttribute(attr);
+      }
+    }
+  });
+  function sanitizeHtml(html) {
+    return DOMPurify.sanitize(html, SVG_PURIFY_CONFIG);
+  }
+
   const DEMO_QUESTIONS = [
     {
       id: "demo-math-1",
@@ -562,13 +577,13 @@
       questionStemTitle.classList.add("is-hidden");
     }
     if (current.paragraph) {
-      questionParagraph.innerHTML = DOMPurify.sanitize(current.paragraph);
+      questionParagraph.innerHTML = sanitizeHtml(current.paragraph);
       questionParagraph.classList.remove("is-hidden");
     } else {
       questionParagraph.innerHTML = "";
       questionParagraph.classList.add("is-hidden");
     }
-    questionStem.innerHTML = DOMPurify.sanitize(current.stem);
+    questionStem.innerHTML = sanitizeHtml(current.stem);
     syncReviewState(!!state.reviewed[current.id]);
 
     // Toggle calc button text + visibility
@@ -633,7 +648,7 @@
           return `
             <div class="sat-answer-row">
               <button class="${classNames.join(" ")}" type="button" data-answer="${option.key}">
-                <span class="sat-answer-key">${option.key}</span>${DOMPurify.sanitize(option.text)}
+                <span class="sat-answer-key">${option.key}</span>${sanitizeHtml(option.text)}
               </button>
               <button class="sat-elim-btn${isEliminated ? " is-active" : ""}" type="button" data-elim="${option.key}" title="Eliminate this choice">
                 <span class="sat-elim-letter">${option.key}</span>
@@ -677,8 +692,8 @@
     // Button text and active states
     if (showExplanationBtn) {
       showExplanationBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r="1" fill="currentColor" stroke="none"/>
-      </svg>`;
+        <path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/>
+      </svg><span class="nav-btn-label">Explain</span>`;
       showExplanationBtn.classList.toggle("is-active", explanationForcedOpen);
     }
     if (markReviewBtn) markReviewBtn.classList.toggle("is-active", !!state.reviewed[current.id]);
