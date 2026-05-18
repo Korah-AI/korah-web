@@ -125,39 +125,7 @@ function initConstellation() {
 
 /* ── Nav Sliding Pill Indicator ── */
 function initNavActivePill() {
-    const navPills = document.querySelectorAll('.nav-pill');
-    const sections = document.querySelectorAll('section[id]');
-    const indicator = document.getElementById('navIndicator');
-    if (!navPills.length || !sections.length) return;
-
-    function update() {
-        const scrollPos = window.scrollY + 150;
-        let currentId = null;
-
-        sections.forEach(section => {
-            const top = section.offsetTop;
-            const bottom = top + section.offsetHeight;
-            if (scrollPos >= top && scrollPos < bottom) currentId = section.id;
-        });
-
-        navPills.forEach(pill => {
-            pill.classList.toggle('nav-pill-active', pill.getAttribute('href') === `#${currentId}`);
-        });
-
-        if (indicator) {
-            const activePill = document.querySelector(`.nav-pill[href="#${currentId}"]`);
-            if (activePill) {
-                indicator.style.opacity = '1';
-                indicator.style.transform = `translateX(${activePill.offsetLeft}px)`;
-                indicator.style.width = `${activePill.offsetWidth}px`;
-            } 
-            // no else — indicator holds its last position instead of disappearing
-        }
-    }
-
-    window.addEventListener('scroll', update, { passive: true });
-    window.addEventListener('resize', update);
-    update();
+    initScrollNav();
 }
 
 /* ── FAQ Search ── */

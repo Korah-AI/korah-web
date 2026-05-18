@@ -1,15 +1,7 @@
 # BUGS FOUND BY AUSTIN
 
 
-# landing/index.html
-**NEW**
---------------------------------
-* on mobile there is no nav bar for navagation (opportunites and support htmls)
-**NEW-ENDED**
---------------------------------
-
 # Index.html
-
 
 **NEW**
 --------------------------------

@@ -1325,12 +1325,17 @@ function showSidebarDeleteModal(name, onConfirm) {
     const dropdown = document.createElement('div');
     dropdown.className = 'mood-dropdown';
     dropdown.innerHTML = MOOD_LEVELS.map(m => `
-      <button type="button" class="mood-option" data-key="${m.key}">
+      <button type="button" class="mood-option" data-key="${m.key}" style="--mood-color:${m.color}">
         <span class="mood-option-dot" style="background:${m.color};box-shadow:0 0 5px ${m.color}88"></span>
         <span>${m.label}</span>
       </button>
     `).join('');
     container.appendChild(dropdown);
+
+    const chevron = document.createElement('span');
+    chevron.className = 'material-icons-round mood-chevron';
+    chevron.textContent = 'expand_more';
+    if (labelEl) labelEl.after(chevron);
 
     const close = () => {
       dropdown.classList.remove('mood-dropdown-open');

@@ -4655,7 +4655,19 @@ html {
     position: relative;
     cursor: pointer;
     user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
     transition: opacity 0.15s;
+}
+.mood-chevron {
+    font-size: 14px;
+    color: var(--tx3);
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    margin-left: auto;
+}
+.mood-indicator.is-active .mood-chevron {
+    transform: rotate(180deg);
 }
 .mood-indicator:hover {
     opacity: 0.85;
@@ -4701,21 +4713,47 @@ html {
     background: none;
     border: none;
     border-radius: 0.4rem;
-    padding: 0.45rem 0.625rem;
+    padding: 0.45rem 0.625rem 0.45rem 0.75rem;
     cursor: pointer;
     color: var(--t1);
     font-size: 0.8125rem;
-    transition: background 0.12s;
+    transition: background 0.15s ease;
     text-align: left;
+    position: relative;
+}
+.mood-option::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.25rem;
+    bottom: 0.25rem;
+    width: 0.1875rem;
+    background: var(--p4);
+    border-radius: 0 0.125rem 0.125rem 0;
+    transform: scaleY(0);
+    transition: transform 0.2s ease;
+    transform-origin: bottom;
 }
 .mood-option:hover {
-    background: var(--hover);
+    background: rgba(139, 92, 246, 0.15);
+}
+.mood-option:hover::before {
+    transform: scaleY(1);
+}
+.mood-option:hover .mood-option-dot {
+    transform: scale(1.2);
+    animation: mood-dot-pulse 2s ease-in-out infinite;
 }
 .mood-option-dot {
     width: 10px;
     height: 10px;
     border-radius: 50%;
     flex-shrink: 0;
+    transition: transform 0.2s ease;
+}
+@keyframes mood-dot-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 transparent; }
+    50% { box-shadow: 0 0 0 0.09375rem color-mix(in srgb, var(--mood-color) 30%, transparent); }
 }
 .sidebar.collapsed .mood-indicator {
     display: none;
