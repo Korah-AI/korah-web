@@ -630,6 +630,30 @@
       transform: translateY(-3px);
       box-shadow: 0 10px 24px rgba(0,0,0,.18), 0 0 14px rgba(139,92,246,.15);
     }
+    .import-source-card.coming-soon {
+      position: relative;
+      pointer-events: none;
+    }
+    .import-source-card.coming-soon .import-source-icon,
+    .import-source-card.coming-soon .import-source-name,
+    .import-source-card.coming-soon .import-source-desc {
+      opacity: 0.5;
+    }
+    .import-source-card.coming-soon .import-source-name,
+    .import-source-card.coming-soon .import-source-desc {
+      text-decoration: line-through;
+    }
+    .import-source-card.coming-soon::after {
+      content: "Coming Soon";
+      position: absolute;
+      bottom: 0.5rem;
+      right: 0.6rem;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: white;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
     .import-source-icon { font-size: 1.85rem; }
     .import-source-name { font-size: 0.95rem; font-weight: 700; }
     .import-source-desc { font-size: 0.75rem; color: var(--tx2); line-height: 1.4; }
@@ -1241,7 +1265,7 @@
         <span class="import-source-name">Upload Files</span>
         <span class="import-source-desc">PDFs, slides, notes, or images from your device</span>
       </button>
-      <button type="button" class="import-source-card t-btn" data-import-source="drive">
+      <button type="button" class="import-source-card coming-soon t-btn" data-import-source="drive">
         <span class="import-source-icon">
           <img src="../logo-images/googledrive.png" alt="Link" style="width:28px;height:28px;object-fit:contain;display:block;" />
         </span>
@@ -2214,7 +2238,8 @@ window._selectedType = null;
     // ─── AI generate study set from import form ──────────────────────────────
     async function generateFromImport() {
       if (!window.KorahStudyAPI || !window.KorahDB) {
-        alert("Korah isn't ready yet — please wait a moment and try again.");
+        showFormError("Korah isn't ready yet — please wait a moment and try again.");
+        formError.scrollIntoView({ behavior: "smooth", block: "nearest" });
         return;
       }
 
@@ -2269,7 +2294,9 @@ window._selectedType = null;
         window.KorahTransitions.go(itemPage + "?id=" + encodeURIComponent(id));
       } catch (error) {
         console.error("[import] generation failed:", error);
-        alert("Oops! There was an error generating your study set. " + (error && error.message ? error.message : ""));
+        const msg = error && error.message ? error.message : "Something went wrong.";
+        showFormError("Korah couldn't generate your study set. " + msg + " Please try again.");
+        formError.scrollIntoView({ behavior: "smooth", block: "nearest" });
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalLabel;
       }
