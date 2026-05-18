@@ -3,16 +3,6 @@
 
 # Index.html
 
-**NEW**
---------------------------------
-* when on ANY page (chat, index, etc) - when you already have the side bar open and select to go into a different page, then close the side bar, the "more / option" (div.collapsed-more-wrapper) button is not appearing
-
-ALSO SAID AS 
-
-when in a different page, and the side bar fully open, selecing the chat page to go into, then closing the side bar, the more options does not show (refreshing does make it show) (DOES NOT SHOW FOR ALL PAGES) * Probably add a js function that lets it load
-
-Also, need to add a function for all pages wheen changing themes, for a smooth transition from dark --> Light b/c it's like a blocky load
-
 
 * when you first load up the page the "how to" pictures / screenshots dont pop up (only appears for new users)
 **NEW-ENDED**

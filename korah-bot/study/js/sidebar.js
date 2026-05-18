@@ -1562,19 +1562,39 @@ function showSidebarDeleteModal(name, onConfirm) {
       }
     });
 
-    if (alpineManaged) {
-      window.KorahSidebar.onCollapseChange = function(collapsed) {
-        if (collapsed) {
-          const nav = sidebar?.querySelector('.sidebar-nav');
+    // Use MutationObserver to reliably detect sidebar collapse/expand
+    // Eliminates race condition between Alpine class application and JS checks
+    function observeSidebarCollapse() {
+      if (!sidebar) return;
+
+      function handleCollapseChange(isCollapsed) {
+        if (isCollapsed) {
+          const nav = sidebar.querySelector('.sidebar-nav');
           if (nav && !sidebar.querySelector('.collapsed-more-wrapper')) {
             nav.appendChild(createCollapsedMoreDropdown());
           }
         } else {
           removeCollapsedMoreDropdown();
         }
-      };
-      // Delay initial check so Alpine has time to apply the collapsed class
-      setTimeout(initCollapsedMoreDropdown, 150);
+      }
+
+      // Initial check
+      handleCollapseChange(sidebar.classList.contains('collapsed'));
+
+      // Watch for class attribute changes
+      const observer = new MutationObserver((mutations) => {
+        for (const m of mutations) {
+          if (m.attributeName === 'class') {
+            handleCollapseChange(sidebar.classList.contains('collapsed'));
+            break;
+          }
+        }
+      });
+      observer.observe(sidebar, { attributes: true, attributeFilter: ['class'] });
+    }
+
+    if (alpineManaged) {
+      observeSidebarCollapse();
     } else {
       // Vanilla fallback for pages not yet migrated to Alpine sidebar
       function updateSidebarState(collapsed) {

@@ -16,10 +16,3 @@
 
 # Study items
 * Check out creating study item css and check all css and improve. (It's really buns like actually, its horrible, looks horrible, css horrible) 
-
-# + new chat
-* Only create a new chat when user inputs text into the input area, but it should when + new chat is clicked, make a new chat.
-^^^^
-
-# Bug
-* in chat.html when + new chat is clicked, in recent chats, the sat math chat disappears then reappears when a new chat is made also i think math chat has + new chat bugs too

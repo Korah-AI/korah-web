@@ -25,7 +25,7 @@
   } else {
     window.addEventListener("load", markReady);
     document.addEventListener("DOMContentLoaded", () => {
-        setTimeout(markReady, 500); // Give heavy JS a bit of breathing room
+        setTimeout(markReady, 1000); // Give heavy JS a bit of breathing room
     });
   }
   
