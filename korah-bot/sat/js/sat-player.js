@@ -17,7 +17,21 @@
       }
     }
   });
+
+  function reconstructSvgGlyphs(html) {
+    // College Board matplotlib SVGs: empty <g transform> should contain <use xlink:href> refs.
+    // Match: <defs>...<path id="GLYPHID"...></path></defs><g transform>...</g>
+    // Inject: <use xlink:href="#GLYPHID"/> into the empty <g transform>
+    if (!html || !html.includes('CrimsonText')) return html;
+
+    return html.replace(
+      /(<defs>[\s\S]*?<path[^>]+id="(CrimsonText-\w+)"[^>]*><\/path>[\s\S]*?<\/defs>)\s*(<g[^>]*transform="[^"]*")>\s*(<\/g>)/g,
+      '$1\n     $3>\n      <use xlink:href="#$2"/>\n     $4'
+    );
+  }
+
   function sanitizeHtml(html) {
+    html = reconstructSvgGlyphs(html);
     return DOMPurify.sanitize(html, SVG_PURIFY_CONFIG);
   }
 
