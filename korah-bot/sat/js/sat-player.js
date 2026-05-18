@@ -852,33 +852,29 @@
     let isResizing = false;
     let currentBreakpoint = window.innerWidth <= 900 ? "mobile" : "desktop";
 
-    handle.addEventListener("mousedown", (e) => {
+    const onResizeStart = (clientX, clientY) => {
       isResizing = true;
       currentBreakpoint = window.innerWidth <= 900 ? "mobile" : "desktop";
       document.body.style.cursor = currentBreakpoint === "mobile" ? "row-resize" : "col-resize";
       document.body.classList.add("is-resizing");
-      e.preventDefault();
-    });
+    };
 
-    document.addEventListener("mousemove", (e) => {
+    const onResizeMove = (clientX, clientY) => {
       if (!isResizing) return;
 
       const rect = layout.getBoundingClientRect();
       const breakpoint = window.innerWidth <= 900 ? "mobile" : "desktop";
 
       if (breakpoint === "mobile") {
-        // MOBILE: vertical resize (Panel A height)
-        const relativeY = e.clientY - rect.top;
+        const relativeY = clientY - rect.top;
         const totalHeight = rect.height;
-        // Clamp: Panel A cannot be smaller than 130px OR larger than (Total - 130px)
-        const minContentHeight = 130; 
+        const minContentHeight = 130;
         if (relativeY > minContentHeight && relativeY < totalHeight - minContentHeight) {
           const heightPx = relativeY;
           desmosWrap.style.flex = `0 0 ${heightPx}px`;
           desmosWrap.style.height = `${heightPx}px`;
           desmosWrap.style.maxHeight = `${heightPx}px`;
-          // Set content panel to remaining height
-          const handleHeight = 12; // px for the resize handle
+          const handleHeight = 12;
           const contentHeight = totalHeight - heightPx - handleHeight;
           if (contentPanel) {
             contentPanel.style.height = `${contentHeight}px`;
@@ -886,8 +882,7 @@
           }
         }
       } else {
-        // DESKTOP: horizontal resize (Panel A width)
-        const relativeX = e.clientX - rect.left;
+        const relativeX = clientX - rect.left;
         const totalWidth = rect.width;
         if (relativeX > 200 && relativeX < totalWidth - 200) {
           const percentage = (relativeX / totalWidth) * 100;
@@ -899,15 +894,23 @@
       if (desmosInstance) {
         requestAnimationFrame(() => desmosInstance.resize());
       }
-    });
+    };
 
-    document.addEventListener("mouseup", () => {
+    const onResizeEnd = () => {
       if (isResizing) {
         isResizing = false;
         document.body.style.cursor = "default";
         document.body.classList.remove("is-resizing");
       }
-    });
+    };
+
+    handle.addEventListener("mousedown", (e) => { onResizeStart(e.clientX, e.clientY); e.preventDefault(); });
+    document.addEventListener("mousemove", (e) => onResizeMove(e.clientX, e.clientY));
+    document.addEventListener("mouseup", onResizeEnd);
+
+    handle.addEventListener("touchstart", (e) => { e.preventDefault(); onResizeStart(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
+    document.addEventListener("touchmove", (e) => { if (isResizing) { e.preventDefault(); onResizeMove(e.touches[0].clientX, e.touches[0].clientY); } }, { passive: false });
+    document.addEventListener("touchend", onResizeEnd);
 
     // Reset mobile drag-set heights when window returns to desktop
     window.addEventListener('resize', () => {

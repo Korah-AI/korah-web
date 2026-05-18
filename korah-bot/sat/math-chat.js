@@ -1638,17 +1638,17 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
     let startY;
     let startGraphHeight;
 
-    handle.addEventListener('mousedown', (e) => {
+    const onDragStart = (clientY) => {
       isDragging = true;
-      startY = e.clientY;
+      startY = clientY;
       startGraphHeight = graphPanel.offsetHeight;
       document.body.style.cursor = 'row-resize';
       document.body.style.userSelect = 'none';
-    });
+    };
 
-    document.addEventListener('mousemove', (e) => {
+    const onDragMove = (clientY) => {
       if (!isDragging) return;
-      const deltaY = e.clientY - startY;
+      const deltaY = clientY - startY;
       const newGraphHeight = startGraphHeight + deltaY;
       const minHeight = 5 * 16;
       const maxHeight = window.innerHeight * 0.7;
@@ -1657,15 +1657,23 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
         graphPanel.style.height = newGraphHeight + 'px';
         chatPanel.style.flex = '1';
       }
-    });
+    };
 
-    document.addEventListener('mouseup', () => {
+    const onDragEnd = () => {
       if (isDragging) {
         isDragging = false;
         document.body.style.cursor = '';
         document.body.style.userSelect = '';
       }
-    });
+    };
+
+    handle.addEventListener('mousedown', (e) => onDragStart(e.clientY));
+    document.addEventListener('mousemove', (e) => onDragMove(e.clientY));
+    document.addEventListener('mouseup', onDragEnd);
+
+    handle.addEventListener('touchstart', (e) => { e.preventDefault(); onDragStart(e.touches[0].clientY); }, { passive: false });
+    document.addEventListener('touchmove', (e) => { if (isDragging) { e.preventDefault(); onDragMove(e.touches[0].clientY); } }, { passive: false });
+    document.addEventListener('touchend', onDragEnd);
   }
 
   function handleResize() {

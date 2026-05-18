@@ -674,15 +674,11 @@ function showSidebarDeleteModal(name, onConfirm) {
 
     selectAllBtn?.addEventListener("click", () => {
       const items = container.querySelectorAll(".history-item");
-      const all = selected.size === items.length;
       selected.clear();
-      items.forEach(el => el.classList.remove("selected"));
-      if (!all) {
-        items.forEach(item => {
-          const id = item.getAttribute("data-session");
-          if (id) { selected.add(id); item.classList.add("selected"); }
-        });
-      }
+      items.forEach(item => {
+        const id = item.getAttribute("data-session");
+        if (id) { selected.add(id); item.classList.add("selected"); }
+      });
       updateBar();
     });
 
@@ -1564,7 +1560,10 @@ function showSidebarDeleteModal(name, onConfirm) {
     if (alpineManaged) {
       window.KorahSidebar.onCollapseChange = function(collapsed) {
         if (collapsed) {
-          setTimeout(initCollapsedMoreDropdown, 100);
+          const nav = sidebar?.querySelector('.sidebar-nav');
+          if (nav && !sidebar.querySelector('.collapsed-more-wrapper')) {
+            nav.appendChild(createCollapsedMoreDropdown());
+          }
         } else {
           removeCollapsedMoreDropdown();
         }

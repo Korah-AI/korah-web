@@ -328,9 +328,6 @@
   });
 
   startSelectedBtn.addEventListener("click", () => {
-    if (state.sections.length === 0) {
-      return;
-    }
     navigate();
   });
 
