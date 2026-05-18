@@ -484,8 +484,19 @@
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
 
+  const VISIT_KEY = 'korah_index_last_visit';
+  // Record that the user navigated to index.html (used to break the landing→index→landing loop)
+  const _prevVisit = parseInt(localStorage.getItem(VISIT_KEY) || '0', 10);
+  localStorage.setItem(VISIT_KEY, String(Date.now()));
+
   onAuthStateChanged(auth, async (user) => {
-    if (!user) { window.KorahTransitions.go('landing/index.html'); return; }
+    if (!user) {
+      // If the user navigated here within the last 24 h (e.g. via a landing CTA), send to login.
+      // If this is their very first arrival (no prior timestamp), send to landing.
+      const within24h = _prevVisit > 0 && (Date.now() - _prevVisit < 24 * 60 * 60 * 1000);
+      window.KorahTransitions.go(within24h ? 'login.html' : 'landing/index.html');
+      return;
+    }
     await setupKorahDB(app, user.uid);
     await initSatAnalytics(app, user.uid);
     const detail = { uid: user.uid };
