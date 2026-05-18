@@ -1,10 +1,12 @@
 # BUGS FOUND BY AUSTIN
 
-**NEW**
-# landing/index.html
 
+# landing/index.html
+**NEW**
+--------------------------------
 * on mobile there is no nav bar for navagation 
-**DONE**
+**NEW-ENDED**
+--------------------------------
 
 # Index.html
 
@@ -18,20 +20,24 @@ ALSO SAID AS
 when in a different page, and the side bar fully open, selecing the chat page to go into, then closing the side bar, the more options does not show (refreshing does make it show) (DOES NOT SHOW FOR ALL PAGES) * Probably add a js function that lets it load
 
 Also, need to add a function for all pages wheen changing themes, for a smooth transition from dark --> Light b/c it's like a blocky load
---------------------------------
+
 
 * when you first load up the page the "how to" pictures / screenshots dont pop up
-**DONE**
+**NEW-ENDED**
+--------------------------------
+
 
 * when the "select all" is selected (when getting rid of chats) then unselect a chat, it gets rid of all
 
 
 
-**NEW**
-# sat/dashboard.html
 
+# sat/dashboard.html
+**NEW**
+--------------------------------
 * (mobile) scroll down to the "skill insight" section, the math is not shown (div.panel-card math-skills-panel)
-**DONE**
+**NEW-ENDED**
+--------------------------------
 
 # sat/math-chat.html
 **NEW**
@@ -41,15 +47,18 @@ Also, need to add a function for all pages wheen changing themes, for a smooth t
 ALSO SAID AS 
 
 * when in vertical / touch screen, your not able to move the desmos graph. Resize handler not resizing on mobile (maybe problem is with touch screen since there is no mouse or maybe just doesn't work at the breakpoint/not allowed)
+**NEW-ENDED**
 --------------------------------
-**DONE**
+
 
 
 # sat/Index.html
 
 **NEW**
+--------------------------------
 when entering the page and going to click "start practice" (div#startSelectedBtn) even though has the basic selection ("All sections · Any domain · Any difficulty · No limit" IN (div.selectionSummary)) it does not go onto the next page
-**DONE**
+**NEW-ENDED**
+--------------------------------
 
 
 
