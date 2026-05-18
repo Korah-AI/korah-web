@@ -255,6 +255,18 @@ function showSidebarDeleteModal(name, onConfirm) {
   }
 
   // ── Render Chat History ──
+  function _getChatLogoPath() {
+    for (const s of document.querySelectorAll('script[src]')) {
+      if (s.src && s.src.includes('sidebar.js')) {
+        const url = new URL(s.src);
+        const parts = url.pathname.split('/');
+        parts.splice(-3); // remove study/js/sidebar.js, leaving root path
+        return url.origin + parts.join('/') + '/logo-images/newlogo11.png';
+      }
+    }
+    return 'logo-images/newlogo11.png';
+  }
+
   function renderChatHistory(container, baseUrl) {
     if (!container) return;
     const sessions = getSessions();
@@ -262,6 +274,16 @@ function showSidebarDeleteModal(name, onConfirm) {
       (a, b) => new Date(sessions[b].updatedAt) - new Date(sessions[a].updatedAt)
     );
     container.innerHTML = "";
+    if (ids.length === 0) {
+      container.innerHTML = `
+        <div class="chat-history-empty">
+          <img src="${_getChatLogoPath()}" alt="Korah" class="chat-history-empty-logo">
+          <div class="chat-history-empty-title">No recent chats</div>
+          <div class="chat-history-empty-sub">Start a conversation to see it here.</div>
+        </div>
+      `;
+      return;
+    }
     ids.forEach((id) => {
       const s = sessions[id];
       const a = document.createElement("a");
