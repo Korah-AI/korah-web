@@ -2216,7 +2216,7 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     const modal = document.getElementById("sat-sub-modal");
     if (!modal) return;
     modal.classList.add("show");
-    const onMath = () => { cleanup(); setSATSubMode("math"); changeMode("sat"); window.location.href = 'sat/math-chat.html' + (currentSessionId ? '#' + currentSessionId : ''); };
+    const onMath = () => { cleanup(); setSATSubMode("math"); changeMode("sat"); window.KorahTransitions.go('sat/math-chat.html' + (currentSessionId ? '#' + currentSessionId : '')); };
     const onEnglish = () => { cleanup(); setSATSubMode("english"); changeMode("sat"); };
     const onOutside = (e) => { if (e.target === modal) cleanup(); };
     const onEsc = (e) => { if (e.key === "Escape") cleanup(); };
@@ -2886,7 +2886,7 @@ ${FORMAT_INSTRUCTIONS}`.trim();
         e.stopPropagation();
         const redirectUrl = option.getAttribute("data-redirect");
         if (redirectUrl) {
-          window.location.href = redirectUrl;
+          window.KorahTransitions.go(redirectUrl);
           return;
         }
         const mode = option.getAttribute("data-mode");

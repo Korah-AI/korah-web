@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<link rel="stylesheet" href="transitions/page-transitions.css"/>
+<script src="transitions/page-transitions.js"></script>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Korah AI — Login</title>
@@ -242,6 +244,19 @@
 </style>
 </head>
 <body>
+<style>
+  html:not(.korah-page-ready) { background: #06040f !important; }
+  html[data-theme="light"]:not(.korah-page-ready) { background: #d2d2d2 !important; }
+  html:not(.korah-page-ready) body { opacity: 0 !important; }
+</style>
+<script>
+  (function() {
+    const t = localStorage.getItem('korah_theme') || 'dark';
+    if (t === 'light' || (t === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  })();
+</script>
 
 <!-- Galaxy WebGL background -->
 <div id="galaxy-bg"></div>
@@ -354,7 +369,7 @@
   const auth  = getAuth(app);
   const gProv = new GoogleAuthProvider();
 
-  function redirectToApp() { window.location.href = 'index.html'; }
+  function redirectToApp() { window.KorahTransitions.go('index.html'); }
   onAuthStateChanged(auth, u => { if (u) redirectToApp(); });
 
   function getErrorMessage(code) {

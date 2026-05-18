@@ -4,7 +4,7 @@
 # landing/index.html
 **NEW**
 --------------------------------
-* on mobile there is no nav bar for navagation 
+* on mobile there is no nav bar for navagation (opportunites and support htmls)
 **NEW-ENDED**
 --------------------------------
 
@@ -22,15 +22,12 @@ when in a different page, and the side bar fully open, selecing the chat page to
 Also, need to add a function for all pages wheen changing themes, for a smooth transition from dark --> Light b/c it's like a blocky load
 
 
-* when you first load up the page the "how to" pictures / screenshots dont pop up
+* when you first load up the page the "how to" pictures / screenshots dont pop up (only appears for new users)
 **NEW-ENDED**
 --------------------------------
 
 
 * when the "select all" is selected (when getting rid of chats) then unselect a chat, it gets rid of all
-
-
-
 
 # sat/dashboard.html
 **NEW**

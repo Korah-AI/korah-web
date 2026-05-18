@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en" x-data="app()" :data-theme="theme">
 <head>
+<link rel="stylesheet" href="../transitions/page-transitions.css"/>
+<script src="../transitions/page-transitions.js"></script>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <meta name="description" content="Korah — AI study companion with SAT Math prep, Desmos graphing, mood-based task recommendations, focus sessions, and AI-generated flashcards, study guides and practice tests."/>
@@ -103,6 +105,19 @@
 </head>
 
 <body class="bg-base tx" x-cloak style="overflow-x:hidden;">
+<style>
+  html:not(.korah-page-ready) { background: #06040f !important; }
+  html[data-theme="light"]:not(.korah-page-ready) { background: #d2d2d2 !important; }
+  html:not(.korah-page-ready) body { opacity: 0 !important; }
+</style>
+<script>
+  (function() {
+    const t = localStorage.getItem('korah_theme') || 'dark';
+    if (t === 'light' || (t === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  })();
+</script>
 
 <!-- Shooting Star background and twinkling stars -->
 <div class="stars-container" id="starField" :style="theme === 'light' ? 'opacity:0;pointer-events:none' : 'opacity:1'" style="transition:opacity 0.4s"></div>
@@ -148,10 +163,10 @@
       </svg>
     </button>
     <button class="hidden lg:block text-[13px] font-semibold px-5 py-2.5 rounded-full cursor-pointer border bd tx2 bg-transparent t-btn hover:tx-p4 hover:border-p4 hover:bg-[var(--bd2)]"
-      onclick="window.location.href='../login.html'">
+      onclick="window.KorahTransitions.go('../login.html')">
       Log in
     </button>
-    <button onclick="window.location.href='../index.html'" class="hidden lg:block text-[13px] font-semibold px-5 py-2.5 rounded-full cursor-pointer border-none text-white grad-bg shadow-glow t-btn hover:-translate-y-px hover:shadow-glow-lg">Open App</button>
+    <button onclick="window.KorahTransitions.go('../index.html')" class="hidden lg:block text-[13px] font-semibold px-5 py-2.5 rounded-full cursor-pointer border-none text-white grad-bg shadow-glow t-btn hover:-translate-y-px hover:shadow-glow-lg">Open App</button>
     <button @click="menuOpen=!menuOpen" :class="menuOpen && 'open'" class="hamburger lg:hidden flex flex-col gap-1.5 bg-transparent border-none cursor-pointer p-1.5" aria-label="Menu">
       <span class="block w-5.5 h-0.5 bg-p4 rounded transition-transform duration-300"></span>
       <span class="block w-5.5 h-0.5 bg-p4 rounded transition-all duration-300"></span>
@@ -171,8 +186,8 @@
   <a href="#chat"     @click="menuOpen=false" class="block text-base font-medium tx2 no-underline py-3.5 px-2 border-b bd2 t-btn hover:tx-p4">Questionbank</a>
   <a href="../opportunities/opportunities.html" class="block text-base font-medium no-underline py-3.5 px-2 border-b bd2 t-btn" style="color:var(--p5);"><span class="material-icons-round" style="color: var(--p5); font-size: 16px; vertical-align: middle; margin-right: 4px;" aria-label="rocket">rocket_launch</span> Opportunities</a>
   <div class="flex gap-2.5 mt-5">
-    <button onclick="window.location.href='../login.html'" class="flex-1 py-3 text-[13px] font-semibold rounded-full border bd tx2 bg-transparent cursor-pointer">Log in</button>
-    <button onclick="window.location.href='../index.html'" class="flex-1 py-3 text-[13px] font-semibold rounded-full border-none text-white grad-bg cursor-pointer">Open App</button>
+    <button onclick="window.KorahTransitions.go('../login.html')" class="flex-1 py-3 text-[13px] font-semibold rounded-full border bd tx2 bg-transparent cursor-pointer">Log in</button>
+    <button onclick="window.KorahTransitions.go('../index.html')" class="flex-1 py-3 text-[13px] font-semibold rounded-full border-none text-white grad-bg cursor-pointer">Open App</button>
   </div>
 </div>
 

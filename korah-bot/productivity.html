@@ -30,6 +30,8 @@
   }
 }" :data-theme="getEffectiveTheme()" x-cloak>
 <head>
+<link rel="stylesheet" href="transitions/page-transitions.css"/>
+<script src="transitions/page-transitions.js"></script>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Korah AI — Productivity</title>
@@ -385,6 +387,19 @@
 </head>
 
 <body class="bg-base tx">
+<style>
+  html:not(.korah-page-ready) { background: #06040f !important; }
+  html[data-theme="light"]:not(.korah-page-ready) { background: #d2d2d2 !important; }
+  html:not(.korah-page-ready) body { opacity: 0 !important; }
+</style>
+<script>
+  (function() {
+    const t = localStorage.getItem('korah_theme') || 'dark';
+    if (t === 'light' || (t === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  })();
+</script>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
@@ -404,7 +419,7 @@
   const auth = getAuth(app);
 
   onAuthStateChanged(auth, async (user) => {
-    if (!user) { window.location.href = 'login.html'; return; }
+    if (!user) { window.KorahTransitions.go('login.html'); return; }
     await setupKorahDB(app, user.uid);
     const detail = { uid: user.uid };
     window._korahReadyFired = detail;
@@ -415,7 +430,7 @@
     window.confirmLogout(async () => {
       await signOut(auth);
       localStorage.removeItem('korah_first_name');
-      window.location.href = 'login.html';
+      window.KorahTransitions.go('login.html');
     });
   });
 </script>
@@ -798,7 +813,7 @@
       window.KorahSidebar.initSidebar({
         chatBaseUrl: "chat.html",
         itemPageUrl: "study/item.html",
-        onItemClick: (id) => { window.location.href = `study/item.html?id=${id}`; }
+        onItemClick: (id) => { window.KorahTransitions.go(`study/item.html?id=${id}`); }
       });
     }
   }, { once: true });

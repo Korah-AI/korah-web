@@ -29,6 +29,8 @@
     }
   }
 }" :data-theme="getEffectiveTheme()" x-cloak><head>
+<link rel="stylesheet" href="../transitions/page-transitions.css"/>
+<script src="../transitions/page-transitions.js"></script>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Korah AI — SAT Practice Player</title>
@@ -81,6 +83,20 @@ html[data-theme="light"] {
 </head>
 
 <body class="bg-base tx sat-shell">
+<style>
+  html:not(.korah-page-ready) { background: #06040f !important; }
+  html[data-theme="light"]:not(.korah-page-ready) { background: #d2d2d2 !important; }
+  html:not(.korah-page-ready) body { opacity: 0 !important; }
+</style>
+
+<script>
+  (function() {
+    const t = localStorage.getItem('korah_theme') || 'dark';
+    if (t === 'light' || (t === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  })();
+</script>
 
 <script>
   (function() {
@@ -112,7 +128,7 @@ html[data-theme="light"] {
 
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
-      window.location.href = '../login.html';
+      window.KorahTransitions.go('../login.html');
       return;
     }
     // Set up Firestore and expose window.KorahDB before notifying the app.
@@ -129,7 +145,7 @@ html[data-theme="light"] {
     _logoutBtn.addEventListener('click', async () => {
       await signOut(auth);
       localStorage.removeItem('korah_first_name');
-      window.location.href = '../login.html';
+      window.KorahTransitions.go('../login.html');
     });
   }
 </script>

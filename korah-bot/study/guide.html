@@ -30,6 +30,8 @@
   }
 }" :data-theme="getEffectiveTheme()" x-cloak>
   <head>
+<link rel="stylesheet" href="../transitions/page-transitions.css"/>
+<script src="../transitions/page-transitions.js"></script>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>Korah AI — Study Guide</title>
@@ -645,6 +647,20 @@
   </style>
 </head>
 <body class="bg-base tx study-modern">
+<style>
+  html:not(.korah-page-ready) { background: #06040f !important; }
+  html[data-theme="light"]:not(.korah-page-ready) { background: #d2d2d2 !important; }
+  html:not(.korah-page-ready) body { opacity: 0 !important; }
+</style>
+
+<script>
+  (function() {
+    const t = localStorage.getItem('korah_theme') || 'dark';
+    if (t === 'light' || (t === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  })();
+</script>
 
 <canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
 
@@ -1073,11 +1089,11 @@
     }
 
     if (itemData.type === "practiceTest") {
-      window.location.replace("item.html?id=" + encodeURIComponent(itemData.id));
+      window.KorahTransitions.replace("item.html?id=" + encodeURIComponent(itemData.id));
       return;
     }
     if (itemData.type !== "studyGuide") {
-      window.location.replace("item.html?id=" + encodeURIComponent(itemData.id));
+      window.KorahTransitions.replace("item.html?id=" + encodeURIComponent(itemData.id));
       return;
     }
 
@@ -1103,7 +1119,7 @@
       copy.title = (copy.title || "Untitled") + " (Copy)";
       copy.createdAt = copy.updatedAt = new Date().toISOString();
       if (window.KorahDB) window.KorahDB.setStudyItem(newId, copy);
-      window.location.href = "guide.html?id=" + encodeURIComponent(newId);
+      window.KorahTransitions.go("guide.html?id=" + encodeURIComponent(newId));
     };
 
     var bodyEl = document.getElementById("item-body");
@@ -1280,7 +1296,7 @@
     window.confirmLogout(async () => {
       await signOut(auth);
       localStorage.removeItem('korah_first_name');
-      window.location.href = '../login.html';
+      window.KorahTransitions.go('../login.html');
     });
   });
 </script>

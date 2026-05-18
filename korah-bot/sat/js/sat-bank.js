@@ -153,7 +153,7 @@
       assessment: state.assessment || "SAT",
       limit: state.limit,
     };
-    window.location.href = buildOpenSatV1QuestionUrl(nextState);
+    window.KorahTransitions.go(buildOpenSatV1QuestionUrl(nextState));
   }
 
   function selectSection(sectionKey) {

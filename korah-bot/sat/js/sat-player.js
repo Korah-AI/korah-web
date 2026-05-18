@@ -1019,7 +1019,7 @@
 
   nextQuestionBtn.addEventListener("click", () => {
     if (state.currentIndex === questions.length - 1) {
-      window.location.href = "./index.html";
+      window.KorahTransitions.go("./index.html");
     } else if (state.currentIndex < questions.length - 1) {
       goTo(state.currentIndex + 1);
     }

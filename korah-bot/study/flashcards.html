@@ -30,6 +30,8 @@
   }
 }" :data-theme="getEffectiveTheme()" x-cloak>
 <head>
+<link rel="stylesheet" href="../transitions/page-transitions.css"/>
+<script src="../transitions/page-transitions.js"></script>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>Korah AI — Create Flashcards</title>
@@ -165,6 +167,20 @@
   </style>
 </head>
 <body class="bg-base tx overflow-hidden h-screen">
+<style>
+  html:not(.korah-page-ready) { background: #06040f !important; }
+  html[data-theme="light"]:not(.korah-page-ready) { background: #d2d2d2 !important; }
+  html:not(.korah-page-ready) body { opacity: 0 !important; }
+</style>
+
+<script>
+  (function() {
+    const t = localStorage.getItem('korah_theme') || 'dark';
+    if (t === 'light' || (t === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  })();
+</script>
   <canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
 
   <!-- Sidebar (Same as original but kept for layout consistency) -->
@@ -644,7 +660,7 @@
         updatedAt: new Date().toISOString()
       };
       if (window.KorahDB) window.KorahDB.setStudyItem(id, item);
-      window.location.href = "item.html?id=" + encodeURIComponent(id);
+      window.KorahTransitions.go("item.html?id=" + encodeURIComponent(id));
     }
 
     methodButtons.forEach(function (btn) {
@@ -761,7 +777,7 @@
     window.confirmLogout(async () => {
       await signOut(auth);
       localStorage.removeItem("korah_first_name");
-      window.location.href = "../login.html";
+      window.KorahTransitions.go("../login.html");
     });
   });
 </script>

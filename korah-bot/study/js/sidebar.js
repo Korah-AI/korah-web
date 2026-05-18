@@ -1269,7 +1269,7 @@ function showSidebarDeleteModal(name, onConfirm) {
 
           // Redirect to index to ensure all in-memory states are reset
           const resolvedBaseUrl = document.getElementById('new-chat-btn')?.getAttribute('data-base-url') || (window.location.pathname.includes('/study/') || window.location.pathname.includes('/sat/') ? '../chat.html' : 'chat.html');
-          window.location.href = resolvedBaseUrl;
+          window.KorahTransitions.go(resolvedBaseUrl);
 
         } catch (err) {
           console.error("Clear Data failed:", err);
@@ -1389,7 +1389,7 @@ function showSidebarDeleteModal(name, onConfirm) {
         // Redirect to main chat if not on main page or on SAT pages
         if (!isMainChatPage || isSatPage) {
           localStorage.setItem("korah_new_chat_trigger", "true");
-          window.location.href = resolvedBaseUrl;
+          window.KorahTransitions.go(resolvedBaseUrl);
         }
       });
     }
