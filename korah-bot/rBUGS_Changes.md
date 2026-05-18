@@ -1,11 +1,34 @@
 # BUGS FOUND BY AUSTIN
+
+**NEW**
+# landing/index.html
+
+* on mobile there is no nav bar for navagation 
+**NEW**
+
 # Index.html
+
+**NEW**
+* when on ANY page (chat, index, etc) - when you already have the side bar open and select to go into a different page, then close the side bar, the "more / option" (div.collapsed-more-wrapper) button is not appearing
+
+* when you first load up the page the "how to" pictures / screenshots dont pop up
+**NEW**
 
 * when the "select all" is selected (when getting rid of chats) then unselect a chat, it gets rid of all
 
 when in a different page, and the side bar fully open, selecing the chat page to go into, then closing the side bar, the more options does not show (refreshing does make it show) (DOES NOT SHOW FOR ALL PAGES) * Probably add a js function that lets it load
 
 Also, need to add a function for all pages wheen changing themes, for a smooth transition from dark --> Light b/c it's like a blocky load
+
+**NEW**
+# sat/dashboard.html
+
+* (mobile) scroll down to the "skill insight" section, the math is not shown (div.panel-card math-skills-panel)
+
+# sat/math-chat.html
+
+* (mobile) not able to resize the desmos graph using resize handler (div.resize-handle)
+**NEW**
 
 
 # sat/Index.html
