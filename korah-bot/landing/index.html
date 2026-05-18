@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en" x-data="app()" :data-theme="theme">
+<head>
+<link rel="stylesheet" href="../transitions/page-transitions.css"/>
+<script src="../transitions/page-transitions.js"></script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="description" content="Korah — AI study companion with SAT Math prep, Desmos graphing, mood-based task recommendations, focus sessions, and AI-generated flashcards, study guides and practice tests."/>
+<meta property="og:title" content="Korah — Your AI Study Companion"/>
+<meta property="og:description" content="Study smarter with mood-based recommendations, focus sessions, and AI-powered study tools."/>
+<title>Korah — Your AI Study Companion</title>
+<link rel="icon" type="image/png" href="../logo-images/newlogo0.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="../korah.js"></script>
+
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<link rel="stylesheet" href="../korah.css"/>
+<style>
+  html { scroll-behavior: smooth; }
+
+  .stat-divider {
+    width: 1px;
+    height: 2.5rem;
+    background: var(--bd);
+    flex-shrink: 0;
+  }
+
+  .hero-stat-num {
+    font-size: clamp(1.5rem, 3vw, 2.25rem);
+    font-weight: 900;
+    line-height: 1;
+    color: var(--tx);
+  }
+  .hero-stat-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--tx2);
+    margin-top: 0.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  /* Two-column feature sections */
+  .feature-section {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 6rem;
+    align-items: center;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  @media (max-width: 768px) {
+    .feature-section { grid-template-columns: 1fr; gap: 2.5rem; }
+    .feature-section.reverse { direction: ltr; }
+    .feature-section.reverse .mock-side { order: -1; }
+  }
+  .feature-section.reverse { direction: rtl; }
+  .feature-section.reverse > * { direction: ltr; }
+
+  /* Mock browser window */
+  .mock-browser {
+    background: var(--bg2);
+    border: 1px solid var(--bd);
+    border-radius: 1rem;
+    overflow: hidden;
+    box-shadow: 0 1.5rem 4rem rgba(0,0,0,0.35), 0 0 2rem rgba(139,92,246,0.15);
+  }
+  .mock-browser-bar {
+    background: var(--sf2);
+    border-bottom: 1px solid var(--bd);
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .mock-dot { width: 0.6rem; height: 0.6rem; border-radius: 50%; }
+  .mock-placeholder {
+    width: 100%;
+    aspect-ratio: 4/3;
+    background: linear-gradient(135deg, rgba(139,92,246,0.08) 0%, rgba(99,102,241,0.08) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 0.75rem;
+    border: 2px dashed rgba(139,92,246,0.2);
+    color: var(--tx3);
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .bullet-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem; }
+  .bullet-list li { display: flex; align-items: center; gap: 0.75rem; font-size: 1.0625rem; color: var(--tx2); }
+  .bullet-dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--p4); flex-shrink: 0; }
+</style>
+</head>
+
+<body class="bg-base tx" x-cloak style="overflow-x:hidden;">
+<style>
+  html:not(.korah-page-ready) { background: #06040f !important; }
+  html[data-theme="light"]:not(.korah-page-ready) { background: #d2d2d2 !important; }
+  html:not(.korah-page-ready) body { opacity: 0 !important; }
+</style>
+<script>
+  (function() {
+    const t = localStorage.getItem('korah_theme') || 'dark';
+    if (t === 'light' || (t === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  })();
+</script>
+
+<!-- Shooting Star background and twinkling stars -->
+<div class="stars-container" id="starField" :style="theme === 'light' ? 'opacity:0;pointer-events:none' : 'opacity:1'" style="transition:opacity 0.4s"></div>
+<canvas id="constellation-canvas" style="position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; opacity:0; transition:opacity 0.5s; z-index:-1;"></canvas>
+
+<!-- ═══ NAVBAR ═══ -->
+<nav id="navbar" class="fixed top-0 left-0 right-0 z-[1000] px-6 md:px-[clamp(28px,5.5vw,96px)]" style="height:var(--nav-h);display:grid;grid-template-columns:1fr auto 1fr;align-items:center;">
+  <a href="#home" class="flex items-center gap-2.5 no-underline shrink-0 z-10">
+    <div class="w-10 h-10 rounded-xl flex items-center justify-center font-display text-xl font-black text-white shadow-glow relative overflow-hidden t-btn hover:rotate-[-5deg] hover:scale-[1.08] hover:shadow-glow-lg">
+      <span class="absolute inset-0"></span><img src="../logo-images/newlogo0.png" style="height:2.5rem;width:auto;">
+    </div>
+    <div class="flex flex-col leading-tight">
+      <span style="font-family: 'Plus Jakarta Sans', sans-serif;" class="text-[19px] font-black tx">Korah</span>
+      <span class="text-[9px] font-semibold tracking-[2.5px] uppercase tx-p4">SAT Study App</span>
+    </div>
+  </a>
+
+  <div class="nav-links flex items-center gap-0.5 bg-sf2 border bd2 rounded-full px-3 py-2 glass-sm t-theme" style="white-space:nowrap;position:relative;">
+    <div class="nav-indicator" id="navIndicator"></div>
+    <a href="#home"     class="nav-link nav-pill text-[13.5px] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx hover:bg-[var(--bd)]"><span class="material-icons-round nav-link-icon">home</span><span class="nav-link-text">Home</span></a>
+    <a href="#sat"      class="nav-link nav-pill text-[13.5px] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx hover:bg-[var(--bd)]"><span class="material-icons-round nav-link-icon">calculate</span><span class="nav-link-text">Desmos Tutoring</span></a>
+    <a href="#progress" class="nav-link nav-pill text-[13.5px] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx hover:bg-[var(--bd)]"><span class="material-icons-round nav-link-icon">insights</span><span class="nav-link-text">Progress</span></a>
+    <a href="#chat"     class="nav-link nav-pill text-[13.5px] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx hover:bg-[var(--bd)]"><span class="material-icons-round nav-link-icon">assignment</span><span class="nav-link-text">Questionbank</span></a>
+    <a href="../opportunities/opportunities.html" class="nav-link nav-pill text-[13.5px] font-medium px-4 py-1.5 rounded-full t-btn" style="color:var(--p5); background:rgba(139,92,246,0.1); border: 1px solid rgba(139,92,246,0.25);"><span class="material-icons-round nav-link-icon" style="color:var(--p5)">rocket_launch</span><span class="nav-link-text">Opportunities</span></a>
+  </div>
+
+  <div class="flex items-center gap-2.5 z-10 justify-self-end">
+    <button @click="theme = theme==='dark' ? 'light' : 'dark'; localStorage.setItem('korah_theme', theme)"
+        class="flex items-center justify-center w-9 h-9 rounded-xl bg-sf2 border bd cursor-pointer t-btn hover:border-p4 hover:bg-[var(--bd2)] t-theme"
+        aria-label="Toggle theme">
+      <svg x-show="theme==='light'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" style="color:var(--p5)">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/>
+      </svg>
+      <svg x-show="theme==='dark'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--p4)">
+        <circle cx="12" cy="12" r="5"/>
+        <line x1="12" y1="1" x2="12" y2="3"/>
+        <line x1="12" y1="21" x2="12" y2="23"/>
+        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+        <line x1="1" y1="12" x2="3" y2="12"/>
+        <line x1="21" y1="12" x2="23" y2="12"/>
+        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+      </svg>
+    </button>
+    <button class="hidden lg:block text-[13px] font-semibold px-5 py-2.5 rounded-full cursor-pointer border bd tx2 bg-transparent t-btn hover:tx-p4 hover:border-p4 hover:bg-[var(--bd2)]"
+      onclick="window.KorahTransitions.go('../login.html')">
+      Log in
+    </button>
+    <button onclick="window.KorahTransitions.go('../index.html')" class="hidden lg:block text-[13px] font-semibold px-5 py-2.5 rounded-full cursor-pointer border-none text-white grad-bg shadow-glow t-btn hover:-translate-y-px hover:shadow-glow-lg">Open App</button>
+  </div>
+</nav>
+
+<!-- ═══ HERO ═══ -->
+<section id="home" style="position:relative;min-height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;padding-top:clamp(5.125rem,10vw,7rem);padding-bottom:4rem;">
+  <canvas id="design-shader-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;display:block;-webkit-mask-image:linear-gradient(to bottom,transparent 0%,black 14%,black 86%,transparent 100%);mask-image:linear-gradient(to bottom,transparent 0%,black 14%,black 86%,transparent 100%);"></canvas>
+
+  <div style="position:relative;z-index:10;width:100%;max-width:56rem;margin:0 auto;padding:0 1.25rem;text-align:center;">
+
+    <div class="t-theme" style="border:0.0625rem solid var(--bd);padding:0.375rem;border-radius:0.75rem;display:inline-block;margin-bottom:1.5rem;width:100%;background:color-mix(in srgb, var(--bg) 55%, transparent);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);">
+      <div style="border:0.0625rem solid var(--bd);border-radius:0.5rem;padding:2.5rem 1.5rem 2rem;">
+        <h1 class="tx" style="font-size:clamp(2.25rem,7vw,5.5rem);font-weight:900;letter-spacing:-0.02em;line-height:1.05;margin:0 0 0.5rem;">
+          The Most Goated
+        </h1>
+        <h1 style="font-size:clamp(2.25rem,7vw,5.5rem);font-weight:900;letter-spacing:-0.02em;line-height:1.05;margin:0 0 1.5rem;background:linear-gradient(135deg,#a855f7,#6366f1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-shadow:none;">
+          SAT Prep App
+        </h1>
+        <p class="tx2" style="font-size:clamp(0.9rem,1.8vw,1.125rem);line-height:1.65;max-width:36rem;margin:0 auto 2rem;">
+          Start cooking on the test today. Learn Desmos and track your progress with our adaptive study system.
+        </p>
+
+        <div style="display:flex;align-items:center;justify-content:center;gap:0.75rem;flex-wrap:wrap;margin-bottom:2.5rem;">
+          <a href="../index.html"
+            class="tx no-underline"
+            style="display:inline-flex;align-items:center;justify-content:center;height:3.25rem;padding:0 2rem;border-radius:9999px;background:#b81476;color:#fff;font-size:0.9375rem;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 0 1.5rem rgba(20,184,166,0.35);transition:transform 0.3s,box-shadow 0.3s;"
+            onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 0 2.5rem rgba(168,85,247,0.7)'" onmouseout="this.style.transform='';this.style.boxShadow='0 0 1.5rem rgba(168,85,247,0.5)'">
+            Try SAT Prep &nbsp;→
+          </a>
+          <a href="../index.html"
+            class="tx no-underline"
+            style="display:inline-flex;align-items:center;justify-content:center;height:3.25rem;padding:0 2rem;border-radius:9999px;border:1px solid var(--bd);background:transparent;font-size:0.9375rem;font-weight:600;cursor:pointer;font-family:inherit;transition:transform 0.3s,border-color 0.3s;"
+            onmouseover="this.style.transform='translateY(-2px)';this.style.borderColor='var(--p4)'" onmouseout="this.style.transform='';this.style.borderColor='var(--bd)'">
+            Open Web App
+          </a>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:center;gap:1.5rem;flex-wrap:wrap;">
+          <div style="text-align:center;">
+            <div class="hero-stat-num">3500+</div>
+            <div class="hero-stat-label">Practice Questions</div>
+          </div>
+          <div class="stat-divider hidden sm:block"></div>
+          <div style="text-align:center;">
+            <div class="hero-stat-num">Live</div>
+            <div class="hero-stat-label">Desmos Integration</div>
+          </div>
+          <div class="stat-divider hidden sm:block"></div>
+          <div style="text-align:center;">
+            <div class="hero-stat-num">1600</div>
+            <div class="hero-stat-label">Points Possible</div>
+          </div>
+          <div class="stat-divider hidden sm:block"></div>
+          <div style="text-align:center;">
+            <div class="hero-stat-num">Free</div>
+            <div class="hero-stat-label">Always</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <svg style="display:none;" aria-hidden="true">
+    <defs>
+      <filter id="design-glass-filter" x="0%" y="0%" width="100%" height="100%" color-interpolation-filters="sRGB">
+        <feTurbulence type="fractalNoise" baseFrequency="0.05 0.05" numOctaves="1" seed="1" result="turbulence"/>
+        <feGaussianBlur in="turbulence" stdDeviation="2" result="blurredNoise"/>
+        <feDisplacementMap in="SourceGraphic" in2="blurredNoise" scale="70" xChannelSelector="R" yChannelSelector="B" result="displaced"/>
+        <feGaussianBlur in="displaced" stdDeviation="4" result="finalBlur"/>
+        <feComposite in="finalBlur" in2="finalBlur" operator="over"/>
+      </filter>
+    </defs>
+  </svg>
+</section>
+
+<script>
+(function () {
+  var vertSrc = [
+    'attribute vec3 position;',
+    'void main() { gl_Position = vec4(position, 1.0); }'
+  ].join('\n');
+
+  var fragSrc = [
+    'precision highp float;',
+    'uniform vec2 resolution;',
+    'uniform float time;',
+    'uniform float xScale;',
+    'uniform float yScale;',
+    'uniform float distortion;',
+    'void main() {',
+    '  vec2 p = (gl_FragCoord.xy * 2.0 - resolution) / min(resolution.x, resolution.y);',
+    '  float d = length(p) * distortion;',
+    '  float rx = p.x * (1.0 + d);',
+    '  float gx = p.x;',
+    '  float bx = p.x * (1.0 - d);',
+    '  float r = 0.05 / abs(p.y + sin((rx + time) * xScale) * yScale);',
+    '  float g = 0.05 / abs(p.y + sin((gx + time) * xScale) * yScale);',
+    '  float b = 0.05 / abs(p.y + sin((bx + time) * xScale) * yScale);',
+    '  float a = clamp(max(max(r, g), b) * 1.8, 0.0, 1.0);',
+    '  gl_FragColor = vec4(r, g, b, a);',
+    '}'
+  ].join('\n');
+
+  function initDesignShader() {
+    var canvas = document.getElementById('design-shader-canvas');
+    if (!canvas || typeof THREE === 'undefined') return;
+
+    var section = document.getElementById('home');
+    var w = section.offsetWidth, h = section.offsetHeight;
+
+    var scene    = new THREE.Scene();
+    var renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true });
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setClearColor(0x000000, 0);
+    renderer.setSize(w, h, false);
+
+    var camera   = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, -1);
+    var uniforms = {
+      resolution: { value: [w, h] },
+      time:       { value: 0.0 },
+      xScale:     { value: 1.0 },
+      yScale:     { value: 0.5 },
+      distortion: { value: 0.05 }
+    };
+
+    var geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(
+      new Float32Array([-1,-1,0, 1,-1,0, -1,1,0, 1,-1,0, -1,1,0, 1,1,0]), 3
+    ));
+
+    var mat = new THREE.RawShaderMaterial({
+      vertexShader:   vertSrc,
+      fragmentShader: fragSrc,
+      uniforms:       uniforms,
+      side:           THREE.DoubleSide
+    });
+
+    scene.add(new THREE.Mesh(geo, mat));
+
+    function loop() {
+      uniforms.time.value += 0.01;
+      renderer.render(scene, camera);
+      requestAnimationFrame(loop);
+    }
+
+    function onResize() {
+      var nw = section.offsetWidth, nh = section.offsetHeight;
+      renderer.setSize(nw, nh, false);
+      uniforms.resolution.value = [nw, nh];
+    }
+
+    loop();
+    window.addEventListener('resize', onResize);
+  }
+
+  function waitForThree() {
+    if (typeof THREE !== 'undefined') { initDesignShader(); }
+    else { setTimeout(waitForThree, 50); }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', waitForThree);
+  } else {
+    waitForThree();
+  }
+}());
+</script>
+
+<!-- ═══ SAT PREP ═══ -->
+<section id="sat" class="min-h-[85vh] flex items-center px-5 md:px-[clamp(20px,6vw,80px)] bg-base t-theme">
+  <div class="feature-section reveal w-full">
+
+    <!-- Mock browser: left -->
+    <div class="mock-side">
+      <div class="mock-browser">
+        <div class="mock-browser-bar">
+          <div class="mock-dot" style="background:#ff5f57;"></div>
+          <div class="mock-dot" style="background:#febc2e;"></div>
+          <div class="mock-dot" style="background:#28c840;"></div>
+          <span class="text-[11px] tx3 ml-2 font-medium">SAT Math Chat · Desmos</span>
+        </div>
+        <img src="../logo-images/desmosdemo.png" alt="Desmos Demo" style="display:block;width:100%;height:100%;object-fit:cover;">
+      </div>
+    </div>
+
+    <!-- Text: right -->
+    <div>
+      <h2 class="text-[clamp(2.25rem,5vw,3.5rem)] font-bold tx leading-tight mb-4">AI Desmos Tutoring</h2>
+      <p class="text-[17px] tx2 leading-relaxed mb-6" style="max-width:36rem;">We built the first AI system that actually understands SAT calculator tricks; learn how to solve any problem at lighting speed. </p>
+      <ul class="bullet-list mb-8">
+        <li><span class="bullet-dot"></span>Korah actively updates the graph</li>
+        <li><span class="bullet-dot"></span>Understand tips and tricks for quicker problemsolving</li>
+        <li><span class="bullet-dot"></span>Learn every kind of regression</li>
+        <li><span class="bullet-dot"></span>Every step explained in plain English</li>
+      </ul>
+      <a href="../index.html" class="inline-flex items-center gap-2 text-[13px] font-semibold px-6 py-3 rounded-full border-none text-white grad-bg shadow-glow t-btn hover:-translate-y-px hover:shadow-glow-lg no-underline">
+        Try SAT Prep →
+      </a>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══ PROGRESS TRACKING ═══ -->
+<section id="progress" class="min-h-[85vh] flex items-center px-5 md:px-[clamp(20px,6vw,80px)] bg-base2 t-theme">
+  <div class="feature-section reverse reveal w-full">
+
+    <!-- Mock browser: right (reversed) -->
+    <div class="mock-side">
+      <div class="mock-browser">
+        <div class="mock-browser-bar">
+          <div class="mock-dot" style="background:#ff5f57;"></div>
+          <div class="mock-dot" style="background:#febc2e;"></div>
+          <div class="mock-dot" style="background:#28c840;"></div>
+          <span class="text-[11px] tx3 ml-2 font-medium">Progress Dashboard</span>
+        </div>
+        <img src="../logo-images/desmosdemo0.png" alt="Analytics Screenshot" style="display:block;width:100%;height:100%;object-fit:cover;">
+      </div>
+    </div>
+
+    <!-- Text: left -->
+    <div>
+      <h2 class="text-[clamp(2.25rem,5vw,3.5rem)] font-bold tx leading-tight mb-4">Track Your Progress</h2>
+      <p class="text-[15px] tx2 leading-relaxed mb-6" style="max-width:34rem;">See exactly where you're strong and where to focus next. Korah's analytics break down your performance by domain so you study smarter, not harder.</p>
+      <ul class="bullet-list mb-8">
+        <li><span class="bullet-dot"></span>Score trends over time by topic</li>
+        <li><span class="bullet-dot"></span>Weak area detection across all domains</li>
+        <li><span class="bullet-dot"></span>Collect XP and level up for consistency</li>
+        <li><span class="bullet-dot"></span>Practice suggestions based on performance</li>
+      </ul>
+      <a href="../index.html" class="inline-flex items-center gap-2 text-[13px] font-semibold px-6 py-3 rounded-full border bd tx t-btn hover:border-p4 hover:tx-p4 no-underline" style="transition:color 0.2s,border-color 0.2s;">
+        View Dashboard →
+      </a>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══ AI STUDY CHAT ═══ -->
+<section id="chat" class="min-h-[85vh] flex items-center px-5 md:px-[clamp(20px,6vw,80px)] bg-base t-theme relative overflow-hidden">
+  <div class="absolute inset-0 pointer-events-none" style="background:radial-gradient(ellipse at 50% 50%,rgba(139,92,246,0.07) 0%,transparent 65%);"></div>
+  <div class="feature-section relative z-10 reveal w-full">
+
+    <!-- Mock browser: left -->
+    <div class="mock-side">
+      <div class="mock-browser">
+        <div class="mock-browser-bar">
+          <div class="mock-dot" style="background:#ff5f57;"></div>
+          <div class="mock-dot" style="background:#febc2e;"></div>
+          <div class="mock-dot" style="background:#28c840;"></div>
+          <span class="text-[11px] tx3 ml-2 font-medium">Korah AI Chat</span>
+        </div>
+        <img src="../logo-images/questionbankdemo.png" alt="Chat Screenshot" style="display:block;width:100%;height:100%;object-fit:cover;">
+      </div>
+    </div>
+
+    <!-- Text: right -->
+    <div>
+      <h2 class="text-[clamp(2.25rem,5vw,3.5rem)] font-bold tx leading-tight mb-4">3500+ Problem Questionbank</h2>
+      <p class="text-[15px] tx2 leading-relaxed mb-6" style="max-width:34rem;">Ask Korah anything — it explains concepts step by step, generates practice problems on demand, and adapts to how you learn.</p>
+      <ul class="bullet-list mb-8">
+        <li><span class="bullet-dot"></span>Step-by-step problem walkthroughs</li>
+        <li><span class="bullet-dot"></span>On-demand practice problem generation</li>
+        <li><span class="bullet-dot"></span>Concept explanations in plain English</li>
+        <li><span class="bullet-dot"></span>Works with any subject, not just SAT</li>
+      </ul>
+      <a href="../index.html" class="inline-flex items-center gap-2 text-[13px] font-semibold px-6 py-3 rounded-full border-none text-white grad-bg shadow-glow t-btn hover:-translate-y-px hover:shadow-glow-lg no-underline">
+        Chat with Korah →
+      </a>
+    </div>
+
+  </div>
+</section>
+
+<footer class="relative z-10 bg-base border-t bd px-[clamp(20px,6vw,80px)] pt-[60px] pb-10 t-theme">
+  <div class="max-w-[1100px] mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr] gap-12">
+    <div>
+      <div class="flex items-center gap-2.5">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center font-display text-xl font-black text-white shadow-glow relative overflow-hidden t-btn hover:rotate-[-5deg] hover:scale-[1.08] hover:shadow-glow-lg">
+          <span class="absolute inset-0"></span><img src="../logo-images/newlogo0.png" style="height:2.5rem;width:auto;">
+        </div>
+        <div class="flex flex-col leading-tight">
+          <span style="font-family: 'Plus Jakarta Sans', sans-serif;" class="text-[19px] font-black tx">Korah</span>
+          <span class="text-[9px] font-semibold tracking-[2.5px] uppercase tx-p4">SAT Study App</span>
+        </div>
+      </div>
+      <p class="text-sm tx2 leading-[1.7] max-w-[280px] mt-3.5">Korah helps students ace the SAT with AI-powered tutoring, live Desmos graphing, adaptive practice, and progress tracking.</p>
+    </div>
+    <div>
+      <h4 class="text-xs font-bold tracking-[2px] uppercase tx-p5 mb-4">Product</h4>
+      <a href="#sat"      class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Desmos Tutoring</a>
+      <a href="#progress" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Progress</a>
+      <a href="#chat"     class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Questionbank</a>
+      <a href="../index.html" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Web App</a>
+    </div>
+    <div>
+      <h4 class="text-xs font-bold tracking-[2px] uppercase tx-p5 mb-4">Support</h4>
+      <a href="../support/index.html#contact" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Contact Us</a>
+      <a href="../support/index.html#faq"    class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">FAQ</a>
+    </div>
+    <div>
+      <h4 class="text-xs font-bold tracking-[2px] uppercase tx-p5 mb-4">Company</h4>
+      <a href="#" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">About Korah</a>
+      <a href="https://www.instagram.com/korah.app/" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Social Media</a>
+      <a href="../support/index.html#privacy" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Privacy Policy</a>
+      <a href="../support/index.html#terms" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Terms</a>
+    </div>
+  </div>
+  <div class="max-w-[1100px] mx-auto mt-10 pt-6 border-t bd2 flex flex-wrap items-center justify-between gap-3 text-[12.5px] tx3">
+    <span>© 2025 Korah AI. All rights reserved.</span>
+    <span>Made for students, by students</span>
+    <span>Beta v0.9.1</span>
+  </div>
+</footer>
+
+<script>
+window.addEventListener('load', function() {
+  const canvas = document.getElementById('constellation-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const dots = Array.from({ length: 80 }, () => ({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    vx: (Math.random() - 0.5) * 0.4,
+    vy: (Math.random() - 0.5) * 0.4,
+    r: 2 + Math.random() * 2,
+  }));
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (let i = 0; i < dots.length; i++) {
+      for (let j = i + 1; j < dots.length; j++) {
+        const dx = dots[i].x - dots[j].x;
+        const dy = dots[i].y - dots[j].y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist < 160) {
+          ctx.beginPath();
+          ctx.moveTo(dots[i].x, dots[i].y);
+          ctx.lineTo(dots[j].x, dots[j].y);
+          ctx.strokeStyle = `rgba(139,92,246,${(1 - dist/160) * 0.3})`;
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
+      }
+    }
+    dots.forEach(d => {
+      ctx.beginPath();
+      ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(139,92,246,0.5)';
+      ctx.fill();
+      d.x += d.vx; d.y += d.vy;
+      if (d.x < 0 || d.x > canvas.width) d.vx *= -1;
+      if (d.y < 0 || d.y > canvas.height) d.vy *= -1;
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+
+  function applyTheme() {
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    canvas.style.opacity = isLight ? '1' : '0';
+  }
+  applyTheme();
+
+  new MutationObserver(applyTheme).observe(document.documentElement, {
+    attributes: true, attributeFilter: ['data-theme']
+  });
+});
+</script>
+</body>
+</html>

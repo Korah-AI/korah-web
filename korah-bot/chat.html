@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en" x-data="{
+  theme: localStorage.getItem('korah_theme') || 'dark',
+  sidebarCollapsed: window.innerWidth <= 768 ? false : localStorage.getItem('korah_sidebar_collapsed') === 'true',
+  mobileOpen: false,
+  getEffectiveTheme() {
+    if (this.theme === 'system') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return this.theme;
+  },
+  toggleSidebar() {
+    if (window.innerWidth <= 768) {
+      this.mobileOpen = !this.mobileOpen;
+      const overlay = document.querySelector('.sidebar-overlay');
+      if (overlay) overlay.classList.toggle('show', this.mobileOpen);
+    } else {
+      if (this.sidebarCollapsed) {
+        const dp = document.getElementById('doc-panel');
+        if (dp?.classList.contains('expanded')) {
+          dp.classList.remove('expanded');
+          dp.classList.add('collapsed');
+          const tab = document.getElementById('doc-panel-tab');
+          if (tab) tab.classList.remove('panel-open');
+        }
+      }
+      this.sidebarCollapsed = !this.sidebarCollapsed;
+      localStorage.setItem('korah_sidebar_collapsed', this.sidebarCollapsed);
+    }
+  }
+}" :data-theme="getEffectiveTheme()" x-cloak>
+<head>
+<link rel="stylesheet" href="transitions/page-transitions.css"/>
+<script src="transitions/page-transitions.js"></script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Korah AI — Chat</title>
+<link rel="icon" type="image/png" href="logo-images/newlogo0.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="app/korah-chat.css"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css"/>
+<style>
+  .opp-feature-intro-modal {
+    position: fixed; inset: 0; z-index: 9999;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.35s cubic-bezier(0.4,0,0.2,1);
+  }
+  .opp-feature-intro-modal.show { opacity: 1; pointer-events: auto; }
+  .opp-feature-intro-backdrop {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(0.5rem); -webkit-backdrop-filter: blur(0.5rem);
+  }
+  .opp-feature-intro-content {
+    position: relative;
+    background: var(--sf); border: 0.0625rem solid var(--bd);
+    border-radius: 1.25rem; padding: 2.5rem 2.5rem 2rem;
+    max-width: 36rem; width: calc(100% - 2rem);
+    box-shadow: 0 1.5rem 4rem rgba(0,0,0,0.4), 0 0 2rem rgba(139,92,246,0.2);
+    transform: translateY(1.5rem) scale(0.95);
+    transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    text-align: center;
+  }
+  .opp-feature-intro-modal.show .opp-feature-intro-content { transform: translateY(0) scale(1); }
+  .opp-feature-intro-close {
+    position: absolute; top: 0.75rem; right: 0.75rem;
+    width: 2rem; height: 2rem; border: none; background: transparent;
+    color: var(--tx3); font-size: 1.25rem; cursor: pointer;
+    border-radius: 0.5rem; display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s ease; z-index: 1;
+  }
+  .opp-feature-intro-close:hover { background: rgba(139,92,246,0.15); color: var(--tx); }
+  .opp-feature-intro-slides { display: flex; align-items: center; justify-content: center; }
+  .opp-feature-intro-slide { display: flex; flex-direction: column; align-items: center; gap: 1rem; width: 100%; }
+  .opp-feature-intro-icon-large { font-size: 3.5rem; line-height: 1; margin-bottom: 0.25rem; filter: drop-shadow(0 0 0.75rem rgba(139,92,246,0.4)); }
+  .opp-feature-intro-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.5rem; font-weight: 800; color: var(--tx); margin: 0; line-height: 1.3; }
+  .opp-feature-intro-desc { font-size: 0.9375rem; line-height: 1.65; color: var(--tx2); margin: 0; max-width: 32rem; }
+  .opp-feature-intro-badge-new {
+    display: inline-block; padding: 0.2rem 0.75rem; border-radius: 1rem;
+    font-size: 0.65rem; font-weight: 800; letter-spacing: 0.1rem; text-transform: uppercase;
+    background: linear-gradient(135deg, var(--p4), var(--p5)); color: #fff; margin-top: 0.25rem;
+  }
+  .opp-feature-intro-actions { display: flex; justify-content: space-between; gap: 0.75rem; margin-top: 1.75rem; }
+  .opp-feature-intro-btn {
+    flex: 1; padding: 0.625rem 1.25rem; border-radius: 0.625rem;
+    font-size: 0.875rem; font-weight: 700; cursor: pointer;
+    border: 0.0625rem solid transparent; transition: all 0.2s ease; font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .opp-feature-intro-btn.primary { background: linear-gradient(135deg, var(--p4), var(--p5)); color: #fff; border-color: var(--p5); }
+  .opp-feature-intro-btn.primary:hover { filter: brightness(1.1); transform: translateY(-0.0625rem); }
+  .opp-feature-intro-btn.secondary { background: transparent; color: var(--tx2); border-color: var(--bd); }
+  .opp-feature-intro-btn.secondary:hover { background: var(--sf2); color: var(--tx); }
+</style>
+</head>
+
+<body class="bg-base tx korah-home-chat">
+<style>
+  html:not(.korah-page-ready) { background: #06040f !important; }
+  html[data-theme="light"]:not(.korah-page-ready) { background: #d2d2d2 !important; }
+  html:not(.korah-page-ready) body { opacity: 0 !important; }
+</style>
+<script>
+  (function() {
+    const t = localStorage.getItem('korah_theme') || 'dark';
+    if (t === 'light' || (t === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  })();
+</script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+  import { setupKorahDB } from "./app/data/firestore-store.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
+    authDomain: "korah-app.firebaseapp.com",
+    projectId: "korah-app",
+    storageBucket: "korah-app.firebasestorage.app",
+    messagingSenderId: "226169460321",
+    appId: "1:226169460321:web:b166fc8260107c55dafc20"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  // Redirect unauthenticated users to login page
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      window.KorahTransitions.go('login.html');
+      return;
+    }
+    // Set up Firestore and expose window.KorahDB before notifying the app.
+    await setupKorahDB(app, user.uid);
+    const detail = { uid: user.uid };
+    // Cache so korah-chat.js can pick it up even in edge-case timing.
+    window._korahReadyFired = detail;
+    window.dispatchEvent(new CustomEvent('korahReady', { detail }));
+  });
+
+  document.getElementById('logout-btn').addEventListener('click', () => {
+    window.confirmLogout(async () => {
+      await signOut(auth);
+      localStorage.removeItem('korah_first_name');
+      window.KorahTransitions.go('login.html');
+    });
+  });
+</script>
+
+<canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
+<div class="doc-panel-overlay" id="doc-panel-overlay"></div>
+
+<!-- ═══ SIDEBAR ═══ -->
+<div class="sidebar-overlay" :class="{ show: mobileOpen }" @click="mobileOpen = false"></div>
+<aside id="sidebar" class="sidebar bg-sf glass t-theme"
+  :class="{ collapsed: sidebarCollapsed, 'mobile-open': mobileOpen }"
+  x-effect="window.KorahSidebar?.onCollapseChange?.(sidebarCollapsed)"
+  @resize.window="if (window.innerWidth > 768) { mobileOpen = false; const overlay = document.querySelector('.sidebar-overlay'); if (overlay) overlay.classList.remove('show'); }">
+  <div class="sidebar-header">
+    <a href="index.html" class="flex items-center gap-2.5 no-underline">
+      <div class="w-12 h-12 rounded-xl flex items-center justify-center font-display text-xl">
+        <span class="logo-letter">
+          <img src="logo-images/newlogo0.png" alt="Korah"/>
+        </span>
+      </div>
+      <div class="flex flex-col leading-tight">
+        <span class="font-display text-[19px] font-bold tx">Korah</span>
+        <span class="text-[9px] font-semibold tracking-[2.5px] uppercase tx-p4">Study Smarter</span>
+      </div>
+    </a>
+    <button id="new-chat-btn" class="new-chat-btn text-white text-xs font-bold px-4 py-2 rounded-full border-none cursor-pointer shadow-glow t-btn">
+      <span class="new-chat-icon">+</span> <span class="new-chat-text">New Chat</span>
+    </button>
+  </div>
+
+  <nav class="sidebar-nav">
+    <span class="sidebar-section-label">HOME</span>
+    <a href="index.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">home</span> <span class="nav-text">Home</span></a>
+    <a href="chat.html" class="sidebar-nav-link active t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">chat</span> <span class="nav-text">Chat</span></a>
+    <a href="study/feed.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">school</span> <span class="nav-text">Study</span></a>
+    <span class="sidebar-section-label">SAT</span>
+    <a href="sat/index.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">assignment</span> <span class="nav-text">Question Bank</span></a>
+    <a href="sat/math-chat.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">calculate</span> <span class="nav-text">Math Chat</span></a>
+    <a href="sat/dashboard.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">insights</span> <span class="nav-text">Dashboard</span></a>
+  </nav>
+
+  <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 0.75rem 0 0.25rem;">
+    <span class="sidebar-section-label" style="margin:0">Recent Chats</span>
+  </div>
+  <div class="sidebar-middle">
+    <div class="select-bar-wrapper">
+      <div id="chat-select-bar" class="select-bar">
+        <span class="select-bar-count" id="chat-select-count">0 selected</span>
+        <div class="select-bar-actions">
+          <button class="select-bar-btn" id="chat-select-all" title="Select all">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </button>
+          <button class="select-bar-btn" id="chat-deselect-all" title="Deselect all">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+          <button class="select-bar-btn danger" id="chat-delete-selected" title="Delete selected"></button>
+        </div>
+      </div>
+    </div>
+    <div id="chat-history" class="chat-history">
+      <div class="skeleton-item">
+        <div class="skeleton-icon"></div>
+        <div class="skeleton-text"></div>
+      </div>
+      <div class="skeleton-item">
+        <div class="skeleton-icon"></div>
+        <div class="skeleton-text"></div>
+      </div>
+      <div class="skeleton-item">
+        <div class="skeleton-icon"></div>
+        <div class="skeleton-text"></div>
+      </div>
+      <div class="skeleton-item">
+        <div class="skeleton-icon"></div>
+        <div class="skeleton-text"></div>
+      </div>
+      <div class="skeleton-item">
+        <div class="skeleton-icon"></div>
+        <div class="skeleton-text"></div>
+      </div>
+    </div>
+  </div>
+
+
+    <div class="sidebar-footer">
+    <div class="mood-indicator" id="sidebar-mood">
+      <span class="mood-dot" id="mood-dot"><span class="m-icon" style="font-size:0.75rem;color:var(--grn)">fiber_manual_record</span></span>
+      <span class="text-xs tx2 font-medium">Full Focus Mode</span>
+    </div>
+    <div class="sidebar-footer-actions">
+      <button id="logout-btn" class="theme-toggle-small t-btn" title="Log out">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+      </button>
+      <button id="settings-btn" class="theme-toggle-small t-btn" title="Settings">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+      <button @click="theme = theme === 'dark' ? 'light' : 'dark'; localStorage.setItem('korah_theme', theme)" class="theme-toggle-small t-btn" title="Toggle theme">
+        <svg x-show="theme==='light'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" style="color:var(--p5)">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/>
+        </svg>
+        <svg x-show="theme==='dark'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--p4)">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</aside>
+
+<!-- Hidden file input for document attachment -->
+<input type="file" id="doc-file-input" class="hidden" multiple accept=".pdf,.txt,.png,.jpg,.jpeg,.gif,.webp,.md"/>
+
+<!-- ═══ MAIN AREA WRAPPER ═══ -->
+<div id="main-area-wrapper" class="main-area-wrapper">
+
+<!-- ═══ MAIN CHAT AREA ═══ -->
+<main id="main-content" class="main-content">
+
+  <!-- Top bar -->
+  <header class="chat-topbar bg-sf glass-sm t-theme bd" style="opacity: 0.95;">
+    <button id="sidebar-toggle" @click="toggleSidebar()" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+
+    <div class="chat-title-area">
+      <div class="korah-status-dot"></div>
+      <span class="font-semibold tx text-sm" id="chat-title">Photosynthesis Study Guide</span>
+    </div>
+
+    <div class="mode-selector-wrapper">
+      <button class="mode-selector-btn t-btn" id="mode-selector-btn" title="Change subject mode">
+        <span class="mode-icon" id="mode-icon"><span class="m-icon ic-gen">auto_awesome</span></span>
+        <span class="mode-name" id="mode-name">General</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+      <div class="mode-dropdown" id="mode-dropdown">
+        <div class="mode-option" data-mode="general">
+          <span class="mode-option-icon"><span class="m-icon ic-gen">auto_awesome</span></span>
+          <div class="mode-option-info">
+            <div class="mode-option-name">General Mode</div>
+            <div class="mode-option-desc">Versatile AI study companion</div>
+          </div>
+        </div>
+        <div class="mode-option" data-mode="math">
+          <span class="mode-option-icon"><span class="m-icon ic-math">calculate</span></span>
+          <div class="mode-option-info">
+            <div class="mode-option-name">Math Mode</div>
+            <div class="mode-option-desc">Step-by-step problem solving</div>
+          </div>
+        </div>
+        <div class="mode-option" data-mode="science">
+          <span class="mode-option-icon"><span class="m-icon ic-sci">science</span></span>
+          <div class="mode-option-info">
+            <div class="mode-option-name">Science Mode</div>
+            <div class="mode-option-desc">Physics, chemistry & biology</div>
+          </div>
+        </div>
+        <div class="mode-option" data-mode="history">
+          <span class="mode-option-icon"><span class="m-icon ic-hist">library_books</span></span>
+          <div class="mode-option-info">
+            <div class="mode-option-name">History Mode</div>
+            <div class="mode-option-desc">Context & cause-effect analysis</div>
+          </div>
+        </div>
+        <div class="mode-option" data-mode="literature">
+          <span class="mode-option-icon"><span class="m-icon ic-lit">menu_book</span></span>
+          <div class="mode-option-info">
+            <div class="mode-option-name">Literature Mode</div>
+            <div class="mode-option-desc">Analysis & interpretation</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="topbar-actions">
+      <button class="topbar-btn t-btn tx2" id="doc-panel-toggle" title="Toggle documents">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+          <polyline points="10 9 9 9 8 9"/>
+        </svg>
+        <span id="doc-count-badge" class="doc-count-badge hidden">0</span>
+      </button>
+      <button class="topbar-btn t-btn tx2" id="clear-chat-btn" title="Clear chat">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="3,6 5,6 21,6"/><path d="M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6"/><path d="M10,11v6M14,11v6"/><path d="M9,6V4a1,1,0,0,1,1-1h4a1,1,0,0,1,1,1v2"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Chat messages -->
+  <div id="chat-body" class="chat-body">
+    <div id="messages-container">
+
+      <!-- Welcome state -->
+      <div id="welcome-screen" class="welcome-screen">
+        <h1 class="welcome-title font-display font-black tx">What can I help you study?</h1>
+
+        <div class="welcome-meta">
+          <div class="tutoring-toggle-wrapper">
+            <span class="tutoring-toggle-label">Tutoring Mode</span>
+            <label class="tutoring-switch">
+              <input type="checkbox" id="tutoring-mode-toggle">
+              <span class="tutoring-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="welcome-input-container bg-sf2 glass-sm bd shadow-glow-lg">
+          <textarea id="welcome-chat-input" class="welcome-textarea tx" placeholder="Ask Korah a study question..." rows="1"></textarea>
+          <div id="welcome-attachments" class="welcome-attachments"></div>
+          <div class="welcome-input-actions">
+            <button id="welcome-attach-btn" class="welcome-tool-btn t-btn tx3" title="Attach file">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44,11.05l-9.19,9.19a6,6,0,0,1-8.49-8.49l9.19-9.19a4,4,0,0,1,5.66,5.66l-9.2,9.19a2,2,0,0,1-2.83-2.83l8.49-8.48"/></svg>
+            </button>
+            <div class="welcome-right-actions">
+              <button id="welcome-send-btn" class="welcome-send-btn grad-bg t-btn" aria-label="Send message">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="22" y1="2" x2="11" y2="13"></line>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="mode-pills mb-8" id="mode-pills-container">
+          <!-- Populated by JS -->
+        </div>
+
+      </div>
+
+      <!-- Messages will appear here -->
+      <div id="messages-list"></div>
+    </div>
+  </div>
+
+  <!-- Typing indicator (hidden by default) -->
+  <div id="typing-indicator" class="typing-bar hidden">
+    <div class="typing-bubble bg-card border bd t-theme">
+      <div class="flex items-center gap-1.5 text-[11px] font-bold tracking-[1px] tx-p4 uppercase mb-1.5">
+        <span class="w-1.5 h-1.5 rounded-full bg-p4 animate-pulse"></span>Korah AI
+      </div>
+      <div class="typing-dots">
+        <span class="typing-dot"></span>
+        <span class="typing-dot" style="animation-delay:.2s"></span>
+        <span class="typing-dot" style="animation-delay:.4s"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Input area -->
+  <div class="chat-input-area t-theme hidden">
+    <div class="input-wrapper">
+      <div id="input-files-bar" class="input-files-bar"></div>
+      <textarea
+        id="chat-input"
+        class="chat-textarea tx bg-transparent"
+        placeholder="Reply..."
+        rows="1"
+        style="min-height: 1.5rem;"
+      ></textarea>
+      
+      <div class="input-actions-row">
+        <div class="input-actions-left">
+          <button class="input-action-btn t-btn" id="attach-file-btn" title="Attach file">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+          </button>
+        </div>
+
+          <button id="send-btn" class="send-btn-circle grad-bg t-btn" aria-label="Send message">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="18 15 12 9 6 15"></polyline>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="input-footer">
+      <span class="text-[11px] tx3 opacity-60">Korah is AI and can make mistakes. Please double-check responses.</span>
+    </div>
+  </div>
+
+  <!-- Drag & Drop Overlay -->
+  <div id="drag-overlay" class="drag-overlay">
+    <div class="drag-overlay-inner">
+      <span class="drag-overlay-icon"><span class="m-icon ic-gen">description</span></span>
+      <span class="drag-overlay-text">Drop documents here</span>
+      <span class="drag-overlay-hint">Images, text files, and PDFs</span>
+    </div>
+  </div>
+
+</main>
+
+<!-- ═══ DOCUMENT PREVIEW PANEL ═══ -->
+
+<aside id="doc-panel" class="doc-panel t-theme collapsed">
+<div id="doc-panel-tab" class="doc-panel-tab" title="Open documents">
+ <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+    <polyline points="15 18 9 12 15 6"/>
+  </svg>
+  <span class="doc-badge" id="doc-tab-badge">0</span>
+</div>
+  <div class="doc-panel-collapsed-content">
+    <button id="doc-add-btn-collapsed" class="doc-add-btn-collapsed t-btn" title="Add documents">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+    </button>
+  </div>
+  
+  <div class="doc-panel-expanded-content">
+    <div class="doc-panel-header">
+      <span class="doc-panel-title">Documents</span>
+      <button id="doc-add-btn-header" class="doc-add-btn-header" title="Add document">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+      </button>
+    </div>
+    <div id="doc-panel-list" class="doc-panel-list">
+      <div class="doc-panel-empty">
+        <span class="docu-panel-empty-icon m-icon tx" style="font-size:2rem;">description</span>
+        <span class="doc-panel-empty-text">Drop or add documents</span>
+        <span class="doc-panel-empty-hint">PDFs, images, text files</span>
+      </div>
+    </div>
+  </div>
+</aside>
+
+</div><!-- end .main-area-wrapper -->
+
+<!-- Settings Modal -->
+<div id="settings-modal" class="settings-modal">
+  <div class="settings-modal-content">
+    <div class="settings-header">
+      <h2 class="settings-title">Settings</h2>
+      <button class="settings-close" id="settings-close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    
+    <div class="settings-body">
+      <!-- Theme Settings -->
+      <div class="settings-section">
+        <h3 class="settings-section-title">Appearance</h3>
+        <div class="settings-item">
+          <div class="settings-item-label">Theme</div>
+          <div class="settings-item-control">
+            <div class="settings-custom-select" id="settings-theme-custom-select">
+              <div class="settings-select-trigger" id="settings-theme-trigger">
+                <div class="flex items-center gap-2">
+                  <span class="material-icons-round trigger-icon">dark_mode</span>
+                  <span class="trigger-text">Dark Mode</span>
+                </div>
+                <span class="material-icons-round">expand_more</span>
+              </div>
+              <div class="settings-select-menu" id="settings-theme-menu">
+                <div class="settings-select-option" data-value="dark">
+                  <span class="material-icons-round">dark_mode</span>
+                  <span>Dark Mode</span>
+                  <span class="material-icons-round check-icon">check</span>
+                </div>
+                <div class="settings-select-option" data-value="light">
+                  <span class="material-icons-round">light_mode</span>
+                  <span>Light Mode</span>
+                  <span class="material-icons-round check-icon">check</span>
+                </div>
+                <div class="settings-select-option" data-value="system">
+                  <span class="material-icons-round">settings_suggest</span>
+                  <span>System</span>
+                  <span class="material-icons-round check-icon">check</span>
+                </div>
+              </div>
+              <input type="hidden" id="settings-theme-select" value="dark">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Profile Settings -->
+      <div class="settings-section">
+        <h3 class="settings-section-title">Profile</h3>
+        <div class="settings-item">
+          <div class="settings-item-label">Display Name</div>
+          <div class="settings-item-control">
+            <input type="text" id="settings-name-input" class="settings-input" placeholder="Your name">
+          </div>
+        </div>
+      </div>
+
+      <!-- Data Settings -->
+      <div class="settings-section">
+        <h3 class="settings-section-title">Data</h3>
+        <div class="settings-item">
+          <div class="settings-item-label">Clear All Data</div>
+          <div class="settings-item-control">
+            <button id="settings-clear-data" class="settings-btn danger">Clear Data</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="settings-actions">
+        <button id="settings-save" class="settings-btn primary">Save Settings</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Rename Modal -->
+<div id="rename-modal" class="delete-modal">
+  <div class="delete-modal-content">
+    <div class="delete-modal-icon"><span class="m-icon ic-gen">edit</span></div>
+    <h3 class="delete-modal-title">Rename</h3>
+    <p class="delete-modal-desc" id="rename-modal-desc">Enter a new name</p>
+    <input id="rename-modal-input" type="text" class="create-input" style="width:100%; margin-top:0.25rem;" placeholder="New name…"/>
+    <div class="delete-modal-actions">
+      <button id="rename-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
+      <button id="rename-modal-confirm" class="delete-modal-btn confirm t-btn" style="background:rgba(139,92,246,.12); color:var(--p5); border-color:rgba(139,92,246,.3);">Rename</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div id="delete-modal" class="delete-modal">
+  <div class="delete-modal-content">
+    <div class="delete-modal-icon"><span class="m-icon ic-gen">delete</span></div>
+    <h3 class="delete-modal-title">Delete?</h3>
+    <p class="delete-modal-desc">This will permanently delete <span id="delete-modal-name"></span>. This cannot be undone.</p>
+    <div class="delete-modal-actions">
+      <button id="delete-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
+      <button id="delete-modal-confirm" class="delete-modal-btn confirm t-btn">Delete</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Opportunities Feature Intro Modal -->
+<div id="opp-intro-modal" class="opp-feature-intro-modal">
+  <div class="opp-feature-intro-backdrop"></div>
+  <div class="opp-feature-intro-content">
+    <button class="opp-feature-intro-close" id="opp-intro-close">&times;</button>
+    <div class="opp-feature-intro-slides">
+      <div class="opp-feature-intro-slide active">
+        <div class="opp-feature-intro-icon-large"><span class="m-icon" style="font-size:3.5rem;color:var(--p4)">rocket_launch</span></div>
+        <h2 class="opp-feature-intro-title">STEM Opportunities</h2>
+        <p class="opp-feature-intro-desc">
+          Discover programs, internships, competitions, and scholarships for underrepresented students in NJ and beyond — all in one place. Browse and filter by grade, cost, and category.
+        </p>
+        <div class="opp-feature-intro-badge-new">NEW</div>
+      </div>
+    </div>
+    <div class="opp-feature-intro-actions">
+      <button class="opp-feature-intro-btn secondary" id="opp-intro-dismiss">Maybe Later</button>
+      <button class="opp-feature-intro-btn primary" id="opp-intro-go">Explore Opportunities</button>
+    </div>
+  </div>
+</div>
+
+<!-- Pro Tip Toast Notification -->
+<div id="pro-tip-toast" class="pro-tip-toast">
+  <span class="pro-tip-toast-icon"><span class="m-icon ic-gen">lightbulb</span></span>
+  <div class="pro-tip-toast-content">
+    <div class="pro-tip-toast-label">Pro Tip</div>
+    <div class="pro-tip-toast-text" id="pro-tip-text"></div>
+  </div>
+  <button class="pro-tip-toast-close" id="pro-tip-close" title="Dismiss">×</button>
+</div>
+
+<script src="https://www.desmos.com/api/v1.11/calculator.js?apiKey=d75985faa7d94050843ebd4528dd94c1"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
+<script src="app/timer-manager.js"></script>
+<script src="study/js/sidebar.js"></script>
+<script src="study/js/study-api.js"></script>
+<script src="app/korah-chat.js"></script>
+
+<script>
+  // Close doc panel when overlay is clicked
+  document.getElementById('doc-panel-overlay').addEventListener('click', () => {
+    const panel = document.getElementById('doc-panel');
+    const overlay = document.getElementById('doc-panel-overlay');
+    panel.classList.remove('expanded');
+    panel.classList.add('collapsed');
+    overlay.classList.remove('show');
+  });
+
+
+  // ── Opportunities Feature Intro ──
+  (function() {
+    const INTRO_KEY = 'korah_opp_intro_seen';
+    if (localStorage.getItem(INTRO_KEY)) return;
+
+    const modal = document.getElementById('opp-intro-modal');
+    if (!modal) return;
+
+    function closeModal() {
+      modal.classList.remove('show');
+      localStorage.setItem(INTRO_KEY, 'true');
+    }
+
+    document.getElementById('opp-intro-go').addEventListener('click', () => {
+      closeModal();
+      window.KorahTransitions.go('opportunities/opportunities.html');
+    });
+    document.getElementById('opp-intro-dismiss').addEventListener('click', closeModal);
+    document.getElementById('opp-intro-close').addEventListener('click', closeModal);
+    modal.querySelector('.opp-feature-intro-backdrop').addEventListener('click', closeModal);
+
+    setTimeout(() => modal.classList.add('show'), 800);
+  })();
+
+  // Initialize sidebar with chat-specific callbacks
+  window.addEventListener('korahReady', () => {
+    if (window.KorahSidebar) {
+      window.KorahSidebar.initSidebar({
+        chatBaseUrl: "chat.html",
+        itemPageUrl: "study/item.html",
+        onItemClick: (id) => {
+          const sessions = window.KorahSidebar.getSessions() || {};
+          const session = sessions[id];
+          if (session && session.mode === 'sat-math') {
+            window.KorahTransitions.go('sat/math-chat.html#' + id);
+            return;
+          }
+          if (window.KorahChat && typeof window.KorahChat.switchToSession === 'function') {
+            window.KorahChat.switchToSession(id);
+          }
+        }
+      });
+    }
+  }, { once: true });
+</script>
+
+</body>
+</html>

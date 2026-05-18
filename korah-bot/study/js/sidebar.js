@@ -4,12 +4,82 @@
  * falls back to empty caches if KorahDB is unavailable.
  */
 
-// ── Rename & Delete Modal Handlers ──
-function initRenameDeleteModals() {
+// ── Action Confirmation Modal Handlers ──
+function injectActionModals() {
+  // Inject Clear Data and Logout modals if they don't exist
+  if (!document.getElementById("clear-data-modal")) {
+    const clearDataHTML = `
+      <div id="clear-data-modal" class="delete-modal">
+        <div class="delete-modal-content">
+          <div class="delete-modal-icon">
+            <span class="material-icons-round" style="font-size: 2.5rem; color: var(--red);">warning</span>
+          </div>
+          <h3 class="delete-modal-title">Clear All Data?</h3>
+          <p class="delete-modal-desc">This will remove all your chats, study items, and settings. Your account will remain, but all your local and cloud progress will be wiped. <strong>This cannot be undone.</strong></p>
+          <div class="delete-modal-actions">
+            <button id="clear-data-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
+            <button id="clear-data-modal-confirm" class="delete-modal-btn confirm t-btn clear-everything-btn">Clear Everything</button>
+          </div>
+        </div>
+      </div>
+      <style>
+        .clear-everything-btn {
+          background: var(--red); 
+          color: #fff; 
+          border-color: var(--red);
+          transition: all 0.2s ease;
+        }
+        .clear-everything-btn:hover {
+          background: #ef4444;
+          filter: brightness(1.1);
+          box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
+        }
+        html[data-theme="light"] .clear-everything-btn:hover {
+          background: #dc2626;
+          box-shadow: 0 0 12px rgba(220, 38, 38, 0.2);
+        }
+      </style>
+    `;
+    document.body.insertAdjacentHTML('beforeend', clearDataHTML);
+  }
+
+  if (!document.getElementById("logout-modal")) {
+    const logoutHTML = `
+      <div id="logout-modal" class="delete-modal">
+        <div class="delete-modal-content">
+          <div class="delete-modal-icon">
+            <span class="material-icons-round" style="font-size: 2.5rem; color: var(--p5);">logout</span>
+          </div>
+          <h3 class="delete-modal-title">Log Out?</h3>
+          <p class="delete-modal-desc">Are you sure you want to log out of your session? You'll need to sign in again to access your chats and study tools.</p>
+          <div class="delete-modal-actions">
+            <button id="logout-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
+            <button id="logout-modal-confirm" class="delete-modal-btn confirm t-btn">Log Out</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', logoutHTML);
+  }
+}
+
+function initActionModals() {
+  injectActionModals();
+
   const renameModal = document.getElementById("rename-modal");
   const deleteModal = document.getElementById("delete-modal");
+  const clearDataModal = document.getElementById("clear-data-modal");
+  const logoutModal = document.getElementById("logout-modal");
 
-  if (!renameModal || !deleteModal) return;
+  // Standardize existing Rename/Delete modal icons to Material Icons
+  if (renameModal) {
+    const icon = renameModal.querySelector('.delete-modal-icon');
+    if (icon) icon.innerHTML = '<span class="material-icons-round" style="font-size: 2.5rem; color: var(--p5);">edit</span>';
+  }
+  if (deleteModal) {
+    const icon = deleteModal.querySelector('.delete-modal-icon');
+    if (icon) icon.innerHTML = '<span class="material-icons-round" style="font-size: 2.5rem; color: var(--red);">delete</span>';
+  }
 
   const renameInput = document.getElementById("rename-modal-input");
   const renameDesc = document.getElementById("rename-modal-desc");
@@ -18,11 +88,19 @@ function initRenameDeleteModals() {
   const deleteName = document.getElementById("delete-modal-name");
   const deleteCancel = document.getElementById("delete-modal-cancel");
   const deleteConfirm = document.getElementById("delete-modal-confirm");
+  
+  const clearDataCancel = document.getElementById("clear-data-modal-cancel");
+  const clearDataConfirm = document.getElementById("clear-data-modal-confirm");
+  const logoutCancel = document.getElementById("logout-modal-cancel");
+  const logoutConfirm = document.getElementById("logout-modal-confirm");
 
   let renameCallback = null;
   let deleteCallback = null;
+  let clearDataCallback = null;
+  let logoutCallback = null;
 
   function showRenameModal(currentName, desc, onConfirm) {
+    if (!renameModal) return;
     renameInput.value = currentName || "";
     if (renameDesc) renameDesc.textContent = desc || "Enter a new name";
     renameCallback = onConfirm;
@@ -31,46 +109,68 @@ function initRenameDeleteModals() {
   }
 
   function showDeleteModal(name, onConfirm) {
+    if (!deleteModal) return;
     if (deleteName) deleteName.textContent = name || "this item";
     deleteCallback = onConfirm;
     deleteModal.classList.add("show");
   }
 
-  function hideRenameModal() {
-    renameModal.classList.remove("show");
-    renameCallback = null;
+  function showClearDataModal(onConfirm) {
+    if (!clearDataModal) return;
+    clearDataCallback = onConfirm;
+    clearDataModal.classList.add("show");
   }
 
-  function hideDeleteModal() {
-    deleteModal.classList.remove("show");
-    deleteCallback = null;
+  function showLogoutModal(onConfirm) {
+    if (!logoutModal) return;
+    logoutCallback = onConfirm;
+    logoutModal.classList.add("show");
   }
 
-  renameCancel?.addEventListener("click", hideRenameModal);
+  function hideModals() {
+    [renameModal, deleteModal, clearDataModal, logoutModal].forEach(m => m?.classList.remove("show"));
+    renameCallback = deleteCallback = clearDataCallback = logoutCallback = null;
+  }
+
+  renameCancel?.addEventListener("click", hideModals);
   renameConfirm?.addEventListener("click", () => {
     const v = renameInput.value.trim();
     if (v && renameCallback) renameCallback(v);
-    hideRenameModal();
+    hideModals();
   });
   renameInput?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") { e.preventDefault(); renameConfirm?.click(); }
-    if (e.key === "Escape") hideRenameModal();
+    if (e.key === "Escape") hideModals();
   });
 
-  deleteCancel?.addEventListener("click", hideDeleteModal);
+  deleteCancel?.addEventListener("click", hideModals);
   deleteConfirm?.addEventListener("click", () => {
     if (deleteCallback) deleteCallback();
-    hideDeleteModal();
+    hideModals();
   });
 
-  [renameModal, deleteModal].forEach(modal => {
+  clearDataCancel?.addEventListener("click", hideModals);
+  clearDataConfirm?.addEventListener("click", () => {
+    if (clearDataCallback) clearDataCallback();
+    hideModals();
+  });
+
+  logoutCancel?.addEventListener("click", hideModals);
+  logoutConfirm?.addEventListener("click", () => {
+    if (logoutCallback) logoutCallback();
+    hideModals();
+  });
+
+  [renameModal, deleteModal, clearDataModal, logoutModal].forEach(modal => {
     modal?.addEventListener("click", (e) => {
-      if (e.target === modal) modal.classList.remove("show");
+      if (e.target === modal) hideModals();
     });
   });
 
   window.showRenameModal = showRenameModal;
   window.showDeleteModal = showDeleteModal;
+  window.showClearDataModal = showClearDataModal;
+  window.showLogoutModal = showLogoutModal;
 }
 
 // Use custom modals if available, otherwise fallback to browser dialogs
@@ -104,13 +204,69 @@ function showSidebarDeleteModal(name, onConfirm) {
   const MODE_EMOJI = {
     general: "✨", math: "🧮", physics: "⚛️",
     chemistry: "⚗️", biology: "🧬", history: "📜", literature: "📚",
+    "sat-math": "📊", sat: "📝",
   };
   function getModeEmoji(mode) { return MODE_EMOJI[mode] || "📚"; }
+
+  const MODE_ICON = {
+    general: "auto_awesome", math: "calculate", physics: "science",
+    chemistry: "science", biology: "science", science: "science", history: "library_books", literature: "menu_book",
+    sat: "analytics", "sat-math": "analytics",
+  };
+  const MODE_ICON_COLOR = {
+    general: "ic-gen", math: "ic-math", physics: "ic-sci",
+    chemistry: "ic-sci", biology: "ic-sci", science: "ic-sci", history: "ic-hist", literature: "ic-lit",
+    sat: "ic-sat-m", "sat-math": "ic-sat-m",
+  };
+  function getModeIconHtml(mode) {
+    const icon = MODE_ICON[mode] || "menu_book";
+    const color = MODE_ICON_COLOR[mode] || "ic-lit";
+    return `<span class="m-icon ${color}">${icon}</span>`;
+  }
 
   const TYPE_EMOJI = { flashcards: "🃏", studyGuide: "📖", practiceTest: "🎯" };
   function getTypeEmoji(type) { return TYPE_EMOJI[type] || "📄"; }
 
+  const TYPE_ICON = { flashcards: "style", studyGuide: "auto_stories", practiceTest: "gps_fixed" };
+  const TYPE_ICON_COLOR = { flashcards: "ic-flash", studyGuide: "ic-guide", practiceTest: "ic-quiz" };
+  function getTypeIconHtml(type) {
+    const icon = TYPE_ICON[type] || "description";
+    const color = TYPE_ICON_COLOR[type] || "ic-gen";
+    return `<span class="m-icon ${color}">${icon}</span>`;
+  }
+
+  /**
+   * Standardizes sidebar section labels with material icons
+   */
+  function standardizeSidebarLabels() {
+    const labels = document.querySelectorAll(".sidebar-section-label");
+    labels.forEach(label => {
+      const text = label.textContent.trim();
+      if (text === "Recent Chats" && !label.querySelector(".material-icons-round")) {
+        label.innerHTML = `<span class="material-icons-round" style="font-size: 1.1rem; opacity: 0.7; margin-right: 8px;">chat</span><span>Recent Chats</span>`;
+        label.style.display = "flex";
+        label.style.alignItems = "center";
+      } else if (text === "Recent Study Items" && !label.querySelector(".material-icons-round")) {
+        label.innerHTML = `<span class="material-icons-round" style="font-size: 1.1rem; opacity: 0.7; margin-right: 8px;">school</span><span>Recent Study Items</span>`;
+        label.style.display = "flex";
+        label.style.alignItems = "center";
+      }
+    });
+  }
+
   // ── Render Chat History ──
+  function _getChatLogoPath() {
+    for (const s of document.querySelectorAll('script[src]')) {
+      if (s.src && s.src.includes('sidebar.js')) {
+        const url = new URL(s.src);
+        const parts = url.pathname.split('/');
+        parts.splice(-3); // remove study/js/sidebar.js, leaving root path
+        return url.origin + parts.join('/') + '/logo-images/newlogo11.png';
+      }
+    }
+    return 'logo-images/newlogo11.png';
+  }
+
   function renderChatHistory(container, baseUrl) {
     if (!container) return;
     const sessions = getSessions();
@@ -118,6 +274,16 @@ function showSidebarDeleteModal(name, onConfirm) {
       (a, b) => new Date(sessions[b].updatedAt) - new Date(sessions[a].updatedAt)
     );
     container.innerHTML = "";
+    if (ids.length === 0) {
+      container.innerHTML = `
+        <div class="chat-history-empty">
+          <img src="${_getChatLogoPath()}" alt="Korah" class="chat-history-empty-logo">
+          <div class="chat-history-empty-title">No recent chats</div>
+          <div class="chat-history-empty-sub">Start a conversation to see it here.</div>
+        </div>
+      `;
+      return;
+    }
     ids.forEach((id) => {
       const s = sessions[id];
       const a = document.createElement("a");
@@ -133,7 +299,7 @@ function showSidebarDeleteModal(name, onConfirm) {
 
       const icon = document.createElement("span");
       icon.className = "history-icon";
-      icon.textContent = getModeEmoji(s.mode);
+      icon.innerHTML = getModeIconHtml(s.mode);
 
       const text = document.createElement("span");
       text.className = "history-text";
@@ -209,18 +375,34 @@ function showSidebarDeleteModal(name, onConfirm) {
     navLinks.forEach(link => {
       if (link.hasAttribute('data-sat-link')) return; // Skip SAT links
       const href = link.getAttribute("href");
+      if (href.includes("sat/")) return; // Skip SAT section links
       if (href.includes("feed.html")) {
         link.innerHTML = "<span class='material-icons-round' style='font-size: 1.25rem;'>school</span> <span class='nav-text'>Study</span>";
         if (itemIds.length === 0) link.classList.add("nav-empty");
         else link.classList.remove("nav-empty");
-      } else if (href.includes("index.html")) {
+      } else if (href.includes("chat.html") && !href.includes("math-chat")) {
         link.innerHTML = "<span class='material-icons-round' style='font-size: 1.25rem;'>chat</span> <span class='nav-text'>Chat</span>";
       }
       // All other links (productivity) remain unchanged
     });
 
     if (!container) return;
+    
+    // Standardize empty state UI
     const emptyEl = document.getElementById("study-items-empty");
+    if (emptyEl) {
+      emptyEl.innerHTML = `
+        <span class="study-items-empty-icon" aria-hidden="true"><span class="m-icon" style="font-size: 2rem; margin-top:2rem;">school</span></span>
+        <div class="study-items-empty-title" style="font-size: 0.85rem; font-weight: 600; color: var(--tx2);">No study items yet</div>
+        <div class="study-items-empty-sub" style="font-size: 0.75rem; color: var(--tx3);">Create one to see it here.</div>
+      `;
+      emptyEl.style.padding = "20px 10px";
+      emptyEl.style.textAlign = "center";
+      emptyEl.style.display = "flex";
+      emptyEl.style.flexDirection = "column";
+      emptyEl.style.alignItems = "center";
+    }
+
     const list = itemIds
       .map((id) => ({ id, ...items[id] }))
       .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
@@ -251,7 +433,7 @@ function showSidebarDeleteModal(name, onConfirm) {
 
       const icon = document.createElement("span");
       icon.className = "history-icon";
-      icon.textContent = getTypeEmoji(item.type);
+      icon.innerHTML = getTypeIconHtml(item.type);
 
       const text = document.createElement("span");
       text.className = "history-text";
@@ -514,15 +696,11 @@ function showSidebarDeleteModal(name, onConfirm) {
 
     selectAllBtn?.addEventListener("click", () => {
       const items = container.querySelectorAll(".history-item");
-      const all = selected.size === items.length;
       selected.clear();
-      items.forEach(el => el.classList.remove("selected"));
-      if (!all) {
-        items.forEach(item => {
-          const id = item.getAttribute("data-session");
-          if (id) { selected.add(id); item.classList.add("selected"); }
-        });
-      }
+      items.forEach(item => {
+        const id = item.getAttribute("data-session");
+        if (id) { selected.add(id); item.classList.add("selected"); }
+      });
       updateBar();
     });
 
@@ -631,6 +809,7 @@ function showSidebarDeleteModal(name, onConfirm) {
       : satHref.replace(/[^/]*$/, '');
     const satIndexHref = `${satDir}index.html`;
     const satMathChatHref = `${satDir}math-chat.html`;
+    const satDashboardHref = `${satDir}dashboard.html`;
     
 
     // Wrap SAT item so it can "reveal" like the Pomodoro idle panel.
@@ -666,6 +845,12 @@ function showSidebarDeleteModal(name, onConfirm) {
           <a class="more-dropdown-item" href="${satIndexHref}">
             <span class="material-icons-round">assignment</span>
             <span>SAT Questionbank</span>
+          </a>
+        </li>
+        <li>
+          <a class="more-dropdown-item" href="${satDashboardHref}">
+            <span class="material-icons-round">insights</span>
+            <span>SAT Dashboard</span>
           </a>
         </li>
       </ul>
@@ -850,35 +1035,24 @@ function showSidebarDeleteModal(name, onConfirm) {
           </button>
           <div class="timer-idle-panel" id="timer-idle-panel">
             <div class="timer-idle-panel-inner">
-              <div class="timer-idle-input-row">
-                <div class="timer-split-input">
-                  <input
-                    id="timer-custom-min"
-                    type="text"
-                    inputmode="numeric"
-                    pattern="[0-9]*"
-                    maxlength="3"
-                    placeholder="25"
-                    value=""
-                    class="timer-custom-input"
-                  />
-                  <span class="timer-input-label">min</span>
-                </div>
-                <div class="timer-split-divider">:</div>
-                <div class="timer-split-input">
-                  <input
-                    id="timer-custom-sec"
-                    type="text"
-                    inputmode="numeric"
-                    pattern="[0-9]*"
-                    maxlength="2"
-                    placeholder="00"
-                    class="timer-custom-input"
-                  />
-                  <span class="timer-input-label">sec</span>
-                </div>
+              <div class="timer-preset-grid">
+                <button class="timer-preset-pill" data-mins="5">5 min</button>
+                <button class="timer-preset-pill" data-mins="10">10 min</button>
+                <button class="timer-preset-pill" data-mins="25">25 min</button>
+                <button class="timer-preset-pill" data-mins="custom">Custom</button>
               </div>
-              <button class="timer-start-btn" id="timer-start-btn">▶ Start</button>
+              <div class="timer-custom-row" id="timer-custom-row" style="display:none;">
+                <input
+                  id="timer-custom-min"
+                  type="text"
+                  inputmode="numeric"
+                  pattern="[0-9]*"
+                  maxlength="3"
+                  placeholder="Minutes"
+                  class="timer-custom-input timer-custom-min-only"
+                />
+              </div>
+              <button class="timer-start-btn" id="timer-start-btn" disabled>▶ Start</button>
             </div>
           </div>
         </div>
@@ -900,32 +1074,47 @@ function showSidebarDeleteModal(name, onConfirm) {
         chevron.classList.toggle('open', nowOpen);
       });
 
-      // Custom start button
-      // Strip non-numeric characters as user types
+      const startBtn = container.querySelector('#timer-start-btn');
+      const customRow = container.querySelector('#timer-custom-row');
       const minInput = container.querySelector('#timer-custom-min');
-      const secInput = container.querySelector('#timer-custom-sec');
+      let selectedMins = null;
+
+      const enableStart = () => {
+        startBtn.disabled = false;
+        startBtn.removeAttribute('disabled');
+      };
+
+      // Preset pill selection
+      container.querySelectorAll('.timer-preset-pill').forEach(pill => {
+        pill.addEventListener('click', () => {
+          container.querySelectorAll('.timer-preset-pill').forEach(p => p.classList.remove('active'));
+          pill.classList.add('active');
+          const val = pill.getAttribute('data-mins');
+          if (val === 'custom') {
+            customRow.style.display = 'flex';
+            selectedMins = null;
+            minInput.focus();
+            startBtn.disabled = !(parseInt(minInput.value) > 0);
+          } else {
+            customRow.style.display = 'none';
+            selectedMins = parseFloat(val);
+            enableStart();
+          }
+        });
+      });
 
       minInput.addEventListener('input', (e) => {
         e.target.value = e.target.value.replace(/[^0-9]/g, '');
         if (e.target.value === '0') e.target.value = '';
+        startBtn.disabled = !(parseInt(minInput.value) > 0);
       });
 
-      secInput.addEventListener('input', (e) => {
-        e.target.value = e.target.value.replace(/[^0-9]/g, '');
-        if (parseInt(e.target.value) > 59) e.target.value = '59';
+      minInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') startBtn.click();
       });
 
-      [minInput, secInput].forEach(input => {
-        input.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter') e.target.blur();
-        });
-      });
-
-      // Custom start button
-      container.querySelector('#timer-start-btn').addEventListener('click', () => {
-        const mins = parseInt(minInput.value) || 0;
-        const secs = parseInt(secInput.value) || 0;
-        const totalMins = mins + secs / 60;
+      startBtn.addEventListener('click', () => {
+        const totalMins = selectedMins !== null ? selectedMins : (parseInt(minInput.value) || 0);
         if (totalMins > 0) window.KorahTimer.start(totalMins);
       });
     }
@@ -1083,42 +1272,147 @@ function showSidebarDeleteModal(name, onConfirm) {
     });
 
     settingsClearDataBtn?.addEventListener('click', () => {
-      if (confirm('Are you sure you want to clear all data? This cannot be undone.')) {
-        localStorage.clear();
-        settingsModal.classList.remove('show');
+      // Transition from settings modal to clear data confirmation
+      settingsModal.classList.remove('show');
+      
+      window.showClearDataModal(async () => {
+        try {
+          // 1. Clear Firestore data if KorahDB is available
+          if (window.KorahDB && window.KorahDB.clearAllData) {
+            await window.KorahDB.clearAllData();
+          }
+
+          // 2. Clear LocalStorage
+          localStorage.clear();
+
+          // Redirect to index to ensure all in-memory states are reset
+          const resolvedBaseUrl = document.getElementById('new-chat-btn')?.getAttribute('data-base-url') || (window.location.pathname.includes('/study/') || window.location.pathname.includes('/sat/') ? '../index.html' : 'index.html');
+          window.KorahTransitions.go(resolvedBaseUrl);
+
+        } catch (err) {
+          console.error("Clear Data failed:", err);
+          alert('Failed to clear some data. Please try again.');
+        }
+      });
+    });
+  }
+
+  // Helper for HTML files to trigger logout modal
+  window.confirmLogout = function(onConfirm) {
+    if (window.showLogoutModal) {
+      window.showLogoutModal(onConfirm);
+    } else {
+      if (confirm("Are you sure you want to log out?")) onConfirm();
+    }
+  };
+
+  // ── Mood Widget ──
+  const MOOD_LEVELS = [
+    { key: 'red',    label: 'Low Focus',    color: '#ef4444' },
+    { key: 'yellow', label: 'Medium Focus', color: '#eab308' },
+    { key: 'green',  label: 'High Focus',   color: '#22c55e' },
+  ];
+
+  function initMoodWidget() {
+    const container = document.getElementById('sidebar-mood');
+    if (!container || container._moodInit) return;
+    container._moodInit = true;
+
+    const savedMood = localStorage.getItem('korah_mood') || null;
+
+    const dot = container.querySelector('.mood-dot') || container.querySelector(':scope > span');
+    const directSpans = container.querySelectorAll(':scope > span');
+    const labelEl = directSpans[1] || null;
+
+    container.style.cursor = 'pointer';
+    container.setAttribute('role', 'button');
+    container.setAttribute('title', 'Set focus level');
+    container.setAttribute('aria-label', 'Set focus level');
+
+    function applyMood(key) {
+      const m = MOOD_LEVELS.find(x => x.key === key);
+      if (m) {
+        if (dot) { dot.style.background = m.color; dot.style.setProperty('--mood-color', m.color); dot.style.boxShadow = `0 0 6px ${m.color}88`; dot.textContent = ''; }
+        if (labelEl) labelEl.textContent = m.label;
+        container.setAttribute('data-mood', key);
+      } else {
+        if (dot) { dot.style.background = 'var(--border)'; dot.style.setProperty('--mood-color', 'var(--grn)'); dot.style.boxShadow = 'none'; dot.textContent = ''; }
+        if (labelEl) labelEl.textContent = 'Focus Level';
+        container.removeAttribute('data-mood');
       }
+    }
+
+    applyMood(savedMood);
+
+    const dropdown = document.createElement('div');
+    dropdown.className = 'mood-dropdown';
+    dropdown.innerHTML = MOOD_LEVELS.map(m => `
+      <button type="button" class="mood-option" data-key="${m.key}" style="--mood-color:${m.color}">
+        <span class="mood-option-dot" style="background:${m.color};box-shadow:0 0 5px ${m.color}88"></span>
+        <span>${m.label}</span>
+      </button>
+    `).join('');
+    container.appendChild(dropdown);
+
+    const chevron = document.createElement('span');
+    chevron.className = 'material-icons-round mood-chevron';
+    chevron.textContent = 'expand_more';
+    if (labelEl) labelEl.after(chevron);
+
+    const close = () => {
+      dropdown.classList.remove('mood-dropdown-open');
+      container.classList.remove('is-active');
+    };
+
+    container.addEventListener('click', (e) => {
+      if (e.target.closest('.mood-option')) return;
+      e.stopPropagation();
+      dropdown.classList.toggle('mood-dropdown-open');
+      container.classList.toggle('is-active');
+    });
+
+    dropdown.querySelectorAll('.mood-option').forEach(opt => {
+      opt.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const key = opt.getAttribute('data-key');
+        localStorage.setItem('korah_mood', key);
+        applyMood(key);
+        close();
+        window.dispatchEvent(new CustomEvent('korahMoodChange', { detail: { mood: key } }));
+      });
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!container.contains(e.target)) close();
     });
   }
 
   // Initialize timer widget when sidebar is ready
   function initSidebar(options) {
     const { chatHistoryId, studyItemsId, chatBaseUrl, itemPageUrl, onItemClick, activeId } = options || {};
+
+    // 0. Action Modals (Rename, Delete, Clear, Logout)
+    initActionModals();
+    
+    // Standardize sidebar labels (Recent Chats, Recent Study Items)
+    standardizeSidebarLabels();
+
     const chatEl = document.getElementById(chatHistoryId || "chat-history");
     const studyEl = document.getElementById(studyItemsId || "study-items-history");
-    const resolvedBaseUrl = chatBaseUrl || "../index.html";
+    const resolvedBaseUrl = chatBaseUrl || "../chat.html";
     const resolvedItemUrl = itemPageUrl || "item.html";
 
     const newChatBtn = document.getElementById("new-chat-btn");
     if (newChatBtn) {
       newChatBtn.addEventListener("click", () => {
         const currentPage = window.location.pathname;
-        const isMainChatPage = currentPage.includes("index.html") || currentPage.endsWith("/");
-        if (!isMainChatPage) {
-          localStorage.setItem("korah_new_chat_trigger", "true");
-          window.location.href = resolvedBaseUrl;
-        }
-      });
-    }
-
-    if (newChatBtn) {
-      newChatBtn.addEventListener("click", () => {
-        const currentPage = window.location.pathname;
-        const isMainChatPage = currentPage.includes("index.html") || currentPage.endsWith("/");
+        const isMainChatPage = currentPage.includes("chat.html") || currentPage.endsWith("/");
         const isSatPage = currentPage.includes("/sat/");
-        // Redirect to main chat if on SAT pages, or stay smooth on main chat page
-        if (isSatPage) {
+        
+        // Redirect to main chat if not on main page or on SAT pages
+        if (!isMainChatPage || isSatPage) {
           localStorage.setItem("korah_new_chat_trigger", "true");
-          window.location.href = resolvedBaseUrl;
+          window.KorahTransitions.go(resolvedBaseUrl);
         }
       });
     }
@@ -1290,16 +1584,39 @@ function showSidebarDeleteModal(name, onConfirm) {
       }
     });
 
-    if (alpineManaged) {
-      window.KorahSidebar.onCollapseChange = function(collapsed) {
-        if (collapsed) {
-          setTimeout(initCollapsedMoreDropdown, 100);
+    // Use MutationObserver to reliably detect sidebar collapse/expand
+    // Eliminates race condition between Alpine class application and JS checks
+    function observeSidebarCollapse() {
+      if (!sidebar) return;
+
+      function handleCollapseChange(isCollapsed) {
+        if (isCollapsed) {
+          const nav = sidebar.querySelector('.sidebar-nav');
+          if (nav && !sidebar.querySelector('.collapsed-more-wrapper')) {
+            nav.appendChild(createCollapsedMoreDropdown());
+          }
         } else {
           removeCollapsedMoreDropdown();
         }
-      };
-      // Delay initial check so Alpine has time to apply the collapsed class
-      setTimeout(initCollapsedMoreDropdown, 150);
+      }
+
+      // Initial check
+      handleCollapseChange(sidebar.classList.contains('collapsed'));
+
+      // Watch for class attribute changes
+      const observer = new MutationObserver((mutations) => {
+        for (const m of mutations) {
+          if (m.attributeName === 'class') {
+            handleCollapseChange(sidebar.classList.contains('collapsed'));
+            break;
+          }
+        }
+      });
+      observer.observe(sidebar, { attributes: true, attributeFilter: ['class'] });
+    }
+
+    if (alpineManaged) {
+      observeSidebarCollapse();
     } else {
       // Vanilla fallback for pages not yet migrated to Alpine sidebar
       function updateSidebarState(collapsed) {
@@ -1412,8 +1729,9 @@ function showSidebarDeleteModal(name, onConfirm) {
       // Initialize settings modal
       initSettingsModal();
 
-      // Initialize rename/delete modals
-      initRenameDeleteModals();
+
+      // Initialize mood widget
+      initMoodWidget();
     }
 
     if (window._korahReadyFired) startWithDB();
@@ -1421,8 +1739,8 @@ function showSidebarDeleteModal(name, onConfirm) {
   }
 
   window.KorahSidebar = {
-    getSessions, getStudyItems, getTypeEmoji, renderChatHistory,
-    renderStudyItemsHistory, updateActiveItem, initSidebar,
+    getSessions, getStudyItems, getTypeEmoji, getModeIconHtml, getTypeIconHtml,
+    renderChatHistory, renderStudyItemsHistory, updateActiveItem, initSidebar,
     initTimerWidget, updateTimerWidget,
     onCollapseChange: null,
   };

@@ -1,11 +1,10 @@
-Read AGENT.md FIRST
-
 Korah UI/UX Agent Guide
 
 Read this entire file before touching a single line of code.
 This is your operating manual, design system, and component library in one document.
 When this file and what you see in the codebase conflict — the codebase wins. This doc describes intent; the CSS files describe reality.
 
+Talk like a caveman, minimum words, you get to the point (Or use tables). Little words, only main points when finished planning but when finished adding something to the code, use a normal amount of words to explain what you did. 
 
 0 · Agent Operating Procedure
 Follow this sequence for every task, without exception.
@@ -789,6 +788,8 @@ Add a new page with new CSS: note its scope with a page tag
 Find something documented here that no longer matches the code: update this file and note the change in your ## What I did section
 
 The goal is that any agent reading this file can orient themselves in the codebase in under 5 minutes.
+
+Always make sure each new thing works completely and check for any bugs or Bed code formating.
 
 Reflection Questions
 Use these questions to guide design decisions:

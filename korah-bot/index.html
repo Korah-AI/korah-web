@@ -15,94 +15,462 @@
       const overlay = document.querySelector('.sidebar-overlay');
       if (overlay) overlay.classList.toggle('show', this.mobileOpen);
     } else {
-      if (this.sidebarCollapsed) {
-        const dp = document.getElementById('doc-panel');
-        if (dp?.classList.contains('expanded')) {
-          dp.classList.remove('expanded');
-          dp.classList.add('collapsed');
-          const tab = document.getElementById('doc-panel-tab');
-          if (tab) tab.classList.remove('panel-open');
-        }
-      }
       this.sidebarCollapsed = !this.sidebarCollapsed;
       localStorage.setItem('korah_sidebar_collapsed', this.sidebarCollapsed);
     }
   }
 }" :data-theme="getEffectiveTheme()" x-cloak>
 <head>
+<link rel="stylesheet" href="transitions/page-transitions.css"/>
+<script src="transitions/page-transitions.js"></script>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Korah AI — Chat</title>
-<link rel="icon" type="image/png" href="app/logoresized.png">
+<title>Korah AI — Home</title>
+<script>document.documentElement.setAttribute('data-theme', localStorage.getItem('korah_theme') || 'dark');</script>
+<link rel="icon" type="image/png" href="logo-images/newlogo0.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="study/js/sidebar.js"></script>
 <link rel="stylesheet" href="app/korah-chat.css"/>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css"/>
 <style>
-  .opp-feature-intro-modal {
+  /* Inner content area scrolls; topbar + sidebar stay fixed like other pages */
+  .home-scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; }
+
+  .home-page { padding: 28px 36px 60px; max-width: 1240px; margin: 0 auto; }
+
+  .home-hero {
+    display: grid; grid-template-columns: 1fr minmax(280px, 360px); gap: 24px;
+    align-items: start; margin-bottom: 8px;
+  }
+  @media (max-width: 880px) { .home-hero { grid-template-columns: 1fr; } }
+
+  .greeting-title {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-size: clamp(28px, 3.6vw, 44px); font-weight: 800; letter-spacing: -0.02em;
+    color: var(--tx); line-height: 1.05; margin: 0;
+  }
+  .greeting-title .name { color: var(--tx2); font-weight: 700; }
+  .greeting-sub { color: var(--tx2); font-size: 15px; margin: 10px 0 22px; }
+
+.cta-primary {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: linear-gradient(135deg, #7c3aed, #a78bfa);
+    color: #fff; font-weight: 700; font-size: 14px;
+    padding: 12px 22px; border-radius: 999px; border: none;
+    cursor: pointer; text-decoration: none;
+    box-shadow: 0 6px 22px rgba(124,58,237,.32);
+    transition: transform .15s, box-shadow .2s;
+  }
+  .cta-primary:hover { transform: translateY(-1px); box-shadow: 0 10px 28px rgba(124,58,237,.4); }
+
+  .countdown-card {
+  background: linear-gradient(135deg, rgba(251,191,36,.1), rgba(251,191,36,.03));
+    border: 1px solid rgba(251,191,36,.3);
+    border-radius: 18px; padding: 22px 24px 32px;
+    backdrop-filter: blur(14px);
+    display: flex; flex-direction: column; justify-content: space-between; min-height: 172px;
+  }
+  .countdown-card .label { font-size: 13px; color: var(--tx2); margin-bottom: 14px; }
+  .countdown-grid { display: flex; gap: 10px; align-items: baseline; justify-content: flex-start; }
+  .countdown-num { font-size: 28px; font-weight: 800; color: var(--tx); line-height: 1; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+  .countdown-unit { font-size: 11px; color: var(--tx2); margin-left: 2px; font-weight: 600; }
+  .countdown-date { margin-top: 16px; color: var(--tx2); font-size: 14px; }
+
+  .score-banner {
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    background: var(--sf);
+    border: 1px solid rgba(56,189,248,.32);
+    border-radius: 16px; padding: 14px 18px;
+    margin-bottom: 36px;
+  }
+  .score-banner .banner-icon {
+    width: 36px; height: 36px; flex-shrink: 0;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(56,189,248,.18), rgba(34,211,238,.12));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .score-banner .banner-text { flex: 1; min-width: 240px; font-size: 14px; color: white; }
+  .score-banner .banner-text strong { font-weight: 700; }
+  .score-banner .banner-text a {
+    color: var(--tx); text-decoration: underline;
+    text-decoration-color: rgba(167,139,250,.5);
+    text-underline-offset: 3px;
+  }
+  .score-banner .help-dot {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 16px; height: 16px; border-radius: 999px;
+    background: rgba(139,92,246,.18); color: var(--tx2);
+    font-size: 10px; font-weight: 700; margin-left: 2px;
+  }
+  .banner-cta {
+    background: rgba(56,189,248,.16);
+    color: #38bdf8; font-weight: 700; font-size: 13px;
+    padding: 10px 18px; border-radius: 999px; border: none;
+    cursor: pointer; text-decoration: none;
+    transition: background .2s;
+  }
+  .banner-cta:hover { background: rgba(56,189,248,.28); }
+
+  .opportunities-banner {
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    background: linear-gradient(135deg, rgba(16,185,129,.08), rgba(16,185,129,.02));
+    border: 1px solid rgba(16,185,129,.32);
+    border-radius: 16px; padding: 14px 18px;
+    margin-bottom: 36px;
+  }
+  .opportunities-banner .banner-icon {
+    width: 36px; height: 36px; flex-shrink: 0;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(16,185,129,.18), rgba(52,211,153,.12));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .opportunities-banner .banner-text { flex: 1; min-width: 140px; font-size: 14px; color: var(--tx); }
+  .opportunities-banner .banner-text strong { font-weight: 700; }
+  .opportunities-banner .banner-text span { color: white; }
+  .opportunities-cta {
+    background: rgba(16,185,129,.16);
+    color: #10b981; font-weight: 700; font-size: 13px;
+  }
+  .opportunities-cta:hover { background: rgba(16,185,129,.28); }
+
+  .home-section-head {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 14px; font-weight: 700; color: var(--tx);
+    margin: 0 0 14px;
+  }
+  .home-section-head .material-icons-round { font-size: 18px; color: var(--tx2); }
+
+  .stats-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+    margin-bottom: 40px;
+  }
+  @media (max-width: 980px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 520px) { .stats-grid { grid-template-columns: 1fr; } }
+
+  .stat-card {
+    position: relative; overflow: hidden;
+    background: var(--sf);
+    border: 1px solid rgba(139,92,246,.22);
+    border-radius: 16px; padding: 18px 20px;
+    min-height: 118px;
+    transition: border-color .2s, box-shadow .2s, transform .2s;
+  }
+  .stat-card:hover { border-color: rgba(167,139,250,.45); box-shadow: 0 6px 22px rgba(139,92,246,.12); transform: translateY(-2px); }
+  .stat-card:nth-child(1) { background: linear-gradient(135deg, rgba(56,189,248,.14), rgba(56,189,248,.04)); border-color: rgba(56,189,248,.3); }
+  .stat-card:nth-child(2) { background: linear-gradient(135deg, rgba(16,185,129,.14), rgba(16,185,129,.04)); border-color: rgba(16,185,129,.3); }
+  .stat-card:nth-child(3) { background: linear-gradient(135deg, rgba(167,139,250,.14), rgba(167,139,250,.04)); border-color: rgba(167,139,250,.3); }
+  .stat-card:nth-child(4) { background: linear-gradient(135deg, rgba(251,146,60,.14), rgba(251,146,60,.04)); border-color: rgba(251,146,60,.3); }
+  [data-theme="dark"] .stat-label { color: white; }
+  [data-theme="light"] .stat-label { color: black; }
+  [data-theme="dark"] .stat-card .stat-label { font-size: 16px; font-weight: 600; }
+  [data-theme="light"] .stat-card .stat-label { font-size: 16px; font-weight: 600; }
+  .stat-card .stat-value { font-size: 36px; font-weight: 800; color: var(--tx); margin-top: 6px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .stat-card .stat-watermark {
+    position: absolute; right: 12px; bottom: 8px;
+    color: rgba(139,92,246,.18); font-size: 60px;
+  }
+  .stat-action {
+    display: inline-flex; align-items: center; justify-content: center;
+    margin-top: 8px; font-size: 12px; font-weight: 700;
+    padding: 6px 14px; border-radius: 999px;
+    text-decoration: none; cursor: pointer; border: 1px solid transparent;
+  }
+  .stat-action.ghost { background: var(--bg, rgba(255,255,255,.04)); color: var(--tx); border-color: rgba(139,92,246,.25); }
+  .stat-action.ghost:hover { border-color: rgba(167,139,250,.55); }
+  .stat-action.danger { background: #e11d48; color: #fff; }
+  .stat-action.danger:hover { background: #be123c; }
+
+  .study-plan-grid {
+    display: grid; grid-template-columns: 2fr 1fr; gap: 20px;
+    align-items: stretch;
+  }
+  @media (max-width: 880px) { .study-plan-grid { grid-template-columns: 1fr; } }
+
+  .plan-card {
+  background: linear-gradient(135deg, rgba(251,191,36,.1), rgba(251,191,36,.03));
+    border: 1px solid rgba(251,191,36,.3);
+    border-radius: 18px; padding: 36px 28px;
+    text-align: center;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .plan-card:hover { border-color: rgba(167,139,250,.45); }
+  .plan-card .plan-icon {
+    font-size: 52px; line-height: 1;
+    filter: drop-shadow(0 6px 14px rgba(167,139,250,.25));
+  }
+  .plan-card h3 { font-size: 22px; font-weight: 800; color: var(--tx); margin: 14px 0 6px; letter-spacing: -0.01em; }
+  .plan-card p { font-size: 14px; color: var(--tx2); margin: 0; max-width: 420px; margin-inline: auto; }
+
+  .plan-side {
+    background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(16,185,129,0.03));
+    border: 1px solid rgba(16,185,129,.32);
+    border-radius: 18px; padding: 40px 26px;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .plan-side .plan-stat-label { font-size: 30px; font-weight: 700; color: var(--tx2); margin-bottom: 16px; }
+  .plan-progress-ring { position: relative; width: 130px; height: 130px; margin: 0 auto; }
+  .plan-progress-svg { width: 100%; height: 100%; }
+  .plan-progress-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .plan-score-num {
+    font-size: 36px; font-weight: 800; color: var(--tx); font-variant-numeric: tabular-nums; line-height: 1;
+  }
+  .plan-score-goal { font-size: 11px; color: var(--tx2); font-weight: 600; margin-top: 2px; }
+  .plan-side .score-sub { font-size: 12px; color: var(--tx2); margin-top: 16px; text-align: center; }
+
+  .plan-stat {
+    border-radius: 16px; padding: 16px 18px;
+    border: 1px solid rgba(139,92,246,.22);
+    background: var(--sf);
+  }
+  .plan-stat .plan-stat-label { font-size: 13px; font-weight: 700; color: var(--tx); }
+  .plan-stat .plan-stat-value { font-size: 28px; font-weight: 800; color: var(--tx); margin-top: 6px; font-variant-numeric: tabular-nums; }
+
+  .plan-side-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+  /* Two-column grid for new cards */
+  .two-col-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+    align-items: stretch; margin-bottom: 40px;
+  }
+  @media (max-width: 880px) { .two-col-grid { grid-template-columns: 1fr; } }
+
+  /* Weakness Card */
+  .weakness-card {
+    background: linear-gradient(135deg, rgba(239,68,68,.14), rgba(239,68,68,.04));
+    border: 1px solid rgba(239,68,68,.32);
+    border-radius: 18px; padding: 24px 26px;
+    display: flex; flex-direction: column; justify-content: space-between;
+    transition: border-color .2s, box-shadow .2s, transform .2s;
+  }
+  .weakness-card:hover { border-color: rgba(239,68,68,.5); box-shadow: 0 6px 22px rgba(239,68,68,.12); transform: translateY(-2px); }
+  .weakness-skill { font-size: 24px; font-weight: 800; color: var(--tx); margin: 10px 0 4px; letter-spacing: -0.01em; line-height: 1.2; }
+  .weakness-acc { font-size: 13px; color: var(--tx2); margin-bottom: 16px; }
+  .weakness-card .fix-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: linear-gradient(135deg, #dc2626, #ef4444);
+    color: #fff; font-weight: 700; font-size: 13px;
+    padding: 10px 20px; border-radius: 999px; border: none;
+    cursor: pointer; text-decoration: none; align-self: flex-start;
+    box-shadow: 0 4px 14px rgba(220,38,38,.3);
+    transition: box-shadow .2s, transform .15s;
+  }
+  .weakness-card .fix-btn:hover { box-shadow: 0 6px 20px rgba(220,38,38,.4); transform: translateY(-1px); }
+
+  /* Today's Momentum Card */
+  .gauge-card {
+    background: linear-gradient(135deg, rgba(59,130,246,.1), rgba(96,165,250,.04));
+    border: 1px solid rgba(59,130,246,.32);
+    border-radius: 18px; padding: 24px;
+    display: flex; flex-direction: column;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .gauge-card:hover { border-color: rgba(96,165,250,.5); box-shadow: 0 6px 22px rgba(59,130,246,.12); }
+  .gauge-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .gauge-card .stat-label { font-size: 12px; color: #3b82f6; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; }
+  .gauge-streak { font-size: 24px; }
+  .momentum-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+  .momentum-stat { display: flex; flex-direction: column; }
+  .momentum-stat-num { font-size: 28px; font-weight: 800; color: var(--tx); font-variant-numeric: tabular-nums; }
+  .momentum-stat-label { font-size: 11px; color: var(--tx2); font-weight: 600; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .momentum-bar { height: 6px; background: rgba(59,130,246,.15); border-radius: 6px; overflow: hidden; }
+  .momentum-bar-fill { height: 100%; background: linear-gradient(90deg, #3b82f6, #60a5fa, #93c5fd); box-shadow: 0 0 8px rgba(59,130,246,.4); transition: width .5s ease; }
+  .gauge-sub { font-size: 12px; color: var(--tx2); margin-top: 12px; }
+
+  /* SAT Tip Card */
+  .tip-card {
+    background: linear-gradient(135deg, rgba(251,191,36,.1), rgba(251,191,36,.03));
+    border: 1px solid rgba(251,191,36,.3);
+    border-radius: 18px; padding: 22px 24px;
+    display: flex; flex-direction: column;
+    transition: border-color .2s, box-shadow .2s, transform .2s;
+  }
+  .tip-card:hover { border-color: rgba(251,191,36,.5); box-shadow: 0 6px 20px rgba(251,191,36,.1); transform: translateY(-2px); }
+  .tip-icon { font-size: 35px; margin-bottom: 10px; line-height: 1; }
+  .tip-label { font-size: 25px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.4px; color: #f59e0b; margin-bottom: 8px; }
+  .tip-text { font-size: 16px; color: var(--tx); line-height: 1.6; flex: 1; }
+  .tip-nav { display: flex; gap: 6px; margin-top: 16px; align-items: center; }
+  .tip-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(251,191,36,.25); cursor: pointer; transition: background .2s, transform .15s; }
+  .tip-dot:hover { transform: scale(1.3); }
+  .tip-dot.active { background: #f59e0b; transform: scale(1.2); }
+  .tip-next-btn { margin-left: auto; font-size: 11px; font-weight: 700; padding: 5px 12px; border-radius: 999px; border: 1px solid rgba(251,191,36,.35); background: rgba(251,191,36,.1); color: #f59e0b; cursor: pointer; transition: background .2s; }
+  .tip-next-btn:hover { background: rgba(251,191,36,.22); }
+
+  /* Flashcard */
+  .flashcard-container { display: flex; flex-direction: column; gap: 10px; }
+  .flashcard-wrapper { perspective: 1000px; height: 185px; }
+  .flashcard {
+    width: 100%; height: 100%;
+    position: relative; transform-style: preserve-3d;
+    transition: transform .55s cubic-bezier(.34,1.56,.64,1);
+    cursor: pointer;
+  }
+  .flashcard.flipped { transform: rotateY(180deg); }
+  .flashcard-face {
+    position: absolute; inset: 0; border-radius: 18px; padding: 20px 22px;
+    backface-visibility: hidden; -webkit-backface-visibility: hidden;
+    display: flex; flex-direction: column;
+  }
+  .flashcard-front {
+    background: linear-gradient(135deg, rgba(56,189,248,.14), rgba(56,189,248,.04));
+    border: 1px solid rgba(56,189,248,.32);
+    justify-content: center;
+  }
+  .flashcard-back {
+    background: linear-gradient(135deg, rgba(16,185,129,.14), rgba(16,185,129,.04));
+    border: 1px solid rgba(16,185,129,.32);
+    transform: rotateY(180deg);
+    justify-content: center;
+  }
+  .fc-badge { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.2px; color: rgba(56,189,248,.7); margin-bottom: 8px; }
+  .fc-word { font-size: 30px; font-weight: 800; color: var(--tx); letter-spacing: -0.02em; line-height: 1.1; }
+  .fc-pos { font-size: 12px; color: var(--tx2); margin-top: 4px; font-weight: 600; }
+  .fc-hint { font-size: 11px; color: rgba(56,189,248,.6); margin-top: auto; padding-top: 10px; }
+  .fc-def { font-size: 15px; color: var(--tx); line-height: 1.55; }
+  .fc-ex { font-size: 13px; color: var(--tx2); margin-top: 8px; font-style: italic; line-height: 1.4; }
+  .flashcard-nav { display: flex; align-items: center; gap: 8px; }
+  .fc-btn { font-size: 11px; font-weight: 700; padding: 7px 16px; border-radius: 999px; border: 1px solid rgba(56,189,248,.3); background: rgba(56,189,248,.08); color: #38bdf8; cursor: pointer; transition: background .2s; }
+  .fc-btn:hover { background: rgba(56,189,248,.2); }
+  .fc-counter { font-size: 12px; color: var(--tx2); flex: 1; text-align: center; font-variant-numeric: tabular-nums; }
+
+  /* ── Onboarding Modal ── */
+  .onboard-modal {
     position: fixed; inset: 0; z-index: 9999;
     display: flex; align-items: center; justify-content: center;
     opacity: 0; pointer-events: none;
-    transition: opacity 0.35s cubic-bezier(0.4,0,0.2,1);
+    transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   }
-  .opp-feature-intro-modal.show { opacity: 1; pointer-events: auto; }
-  .opp-feature-intro-backdrop {
+  .onboard-modal.show { opacity: 1; pointer-events: auto; }
+  .onboard-backdrop {
     position: absolute; inset: 0;
-    background: rgba(0,0,0,0.6);
-    backdrop-filter: blur(0.5rem); -webkit-backdrop-filter: blur(0.5rem);
+    background: rgba(0,0,0,0.65); backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
   }
-  .opp-feature-intro-content {
+  .onboard-content {
     position: relative;
-    background: var(--sf); border: 0.0625rem solid var(--bd);
-    border-radius: 1.25rem; padding: 2.5rem 2.5rem 2rem;
-    max-width: 36rem; width: calc(100% - 2rem);
-    box-shadow: 0 1.5rem 4rem rgba(0,0,0,0.4), 0 0 2rem rgba(139,92,246,0.2);
-    transform: translateY(1.5rem) scale(0.95);
-    transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    background: var(--sf);
+    border: 1px solid var(--bd);
+    border-radius: 20px;
+    padding: 44px 48px 36px;
+    max-width: 680px; width: calc(100% - 32px);
+    max-height: calc(100vh - 48px); overflow-y: auto;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.4), 0 0 32px rgba(139,92,246,.15);
+    transform: translateY(24px) scale(0.95);
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
     text-align: center;
   }
-  .opp-feature-intro-modal.show .opp-feature-intro-content { transform: translateY(0) scale(1); }
-  .opp-feature-intro-close {
-    position: absolute; top: 0.75rem; right: 0.75rem;
-    width: 2rem; height: 2rem; border: none; background: transparent;
-    color: var(--tx3); font-size: 1.25rem; cursor: pointer;
-    border-radius: 0.5rem; display: flex; align-items: center; justify-content: center;
-    transition: all 0.2s ease; z-index: 1;
+  .onboard-modal.show .onboard-content { transform: translateY(0) scale(1); }
+  .onboard-close {
+    position: absolute; top: 12px; right: 12px;
+    width: 32px; height: 32px; border: none; background: transparent;
+    color: var(--tx3); font-size: 20px; cursor: pointer;
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    transition: all .2s;
   }
-  .opp-feature-intro-close:hover { background: rgba(139,92,246,0.15); color: var(--tx); }
-  .opp-feature-intro-slides { display: flex; align-items: center; justify-content: center; }
-  .opp-feature-intro-slide { display: flex; flex-direction: column; align-items: center; gap: 1rem; width: 100%; }
-  .opp-feature-intro-icon-large { font-size: 3.5rem; line-height: 1; margin-bottom: 0.25rem; filter: drop-shadow(0 0 0.75rem rgba(139,92,246,0.4)); }
-  .opp-feature-intro-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.5rem; font-weight: 800; color: var(--tx); margin: 0; line-height: 1.3; }
-  .opp-feature-intro-desc { font-size: 0.9375rem; line-height: 1.65; color: var(--tx2); margin: 0; max-width: 32rem; }
-  .opp-feature-intro-badge-new {
-    display: inline-block; padding: 0.2rem 0.75rem; border-radius: 1rem;
-    font-size: 0.65rem; font-weight: 800; letter-spacing: 0.1rem; text-transform: uppercase;
-    background: linear-gradient(135deg, var(--p4), var(--p5)); color: #fff; margin-top: 0.25rem;
+  .onboard-close:hover { background: rgba(139,92,246,.15); color: var(--tx); }
+  .onboard-slides { position: relative; min-height: 320px; display: flex; align-items: center; justify-content: center; }
+  .onboard-slide { display: none; flex-direction: column; align-items: center; gap: 14px; animation: obSlideIn .3s ease; width: 100%; }
+  .onboard-slide.active { display: flex; }
+  @keyframes obSlideIn { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: translateX(0); } }
+  .onboard-logo { width: 72px; height: 72px; margin-bottom: 4px; filter: drop-shadow(0 6px 16px rgba(139,92,246,.3)); }
+  .onboard-icon-large { font-size: 56px; line-height: 1; margin-bottom: 4px; filter: drop-shadow(0 0 12px rgba(139,92,246,.25)); }
+  .onboard-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 26px; font-weight: 800; color: var(--tx); margin: 0; line-height: 1.25; }
+  .onboard-desc { font-size: 16px; line-height: 1.65; color: white; margin: 0; }
+
+  /* Welcome / All Set hero layout */
+  .onboard-hero-layout {
+    display: grid; grid-template-columns: 1fr auto;
+    gap: 36px; align-items: center; width: 100%; text-align: left;
   }
-  .opp-feature-intro-actions { display: flex; justify-content: space-between; gap: 0.75rem; margin-top: 1.75rem; }
-  .opp-feature-intro-btn {
-    flex: 1; padding: 0.625rem 1.25rem; border-radius: 0.625rem;
-    font-size: 0.875rem; font-weight: 700; cursor: pointer;
-    border: 0.0625rem solid transparent; transition: all 0.2s ease; font-family: 'Plus Jakarta Sans', sans-serif;
+  .onboard-hero-text { display: flex; flex-direction: column; gap: 14px; }
+  .onboard-hero-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 38px; font-weight: 800; color: var(--tx); margin: 0; line-height: 1.15; letter-spacing: -0.02em; }
+  .onboard-hero-img { width: 170px; height: 170px; object-fit: contain; filter: drop-shadow(0 10px 28px rgba(139,92,246,.4)); flex-shrink: 0; }
+  @media (max-width: 580px) {
+    .onboard-hero-layout { grid-template-columns: 1fr; text-align: center; }
+    .onboard-hero-img { display: none; }
+    .onboard-hero-title { font-size: 28px; }
   }
-  .opp-feature-intro-btn.primary { background: linear-gradient(135deg, var(--p4), var(--p5)); color: #fff; border-color: var(--p5); }
-  .opp-feature-intro-btn.primary:hover { filter: brightness(1.1); transform: translateY(-0.0625rem); }
-  .opp-feature-intro-btn.secondary { background: transparent; color: var(--tx2); border-color: var(--bd); }
-  .opp-feature-intro-btn.secondary:hover { background: var(--sf2); color: var(--tx); }
+
+  .onboard-img-placeholder {
+    width: 100%; aspect-ratio: 16 / 9;
+    border-radius: 14px; border: 2px dashed var(--bd2);
+    background: var(--sf2); display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 8px;
+    color: var(--tx3); font-size: 13px; font-weight: 500;
+  }
+  .onboard-img-placeholder .ob-ph-icon { font-size: 36px; opacity: .35; }
+
+  /* Score form */
+  .onboard-form { width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 14px; text-align: left; }
+  .onboard-field { display: flex; flex-direction: column; gap: 5px; }
+  .onboard-field label { font-size: 12px; font-weight: 700; color: white; text-transform: uppercase; letter-spacing: .7px; }
+  .onboard-field input {
+    background: var(--bg); border: 1px solid var(--bd2);
+    border-radius: 10px; padding: 10px 14px;
+    font-size: 15px; font-weight: 600; color: var(--tx);
+    outline: none; transition: border-color .2s, box-shadow .2s;
+    font-variant-numeric: tabular-nums; width: 100%; box-sizing: border-box;
+  }
+  .onboard-field input:focus { border-color: rgba(167,139,250,.6); box-shadow: 0 0 0 3px rgba(167,139,250,.12); }
+  .onboard-field input.ob-error { border-color: rgba(239,68,68,.6); box-shadow: 0 0 0 3px rgba(239,68,68,.1); }
+  .onboard-field input::placeholder { color: var(--tx3); font-weight: 400; }
+  .ob-field-error { font-size: 11px; color: #ef4444; font-weight: 600; margin-top: 2px; display: none; }
+  .ob-field-error.show { display: block; }
+  .onboard-total-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-radius: 10px; background: rgba(139,92,246,.08); border: 1px solid rgba(139,92,246,.2); }
+  .onboard-total-label { font-size: 13px; font-weight: 700; color: white; }
+  .onboard-total-value { font-size: 20px; font-weight: 800; color: var(--tx); font-variant-numeric: tabular-nums; }
+  .onboard-divider { height: 1px; background: var(--bd2); width: 100%; }
+  .onboard-skip { font-size: 12px; color: var(--tx3); cursor: pointer; margin-top: 2px; text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 3px; transition: color .2s; align-self: center; }
+  .onboard-skip:hover { color: var(--tx2); text-decoration-color: var(--tx2); }
+
+  /* Dots */
+  .onboard-dots { display: flex; justify-content: center; gap: 8px; margin: 20px 0 16px; }
+  .onboard-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--bd2); cursor: pointer; transition: all .25s; }
+  .onboard-dot.active { background: #a78bfa; transform: scale(1.3); box-shadow: 0 0 8px rgba(167,139,250,.5); }
+
+  /* Actions */
+  .onboard-actions { display: flex; justify-content: space-between; gap: 12px; }
+  .onboard-btn { flex: 1; padding: 10px 20px; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; border: 1px solid transparent; transition: all .2s; }
+  .onboard-btn.primary { background: linear-gradient(135deg, #7c3aed, #a78bfa); color: #fff; border-color: #a78bfa; }
+  .onboard-btn.primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
+  .onboard-btn.secondary { background: transparent; color: var(--tx2); border-color: var(--bd); }
+  .onboard-btn.secondary:hover { background: var(--sf2); color: var(--tx); }
+  [data-theme="light"] .onboard-content { box-shadow: 0 24px 64px rgba(0,0,0,.15), 0 0 24px rgba(139,92,246,.08); }
+  [data-theme="light"] .onboard-backdrop { background: rgba(0,0,0,.4); }
+  @media (max-width: 600px) { .onboard-content { padding: 32px 22px 28px; } .onboard-title { font-size: 22px; } }
+
+  @keyframes bar-flow {
+    0% { left: -100%; }
+    100% { left: 100%; }
+  }
 </style>
 </head>
 
-<body class="bg-base tx korah-home-chat">
+<body>
+<style>
+  html:not(.korah-page-ready) { background: #06040f !important; }
+  html[data-theme="light"]:not(.korah-page-ready) { background: #d2d2d2 !important; }
+  html:not(.korah-page-ready) body { opacity: 0 !important; }
+</style>
+<script>
+  (function() {
+    const t = localStorage.getItem('korah_theme') || 'dark';
+    if (t === 'light' || (t === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  })();
+</script>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
   import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
   import { setupKorahDB } from "./app/data/firestore-store.js";
+  import { initSatAnalytics } from "./sat/js/sat-analytics.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
@@ -116,41 +484,42 @@
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
 
-  // Redirect unauthenticated users to login page
   onAuthStateChanged(auth, async (user) => {
-    if (!user) {
-      window.location.href = 'login.html';
-      return;
-    }
-    // Set up Firestore and expose window.KorahDB before notifying the app.
+    if (!user) { window.KorahTransitions.go('landing/index.html'); return; }
     await setupKorahDB(app, user.uid);
+    await initSatAnalytics(app, user.uid);
     const detail = { uid: user.uid };
-    // Cache so korah-chat.js can pick it up even in edge-case timing.
     window._korahReadyFired = detail;
     window.dispatchEvent(new CustomEvent('korahReady', { detail }));
+
+    const firstName = (localStorage.getItem('korah_first_name') || user.displayName || user.email?.split('@')[0] || 'there').toLowerCase();
+    const nameEl = document.getElementById('greeting-name');
+    if (nameEl) nameEl.textContent = firstName;
   });
 
-  document.getElementById('logout-btn').addEventListener('click', async () => {
-    await signOut(auth);
-    localStorage.removeItem('korah_first_name');
-    window.location.href = 'login.html';
+  document.getElementById('logout-btn').addEventListener('click', () => {
+    window.confirmLogout(async () => {
+      await signOut(auth);
+      localStorage.removeItem('korah_first_name');
+      window.KorahTransitions.go('login.html');
+    });
   });
 </script>
 
+
 <canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
-<div class="doc-panel-overlay" id="doc-panel-overlay"></div>
+<div class="sidebar-overlay" :class="{ show: mobileOpen }" @click="mobileOpen = false"></div>
 
 <!-- ═══ SIDEBAR ═══ -->
-<div class="sidebar-overlay" :class="{ show: mobileOpen }" @click="mobileOpen = false"></div>
 <aside id="sidebar" class="sidebar bg-sf glass t-theme"
   :class="{ collapsed: sidebarCollapsed, 'mobile-open': mobileOpen }"
   x-effect="window.KorahSidebar?.onCollapseChange?.(sidebarCollapsed)"
   @resize.window="if (window.innerWidth > 768) { mobileOpen = false; const overlay = document.querySelector('.sidebar-overlay'); if (overlay) overlay.classList.remove('show'); }">
   <div class="sidebar-header">
     <a href="index.html" class="flex items-center gap-2.5 no-underline">
-      <div class="w-12 h-12 rounded-xl flex items-center justify-center font-display text-xl font-black text-white shadow-glow logo-btn">
-        <span class="logo-letter">
-          <img src="app/logo.png" alt="Korah"/>
+      <div class="w-16 h-16 rounded-xl flex items-center justify-center font-display text-xl">
+        <span class="logo-letter"></span>
+          <img src="logo-images/newlogo0.png" alt="Korah"/>
         </span>
       </div>
       <div class="flex flex-col leading-tight">
@@ -158,19 +527,20 @@
         <span class="text-[9px] font-semibold tracking-[2.5px] uppercase tx-p4">Study Smarter</span>
       </div>
     </a>
-    <button id="new-chat-btn" class="new-chat-btn text-white text-xs font-bold px-4 py-2 rounded-full border-none cursor-pointer shadow-glow t-btn">
+    <button id="new-chat-btn" class="new-chat-btn text-white text-xs font-bold px-4 py-2 rounded-full border-none cursor-pointer shadow-glow t-btn" data-base-url="index.html">
       <span class="new-chat-icon">+</span> <span class="new-chat-text">New Chat</span>
     </button>
   </div>
 
   <nav class="sidebar-nav">
-    <div class="sidebar-nav-row">
-      <a href="index.html" class="sidebar-nav-link active t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">chat</span> <span class="nav-text">Chat</span></a>
-      <a href="study/feed.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">school</span> <span class="nav-text">Study</span></a>
-    </div>
-    <a href="sat/index.html" class="sidebar-nav-link t-btn" data-sat-link="true"><span class="material-icons-round" style="font-size: 1.25rem;">assignment</span> <span class="nav-text">SAT</span></a>
-    <a href="productivity.html" class="sidebar-nav-link productivity-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">timer</span> <span class="nav-text">Productivity</span></a>
-    <a href="opportunities/opportunities.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">rocket_launch</span> <span class="nav-text">Opportunities</span></a>
+    <span class="sidebar-section-label">HOME</span>
+    <a href="index.html" class="sidebar-nav-link active t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">home</span> <span class="nav-text">Home</span></a>
+    <a href="chat.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">chat</span> <span class="nav-text">Chat</span></a>
+    <a href="study/feed.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">school</span> <span class="nav-text">Study</span></a>
+    <span class="sidebar-section-label">SAT</span>
+    <a href="sat/index.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">assignment</span> <span class="nav-text">Question Bank</span></a>
+    <a href="sat/math-chat.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">calculate</span> <span class="nav-text">Math Chat</span></a>
+    <a href="sat/dashboard.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">insights</span> <span class="nav-text">Dashboard</span></a>
   </nav>
 
   <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 0.75rem 0 0.25rem;">
@@ -197,65 +567,16 @@
       </div>
     </div>
     <div id="chat-history" class="chat-history">
-      <div class="skeleton-item">
-        <div class="skeleton-icon"></div>
-        <div class="skeleton-text"></div>
-      </div>
-      <div class="skeleton-item">
-        <div class="skeleton-icon"></div>
-        <div class="skeleton-text"></div>
-      </div>
-      <div class="skeleton-item">
-        <div class="skeleton-icon"></div>
-        <div class="skeleton-text"></div>
-      </div>
-      <div class="skeleton-item">
-        <div class="skeleton-icon"></div>
-        <div class="skeleton-text"></div>
-      </div>
-      <div class="skeleton-item">
-        <div class="skeleton-icon"></div>
-        <div class="skeleton-text"></div>
-      </div>
+      <div class="skeleton-item"><div class="skeleton-icon"></div><div class="skeleton-text"></div></div>
+      <div class="skeleton-item"><div class="skeleton-icon"></div><div class="skeleton-text"></div></div>
+      <div class="skeleton-item"><div class="skeleton-icon"></div><div class="skeleton-text"></div></div>
     </div>
   </div>
 
-<div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 0.75rem 0 0.25rem;">
-      <span class="sidebar-section-label" style="margin:0">Recent Study Items</span>
-    </div>
-    <div class="sidebar-middle">
-      <div class="select-bar-wrapper">
-        <div id="study-select-bar" class="select-bar">
-          <span class="select-bar-count" id="study-select-count">0 selected</span>
-          <div class="select-bar-actions">
-            <button class="select-bar-btn" id="study-select-all" title="Select all">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <polyline points="20 6 9 17 4 12"/>
-              </svg>
-            </button>
-            <button class="select-bar-btn" id="study-deselect-all" title="Deselect all">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <line x1="18" y1="6" x2="6" y2="18"/>
-                <line x1="6" y1="6" x2="18" y2="18"/>
-              </svg>
-            </button>
-            <button class="select-bar-btn danger" id="study-delete-selected" title="Delete selected"></button>
-          </div>
-        </div>
-      </div>
-      <div id="study-items-history" class="chat-history">
-      </div>
-      <div id="study-items-empty" class="study-items-empty hidden">
-        <span class="study-items-empty-icon" aria-hidden="true">📚</span>
-        <div class="study-items-empty-title">No study items yet</div>
-        <div class="study-items-empty-sub">Create one to see it here.</div>
-      </div>
-    </div>
-  </div>
 
-    <div class="sidebar-footer">
+  <div class="sidebar-footer">
     <div class="mood-indicator" id="sidebar-mood">
-      <span class="mood-dot" id="mood-dot">🟢</span>
+      <span class="mood-dot" id="mood-dot"><span class="material-icons-round" style="font-size: 12px; color: var(--grn);" aria-label="online">circle</span></span>
       <span class="text-xs tx2 font-medium">Full Focus Mode</span>
     </div>
     <div class="sidebar-footer-actions">
@@ -292,254 +613,6 @@
   </div>
 </aside>
 
-<!-- Hidden file input for document attachment -->
-<input type="file" id="doc-file-input" class="hidden" multiple accept=".pdf,.txt,.png,.jpg,.jpeg,.gif,.webp,.md"/>
-
-<!-- ═══ MAIN AREA WRAPPER ═══ -->
-<div id="main-area-wrapper" class="main-area-wrapper">
-
-<!-- ═══ MAIN CHAT AREA ═══ -->
-<main id="main-content" class="main-content">
-
-  <!-- Top bar -->
-  <header class="chat-topbar bg-sf glass-sm t-theme bd">
-    <button id="sidebar-toggle" @click="toggleSidebar()" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
-      </svg>
-    </button>
-
-    <div class="logo-container" style="display: flex; align-items: center; margin-right: 0.75rem;">
-      <img src="app/logo.png" alt="Korah Logo" style="height: 2rem; width: auto;">
-    </div>
-
-    <div class="chat-title-area">
-      <div class="korah-status-dot"></div>
-      <span class="font-semibold tx text-sm" id="chat-title">Photosynthesis Study Guide</span>
-    </div>
-
-    <div class="mode-selector-wrapper">
-      <button class="mode-selector-btn t-btn" id="mode-selector-btn" title="Change subject mode">
-        <span class="mode-icon" id="mode-icon">✨</span>
-        <span class="mode-name" id="mode-name">General</span>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="6 9 12 15 18 9"/>
-        </svg>
-      </button>
-      <div class="mode-dropdown" id="mode-dropdown">
-        <div class="mode-option" data-mode="general">
-          <span class="mode-option-icon">✨</span>
-          <div class="mode-option-info">
-            <div class="mode-option-name">General Mode</div>
-            <div class="mode-option-desc">Versatile AI study companion</div>
-          </div>
-        </div>
-        <div class="mode-option" data-mode="math">
-          <span class="mode-option-icon">🧮</span>
-          <div class="mode-option-info">
-            <div class="mode-option-name">Math Mode</div>
-            <div class="mode-option-desc">Step-by-step problem solving</div>
-          </div>
-        </div>
-        <div class="mode-option" data-mode="sat">
-          <span class="mode-option-icon">📝</span>
-          <div class="mode-option-info">
-            <div class="mode-option-name">SAT Mode</div>
-            <div class="mode-option-desc">SAT Math strategies & regressions</div>
-          </div>
-        </div>
-        <div class="mode-option" data-mode="science">
-          <span class="mode-option-icon">🔬</span>
-          <div class="mode-option-info">
-            <div class="mode-option-name">Science Mode</div>
-            <div class="mode-option-desc">Physics, chemistry & biology</div>
-          </div>
-        </div>
-        <div class="mode-option" data-mode="history">
-          <span class="mode-option-icon">📜</span>
-          <div class="mode-option-info">
-            <div class="mode-option-name">History Mode</div>
-            <div class="mode-option-desc">Context & cause-effect analysis</div>
-          </div>
-        </div>
-        <div class="mode-option" data-mode="literature">
-          <span class="mode-option-icon">📚</span>
-          <div class="mode-option-info">
-            <div class="mode-option-name">Literature Mode</div>
-            <div class="mode-option-desc">Analysis & interpretation</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="topbar-actions">
-      <button class="topbar-btn t-btn tx2" id="doc-panel-toggle" title="Toggle documents">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <polyline points="14 2 14 8 20 8"/>
-          <line x1="16" y1="13" x2="8" y2="13"/>
-          <line x1="16" y1="17" x2="8" y2="17"/>
-          <polyline points="10 9 9 9 8 9"/>
-        </svg>
-        <span id="doc-count-badge" class="doc-count-badge hidden">0</span>
-      </button>
-      <button class="topbar-btn t-btn tx2" id="clear-chat-btn" title="Clear chat">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="3,6 5,6 21,6"/><path d="M19,6l-1,14a2,2,0,0,1-2,2H8a2,2,0,0,1-2-2L5,6"/><path d="M10,11v6M14,11v6"/><path d="M9,6V4a1,1,0,0,1,1-1h4a1,1,0,0,1,1,1v2"/>
-        </svg>
-      </button>
-    </div>
-  </header>
-
-  <!-- Chat messages -->
-  <div id="chat-body" class="chat-body">
-    <div id="messages-container">
-
-      <!-- Welcome state -->
-      <div id="welcome-screen" class="welcome-screen">
-        <h1 class="welcome-title font-display font-black tx">What can I help you study?</h1>
-
-        <div class="welcome-meta">
-          <div class="welcome-mode-badge bg-sf glass-sm bd">
-            <span class="welcome-mode-dot"></span>
-            <span class="welcome-mode-text" id="welcome-mode-name">General Mode</span>
-          </div>
-          <div class="tutoring-toggle-wrapper">
-            <span class="tutoring-toggle-label">Tutoring Mode</span>
-            <label class="tutoring-switch">
-              <input type="checkbox" id="tutoring-mode-toggle">
-              <span class="tutoring-slider"></span>
-            </label>
-          </div>
-        </div>
-
-        <div class="welcome-input-container bg-sf2 glass-sm bd shadow-glow-lg">
-          <textarea id="welcome-chat-input" class="welcome-textarea tx" placeholder="Ask Korah a study question..." rows="1"></textarea>
-          <div id="welcome-attachments" class="welcome-attachments"></div>
-          <div class="welcome-input-actions">
-            <button id="welcome-attach-btn" class="welcome-tool-btn t-btn tx3" title="Attach file">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44,11.05l-9.19,9.19a6,6,0,0,1-8.49-8.49l9.19-9.19a4,4,0,0,1,5.66,5.66l-9.2,9.19a2,2,0,0,1-2.83-2.83l8.49-8.48"/></svg>
-            </button>
-            <div class="welcome-right-actions">
-              <button id="welcome-send-btn" class="welcome-send-btn grad-bg t-btn" aria-label="Send message">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="22" y1="2" x2="11" y2="13"></line>
-                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div class="mode-pills mb-8" id="mode-pills-container">
-          <!-- Populated by JS -->
-        </div>
-
-      </div>
-
-      <!-- Messages will appear here -->
-      <div id="messages-list"></div>
-    </div>
-  </div>
-
-  <!-- Typing indicator (hidden by default) -->
-  <div id="typing-indicator" class="typing-bar hidden">
-    <div class="typing-bubble bg-card border bd t-theme">
-      <div class="flex items-center gap-1.5 text-[11px] font-bold tracking-[1px] tx-p4 uppercase mb-1.5">
-        <span class="w-1.5 h-1.5 rounded-full bg-p4 animate-pulse"></span>Korah AI
-      </div>
-      <div class="typing-dots">
-        <span class="typing-dot"></span>
-        <span class="typing-dot" style="animation-delay:.2s"></span>
-        <span class="typing-dot" style="animation-delay:.4s"></span>
-      </div>
-    </div>
-  </div>
-
-  <!-- Input area -->
-  <div class="chat-input-area t-theme hidden">
-    <div class="input-wrapper">
-      <div id="input-files-bar" class="input-files-bar"></div>
-      <textarea
-        id="chat-input"
-        class="chat-textarea tx bg-transparent"
-        placeholder="Reply..."
-        rows="1"
-        style="min-height: 1.5rem;"
-      ></textarea>
-      
-      <div class="input-actions-row">
-        <div class="input-actions-left">
-          <button class="input-action-btn t-btn" id="attach-file-btn" title="Attach file">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-          </button>
-        </div>
-
-          <button id="send-btn" class="send-btn-circle grad-bg t-btn" aria-label="Send message">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="18 15 12 9 6 15"></polyline>
-            </svg>
-          </button>
-        </div>
-      </div>
-    </div>
-    <div class="input-footer">
-      <span class="text-[11px] tx3 opacity-60">Korah is AI and can make mistakes. Please double-check responses.</span>
-    </div>
-  </div>
-
-  <!-- Drag & Drop Overlay -->
-  <div id="drag-overlay" class="drag-overlay">
-    <div class="drag-overlay-inner">
-      <span class="drag-overlay-icon">📄</span>
-      <span class="drag-overlay-text">Drop documents here</span>
-      <span class="drag-overlay-hint">Images, text files, and PDFs</span>
-    </div>
-  </div>
-
-</main>
-
-<!-- ═══ DOCUMENT PREVIEW PANEL ═══ -->
-
-<aside id="doc-panel" class="doc-panel t-theme collapsed">
-<div id="doc-panel-tab" class="doc-panel-tab" title="Open documents">
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-    <polyline points="15 18 9 12 15 6"/>
-  </svg>
-  <span class="doc-badge" id="doc-tab-badge">0</span>
-</div>
-  <div class="doc-panel-collapsed-content">
-    <button id="doc-add-btn-collapsed" class="doc-add-btn-collapsed t-btn" title="Add documents">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-      </svg>
-    </button>
-  </div>
-  
-  <div class="doc-panel-expanded-content">
-    <div class="doc-panel-header">
-      <span class="doc-panel-title">Documents</span>
-      <button id="doc-add-btn-header" class="doc-add-btn-header" title="Add document">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-        </svg>
-      </button>
-    </div>
-    <div id="doc-panel-list" class="doc-panel-list">
-      <div class="doc-panel-empty">
-        <span class="doc-panel-empty-icon">📄</span>
-        <span class="doc-panel-empty-text">Drop or add documents</span>
-        <span class="doc-panel-empty-hint">PDFs, images, text files</span>
-      </div>
-    </div>
-  </div>
-</aside>
-
-</div><!-- end .main-area-wrapper -->
-
 <!-- Settings Modal -->
 <div id="settings-modal" class="settings-modal">
   <div class="settings-modal-content">
@@ -552,9 +625,7 @@
         </svg>
       </button>
     </div>
-    
     <div class="settings-body">
-      <!-- Theme Settings -->
       <div class="settings-section">
         <h3 class="settings-section-title">Appearance</h3>
         <div class="settings-item">
@@ -590,8 +661,6 @@
           </div>
         </div>
       </div>
-
-      <!-- Profile Settings -->
       <div class="settings-section">
         <h3 class="settings-section-title">Profile</h3>
         <div class="settings-item">
@@ -601,8 +670,6 @@
           </div>
         </div>
       </div>
-
-      <!-- Data Settings -->
       <div class="settings-section">
         <h3 class="settings-section-title">Data</h3>
         <div class="settings-item">
@@ -612,8 +679,6 @@
           </div>
         </div>
       </div>
-
-      <!-- Actions -->
       <div class="settings-actions">
         <button id="settings-save" class="settings-btn primary">Save Settings</button>
       </div>
@@ -621,29 +686,320 @@
   </div>
 </div>
 
-<!-- Rename Modal -->
-<div id="rename-modal" class="delete-modal">
-  <div class="delete-modal-content">
-    <div class="delete-modal-icon">✏️</div>
-    <h3 class="delete-modal-title">Rename</h3>
-    <p class="delete-modal-desc" id="rename-modal-desc">Enter a new name</p>
-    <input id="rename-modal-input" type="text" class="create-input" style="width:100%; margin-top:0.25rem;" placeholder="New name…"/>
-    <div class="delete-modal-actions">
-      <button id="rename-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
-      <button id="rename-modal-confirm" class="delete-modal-btn confirm t-btn" style="background:rgba(139,92,246,.12); color:var(--p5); border-color:rgba(139,92,246,.3);">Rename</button>
+<!-- ═══ MAIN AREA ═══ -->
+<div id="main-area-wrapper" class="main-area-wrapper">
+<main id="main-content" class="main-content">
+
+  <!-- Top bar -->
+  <header class="chat-topbar bg-sf glass-sm t-theme bd" style="opacity: 0.95;">
+    <button id="sidebar-toggle" @click="toggleSidebar()" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+    <div class="chat-title-area">
+      <div class="korah-status-dot"></div>
+      <span class="font-semibold tx text-sm">Home</span>
+    </div>
+  </header>
+
+  <div class="home-scroll">
+  <div class="home-page">
+
+    <!-- Hero -->
+    <section class="home-hero">
+      <div>
+        <h1 class="greeting-title"><span id="greeting-prefix">Good morning,</span> <span class="name" id="greeting-name">friend</span></h1>
+        <p class="greeting-sub"> <strong> "Is it better to cook, or to get cooked?" </strong> - Korah, 2026</p>
+        <!-- Opportunities Banner -->
+        <div class="opportunities-banner" style="margin-top: 14px;">
+          <div class="banner-icon"><img src="logo-images/newlogo10.png" alt="Opportunities" style="width: 100%; height: 100%; object-fit: contain;"/></div>
+          <div class="banner-text">
+            <strong>Explore STEM Opportunities:</strong> <span>Programs, internships, scholarships, and competitions in your area</span>
+          </div>
+          <a href="opportunities/opportunities.html" class="banner-cta opportunities-cta" >Discover Opportunities</a>
+        </div>
+      </div>
+
+      <div class="countdown-card">
+        <div class="label">Time left to SAT exam</div>
+        <div class="countdown-grid">
+          <div><span class="countdown-num" id="cd-days">—</span><span class="countdown-unit">days</span></div>
+          <div><span class="countdown-num" id="cd-hours">—</span><span class="countdown-unit">hrs</span></div>
+          <div><span class="countdown-num" id="cd-mins">—</span><span class="countdown-unit">min</span></div>
+          <div><span class="countdown-num" id="cd-secs">—</span><span class="countdown-unit">sec</span></div>
+        </div>
+        <div class="countdown-date" id="cd-date">Set an exam date</div>
+      </div>
+    </section>
+
+
+    <!-- My Stats -->
+
+    <h2 class="home-section-head"><span class="material-icons-round">insert_chart_outlined</span> My Stats</h2>
+    <section class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Questions Attempted</div>
+        <div class="stat-value" id="stat-attempted">0</div>
+        <span class="stat-watermark material-icons-round">check_circle</span>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Current Accuracy</div>
+        <div class="stat-value" id="stat-accuracy">—</div>
+        <span class="stat-watermark material-icons-round">bar_chart</span>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Saved Questions</div>
+        <div class="stat-value" id="stat-saved">0</div>
+        <a id="stat-saved-link" class="stat-action ghost" href="sat/dashboard.html#saved">View Saved</a>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Recent Errors</div>
+        <div class="stat-value" id="stat-errors">0</div>
+        <a class="stat-action danger" href="sat/dashboard.html">Start Review</a>
+      </div>
+    </section>
+
+
+
+<section class="study-plan-grid">
+      <a href="sat/math-chat.html" class="plan-card no-underline" style="display:block;">
+        <div class="plan-icon">
+          <div style="display: flex; justify-content: center; align-items: center; height: 100%;">
+            <img src="logo-images/newlogo2.png" style="height: 10rem;">
+          </div>
+        </div>
+        <h3>Learn how to use Desmos</h3>
+        <p>Get started in <strong>Math Chat</strong> to get that math score up, fast. </p>
+      </a>
+
+      <div class="plan-side" style="gap: 18px;">
+        <div class="plan-stat-label">Score Journey</div>
+        <div style="width:100%; display:flex; flex-direction:column; gap:16px;">
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px;">
+              <span style="font-size:12px; font-weight:700; color:rgba(56,189,248,.9); text-transform:uppercase; letter-spacing:.8px;">Reading &amp; Writing</span>
+              <span style="font-size:13px; font-weight:700; color:var(--tx); font-variant-numeric:tabular-nums;" id="plan-english-label">— / —</span>
+            </div>
+            <div style="height:28px; background:rgba(56,189,248,.12); border-radius:12px; overflow:hidden; position:relative;">
+              <div id="plan-english-bar" style="height:100%; width:0%; border-radius:12px; background:linear-gradient(90deg,#0ea5e9,#38bdf8,#7dd3fc); box-shadow:0 0 20px rgba(56,189,248,.6); position:relative; overflow:hidden; transition:width .5s ease;">
+                <span style="position:absolute; top:0; left:-100%; width:60%; height:100%; background:linear-gradient(90deg,transparent,rgba(255,255,255,.4),transparent); animation:bar-flow 2.5s linear infinite;"></span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px;">
+              <span style="font-size:12px; font-weight:700; color:rgba(16,185,129,.9); text-transform:uppercase; letter-spacing:.8px;">Math</span>
+              <span style="font-size:13px; font-weight:700; color:var(--tx); font-variant-numeric:tabular-nums;" id="plan-math-label">— / —</span>
+            </div>
+            <div style="height:28px; background:rgba(16,185,129,.12); border-radius:12px; overflow:hidden; position:relative;">
+              <div id="plan-math-bar" style="height:100%; width:0%; border-radius:12px; background:linear-gradient(90deg,#10b981,#34d399,#6ee7b7); box-shadow:0 0 20px rgba(16,185,129,.6); position:relative; overflow:hidden; transition:width .5s ease;">
+                <span style="position:absolute; top:0; left:-100%; width:60%; height:100%; background:linear-gradient(90deg,transparent,rgba(255,255,255,.4),transparent); animation:bar-flow 2.5s linear infinite; animation-delay:.8s;"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="score-sub" id="plan-score-sub" style="margin-top:0;">Set a goal to track your progress.</div>
+      </div>
+    </section>
+
+    <!-- Today's Focus -->
+    <h2 class="home-section-head" style = "margin-top: 2.5rem"><span class="material-icons-round" >my_location</span> Today's Focus</h2>
+    <section class="two-col-grid" >
+      <!-- Weakness Targeted Card -->
+      <div class="weakness-card" id="weakness-card-container">
+        <div>
+          <div class="stat-label">#1 Weakness to Fix</div>
+          <div class="weakness-skill" id="weakness-skill">Start practicing</div>
+          <div class="weakness-acc" id="weakness-acc">Answer a few questions to see your weaknesses</div>
+        </div>
+        <a class="fix-btn" id="weakness-btn" href="sat/questions.html?limit=10">Start Practicing →</a>
+      </div>
+
+      <!-- Today's Momentum Card -->
+      <div class="gauge-card">
+        <div class="gauge-header">
+          <div class="stat-label" style = "font-size: 20px;">Today's Momentum</div>
+          <div class="gauge-streak" id="streak-emoji"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#3b82f6;"><path d="M12 2c1.6 1.5 2 3 2 5 0 2-1 4-3 5 1 .5 2 1 2.5 2 1 2 .5 4-.5 6-1 2-3 3-5 3s-4-1-5-3c-1-2-1.5-4-.5-6 .5-1 1.5-1.5 2.5-2-2-1-3-3-3-5 0-2 .4-3.5 2-5z"/></svg></div>
+        </div>
+        <div class="momentum-row">
+          <div class="momentum-stat">
+            <div class="momentum-stat-num" id="today-questions">0</div>
+            <div class="momentum-stat-label">Questions</div>
+          </div>
+          <div class="momentum-stat">
+            <div class="momentum-stat-num" id="today-xp">0</div>
+            <div class="momentum-stat-label">XP Earned</div>
+          </div>
+        </div>
+        <div class="momentum-bar"><div class="momentum-bar-fill" id="momentum-fill" style="width: 0%;"></div></div>
+        <div class="gauge-sub" id="gauge-sub">Keep the momentum going!</div>
+      </div>
+    </section>
+
+    <!-- Learn & Prep -->
+    <h2 class="home-section-head"><span class="material-icons-round">lightbulb</span> Learn & Prep</h2>
+    <section class="two-col-grid">
+      <!-- SAT Strategy Tip -->
+      <div class="tip-card" id="tipCard">
+        <div class="tip-icon" id="tipIcon"><span class="material-icons-round" style="color: var(--tx2); font-size: 20px;" aria-label="ruler">straighten</span></div>
+        <div class="tip-label" id="tipLabel">Math Strategy</div>
+        <div class="tip-text" id="tipText">If a problem has variables in both the question and answers, try plugging in simple numbers like 2 or 3.</div>
+        <div class="tip-nav">
+          <div id="tipDots"></div>
+          <button class="tip-next-btn" onclick="nextTip()">Next tip →</button>
+        </div>
+      </div>
+
+      <!-- Word Flashcard -->
+      <div class="flashcard-container">
+        <div class="flashcard-wrapper">
+          <div class="flashcard" id="flashcard" onclick="flipCard()">
+            <div class="flashcard-face flashcard-front">
+              <div class="fc-badge">Word of the Day</div>
+              <div class="fc-word" id="fc-word">Pragmatic</div>
+              <div class="fc-pos" id="fc-pos">adjective</div>
+              <div class="fc-hint"><strong>Tap to reveal definition</strong> →</div>
+            </div>
+            <div class="flashcard-face flashcard-back">
+              <div class="fc-def" id="fc-def">Dealing with things realistically, based on practical rather than theoretical considerations.</div>
+              <div class="fc-ex" id="fc-ex">"A pragmatic approach helped solve the budget crisis."</div>
+            </div>
+          </div>
+        </div>
+        <div class="flashcard-nav">
+          <button class="fc-btn" onclick="prevCard()">← Prev</button>
+          <span class="fc-counter" id="fc-counter">1 / 6</span>
+          <button class="fc-btn" onclick="nextCard()">Next →</button>
+        </div>
+      </div>
+    </section>
+
+  </div>
+  </div>
+
+  <!-- Drag & Drop Overlay -->
+  <div id="drag-overlay" class="drag-overlay">
+    <div class="drag-overlay-inner">
+      <span class="drag-overlay-icon"><span class="material-icons-round" style="color: var(--tx3); font-size: 20px;" aria-label="document">article</span></span>
+      <span class="drag-overlay-text">Drop files here</span>
+      <span class="drag-overlay-hint">Images, PDFs, text files</span>
     </div>
   </div>
+</main>
 </div>
 
-<!-- Delete Confirm Modal -->
-<div id="delete-modal" class="delete-modal">
-  <div class="delete-modal-content">
-    <div class="delete-modal-icon">🗑️</div>
-    <h3 class="delete-modal-title">Delete?</h3>
-    <p class="delete-modal-desc">This will permanently delete <span id="delete-modal-name"></span>. This cannot be undone.</p>
-    <div class="delete-modal-actions">
-      <button id="delete-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
-      <button id="delete-modal-confirm" class="delete-modal-btn confirm t-btn">Delete</button>
+<!-- ── Onboarding Modal ── -->
+<div id="home-onboard-modal" class="onboard-modal">
+  <div class="onboard-backdrop"></div>
+  <div class="onboard-content">
+    <button class="onboard-close" id="onboard-close-btn">&times;</button>
+
+    <div class="onboard-slides" id="onboard-slides">
+
+      <!-- Slide 0: Welcome -->
+      <div class="onboard-slide active" data-slide="0">
+        <div class="onboard-hero-layout">
+          <div class="onboard-hero-text">
+            <h2 class="onboard-hero-title">Welcome to Korah!</h2>
+            <p class="onboard-desc" style = "color: white">Your personal SAT coach — AI tutoring, 3,500+ College Board questions, and analytics that keep your score moving up.</p>
+            <p class="onboard-desc" style="font-size:14px; margin-top:2px;"> <strong>Let's get you set up. This only takes a minute. </strong></p>
+          </div>
+          <img src="logo-images/newlogo11.png" class="onboard-hero-img" alt="Korah"/>
+        </div>
+      </div>
+
+      <!-- Slide 1: SAT Goals -->
+      <div class="onboard-slide" data-slide="1">
+        <img src="logo-images/newlogo0.png" class="onboard-logo" alt="Korah"/>
+        <h2 class="onboard-title">Set Your SAT Goals</h2>
+        <p class="onboard-desc">Set your current and goal scores by section. You can update these anytime.</p>
+        <div class="onboard-form" id="onboard-score-form">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+            <div class="onboard-field">
+              <label>Math — Current</label>
+              <input id="ob-math-score" type="number" min="200" max="800" step="10" placeholder="e.g. 620"/>
+              <span class="ob-field-error" id="ob-math-err">200–800, multiples of 10</span>
+            </div>
+            <div class="onboard-field">
+              <label>Math — Goal</label>
+              <input id="ob-math-goal" type="number" min="200" max="800" step="10" placeholder="e.g. 750"/>
+              <span class="ob-field-error" id="ob-math-goal-err">200–800, multiples of 10</span>
+            </div>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+            <div class="onboard-field">
+              <label>R&amp;W — Current</label>
+              <input id="ob-rw-score" type="number" min="200" max="800" step="10" placeholder="e.g. 660"/>
+              <span class="ob-field-error" id="ob-rw-err">200–800, multiples of 10</span>
+            </div>
+            <div class="onboard-field">
+              <label>R&amp;W — Goal</label>
+              <input id="ob-rw-goal" type="number" min="200" max="800" step="10" placeholder="e.g. 750"/>
+              <span class="ob-field-error" id="ob-rw-goal-err">200–800, multiples of 10</span>
+            </div>
+          </div>
+          <div class="onboard-total-row">
+            <span class="onboard-total-label">Current Total</span>
+            <span class="onboard-total-value" id="ob-total">— / 1600</span>
+          </div>
+        </div>
+        <span class="onboard-skip" style="color: whitesmoke;" id="onboard-skip-scores"><strong>Skip for now</strong></span>
+      </div>
+
+      <!-- Slide 2: Question Bank -->
+      <div class="onboard-slide" data-slide="2">
+        <img src="logo-images/newlogo2.png" class="onboard-logo" alt="Korah"/>
+        <h2 class="onboard-title">3,500+ Practice Questions</h2>
+        <img src="logo-images/questionbankdemo.png" alt="Question Bank screenshot" style="width:100%;aspect-ratio:16/9;border-radius:14px;object-fit:contain;background:var(--sf2);">
+        <p class="onboard-desc">College Board-sourced questions across Math and Reading &amp; Writing. Every answer is tracked, so Korah always knows where you stand.</p>
+      </div>
+
+      <!-- Slide 3: Math Chat -->
+      <div class="onboard-slide" data-slide="3">
+        <img src="logo-images/newlogo5.png" class="onboard-logo" alt="Korah"/>
+        <h2 class="onboard-title">SAT Math Chat</h2>
+        <img src="logo-images/desmosdemo.png" alt="Math Chat screenshot" style="width:100%;aspect-ratio:16/9;border-radius:14px;object-fit:contain;background:var(--sf2);">
+        <p class="onboard-desc">Korah actively updates the Desmos graph to teach you how to use it. Learn regression tricks, visualize functions, and solve problems faster than ever.</p>
+      </div>
+
+      <!-- Slide 4: Weakness Tracking -->
+      <div class="onboard-slide" data-slide="4">
+        <img src="logo-images/newlogo10.png" class="onboard-logo" alt="Korah"/>
+        <h2 class="onboard-title">Korah Finds Your Weak Spots</h2>
+        <img src="logo-images/desmosdemo0.png" alt="Weakness tracker screenshot" style="max-width:100%;border-radius:14px;display:block;">
+        <p class="onboard-desc">After you practice, Korah identifies your lowest-accuracy skills and surfaces targeted drills on your home page every single day.</p>
+      </div>
+
+      <!-- Slide 5: All Set -->
+      <div class="onboard-slide" data-slide="5">
+        <div class="onboard-hero-layout">
+          <div class="onboard-hero-text">
+            <h2 class="onboard-hero-title">You're All Set! <span class="material-icons-round" style="color: var(--ac); font-size: 24px; vertical-align: middle;" aria-label="celebration">celebration</span></h2>
+            <p class="onboard-desc">Start practicing to build your momentum. Your first question is waiting, let's get that score moving!</p>
+            <!-- temporary comment out, i don't like the button -->
+            <!-- <a href="sat/index.html" class="cta-primary" style="margin-top:4px; align-self:flex-start;" id="onboard-cta-btn">
+              <span class="material-icons-round" style="font-size:16px;">assignment</span>
+              Start Practicing
+            </a> -->
+          </div>
+          <img src="logo-images/newlogo3.png" class="onboard-hero-img" alt="Korah" style = "width: 14rem; height:14rem"/>
+        </div>
+      </div>
+    </div>
+
+    <div class="onboard-dots" id="onboard-dots">
+      <span class="onboard-dot active" data-dot="0"></span>
+      <span class="onboard-dot" data-dot="1"></span>
+      <span class="onboard-dot" data-dot="2"></span>
+      <span class="onboard-dot" data-dot="3"></span>
+      <span class="onboard-dot" data-dot="4"></span>
+      <span class="onboard-dot" data-dot="5"></span>
+    </div>
+
+    <div class="onboard-actions">
+      <button class="onboard-btn secondary" id="onboard-prev-btn" style="visibility:hidden;">Back</button>
+      <button class="onboard-btn primary" id="onboard-next-btn">Next</button>
     </div>
   </div>
 </div>
@@ -651,17 +1007,17 @@
 <!-- SAT Sub-Mode Modal -->
 <div id="sat-sub-modal" class="delete-modal">
   <div class="delete-modal-content" style="max-width: 420px;">
-    <div class="delete-modal-icon">📝</div>
+    <div class="delete-modal-icon"><span class="material-icons-round" style="color: var(--p4); font-size: 20px;" aria-label="memo">description</span></div>
     <h3 class="delete-modal-title">SAT Mode</h3>
     <p class="delete-modal-desc" style="margin-bottom: 1rem;">Which section are you working on?</p>
     <div style="display: flex; gap: 0.75rem; width: 100%;">
       <button id="sat-math-btn" class="sat-sub-btn" style="flex:1; padding: 1rem; border-radius: 12px; border: 2px solid rgba(245,158,11,0.3); background: rgba(245,158,11,0.08); cursor: pointer; text-align: center; transition: all 0.2s;">
-        <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">📝</div>
+        <div style="font-size: 1.5rem; margin-bottom: 0.25rem;"><span class="material-icons-round" style="color: var(--p4); font-size: 24px;" aria-label="memo">description</span></div>
         <div style="font-weight: 700; font-size: 0.95rem; color: var(--tx);">Math</div>
         <div style="font-size: 0.75rem; color: var(--tx3); margin-top: 0.25rem;">Regressions, algebra, geometry</div>
       </button>
       <button id="sat-english-btn" class="sat-sub-btn" style="flex:1; padding: 1rem; border-radius: 12px; border: 2px solid rgba(99,102,241,0.3); background: rgba(99,102,241,0.08); cursor: pointer; text-align: center; transition: all 0.2s;">
-        <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">📖</div> 
+        <div style="font-size: 1.5rem; margin-bottom: 0.25rem;"><span class="material-icons-round" style="color: var(--p4); font-size: 24px;" aria-label="book">auto_stories</span></div>
         <div style="font-weight: 700; font-size: 0.95rem; color: var(--tx);">English</div>
         <div style="font-size: 0.75rem; color: var(--tx3); margin-top: 0.25rem;">Reading & Writing</div>
       </button>
@@ -669,111 +1025,467 @@
   </div>
 </div>
 
+<script>
+  // Time-aware greeting
+  (function () {
+    const h = new Date().getHours();
+    let g = 'Good evening,';
+    if (h < 12) g = 'Good morning,';
+    else if (h < 18) g = 'Good afternoon,';
+    const el = document.getElementById('greeting-prefix');
+    if (el) el.textContent = g;
+  })();
 
+  // Rotating SAT exam countdown
+  (function () {
+    const SAT_DATES = [
+      new Date('2026-06-06T08:00:00'),
+      new Date('2026-08-22T08:00:00'),
+      new Date('2026-09-12T08:00:00'),
+      new Date('2026-10-03T08:00:00'),
+      new Date('2026-11-07T08:00:00'),
+      new Date('2026-12-05T08:00:00'),
+      new Date('2027-03-06T08:00:00'),
+      new Date('2027-05-01T08:00:00'),
+      new Date('2027-06-05T08:00:00'),
+    ];
 
+    const daysEl = document.getElementById('cd-days');
+    const hrsEl = document.getElementById('cd-hours');
+    const minsEl = document.getElementById('cd-mins');
+    const secsEl = document.getElementById('cd-secs');
+    const dateEl = document.getElementById('cd-date');
+    const planDaysEl = document.getElementById('plan-days-exam');
 
+    function getNextDate() {
+      const now = new Date();
+      for (const date of SAT_DATES) {
+        if (date.getTime() > now.getTime()) {
+          return date;
+        }
+      }
+      return null;
+    }
 
-<!-- Opportunities Feature Intro Modal -->
-<div id="opp-intro-modal" class="opp-feature-intro-modal">
-  <div class="opp-feature-intro-backdrop"></div>
-  <div class="opp-feature-intro-content">
-    <button class="opp-feature-intro-close" id="opp-intro-close">&times;</button>
-    <div class="opp-feature-intro-slides">
-      <div class="opp-feature-intro-slide active">
-        <div class="opp-feature-intro-icon-large">🚀</div>
-        <h2 class="opp-feature-intro-title">STEM Opportunities</h2>
-        <p class="opp-feature-intro-desc">
-          Discover programs, internships, competitions, and scholarships for underrepresented students in NJ and beyond — all in one place. Browse and filter by grade, cost, and category.
-        </p>
-        <div class="opp-feature-intro-badge-new">NEW</div>
-      </div>
-    </div>
-    <div class="opp-feature-intro-actions">
-      <button class="opp-feature-intro-btn secondary" id="opp-intro-dismiss">Maybe Later</button>
-      <button class="opp-feature-intro-btn primary" id="opp-intro-go">Explore Opportunities</button>
-    </div>
-  </div>
-</div>
+    function tick() {
+      const target = getNextDate();
+      if (!target) {
+        if (dateEl) dateEl.textContent = 'No upcoming dates';
+        if (daysEl) daysEl.textContent = '—';
+        if (hrsEl) hrsEl.textContent = '—';
+        if (minsEl) minsEl.textContent = '—';
+        if (planDaysEl) planDaysEl.textContent = '—';
+        return;
+      }
 
-<!-- Pro Tip Toast Notification -->
-<div id="pro-tip-toast" class="pro-tip-toast">
-  <span class="pro-tip-toast-icon">💡</span>
-  <div class="pro-tip-toast-content">
-    <div class="pro-tip-toast-label">Pro Tip</div>
-    <div class="pro-tip-toast-text" id="pro-tip-text"></div>
-  </div>
-  <button class="pro-tip-toast-close" id="pro-tip-close" title="Dismiss">×</button>
-</div>
+      const now = new Date();
+      let diff = target.getTime() - now.getTime();
+      if (diff < 0) diff = 0;
 
-<script src="https://www.desmos.com/api/v1.11/calculator.js?apiKey=d75985faa7d94050843ebd4528dd94c1"></script>
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
-<script src="app/timer-manager.js"></script>
-<script src="study/js/sidebar.js"></script>
-<script src="study/js/study-api.js"></script>
-<script src="app/korah-chat.js"></script>
+      const day = Math.floor(diff / 86400000);
+      const hr = Math.floor((diff % 86400000) / 3600000);
+      const mn = Math.floor((diff % 3600000) / 60000);
+      const sec = Math.floor((diff % 60000) / 1000);
+
+      if (daysEl) daysEl.textContent = day;
+      if (hrsEl) hrsEl.textContent = hr;
+      if (minsEl) minsEl.textContent = mn;
+      if (secsEl) secsEl.textContent = sec;
+      if (planDaysEl) planDaysEl.textContent = day;
+      if (dateEl) dateEl.textContent = target.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+    }
+
+    tick();
+    setInterval(tick, 1000);
+  })();
+
+  // Stat hydration from KorahSATAnalytics
+  async function hydrateStats() {
+    const a = window.KorahSATAnalytics;
+    if (!a) return;
+
+    try {
+      const [profile, totals, missedIds, bookmarks, suggestions, recent] = await Promise.all([
+        a.getProfile(),
+        a.getTotals(),
+        a.getMissedQuestionIds(10),
+        a.getBookmarks(),
+        a.suggestSkills(3),
+        a.getRecentAttempts(50),
+      ]);
+
+      const pct = (x) => Math.round(x * 100);
+
+      // My Stats
+      const answered = totals?.answered || 0;
+      const correct = totals?.correct || 0;
+      const acc = answered > 0 ? pct(correct / answered) : null;
+      const missedCount = missedIds.length;
+      const savedCount = bookmarks.length;
+
+      document.getElementById('stat-attempted').textContent = answered;
+      document.getElementById('stat-accuracy').textContent = acc !== null ? acc + '%' : '—';
+      document.getElementById('stat-saved').textContent = savedCount;
+      document.getElementById('stat-errors').textContent = missedCount;
+
+      const savedLink = document.getElementById('stat-saved-link');
+      if (savedLink && savedCount > 0) {
+        const ids = bookmarks.map(b => b.questionId).slice(0, 50).join(',');
+        savedLink.href = `sat/questions.html?questionIds=${ids}`;
+        savedLink.textContent = 'Practice Saved';
+      }
+
+      const reviewBtn = document.querySelector('.stat-action.danger');
+      if (reviewBtn) {
+        if (missedCount > 0) {
+          const params = new URLSearchParams();
+          params.set("questionIds", missedIds.join(","));
+          reviewBtn.href = `sat/questions.html?${params.toString()}`;
+          reviewBtn.textContent = "Start Review";
+        } else {
+          reviewBtn.href = "sat/dashboard.html";
+          reviewBtn.textContent = "View Stats";
+        }
+      }
+
+      // Weakness card
+      const top = suggestions?.[0];
+      if (top) {
+        const SECTION_LABEL = { english: 'Reading & Writing', math: 'Math' };
+        const sectionStr = SECTION_LABEL[top.section] || top.section || '';
+        document.getElementById('weakness-skill').textContent = top.skillName;
+        if (top.attempts > 0) {
+          document.getElementById('weakness-acc').textContent =
+            `${pct(top.accuracy)}% accuracy · ${top.attempts} attempt${top.attempts === 1 ? '' : 's'} · ${sectionStr}`;
+        } else {
+          document.getElementById('weakness-acc').textContent = `Not yet practiced · ${sectionStr}`;
+        }
+        const weakBtn = document.getElementById('weakness-btn');
+        const skillMissed = recent.filter(r => !r.correct && r.skillCd === top.skillCd).map(r => r.questionId);
+        if (skillMissed.length > 0) {
+          const params = new URLSearchParams();
+          params.set('questionIds', skillMissed.join(','));
+          weakBtn.href = `sat/questions.html?${params.toString()}`;
+          weakBtn.textContent = 'Review Mistakes →';
+        } else {
+          const wp = new URLSearchParams();
+          if (top.domain) wp.set('domains', top.domain);
+          if (top.skillCd) wp.set('skills', top.skillCd);
+          wp.set('limit', '10');
+          weakBtn.href = `sat/questions.html?${wp.toString()}`;
+          weakBtn.textContent = top.attempts > 0 ? 'Fix This →' : 'Start Practicing →';
+        }
+      }
+
+      // Today's Momentum
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayAttempts = recent.filter(r => {
+        const rDate = new Date(r.ts);
+        rDate.setHours(0, 0, 0, 0);
+        return rDate.getTime() === today.getTime();
+      });
+      const todayQCount = todayAttempts.length;
+      const todayXP = todayAttempts.reduce((s, r) => s + (r.xp || 0), 0);
+      document.getElementById('today-questions').textContent = todayQCount;
+      document.getElementById('today-xp').textContent = todayXP;
+      const momentumGoal = 10;
+      const momentumPct = Math.min(1, todayQCount / momentumGoal);
+      document.getElementById('momentum-fill').style.width = `${momentumPct * 100}%`;
+      const momentumMsg = todayQCount === 0 ? "Start practicing to build momentum!"
+        : todayQCount < momentumGoal ? `${momentumGoal - todayQCount} more to daily goal`
+        : "Daily goal crushed! <span class=\"material-icons-round\" style=\"color: var(--ac); font-size: 18px; vertical-align: middle;\" aria-label=\"celebration\">celebration</span>";
+      document.getElementById('gauge-sub').textContent = momentumMsg;
+      const streakIcon = todayQCount === 0 ? '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#3b82f6;"><circle cx="12" cy="12" r="9"/><polyline points="12 6 12 12 16 14"/></svg>' : todayQCount < 5 ? '<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="color:#3b82f6;"><path d="M12 1c.8 0 1.6.4 2 1l7 11c.4.6.4 1.4 0 2l-7 11c-.4.6-1.2 1-2 1s-1.6-.4-2-1l-7-11c-.4-.6-.4-1.4 0-2l7-11c.4-.6 1.2-1 2-1zm0 3.5L6.5 13l5.5 8.5 5.5-8.5-5.5-8.5z"/></svg>' : '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#3b82f6;"><path d="M12 2c1.6 1.5 2 3 2 5 0 2-1 4-3 5 1 .5 2 1 2.5 2 1 2 .5 4-.5 6-1 2-3 3-5 3s-4-1-5-3c-1-2-1.5-4-.5-6 .5-1 1.5-1.5 2.5-2-2-1-3-3-3-5 0-2 .4-3.5 2-5z"/></svg>';
+      document.getElementById('streak-emoji').innerHTML = streakIcon;
+
+      // Score Progress (Plan-side — two section bars)
+      const enCur  = profile?.englishScore ?? null;
+      const enGoal = profile?.englishGoal  ?? null;
+      const maCur  = profile?.mathScore    ?? null;
+      const maGoal = profile?.mathGoal     ?? null;
+
+      const enBar   = document.getElementById('plan-english-bar');
+      const enLabel = document.getElementById('plan-english-label');
+      const maBar   = document.getElementById('plan-math-bar');
+      const maLabel = document.getElementById('plan-math-label');
+      const subEl2  = document.getElementById('plan-score-sub');
+
+      if (enCur && enGoal && enBar) {
+        enLabel.textContent = `${enCur} / ${enGoal}`;
+        enBar.style.width = `${Math.round(Math.max(0, Math.min(1, (enCur - 200) / (enGoal - 200))) * 100)}%`;
+      } else {
+        enLabel.textContent = enGoal ? `— / ${enGoal}` : '— / —';
+        if (enBar) enBar.style.width = '0%';
+      }
+      if (maCur && maGoal && maBar) {
+        maLabel.textContent = `${maCur} / ${maGoal}`;
+        maBar.style.width = `${Math.round(Math.max(0, Math.min(1, (maCur - 200) / (maGoal - 200))) * 100)}%`;
+      } else {
+        maLabel.textContent = maGoal ? `— / ${maGoal}` : '— / —';
+        if (maBar) maBar.style.width = '0%';
+      }
+
+      const bothSet = enCur && enGoal && maCur && maGoal;
+      if (bothSet) {
+        const enLeft = enGoal - enCur;
+        const maLeft = maGoal - maCur;
+        const total  = enLeft + maLeft;
+        subEl2.textContent = total > 0
+          ? `${enLeft > 0 ? `+${enLeft} R&W` : ''}${enLeft > 0 && maLeft > 0 ? ' · ' : ''}${maLeft > 0 ? `+${maLeft} Math` : ''} to go`
+          : "Both goals reached! Set new ones.";
+      } else if (enGoal || maGoal) {
+        subEl2.textContent = "Log a score to track section progress.";
+      } else {
+        subEl2.textContent = "Set a goal to track your progress.";
+      }
+
+    } catch (e) {
+      console.warn("[Home] hydration failed", e);
+    }
+  }
+
+  // Initialize sidebar (recent chats / study items)
+  window.addEventListener('korahReady', () => {
+    if (window.KorahSidebar?.initSidebar) {
+      window.KorahSidebar.initSidebar({ chatBaseUrl: "chat.html", itemPageUrl: "study/item.html" });
+    }
+    // Hydrate when analytics are ready
+    if (window.KorahSATAnalytics) {
+      hydrateStats();
+    } else {
+      window.addEventListener('korahSATAnalyticsReady', hydrateStats, { once: true });
+    }
+  });
+</script>
 
 <script>
-  // Close doc panel when overlay is clicked
-  document.getElementById('doc-panel-overlay').addEventListener('click', () => {
-    const panel = document.getElementById('doc-panel');
-    const overlay = document.getElementById('doc-panel-overlay');
-    panel.classList.remove('expanded');
-    panel.classList.add('collapsed');
-    overlay.classList.remove('show');
-  });
+  // SAT Strategy Tips
+  const SAT_TIPS = [
+    { icon: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#fbbf24;"><path d="M3 21h18M3 3h18M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>', label: 'Math Strategy', text: 'If a problem has variables in both the question and answers, try plugging in simple numbers like 2 or 3.' },
+    { icon: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#fbbf24;"><circle cx="12" cy="12" r="9"/><polyline points="12 6 12 12 16 14"/></svg>', label: 'Time Strategy', text: 'Skip hard questions and come back later. Every question is worth the same point — don\'t spend 5 minutes on one.' },
+    { icon: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#fbbf24;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>', label: 'Reading Strategy', text: 'Read the question before the passage. Know exactly what you\'re looking for before you start reading.' },
+    { icon: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#fbbf24;"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>', label: 'Process of Elimination', text: 'Eliminate answers with extreme language ("never", "always") first. The SAT rarely deals in absolutes.' },
+    { icon: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#fbbf24;"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 9h6M9 15h6"/></svg>', label: 'Calculator Tip', text: 'For Module 1, practice without a calculator. It trains you to recognize patterns and mental math tricks faster.' },
+    { icon: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#fbbf24;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>', label: 'Grammar Tip', text: 'When two answers seem similar, pick the shorter, more concise one — the SAT consistently rewards clarity and brevity.' },
+  ];
+
+  let tipIdx = 0;
+  function renderTip(idx) {
+    const t = SAT_TIPS[idx];
+    document.getElementById('tipIcon').innerHTML = t.icon;
+    document.getElementById('tipLabel').textContent = t.label;
+    document.getElementById('tipText').textContent = t.text;
+    const dots = document.getElementById('tipDots');
+    dots.innerHTML = SAT_TIPS.map((_, i) =>
+      `<span class="tip-dot${i === idx ? ' active' : ''}" onclick="setTip(${i})"></span>`
+    ).join('');
+    dots.style.display = 'flex';
+    dots.style.gap = '6px';
+  }
+  function setTip(i) { tipIdx = i; renderTip(i); }
+  function nextTip() { tipIdx = (tipIdx + 1) % SAT_TIPS.length; renderTip(tipIdx); }
+  renderTip(0);
+  setInterval(nextTip, 9000);
+
+  // Word Flashcards
+  const FLASHCARDS = [
+    { word: 'Pragmatic', pos: 'adjective', def: 'Dealing with things realistically, based on practical rather than theoretical considerations.', ex: '"A pragmatic approach helped solve the budget crisis quickly."' },
+    { word: 'Perfidious', pos: 'adjective', def: 'Deceitful and untrustworthy; guilty of betrayal or breaking faith.', ex: '"The perfidious advisor secretly undermined the king\'s plans."' },
+    { word: 'Laconic', pos: 'adjective', def: 'Using very few words; brief and concise in speech or expression.', ex: '"Her laconic reply — just \'no\' — left everyone stunned."' },
+    { word: 'Obsequious', pos: 'adjective', def: 'Excessively eager to serve, please, or obey; fawning.', ex: '"The obsequious assistant agreed with every suggestion the boss made."' },
+    { word: 'Ephemeral', pos: 'adjective', def: 'Lasting for a very short time; quickly fading or disappearing.', ex: '"The ephemeral beauty of cherry blossoms lasts only a few days."' },
+    { word: 'Equivocal', pos: 'adjective', def: 'Open to more than one interpretation; ambiguous, often intentionally so.', ex: '"His equivocal answer satisfied neither side of the debate."' },
+  ];
 
   // Redirect SAT Math button to SAT Math chat page
   document.getElementById('sat-math-btn').addEventListener('click', () => {
-    window.location.href = 'sat/math-chat.html';
+    window.KorahTransitions.go('sat/math-chat.html');
   });
 
-  // ── Opportunities Feature Intro ──
-  (function() {
-    const INTRO_KEY = 'korah_opp_intro_seen';
-    if (localStorage.getItem(INTRO_KEY)) return;
+  let fcIdx = 0;
+  let fcFlipped = false;
 
-    const modal = document.getElementById('opp-intro-modal');
+  function renderCard() {
+    const c = FLASHCARDS[fcIdx];
+    const card = document.getElementById('flashcard');
+    card.classList.remove('flipped');
+    fcFlipped = false;
+    document.getElementById('fc-word').textContent = c.word;
+    document.getElementById('fc-pos').textContent = c.pos;
+    document.getElementById('fc-def').textContent = c.def;
+    document.getElementById('fc-ex').textContent = c.ex;
+    document.getElementById('fc-counter').textContent = `${fcIdx + 1} / ${FLASHCARDS.length}`;
+  }
+  function flipCard() {
+    fcFlipped = !fcFlipped;
+    document.getElementById('flashcard').classList.toggle('flipped', fcFlipped);
+  }
+  function nextCard() { fcIdx = (fcIdx + 1) % FLASHCARDS.length; renderCard(); }
+  function prevCard() { fcIdx = (fcIdx - 1 + FLASHCARDS.length) % FLASHCARDS.length; renderCard(); }
+  renderCard();
+</script>
+
+<script>
+  // ── Home Onboarding Carousel ──
+  (function () {
+    const ONBOARD_KEY = 'korah_home_onboard_v1';
+    if (localStorage.getItem(ONBOARD_KEY)) return;
+
+    const modal = document.getElementById('home-onboard-modal');
     if (!modal) return;
+
+    const TOTAL_SLIDES = 6;
+    let current = 0;
+    let pendingProfile = null; // { currentScore, goalScore } to save once analytics ready
+
+    const slides = modal.querySelectorAll('.onboard-slide');
+    const dots   = modal.querySelectorAll('.onboard-dot');
+    const prevBtn = document.getElementById('onboard-prev-btn');
+    const nextBtn = document.getElementById('onboard-next-btn');
+    const closeBtn = document.getElementById('onboard-close-btn');
+    const skipScoresBtn = document.getElementById('onboard-skip-scores');
+    const mathInput    = document.getElementById('ob-math-score');
+    const rwInput      = document.getElementById('ob-rw-score');
+    const mathGoalInput = document.getElementById('ob-math-goal');
+    const rwGoalInput   = document.getElementById('ob-rw-goal');
+    const totalEl      = document.getElementById('ob-total');
+    const mathErr      = document.getElementById('ob-math-err');
+    const rwErr        = document.getElementById('ob-rw-err');
+    const mathGoalErr  = document.getElementById('ob-math-goal-err');
+    const rwGoalErr    = document.getElementById('ob-rw-goal-err');
+
+    function isValidModuleScore(v) { return v === '' || (v >= 200 && v <= 800 && v % 10 === 0); }
+
+    function validateInput(input, errEl, validFn) {
+      const raw = input.value.trim();
+      const valid = raw === '' || validFn(Number(raw));
+      input.classList.toggle('ob-error', !valid && raw !== '');
+      errEl.classList.toggle('show', !valid && raw !== '');
+      return valid || raw === '';
+    }
+
+    function snapToTen(input) {
+      const v = parseInt(input.value);
+      if (!isNaN(v)) input.value = Math.round(v / 10) * 10;
+    }
+
+    function updateTotal() {
+      const m  = parseInt(mathInput.value) || 0;
+      const rw = parseInt(rwInput.value)   || 0;
+      const sum = m + rw;
+      if (m || rw) {
+        totalEl.textContent = Math.min(sum, 1600) + ' / 1600';
+        totalEl.style.color = sum > 1600 ? '#ef4444' : 'var(--tx)';
+      } else {
+        totalEl.textContent = '— / 1600';
+        totalEl.style.color = 'var(--tx)';
+      }
+    }
+
+    mathInput.addEventListener('input',    () => { validateInput(mathInput,    mathErr,     isValidModuleScore); updateTotal(); });
+    rwInput.addEventListener('input',      () => { validateInput(rwInput,      rwErr,       isValidModuleScore); updateTotal(); });
+    mathGoalInput.addEventListener('input',() => { validateInput(mathGoalInput,mathGoalErr, isValidModuleScore); });
+    rwGoalInput.addEventListener('input',  () => { validateInput(rwGoalInput,  rwGoalErr,   isValidModuleScore); });
+
+    mathInput.addEventListener('blur',    () => { snapToTen(mathInput);    validateInput(mathInput,    mathErr,     isValidModuleScore); updateTotal(); });
+    rwInput.addEventListener('blur',      () => { snapToTen(rwInput);      validateInput(rwInput,      rwErr,       isValidModuleScore); updateTotal(); });
+    mathGoalInput.addEventListener('blur',() => { snapToTen(mathGoalInput);validateInput(mathGoalInput,mathGoalErr, isValidModuleScore); });
+    rwGoalInput.addEventListener('blur',  () => { snapToTen(rwGoalInput);  validateInput(rwGoalInput,  rwGoalErr,   isValidModuleScore); });
+
+    function goTo(idx) {
+      current = Math.max(0, Math.min(idx, TOTAL_SLIDES - 1));
+      slides.forEach((s, i) => s.classList.toggle('active', i === current));
+      dots.forEach((d, i)   => d.classList.toggle('active', i === current));
+      prevBtn.style.visibility = current === 0 ? 'hidden' : 'visible';
+      nextBtn.textContent = current === TOTAL_SLIDES - 1 ? 'Done' : 'Next';
+    }
+
+    function scoreFormValid() {
+      const allOk = [
+        validateInput(mathInput,    mathErr,     isValidModuleScore),
+        validateInput(rwInput,      rwErr,       isValidModuleScore),
+        validateInput(mathGoalInput,mathGoalErr, isValidModuleScore),
+        validateInput(rwGoalInput,  rwGoalErr,   isValidModuleScore),
+      ];
+      return allOk.every(Boolean);
+    }
+
+    function collectAndSaveScores() {
+      const mathScore    = parseInt(mathInput.value)    || null;
+      const englishScore = parseInt(rwInput.value)      || null;
+      const mathGoal     = parseInt(mathGoalInput.value)|| null;
+      const englishGoal  = parseInt(rwGoalInput.value)  || null;
+      if (mathScore || englishScore || mathGoal || englishGoal) {
+        pendingProfile = { mathScore, englishScore, mathGoal, englishGoal };
+        trySaveProfile();
+      }
+    }
+
+    function trySaveProfile() {
+      if (!pendingProfile) return;
+      const a = window.KorahSATAnalytics;
+      if (a?.saveProfile) {
+        a.saveProfile(pendingProfile).catch(() => {});
+        pendingProfile = null;
+      }
+    }
 
     function closeModal() {
       modal.classList.remove('show');
-      localStorage.setItem(INTRO_KEY, 'true');
+      localStorage.setItem(ONBOARD_KEY, 'true');
     }
 
-    document.getElementById('opp-intro-go').addEventListener('click', () => {
-      closeModal();
-      window.location.href = 'opportunities.html';
+    nextBtn.addEventListener('click', () => {
+      if (current === 1) {
+        if (!scoreFormValid()) return; // block if validation errors
+        collectAndSaveScores();
+      }
+      if (current < TOTAL_SLIDES - 1) {
+        goTo(current + 1);
+      } else {
+        closeModal();
+      }
     });
-    document.getElementById('opp-intro-dismiss').addEventListener('click', closeModal);
-    document.getElementById('opp-intro-close').addEventListener('click', closeModal);
-    modal.querySelector('.opp-feature-intro-backdrop').addEventListener('click', closeModal);
 
-    setTimeout(() => modal.classList.add('show'), 800);
+    prevBtn.addEventListener('click', () => goTo(current - 1));
+    closeBtn.addEventListener('click', closeModal);
+    modal.querySelector('.onboard-backdrop').addEventListener('click', closeModal);
+    skipScoresBtn.addEventListener('click', () => goTo(current + 1));
+
+    dots.forEach(d => d.addEventListener('click', () => goTo(parseInt(d.dataset.dot))));
+
+    document.getElementById('onboard-cta-btn')?.addEventListener('click', closeModal);
+
+    // Save queued profile once analytics load
+    window.addEventListener('korahSATAnalyticsReady', trySaveProfile, { once: true });
+
+    // Show after a short delay
+    setTimeout(() => modal.classList.add('show'), 700);
   })();
 
-  // Initialize sidebar with chat-specific callbacks
-  window.addEventListener('korahReady', () => {
-    if (window.KorahSidebar) {
-      window.KorahSidebar.initSidebar({
-        chatBaseUrl: "index.html",
-        itemPageUrl: "study/item.html",
-        onItemClick: (id) => {
-          const sessions = window.KorahSidebar.getSessions() || {};
-          const session = sessions[id];
-          if (session && session.mode === 'sat-math') {
-            window.location.href = 'sat/math-chat.html#' + id;
-            return;
-          }
-          if (window.KorahChat && typeof window.KorahChat.switchToSession === 'function') {
-            window.KorahChat.switchToSession(id);
-          }
-        }
-      });
-    }
-  }, { once: true });
-</script>
+  // ── Drag & Drop Overlay ──
+  (function() {
+    const dragOverlay = document.getElementById('drag-overlay');
 
+    if (!dragOverlay) return;
+
+    document.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dragOverlay.classList.add('active');
+    }, true);
+
+    document.addEventListener('dragleave', (e) => {
+      if (e.clientX === 0 && e.clientY === 0) {
+        dragOverlay.classList.remove('active');
+      }
+    }, true);
+
+    document.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dragOverlay.classList.remove('active');
+    }, true);
+  })();
+</script>
 </body>
 </html>

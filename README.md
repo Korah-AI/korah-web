@@ -1,3 +1,6 @@
+# Temporarily Removed
+* **Productivity page** (`korah-bot/productivity.html`) — sidebar links commented out in all 13 pages with `<!-- PRODUCTIVITY PAGE TEMPORARILY REMOVED - restore when ready to re-enable -->`. The page file itself is intact. To restore: uncomment those lines and add back the nav link: `<a href="[../]productivity.html" class="sidebar-nav-link productivity-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">timer</span> <span class="nav-text">Productivity</span></a>`
+
 # Next Updates
 * Need to add Google Drive API for document creation
 * Need to add "Import from Quizlet" option for study items
@@ -12,11 +15,10 @@
 * sat_question fetch tool (chatbot to output SAT problems, JSON formatted)
 
 # Potential Updates
-* Find API's for AP classes and make a page regarding AP prep
-* Update Question SAT navigator, backend to statistical data (like how much a user got wrong, write, and marked for review,etc..). This is so we can add options that filter user SAT questions.
+* Find API's for AP classes and make a page regarding AP prep.
 * Remake korah landing page to be a 3d scroll interative website that explains the app and introduces it (Maybe using figma or something else). When the users enter, everything like dark (but still a bit visible) with "Korah A.I" lightened up and as they keep scrolling, everything listens up and there are 3d very well animated iphone with korah explaining features.
 * Add sat question prep on korah app.
-* Add user setting sin korah app for user experience.
+* Add user settings in korah app for user experience.
 * Add mood based option like "full focus mode" to match how it is in korah and depending on the mood tips and advice or positive things show up for the user.
 
 

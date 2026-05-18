@@ -1,33 +1,49 @@
+import {
+  ASSESSMENTS,
+  ALL_DOMAIN_CODES,
+  SECTION_DOMAIN_CODES,
+  fetchQuestionList,
+  fetchQuestionDetail,
+  findCachedQuestionMeta,
+  normalizeQuestion,
+  resolveDomainCodes,
+  shuffleArray,
+} from "../_lib/collegeboard.js";
+
 export const config = {
   maxDuration: 60,
 };
 
-const UPSTREAM_BASE = "https://mysatprep.fun";
+const VALID_DIFFICULTIES = ["E", "M", "H"];
 
-// Maps our internal domain key (name) to the upstream API domain code
-const DOMAIN_CODE_MAP = {
-  // English (R&W)
-  "Information and Ideas": "INI",
-  "Craft and Structure": "CAS",
-  "Expression of Ideas": "EOI",
-  "Standard English Conventions": "SEC",
-  // Math
-  "Algebra": "H",
-  "Advanced Math": "P",
-  "Problem-Solving and Data Analysis": "Q",
-  "Geometry and Trigonometry": "S",
-};
+// How many questions to fully detail in the initial response. The rest are
+// returned as stubs (loaded: false) and the frontend hydrates them on demand
+// via /api/sat/question?id=… as the user navigates.
+const INITIAL_BATCH = 20;
 
-// All domain codes for each section (used when domain is "any")
-const SECTION_DOMAIN_CODES = {
-  english: ["INI", "CAS", "EOI", "SEC"],
-  math: ["H", "P", "Q", "S"],
-};
+// Bound on simultaneous open detail fetches to CB during the initial batch.
+const DETAIL_CONCURRENCY = 5;
 
-// Reverse lookup: domain code → human-readable name
-const DOMAIN_CODE_TO_NAME = Object.fromEntries(
-  Object.entries(DOMAIN_CODE_MAP).map(([name, code]) => [code, name])
-);
+async function buildQuestionMetaLookup(asmtEventId) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30_000);
+  try {
+    const items = await fetchQuestionList({
+      asmtEventId,
+      domainCodes: ALL_DOMAIN_CODES,
+      signal: controller.signal,
+    });
+    const byId = new Map();
+    for (const item of items) {
+      if (item?.external_id) byId.set(String(item.external_id), item);
+      if (item?.ibn) byId.set(String(item.ibn), item);
+      if (item?.questionId) byId.set(String(item.questionId), item);
+    }
+    return byId;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
 
 function parseLimit(value) {
   if (value === undefined || value === null || value === "") return null;
@@ -40,88 +56,47 @@ function parseLimit(value) {
 
 function normalizeSection(value) {
   const sectionStr = String(value || "").trim().toLowerCase();
-  if (!sectionStr) return ["english", "math"];
-  const sections = sectionStr.split(",").map((s) => s.trim()).filter((s) => s === "english" || s === "math");
+  if (!sectionStr || sectionStr === "any") return ["english", "math"];
+  const sections = sectionStr
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s === "english" || s === "math");
   return sections.length > 0 ? sections : ["english", "math"];
 }
 
-function normalizeDomain(value) {
-  const domainStr = String(value || "").trim();
-  if (!domainStr || domainStr.toLowerCase() === "any") return "any";
-  const domains = domainStr.split(",").map((d) => d.trim()).filter(Boolean);
-  return domains.length > 0 ? domains : "any";
+function normalizeListParam(value) {
+  const str = String(value || "").trim();
+  if (!str || str.toLowerCase() === "any") return "any";
+  const items = str.split(",").map((s) => s.trim()).filter(Boolean);
+  return items.length > 0 ? items : "any";
 }
 
-function normalizeSkill(value) {
-  const skillStr = String(value || "").trim();
-  if (!skillStr || skillStr.toLowerCase() === "any") return "any";
-  const skills = skillStr.split(",").map((s) => s.trim()).filter(Boolean);
-  return skills.length > 0 ? skills : "any";
+function normalizeDifficulties(value) {
+  const str = String(value || "").trim().toUpperCase();
+  if (!str || str === "ANY") return null;
+  const items = str
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => VALID_DIFFICULTIES.includes(s));
+  return items.length > 0 ? items : null;
 }
 
-// Rewrites relative image/asset src and href paths to absolute upstream URLs
-function fixImageUrls(html) {
-  if (typeof html !== "string") return html;
-  return html
-    .replace(/src="(\/[^"]*)"/g, `src="${UPSTREAM_BASE}$1"`)
-    .replace(/src='(\/[^']*)'/g, `src='${UPSTREAM_BASE}$1'`)
-    .replace(/href="(\/[^"]*)"/g, `href="${UPSTREAM_BASE}$1"`)
-    .replace(/href='(\/[^']*)'/g, `href='${UPSTREAM_BASE}$1'`);
-}
-
-function choicesToOptions(answerOptions) {
-  if (!answerOptions || typeof answerOptions !== "object") return [];
-  const preferredOrder = ["A", "B", "C", "D"];
-  const keys = Object.keys(answerOptions);
-  const ordered = [
-    ...preferredOrder.filter((k) => keys.includes(k)),
-    ...keys.filter((k) => !preferredOrder.includes(k)).sort(),
-  ];
-  return ordered
-    .map((key) => {
-      const raw = typeof answerOptions[key] === "string" ? answerOptions[key] : String(answerOptions[key] ?? "");
-      return { key, text: fixImageUrls(raw) };
-    })
-    .filter((opt) => opt.key && opt.text);
-}
-
-function shuffleArray(arr) {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
+async function pooledMap(items, concurrency, worker) {
+  const results = new Array(items.length);
+  let cursor = 0;
+  async function next() {
+    while (true) {
+      const i = cursor++;
+      if (i >= items.length) return;
+      results[i] = await worker(items[i], i);
+    }
   }
-  return a;
-}
-
-// Combine list-metadata + detail into the normalized shape the frontend expects.
-// The upstream returns:
-//   stem      — the question text (may contain HTML/MathML/images)
-//   stimulus  — passage or context material (English R&W questions)
-//   answerOptions — { A, B, C, D } or null for SPR
-//   correct_answer — array of strings
-//   rationale  — explanation HTML
-//   type       — "mcq" | "spr"
-function buildQuestion(meta, detail, section) {
-  const domainName = DOMAIN_CODE_TO_NAME[meta.primary_class_cd] || meta.primary_class_cd_desc || meta.primary_class_cd || "";
-
-  const stimulus = typeof detail.stimulus === "string" ? detail.stimulus : "";
-  const stem = typeof detail.stem === "string" ? detail.stem : "";
-  const rationale = typeof detail.rationale === "string" ? detail.rationale : "";
-
-  return {
-    id: meta.questionId || meta.external_id || meta.ibn || "",
-    section,
-    domain: domainName,
-    paragraph: fixImageUrls(stimulus),
-    stem: fixImageUrls(stem),
-    options: choicesToOptions(detail.answerOptions),
-    correctAnswer: Array.isArray(detail.correct_answer)
-      ? detail.correct_answer[0] ?? ""
-      : typeof detail.correct_answer === "string" ? detail.correct_answer : "",
-    explanation: fixImageUrls(rationale),
-    type: detail.type || "mcq",
-  };
+  const runners = Array.from(
+    { length: Math.min(concurrency, items.length) },
+    next
+  );
+  await Promise.all(runners);
+  return results;
 }
 
 export default async function handler(req, res) {
@@ -135,140 +110,167 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const sectionInput = req.query?.sections || req.query?.section;
-  const sections = normalizeSection(sectionInput);
+  const sections = normalizeSection(req.query?.sections || req.query?.section);
+  const domains = normalizeListParam(req.query?.domains || req.query?.domain);
+  const skills = normalizeListParam(req.query?.skills || req.query?.skill);
+  const difficulties = normalizeDifficulties(
+    req.query?.difficulties || req.query?.difficulty
+  );
+  const limit = parseLimit(req.query?.limit); // null = all matching
+  const assessmentKey = String(req.query?.assessment || "SAT").toUpperCase();
+  const asmtEventId = ASSESSMENTS[assessmentKey] ?? ASSESSMENTS.SAT;
 
-  if (!sections || sections.length === 0) {
-    return res.status(400).json({
-      error: "Invalid section",
-      message: "section must be one of: english, math, or a comma-separated combination",
+  // Handle explicit question IDs (review errors, saved questions, etc.)
+  const questionIdsParam = req.query?.questionIds || req.query?.ids;
+  if (questionIdsParam) {
+    const ids = [...new Set(String(questionIdsParam).split(",").map(id => id.trim()).filter(Boolean))];
+    let metaLookup = null;
+    try {
+      metaLookup = await buildQuestionMetaLookup(asmtEventId);
+    } catch (e) {
+      console.warn("Failed to preload question metadata lookup", e);
+    }
+    const details = await pooledMap(ids, DETAIL_CONCURRENCY, async (id) => {
+      try {
+        const cachedMeta = findCachedQuestionMeta(id);
+        const resolvedMeta = cachedMeta || metaLookup?.get(id) || null;
+        const fetchId = resolvedMeta?.external_id || resolvedMeta?.ibn || id;
+        const dc = new AbortController();
+        const dt = setTimeout(() => dc.abort(), 10_000);
+        const detail = await fetchQuestionDetail(fetchId, dc.signal);
+        clearTimeout(dt);
+        if (!detail) return null;
+        const meta = resolvedMeta || {
+          external_id: fetchId,
+          difficulty: "M",
+        };
+        return normalizeQuestion(meta, detail);
+      } catch (e) {
+        console.warn(`Failed to fetch detail for ${id}`, e);
+        return null;
+      }
+    });
+    const questions = details.filter(Boolean);
+    return res.status(200).json({
+      count: questions.length,
+      questions,
+      batchSize: INITIAL_BATCH,
     });
   }
 
-  const domains = normalizeDomain(req.query?.domains || req.query?.domain);
-  const skills = normalizeSkill(req.query?.skills || req.query?.skill);
-  const limit = parseLimit(req.query?.limit);
+  // Resolve target domain codes across ALL requested sections
+  const targetCodes = resolveDomainCodes({ sections, domains });
 
-  // Per-section limit for balanced results. When no limit is set, fetch all available items.
-  const perSectionLimit = limit !== null ? Math.ceil(limit / sections.length) : null;
-
-  // ── Step 1: Fetch question metadata lists for each section ─────────────
-
-  async function fetchListForSection(sec, dom, skl) {
-    const url = new URL(`${UPSTREAM_BASE}/api/get-questions`);
-
-    // Section is expressed through domain codes — the upstream has no "section" param
-    const isAnyDomain = dom === "any" || (Array.isArray(dom) && (dom.length === 0 || dom.includes("any")));
-    let domainCodes;
-    if (isAnyDomain) {
-      domainCodes = SECTION_DOMAIN_CODES[sec] || [];
-    } else {
-      const doms = Array.isArray(dom) ? dom : [dom];
-      domainCodes = doms.map((d) => DOMAIN_CODE_MAP[d] || d).filter(Boolean);
-      if (domainCodes.length === 0) domainCodes = SECTION_DOMAIN_CODES[sec] || [];
-    }
-    url.searchParams.set("domains", domainCodes.join(","));
-    url.searchParams.set("assessment", "SAT");
-
-    const isAnySkill = skl === "any" || (Array.isArray(skl) && (skl.length === 0 || skl.includes("any")));
-    if (!isAnySkill) {
-      url.searchParams.set("skillCds", Array.isArray(skl) ? skl.join(",") : skl);
-    }
-
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15_000);
-    try {
-      const resp = await fetch(url.toString(), {
-        method: "GET",
-        headers: { Accept: "application/json" },
-        signal: controller.signal,
-      });
-      clearTimeout(timeout);
-      if (!resp.ok) return { ok: false, status: resp.status, items: [] };
-      const body = await resp.json();
-      const items = Array.isArray(body?.data) ? body.data : [];
-      return { ok: true, items };
-    } catch (err) {
-      clearTimeout(timeout);
-      throw err;
-    }
+  if (targetCodes.length === 0) {
+    return res.status(200).json({
+      sections, domains, skills, difficulties, count: 0, questions: [],
+      batchSize: INITIAL_BATCH,
+    });
   }
 
-  // ── Step 2: Fetch individual question details ──────────────────────────
+  const isAnySkill =
+    skills === "any" ||
+    (Array.isArray(skills) && (skills.length === 0 || skills.includes("any")));
+  const skillFilter = isAnySkill ? null : new Set(skills);
 
-  async function fetchQuestionDetail(idParam) {
-    const url = `${UPSTREAM_BASE}/api/question/${encodeURIComponent(idParam)}`;
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10_000);
-    try {
-      const resp = await fetch(url, {
-        method: "GET",
-        headers: { Accept: "application/json" },
-        signal: controller.signal,
-      });
-      clearTimeout(timeout);
-      if (!resp.ok) return null;
-      const body = await resp.json();
-      return body?.success ? body.data : null;
-    } catch {
-      clearTimeout(timeout);
-      return null;
-    }
-  }
-
-  // ── Execute ────────────────────────────────────────────────────────────
-
-  let normalizedQuestions = [];
+  let allQuestions = [];
 
   try {
-    const listResults = await Promise.all(
-      sections.map((sec) => fetchListForSection(sec, domains, skills))
-    );
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30_000);
+    let listItems;
+    try {
+      listItems = await fetchQuestionList({
+        asmtEventId,
+        domainCodes: targetCodes,
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
 
-    for (let i = 0; i < listResults.length; i++) {
-      const result = listResults[i];
-      const section = sections[i];
+    // Partition by section and apply filters
+    const bySection = { english: [], math: [] };
+    for (const meta of listItems) {
+      const code = meta?.primary_class_cd;
+      if (SECTION_DOMAIN_CODES.english.includes(code)) bySection.english.push(meta);
+      else if (SECTION_DOMAIN_CODES.math.includes(code)) bySection.math.push(meta);
+    }
+    function applyFilters(arr) {
+      let out = arr;
+      if (skillFilter) out = out.filter((q) => skillFilter.has(q.skill_cd));
+      if (difficulties) out = out.filter((q) => difficulties.includes(q.difficulty));
+      return out;
+    }
 
-      if (!result.ok) {
-        return res.status(502).json({ error: "OpenSAT upstream error", status: result.status });
+    // Per-section sampling so a 2-section request stays balanced. When no
+    // explicit limit is given, keep everything.
+    const perSectionCap = limit
+      ? Math.max(1, Math.ceil(limit / sections.length))
+      : null;
+
+    const sampledMetas = [];
+    for (const sec of sections) {
+      let pool = applyFilters(bySection[sec] || []);
+      pool = shuffleArray(pool);
+      if (perSectionCap !== null) pool = pool.slice(0, perSectionCap);
+      sampledMetas.push(...pool);
+    }
+
+    // If the caller asked for a hard total limit, trim now (per-section sampling
+    // may have rounded up slightly when sections divided unevenly).
+    let finalMetas = sampledMetas;
+    if (limit !== null && finalMetas.length > limit) {
+      finalMetas = shuffleArray(finalMetas).slice(0, limit);
+    }
+
+    // Build a stub for every sampled question — these ship immediately so the
+    // frontend can render navigation/progress/total counts.
+    allQuestions = finalMetas.map((meta) => normalizeQuestion(meta, null));
+
+    // Fully detail the first batch only.
+    const batchSize = Math.min(INITIAL_BATCH, allQuestions.length);
+    const headMetas = finalMetas.slice(0, batchSize);
+    const headDetails = await pooledMap(headMetas, DETAIL_CONCURRENCY, async (meta) => {
+      const id = meta?.external_id || meta?.ibn;
+      if (!id) return null;
+      const dc = new AbortController();
+      const dt = setTimeout(() => dc.abort(), 30_000);
+      try {
+        return await fetchQuestionDetail(id, dc.signal);
+      } finally {
+        clearTimeout(dt);
       }
+    });
 
-      // Shuffle then optionally slice — no slice when perSectionLimit is null (fetch all)
-      let items = shuffleArray(result.items);
-      if (perSectionLimit !== null) {
-        items = items.slice(0, perSectionLimit);
-      }
-
-      // Fetch all question details in parallel
-      const detailResults = await Promise.all(
-        items.map(async (meta) => {
-          const idParam = meta.external_id || meta.ibn;
-          if (!idParam) return null;
-          const detail = await fetchQuestionDetail(idParam);
-          if (!detail) return null;
-          return buildQuestion(meta, detail, section);
-        })
-      );
-
-      normalizedQuestions.push(...detailResults.filter(Boolean));
+    for (let i = 0; i < batchSize; i++) {
+      const detail = headDetails[i];
+      if (!detail) continue;
+      allQuestions[i] = normalizeQuestion(finalMetas[i], detail);
     }
   } catch (err) {
-    console.error("OpenSAT fetch error:", err);
-    return res.status(502).json({
-      error: "OpenSAT unavailable",
-      message: "Could not reach OpenSAT upstream.",
-    });
+    console.error("College Board fetch error:", err);
+    const body = {
+      error: "College Board unavailable",
+      message: "Could not reach the College Board question bank.",
+    };
+    if (process.env.VERCEL_ENV !== "production") {
+      body.detail = err instanceof Error ? err.message : String(err);
+    }
+    return res.status(502).json(body);
   }
 
-  // Apply global limit to the combined result
-  if (limit !== null && normalizedQuestions.length > limit) {
-    normalizedQuestions = normalizedQuestions.slice(0, limit);
-  }
-
+  // CDN headers — the list response is deterministic per query string.
+  res.setHeader("Cache-Control", "public, s-maxage=300");
+  res.setHeader("CDN-Cache-Control", "public, s-maxage=60");
+  res.setHeader("Vercel-CDN-Cache-Control", "public, s-maxage=300");
   return res.status(200).json({
     sections,
     domains,
-    count: normalizedQuestions.length,
-    questions: normalizedQuestions,
+    skills,
+    difficulties,
+    batchSize: INITIAL_BATCH,
+    count: allQuestions.length,
+    questions: allQuestions,
   });
 }

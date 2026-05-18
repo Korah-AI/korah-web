@@ -30,412 +30,376 @@
   }
 }" :data-theme="getEffectiveTheme()" x-cloak>
 <head>
+<link rel="stylesheet" href="transitions/page-transitions.css"/>
+<script src="transitions/page-transitions.js"></script>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Korah AI — Productivity</title>
-<link rel="icon" type="image/png" href="app/logoresized.png">
+<link rel="icon" type="image/png" href="logo-images/newlogo0.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="app/korah-chat.css"/>
 <style>
-  .productivity-wrapper {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    padding: 32px;
-    overflow-y: auto;
-    min-height: 0;
+  /* ── Page scroll wrapper (matches home) ── */
+  .prod-scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; }
+  .prod-page {
+    padding: clamp(16px, 3vw, 28px) clamp(16px, 4vw, 36px) 60px;
+    max-width: 1140px; margin: 0 auto;
     animation: fadeUp 0.6s ease-out;
   }
-  
-  .shared-container {
-    background: var(--sf);
-    backdrop-filter: blur(30px);
-    -webkit-backdrop-filter: blur(30px);
-    border: 1px solid var(--bd);
-    border-radius: 32px;
-    display: flex;
-    flex: 1;
-    min-height: 0;
-    width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
-    box-shadow: 0 40px 80px rgba(0,0,0,0.3);
-    overflow: hidden;
-  }
 
-  .productivity-grid {
+  /* ── Section headers (same as home) ── */
+  .prod-section-head {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 14px; font-weight: 700; color: var(--tx);
+    margin: 0 0 16px;
+  }
+  .prod-section-head .material-icons-round { font-size: 18px; color: var(--tx2); }
+
+  /* ── Timer grid: timer card + stats column ── */
+  .prod-timer-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    width: 100%;
-    height: 100%;
+    grid-template-columns: 1fr minmax(260px, 310px);
+    gap: 20px; margin-bottom: 36px; align-items: start;
   }
+  @media (max-width: 860px) { .prod-timer-grid { grid-template-columns: 1fr; } }
 
-  @media (max-width: 1024px) {
-    .productivity-grid {
-      grid-template-columns: 1fr;
-      overflow-y: auto;
-    }
-    .shared-container {
-      height: auto;
-      min-height: 100%;
-    }
+  /* ── Timer card ── */
+  .timer-card {
+    position: relative; overflow: hidden;
+    background: linear-gradient(135deg, rgba(139,92,246,.12), rgba(167,139,250,.04));
+    border: 1px solid rgba(139,92,246,.28);
+    border-radius: 20px; padding: 36px 28px 32px;
+    display: flex; flex-direction: column; align-items: center;
+    transition: border-color .2s, box-shadow .2s;
   }
-
-  .productivity-section {
-    padding: 48px;
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    min-height: 0;
-    position: relative;
+  .timer-card::before {
+    content: ''; position: absolute;
+    width: 360px; height: 360px;
+    background: radial-gradient(circle, rgba(139,92,246,.08) 0%, transparent 70%);
+    top: -120px; right: -120px; pointer-events: none;
   }
+  .timer-card:hover { border-color: rgba(167,139,250,.5); box-shadow: 0 8px 32px rgba(139,92,246,.14); }
 
-  .timer-section {
-    border-right: 1px solid var(--bd);
-    align-items: center;
-    justify-content: center;
-    background: rgba(139, 92, 246, 0.02);
-  }
-
-  .todo-section {
-    background: transparent;
-  }
-
-  @media (max-width: 1024px) {
-    .timer-section {
-      border-right: none;
-      border-bottom: 1px solid var(--bd);
-      padding: 60px 24px;
-    }
-  }
-
-  .productivity-title {
-    font-size: 20px;
-    font-weight: 800;
-    margin-bottom: 32px;
-    color: var(--tx);
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    letter-spacing: -0.02em;
-    position: absolute;
-    top: 40px;
-    left: 48px;
-  }
-
-  .productivity-title i {
-    font-style: normal;
-    opacity: 0.6;
-  }
-
-  /* --- Circular Timer --- */
+  /* ── Circular timer ── */
   .timer-circle-container {
     position: relative;
-    width: 320px;
-    height: 320px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 40px 0;
+    width: clamp(180px, 32vmin, 240px);
+    aspect-ratio: 1 / 1;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 28px;
   }
-
   .timer-svg {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 100%;
     transform: rotate(-90deg);
   }
-
-  .timer-circle-bg {
-    fill: none;
-    stroke: var(--bd2);
-    stroke-width: 10;
-  }
-
+  .timer-circle-bg { fill: none; stroke: var(--bd2); stroke-width: 7; }
   .timer-circle-progress {
-    fill: none;
-    stroke: var(--p4);
-    stroke-width: 10;
+    fill: none; stroke: url(#timerGrad); stroke-width: 7;
     stroke-linecap: round;
     transition: stroke-dashoffset 0.3s ease;
-    filter: drop-shadow(0 0 12px var(--glow));
+    filter: drop-shadow(0 0 6px rgba(139,92,246,.5));
   }
-
   .timer-display {
-    font-size: 64px;
-    font-weight: 800;
-    text-align: center;
+    font-size: clamp(2.8rem, 10vmin, 4.2rem);
+    font-weight: 800; text-align: center;
     font-variant-numeric: tabular-nums;
-    color: var(--tx);
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    letter-spacing: -0.04em;
-    z-index: 1;
+    color: var(--tx); font-family: 'Plus Jakarta Sans', sans-serif;
+    letter-spacing: -0.04em; z-index: 1;
+  }
+  .timer-status-label {
+    font-size: 10px; font-weight: 700; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--tx3);
+    margin-top: 4px; z-index: 1;
   }
 
-  .timer-controls {
-    display: flex;
-    justify-content: center;
-    gap: 16px;
-    margin-top: 24px;
-    width: 100%;
-    max-width: 360px;
+  /* ── Preset pills ── */
+  .timer-presets {
+    display: flex; flex-wrap: wrap; justify-content: center;
+    gap: 8px; margin-bottom: 24px; width: 100%; max-width: 400px;
+  }
+  .preset-pill {
+    font-size: 12px; font-weight: 700;
+    padding: 7px 16px; border-radius: 999px; cursor: pointer;
+    border: 1px solid rgba(139,92,246,.22);
+    background: rgba(139,92,246,.06); color: var(--tx2);
+    transition: all .2s;
+  }
+  .preset-pill:hover { border-color: rgba(167,139,250,.5); color: var(--tx); background: rgba(139,92,246,.12); }
+  .preset-pill.active {
+    background: linear-gradient(135deg, #7c3aed, #a78bfa);
+    border-color: transparent; color: #fff;
+    box-shadow: 0 4px 16px rgba(124,58,237,.35);
   }
 
-  .timer-btn {
-    flex: 1;
-    height: 52px;
-    border-radius: 16px;
-    font-weight: 700;
-    font-size: 15px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  /* ── Timer controls ── */
+  .timer-controls { display: flex; gap: 10px; width: 100%; max-width: 340px; }
+  .timer-btn-primary {
+    flex: 1; height: 46px; border-radius: 999px;
+    font-weight: 700; font-size: 14px;
+    background: linear-gradient(135deg, #7c3aed, #a78bfa);
+    color: #fff; border: none; cursor: pointer;
+    box-shadow: 0 6px 22px rgba(124,58,237,.32);
+    transition: transform .15s, box-shadow .2s;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .timer-btn-primary:hover { transform: translateY(-1px); box-shadow: 0 10px 28px rgba(124,58,237,.4); }
+  .timer-btn-secondary {
+    width: 46px; height: 46px; border-radius: 999px;
+    background: var(--sf2); border: 1px solid var(--bd);
+    color: var(--tx2); cursor: pointer;
+    transition: all .2s; display: flex; align-items: center; justify-content: center;
+  }
+  .timer-btn-secondary:hover { border-color: rgba(139,92,246,.4); color: var(--tx); background: var(--sf); }
+
+  /* ── Stats column ── */
+  .prod-stats-col { display: flex; flex-direction: column; gap: 14px; }
+
+  .prod-mini-stat {
+    position: relative; overflow: hidden;
+    border-radius: 16px; padding: 18px 20px;
+    border: 1px solid transparent;
+    min-height: 98px;
+    transition: border-color .2s, box-shadow .2s, transform .2s;
+  }
+  .prod-mini-stat:hover { transform: translateY(-2px); }
+  .prod-mini-stat .mini-label { font-size: 11px; font-weight: 700; color: var(--tx2); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+  .prod-mini-stat .mini-value { font-size: 34px; font-weight: 800; color: var(--tx); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1.1; }
+  .prod-mini-stat .mini-sub { font-size: 12px; color: var(--tx2); margin-top: 4px; }
+  .prod-mini-stat .mini-wm {
+    position: absolute; right: 14px; bottom: 8px;
+    font-size: 52px; line-height: 1; opacity: .12;
   }
 
-  /* --- To-Do Section Refinements --- */
-  .todo-header {
-    margin-bottom: 24px;
-    padding-top: 24px;
+  .mini-stat-purple {
+    background: linear-gradient(135deg, rgba(139,92,246,.14), rgba(139,92,246,.04));
+    border-color: rgba(139,92,246,.28);
   }
+  .mini-stat-purple:hover { border-color: rgba(167,139,250,.5); box-shadow: 0 6px 22px rgba(139,92,246,.12); }
 
-  .todo-input-wrapper {
-    background: var(--bg2);
-    border: 1px solid var(--bd);
-    border-radius: 18px;
-    padding: 6px;
-    display: flex;
-    gap: 8px;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  .mini-stat-amber {
+    background: linear-gradient(135deg, rgba(251,191,36,.12), rgba(251,191,36,.03));
+    border-color: rgba(251,191,36,.28);
   }
+  .mini-stat-amber:hover { border-color: rgba(251,191,36,.5); box-shadow: 0 6px 20px rgba(251,191,36,.1); }
 
-  .todo-input-wrapper:focus-within {
-    border-color: var(--p4);
-    box-shadow: 0 8px 24px var(--glow);
-    transform: translateY(-1px);
+  .mini-stat-green {
+    background: linear-gradient(135deg, rgba(16,185,129,.12), rgba(16,185,129,.03));
+    border-color: rgba(16,185,129,.28);
   }
+  .mini-stat-green:hover { border-color: rgba(16,185,129,.5); box-shadow: 0 6px 20px rgba(16,185,129,.1); }
 
-  .todo-input {
-    flex: 1;
-    background: transparent;
-    border: none;
-    padding: 0 16px;
-    color: var(--tx);
-    font-size: 15px;
-    outline: none;
-    font-weight: 500;
+  /* ── Todo main card ── */
+  .prod-todo-card {
+    background: var(--sf);
+    border: 1px solid rgba(139,92,246,.16);
+    border-radius: 20px; padding: 24px 28px;
+    transition: border-color .2s;
   }
+  .prod-todo-card:hover { border-color: rgba(167,139,250,.3); }
+
+  .todo-input-row {
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    background: var(--bg2); border: 1px solid var(--bd);
+    border-radius: 14px; padding: 8px 12px;
+    margin-bottom: 20px;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .todo-input-row:focus-within {
+    border-color: rgba(139,92,246,.5);
+    box-shadow: 0 0 0 3px rgba(139,92,246,.1);
+  }
+  .todo-text-input {
+    flex: 1; min-width: 120px;
+    background: transparent; border: none; outline: none;
+    color: var(--tx); font-size: 14px; font-weight: 500;
+    padding: 4px 6px;
+  }
+  [data-theme="light"] .todo-text-input { color: black; }
+  [data-theme="dark"] .todo-text-input { color: white; }
+
+  .todo-chip {
+    background: var(--sf2); border: 1px solid var(--bd);
+    border-radius: 8px; padding: 4px 10px;
+    color: var(--tx); font-size: 12px; font-weight: 600;
+    cursor: pointer; display: flex; align-items: center; gap: 6px;
+    transition: all .2s; white-space: nowrap;
+  }
+  .todo-chip:hover { border-color: rgba(139,92,246,.4); }
+  .todo-chip:focus { outline: none; border-color: rgba(139,92,246,.5); }
 
   .todo-add-btn {
-    width: 44px;
-    height: 44px;
-    border-radius: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
+    width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+    background: linear-gradient(135deg, #7c3aed, #a78bfa);
+    border: none; cursor: pointer; color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 12px rgba(124,58,237,.3);
+    transition: transform .15s, box-shadow .2s;
   }
+  .todo-add-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(124,58,237,.4); }
 
-  .todo-input-wrapper input[type="date"] {
-    background: var(--sf2);
-    border: 1px solid var(--bd);
-    border-radius: 8px;
-    padding: 4px 8px;
-    color: var(--tx);
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
+  /* Priority dropdown */
+  .priority-dropdown { position: relative; }
+  .priority-dropdown-menu {
+    position: absolute; top: calc(100% + 4px); left: 0; z-index: 50;
+    background: var(--sf2); border: 1px solid var(--bd);
+    border-radius: 10px; padding: 4px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.15);
+    min-width: 130px;
   }
-
-  .todo-input-wrapper input[type="date"]:focus {
-    outline: none;
-    border-color: var(--p4);
+  .priority-opt {
+    width: 100%; padding: 8px 12px; text-align: left;
+    font-size: 13px; font-weight: 600; color: var(--tx);
+    background: none; border: none; border-radius: 6px;
+    cursor: pointer; display: flex; align-items: center; gap: 8px;
+    transition: background .15s;
   }
+  .priority-opt:hover { background: var(--sf); }
 
-  .priority-dropdown {
-    position: relative;
-  }
-
-  .priority-dropdown > button {
-    background: var(--sf2);
-    border: 1px solid var(--bd);
-    border-radius: 8px;
-    padding: 4px 8px;
-    color: var(--tx);
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    height: 100%
-  }
-
-  .priority-dropdown > button:focus {
-    outline: none;
-    border-color: var(--p4);
-  }
-
-  .priority-dropdown > button:hover {
-    border-color: var(--p4);
-  }
-
-  .priority-dropdown > div {
-    background: var(--sf2);
-    border: 1px solid var(--bd);
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  }
-
-  .priority-dropdown > div > button:hover {
-    background: var(--sf);
-  }
-
-  .todo-list-container {
-    flex: 1;
-    overflow-y: auto;
-    padding-right: 12px;
-    margin-right: -12px;
-  }
-
-  .todo-list-container::-webkit-scrollbar { width: 5px }
-  .todo-list-container::-webkit-scrollbar-thumb { background: var(--bd); border-radius: 10px }
-
-  .todo-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
+  /* ── Todo list ── */
+  .todo-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
 
   .todo-item {
-    background: var(--sf2);
-    border: 1px solid var(--bd2);
+    background: var(--sf2); border: 1px solid var(--bd2);
     border-left: 4px solid transparent;
-    border-radius: 16px;
-    padding: 16px;
-    padding-left: 20px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 12px; padding: 14px 16px;
+    display: flex; align-items: center; gap: 12px;
+    transition: all .25s cubic-bezier(.4,0,.2,1);
     cursor: grab;
   }
-
   .todo-item:hover:not(.drag-over) {
-    border-color: var(--p4);
-    background: var(--cu);
-    transform: translateX(6px);
+    border-color: rgba(139,92,246,.3);
+    transform: translateX(4px);
+    box-shadow: 0 4px 16px rgba(0,0,0,.08);
   }
-
-  .todo-item.drag-over {
-    border-color: var(--p4);
-    background: var(--cu);
-    transform: scale(1.02);
-  }
-
-  .todo-item.dragging {
-    opacity: 0.5;
-    transform: scale(0.98);
-    cursor: grabbing !important;
-  }
-
-  .todo-item.completed {
-    opacity: 0.5;
-  }
-
-  .todo-item.completed .todo-text {
-    text-decoration: line-through;
-  }
+  .todo-item.drag-over { border-color: var(--p4); transform: scale(1.01); }
+  .todo-item.dragging { opacity: 0.45; transform: scale(0.98); cursor: grabbing !important; }
+  .todo-item.completed { opacity: 0.5; }
+  .todo-item.completed .todo-text { text-decoration: line-through; }
 
   .todo-checkbox {
-    width: 24px;
-    height: 24px;
-    border-radius: 8px;
-    border: 2px solid var(--bd);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s;
-    flex-shrink: 0;
+    width: 20px; height: 20px; border-radius: 6px;
+    border: 2px solid var(--bd); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all .2s;
   }
-
   .todo-checkbox.checked {
-    background: var(--p4);
-    border-color: var(--p4);
-    box-shadow: 0 0 15px var(--glow);
+    background: linear-gradient(135deg, #7c3aed, #a78bfa);
+    border-color: transparent;
+    box-shadow: 0 2px 8px rgba(124,58,237,.4);
   }
 
   .todo-text {
-    flex: 1;
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--tx);
+    flex: 1; font-size: 14px; font-weight: 600; color: var(--tx); line-height: 1.4;
+  }
+
+  .todo-due-badge {
+    font-size: 11px; font-weight: 600; padding: 2px 8px;
+    border-radius: 999px; background: rgba(139,92,246,.1);
+    color: var(--tx2); border: 1px solid rgba(139,92,246,.15);
+    white-space: nowrap;
+  }
+  .todo-due-badge.overdue {
+    background: rgba(239,68,68,.1); color: #ef4444;
+    border-color: rgba(239,68,68,.2);
   }
 
   .todo-delete {
-    opacity: 0;
-    color: var(--tx3);
-    padding: 6px;
-    border-radius: 8px;
-    transition: all 0.2s;
+    opacity: 0; color: var(--tx3); padding: 4px;
+    border-radius: 6px; transition: all .2s; flex-shrink: 0;
   }
+  .todo-item:hover .todo-delete { opacity: 1; }
+  .todo-delete:hover { background: rgba(239,68,68,.1); color: #ef4444; }
 
-  .todo-item:hover .todo-delete {
-    opacity: 1;
+  .todo-empty {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; padding: 48px 24px; gap: 12px;
+    color: var(--tx3); text-align: center;
   }
+  .todo-empty .empty-icon { font-size: 3rem; }
 
-  .todo-delete:hover {
-    background: rgba(239, 68, 68, 0.1);
-    color: var(--red);
+  /* ── Todo tabs (All / Active / Done) ── */
+  .todo-tabs {
+    display: flex; gap: 4px; margin-bottom: 16px;
+    background: var(--bg2); border: 1px solid var(--bd);
+    border-radius: 10px; padding: 4px;
   }
+  .todo-tab {
+    flex: 1; padding: 6px 12px; border-radius: 7px;
+    font-size: 12px; font-weight: 700; color: var(--tx2);
+    cursor: pointer; text-align: center; transition: all .2s;
+    border: none; background: none;
+  }
+  .todo-tab.active {
+    background: linear-gradient(135deg, rgba(124,58,237,.18), rgba(167,139,250,.1));
+    color: var(--tx); border: 1px solid rgba(139,92,246,.25);
+  }
+  .todo-tab:hover:not(.active) { color: var(--tx); }
 
-  .empty-state {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    color: var(--tx3);
-    text-align: center;
-    gap: 16px;
+  /* ── Celebration overlay ── */
+  .prod-celebration-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,.6); backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center;
+    animation: fadeIn .3s ease;
   }
+  .prod-celebration-card {
+    background: var(--sf); border: 1px solid rgba(139,92,246,.4);
+    border-radius: 24px; padding: 40px 36px;
+    max-width: 420px; width: 90%; text-align: center;
+    box-shadow: 0 24px 64px rgba(0,0,0,.3), 0 0 0 1px rgba(139,92,246,.15);
+    animation: scaleUp .4s cubic-bezier(.34,1.56,.64,1);
+  }
+  .prod-celebration-emoji { font-size: 4rem; margin-bottom: 16px; }
+  .prod-celebration-title { font-size: 26px; font-weight: 800; color: var(--tx); margin-bottom: 10px; letter-spacing: -0.02em; }
+  .prod-celebration-msg { font-size: 15px; color: var(--tx2); line-height: 1.6; margin-bottom: 24px; }
+  .prod-celebration-stats {
+    display: flex; gap: 16px; justify-content: center;
+    background: var(--bg2); border-radius: 14px; padding: 16px;
+    margin-bottom: 24px; border: 1px solid var(--bd);
+  }
+  .prod-celebration-stat { flex: 1; }
+  .prod-celebration-stat-val { font-size: 28px; font-weight: 800; color: var(--tx); font-variant-numeric: tabular-nums; }
+  .prod-celebration-stat-lbl { font-size: 11px; color: var(--tx2); font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; margin-top: 4px; }
+  .prod-celebration-actions { display: flex; gap: 10px; }
+  .prod-cta-secondary {
+    flex: 1; padding: 12px; border-radius: 999px; font-weight: 700; font-size: 14px;
+    background: var(--sf2); border: 1px solid var(--bd); color: var(--tx); cursor: pointer;
+    transition: all .2s;
+  }
+  .prod-cta-secondary:hover { border-color: rgba(139,92,246,.4); }
+  .prod-cta-primary {
+    flex: 1; padding: 12px; border-radius: 999px; font-weight: 700; font-size: 14px;
+    background: linear-gradient(135deg, #7c3aed, #a78bfa); color: #fff; border: none;
+    cursor: pointer; box-shadow: 0 6px 22px rgba(124,58,237,.32);
+    transition: transform .15s, box-shadow .2s;
+  }
+  .prod-cta-primary:hover { transform: translateY(-1px); box-shadow: 0 10px 28px rgba(124,58,237,.4); }
 
-  .empty-icon {
-    font-size: 56px;
-    filter: drop-shadow(0 10px 20px rgba(0,0,0,0.1));
-  }
-
-  /* Purple-themed buttons for productivity page */
-  .timer-btn.grad-bg,
-  .todo-add-btn.grad-bg {
-    background: linear-gradient(135deg, var(--p4), var(--p5));
-  }
-
-  .timer-btn.grad-bg:hover,
-  .todo-add-btn.grad-bg:hover {
-    background: linear-gradient(135deg, var(--p5), var(--p4));
-  }
-
-  .preset-btn-active {
-    background: linear-gradient(135deg, var(--p4), var(--p5));
-  }
+  @keyframes scaleUp { from { transform: scale(0.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 </style>
 </head>
 
 <body class="bg-base tx">
+<style>
+  html:not(.korah-page-ready) { background: #06040f !important; }
+  html[data-theme="light"]:not(.korah-page-ready) { background: #d2d2d2 !important; }
+  html:not(.korah-page-ready) body { opacity: 0 !important; }
+</style>
+<script>
+  (function() {
+    const t = localStorage.getItem('korah_theme') || 'dark';
+    if (t === 'light' || (t === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  })();
+</script>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
@@ -455,20 +419,19 @@
   const auth = getAuth(app);
 
   onAuthStateChanged(auth, async (user) => {
-    if (!user) {
-      window.location.href = 'login.html';
-      return;
-    }
+    if (!user) { window.KorahTransitions.go('login.html'); return; }
     await setupKorahDB(app, user.uid);
     const detail = { uid: user.uid };
     window._korahReadyFired = detail;
     window.dispatchEvent(new CustomEvent('korahReady', { detail }));
   });
 
-  document.getElementById('logout-btn').addEventListener('click', async () => {
-    await signOut(auth);
-    localStorage.removeItem('korah_first_name');
-    window.location.href = 'login.html';
+  document.getElementById('logout-btn').addEventListener('click', () => {
+    window.confirmLogout(async () => {
+      await signOut(auth);
+      localStorage.removeItem('korah_first_name');
+      window.KorahTransitions.go('login.html');
+    });
   });
 </script>
 
@@ -482,9 +445,9 @@
   @resize.window="if (window.innerWidth > 768) { mobileOpen = false; const overlay = document.querySelector('.sidebar-overlay'); if (overlay) overlay.classList.remove('show'); }">
   <div class="sidebar-header">
     <a href="index.html" class="flex items-center gap-2.5 no-underline">
-      <div class="w-12 h-12 rounded-xl flex items-center justify-center font-display text-xl font-black text-white shadow-glow logo-btn">
+      <div class="w-12 h-12 rounded-xl flex items-center justify-center font-display text-xl">
         <span class="logo-letter">
-          <img src="app/logo.png" alt="Korah"/>
+          <img src="logo-images/newlogo0.png" alt="Korah"/>
         </span>
       </div>
       <div class="flex flex-col leading-tight">
@@ -498,97 +461,47 @@
   </div>
 
   <nav class="sidebar-nav">
-    <div class="sidebar-nav-row">
-      <a href="index.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">chat</span> <span class="nav-text">Chat</span></a>
-      <a href="study/feed.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">school</span> <span class="nav-text">Study</span></a>
-    </div>
-    <a href="sat/index.html" class="sidebar-nav-link t-btn" data-sat-link="true"><span class="material-icons-round" style="font-size: 1.25rem;">assignment</span> <span class="nav-text">SAT</span></a>
-    <a href="productivity.html" class="sidebar-nav-link productivity-link active t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">timer</span> <span class="nav-text">Productivity</span></a>
+    <span class="sidebar-section-label">HOME</span>
+    <a href="index.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">home</span> <span class="nav-text">Home</span></a>
+    <a href="chat.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">chat</span> <span class="nav-text">Chat</span></a>
+    <a href="study/feed.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">school</span> <span class="nav-text">Study</span></a>
+    <span class="sidebar-section-label">SAT</span>
+    <a href="sat/index.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">assignment</span> <span class="nav-text">Question Bank</span></a>
+    <a href="sat/math-chat.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">calculate</span> <span class="nav-text">Math Chat</span></a>
+    <a href="sat/dashboard.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">insights</span> <span class="nav-text">Dashboard</span></a>
   </nav>
 
   <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 0.75rem 0 0.25rem;">
     <span class="sidebar-section-label" style="margin:0">Recent Chats</span>
-</div>
-<div class="sidebar-middle">
+  </div>
+  <div class="sidebar-middle">
     <div class="select-bar-wrapper">
       <div id="chat-select-bar" class="select-bar">
         <span class="select-bar-count" id="chat-select-count">0 selected</span>
         <div class="select-bar-actions">
           <button class="select-bar-btn" id="chat-select-all" title="Select all">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <polyline points="20 6 9 17 4 12"/>
-            </svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
           </button>
           <button class="select-bar-btn" id="chat-deselect-all" title="Deselect all">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <line x1="18" y1="6" x2="6" y2="18"/>
-              <line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
           <button class="select-bar-btn danger" id="chat-delete-selected" title="Delete selected"></button>
         </div>
       </div>
     </div>
     <div id="chat-history" class="chat-history">
-      <div class="skeleton-item">
-        <div class="skeleton-icon"></div>
-        <div class="skeleton-text"></div>
-      </div>
-      <div class="skeleton-item">
-        <div class="skeleton-icon"></div>
-        <div class="skeleton-text"></div>
-      </div>
-      <div class="skeleton-item">
-        <div class="skeleton-icon"></div>
-        <div class="skeleton-text"></div>
-      </div>
-      <div class="skeleton-item">
-        <div class="skeleton-icon"></div>
-        <div class="skeleton-text"></div>
-      </div>
-      <div class="skeleton-item">
-        <div class="skeleton-icon"></div>
-        <div class="skeleton-text"></div>
-      </div>
+      <div class="skeleton-item"><div class="skeleton-icon"></div><div class="skeleton-text"></div></div>
+      <div class="skeleton-item"><div class="skeleton-icon"></div><div class="skeleton-text"></div></div>
+      <div class="skeleton-item"><div class="skeleton-icon"></div><div class="skeleton-text"></div></div>
+      <div class="skeleton-item"><div class="skeleton-icon"></div><div class="skeleton-text"></div></div>
+      <div class="skeleton-item"><div class="skeleton-icon"></div><div class="skeleton-text"></div></div>
     </div>
   </div>
 
-  <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 0.75rem 0 0.25rem;">
-    <span class="sidebar-section-label" style="margin:0">Recent Study Items</span>
-  </div>
-  <div class="sidebar-middle">
-    <div class="select-bar-wrapper">
-      <div id="study-select-bar" class="select-bar">
-        <span class="select-bar-count" id="study-select-count">0 selected</span>
-        <div class="select-bar-actions">
-          <button class="select-bar-btn" id="study-select-all" title="Select all">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <polyline points="20 6 9 17 4 12"/>
-            </svg>
-          </button>
-          <button class="select-bar-btn" id="study-deselect-all" title="Deselect all">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <line x1="18" y1="6" x2="6" y2="18"/>
-              <line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
-          <button class="select-bar-btn danger" id="study-delete-selected" title="Delete selected"></button>
-        </div>
-      </div>
-    </div>
-    <div id="study-items-history" class="chat-history">
-        <!-- Populated by JS from localStorage -->
-      </div>
-      <div id="study-items-empty" class="study-items-empty hidden">
-        <span class="study-items-empty-icon" aria-hidden="true">📚</span>
-        <div class="study-items-empty-title">No study items yet</div>
-        <div class="study-items-empty-sub">Create one to see it here.</div>
-      </div>
-    </div>
 
-    <div class="sidebar-footer">
+  <div class="sidebar-footer">
     <div class="mood-indicator" id="sidebar-mood">
-      <span class="mood-dot" id="mood-dot">🟢</span>
+      <span class="mood-dot" id="mood-dot"><span class="material-icons-round" style="font-size: 12px; color: var(--grn);" aria-label="online">circle</span></span>
       <span class="text-xs tx2 font-medium">Full Focus Mode</span>
     </div>
     <div class="sidebar-footer-actions">
@@ -611,14 +524,10 @@
         </svg>
         <svg x-show="theme==='dark'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--p4)">
           <circle cx="12" cy="12" r="5"/>
-          <line x1="12" y1="1" x2="12" y2="3"/>
-          <line x1="12" y1="21" x2="12" y2="23"/>
-          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-          <line x1="1" y1="12" x2="3" y2="12"/>
-          <line x1="21" y1="12" x2="23" y2="12"/>
-          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+          <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
         </svg>
       </button>
     </div>
@@ -628,333 +537,422 @@
 <!-- ═══ MAIN AREA ═══ -->
 <div id="main-area-wrapper" class="main-area-wrapper">
   <main id="main-content" class="main-content">
+
     <!-- Top bar -->
-    <header class="chat-topbar bg-sf glass-sm t-theme bd">
+    <header class="chat-topbar bg-sf glass-sm t-theme bd" style="opacity: 0.95;">
       <button id="sidebar-toggle" @click="toggleSidebar()" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
         </svg>
       </button>
-      <div class="logo-container" style="display: flex; align-items: center; margin-right: 12px;">
-        <img src="app/logo.png" alt="Korah Logo" style="height: 32px; width: auto;">
-      </div>
       <div class="chat-title-area">
         <div class="korah-status-dot"></div>
         <span class="font-semibold tx text-sm">Productivity</span>
       </div>
     </header>
 
-    <!-- Content -->
-    <div class="productivity-wrapper" x-data="productivityApp()">
-      <div class="shared-container">
-        <div class="productivity-grid">
-          
-          <!-- Timer Section -->
-          <div class="productivity-section timer-section">
-            <h2 class="productivity-title">Focus Timer</i></h2>
+    <!-- ═══ CONTENT ═══ -->
+    <div class="prod-scroll" x-data="productivityApp()">
+      <div class="prod-page">
+
+        <!-- Focus Timer Section -->
+        <h2 class="prod-section-head">
+          <span class="material-icons-round">timer</span> Focus Timer
+        </h2>
+
+        <section class="prod-timer-grid">
+
+          <!-- Timer Card -->
+          <div class="timer-card">
+            <!-- SVG gradient def -->
+            <svg width="0" height="0" style="position:absolute">
+              <defs>
+                <linearGradient id="timerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#7c3aed"/>
+                  <stop offset="100%" stop-color="#a78bfa"/>
+                </linearGradient>
+              </defs>
+            </svg>
 
             <div class="timer-circle-container">
               <svg class="timer-svg" viewBox="0 0 300 300">
-                <circle class="timer-circle-bg" cx="150" cy="150" r="135" />
-                <circle class="timer-circle-progress" cx="150" cy="150" r="135" 
-                  stroke-dasharray="848.2" 
-                  :stroke-dashoffset="848.2 * (1 - timeLeft / totalSeconds)" />
+                <circle class="timer-circle-bg" cx="150" cy="150" r="132"/>
+                <circle class="timer-circle-progress" cx="150" cy="150" r="132"
+                  stroke-dasharray="829.4"
+                  :stroke-dashoffset="829.4 * (1 - timeLeft / totalSeconds)"/>
               </svg>
-              <div class="timer-display" x-text="formatTime(timeLeft)"></div>
+              <div style="display:flex; flex-direction:column; align-items:center; z-index:1;">
+                <div class="timer-display" x-text="formatTime(timeLeft)"></div>
+                <div class="timer-status-label" x-text="isRunning ? 'Session Active' : (timeLeft < totalSeconds ? 'Paused' : 'Ready')"></div>
+              </div>
             </div>
 
-            <div class="text-xs font-semibold tracking-widest uppercase tx3 mb-4 text-center">Session Duration</div>
+            <div class="text-xs font-semibold tracking-widest uppercase tx3 mb-3 text-center">Session Duration</div>
 
-            <div class="flex justify-center gap-3 mb-8">
-              <button class="t-btn text-xs font-bold px-6 py-2.5 rounded-xl transition-all" 
-                :class="preset === 5 ? 'grad-bg-purple text-white shadow-glow scale-105' : 'bg-sf2 bd tx2 hover:bg-sf'" 
-                @click="setPreset(5)">5:00</button>
-              <button class="t-btn text-xs font-bold px-6 py-2.5 rounded-xl transition-all" 
-                :class="preset === 10 ? 'grad-bg-purple text-white shadow-glow scale-105' : 'bg-sf2 bd tx2 hover:bg-sf'" 
-                @click="setPreset(10)">10:00</button>
-              <button class="t-btn text-xs font-bold px-6 py-2.5 rounded-xl transition-all" 
-                :class="preset === 25 ? 'grad-bg-purple text-white shadow-glow scale-105' : 'bg-sf2 bd tx2 hover:bg-sf'" 
-                @click="setPreset(25)">25:00</button>
-              <template x-for="(customPreset, index) in customPresets" :key="'custom-'+index">
-                <button class="t-btn text-xs font-bold px-6 py-2.5 rounded-xl transition-all" 
-                  :class="preset === customPreset ? 'grad-bg-purple text-white shadow-glow scale-105' : 'bg-sf2 bd tx2 hover:bg-sf'" 
-                  @click="setPreset(customPreset)">
-                  <span x-text="customPreset + ':00'"></span>
+            <div class="timer-presets">
+              <button class="preset-pill" :class="preset === 5 ? 'active' : ''" @click="setPreset(5)">5 min</button>
+              <button class="preset-pill" :class="preset === 10 ? 'active' : ''" @click="setPreset(10)">10 min</button>
+              <button class="preset-pill" :class="preset === 25 ? 'active' : ''" @click="setPreset(25)">25 min</button>
+              <template x-for="(cp, idx) in customPresets" :key="'cp-'+idx">
+                <button class="preset-pill" :class="preset === cp ? 'active' : ''" @click="setPreset(cp)">
+                  <span x-text="cp + ' min'"></span>
                 </button>
               </template>
-              <button class="t-btn bg-sf2 bd tx2 hover:bg-sf px-4 py-2.5 rounded-xl text-xs font-bold" 
-                @click="showAddPresetModal = true"
-                title="Custom timer">
-                Custom
-              </button>
+              <button class="preset-pill" @click="showAddPresetModal = true">+ Custom</button>
             </div>
 
             <div class="timer-controls">
-              <button class="timer-btn t-btn grad-bg-purple text-white shadow-glow" @click="toggleTimer">
+              <button class="timer-btn-primary" @click="toggleTimer">
+                <span class="material-icons-round" style="font-size:18px" x-text="isRunning ? 'pause' : 'play_arrow'"></span>
                 <span x-text="isRunning ? 'Pause' : (timeLeft === totalSeconds ? 'Start Session' : 'Resume')"></span>
               </button>
-              <button class="timer-btn t-btn bg-sf2 bd tx hover:bg-sf" @click="resetTimer">Reset</button>
-            </div>
-
-            <!-- Add Custom Preset Modal -->
-            <div x-show="showAddPresetModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" @click.self="showAddPresetModal = false">
-              <div class="bg-sf rounded-2xl p-6 w-80">
-                <h3 class="font-bold mb-4 tx">Add Custom Timer</h3>
-                <input type="number" min="1" max="180" x-model="newPresetMinutes" class="w-full bg-sf2 bd rounded-xl p-3 mb-4 tx" placeholder="Minutes (1-180)">
-                <div class="flex gap-3">
-                  <button class="flex-1 t-btn bg-sf2 bd tx2 rounded-xl p-2" @click="showAddPresetModal = false">Cancel</button>
-                  <button class="flex-1 t-btn grad-bg-purple text-white rounded-xl p-2" @click="addCustomPreset">Add</button>
-                </div>
-              </div>
+              <button class="timer-btn-secondary" @click="resetTimer" title="Reset">
+                <span class="material-icons-round" style="font-size:18px">replay</span>
+              </button>
             </div>
           </div>
 
-          <!-- Todo List Section -->
-          <div class="productivity-section todo-section">
-            <h2 class="productivity-title">Todo List</h2>
-            
-            <div class="todo-header mt-12">
-              <div class="todo-input-wrapper">
-                <input type="text" class="todo-input flex-1" placeholder="Task Title?" x-model="newTask" @keyup.enter="addTask">
-                <div class="priority-dropdown relative" @click.away="showPriorityDropdown = false">
-                  <button type="button" class="bg-sf2 bd rounded-lg px-2 py-1 text-sm tx font-medium cursor-pointer flex items-center gap-2" @click="togglePriorityDropdown()">
-                    <span class="w-2 h-2 rounded-full" :class="{
-                      'bg-red-500': newTaskPriority === 'high',
-                      'bg-yellow-500': newTaskPriority === 'medium',
-                      'bg-green-500': newTaskPriority === 'low'
-                    }"></span>
-                    <span x-text="newTaskPriority.charAt(0).toUpperCase() + newTaskPriority.slice(1)"></span>
-                    <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                  </button>
-                  <div x-show="showPriorityDropdown" x-transition class="absolute z-50 mt-1 w-full bg-sf2 bd rounded-lg shadow-lg py-1">
-                    <button type="button" class="w-full px-3 py-2 text-left text-sm tx hover:bg-sf flex items-center gap-2" @click="selectPriority('high')">
-                      <span class="w-2 h-2 rounded-full bg-red-500"></span>
-                      High
-                    </button>
-                    <button type="button" class="w-full px-3 py-2 text-left text-sm tx hover:bg-sf flex items-center gap-2" @click="selectPriority('medium')">
-                      <span class="w-2 h-2 rounded-full bg-yellow-500"></span>
-                      Medium
-                    </button>
-                    <button type="button" class="w-full px-3 py-2 text-left text-sm tx hover:bg-sf flex items-center gap-2" @click="selectPriority('low')">
-                      <span class="w-2 h-2 rounded-full bg-green-500"></span>
-                      Low
-                    </button>
-                  </div>
-                </div>
-                <input type="date" x-model="newTaskDueDate" class="bg-sf2 bd rounded-lg px-2 py-1 text-sm tx cursor-pointer" title="Due date">
-                <button class="todo-add-btn t-btn grad-bg-purple text-white shadow-glow" @click="addTask">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                  </svg>
+          <!-- Stats Column -->
+          <div class="prod-stats-col">
+            <div class="prod-mini-stat mini-stat-purple">
+              <div class="mini-label">Sessions Today</div>
+              <div class="mini-value" x-text="sessionsToday"></div>
+              <div class="mini-sub">Focus sessions completed</div>
+              <span class="mini-wm material-icons-round">local_fire_department</span>
+            </div>
+
+            <div class="prod-mini-stat mini-stat-amber">
+              <div class="mini-label">Focus Time</div>
+              <div class="mini-value" x-text="focusMinutesToday + '<span style=\'font-size:18px;font-weight:600\'>m</span>'" x-html="true"></div>
+              <div class="mini-sub">Minutes focused today</div>
+              <span class="mini-wm material-icons-round">schedule</span>
+            </div>
+
+            <div class="prod-mini-stat mini-stat-green">
+              <div class="mini-label">Tasks Done</div>
+              <div class="mini-value" x-text="tasks.filter(t => t.completed).length"></div>
+              <div class="mini-sub" x-text="tasks.length + ' total tasks'"></div>
+              <span class="mini-wm material-icons-round">check_circle</span>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- Task Board Section -->
+        <h2 class="prod-section-head">
+          <span class="material-icons-round">check_circle</span> Task Board
+        </h2>
+
+        <div class="prod-todo-card">
+
+          <!-- Input row -->
+          <div class="todo-input-row">
+            <input type="text" class="todo-text-input" placeholder="What needs to get done?" x-model="newTask" @keyup.enter="addTask">
+
+            <!-- Priority -->
+            <div class="priority-dropdown" @click.away="showPriorityDropdown = false">
+              <button type="button" class="todo-chip" @click="showPriorityDropdown = !showPriorityDropdown">
+                <span class="w-2 h-2 rounded-full" style="display:inline-block; width:8px; height:8px; border-radius:50%;"
+                  :style="newTaskPriority === 'high' ? 'background:#ef4444' : newTaskPriority === 'medium' ? 'background:#eab308' : 'background:#22c55e'">
+                </span>
+                <span x-text="newTaskPriority.charAt(0).toUpperCase() + newTaskPriority.slice(1)"></span>
+                <span class="material-icons-round" style="font-size:14px">expand_more</span>
+              </button>
+              <div class="priority-dropdown-menu" x-show="showPriorityDropdown" x-transition>
+                <button type="button" class="priority-opt" @click="newTaskPriority='high'; showPriorityDropdown=false">
+                  <span style="width:8px;height:8px;border-radius:50%;background:#ef4444;display:inline-block;flex-shrink:0;"></span> High
+                </button>
+                <button type="button" class="priority-opt" @click="newTaskPriority='medium'; showPriorityDropdown=false">
+                  <span style="width:8px;height:8px;border-radius:50%;background:#eab308;display:inline-block;flex-shrink:0;"></span> Medium
+                </button>
+                <button type="button" class="priority-opt" @click="newTaskPriority='low'; showPriorityDropdown=false">
+                  <span style="width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block;flex-shrink:0;"></span> Low
                 </button>
               </div>
             </div>
 
-            <div class="todo-list-container">
-              <template x-if="tasks.length === 0">
-                <div class="empty-state">
-                  <div class="empty-icon">🎯</div>
-                  <div class="flex flex-col gap-1">
-                    <p class="font-bold text-lg tx">No active tasks</p>
-                    <span class="text-sm tx3">Add an objective to track your progress</span>
-                  </div>
-                </div>
-              </template>
-              
-              <ul class="todo-list">
-                <template x-for="(task, index) in tasks" :key="task.id">
-                  <li class="todo-item" 
-                      :class="task.completed ? 'completed' : ''" 
-                      :style="getPriorityStyle(task.priority || 'medium')"
-                      draggable="true"
-                      @dragstart="handleDragStart($event, index)"
-                      @dragover="handleDragOver($event, index)"
-                      @dragleave="handleDragLeave($event)"
-                      @drop="handleDrop($event, index)"
-                      @dragend="handleDragEnd($event)"
-                      :data-index="index">
-                    <button class="todo-checkbox" :class="task.completed ? 'checked' : ''" @click="toggleTask(index)" draggable="false">
-                      <svg x-show="task.completed" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="20 6 9 17 4 12"/>
-                      </svg>
-                    </button>
-                    <div class="flex-1 flex flex-col gap-1">
-                      <span class="todo-text" x-text="task.text"></span>
-                      <div class="flex items-center gap-2" x-show="task.dueDate">
-                        <span class="text-xs tx3" :class="isOverdue(task.dueDate) ? 'text-red-500' : ''" x-text="formatDueDate(task.dueDate)"></span>
-                        <span class="text-xs tx3" x-show="isOverdue(task.dueDate)">Overdue</span>
-                      </div>
-                    </div>
-                    <button class="todo-delete t-btn" @click="removeTask(index)" title="Remove task" draggable="false">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M18 6L6 18M6 6l12 12"/>
-                      </svg>
-                    </button>
-                  </li>
-                </template>
-              </ul>
-            </div>
+            <!-- Due date -->
+            <input type="date" x-model="newTaskDueDate"
+              class="todo-chip" style="cursor:pointer; font-family: inherit;"
+              title="Due date">
+
+            <button class="todo-add-btn" @click="addTask" title="Add task">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+            </button>
           </div>
 
-        </div>
-      </div>
-      
-      <!-- Celebration Overlay -->
-      <template x-if="showCelebration">
-        <div class="productivity-celebration-overlay" @click.self="dismissCelebration()">
-          <div class="productivity-celebration-card">
-            <div class="productivity-celebration-emoji">🎉</div>
-            <h2 class="productivity-celebration-title">Session Complete!</h2>
-            <p class="productivity-celebration-message">
-              Great work! You stayed focused for the entire session. Take a break and recharge!
-            </p>
-            <div class="productivity-celebration-stats">
-              <div class="productivity-celebration-stat">
-                <div class="productivity-celebration-stat-value" x-text="preset + ':00'"></div>
-                <div class="productivity-celebration-stat-label">Duration</div>
-              </div>
-              <div class="productivity-celebration-stat">
-                <div class="productivity-celebration-stat-value">100%</div>
-                <div class="productivity-celebration-stat-label">Completed</div>
-              </div>
+          <!-- Filter tabs -->
+          <div class="todo-tabs">
+            <button class="todo-tab" :class="todoFilter === 'all' ? 'active' : ''" @click="todoFilter = 'all'">
+              All <span x-text="'(' + tasks.length + ')'"></span>
+            </button>
+            <button class="todo-tab" :class="todoFilter === 'active' ? 'active' : ''" @click="todoFilter = 'active'">
+              Active <span x-text="'(' + tasks.filter(t => !t.completed).length + ')'"></span>
+            </button>
+            <button class="todo-tab" :class="todoFilter === 'done' ? 'active' : ''" @click="todoFilter = 'done'">
+              Done <span x-text="'(' + tasks.filter(t => t.completed).length + ')'"></span>
+            </button>
+          </div>
+
+          <!-- List -->
+          <template x-if="filteredTasks.length === 0">
+            <div class="todo-empty">
+              <div class="empty-icon"><span class="material-icons-round" style="color: #EF5350; font-size: 24px;" aria-label="target">gps_fixed</span></div>
+              <p class="font-bold text-base tx">
+                <span x-show="todoFilter === 'all'">No tasks yet</span>
+                <span x-show="todoFilter === 'active'">All caught up!</span>
+                <span x-show="todoFilter === 'done'">Nothing completed yet</span>
+              </p>
+              <span class="text-sm tx3" x-show="todoFilter === 'all'">Add a task above to track your progress</span>
             </div>
-            <div class="productivity-celebration-actions">
-              <button class="productivity-celebration-btn secondary" @click="dismissCelebration()">
-                Dismiss
-              </button>
-              <button class="productivity-celebration-btn primary" @click="dismissCelebration(); setPreset(preset); toggleTimer()">
-                Start Another
-              </button>
+          </template>
+
+          <ul class="todo-list" x-show="filteredTasks.length > 0">
+            <template x-for="(task, index) in filteredTasks" :key="task.id">
+              <li class="todo-item"
+                  :class="task.completed ? 'completed' : ''"
+                  :style="getPriorityStyle(task.priority || 'medium')"
+                  draggable="true"
+                  @dragstart="handleDragStart($event, tasks.indexOf(task))"
+                  @dragover="handleDragOver($event, tasks.indexOf(task))"
+                  @dragleave="handleDragLeave($event)"
+                  @drop="handleDrop($event, tasks.indexOf(task))"
+                  @dragend="handleDragEnd($event)">
+
+                <button class="todo-checkbox" :class="task.completed ? 'checked' : ''" @click="toggleTask(tasks.indexOf(task))" draggable="false">
+                  <svg x-show="task.completed" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                </button>
+
+                <div class="flex-1 flex flex-col gap-1 min-w-0">
+                  <span class="todo-text" x-text="task.text"></span>
+                  <div x-show="task.dueDate" class="flex items-center gap-2">
+                    <span class="todo-due-badge" :class="isOverdue(task.dueDate) && !task.completed ? 'overdue' : ''"
+                      x-text="(isOverdue(task.dueDate) && !task.completed ? 'Overdue · ' : '') + formatDueDate(task.dueDate)">
+                    </span>
+                  </div>
+                </div>
+
+                <button class="todo-delete t-btn" @click="removeTask(tasks.indexOf(task))" title="Remove task" draggable="false">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 6L6 18M6 6l12 12"/>
+                  </svg>
+                </button>
+              </li>
+            </template>
+          </ul>
+
+        </div>
+
+        <!-- Celebration Overlay -->
+        <template x-if="showCelebration">
+          <div class="prod-celebration-overlay" @click.self="dismissCelebration()">
+            <div class="prod-celebration-card">
+              <div class="prod-celebration-emoji"><span class="material-icons-round" style="color: var(--ac); font-size: 48px;" aria-label="celebration">celebration</span></div>
+              <h2 class="prod-celebration-title">Session Complete!</h2>
+              <p class="prod-celebration-msg">
+                Excellent focus! You stayed locked in for the entire session. Time to recharge — you earned it.
+              </p>
+              <div class="prod-celebration-stats">
+                <div class="prod-celebration-stat">
+                  <div class="prod-celebration-stat-val" x-text="preset + 'm'"></div>
+                  <div class="prod-celebration-stat-lbl">Duration</div>
+                </div>
+                <div class="prod-celebration-stat">
+                  <div class="prod-celebration-stat-val" x-text="sessionsToday"></div>
+                  <div class="prod-celebration-stat-lbl">Today's Sessions</div>
+                </div>
+                <div class="prod-celebration-stat">
+                  <div class="prod-celebration-stat-val">100%</div>
+                  <div class="prod-celebration-stat-lbl">Completed</div>
+                </div>
+              </div>
+              <div class="prod-celebration-actions">
+                <button class="prod-cta-secondary" @click="dismissCelebration()">Dismiss</button>
+                <button class="prod-cta-primary" @click="dismissCelebration(); setPreset(preset); toggleTimer()">Start Another</button>
+              </div>
             </div>
           </div>
-        </div>
-      </template>
+        </template>
+
+      </div>
     </div>
 
   </main>
 </div>
 
+<!-- Add Custom Preset Modal (rendered at body level) -->
+<div x-data="{ get show() { return window._showPresetModal; } }"
+  id="preset-modal-overlay"
+  class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 hidden"
+  style="backdrop-filter:blur(6px)">
+  <div class="bg-sf rounded-2xl p-6 w-80 border bd" style="border-color:rgba(139,92,246,.3)">
+    <h3 class="font-bold mb-1 tx text-lg">Add Custom Timer</h3>
+    <p class="text-sm tx2 mb-4">Enter a duration between 1–180 minutes.</p>
+    <input type="number" id="custom-preset-input" min="1" max="180" value="30"
+      class="w-full rounded-xl p-3 mb-4 tx text-lg font-bold"
+      style="background:var(--bg2); border:1px solid var(--bd); outline:none;">
+    <div class="flex gap-3">
+      <button class="flex-1 t-btn rounded-xl p-3 font-bold" style="background:var(--sf2); border:1px solid var(--bd); color:var(--tx2);"
+        onclick="closePresetModal()">Cancel</button>
+      <button class="flex-1 rounded-xl p-3 font-bold text-white"
+        style="background:linear-gradient(135deg,#7c3aed,#a78bfa); border:none; cursor:pointer;"
+        onclick="confirmPresetModal()">Add Timer</button>
+    </div>
+  </div>
+</div>
+
 <script src="app/timer-manager.js"></script>
 <script src="study/js/sidebar.js"></script>
 <script>
-  // Initialize sidebar with productivity-specific callbacks
   window.addEventListener('korahReady', () => {
     if (window.KorahSidebar) {
       window.KorahSidebar.initSidebar({
-        chatBaseUrl: "index.html",
+        chatBaseUrl: "chat.html",
         itemPageUrl: "study/item.html",
-        onItemClick: (id) => {
-          window.location.href = `study/item.html?id=${id}`;
-        }
+        onItemClick: (id) => { window.KorahTransitions.go(`study/item.html?id=${id}`); }
       });
     }
   }, { once: true });
 
-  // Productivity app logic (synced with global KorahTimer)
+  // Custom preset modal helpers (used by body-level modal)
+  let _presetModalCallback = null;
+  function openPresetModal(cb) {
+    _presetModalCallback = cb;
+    document.getElementById('preset-modal-overlay').classList.remove('hidden');
+    document.getElementById('custom-preset-input').focus();
+  }
+  function closePresetModal() {
+    document.getElementById('preset-modal-overlay').classList.add('hidden');
+    _presetModalCallback = null;
+  }
+  function confirmPresetModal() {
+    const val = parseInt(document.getElementById('custom-preset-input').value);
+    if (val >= 1 && val <= 180 && _presetModalCallback) _presetModalCallback(val);
+    closePresetModal();
+  }
+
+  // Today's date key for stats
+  function todayKey() { return new Date().toISOString().slice(0, 10); }
+
   function productivityApp() {
     return {
-      // Timer (synced with global KorahTimer)
+      // Timer state (synced with global KorahTimer)
       timeLeft: 25 * 60,
       totalSeconds: 25 * 60,
       preset: 25,
+      isRunning: false,
+      showCelebration: false,
+      confettiElements: [],
       customPresets: JSON.parse(localStorage.getItem('korah_custom_presets') || '[]'),
       showAddPresetModal: false,
       newPresetMinutes: 30,
-      isRunning: false,
-      timerInterval: null,
-      showCelebration: false,
-      confettiElements: [],
 
-      // Todo list
+      // Session stats
+      sessionsToday: 0,
+      focusMinutesToday: 0,
+
+      // Tasks
       tasks: [],
       newTask: '',
       newTaskPriority: 'medium',
       newTaskDueDate: '',
       showPriorityDropdown: false,
       draggedIndex: null,
+      todoFilter: 'all',
+
+      get filteredTasks() {
+        if (this.todoFilter === 'active') return this.tasks.filter(t => !t.completed);
+        if (this.todoFilter === 'done') return this.tasks.filter(t => t.completed);
+        return this.tasks;
+      },
 
       init() {
-        // Load tasks from localStorage
+        // Load tasks
         const saved = localStorage.getItem('korah_tasks');
         if (saved) {
           try {
             this.tasks = JSON.parse(saved);
-            // Ensure each task has priority and dueDate fields
-            this.tasks.forEach(task => {
-              if (!task.priority) task.priority = 'medium';
-              if (!task.dueDate) task.dueDate = null;
+            this.tasks.forEach(t => {
+              if (!t.priority) t.priority = 'medium';
+              if (!t.dueDate) t.dueDate = null;
             });
           } catch (e) {}
         }
 
+        // Load today's session stats
+        const key = todayKey();
+        const stats = JSON.parse(localStorage.getItem('korah_prod_stats') || '{}');
+        if (stats.date === key) {
+          this.sessionsToday = stats.sessions || 0;
+          this.focusMinutesToday = stats.minutes || 0;
+        }
+
         // Sync with global timer
         this.syncWithGlobalTimer();
-        
-        // Listen for global timer updates
+        setInterval(() => { this.syncWithGlobalTimer(); }, 1000);
+
         if (window.KorahTimer) {
           window.KorahTimer.addListener((eventType, state) => {
             this.syncWithGlobalTimer();
-            
-            // Show celebration on completion
             if (eventType === 'complete') {
+              this.recordSession();
               this.showCelebration = true;
               this.spawnConfetti();
             }
-            
-            // Hide celebration when dismissed
             if (eventType === 'dismiss') {
               this.showCelebration = false;
               this.clearConfetti();
             }
           });
         }
-        
-        // Update display every second
-        setInterval(() => {
-          this.syncWithGlobalTimer();
-        }, 1000);
       },
 
       syncWithGlobalTimer() {
         if (!window.KorahTimer) return;
-        
         const state = window.KorahTimer.getState();
         this.timeLeft = window.KorahTimer.getRemainingSeconds();
         this.totalSeconds = state.totalSeconds;
         this.preset = state.preset;
         this.isRunning = state.isRunning;
-        
-        // Check if we should show celebration (coming back to page after completion)
         if (state.completedAt && (Date.now() - state.completedAt < 30000)) {
           this.showCelebration = true;
         }
       },
 
-      // Confetti animation
+      recordSession() {
+        const key = todayKey();
+        const stats = JSON.parse(localStorage.getItem('korah_prod_stats') || '{}');
+        const base = stats.date === key ? stats : { date: key, sessions: 0, minutes: 0 };
+        base.sessions += 1;
+        base.minutes += this.preset;
+        localStorage.setItem('korah_prod_stats', JSON.stringify(base));
+        this.sessionsToday = base.sessions;
+        this.focusMinutesToday = base.minutes;
+      },
+
       spawnConfetti() {
         const container = document.createElement('div');
-        container.className = 'confetti-container';
+        container.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:300;overflow:hidden;';
         document.body.appendChild(container);
-        
-        const colors = ['#8b5cf6', '#a78bfa', '#f0abfc', '#fbbf24', '#34d399', '#f87171'];
-        
-        for (let i = 0; i < 50; i++) {
-          const confetti = document.createElement('div');
-          confetti.className = 'confetti';
-          confetti.style.left = Math.random() * 100 + '%';
-          confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-          confetti.style.animationDelay = Math.random() * 2 + 's';
-          confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
-          container.appendChild(confetti);
+        const colors = ['#8b5cf6','#a78bfa','#f0abfc','#fbbf24','#34d399','#f87171'];
+        for (let i = 0; i < 60; i++) {
+          const c = document.createElement('div');
+          const size = 6 + Math.random() * 8;
+          c.style.cssText = `position:absolute;width:${size}px;height:${size}px;border-radius:${Math.random() > 0.5 ? '50%' : '2px'};top:-10px;left:${Math.random()*100}%;background:${colors[Math.floor(Math.random()*colors.length)]};animation:confettiFall ${2+Math.random()*2}s ${Math.random()*2}s linear forwards;`;
+          container.appendChild(c);
         }
-        
+        if (!document.getElementById('confetti-style')) {
+          const st = document.createElement('style');
+          st.id = 'confetti-style';
+          st.textContent = `@keyframes confettiFall{to{transform:translateY(110vh) rotate(720deg);opacity:0;}}`;
+          document.head.appendChild(st);
+        }
         this.confettiElements.push(container);
-        
-        // Auto-remove after animation
-        setTimeout(() => {
-          this.clearConfetti();
-        }, 5000);
+        setTimeout(() => this.clearConfetti(), 5000);
       },
 
       clearConfetti() {
@@ -965,65 +963,37 @@
       dismissCelebration() {
         this.showCelebration = false;
         this.clearConfetti();
-        if (window.KorahTimer) {
-          window.KorahTimer.dismissCompletion();
-        }
+        if (window.KorahTimer) window.KorahTimer.dismissCompletion();
       },
 
-      // Timer methods
+      // Timer
       formatTime(seconds) {
         const m = Math.floor(seconds / 60).toString().padStart(2, '0');
         const s = (seconds % 60).toString().padStart(2, '0');
         return `${m}:${s}`;
       },
-
-      toggleTimer() {
-        if (window.KorahTimer) {
-          window.KorahTimer.toggle();
-        }
-      },
-
-      startTimer() {
-        if (window.KorahTimer) {
-          window.KorahTimer.start(this.preset);
-        }
-      },
-
-      pauseTimer() {
-        if (window.KorahTimer) {
-          window.KorahTimer.pause();
-        }
-      },
-
-      resetTimer() {
-        if (window.KorahTimer) {
-          window.KorahTimer.reset(this.preset);
-        }
-      },
-
+      toggleTimer() { if (window.KorahTimer) window.KorahTimer.toggle(); },
+      resetTimer() { if (window.KorahTimer) window.KorahTimer.reset(this.preset); },
       setPreset(minutes) {
         this.preset = minutes;
-        if (window.KorahTimer) {
-          window.KorahTimer.setPreset(minutes);
-        }
+        if (window.KorahTimer) window.KorahTimer.setPreset(minutes);
       },
-
       addCustomPreset() {
-        const mins = parseInt(this.newPresetMinutes);
-        if (mins >= 1 && mins <= 180 && this.customPresets.length < 5) {
-          this.customPresets.push(mins);
-          localStorage.setItem('korah_custom_presets', JSON.stringify(this.customPresets));
-          this.showAddPresetModal = false;
-        }
+        openPresetModal((mins) => {
+          if (this.customPresets.length < 5) {
+            this.customPresets.push(mins);
+            localStorage.setItem('korah_custom_presets', JSON.stringify(this.customPresets));
+          }
+        });
+        this.showAddPresetModal = false;
       },
 
-      // Todo methods
+      // Tasks
       addTask() {
         const text = this.newTask.trim();
         if (!text) return;
         this.tasks.push({
-          id: Date.now(),
-          text: text,
+          id: Date.now(), text,
           completed: false,
           priority: this.newTaskPriority,
           dueDate: this.newTaskDueDate || null
@@ -1039,95 +1009,67 @@
         this.saveTasks();
       },
 
-      formatDueDate(dateStr) {
-        if (!dateStr) return '';
-        const date = new Date(dateStr);
-        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      },
-
-      isOverdue(dateStr) {
-        if (!dateStr) return false;
-        return new Date(dateStr) < new Date();
-      },
-
-      getPriorityStyle(priority) {
-        const colors = {
-          high: '#ef4444',
-          medium: '#eab308',
-          low: '#22c55e'
-        };
-        return `border-left: 4px solid ${colors[priority] || colors.medium}`;
-      },
-
-      togglePriorityDropdown() {
-        this.showPriorityDropdown = !this.showPriorityDropdown;
-      },
-
-      selectPriority(priority) {
-        this.newTaskPriority = priority;
-        this.showPriorityDropdown = false;
-      },
-
       removeTask(index) {
         this.tasks.splice(index, 1);
         this.saveTasks();
       },
 
-      // Drag and drop methods
+      saveTasks() {
+        localStorage.setItem('korah_tasks', JSON.stringify(this.tasks));
+      },
+
+      formatDueDate(dateStr) {
+        if (!dateStr) return '';
+        const d = new Date(dateStr + 'T00:00:00');
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      },
+
+      isOverdue(dateStr) {
+        if (!dateStr) return false;
+        return new Date(dateStr + 'T23:59:59') < new Date();
+      },
+
+      getPriorityStyle(priority) {
+        const c = { high: '#ef4444', medium: '#eab308', low: '#22c55e' };
+        return `border-left-color: ${c[priority] || c.medium}`;
+      },
+
+      // Drag & drop
       handleDragStart(event, index) {
         this.draggedIndex = index;
         event.dataTransfer.effectAllowed = 'move';
-        event.dataTransfer.setData('text/plain', index);
-        // Add dragging class to the dragged element
         event.target.classList.add('dragging');
       },
-
       handleDragOver(event, index) {
         event.preventDefault();
         event.dataTransfer.dropEffect = 'move';
-        // Add drag-over class to the target element
         event.currentTarget.classList.add('drag-over');
       },
-
       handleDragLeave(event) {
-        // Remove drag-over class when leaving the element
         event.currentTarget.classList.remove('drag-over');
       },
-
       handleDrop(event, index) {
         event.preventDefault();
-        // Remove drag-over class
         event.currentTarget.classList.remove('drag-over');
-        const fromIndex = this.draggedIndex;
-        const toIndex = index;
-        if (fromIndex === null || fromIndex === toIndex) return;
-        // Reorder tasks array
-        const task = this.tasks.splice(fromIndex, 1)[0];
-        this.tasks.splice(toIndex, 0, task);
+        const from = this.draggedIndex;
+        if (from === null || from === index) return;
+        const task = this.tasks.splice(from, 1)[0];
+        this.tasks.splice(index, 0, task);
         this.saveTasks();
       },
-
       handleDragEnd(event) {
-        // Remove dragging class from the dragged element
         event.target.classList.remove('dragging');
         this.draggedIndex = null;
-        // Remove any remaining drag-over classes (in case drop didn't fire)
-        document.querySelectorAll('.todo-item.drag-over').forEach(el => {
-          el.classList.remove('drag-over');
-        });
-      },
-
-      saveTasks() {
-        localStorage.setItem('korah_tasks', JSON.stringify(this.tasks));
+        document.querySelectorAll('.todo-item.drag-over').forEach(el => el.classList.remove('drag-over'));
       }
     };
   }
-
 </script>
+
 <!-- Rename Modal -->
 <div id="rename-modal" class="delete-modal">
   <div class="delete-modal-content">
-    <div class="delete-modal-icon">✏️</div>
+    <div class="delete-modal-icon"><span class="material-icons-round" style="color: #FFA726; font-size: 20px;" aria-label="rename">edit</span></div>
     <h3 class="delete-modal-title">Rename</h3>
     <p class="delete-modal-desc" id="rename-modal-desc">Enter a new name</p>
     <input id="rename-modal-input" type="text" class="create-input" style="width:100%; margin-top:0.25rem;" placeholder="New name…"/>
@@ -1141,7 +1083,7 @@
 <!-- Delete Confirm Modal -->
 <div id="delete-modal" class="delete-modal">
   <div class="delete-modal-content">
-    <div class="delete-modal-icon">🗑️</div>
+    <div class="delete-modal-icon"><span class="material-icons-round" style="color: var(--red); font-size: 20px;" aria-label="delete">delete</span></div>
     <h3 class="delete-modal-title">Delete?</h3>
     <p class="delete-modal-desc">This will permanently delete <span id="delete-modal-name"></span>. This cannot be undone.</p>
     <div class="delete-modal-actions">
@@ -1158,14 +1100,11 @@
       <h2 class="settings-title">Settings</h2>
       <button class="settings-close" id="settings-close">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="18" y1="6" x2="6" y2="18"/>
-          <line x1="6" y1="6" x2="18" y2="18"/>
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
         </svg>
       </button>
     </div>
-    
     <div class="settings-body">
-      <!-- Theme Settings -->
       <div class="settings-section">
         <h3 class="settings-section-title">Appearance</h3>
         <div class="settings-item">
@@ -1201,8 +1140,6 @@
           </div>
         </div>
       </div>
-
-      <!-- Profile Settings -->
       <div class="settings-section">
         <h3 class="settings-section-title">Profile</h3>
         <div class="settings-item">
@@ -1212,8 +1149,6 @@
           </div>
         </div>
       </div>
-
-      <!-- Data Settings -->
       <div class="settings-section">
         <h3 class="settings-section-title">Data</h3>
         <div class="settings-item">
@@ -1223,8 +1158,6 @@
           </div>
         </div>
       </div>
-
-      <!-- Actions -->
       <div class="settings-actions">
         <button id="settings-save" class="settings-btn primary">Save Settings</button>
       </div>

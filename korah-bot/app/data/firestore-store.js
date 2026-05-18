@@ -271,6 +271,33 @@ export async function setupKorahDB(app, uid) {
     localStorage.setItem(MIGRATION_KEY, "1");
   }
 
+  /**
+   * Wipes all user data from Firestore (conversations and study items).
+   * This is a destructive operation that cannot be undone.
+   */
+  async function clearAllData() {
+    try {
+      // 1. Clear Conversations
+      const convs = await fetchConversations();
+      const convIds = Object.keys(convs);
+      if (convIds.length > 0) {
+        await deleteConversations(convIds);
+      }
+
+      // 2. Clear Study Items
+      const items = await fetchStudyItems();
+      const itemIds = Object.keys(items);
+      if (itemIds.length > 0) {
+        await deleteStudyItems(itemIds);
+      }
+
+      console.info("[KorahDB] All Firestore data cleared successfully.");
+    } catch (err) {
+      console.error("[KorahDB] Failed to clear Firestore data:", err);
+      throw err;
+    }
+  }
+
   // ─── Expose ───────────────────────────────────────────────────────────────
 
   window.KorahDB = {
@@ -291,5 +318,7 @@ export async function setupKorahDB(app, uid) {
     fetchStudyItems,
     // migration
     migrateFromLocalStorage,
+    // actions
+    clearAllData,
   };
 }

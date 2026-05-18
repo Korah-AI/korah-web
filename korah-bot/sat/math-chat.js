@@ -25,214 +25,338 @@ console.log('math-chat.js loading...');
   let currentSession   = null;
   let conversationHistory = []; // [{ role: 'user'|'assistant', content: string }]
 
-  const SAT_MATH_SYSTEM_PROMPT = `You are Korah, a specialized SAT Math tutor. You teach students how to solve SAT Math problems using three core strategies — choosing the fastest one for each problem:
+  // ─── Desmos Template Library ──────────────────────────────────────────────
+  let _templateIndex = null;
+  const _exampleCache = {};
+  const _templateCache = {};
 
-1. **Strategic (Desmos-first)** — Graph both sides or plug in answer choices visually. Fastest when the problem gives you expressions to compare.
-2. **Regression** — Use Desmos regression to solve for unknowns or fit data. Fastest when the problem gives you data points or asks you to find a parameter.
-3. **Algebraic** — Solve by hand with clear steps. Use when the problem is purely symbolic or when you want to verify a Desmos answer.
+  async function loadTemplateIndex() {
+    if (_templateIndex) return _templateIndex;
+    try {
+      const res = await fetch('./template-index.json');
+      _templateIndex = await res.json();
+    } catch (e) {
+      console.error('Failed to load template-index.json:', e);
+      _templateIndex = [];
+    }
+    return _templateIndex;
+  }
 
-You cover all SAT Math domains:
-- Algebra (linear equations, systems, inequalities)
-- Advanced Math (quadratics, polynomials, exponential/rational functions)
-- Problem-Solving & Data Analysis (ratios, percentages, statistics, scatterplots)
-- Geometry & Trigonometry (area, volume, circles, right triangles, unit circle)
+  async function loadExample(id) {
+    if (_exampleCache[id]) return _exampleCache[id];
+    const res = await fetch(`./desmos-json/${id}.json`);
+    _exampleCache[id] = await res.json();
+    return _exampleCache[id];
+  }
 
-═══════════════════════════════════════════
-TEACHING APPROACH — STEP-BY-STEP ALWAYS
-═══════════════════════════════════════════
+  async function loadTemplate(id) {
+    if (_templateCache[id]) return _templateCache[id];
+    const res = await fetch(`./desmos-json/templates/${id}.json`);
+    _templateCache[id] = await res.json();
+    return _templateCache[id];
+  }
 
-Every explanation MUST follow this structure:
+  function buildTemplateIndexBlock(index) {
+    const lines = index.map(t =>
+      `  { "id": "${t.id}", "type": "${t.type}", "name": "${t.name}", "description": "${t.description.replace(/"/g, '\\"')}", "keywords": [${t.keywords.map(k => `"${k}"`).join(', ')}] }`
+    );
+    return `AVAILABLE TEMPLATES — pick the best match by id, or null if none fit:\n[\n${lines.join(',\n')}\n]`;
+  }
 
-**Step 1 — Understand the problem.** Restate what is given and what is being asked. Identify the problem type (linear, quadratic, system, data/regression, geometry, etc.).
+  // Validate a Desmos state object before calling setState().
+  // Catches the common failure modes described in docs/desmos-template-library-plan.md.
+  function validateDesmosState(state) {
+    const errors = [];
+    if (!state || typeof state !== 'object') { errors.push('state is not an object'); return errors; }
+    if (!state.expressions || !Array.isArray(state.expressions.list)) {
+      errors.push('state.expressions.list is missing or not an array');
+      return errors;
+    }
+    const list = state.expressions.list;
+    const ids = new Set();
+    let seenTable = false;
+    let tableHasX1 = false;
+    let tableHasY1 = false;
 
-**Step 2 — Choose a strategy.** Explicitly tell the student which approach you are using and WHY it is the fastest:
-- "This is a parameter-solving problem → **Regression trick** is fastest."
-- "We have answer choices with graphable expressions → **Graph-and-check** is fastest."
-- "This is a pure algebra manipulation → **Algebraic approach** is cleanest."
+    list.forEach((expr, idx) => {
+      if (!expr || typeof expr !== 'object') { errors.push(`expr[${idx}] is not an object`); return; }
+      if (!expr.type) { errors.push(`expr[${idx}] missing "type"`); return; }
+      if (expr.id) {
+        if (ids.has(expr.id)) errors.push(`duplicate id "${expr.id}" at expr[${idx}]`);
+        ids.add(expr.id);
+      }
+      if (expr.type === 'text' && 'color' in expr) {
+        errors.push(`expr[${idx}] is a text node and must not have a "color" field`);
+      }
+      if (expr.type === 'table') {
+        seenTable = true;
+        const cols = expr.columns || [];
+        cols.forEach((c, ci) => {
+          const lx = (c.latex || '').replace(/\s/g, '');
+          if (lx === 'x_{1}' || lx === 'x_1') tableHasX1 = true;
+          if (lx === 'y_{1}' || lx === 'y_1') tableHasY1 = true;
+          if (lx === 'x' || lx === 'y') {
+            errors.push(`expr[${idx}] table column ${ci} uses bare "${lx}" — must use subscript (x_1 / y_1)`);
+          }
+        });
+      }
+      if (expr.type === 'expression' && typeof expr.latex === 'string') {
+        const lx = expr.latex;
+        // A regression with x_1 / y_1 that comes before any table is broken,
+        // UNLESS the expression declares its own regressionParameters (in which case
+        // x_{1} is a fitted parameter, not a table column reference).
+        const hasTilde = lx.includes('\\sim') || /(?:^|[^\\])~/.test(lx);
+        const refsTableVar = /x_\{?1\}?|y_\{?1\}?/.test(lx);
+        const hasOwnRegParams = expr.regressionParameters && typeof expr.regressionParameters === 'object';
+        if (hasTilde && refsTableVar && !seenTable && !hasOwnRegParams) {
+          errors.push(`expr[${idx}] regression references x_1/y_1 but no preceding table found`);
+        }
+      }
+    });
 
-**Step 3 — Execute step-by-step.** Show each substep clearly. When using Desmos, narrate what appears on the graph: "Notice on the graph that the two curves intersect at $x = 3$..."
+    if (seenTable && !(tableHasX1 && tableHasY1)) {
+      // not fatal — a table can use different subscripts (e.g. x_2/y_2) — only flag the common error
+    }
+    return errors;
+  }
 
-**Step 4 — Verify.** Always verify the answer using a second method or by plugging back in. Reference the graph: "As you can see on the graph, plugging $k = 2.45$ back in makes both expressions identical."
+  function stripPlaceholders(raw) {
+    // Helper to detect any unfilled {{...}} placeholders in the model's adapted output.
+    if (raw == null) return [];
+    const text = typeof raw === 'string' ? raw : JSON.stringify(raw);
+    const matches = text.match(/\{\{[A-Z0-9_]+\}\}/g);
+    return matches || [];
+  }
 
-**Step 5 — SAT Tip.** End with a brief, actionable test-day tip related to this problem type.
+  // ─── Phase 1 (classifier) ──────────────────────────────────────────────
+  // Pure template selection. Tiny output. Streams but feels instant.
+  const PHASE1_CLASSIFIER_PROMPT_BASE = `You are the classifier stage of Korah, an SAT Math tutor. Your ONLY job is to pick the best matching Desmos template id for the student's problem.
 
-═══════════════════════════════════════════
-SAT PROBLEM-SOLVING STRATEGIES (DETAILED)
-═══════════════════════════════════════════
-
-STRATEGY A — REGRESSION TRICK (for solving unknowns)
-When a problem says "Expression A can be rewritten as Expression B, find k" or "find h and k":
-1. Set the two expressions equal to each other.
-2. Replace every variable (like $x$) with a subscript constant ($x_1$). This tells Desmos to treat it as data, not a variable.
-3. Replace the equals sign ($=$) with a tilde ($\\sim$). This tells Desmos to run a regression.
-4. **If solving for ONE parameter:** Desmos will compute it automatically from context.
-5. **If solving for MULTIPLE parameters (h, k, etc.):** First add $x_1 = [1, 2, 3]$ (or an appropriate range like [0, 5]) to define data points for fitting. This gives Desmos concrete values to regress against.
-6. Read the fitted values from the graph panel.
-
-EXAMPLE (single parameter) — "$(1/3)x^2 - 2$ can be rewritten as $(1/3)(x-k)(x+k)$. Find $k$."
-→ Type: $\\frac{1}{3}x_{1}^{2}-2 \\sim \\frac{1}{3}(x_{1}-k)(x_{1}+k)$
-→ Desmos outputs $k \\approx 2.449$, which is $\\sqrt{6}$.
-→ Verify: plug $k = \\sqrt{6}$ back in and graph both — they overlap perfectly.
-
-EXAMPLE (multiple parameters) — "$2x^2 - 12x + 10$ can be rewritten as $2(x-h)^2 + k$. Find $h$ and $k$."
-→ First set $x_1 = [1, 2, 3, 4, 5]$ to define test points.
-→ Then type the regression: $2x_{1}^{2}-12x_{1}+10 \\sim 2(x_{1}-h)^{2}+k$
-→ Desmos fits both $h$ and $k$ simultaneously using the $x_1$ values as anchors.
-→ Read: $h \\approx 3$, $k \\approx -8$. Verify by substituting back.
-
-STRATEGY B — DATA TABLE + REGRESSION (for data/scatterplot problems)
-When a problem gives you a table of values or data points:
-1. Enter the data as a table with columns $x_1$ and $y_1$.
-2. Run the appropriate regression (linear, quadratic, exponential, etc.).
-3. Read the equation from the regression output.
-4. If the problem gives answer choices, also graph each choice and see which one passes through all the points.
-
-EXAMPLE — "A linear function contains the points (-1,12), (0,15), (1,18), (2,21). Which expression represents it?"
-→ Enter the table, run linear regression $y_1 \\sim mx_1 + b$.
-→ Desmos outputs $m=3$, $b=15$, so the function is $3x+15$.
-→ Alternatively: graph each answer choice ($3x+12$, $15x+12$, $15x+15$, $3x+15$) and see which line hits every data point. Only $3x+15$ passes through all four.
-
-STRATEGY C — GRAPH-AND-CHECK (for multiple choice with graphable expressions)
-When the problem gives you answer choices that are equations/functions:
-1. Graph the constraint or original equation.
-2. Graph each answer choice in a different color.
-3. The correct answer is the one that matches, intersects at the right point, or passes through the data.
-
-STRATEGY D — ALGEBRAIC (traditional solving)
-Use standard algebra when the problem is purely symbolic:
-- Show each manipulation step clearly.
-- Use KaTeX display math ($$...$$) for important equations.
-- Always state what operation you are performing: "Subtract 3 from both sides..."
-- After solving, graph the result on Desmos so the student can see it visually.
-
-═══════════════════════════════════════════
-RESPONSE FORMAT (STRICT)
-═══════════════════════════════════════════
-
-IMPORTANT: You MUST respond in JSON format with two fields: "graph" and "response".
-DO NOT include any markdown formatting like \`\`\`json outside the JSON itself.
-The response must be a single raw JSON object.
+Output a single raw JSON object — NO code fences, NO commentary, NO extra fields:
 
 {
-  "graph": {
-    "expressions": [
-      {"latex": "y=x^2", "color": "#4285F4"}
-    ],
-    "viewport": {"xmin": -10, "xmax": 10, "ymin": -10, "ymax": 10}
-  },
-  "response": "Your explanation here using Markdown and KaTeX . . ."
+  "stateId": "id_from_template_list_or_null",
+  "strategy": "one short sentence (max 20 words) on which template fits and why"
 }
 
 ═══════════════════════════════════════════
-DESMOS API SYNTAX REFERENCE
+BIAS STRONGLY TOWARD PICKING A TEMPLATE
 ═══════════════════════════════════════════
 
-EXPRESSION TYPES:
-- Function/equation: {"latex": "y=mx+b", "color": "#2d70b3"}
-- Point: {"latex": "(1,2)", "label": "Vertex", "showLabel": true, "color": "#c74440"}
-- Variable/constant: {"latex": "a=5"}
-- Inequality: {"latex": "y < 2x + 1", "color": "#388c46"}
-- Hidden (for helper expressions): {"latex": "f(x)=x^2", "color": "#2d70b3", "hidden": true}
-- Text note: {"type": "text", "text": "This is a note"} — do NOT include a latex or color field on text notes.
+Korah's whole value is teaching SAT math through Desmos. ALMOST EVERY SAT MATH PROBLEM maps to one of the templates below. Default to picking a template. Only return null as an absolute last resort.
 
-TABLES:
-{
-  "type": "table",
-  "columns": [
-    {"latex": "x_1", "values": ["1", "2", "3", "4", "5"]},
-    {"latex": "y_1", "values": ["2.1", "3.9", "6.2", "8.1", "10.2"]}
-  ]
-}
-CRITICAL: Column headers MUST use underscores: $x_1$, $y_1$ (NOT $x$, $y$).
-CRITICAL: The table MUST appear BEFORE any regression expression that references its columns.
+Concretely, you SHOULD pick a template whenever ANY of these apply:
+- The problem involves a linear function, line, slope, y-intercept → linear-functions / linear-equations-in-two-variables
+- The problem involves an equation in one variable with unknown constants and asks about "infinitely many solutions" or "no solutions" → linear-equations-in-one-variable
+- The problem gives an inequality and asks which (x,y) pairs satisfy it → linear-equalities-in-one-or-two-variables
+- The problem gives a system of two equations and asks for a value at the intersection → system-of-two-linear-equations
+- The problem is a polynomial identity like (ax+...)(...) = ... where the equation holds "for all x" → equivalent-expressions
+- The problem is a quadratic in vertex form, or asks about vertex/parabola shape → quadratic-from-vertex-point
+- The problem involves symmetry, even/odd functions, reflection → 3-types-of-symmetry
+- The problem involves the unit circle, sin θ, cos θ, angles, radians → unit-circle
+- The problem involves sine/cosine waves, period, amplitude, phase → sine-cosine-sinuoids-graphs
+- The problem involves dilations, vertical/horizontal stretches → nonrigid-transformations-dilations
+- The problem mentions concavity, concave up/down, rate of change → concavity-discovery / concavity-rate-of-change
 
-REGRESSIONS:
-A regression uses the tilde (~) to fit parameters. It MUST reference the table columns ($x_1$, $y_1$).
-- Linear: {"latex": "y_1 ~ m x_1 + b"}
-- Quadratic: {"latex": "y_1 ~ a x_1^2 + b x_1 + c"}
-- Exponential: {"latex": "y_1 ~ a b^{x_1}"}
-- Power: {"latex": "y_1 ~ a x_1^b"}
-- Logarithmic: {"latex": "y_1 ~ a \\\\ln(x_1) + b"}
-
-REGRESSION TRICK (solving for unknowns without a table):
-When two expressions are equal and you need to find unknown parameters, replace the variable with $x_1$ (a subscript constant) and use tilde instead of equals:
-- Single parameter: {"latex": "\\\\frac{1}{3}x_1^2 - 2 \\\\sim \\\\frac{1}{3}(x_1 - k)(x_1 + k)"}
-- Multiple parameters: Always add $x_1 = [1, 2, 3]$ or an appropriate range FIRST, then the regression expression.
-
-For multiple unknowns, the x_1 data points anchor the fitting. Without them, Desmos cannot uniquely solve for 2+ parameters.
-
-COMPLETE EXAMPLES:
-
-Example 1 — Regression trick (no table):
-{
-  "expressions": [
-    {"latex": "\\\\frac{1}{3}x^{2}-2", "color": "#388c46", "hidden": true},
-    {"latex": "\\\\frac{1}{3}(x-k)(x+k)", "color": "#2d70b3", "hidden": true},
-    {"latex": "\\\\frac{1}{3}x_{1}^{2}-2\\\\sim\\\\frac{1}{3}\\\\left(x_{1}-k\\\\right)\\\\left(x_{1}+k\\\\right)", "color": "#388c46"}
-  ],
-  "viewport": {"xmin": -5, "xmax": 5, "ymin": -5, "ymax": 5}
-}
-
-Example 2 — Data table + linear regression + answer choices:
-{
-  "expressions": [
-    {
-      "type": "table",
-      "columns": [
-        {"latex": "x_1", "values": ["-1", "0", "1", "2"]},
-        {"latex": "y_1", "values": ["12", "15", "18", "21"]}
-      ]
-    },
-    {"latex": "y_1 ~ m x_1 + b", "color": "#388c46"},
-    {"latex": "3x+15", "color": "#c74440", "lineStyle": "DASHED"}
-  ],
-  "viewport": {"xmin": -3, "xmax": 4, "ymin": 5, "ymax": 25}
-}
-
-Example 3 — Regression trick with multiple parameters:
-{
-  "expressions": [
-    {"latex": "x_1 = [1, 2, 3, 4, 5]"},
-    {"latex": "2x_{1}^{2}-12x_{1}+10", "color": "#388c46", "hidden": true},
-    {"latex": "2(x_{1}-h)^{2}+k", "color": "#2d70b3", "hidden": true},
-    {"latex": "2x_{1}^{2}-12x_{1}+10\\\\sim 2(x_{1}-h)^{2}+k", "color": "#388c46"}
-  ],
-  "viewport": {"xmin": 0, "xmax": 6, "ymin": -15, "ymax": 15}
-}
-
-STYLING:
-- Colors: #c74440 (red), #2d70b3 (blue), #388c46 (green), #6042a6 (purple), #fa7e19 (orange), #000000 (black)
-- Line Styles: "SOLID", "DASHED", "DOTTED"
-- Use different colors for: original expression, answer choices, regression line, verification
-
-GRAPH FIELD RULES:
-- "expressions": array of expression objects. For tables, include "type": "table" and "columns".
-- "viewport": optional bounds {xmin, xmax, ymin, ymax}. ALWAYS set a viewport that frames the interesting region of the problem (don't leave everything at -10 to 10 if the data is clustered around 0-5).
-- To clear the graph: provide an empty expressions array.
-- If no graph update needed: set "graph": null.
+Only return stateId: null if the problem is COMPLETELY non-mathematical (e.g., "hi" or "what is Korah?") or if it's a math problem in a category clearly outside the template list (e.g., a 3D geometry problem about volumes, or a probability/statistics question with no graph utility). When in doubt — PICK A TEMPLATE.
 
 ═══════════════════════════════════════════
-TEXT RESPONSE RULES
+RULES
 ═══════════════════════════════════════════
 
-The "response" field contains your explanation using:
-- Markdown headings (## Step 1, ## Step 2, etc.), bold, italic
-- KaTeX for math: $inline$ or $$display$$
-- NEVER use \\\\(...\\\\), \\\\[...\\\\], or bare math outside dollar signs.
-- NEVER embed raw JSON objects, graph updates, or code blocks inside the response text. ALL Desmos graph updates go ONLY in the top-level "graph" field. The "response" field is text only.
-- Reference the graph directly: "Look at the graph — the green regression line passes through all four data points."
-- Always number your steps and label them with the strategy name.
+- stateId must be EXACTLY an "id" from the AVAILABLE TEMPLATES list below, or null.
+- "visualizer" templates are for conceptual questions (e.g., "what is concavity?", "show me the unit circle"). Pick these when the student asks to UNDERSTAND a concept rather than solve a specific problem.
+- "problem-solver" templates are for actual SAT problems with concrete numbers/equations to solve. Prefer these when the student pastes or describes an SAT-style problem.
+- Do NOT explain the math. Do NOT write a tutoring response. Just classify.
+- Output ONLY the JSON object. Nothing else.`;
 
-OPTIONALLY include a "suggestions" field with 0-2 follow-up questions the user might ask next.
-Only include suggestions if genuinely useful. Max 2 items.
-Example: "suggestions": ["What if the data were exponential instead?", "How do I verify this on test day?"]`;
+  async function buildPhase1SystemPrompt() {
+    const index = await loadTemplateIndex();
+    const block = buildTemplateIndexBlock(index);
+    return PHASE1_CLASSIFIER_PROMPT_BASE + '\n\n' + block;
+  }
 
-function getFormatInstructions() {
-  return `STRICT RESPONSE FORMAT: Output ONLY raw JSON. No code blocks.
-Fields: { "graph": {...}, "response": "...", "suggestions": [...] }
-KATEX: $...$ for inline, $$...$$ for display.
-OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
+function buildPhase2SystemPrompt() {
+  return `You are adapting a Desmos calculator state to fit a SPECIFIC STUDENT PROBLEM.
+
+═══════════════════════════════════════════
+CRITICAL: YOU MUST ADAPT, NOT COPY
+═══════════════════════════════════════════
+
+You are NOT allowed to output the example verbatim. The example uses ITS OWN numbers and ITS OWN problem text — none of that is the student's problem. You MUST:
+
+1. Read the student's actual problem (numbers, equations, coefficients, constraints).
+2. Use the TEMPLATE as your structural guide — same expression types in the same order.
+3. Fill EVERY {{PLACEHOLDER}} with values from the STUDENT'S problem (not from the example).
+4. Rewrite EVERY text node so it describes the STUDENT'S problem (not the example's). Use the student's numbers, the student's variable names, the student's question.
+5. Replace the example's numeric values in tables/expressions with the student's numeric values.
+
+If your output is byte-for-byte the same as the example, you have FAILED THIS TASK.
+
+═══════════════════════════════════════════
+INPUTS YOU WILL RECEIVE
+═══════════════════════════════════════════
+
+- PROBLEM: the student's actual SAT problem
+- FULL WORKING EXAMPLE: real Desmos JSON for a DIFFERENT problem of the same type — use ONLY for syntax/structure reference
+- TEMPLATE: the structural skeleton with {{PLACEHOLDER}} slots showing where to put the student's values
+
+The example exists so you can see what valid Desmos JSON looks like — NOT for you to copy. The template tells you the shape; the STUDENT'S PROBLEM provides the content.
+
+═══════════════════════════════════════════
+HOW TO ADAPT, STEP BY STEP
+═══════════════════════════════════════════
+
+For each expression in the template:
+- If it's a text node: rewrite the text to describe the student's specific problem using PLAIN TEXT ONLY (use their numbers, their setup, their question). Do NOT carry over the example's text. Do NOT include any LaTeX, backslashes, or math syntax — plain English sentences only. If the template text node contains LaTeX or math, convert it to a readable English sentence instead.
+- If it's a table: replace ALL values with the student's data. Keep the same column structure (x_{1}, y_{1}) and order.
+- If it's a regression/equation: substitute the student's coefficients, constants, and unknowns. Use the example's syntax (tilde, subscripts) but the student's numbers.
+- If it has regressionParameters: keep the parameter list but use the student's unknown letters.
+
+═══════════════════════════════════════════
+CRITICAL DESMOS RULES (violations will break the graph)
+═══════════════════════════════════════════
+
+- Table data columns must use SUBSCRIPT notation: x_{1}, y_{1} (NOT bare x or y)
+- A table must appear BEFORE any expression that uses its columns
+- Regressions use TILDE (\\sim) not equals
+- Text nodes use ONLY {type, id, text}. NO color field on text nodes.
+- Every id must be unique within the expressions.list
+- LaTeX backslashes must be properly JSON-escaped (\\\\frac, \\\\sim, \\\\left, etc.)
+- Do NOT include "graph", "viewport", or other top-level fields beyond version/randomSeed/expressions
+
+TEXT NODES VS EXPRESSION NODES — THIS IS CRITICAL:
+- A { "type": "text" } node MUST contain ONLY plain human-readable text in the "text" field.
+  - NO LaTeX, NO backslashes, NO $...$, NO \\frac, NO \\sim, NO subscripts like x_{1}.
+  - Plain English sentences only. Example: "The slope is -4 and the y-intercept is 30."
+- If you need to display a mathematical formula or equation, use a { "type": "expression" } node with a "latex" key instead.
+  - Example: { "type": "expression", "id": "5", "color": "#000000", "latex": "y=-4x+30" }
+- NEVER put LaTeX syntax inside a "text" node. The Desmos text widget renders plain text only — LaTeX in a text node will display as raw garbled characters, not formatted math.
+
+WHAT YOU CAN DO:
+- Add new expressions or text nodes if the student's problem needs them
+- Omit template slots if they're not needed
+- Use the example's id values or generate new unique ones
+- Choose appropriate colors from the example's palette
+
+═══════════════════════════════════════════
+OUTPUT FORMAT
+═══════════════════════════════════════════
+
+Output a single raw JSON object — the full Desmos state — with NO surrounding text, no code fences, no commentary.
+
+Shape:
+{
+  "version": 11,
+  "randomSeed": "32-char hex",
+  "expressions": {
+    "list": [ ...your adapted expressions for THE STUDENT'S problem... ]
+  }
 }
+
+REMINDER: every text node, every numeric value, every coefficient must reflect the STUDENT'S problem — not the example's. If unsure, prefer the student's data over the example's.
+
+If the template genuinely cannot represent the student's problem (very rare — only if the classifier picked wrong), output exactly: null`;
+}
+
+  // ─── Phase 3 (tutoring response) ────────────────────────────────────────
+  // Streams a chat-facing markdown explanation. Grounded in the loaded Desmos
+  // state when one was loaded, so the model can reference exact values.
+  function buildPhase3SystemPrompt(adaptedState, classifierStrategy) {
+    const base = `You are Korah, an SAT Math tutor created by Oscar Euceda. The system has already loaded a Desmos graph for the student (or determined no graph was needed). Your job: explain the solution, referencing what is visible on the graph.
+
+OUTPUT FORMAT:
+Output ONLY the explanation text — pure Markdown + KaTeX. NO JSON, NO code fences, NO field names.
+
+STYLE:
+- Confident, finished walkthrough. Do NOT think out loud. Do NOT show "let me re-check" moments.
+- If you need to verify, do it silently. Only the final clean explanation appears in your output.
+- Do NOT type Desmos commands or instruct the student to "type $x_1 = [1,2,3]$". The graph is already on screen — reference what it shows.
+- Be concise. Clarity over length.
+
+STRUCTURE:
+**Step 1 — Understand the problem.** Restate what is given and what is being asked.
+**Step 2 — Strategy.** One sentence on the approach (e.g., "Read m and b from the regression on the graph").
+**Step 3 — Solve.** Walk through the math, referencing what the graph shows ("The regression line fits m = -4 and b = 30…"). Use the EXACT values that appear in the loaded state below.
+**Step 4 — Answer.** State the final answer clearly.
+**Step 5 — SAT Tip.** One short test-day tip.
+
+TEXT FORMATTING:
+- Markdown headings, **bold**, *italic*
+- KaTeX for math: $inline$ or $$display$$. Every variable, coefficient, equation goes in dollar signs.
+- NEVER use \\\\(...\\\\) or \\\\[...\\\\]
+- NEVER include raw JSON, code blocks, or Desmos input syntax`;
+
+    let context = '';
+    if (classifierStrategy) {
+      context += `\n\n=== CLASSIFIER NOTE ===\n${classifierStrategy}`;
+    }
+    if (adaptedState) {
+      // Trim the state to just the expressions so the model focuses on math content,
+      // not the boilerplate randomSeed/version.
+      const slim = { expressions: adaptedState.expressions };
+      context += `\n\n=== LOADED GRAPH STATE (ground your explanation in these exact values) ===\n${JSON.stringify(slim, null, 2)}\n\nThe text nodes above already contain the algebraic reasoning written by the system. Rewrite that reasoning as a flowing student-facing explanation — do NOT just copy the text nodes verbatim, but use their numbers and steps as ground truth.`;
+    } else {
+      context += `\n\n=== NO GRAPH LOADED ===\nNo Desmos graph was loaded for this problem. Solve it algebraically with clear steps.`;
+    }
+    return base + context;
+  }
+
+  // Phase 1 caller: non-streaming feel (small JSON output, parsed at the end).
+  async function runPhase1Classification(problem) {
+    console.log('🔵 [Phase 1] classifier starting…');
+    const t0 = performance.now();
+    let fullText = '';
+    try {
+      await callAPI(problem, (_chunk, full) => { fullText = full; }, {
+        systemPrompt: (await buildPhase1SystemPrompt()),
+        temperature: 0.1,
+        _phaseTag: 'Phase 1 (classify)',
+      });
+    } catch (e) {
+      console.error('🔵 [Phase 1] API call failed:', e);
+      return null;
+    }
+    const dt = Math.round(performance.now() - t0);
+    console.log(`🔵 [Phase 1] raw response (${dt}ms, ${fullText.length} chars):`, fullText.slice(0, 300));
+
+    let s = fullText.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+    const braceIdx = s.indexOf('{');
+    if (braceIdx === -1) {
+      console.warn('🔵 [Phase 1] no JSON object found in response');
+      return null;
+    }
+    s = s.substring(braceIdx);
+
+    let parsed = null;
+    try { parsed = JSON.parse(s); } catch (e) { console.warn('🔵 [Phase 1] direct JSON.parse failed:', e.message); }
+    if (!parsed) {
+      // Last-resort: find balanced braces.
+      let depth = 0, end = -1, inStr = false, esc = false;
+      for (let i = 0; i < s.length; i++) {
+        const ch = s[i];
+        if (esc) { esc = false; continue; }
+        if (ch === '\\') { esc = true; continue; }
+        if (ch === '"') { inStr = !inStr; continue; }
+        if (inStr) continue;
+        if (ch === '{') depth++;
+        else if (ch === '}') { depth--; if (depth === 0) { end = i; break; } }
+      }
+      if (end !== -1) {
+        try { parsed = JSON.parse(s.substring(0, end + 1)); } catch (e) { console.warn('🔵 [Phase 1] balanced-brace parse failed:', e.message); }
+      }
+    }
+    if (!parsed) {
+      console.warn('🔵 [Phase 1] could not parse JSON, returning null');
+      return null;
+    }
+    const out = {
+      stateId: typeof parsed.stateId === 'string' ? parsed.stateId : null,
+      strategy: typeof parsed.strategy === 'string' ? parsed.strategy : '',
+    };
+    console.log('🔵 [Phase 1] parsed:', out);
+    return out;
+  }
 
   function initializeSATGraph() {
     const container = document.getElementById('sat-graph-container');
@@ -355,35 +479,32 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
     return exprList ? `\n\n[Current Desmos State: ${exprList}]` : '';
   }
 
-  function updateSATGraph(data) {
-    if (!satMathCalculator) return;
-    if (!data || typeof data !== 'object') return;
+  // Load a complete Desmos state (from a verified template or an adapted state)
+  // and apply it via setState(). Returns { ok, errors } so callers can show diagnostics.
+  function loadDesmosState(state) {
+    if (!satMathCalculator) return { ok: false, errors: ['calculator not initialized'] };
+    if (!state || typeof state !== 'object') return { ok: false, errors: ['no state provided'] };
+
+    const errors = validateDesmosState(state);
+    if (errors.length > 0) {
+      console.warn('Desmos state validation failed:', errors, state);
+      return { ok: false, errors };
+    }
 
     const graphContainer = document.getElementById('sat-graph-container');
 
-    // To properly "update" we either clear and rebuild or surgically update.
-    // Given the prompt asks to "update existing", we'll clear first to ensure a clean state.
-    satMathCalculator.setBlank();
-
-    if (data.viewport) {
-      satMathCalculator.setMathBounds({
-        left: data.viewport.xmin ?? -10,
-        right: data.viewport.xmax ?? 10,
-        bottom: data.viewport.ymin ?? -10,
-        top: data.viewport.ymax ?? 10,
-      });
-    }
-
-    if (data.expressions && Array.isArray(data.expressions)) {
-      data.expressions.forEach((expr, idx) => {
-        const isTextNote = expr.type === 'text';
-        // Text notes don't accept a color property — spread everything except color.
-        // All other expression types get the default color fallback.
-        satMathCalculator.setExpression(isTextNote
-          ? { id: expr.id || 'expr_' + idx, ...expr }
-          : { id: expr.id || 'expr_' + idx, color: expr.color || '#4285F4', ...expr }
-        );
-      });
+    try {
+      // Defensive copy so we don't mutate the cached template/example.
+      const stateCopy = JSON.parse(JSON.stringify(state));
+      // Desmos setState requires state.graph.viewport. We strip viewport from
+      // stored states (per the library plan), so inject a sensible default here.
+      if (!stateCopy.graph || !stateCopy.graph.viewport) {
+        stateCopy.graph = { viewport: { xmin: -10, xmax: 10, ymin: -10, ymax: 10 } };
+      }
+      satMathCalculator.setState(stateCopy);
+    } catch (e) {
+      console.error('setState failed:', e);
+      return { ok: false, errors: ['setState failed: ' + e.message] };
     }
 
     if (graphContainer) {
@@ -392,6 +513,121 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
     }
 
     captureGraphState();
+    return { ok: true, errors: [] };
+  }
+
+  // Run Phase 2: hand the model the example + template + problem, ask it to adapt.
+  // Returns a parsed Desmos state (or null on failure).
+  async function runPhase2Adaptation(problem, stateId) {
+    console.log(`🟡 [Phase 2] adapting template "${stateId}"…`);
+    const t0 = performance.now();
+    let example, template;
+    try {
+      [example, template] = await Promise.all([loadExample(stateId), loadTemplate(stateId)]);
+    } catch (e) {
+      console.error(`🟡 [Phase 2] failed to load example/template for ${stateId}:`, e);
+      return null;
+    }
+
+    const userContent =
+`═══════════════════════════════════════════
+STUDENT'S PROBLEM — this is what you must solve
+═══════════════════════════════════════════
+${problem}
+
+═══════════════════════════════════════════
+TEMPLATE — YOUR WORKING FILE. Adapt this.
+═══════════════════════════════════════════
+This is the file you must fill in. Replace EVERY {{PLACEHOLDER}} with a value from the STUDENT'S PROBLEM above. Rewrite EVERY text node so it describes the student's problem (using their numbers, their variables, their question).
+
+${JSON.stringify(template, null, 2)}
+
+═══════════════════════════════════════════
+REFERENCE EXAMPLE — for syntax only. DO NOT copy.
+═══════════════════════════════════════════
+This is a FULLY-FILLED-IN version of the template, but for a DIFFERENT problem (not the student's). Use it ONLY to see what valid Desmos JSON looks like — what fields exist, how subscripts are written, how regressions are formatted. The numbers, variables, and text in the example belong to a DIFFERENT problem and must NOT appear in your output.
+
+${JSON.stringify(example, null, 2)}
+
+═══════════════════════════════════════════
+YOUR TASK
+═══════════════════════════════════════════
+1. Start with the TEMPLATE.
+2. For each {{PLACEHOLDER}}, look at the STUDENT'S PROBLEM and write the correct value there.
+3. For each text node in the template, write text that explains the STUDENT'S PROBLEM (not the example's).
+4. Keep the same expression types, ordering, and structure as the template.
+5. Use the REFERENCE EXAMPLE only to confirm Desmos syntax — never copy its content.
+6. Output the completed JSON. Nothing else.
+
+If your output looks anything like the REFERENCE EXAMPLE's content, you have failed. Your output should reflect the STUDENT'S PROBLEM.`;
+
+    let fullText = '';
+    try {
+      await callAPI(userContent, (_chunk, full) => { fullText = full; }, {
+        systemPrompt: buildPhase2SystemPrompt(),
+        temperature: 0.2,
+        _phaseTag: 'Phase 2 (adapt)',
+      });
+    } catch (e) {
+      console.error('🟡 [Phase 2] API call failed:', e);
+      return null;
+    }
+    const dt = Math.round(performance.now() - t0);
+    console.log(`🟡 [Phase 2] raw response (${dt}ms, ${fullText.length} chars):`, fullText.slice(0, 200) + '…');
+
+    // Strip code fences if present, then locate the JSON.
+    let s = fullText.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+    if (s === 'null') return null;
+    const braceIdx = s.indexOf('{');
+    if (braceIdx === -1) {
+      console.warn('Phase 2: no JSON object found in response:', s.slice(0, 200));
+      return null;
+    }
+    s = s.substring(braceIdx);
+
+    // Try direct JSON.parse first (model usually outputs proper escapes for Desmos LaTeX).
+    let parsed = null;
+    try { parsed = JSON.parse(s); } catch (_) {}
+
+    if (!parsed) {
+      // Fallback: balanced brace extraction in case there's trailing junk.
+      let depth = 0, end = -1, inStr = false, esc = false;
+      for (let i = 0; i < s.length; i++) {
+        const ch = s[i];
+        if (esc) { esc = false; continue; }
+        if (ch === '\\') { esc = true; continue; }
+        if (ch === '"') { inStr = !inStr; continue; }
+        if (inStr) continue;
+        if (ch === '{') depth++;
+        else if (ch === '}') { depth--; if (depth === 0) { end = i; break; } }
+      }
+      if (end !== -1) {
+        try { parsed = JSON.parse(s.substring(0, end + 1)); } catch (e) {
+          console.warn('Phase 2: JSON.parse failed even after brace extraction:', e.message);
+        }
+      }
+    }
+
+    if (!parsed) return null;
+
+    const leftoverSlots = stripPlaceholders(parsed);
+    if (leftoverSlots.length > 0) {
+      console.warn('🟡 [Phase 2] model left unfilled placeholders:', leftoverSlots);
+    }
+
+    // Detect the failure mode where the model just copied the example verbatim
+    // (a common shortcut). Compare expressions.list as JSON.
+    try {
+      const adaptedExprs = JSON.stringify(parsed?.expressions?.list ?? []);
+      const exampleExprs = JSON.stringify(example?.expressions?.list ?? []);
+      if (adaptedExprs === exampleExprs) {
+        console.warn('🟡 [Phase 2] ⚠️ model returned the example VERBATIM — no adaptation happened. Treating as failure so the fallback uses the example anyway (same outcome, but flagged).');
+        return null;
+      }
+    } catch (_) {}
+
+    console.log('🟡 [Phase 2] parsed adapted state with', parsed?.expressions?.list?.length ?? 0, 'expressions ✓');
+    return parsed;
   }
 
   function renderGraphUpdates(container) {
@@ -575,7 +811,6 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
     const attachBtn = document.getElementById('attach-file-btn');
     const welcomeAttachBtn = document.getElementById('welcome-attach-btn');
     const dragOverlay = document.getElementById('drag-overlay');
-    const mainContent = document.getElementById('main-content');
 
     attachBtn?.addEventListener('click', () => fileInput?.click());
     welcomeAttachBtn?.addEventListener('click', () => fileInput?.click());
@@ -584,13 +819,9 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
       if (e.target.files?.length) { handleNewFiles(e.target.files); e.target.value = ''; }
     });
 
-    if (mainContent) {
-      mainContent.addEventListener('dragover', (e) => { e.preventDefault(); dragOverlay?.classList.add('show'); });
-      mainContent.addEventListener('dragleave', (e) => { if (!mainContent.contains(e.relatedTarget)) dragOverlay?.classList.remove('show'); });
-      mainContent.addEventListener('drop', (e) => { e.preventDefault(); dragOverlay?.classList.remove('show'); if (e.dataTransfer.files?.length) handleNewFiles(e.dataTransfer.files); });
-    }
-    dragOverlay?.addEventListener('dragleave', () => dragOverlay.classList.remove('show'));
-    dragOverlay?.addEventListener('drop', (e) => { e.preventDefault(); dragOverlay.classList.remove('show'); if (e.dataTransfer.files?.length) handleNewFiles(e.dataTransfer.files); });
+    document.addEventListener('dragover', (e) => { e.preventDefault(); dragOverlay?.classList.add('active'); }, true);
+    document.addEventListener('dragleave', (e) => { if (e.clientX === 0 && e.clientY === 0) dragOverlay?.classList.remove('active'); }, true);
+    document.addEventListener('drop', (e) => { e.preventDefault(); dragOverlay?.classList.remove('active'); if (e.dataTransfer.files?.length) handleNewFiles(e.dataTransfer.files); }, true);
   }
 
   // ─── Session Management ────────────────────────────────────────────────────
@@ -609,9 +840,8 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
       userRenamed: false,
     };
     conversationHistory = [];
-    if (window.KorahDB) {
-      window.KorahDB.setConversation(id, currentSession).catch(console.error);
-    }
+    // Don't persist to Firestore yet — saveCurrentSession() runs after the
+    // first user message, so empty sessions never appear in the sidebar.
     window.location.hash = id;
   }
 
@@ -632,10 +862,44 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
     window.KorahDB.setConversation(currentSessionId, currentSession).catch(console.error);
   }
 
-  function autoTitleFromMessage(text) {
+  async function generateAutoTitle() {
     if (!currentSession || currentSession.autoTitleGenerated || currentSession.userRenamed) return;
-    currentSession.title = text.slice(0, 50) + (text.length > 50 ? '…' : '');
-    currentSession.autoTitleGenerated = true;
+    const firstUser = conversationHistory.find(m => m.role === 'user');
+    const lastAI = [...conversationHistory].reverse().find(m => m.role === 'assistant');
+    if (!firstUser) return;
+    const parts = [
+      "You generate short, clear titles for SAT Math tutoring chats.",
+      "Write a 3–6 word title a student would use to find this conversation later.",
+      "No quotes or punctuation at the end. Respond with ONLY the title.",
+      "",
+      "Student message:",
+      firstUser.content.slice(0, 400),
+    ];
+    if (lastAI) {
+      parts.push("", "AI reply (context):", lastAI.content.slice(0, 300));
+    }
+    try {
+      const reply = await callAPI(parts.join('\n'), null, {
+        systemPrompt: "You generate concise, descriptive titles for SAT Math tutoring conversations.",
+        temperature: 0.3,
+        _phaseTag: 'auto-title',
+      });
+      if (!reply) return;
+      let title = reply.split('\n')[0].trim().replace(/^["']+|["']+$/g, '');
+      if (!title) return;
+      currentSession.title = title;
+      currentSession.autoTitleGenerated = true;
+      saveCurrentSession();
+      const chatTitleEl = document.getElementById('chat-title');
+      if (chatTitleEl) chatTitleEl.textContent = title;
+      if (window.KorahSidebar) {
+        window.KorahSidebar.renderChatHistory(
+          document.getElementById('chat-history'), 'math-chat.html'
+        );
+      }
+    } catch (e) {
+      console.warn('Auto-title generation failed:', e);
+    }
   }
 
   // Extract the value of a JSON string field without using JSON.parse,
@@ -703,10 +967,14 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
       }
     });
 
-    // Restore graph state from session (persisted separately from messages)
+    // Restore graph state from session
     if (currentSession?.graphState && satMathCalculator) {
       try {
-        satMathCalculator.setState(currentSession.graphState);
+        const stateCopy = JSON.parse(JSON.stringify(currentSession.graphState));
+        if (!stateCopy.graph || !stateCopy.graph.viewport) {
+          stateCopy.graph = { viewport: { xmin: -10, xmax: 10, ymin: -10, ymax: 10 } };
+        }
+        satMathCalculator.setState(stateCopy);
         captureGraphState();
       } catch (e) {
         console.warn('Failed to restore graph state:', e);
@@ -716,6 +984,12 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
     welcomeScreen?.classList.add('hidden');
     document.getElementById('chat-input-area')?.classList.remove('hidden');
     chatBody.scrollTop = chatBody.scrollHeight;
+
+    // Update topbar title to reflect the session's title
+    const chatTitleEl = document.getElementById('chat-title');
+    if (chatTitleEl && currentSession?.title) {
+      chatTitleEl.textContent = currentSession.title;
+    }
   }
 
   async function switchToSession(id) {
@@ -742,6 +1016,8 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
     welcomeScreen?.classList.remove('hidden');
     document.getElementById('chat-input-area')?.classList.add('hidden');
     if (satMathCalculator) { satMathCalculator.setBlank(); graphExpressions = []; updateGraphContextIndicator(); }
+    const chatTitleEl = document.getElementById('chat-title');
+    if (chatTitleEl) chatTitleEl.textContent = 'SAT Math';
     createNewSession();
   }
 
@@ -749,9 +1025,10 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
     const hash = window.location.hash.slice(1);
     if (hash && window.KorahDB) {
       const session = await window.KorahDB.getConversation(hash);
-      if (session && session.mode === 'sat-math') {
+      if (session && (session.mode === 'sat-math' || (session.mode === 'sat' && session.satSubMode === 'math'))) {
         currentSessionId = hash;
         currentSession = session;
+        if (currentSession.mode === 'sat') currentSession.mode = 'sat-math';
         conversationHistory = session.messages || [];
         renderSavedMessages();
         if (window.KorahSidebar) window.KorahSidebar.updateActiveItem(hash);
@@ -782,8 +1059,6 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
     const pendingFiles = [...attachedFiles];
     clearAttachedFiles();
 
-    // Auto-title from first message
-    if (conversationHistory.length === 0) autoTitleFromMessage(userMessage);
 
     console.log('Adding user message to chat');
     addMessage('user', userMessage, false, null, [], pendingFiles);
@@ -839,8 +1114,18 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
 
       let delay = 5;
       if (charBuffer.length > 50) delay = 0;
-      
+
       setTimeout(typeNextChar, delay);
+    };
+
+    // Animate already-buffered text into the content element using the same
+    // typewriter as live streaming. Used after the graph has loaded so the
+    // chat narration flows in over the (already-visible) graph.
+    const animateResponseText = (el, text) => {
+      if (!el || !text) return;
+      currentTypedText = '';
+      charBuffer = text.split('');
+      if (!typewriterActive) typeNextChar();
     };
 
   // Unescape a JSON string value, preserving LaTeX backslashes.
@@ -871,300 +1156,122 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
     return out;
   };
 
-  console.log('Calling API with message:', fullMessage.substring(0, 50));
-  let parsedResponse = null;
-  let isJSONMode = false;
-  let fullReplyFromAPI = "";
+  console.log('═══ Three-phase send ═══ problem:', fullMessage.substring(0, 80));
+  let phase3FullText = "";
+
+  // Helper: replace the current indicator with a "Drawing graph…" indicator.
+  const showDrawingIndicator = () => {
+    if (!contentElement) return;
+    contentElement.innerHTML = '';
+    const ind = document.createElement('div');
+    ind.className = 'thinking-indicator graph-loading-indicator';
+    ind.innerHTML = `
+      <span style="font-size: 0.8125rem; font-weight: 600; margin-right: 0.5rem;">Drawing graph…</span>
+      <div class="thinking-dot"></div>
+      <div class="thinking-dot"></div>
+      <div class="thinking-dot"></div>
+    `;
+    contentElement.appendChild(ind);
+    thinkingIndicator = ind;
+  };
 
   try {
     const userContent = buildUserContent(fullMessage, pendingFiles);
-    await callAPI(userContent, (chunk, fullText) => {
-      // Remove thinking indicator when first chunk arrives
-      if (thinkingIndicator && fullText.length > 0) {
-        thinkingIndicator.remove();
+
+    // ── PHASE 1: silent classification ──
+    const classification = await runPhase1Classification(userContent);
+    const stateId = classification?.stateId || null;
+    const classifierStrategy = classification?.strategy || '';
+
+    // ── PHASE 2: graph loading (silent, shows "Drawing graph…" indicator) ──
+    let loadedState = null;
+    if (stateId) {
+      showDrawingIndicator();
+      try {
+        const index = await loadTemplateIndex();
+        const entry = index.find(e => e.id === stateId);
+        if (!entry) {
+          console.warn(`🔵 [Phase 1] stateId "${stateId}" not found in template index — skipping graph`);
+        } else if (entry.type === 'visualizer') {
+          console.log(`🟡 [Phase 2] visualizer "${stateId}" — loading example as-is (no adaptation API call)`);
+          const example = await loadExample(stateId);
+          const result = loadDesmosState(example);
+          if (result.ok) { loadedState = example; console.log('🟡 [Phase 2] visualizer loaded ✓'); }
+          else console.warn('🟡 [Phase 2] visualizer load failed:', result.errors);
+        } else if (entry.type === 'problem-solver') {
+          const adapted = await runPhase2Adaptation(userMessage, stateId);
+          if (adapted) {
+            const result = loadDesmosState(adapted);
+            if (result.ok) {
+              loadedState = adapted;
+              console.log('🟡 [Phase 2] adapted state loaded ✓');
+            } else {
+              console.warn('🟡 [Phase 2] adapted state failed validation, falling back to verified example:', result.errors);
+              const example = await loadExample(stateId);
+              if (loadDesmosState(example).ok) { loadedState = example; console.log('🟡 [Phase 2] fallback example loaded ✓'); }
+            }
+          } else {
+            console.warn('🟡 [Phase 2] returned null; falling back to verified example.');
+            const example = await loadExample(stateId);
+            if (loadDesmosState(example).ok) { loadedState = example; console.log('🟡 [Phase 2] fallback example loaded ✓'); }
+          }
+        }
+      } catch (e) {
+        console.error('🟡 [Phase 2] failed to resolve/load template:', e);
+      }
+    } else {
+      console.log('⚪ [Phase 2] skipped (stateId is null — no template selected)');
+    }
+
+    // ── PHASE 3: streamed tutoring response, grounded in the loaded state ──
+    // Keep the existing indicator visible until Phase 3 produces its first chunk.
+    charBuffer = [];
+    typewriterActive = false;
+    lastBufferedLength = 0;
+    currentTypedText = '';
+    let firstChunkSeen = false;
+
+    console.log(`🟢 [Phase 3] streaming tutoring response (grounded=${!!loadedState})…`);
+    const phase3T0 = performance.now();
+    await callAPI(userContent, (_chunk, fullText) => {
+      phase3FullText = fullText;
+      if (!firstChunkSeen && fullText.length > 0) {
+        firstChunkSeen = true;
+        if (contentElement) contentElement.innerHTML = '';
         thinkingIndicator = null;
       }
-      
-      fullReplyFromAPI = fullText;
       if (contentElement && fullText) {
         const delta = fullText.slice(lastBufferedLength);
         lastBufferedLength = fullText.length;
-        
-        if (!isJSONMode && (fullText.trim().startsWith('{') || fullText.trim().startsWith('```json'))) {
-          isJSONMode = true;
-          charBuffer = []; 
-        }
-        
-        if (!isJSONMode) {
-          charBuffer.push(...delta.split(''));
-          if (!typewriterActive) {
-            typeNextChar();
-          }
-        } else {
-          // While streaming JSON, try to extract and show the response field
-          // Use more robust parsing - try to find the response value by counting braces
-          const responseKey = '"response":';
-          const responseStart = fullText.indexOf(responseKey);
-          if (responseStart !== -1) {
-            let inString = false;
-            let escapeNext = false;
-            let quoteStart = -1;
-            // Start scanning right after `"response":` (skip optional whitespace to find opening quote)
-            for (let i = responseStart + responseKey.length; i < fullText.length; i++) {
-              const char = fullText[i];
-              if (escapeNext) {
-                escapeNext = false;
-                continue;
-              }
-              if (char === '\\') {
-                escapeNext = true;
-                continue;
-              }
-              if (char === '"') {
-                if (!inString) {
-                  inString = true;
-                  quoteStart = i;
-                } else {
-                  // End of string - we have the full response value so far
-                  const responseValue = unescapeJSONString(fullText.substring(quoteStart + 1, i));
-                  renderMarkdownAndMath(contentElement, responseValue + "▊");
-                  break;
-                }
-              }
-            }
-            // If we found the opening quote but not the closing one yet (still streaming), render partial
-            if (quoteStart !== -1 && inString === true) {
-              const partial = unescapeJSONString(fullText.substring(quoteStart + 1));
-              if (partial.length > 0) {
-                renderMarkdownAndMath(contentElement, partial + "▊");
-              }
-            }
-          } else if (!contentElement.textContent || contentElement.textContent === "Korah is thinking...") {
-            contentElement.textContent = "Korah is thinking...";
-          }
-        }
+        charBuffer.push(...delta.split(''));
+        if (!typewriterActive) typeNextChar();
       }
+    }, {
+      systemPrompt: buildPhase3SystemPrompt(loadedState, classifierStrategy),
+      temperature: 0.2,
+      _phaseTag: 'Phase 3 (respond)',
     });
+    console.log(`🟢 [Phase 3] done in ${Math.round(performance.now() - phase3T0)}ms (${phase3FullText.length} chars)`);
 
-      typingIndicator?.classList.add('hidden');
-      
+    typingIndicator?.classList.add('hidden');
+
+    // Wait for the typewriter to drain so the final render reflects the full text.
+    // (Cheap busy-wait alternative would be ugly; instead, force one final render.)
+    if (contentElement && phase3FullText) {
+      renderMarkdownAndMath(contentElement, phase3FullText);
       charBuffer = [];
       typewriterActive = false;
-      
-      if (contentElement) {
-        const finalRawText = fullReplyFromAPI.trim();
-        
-        // ── Manual field extraction ──────────────────────────────
-        // Instead of JSON.parse (which breaks on unescaped LaTeX
-        // backslashes like \frac, \sim, \text), we extract each
-        // field directly from the raw text.
+    }
 
-        const parseAIResponse = (raw) => {
-          let s = raw.trim();
-          // Strip ```json ... ``` wrappers
-          s = s.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
-          const braceIdx = s.indexOf('{');
-          if (braceIdx === -1) return null;
-          s = s.substring(braceIdx);
+    chatBody.scrollTop = chatBody.scrollHeight;
 
-          // Fast path: try JSON.parse first (handles well-formed JSON)
-          try {
-            const p = JSON.parse(s);
-            if (p && (p.response || p.graph)) return p;
-          } catch (_) {}
-
-          // Slow path: extract fields manually
-          const result = { graph: null, response: '', suggestions: [] };
-
-          // ── Extract "response" string ──
-          result.response = extractStringField(s, 'response') || '';
-
-          // ── Extract "graph" object or null ──
-          const graphStart = findFieldValueStart(s, 'graph');
-          if (graphStart !== -1) {
-            const after = s.substring(graphStart).trim();
-            if (after.startsWith('null')) {
-              result.graph = null;
-            } else if (after.startsWith('{')) {
-              const obj = extractBraceBlock(after);
-              if (obj) {
-                try { result.graph = JSON.parse(fixEscapesForJSON(obj)); }
-                catch (e) { console.warn('Graph parse failed:', e.message); }
-              }
-            }
-          }
-
-          // ── Extract "suggestions" array ──
-          const sugStart = findFieldValueStart(s, 'suggestions');
-          if (sugStart !== -1) {
-            const after = s.substring(sugStart).trim();
-            if (after.startsWith('[')) {
-              const end = after.indexOf(']');
-              if (end !== -1) {
-                try { result.suggestions = JSON.parse(after.substring(0, end + 1)); }
-                catch (_) {}
-              }
-            }
-          }
-
-          return (result.response || result.graph) ? result : null;
-        };
-
-        // Find the index right after `"fieldName":` in text
-        const findFieldValueStart = (text, name) => {
-          const key = '"' + name + '"';
-          const idx = text.indexOf(key);
-          if (idx === -1) return -1;
-          let i = idx + key.length;
-          while (i < text.length && text[i] !== ':') i++;
-          return i < text.length ? i + 1 : -1;
-        };
-
-        // Extract a JSON string value, properly unescaping while
-        // preserving LaTeX backslashes (\frac → \frac, not form-feed + rac)
-        const extractStringField = (text, name) => {
-          const start = findFieldValueStart(text, name);
-          if (start === -1) return null;
-          let i = start;
-          while (i < text.length && /\s/.test(text[i])) i++;
-          if (text[i] !== '"') return null;
-          i++; // skip opening quote
-
-          let value = '';
-          let esc = false;
-          while (i < text.length) {
-            const ch = text[i];
-            if (esc) {
-              switch (ch) {
-                case '"':  value += '"'; break;
-                case '\\': value += '\\'; break;
-                case '/':  value += '/'; break;
-                case 'n': case 'r': case 't': case 'b': case 'f':
-                  // If next char is also a letter → LaTeX (\frac, \nabla, \text …)
-                  if (i + 1 < text.length && /[a-z]/.test(text[i + 1])) {
-                    value += '\\' + ch;           // keep as literal backslash + letter
-                  } else {
-                    value += ({ n: '\n', r: '\r', t: '\t', b: '', f: '' })[ch];
-                  }
-                  break;
-                case 'u':
-                  if (i + 4 < text.length && /^[0-9a-fA-F]{4}$/.test(text.substring(i + 1, i + 5))) {
-                    value += String.fromCharCode(parseInt(text.substring(i + 1, i + 5), 16));
-                    i += 4;
-                  } else {
-                    value += '\\u';
-                  }
-                  break;
-                default:
-                  // Any other \X → keep as LaTeX (\sim, \left, \cdot …)
-                  value += '\\' + ch;
-              }
-              esc = false; i++; continue;
-            }
-            if (ch === '\\') { esc = true; i++; continue; }
-            if (ch === '"') break; // closing quote
-            value += ch; i++;
-          }
-          return value;
-        };
-
-        // Extract a balanced { … } block from the start of text
-        const extractBraceBlock = (text) => {
-          if (text[0] !== '{') return null;
-          let depth = 0, inStr = false, esc = false;
-          for (let i = 0; i < text.length; i++) {
-            const ch = text[i];
-            if (esc) { esc = false; continue; }
-            if (ch === '\\') { esc = true; continue; }
-            if (ch === '"') { inStr = !inStr; continue; }
-            if (inStr) continue;
-            if (ch === '{') depth++;
-            else if (ch === '}') { depth--; if (depth === 0) return text.substring(0, i + 1); }
-          }
-          return null;
-        };
-
-        // Fix LaTeX backslashes inside JSON strings so JSON.parse works
-        // (used only for the graph/suggestions objects, not the response text)
-        const fixEscapesForJSON = (jsonStr) => {
-          let out = '', inStr = false, esc = false;
-          for (let i = 0; i < jsonStr.length; i++) {
-            const ch = jsonStr[i];
-            if (esc) {
-              if (inStr) {
-                if (!'"\\/bfnrtu'.includes(ch)) {
-                  out += '\\';
-                } else if ('bfnrt'.includes(ch) && i + 1 < jsonStr.length && /[a-z]/.test(jsonStr[i + 1])) {
-                  out += '\\';
-                }
-              }
-              out += ch; esc = false; continue;
-            }
-            if (ch === '\\') { esc = true; out += ch; continue; }
-            if (ch === '"') inStr = !inStr;
-            if (inStr) {
-              if (ch === '\n') { out += '\\n'; continue; }
-              if (ch === '\r') { out += '\\r'; continue; }
-              if (ch === '\t') { out += '\\t'; continue; }
-            }
-            out += ch;
-          }
-          return out;
-        };
-
-        parsedResponse = parseAIResponse(finalRawText);
-        
-        if (parsedResponse && typeof parsedResponse === 'object' && (parsedResponse.graph || parsedResponse.response)) {
-          const graphData = parsedResponse.graph;
-          const chatResponse = parsedResponse.response || '';
-          
-          if (graphData) {
-            console.log('Updating graph with data:', graphData);
-            updateSATGraph(graphData);
-          }
-          
-          contentElement.textContent = '';
-          if (chatResponse) {
-            renderMarkdownAndMath(contentElement, chatResponse);
-          } else if (graphData) {
-            renderMarkdownAndMath(contentElement, "_Graph updated._");
-          }
-        } else {
-          // If not valid JSON or missing fields, fall back to rendering the whole text
-          contentElement.textContent = '';
-          renderMarkdownAndMath(contentElement, finalRawText);
-        }
-        
-        chatBody.scrollTop = chatBody.scrollHeight;
-      }
-
-      // ── Persist conversation history ──
-      conversationHistory.push({ role: 'user', content: userMessage });
-      conversationHistory.push({ role: 'assistant', content: fullReplyFromAPI });
-      saveCurrentSession();
-
-      if (parsedResponse?.suggestions && Array.isArray(parsedResponse.suggestions)) {
-        aiSuggestions = parsedResponse.suggestions.slice(0, 2);
-      }
-
-      if (aiSuggestions.length > 0 && streamingRow) {
-        const bubble = streamingRow.querySelector('.msg-bubble');
-        if (bubble) {
-          const existingSuggestions = bubble.querySelector('.inline-suggestions');
-          if (!existingSuggestions) {
-            const suggestionsDiv = document.createElement('div');
-            suggestionsDiv.className = 'inline-suggestions';
-            aiSuggestions.forEach((suggestion) => {
-              const btn = document.createElement('button');
-              btn.className = 'inline-suggestion-btn t-btn';
-              btn.textContent = suggestion;
-              btn.addEventListener('click', () => sendMessage(suggestion));
-              suggestionsDiv.appendChild(btn);
-            });
-            bubble.appendChild(suggestionsDiv);
-          }
-        }
-      }
+    // ── Persist conversation history ──
+    conversationHistory.push({ role: 'user', content: userMessage });
+    conversationHistory.push({ role: 'assistant', content: phase3FullText });
+    saveCurrentSession();
+    // Generate AI title after first exchange
+    if (conversationHistory.length <= 2) generateAutoTitle();
+    console.log('═══ Three-phase send complete ═══');
 
     } catch (error) {
       console.error('Error in sendMessage:', error);
@@ -1173,15 +1280,21 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
     }
   }
 
-  async function callAPI(userContent, onChunk = null) {
+  async function callAPI(userContent, onChunk = null, options = {}) {
+    const systemPrompt = options.systemPrompt
+      ?? (await buildPhase1SystemPrompt());
+    const temperature = options.temperature ?? 0.2;
+    const phaseTag = options._phaseTag || 'callAPI';
+    console.log(`📡 [${phaseTag}] → POST ${API_ENDPOINT} (model=${MODEL}, temp=${temperature}, sysPromptLen=${systemPrompt.length})`);
+
     const messagesWithSystem = [
-      { role: 'system', content: SAT_MATH_SYSTEM_PROMPT + getFormatInstructions() },
+      { role: 'system', content: systemPrompt },
       { role: 'user', content: userContent }
     ];
 
     const bodyObj = {
       model: MODEL,
-      temperature: 0.4,
+      temperature,
       messages: messagesWithSystem,
       stream: true
     };
@@ -1194,7 +1307,10 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
 
     const response = await fetch(API_ENDPOINT, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "X-Korah-Phase": phaseTag,
+      },
       body: bodyStr
     });
 
@@ -1204,8 +1320,10 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
         const errorData = await response.json();
         errorMessage = errorData?.message || errorData?.error || errorMessage;
       } catch (_error) {}
+      console.error(`📡 [${phaseTag}] ← HTTP ${response.status}: ${errorMessage}`);
       throw new Error(errorMessage);
     }
+    console.log(`📡 [${phaseTag}] ← HTTP ${response.status} (streaming…)`);
 
     if (!response.body) {
       throw new Error("No response body received");
@@ -1278,7 +1396,7 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
     if (role === 'user') {
       avatar.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
     } else {
-      avatar.innerHTML = `<img src="../app/logo.png" alt="K" class="w-10 h-10 object-contain" />`;
+      avatar.innerHTML = `<img src="../logo-images/newlogo0.png" alt="K" class="w-10 h-10 object-contain" />`;
     }
 
     const bubble = document.createElement('div');
@@ -1413,8 +1531,11 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
       html = normalizedMarkdown.replace(/\n/g, "<br/>");
     }
     
+    if (window.DOMPurify) {
+      html = DOMPurify.sanitize(html, { USE_PROFILES: { html: true } });
+    }
     container.innerHTML = html;
-    
+
     container.querySelectorAll('pre code').forEach(block => {
       if (block.classList.contains('language-graph-update') || block.classList.contains('lang-graph-update')) {
         return;
@@ -1517,17 +1638,17 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
     let startY;
     let startGraphHeight;
 
-    handle.addEventListener('mousedown', (e) => {
+    const onDragStart = (clientY) => {
       isDragging = true;
-      startY = e.clientY;
+      startY = clientY;
       startGraphHeight = graphPanel.offsetHeight;
       document.body.style.cursor = 'row-resize';
       document.body.style.userSelect = 'none';
-    });
+    };
 
-    document.addEventListener('mousemove', (e) => {
+    const onDragMove = (clientY) => {
       if (!isDragging) return;
-      const deltaY = e.clientY - startY;
+      const deltaY = clientY - startY;
       const newGraphHeight = startGraphHeight + deltaY;
       const minHeight = 5 * 16;
       const maxHeight = window.innerHeight * 0.7;
@@ -1536,15 +1657,23 @@ OPTIONAL: Include 0-2 "suggestions" for follow-up questions.`;
         graphPanel.style.height = newGraphHeight + 'px';
         chatPanel.style.flex = '1';
       }
-    });
+    };
 
-    document.addEventListener('mouseup', () => {
+    const onDragEnd = () => {
       if (isDragging) {
         isDragging = false;
         document.body.style.cursor = '';
         document.body.style.userSelect = '';
       }
-    });
+    };
+
+    handle.addEventListener('mousedown', (e) => onDragStart(e.clientY));
+    document.addEventListener('mousemove', (e) => onDragMove(e.clientY));
+    document.addEventListener('mouseup', onDragEnd);
+
+    handle.addEventListener('touchstart', (e) => { e.preventDefault(); onDragStart(e.touches[0].clientY); }, { passive: false });
+    document.addEventListener('touchmove', (e) => { if (isDragging) { e.preventDefault(); onDragMove(e.touches[0].clientY); } }, { passive: false });
+    document.addEventListener('touchend', onDragEnd);
   }
 
   function handleResize() {

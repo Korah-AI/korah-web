@@ -6,6 +6,28 @@
   const { parseOpenSatV1Query, buildOpenSatV1QuestionUrl, OPENSAT_CATALOG } = window.KorahSAT;
   const query = parseOpenSatV1Query();
 
+  // CollegeBoard matplotlib SVGs draw axis labels via <use xlink:href="#glyphId"/>.
+  // Browsers + DOMPurify treat SVG 2's plain `href` more reliably than `xlink:href`,
+  // so normalize to `href` before sanitizing.
+  function normalizeSvgUseHrefs(html) {
+    if (!html || html.indexOf('xlink:href') === -1) return html;
+    return html.replace(/\sxlink:href=/g, ' href=');
+  }
+
+  const SVG_PURIFY_CONFIG = { ADD_TAGS: ['use'], ADD_ATTR: ['href', 'xlink:href'] };
+  DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+    if (node.tagName && node.tagName.toLowerCase() === 'use') {
+      for (const attr of ['href', 'xlink:href']) {
+        const val = node.getAttribute(attr);
+        if (val !== null && !val.startsWith('#')) node.removeAttribute(attr);
+      }
+    }
+  });
+
+  function sanitizeHtml(html) {
+    return DOMPurify.sanitize(normalizeSvgUseHrefs(html), SVG_PURIFY_CONFIG);
+  }
+
   const DEMO_QUESTIONS = [
     {
       id: "demo-math-1",
@@ -228,6 +250,7 @@
     answers: {},
     checked: {},
     reviewed: {},
+    eliminated: {},
     // Stopwatch state
     stopwatchElapsed: 0,
     isPaused: false,
@@ -257,7 +280,8 @@
   const questionStem = document.getElementById("questionStem");
   const answerChoices = document.getElementById("answerChoices");
   const feedbackPanel = document.getElementById("feedbackPanel");
-  const reviewBadge = document.getElementById("reviewBadge");
+  const inlineReviewBtn = document.getElementById("inlineReviewBtn");
+  const inlineReviewIcon = document.getElementById("inlineReviewIcon");
   
   const prevQuestionBtn = document.getElementById("prevQuestionBtn");
   const nextQuestionBtn = document.getElementById("nextQuestionBtn");
@@ -277,7 +301,18 @@
   const sessionInfoBtn = document.getElementById("sessionInfoBtn");
   const sessionInfoModal = document.getElementById("sessionInfoModal");
   const modalSection = document.getElementById("modalSection");
+  const modalAssessment = document.getElementById("modalAssessment");
+  const modalDifficulty = document.getElementById("modalDifficulty");
   const modalDomains = document.getElementById("modalDomains");
+  const sessionFilterChips = document.getElementById("sessionFilterChips");
+
+  const DIFFICULTY_LABELS = { E: "Easy", M: "Medium", H: "Hard" };
+  function difficultyText(diffs) {
+    if (!Array.isArray(diffs) || diffs.length === 0 || diffs.includes("any")) {
+      return "Any";
+    }
+    return diffs.map((d) => DIFFICULTY_LABELS[d] || d).join(", ");
+  }
 
   // Reference panel
   const referencePanel = document.getElementById("referencePanel");
@@ -399,6 +434,12 @@
     }
   }
 
+  function syncReviewState(isReviewed) {
+    if (inlineReviewBtn) inlineReviewBtn.classList.toggle("is-active", isReviewed);
+    if (inlineReviewIcon) inlineReviewIcon.setAttribute("fill", isReviewed ? "currentColor" : "none");
+    if (markReviewBtn) markReviewBtn.classList.toggle("is-active", isReviewed);
+  }
+
   function renderQuestion() {
     const current = getCurrentQuestion();
 
@@ -410,13 +451,13 @@
         questionStemTitle.textContent = "Loading questions…";
         questionStemTitle.classList.remove("is-hidden");
       }
-      questionParagraph.textContent = "Fetching your OpenSAT session from Korah.";
+      questionParagraph.textContent = "Fetching your session from the Official College Board Question Bank.";
       questionParagraph.classList.remove("is-hidden");
       questionStem.textContent = "";
       answerChoices.innerHTML = "";
       feedbackPanel.className = "sat-feedback-panel is-hidden";
       feedbackPanel.innerHTML = "";
-      reviewBadge.classList.add("is-hidden");
+      if (inlineReviewBtn) { inlineReviewBtn.classList.remove("is-active"); inlineReviewBtn.disabled = true; }
       // RESTORED: Button disabled states
       if (prevQuestionBtn) prevQuestionBtn.disabled = true;
       if (nextQuestionBtn) nextQuestionBtn.disabled = true;
@@ -432,7 +473,7 @@
       if (questionNumberEl) questionNumberEl.textContent = "!";
       questionDomain.textContent = "";
       if (questionStemTitle) {
-        questionStemTitle.textContent = "OpenSAT connection issue";
+        questionStemTitle.textContent = "College Board connection issue";
         questionStemTitle.classList.remove("is-hidden");
       }
       questionParagraph.textContent = loadError || "Something went wrong while loading questions.";
@@ -444,7 +485,7 @@
       `;
       feedbackPanel.className = "sat-feedback-panel is-hidden";
       feedbackPanel.innerHTML = "";
-      reviewBadge.classList.add("is-hidden");
+      if (inlineReviewBtn) { inlineReviewBtn.classList.remove("is-active"); inlineReviewBtn.disabled = true; }
       // RESTORED: Button disabled states
       if (prevQuestionBtn) prevQuestionBtn.disabled = true;
       if (nextQuestionBtn) nextQuestionBtn.disabled = true;
@@ -469,7 +510,7 @@
       answerChoices.innerHTML = `<a class="sat-button sat-button-primary" href="./index.html">Back to bank</a>`;
       feedbackPanel.className = "sat-feedback-panel is-hidden";
       feedbackPanel.innerHTML = "";
-      reviewBadge.classList.add("is-hidden");
+      if (inlineReviewBtn) { inlineReviewBtn.classList.remove("is-active"); inlineReviewBtn.disabled = true; }
       // RESTORED: Button disabled states
       if (prevQuestionBtn) prevQuestionBtn.disabled = true;
       if (nextQuestionBtn) nextQuestionBtn.disabled = true;
@@ -485,6 +526,37 @@
       loadState = questions.length ? "success" : "empty";
       renderHeader();
       renderQuestion();
+      return;
+    }
+
+    // Stub (not yet fully loaded) — show loading or load-error placeholder
+    // and let ensureDetail(currentIndex) hydrate it in the background.
+    if (!current.loaded) {
+      if (questionNumberEl) questionNumberEl.textContent = state.currentIndex + 1;
+      questionDomain.textContent = current.domain || "";
+      if (questionStemTitle) {
+        questionStemTitle.textContent = current._loadError ? "Could not load question" : "Loading question…";
+        questionStemTitle.classList.remove("is-hidden");
+      }
+      questionParagraph.textContent = current._loadError
+        ? "Skip to the next one, or try again."
+        : "Fetching question from the College Board question bank.";
+      questionParagraph.classList.remove("is-hidden");
+      questionStem.textContent = "";
+      answerChoices.innerHTML = current._loadError
+        ? `<button class="sat-button sat-button-primary" type="button" id="retryDetailBtn">Retry</button>`
+        : "";
+      feedbackPanel.className = "sat-feedback-panel is-hidden";
+      feedbackPanel.innerHTML = "";
+      if (inlineReviewBtn) { inlineReviewBtn.classList.remove("is-active"); inlineReviewBtn.disabled = true; }
+      if (prevQuestionBtn) prevQuestionBtn.disabled = state.currentIndex === 0;
+      if (nextQuestionBtn) nextQuestionBtn.disabled = false;
+      if (checkAnswerBtn) checkAnswerBtn.disabled = true;
+      if (toggleCalcBtn) toggleCalcBtn.disabled = true;
+      if (showExplanationBtn) showExplanationBtn.disabled = true;
+      if (markReviewBtn) markReviewBtn.disabled = true;
+      // Kick off the hydration (no-op if already in flight).
+      ensureDetail(state.currentIndex);
       return;
     }
 
@@ -512,20 +584,20 @@
       questionStemTitle.classList.add("is-hidden");
     }
     if (current.paragraph) {
-      questionParagraph.innerHTML = current.paragraph;
+      questionParagraph.innerHTML = sanitizeHtml(current.paragraph);
       questionParagraph.classList.remove("is-hidden");
     } else {
       questionParagraph.innerHTML = "";
       questionParagraph.classList.add("is-hidden");
     }
-    questionStem.innerHTML = current.stem;
-    reviewBadge.classList.toggle("is-hidden", !state.reviewed[current.id]);
+    questionStem.innerHTML = sanitizeHtml(current.stem);
+    syncReviewState(!!state.reviewed[current.id]);
 
     // Toggle calc button text + visibility
     if (toggleCalcBtn) {
       toggleCalcBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
         <rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="16" y2="18"/>
-      </svg>`;
+      </svg><span class="nav-btn-label">Calculator</span>`;
       toggleCalcBtn.disabled = current.section !== "math";
       toggleCalcBtn.classList.toggle("is-hidden", current.section !== "math");
       toggleCalcBtn.classList.toggle("is-active", state.calcActive);
@@ -566,9 +638,12 @@
         </div>
       `;
     } else {
+      const eliminated = state.eliminated[current.id] || {};
       answerChoices.innerHTML = current.options
         .map((option) => {
           const classNames = ["sat-answer-choice"];
+          const isEliminated = !!eliminated[option.key];
+          if (isEliminated) classNames.push("is-eliminated");
           if (selectedAnswer === option.key) {
             classNames.push("is-selected");
           }
@@ -578,9 +653,14 @@
             classNames.push("is-incorrect");
           }
           return `
-            <button class="${classNames.join(" ")}" type="button" data-answer="${option.key}">
-              <span class="sat-answer-key">${option.key}</span>${option.text}
-            </button>
+            <div class="sat-answer-row">
+              <button class="${classNames.join(" ")}" type="button" data-answer="${option.key}">
+                <span class="sat-answer-key">${option.key}</span>${sanitizeHtml(option.text)}
+              </button>
+              <button class="sat-elim-btn${isEliminated ? " is-active" : ""}" type="button" data-elim="${option.key}" title="Eliminate this choice">
+                <span class="sat-elim-letter">${option.key}</span>
+              </button>
+            </div>
           `;
         })
         .join("");
@@ -619,21 +699,36 @@
     // Button text and active states
     if (showExplanationBtn) {
       showExplanationBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r="1" fill="currentColor" stroke="none"/>
-      </svg>`;
+        <path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/>
+      </svg><span class="nav-btn-label">Explain</span>`;
       showExplanationBtn.classList.toggle("is-active", explanationForcedOpen);
     }
     if (markReviewBtn) markReviewBtn.classList.toggle("is-active", !!state.reviewed[current.id]);
+    if (inlineReviewBtn) inlineReviewBtn.disabled = false;
 
     if (window.qNav) window.qNav.refresh();
   }
 
+  // Flush the current question's elapsed time into the all-time practice
+  // total before the stopwatch is reset or the page is unloaded. Without
+  // this, time spent on skipped/reviewed questions is silently dropped.
+  function flushPracticeTime() {
+    const elapsed = state.stopwatchElapsed;
+    if (elapsed > 0 && window.KorahSATAnalytics?.recordPracticeTime) {
+      console.log("[SAT player] flushing", elapsed, "seconds of practice time");
+      window.KorahSATAnalytics.recordPracticeTime(elapsed)
+        .then(() => console.log("[SAT player] practice time write OK"))
+        .catch((e) => console.warn("[SAT] recordPracticeTime failed", e));
+    }
+    state.stopwatchElapsed = 0;
+  }
+
   // NEW: Stopwatch functions (replaces old 32min timer)
   function startStopwatch() {
-    state.stopwatchElapsed = 0;
+    flushPracticeTime();
     updateStopwatchDisplay();
     if (stopwatchInterval) clearInterval(stopwatchInterval);
-    
+
     stopwatchInterval = setInterval(() => {
       if (!state.isPaused) {
         state.stopwatchElapsed++;
@@ -641,6 +736,8 @@
       }
     }, 1000);
   }
+
+  window.addEventListener("pagehide", flushPracticeTime);
 
   function updateStopwatchDisplay() {
     if (!playerTimer || !clockIcon) return;
@@ -661,22 +758,81 @@
     explanationForcedOpen = false;
     // NEW: Reset stopwatch on navigation
     startStopwatch();
-    
+
     // Clean up Desmos before moving
     destroyDesmos();
 
     renderHeader();
     renderQuestion();
     if (window.qNav) window.qNav.refresh();
-    
+    // Hydrate the current question if it's still a stub, and warm up nearby ones.
+    ensureDetail(index);
+    prefetchAround(index, 3);
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ── Lazy detail loading ──────────────────────────────────────────────────
+  // /api/sat/questions ships the full filtered list, but only the first
+  // batchSize entries are fully detailed. Everything beyond ships as a stub
+  // (loaded: false). We hydrate stubs on demand as the user navigates, and
+  // prefetch a small window around the current question so navigation feels
+  // instant.
+  const detailFetchPromises = new Map(); // index → Promise
+
+  async function ensureDetail(index) {
+    const q = questions[index];
+    if (!q || q.loaded) return;
+    if (detailFetchPromises.has(index)) return detailFetchPromises.get(index);
+    const detailKey = q.detailKey || q.id;
+    if (!detailKey) return;
+
+    const promise = (async () => {
+      try {
+        const resp = await fetch(`/api/sat/question?id=${encodeURIComponent(detailKey)}`, {
+          method: "GET",
+          headers: { Accept: "application/json" },
+        });
+        if (!resp.ok) throw new Error(`status ${resp.status}`);
+        const body = await resp.json();
+        // Merge detail fields into the existing stub so id/section/domain etc. survive.
+        Object.assign(questions[index], {
+          type: body.type || q.type,
+          paragraph: body.paragraph || "",
+          stem: body.stem || "",
+          options: Array.isArray(body.options) ? body.options : [],
+          correctAnswer: body.correctAnswer || "",
+          explanation: body.explanation || "",
+          loaded: true,
+        });
+        // Re-render if the user is still on this question.
+        if (state.currentIndex === index) renderQuestion();
+      } catch (err) {
+        console.error("ensureDetail failed for index", index, err);
+        questions[index]._loadError = err?.message || "load failed";
+        if (state.currentIndex === index) renderQuestion();
+      } finally {
+        detailFetchPromises.delete(index);
+      }
+    })();
+    detailFetchPromises.set(index, promise);
+    return promise;
+  }
+
+  function prefetchAround(index, radius = 3) {
+    for (let i = 1; i <= radius; i++) {
+      const fwd = index + i;
+      if (fwd < questions.length) ensureDetail(fwd);
+    }
   }
 
   // NEW: Session modal population
   function populateSessionModal() {
     const sections = query.sections;
     if (modalSection) modalSection.textContent = getSectionsLabel(sections);
-    
+    if (modalAssessment) modalAssessment.textContent = query.assessment || "SAT";
+    if (modalDifficulty) modalDifficulty.textContent = difficultyText(query.difficulties);
+
     const domains = query.domains;
     if (modalDomains) {
       if (Array.isArray(domains) && domains.length > 0 && !domains.includes("any")) {
@@ -685,6 +841,21 @@
         modalDomains.innerHTML = `<span style="opacity: 0.6; font-style: italic;">All domains selected</span>`;
       }
     }
+  }
+
+  // Render small persistent chips next to the question domain so the active
+  // difficulty/assessment filters are always visible, not just in the modal.
+  function renderSessionFilterChips() {
+    if (!sessionFilterChips) return;
+    const chips = [];
+    const diffs = Array.isArray(query.difficulties) ? query.difficulties : [];
+    if (diffs.length > 0 && !diffs.includes("any")) {
+      chips.push(`<span class="sat-filter-chip">${difficultyText(diffs)}</span>`);
+    }
+    if (query.assessment && query.assessment !== "SAT") {
+      chips.push(`<span class="sat-filter-chip">${query.assessment}</span>`);
+    }
+    sessionFilterChips.innerHTML = chips.join("");
   }
 
   /**
@@ -703,33 +874,29 @@
     let isResizing = false;
     let currentBreakpoint = window.innerWidth <= 900 ? "mobile" : "desktop";
 
-    handle.addEventListener("mousedown", (e) => {
+    const onResizeStart = (clientX, clientY) => {
       isResizing = true;
       currentBreakpoint = window.innerWidth <= 900 ? "mobile" : "desktop";
       document.body.style.cursor = currentBreakpoint === "mobile" ? "row-resize" : "col-resize";
       document.body.classList.add("is-resizing");
-      e.preventDefault();
-    });
+    };
 
-    document.addEventListener("mousemove", (e) => {
+    const onResizeMove = (clientX, clientY) => {
       if (!isResizing) return;
 
       const rect = layout.getBoundingClientRect();
       const breakpoint = window.innerWidth <= 900 ? "mobile" : "desktop";
 
       if (breakpoint === "mobile") {
-        // MOBILE: vertical resize (Panel A height)
-        const relativeY = e.clientY - rect.top;
+        const relativeY = clientY - rect.top;
         const totalHeight = rect.height;
-        // Clamp: Panel A cannot be smaller than 130px OR larger than (Total - 130px)
-        const minContentHeight = 130; 
+        const minContentHeight = 130;
         if (relativeY > minContentHeight && relativeY < totalHeight - minContentHeight) {
           const heightPx = relativeY;
           desmosWrap.style.flex = `0 0 ${heightPx}px`;
           desmosWrap.style.height = `${heightPx}px`;
           desmosWrap.style.maxHeight = `${heightPx}px`;
-          // Set content panel to remaining height
-          const handleHeight = 12; // px for the resize handle
+          const handleHeight = 12;
           const contentHeight = totalHeight - heightPx - handleHeight;
           if (contentPanel) {
             contentPanel.style.height = `${contentHeight}px`;
@@ -737,8 +904,7 @@
           }
         }
       } else {
-        // DESKTOP: horizontal resize (Panel A width)
-        const relativeX = e.clientX - rect.left;
+        const relativeX = clientX - rect.left;
         const totalWidth = rect.width;
         if (relativeX > 200 && relativeX < totalWidth - 200) {
           const percentage = (relativeX / totalWidth) * 100;
@@ -750,15 +916,23 @@
       if (desmosInstance) {
         requestAnimationFrame(() => desmosInstance.resize());
       }
-    });
+    };
 
-    document.addEventListener("mouseup", () => {
+    const onResizeEnd = () => {
       if (isResizing) {
         isResizing = false;
         document.body.style.cursor = "default";
         document.body.classList.remove("is-resizing");
       }
-    });
+    };
+
+    handle.addEventListener("mousedown", (e) => { onResizeStart(e.clientX, e.clientY); e.preventDefault(); });
+    document.addEventListener("mousemove", (e) => onResizeMove(e.clientX, e.clientY));
+    document.addEventListener("mouseup", onResizeEnd);
+
+    handle.addEventListener("touchstart", (e) => { e.preventDefault(); onResizeStart(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
+    document.addEventListener("touchmove", (e) => { if (isResizing) { e.preventDefault(); onResizeMove(e.touches[0].clientX, e.touches[0].clientY); } }, { passive: false });
+    document.addEventListener("touchend", onResizeEnd);
 
     // Reset mobile drag-set heights when window returns to desktop
     window.addEventListener('resize', () => {
@@ -787,12 +961,59 @@
     console.log("SAT Player: Resize handle initialized");
   }
 
+  // Hydrate state.reviewed from Firestore bookmarks so a previously saved question
+  // shows the Save button as active even in a fresh session.
+  async function syncBookmarksToState() {
+    const a = window.KorahSATAnalytics;
+    if (!a || !questions.length) return;
+    try {
+      const bookmarks = await a.getBookmarks();
+      const savedIds = new Set(bookmarks.map(b => b.questionId));
+      let changed = false;
+      questions.forEach(q => {
+        if (q.id && savedIds.has(q.id) && !state.reviewed[q.id]) {
+          state.reviewed[q.id] = true;
+          changed = true;
+        }
+      });
+      if (changed) {
+        renderQuestion();
+        if (window.qNav) window.qNav.refresh();
+      }
+    } catch (e) {
+      console.warn("[SAT] bookmark sync failed", e);
+    }
+  }
+
   // Event Listeners
   answerChoices.addEventListener("click", (event) => {
     // Retry button logic
     const retry = event.target.closest("#retryLoadBtn");
     if (retry) {
       void loadQuestions();
+      return;
+    }
+
+    // Retry a single failed question detail.
+    const retryDetail = event.target.closest("#retryDetailBtn");
+    if (retryDetail) {
+      const idx = state.currentIndex;
+      if (questions[idx]) {
+        delete questions[idx]._loadError;
+        renderQuestion();
+        ensureDetail(idx);
+      }
+      return;
+    }
+
+    const elimBtn = event.target.closest("[data-elim]");
+    if (elimBtn) {
+      const current = getCurrentQuestion();
+      if (!current) return;
+      if (!state.eliminated[current.id]) state.eliminated[current.id] = {};
+      const key = elimBtn.dataset.elim;
+      state.eliminated[current.id][key] = !state.eliminated[current.id][key];
+      renderQuestion();
       return;
     }
 
@@ -823,7 +1044,7 @@
 
   nextQuestionBtn.addEventListener("click", () => {
     if (state.currentIndex === questions.length - 1) {
-      window.location.href = "./index.html";
+      window.KorahTransitions.go("./index.html");
     } else if (state.currentIndex < questions.length - 1) {
       goTo(state.currentIndex + 1);
     }
@@ -837,9 +1058,33 @@
     if (!state.answers[current.id]) {
       return;
     }
+    const wasChecked = state.checked[current.id];
     state.checked[current.id] = true;
     renderQuestion();
     if (window.qNav) window.qNav.refresh();
+
+    // Log to Firestore — only the first time the user checks this question
+    // in this session, so refreshing/re-clicking doesn't double-count.
+    if (!wasChecked && window.KorahSATAnalytics) {
+      const selected = state.answers[current.id];
+      const isSpr = current.type === "spr";
+      const isCorrect = isSpr
+        ? normalizeSprAnswer(selected) === normalizeSprAnswer(current.correctAnswer)
+        : selected === current.correctAnswer;
+      window.KorahSATAnalytics.recordAttempt({
+        questionId: current.detailKey || current.id,
+        legacyQuestionId: current.id,
+        detailKey: current.detailKey || current.id,
+        type: current.type || "",
+        skillCd: current.skillCd || "",
+        domain: current.domain || "",
+        section: current.section || "",
+        difficulty: current.difficulty || "",
+        assessment: query.assessment || "SAT",
+        correct: isCorrect,
+        timeSpent: state.stopwatchElapsed,
+      }).catch((e) => console.warn("[SAT] recordAttempt failed", e));
+    }
   });
 
   showExplanationBtn.addEventListener("click", () => {
@@ -847,15 +1092,29 @@
     renderQuestion();
   });
 
-  markReviewBtn.addEventListener("click", () => {
+  function toggleReview() {
     const current = getCurrentQuestion();
-    if (!current) {
-      return;
+    if (!current) return;
+    const newState = !state.reviewed[current.id];
+    state.reviewed[current.id] = newState;
+
+    if (window.KorahSATAnalytics) {
+      window.KorahSATAnalytics.saveBookmark(current.detailKey || current.id, newState, {
+        legacyQuestionId: current.id,
+        detailKey: current.detailKey || current.id,
+        section: current.section || "",
+        domain: current.domain || "",
+        skillCd: current.skillCd || "",
+      }).catch((e) => console.warn("[SAT] saveBookmark failed", e));
     }
-    state.reviewed[current.id] = !state.reviewed[current.id];
+
     renderQuestion();
     if (window.qNav) window.qNav.refresh();
-  });
+  }
+
+  markReviewBtn.addEventListener("click", toggleReview);
+  if (inlineReviewBtn) inlineReviewBtn.addEventListener("click", toggleReview);
+
 
   // Reference panel toggle
   referenceBtn.addEventListener("click", () => {
@@ -932,9 +1191,23 @@
       ? query.domains.join(",")
       : "any";
     params.set("domains", domainValue);
+    const skillValue = Array.isArray(query.skills) && query.skills.length > 0 && !query.skills.includes("any")
+      ? query.skills.join(",")
+      : "any";
+    params.set("skills", skillValue);
+    if (Array.isArray(query.difficulties) && query.difficulties.length > 0 && !query.difficulties.includes("any")) {
+      params.set("difficulties", query.difficulties.join(","));
+    }
+    if (query.assessment && query.assessment !== "SAT") {
+      params.set("assessment", query.assessment);
+    }
+    if (query.questionIds && query.questionIds.length > 0) {
+      params.set("questionIds", query.questionIds.join(","));
+    }
     if (query.limit !== null && query.limit !== undefined) {
       params.set("limit", String(query.limit));
     }
+
 
     let response;
     try {
@@ -998,12 +1271,24 @@
     state.currentIndex = 0;
     startStopwatch();
     renderHeader();
+    renderSessionFilterChips();
     renderQuestion();
-    
+
     // Initialize resize handle
     initResizeHandle();
 
     if (window.qNav) window.qNav.refresh();
+
+    // The first batch arrives fully detailed; warm up the next few in the
+    // background so forward navigation feels instant.
+    if (questions.length > 0) {
+      ensureDetail(0);
+      prefetchAround(0, 5);
+    }
+
+    // Sync saved state — runs immediately if analytics is ready, otherwise
+    // the korahSATAnalyticsReady listener below will pick it up.
+    syncBookmarksToState();
   }
 
 /**
@@ -1417,6 +1702,9 @@
 
   renderHeader();
   renderQuestion();
+
+  // If analytics wasn't ready when questions loaded, sync bookmarks now.
+  window.addEventListener('korahSATAnalyticsReady', () => syncBookmarksToState(), { once: true });
 
   void loadQuestions();
 })();

@@ -174,7 +174,7 @@
 
   /**
    * Generate study item content via AI.
-   * @param {Object} opts - { type: string, prompt: string, title?: string, subject?: string, testConfig?: Object, files?: Array }
+   * @param {Object} opts - { type: string, prompt: string, title?: string, subject?: string, testConfig?: Object, files?: Array, urls?: Array, pastedTexts?: Array }
    * @returns {Promise<{ content: Object }>} - content is { cards } | { sections } | { questions }
    */
   async function generateStudyContent(opts) {
@@ -184,6 +184,8 @@
     var subject = opts.subject || "";
     var testConfig = getTestConfig(opts.testConfig || {});
     var files = opts.files || [];
+    var urls = opts.urls || [];
+    var pastedTexts = opts.pastedTexts || [];
     var userMessage = [prompt];
     if (title) userMessage.push("Title: " + title);
     if (subject) userMessage.push("Subject: " + subject);
@@ -278,13 +280,15 @@
 
     function tryBackendApi() {
       var url = "/api/generate-study-item";
-      var bodyStr = JSON.stringify({ 
-        type: type, 
-        prompt: prompt, 
-        title: title, 
-        subject: subject, 
+      var bodyStr = JSON.stringify({
+        type: type,
+        prompt: prompt,
+        title: title,
+        subject: subject,
         testConfig: testConfig,
-        fileContents: fileContents 
+        fileContents: fileContents,
+        urls: urls,
+        pastedTexts: pastedTexts
       });
 
       if (bodyStr.length > 4.4 * 1024 * 1024) {
@@ -312,14 +316,28 @@
 
     function tryChatProxy() {
       var systemPrompt = getSystemPrompt(type, { testConfig: testConfig });
-      
+
       // Construct messages for Chat Proxy
       var messages = [
         { role: "system", content: systemPrompt }
       ];
 
-      var userContent = [{ type: "text", text: userMessage.join("\n") }];
-      
+      var msgText = userMessage.join("\n");
+
+      // Add URLs and pasted texts as context (fallback mode)
+      if (urls.length > 0) {
+        msgText += "\n\nURLs provided:";
+        urls.forEach(u => { msgText += "\n- " + u; });
+      }
+      if (pastedTexts.length > 0) {
+        msgText += "\n\nPasted content:";
+        pastedTexts.forEach(t => {
+          msgText += "\n--- Pasted Text ---\n" + t + "\n--- End ---";
+        });
+      }
+
+      var userContent = [{ type: "text", text: msgText }];
+
       // If we have images or PDFs, Gemini can handle them if the proxy supports it
       fileContents.forEach(f => {
         if (f.type === "image" || f.type === "pdf") {

@@ -100,9 +100,8 @@ async function korahAPI(systemMsg, messages, maxTokens = 1000) {
    ════════════════════════════════════════════════════════ */
 function app() {
   return {
-    theme: 'dark',
+    theme: localStorage.getItem('korah_theme') || 'dark',
     menuOpen: false,
-    currentSection: 'home',
     /* FIX #17: removed dead scrollTo function */
     navLinks: [
       { id: 'home', label: 'Home' }, { id: 'how', label: 'How it Works' },
@@ -135,25 +134,17 @@ function app() {
         setTimeout(() => { typing.replaceWith(reply); stream.scrollTop = stream.scrollHeight; }, 2500);
       }, 1000);
 
-      /* FIX #1 PERF: ONE IntersectionObserver handles reveal, progress bars, active nav, and mascot */
+      /* IO handles only reveal + progress bars */
       const io = new IntersectionObserver(entries => {
         entries.forEach(e => {
-          /* Scroll reveal */
           if (e.target.classList.contains('reveal') && e.isIntersecting) e.target.classList.add('visible');
-          /* Progress bars */
           if (e.isIntersecting) e.target.querySelectorAll('[data-target]').forEach(b => setTimeout(() => b.style.width = b.dataset.target + '%', 200));
-          /* Active nav + mascot */
-          if (e.isIntersecting && e.target.tagName === 'SECTION') {
-            const id = e.target.id;
-            document.querySelectorAll('.nav-link').forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + id));
-            if (id !== this.currentSection) {
-              this.currentSection = id;
-            }
-          }
         });
-      }, { threshold: 0.15 });
+      }, { threshold: 0.08 });
 
       document.querySelectorAll('.reveal, section[id], .bc, .tool-card').forEach(el => io.observe(el));
+
+      initScrollNav();
 
       /* Streak row */
       const row = document.getElementById('streakRow');
@@ -188,6 +179,40 @@ function app() {
       if (document.readyState === 'complete') initThreeJS();
     }
   };
+}
+
+/* ── Shared nav pill tracking (used by landing and support pages) ── */
+function initScrollNav() {
+  const navPills = document.querySelectorAll('.nav-pill');
+  const sections = document.querySelectorAll('section[id]');
+  const navIndicator = document.getElementById('navIndicator');
+  if (!navPills.length || !sections.length) return;
+  let lastId = null;
+  function update() {
+    const scrollPos = window.scrollY + 120;
+    let currentId = null;
+    sections.forEach(section => {
+      const top = section.offsetTop;
+      const bottom = top + section.offsetHeight;
+      if (scrollPos >= top && scrollPos < bottom) currentId = section.id;
+    });
+    if (currentId) lastId = currentId;
+    const activeId = currentId || lastId;
+    navPills.forEach(pill => {
+      pill.classList.toggle('active', pill.getAttribute('href') === '#' + activeId);
+    });
+    if (navIndicator && activeId) {
+      const activePill = document.querySelector(`.nav-pill[href="#${activeId}"]`);
+      if (activePill) {
+        navIndicator.style.opacity = '1';
+        navIndicator.style.transform = `translateX(${activePill.offsetLeft}px)`;
+        navIndicator.style.width = `${activePill.offsetWidth}px`;
+      }
+    }
+  }
+  window.addEventListener('scroll', update, { passive: true });
+  window.addEventListener('resize', update);
+  update();
 }
 
 /* ── Three.js 3D background ── FIX #8: called after defer load ── */

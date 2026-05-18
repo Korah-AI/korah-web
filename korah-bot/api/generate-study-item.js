@@ -202,7 +202,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Invalid JSON body" });
   }
 
-  const { type, prompt, title, subject, testConfig, fileContents } = body;
+  const { type, prompt, title, subject, testConfig, fileContents, urls, pastedTexts } = body;
   const allowedTypes = ["flashcards", "studyGuide", "practiceTest"];
   if (!type || !allowedTypes.includes(type)) {
     return res.status(400).json({ error: "Missing or invalid type (use: flashcards, studyGuide, practiceTest)" });
@@ -217,7 +217,7 @@ export default async function handler(req, res) {
   }
 
   const systemPrompt = getSystemPrompt(type, testConfig);
-  
+
   // Gemini-specific mapping
   const contents = [
     {
@@ -245,6 +245,63 @@ export default async function handler(req, res) {
         contents[0].parts[0].text += `\n\n[Attached file: ${f.name}]`;
       }
     });
+  }
+
+  // Handle URLs: YouTube → fileData, others → fetch & extract text
+  const SSRF_BLOCKED = /^(127\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|169\.254\.|::1|metadata\.google\.internal)/;
+  function isSafeUrl(raw) {
+    try {
+      const { protocol, hostname } = new URL(raw);
+      return protocol === 'https:' && !SSRF_BLOCKED.test(hostname);
+    } catch { return false; }
+  }
+
+  if (Array.isArray(urls) && urls.length > 0) {
+    for (const url of urls) {
+      const isYouTube = /youtube\.com|youtu\.be/.test(url);
+      if (isYouTube) {
+        // Gemini 2.5 Flash natively supports YouTube URLs via fileData
+        contents[0].parts.push({
+          fileData: { fileUri: url }
+        });
+      } else if (isSafeUrl(url)) {
+        // Fetch non-YouTube URLs server-side, extract text
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 10000);
+          const response = await fetch(url, {
+            headers: { 'User-Agent': 'Mozilla/5.0' },
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+          if (response.ok) {
+            const html = await response.text();
+            // Simple HTML tag stripping and text extraction
+            const text = html
+              .replace(/<script[^>]*>.*?<\/script>/gi, '')
+              .replace(/<style[^>]*>.*?<\/style>/gi, '')
+              .replace(/<[^>]+>/g, ' ')
+              .replace(/\s+/g, ' ')
+              .trim()
+              .slice(0, 20000);
+            if (text) {
+              contents[0].parts[0].text += `\n\n--- Content from ${url} ---\n${text}\n--- End of URL content ---`;
+            }
+          }
+        } catch (err) {
+          contents[0].parts[0].text += `\n\n[Could not fetch content from ${url}]`;
+        }
+      }
+    }
+  }
+
+  // Handle pasted text content
+  if (Array.isArray(pastedTexts)) {
+    for (const text of pastedTexts) {
+      if (text && typeof text === "string" && text.trim()) {
+        contents[0].parts[0].text += `\n\n--- Pasted Content ---\n${text.trim()}\n--- End of Pasted Content ---`;
+      }
+    }
   }
 
   const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;

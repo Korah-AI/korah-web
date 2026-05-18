@@ -5,6 +5,8 @@
     sections: [],
     domains: [],
     skills: [],
+    difficulties: [],
+    assessment: "SAT",
     limit: null,
     globalStats: null,
   };
@@ -14,6 +16,11 @@
   const limitInput = document.getElementById("limitInput");
   const startSelectedBtn = document.getElementById("startSelectedBtn");
   const clearFiltersBtn = document.getElementById("clearFiltersBtn");
+  const assessmentTrigger = document.getElementById("assessmentTrigger");
+  const assessmentDropdown = document.getElementById("assessmentDropdown");
+  const assessmentLabel = document.getElementById("assessmentLabel");
+  const assessmentArrow = document.getElementById("assessmentArrow");
+  const difficultyChips = document.getElementById("difficultyChips");
 
   const totalSections = OPENSAT_CATALOG.sections.length;
   const totalDomains = OPENSAT_CATALOG.sections.reduce((sum, s) => sum + (s.domains?.length || 0), 0);
@@ -33,9 +40,23 @@
     }
 
     const limitLabel = state.limit === null || state.limit === "" ? "No limit" : `${state.limit} questions`;
-    selectionSummary.textContent = `${sectionsLabel} · ${domainLabel} · ${limitLabel}`;
+    const difficultyLabel = state.difficulties.length === 0
+      ? "Any difficulty"
+      : state.difficulties.map((d) => ({ E: "Easy", M: "Medium", H: "Hard" }[d] || d)).join("/");
+    const assessmentLabel = state.assessment && state.assessment !== "SAT" ? ` · ${state.assessment}` : "";
+    selectionSummary.textContent = `${sectionsLabel} · ${domainLabel} · ${difficultyLabel} · ${limitLabel}${assessmentLabel}`;
     startSelectedBtn.textContent = "Start practice";
     startSelectedBtn.disabled = false;
+  }
+
+  function renderDifficulty() {
+    if (!difficultyChips) return;
+    difficultyChips.querySelectorAll("[data-difficulty]").forEach((btn) => {
+      const code = btn.dataset.difficulty;
+      const active = state.difficulties.includes(code);
+      btn.classList.toggle("is-active", active);
+      btn.setAttribute("aria-pressed", active ? "true" : "false");
+    });
   }
 
   function renderSections() {
@@ -43,14 +64,30 @@
     const stats = state.globalStats?.data?.stats || {};
     const domainStats = stats.domainBreakdown || {};
     const skillStats = stats.skillBreakdown || {};
+    const domainByDiff = stats.domainBreakdownByDifficulty || {};
+    const skillByDiff = stats.skillBreakdownByDifficulty || {};
+    const difficultyFilter = state.difficulties; // [] | array of "E"/"M"/"H"
+
+    function countDomain(code) {
+      if (difficultyFilter.length === 0) return domainStats[code] || 0;
+      const bucket = domainByDiff[code];
+      if (!bucket) return 0;
+      return difficultyFilter.reduce((sum, d) => sum + (bucket[d] || 0), 0);
+    }
+    function countSkill(code) {
+      if (difficultyFilter.length === 0) return skillStats[code] || 0;
+      const bucket = skillByDiff[code];
+      if (!bucket) return 0;
+      return difficultyFilter.reduce((sum, d) => sum + (bucket[d] || 0), 0);
+    }
 
     sectionColumns.innerHTML = sections
       .map((section) => {
         const isActiveSection = state.sections.includes(section.key);
         const allSelected = section.domains.every(d => state.domains.includes(d.key));
-        
-        // Calculate section total count
-        const sectionTotal = section.domains.reduce((sum, d) => sum + (domainStats[d.code] || 0), 0);
+
+        // Calculate section total count (respecting difficulty filter)
+        const sectionTotal = section.domains.reduce((sum, d) => sum + countDomain(d.code), 0);
         const sectionCountLabel = sectionTotal > 0 ? ` — ${sectionTotal} Questions` : "";
 
         return `
@@ -68,13 +105,13 @@
               ${section.domains
                 .map((domain) => {
                   const selected = isActiveSection && state.domains.includes(domain.key);
-                  const domainCount = domainStats[domain.code] || 0;
+                  const domainCount = countDomain(domain.code);
                   const domainCountLabel = domainCount > 0 ? `${domainCount} Questions` : "";
 
                   const skillHtml = (domain.skills || [])
                     .map((skill) => {
                       const skillSelected = state.skills.includes(skill.code);
-                      const skillCount = skillStats[skill.code] || 0;
+                      const skillCount = countSkill(skill.code);
                       const skillCountLabel = skillCount > 0 ? `${skillCount} Questions` : "";
                       return `
                         <div class="sat-topic-row">
@@ -112,9 +149,11 @@
       sections: state.sections.length > 0 ? state.sections : ["any"],
       domains: state.domains.length > 0 ? state.domains : ["any"],
       skills: state.skills.length > 0 ? state.skills : ["any"],
+      difficulties: state.difficulties.length > 0 ? state.difficulties : ["any"],
+      assessment: state.assessment || "SAT",
       limit: state.limit,
     };
-    window.location.href = buildOpenSatV1QuestionUrl(nextState);
+    window.KorahTransitions.go(buildOpenSatV1QuestionUrl(nextState));
   }
 
   function selectSection(sectionKey) {
@@ -215,20 +254,32 @@
     state.sections = [];
     state.domains = [];
     state.skills = [];
+    state.difficulties = [];
+    state.assessment = "SAT";
     state.limit = null;
     limitInput.value = "";
+    if (assessmentLabel) {
+      assessmentLabel.textContent = "SAT";
+      assessmentDropdown.querySelectorAll(".more-dropdown-item").forEach((item) => {
+        const check = item.querySelector(".more-dropdown-check");
+        if (check) check.style.opacity = item.dataset.value === "SAT" ? "1" : "0";
+      });
+    }
     renderAll();
   }
 
   function renderAll() {
     renderSections();
+    renderDifficulty();
     renderSummary();
-    fetchQuestionCounts();
   }
 
   async function fetchGlobalStats() {
     try {
-      const response = await fetch("/api/sat/stats", {
+      const assessmentParam = state.assessment && state.assessment !== "SAT"
+        ? `?assessment=${encodeURIComponent(state.assessment)}`
+        : "";
+      const response = await fetch(`/api/sat/stats${assessmentParam}`, {
         method: "GET",
         headers: { Accept: "application/json" },
       });
@@ -238,42 +289,6 @@
       }
     } catch (err) {
       console.error("Failed to fetch global stats:", err);
-    }
-  }
-
-  async function fetchQuestionCounts() {
-    const questionCountEl = document.getElementById("questionCount");
-    if (!questionCountEl) return;
-    
-    const params = new URLSearchParams();
-    const sectionValue = state.sections.length > 0 && !(state.sections.length === 2 && state.sections.includes("english") && state.sections.includes("math"))
-      ? state.sections.join(",")
-      : "any";
-    params.set("sections", sectionValue);
-    const domainValue = state.domains.length > 0 && !state.domains.includes("any")
-      ? state.domains.join(",")
-      : "any";
-    params.set("domains", domainValue);
-    const skillValue = state.skills.length > 0 && !state.skills.includes("any")
-      ? state.skills.join(",")
-      : "any";
-    params.set("skills", skillValue);
-    params.set("limit", "1");
-
-    try {
-      const response = await fetch(`/api/sat/questions?${params.toString()}`, {
-        method: "GET",
-        headers: { Accept: "application/json" },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        const count = data.count ?? 0;
-        questionCountEl.textContent = count >= 1000 ? `${Math.floor(count / 1000)}k+` : String(count);
-      } else {
-        questionCountEl.textContent = "—";
-      }
-    } catch (err) {
-      questionCountEl.textContent = "—";
     }
   }
 
@@ -313,13 +328,66 @@
   });
 
   startSelectedBtn.addEventListener("click", () => {
-    if (state.sections.length === 0) {
-      return;
-    }
     navigate();
   });
 
   clearFiltersBtn.addEventListener("click", resetFilters);
+
+  if (difficultyChips) {
+    difficultyChips.addEventListener("click", (event) => {
+      const btn = event.target.closest("[data-difficulty]");
+      if (!btn) return;
+      const code = btn.dataset.difficulty;
+      if (state.difficulties.includes(code)) {
+        state.difficulties = state.difficulties.filter((d) => d !== code);
+      } else {
+        state.difficulties = [...state.difficulties, code];
+      }
+      renderAll();
+    });
+  }
+
+  function selectAssessment(value) {
+    state.assessment = value;
+    assessmentLabel.textContent = value;
+    assessmentDropdown.querySelectorAll(".more-dropdown-item").forEach((item) => {
+      const check = item.querySelector(".more-dropdown-check");
+      if (check) check.style.opacity = item.dataset.value === value ? "1" : "0";
+    });
+    closeAssessment();
+    fetchGlobalStats();
+    renderAll();
+  }
+
+  function toggleAssessment() {
+    const isOpen = assessmentDropdown.classList.contains("more-dropdown-open");
+    assessmentDropdown.classList.toggle("more-dropdown-open");
+    if (assessmentArrow) assessmentArrow.style.transform = isOpen ? "" : "rotate(180deg)";
+  }
+
+  function closeAssessment() {
+    assessmentDropdown.classList.remove("more-dropdown-open");
+    if (assessmentArrow) assessmentArrow.style.transform = "";
+  }
+
+  if (assessmentTrigger) {
+    assessmentTrigger.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleAssessment();
+    });
+
+    assessmentDropdown.addEventListener("click", (e) => {
+      const item = e.target.closest(".more-dropdown-item");
+      if (!item) return;
+      const value = item.dataset.value;
+      if (value) selectAssessment(value);
+    });
+
+    document.addEventListener("click", (e) => {
+      const wrapper = assessmentTrigger.closest(".sat-dropdown-wrapper");
+      if (wrapper && !wrapper.contains(e.target)) closeAssessment();
+    });
+  }
 
   fetchGlobalStats();
   resetFilters();

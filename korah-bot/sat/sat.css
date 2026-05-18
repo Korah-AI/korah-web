@@ -1,6 +1,6 @@
 /* ── SAT Question Bank Styles ── */
 :root {
-  --player-topbar-h: 3.5rem;
+  --player-topbar-h: 4.5rem;
   --player-footer-h: 4rem;
   
   /* Purple Scrollbar */
@@ -27,20 +27,10 @@
     background: var(--p5);
 }
 
-/* Firefox Scrollbar */
-* {
-    scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
-}
-
 /* Matches korah-bot coding patterns: rem units, CSS variables, consistent spacing */
 /* Fully responsive with rem units */
 
 /* ── Sidebar (matching korah-chat.css) ── */
-.sidebar-section-label {
-    color: var(--tx3);
-}
-
 [data-theme="dark"] .sidebar .history-item,
 [data-theme="dark"] .sidebar .history-text {
     color: var(--tx) !important;
@@ -76,8 +66,8 @@
     height: auto !important;
     overflow-x: hidden;
     background: var(--bg);
-    padding-top: 3.5rem;
-    padding-bottom: 4rem;
+    padding-top: var(--player-topbar-h);
+    padding-bottom: var(--player-footer-h);
     box-sizing: border-box;
 }
 
@@ -91,7 +81,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.75rem 1.25rem;
+    padding: 0.5rem 1.25rem;
     height: var(--player-topbar-h);
     background: var(--sf);
     border-bottom: 0.0625rem solid var(--bd);
@@ -115,7 +105,36 @@
 .sat-topbar-right {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.25rem;
+}
+
+/* Labeled nav buttons (icon + text, stacked vertically) */
+.nav-labeled-btn {
+    flex-direction: column !important;
+    gap: 3px !important;
+    height: auto !important;
+    min-height: 3rem;
+    padding: 0.35rem 0.7rem !important;
+    border-radius: 0.5rem !important;
+    width: auto !important;
+    min-width: 3.25rem;
+    border: none !important;
+}
+
+.nav-btn-label {
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    line-height: 1;
+    color: inherit;
+    white-space: nowrap;
+}
+
+/* Active state for labeled nav buttons */
+.nav-labeled-btn.is-active {
+    background: rgba(139, 92, 246, 0.18) !important;
+    color: var(--p5) !important;
+    border: 1px solid rgba(139, 92, 246, 0.3) !important;
 }
 
 /* Timer Display */
@@ -233,8 +252,8 @@ html[data-theme="light"] .sat-player-zen-wrap .sat-question-panel {
 }
 
 .sat-question-head {
-    display: inline-flex !important;
-    align-items: baseline;
+    display: flex !important;
+    align-items: center;
     gap: 0.5rem;
     flex-wrap: wrap;
 }
@@ -485,6 +504,96 @@ html[data-theme="light"] .sat-desmos-container {
     color: var(--tx3);
 }
 
+.sat-filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem 1.5rem;
+    align-items: center;
+    margin-top: 0.75rem;
+    width: 100%;
+}
+
+.sat-filter-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.sat-filter-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--tx2);
+}
+
+.sat-filter-select {
+    height: 2.375rem;
+    border-radius: 0.75rem;
+    border: 0.0625rem solid var(--bd);
+    background: var(--sf2);
+    color: var(--tx);
+    padding: 0 0.75rem;
+    font: inherit;
+    font-size: 0.875rem;
+    cursor: pointer;
+}
+
+.sat-filter-select:focus {
+    outline: none;
+    border-color: var(--p4);
+}
+
+.sat-difficulty-chips {
+    display: inline-flex;
+    gap: 0.375rem;
+    flex-wrap: wrap;
+}
+
+.sat-chip {
+    height: 2.375rem;
+    padding: 0 0.875rem;
+    border-radius: 999px;
+    border: 0.0625rem solid var(--bd);
+    background: var(--sf2);
+    color: var(--tx2);
+    font: inherit;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.sat-chip:hover {
+    border-color: var(--p4);
+    color: var(--tx);
+}
+
+.sat-chip.is-active {
+    background: var(--p4);
+    border-color: var(--p4);
+    color: #fff;
+}
+
+.sat-filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: 999px;
+    border: 0.0625rem solid var(--bd);
+    background: var(--sf2);
+    color: var(--tx2);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.sat-filter-chip-row:empty {
+    display: none !important;
+}
+
 .sat-inline-selection {
     flex: 1;
     min-width: 15rem;
@@ -644,6 +753,10 @@ html[data-theme="light"] .sat-desmos-container {
     background: var(--cu);
     color: #fff;
     border-color: var(--p4);
+}
+
+html[data-theme="light"] .sat-chip.is-active {
+    color: var(--tx);
 }
 
 /* ── Section & Domain Cards ── */
@@ -1044,15 +1157,18 @@ html[data-theme="light"] .sat-section-header:hover {
     display: grid;
     gap: 1rem;
     background: var(--sf);/* Question card inside scroll — constrained width, centered */
-    height: 100%;
+    min-height: 0;
     border: 0.0625rem solid var(--bd);
     border-radius: 1.5rem;
     padding: 1.375rem;
     box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.15);
+    overflow: visible;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .sat-question-head {
-    justify-content: space-between;
+    justify-content: flex-start;
 }
 
 .sat-question-head h2 {
@@ -1084,34 +1200,31 @@ html[data-theme="light"] .sat-section-header:hover {
     border: 0.0625rem solid var(--bd2);
 }
 
-/* Dark mode: lighten the passage card so dark images/content are visible */
+/* Dark mode: elevated glass surface for passage card */
 html[data-theme="dark"] .sat-passage-card {
-  background: rgba(139, 92, 246, 0.75);
-  border-color: rgba(139, 92, 246, 0.15);
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.09);
 }
 html[data-theme="dark"] .sat-passage-text {
-  color: #e9d5ff;
+  color: rgba(255, 255, 255, 0.9);
 }
 html[data-theme="dark"] .sat-question-stem {
-  color: #e9d5ff;
+  color: rgba(255, 255, 255, 0.82);
 }
 
-/* Dark mode: invert SVG/image colors in question content so dark diagrams are visible */
-html[data-theme="dark"] .sat-passage-card svg,
+/* Dark mode: keep loaded images on a white background so black content stays visible */
 html[data-theme="dark"] .sat-passage-card img,
-html[data-theme="dark"] .sat-answer-list svg,
 html[data-theme="dark"] .sat-answer-list img {
-  filter: invert(1) hue-rotate(180deg);
+  filter: none;
+  background: #ffffff;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
 }
 
-html[data-theme="dark"] .sat-passage-card svg path,
-html[data-theme="dark"] .sat-passage-card svg line,
-html[data-theme="dark"] .sat-passage-card svg rect,
-html[data-theme="dark"] .sat-passage-card svg circle,
-html[data-theme="dark"] .sat-answer-item svg path,
-html[data-theme="dark"] .sat-answer-item svg line,
-html[data-theme="dark"] .sat-answer-item svg circle {
-    color: var(--tx);
+/* Inline SVG diagrams: invert so dark lines become white and are readable on dark bg */
+html[data-theme="dark"] .sat-passage-card svg,
+html[data-theme="dark"] .sat-answer-list svg {
+  filter: invert(1) hue-rotate(180deg);
 }
 
 .sat-passage-text,
@@ -1250,6 +1363,98 @@ html[data-theme="light"] .sat-spr-input.is-incorrect {
     border-radius: 999px;
     background: var(--sf);
     font-weight: 800;
+}
+
+/* ── Inline Mark-for-Review button (inside question card header) ── */
+.sat-inline-review-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.25rem 0.625rem 0.25rem 0.5rem;
+    border-radius: 999px;
+    border: 0.0625rem solid var(--bd);
+    background: transparent;
+    color: var(--tx3);
+    font-size: 0.78rem;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: color .15s, border-color .15s, background .15s;
+    letter-spacing: 0.01em;
+}
+.sat-inline-review-btn:hover {
+    color: var(--p5);
+    border-color: var(--p4);
+}
+.sat-inline-review-btn.is-active {
+    color: #f59e0b;
+    border-color: rgba(245, 158, 11, 0.5);
+    background: rgba(245, 158, 11, 0.08);
+}
+.sat-inline-review-btn svg {
+    flex-shrink: 0;
+}
+
+/* ── Answer row: choice + elimination button ── */
+.sat-answer-row {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+}
+.sat-answer-row .sat-answer-choice {
+    flex: 1;
+}
+
+/* Eliminated state: strikethrough text + dimmed */
+.sat-answer-choice.is-eliminated {
+    opacity: 0.45;
+    text-decoration: line-through;
+    text-decoration-color: currentColor;
+}
+
+/* ── Elimination button ── */
+.sat-elim-btn {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 999px;
+    border: 0.125rem solid var(--tx3);
+    background: transparent;
+    color: var(--tx3);
+    cursor: pointer;
+    position: relative;
+    transition: border-color .15s, color .15s;
+}
+.sat-elim-btn::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 115%;
+    height: 0.125rem;
+    background: currentColor;
+    transform: translate(-50%, -50%) rotate(-45deg);
+    opacity: 0;
+    transition: opacity .15s;
+}
+.sat-elim-btn:hover {
+    border-color: var(--p5);
+    color: var(--p5);
+}
+.sat-elim-btn.is-active {
+    border-color: var(--tx);
+    color: var(--tx);
+}
+.sat-elim-btn.is-active::after {
+    opacity: 1;
+}
+.sat-elim-letter {
+    font-size: 0.8rem;
+    font-weight: 800;
+    line-height: 1;
 }
 
 .sat-feedback-panel {
@@ -1793,6 +1998,9 @@ html[data-theme="light"] .more-dropdown-item .material-icons-round {
     opacity: 0;
     transition: opacity 0.2s ease;
 }
+html[data-theme="dark"] .more-dropdown-check {
+    color: #ffffff;
+}
 
 .more-dropdown-theme-option.active .more-dropdown-check {
     opacity: 1;
@@ -1856,6 +2064,14 @@ html[data-theme="light"] .more-dropdown-item.danger:hover {
 .sat-topbar-right .sat-button:hover svg {
     color: var(--p5);
 }
+html[data-theme="dark"] .sat-topbar-right .sat-button:hover svg,
+html[data-theme="dark"] .sat-topbar-right .sat-button:hover .material-icons-round {
+    color: #ffffff;
+}
+html[data-theme="dark"] .sat-topbar-right .sat-button.is-active svg,
+html[data-theme="dark"] .sat-topbar-right .sat-button.is-active .material-icons-round {
+    color: rgba(255, 255, 255, 0.9);
+}
 /* ═══ ENHANCED PLAYER TIMER ═══ */
 #stopwatchContainer {
     background: var(--sf2) !important;
@@ -1877,6 +2093,9 @@ html[data-theme="light"] .more-dropdown-item.danger:hover {
 }
 #stopwatchContainer.running #playerTimer {
     color: var(--p5);
+}
+html[data-theme="dark"] #stopwatchContainer.running #playerTimer {
+    color: #ffffff;
 }
 /* ═══ ENHANCED FOOTER BUTTONS ═══ */
 .sat-player-footer {
@@ -1906,6 +2125,9 @@ html[data-theme="light"] .more-dropdown-item.danger:hover {
     background: var(--sf2);
     color: var(--p5);
 }
+html[data-theme="dark"] .sat-player-footer .sat-button-ghost:hover {
+    color: #ffffff;
+}
 /* ═══ ENHANCED QUESTION AREA ═══ */
 .sat-question-panel {
     display: grid;
@@ -1917,11 +2139,31 @@ html[data-theme="light"] .more-dropdown-item.danger:hover {
     transition: all 0.3s ease;
     min-height: 0;
 }
+html[data-theme="dark"] .sat-question-panel {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.08);
+}
 .sat-question-number {
-    font-size: 1.75rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2rem;
+    height: 2rem;
+    padding: 0.15rem 0.55rem;
+    border-radius: 0.5rem;
+    font-size: 0.95rem;
     font-weight: 900;
+    background: rgba(139, 92, 246, 0.18);
     color: var(--p5);
-    text-shadow: 0 0 2rem rgba(139, 92, 246, 0.3);
+    text-shadow: none;
+    border: 1px solid rgba(139, 92, 246, 0.35);
+    line-height: 1;
+    flex-shrink: 0;
+}
+html[data-theme="dark"] .sat-question-number {
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.22);
 }
 .sat-domain-label {
     font-size: 0.75rem;
@@ -1932,6 +2174,10 @@ html[data-theme="light"] .more-dropdown-item.danger:hover {
     background: rgba(139, 92, 246, 0.1);
     padding: 0.25rem 0.625rem;
     border-radius: 999px;
+}
+html[data-theme="dark"] .sat-domain-label {
+    color: rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.08);
 }
 /* ═══ ENHANCED ANSWER CHOICES ═══ */
 .sat-answer-list {
@@ -2016,6 +2262,45 @@ html[data-theme="light"] .more-dropdown-item.danger:hover {
     color: white;
 }
 
+/* Dark mode: lighter elevated surfaces for answer items */
+html[data-theme="dark"] .sat-answer-item {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+html[data-theme="dark"] .sat-answer-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(139, 92, 246, 0.6);
+}
+html[data-theme="dark"] .sat-answer-item.is-selected {
+    background: rgba(139, 92, 246, 0.18);
+    border-color: var(--p5);
+}
+html[data-theme="dark"] .sat-answer-letter {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.9);
+}
+html[data-theme="dark"] .sat-answer-item:hover .sat-answer-letter {
+    background: var(--p4);
+    border-color: var(--p4);
+    color: #ffffff;
+}
+html[data-theme="dark"] .sat-answer-item.is-selected .sat-answer-letter {
+    background: var(--p5);
+    border-color: var(--p5);
+    color: #ffffff;
+}
+html[data-theme="dark"] .sat-answer-item.is-correct .sat-answer-letter {
+    background: #22c55e;
+    border-color: #22c55e;
+    color: #ffffff;
+}
+html[data-theme="dark"] .sat-answer-item.is-incorrect .sat-answer-letter {
+    background: #ef4444;
+    border-color: #ef4444;
+    color: #ffffff;
+}
+
 /* ═══════════════════════════════════════════════════
    QUESTION NAVIGATOR
    ═══════════════════════════════════════════════════ */
@@ -2067,6 +2352,21 @@ html[data-theme="light"] .q-nav-trigger.is-open {
   background: rgba(124, 58, 237, 0.08);
   border-color: var(--p5);
   box-shadow: 0 4px 12px rgba(124, 58, 237, 0.1);
+}
+
+html[data-theme="dark"] .q-nav-trigger {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  box-shadow: none;
+}
+
+html[data-theme="dark"] .q-nav-trigger:hover,
+html[data-theme="dark"] .q-nav-trigger.is-open {
+  background: rgba(255, 255, 255, 0.13);
+  border-color: rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+  box-shadow: none;
 }
 
 .q-nav-trigger:active {
@@ -3108,7 +3408,6 @@ html[data-theme="light"] .more-dropdown-item.danger:hover {
   overflow: visible;
   display: flex;
   justify-content: center;
-  margin-top: auto;
 }
 
 .collapsed-more-btn {
@@ -3560,3 +3859,54 @@ html[data-theme="light"] .sat-more-dropdown .more-dropdown-item::before {
         max-width: calc(100vw - 2rem);
     }
 }
+
+/* ── Dashboard Skeleton Loading ── */
+@keyframes skeleton-shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.skel {
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    rgba(139, 92, 246, 0.08) 25%,
+    rgba(167, 139, 250, 0.18) 50%,
+    rgba(139, 92, 246, 0.08) 75%
+  );
+  background-size: 800px 100%;
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+  display: block;
+}
+
+[data-theme="light"] .skel {
+  background: linear-gradient(
+    90deg,
+    rgba(124, 58, 237, 0.07) 25%,
+    rgba(167, 139, 250, 0.2) 50%,
+    rgba(124, 58, 237, 0.07) 75%
+  );
+  background-size: 800px 100%;
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+}
+
+.skel-stat      { height: 38px; width: 80px; border-radius: 8px; }
+.skel-stat-sub  { height: 13px; width: 140px; margin-top: 8px; border-radius: 4px; }
+.skel-bar       { height: 7px; margin-top: 16px; border-radius: 8px; }
+
+.skel-skill-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(139,92,246,.1);
+}
+.skel-skill-row:last-child { border-bottom: none; }
+.skel-skill-name  { height: 13px; width: 60%; border-radius: 4px; }
+.skel-skill-sub   { height: 11px; width: 45%; margin-top: 5px; border-radius: 4px; }
+.skel-skill-badge { height: 13px; width: 52px; border-radius: 10px; flex-shrink: 0; }
+
+.skel-domain-row  { margin-bottom: 14px; }
+.skel-domain-row:last-child { margin-bottom: 0; }
+.skel-domain-label { height: 12px; width: 55%; border-radius: 4px; margin-bottom: 8px; }
+.skel-domain-bar   { height: 6px; border-radius: 6px; }
+
+.skel-skill-meta { display: flex; flex-direction: column; gap: 4px; }

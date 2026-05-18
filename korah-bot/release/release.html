@@ -13,10 +13,12 @@
   }
 }" :data-theme="getEffectiveTheme()" x-cloak>
 <head>
+<link rel="stylesheet" href="../transitions/page-transitions.css"/>
+<script src="../transitions/page-transitions.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Korah AI — Coming Soon</title>
-    <link rel="icon" type="image/png" href="../app/logoresized.png">
+    <link rel="icon" type="image/png" href="../logo-images/newlogo0.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -24,11 +26,24 @@
     <link rel="stylesheet" href="release.css">
 </head>
 <body class="prerelease-body">
+<style>
+  html { background: #06040f; }
+  html[data-theme="light"] { background: #d2d2d2 !important;}
+  html:not(.korah-page-ready) body { opacity: 0 !important; }
+</style>
+<script>
+  (function() {
+    const t = localStorage.getItem('korah_theme') || 'dark';
+    if (t === 'light' || (t === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  })();
+</script>
     <canvas id="bg-canvas" class="stars-container"></canvas>
     
     <main class="content-wrapper">
         <div class="mascot-container">
-            <img src="../app/logo.png" alt="Korah Mascot" class="korah-mascot">
+            <img src="../logo-images/newlogo0.png" alt="Korah Mascot" class="korah-mascot">
         </div>
         
         <header class="text-content">

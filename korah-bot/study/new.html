@@ -30,18 +30,17 @@
   }
 }" :data-theme="getEffectiveTheme()" x-cloak>
 <head>
+<link rel="stylesheet" href="../transitions/page-transitions.css"/>
+<script src="../transitions/page-transitions.js"></script>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>Korah AI — Create Study Item</title>
-  <link rel="icon" type="image/png" href="../app/logoresized.png">
+  <link rel="icon" type="image/png" href="../logo-images/newlogo0.png">
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="../app/korah-chat.css"/>
   <style>
@@ -538,6 +537,20 @@
   </style>
 </head>
 <body class="bg-base tx">
+<style>
+  html:not(.korah-page-ready) { background: #06040f !important; }
+  html[data-theme="light"]:not(.korah-page-ready) { background: #d2d2d2 !important; }
+  html:not(.korah-page-ready) body { opacity: 0 !important; }
+</style>
+
+<script>
+  (function() {
+    const t = localStorage.getItem('korah_theme') || 'dark';
+    if (t === 'light' || (t === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  })();
+</script>
 
 <canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
 <div class="sidebar-overlay" @click="mobileOpen = false; document.querySelector('.sidebar-overlay').classList.remove('show')"></div>
@@ -559,9 +572,9 @@
   @resize.window="if (window.innerWidth > 768) { mobileOpen = false; const overlay = document.querySelector('.sidebar-overlay'); if (overlay) overlay.classList.remove('show'); }">
   <div class="sidebar-header">
     <a href="../index.html" class="flex items-center gap-2.5 no-underline">
-      <div class="w-12 h-12 rounded-xl flex items-center justify-center font-display text-xl font-black text-white shadow-glow logo-btn">
+      <div class="w-12 h-12 rounded-xl flex items-center justify-center font-display text-xl">
         <span class="logo-letter">
-          <img src="../app/logo.png" alt="Korah"/>
+          <img src="../logo-images/newlogo0.png" alt="Korah"/>
         </span>
       </div>
       <div class="flex flex-col leading-tight">
@@ -575,13 +588,13 @@
   </div>
 
   <nav class="sidebar-nav">
-    <div class="sidebar-nav-row">
-      <a href="../index.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">chat</span> <span class="nav-text">Chat</span></a>
-      <a href="feed.html" class="sidebar-nav-link active t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">school</span> <span class="nav-text">Study</span></a>
-    </div>
-    <a href="../sat/index.html" class="sidebar-nav-link t-btn" data-sat-link="true"><span class="material-icons-round" style="font-size: 1.25rem;">assignment</span> <span class="nav-text">SAT</span></a>
-    <a href="../productivity.html" class="sidebar-nav-link productivity-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">timer</span> <span class="nav-text">Productivity</span></a>
-    <a href="../opportunities/opportunities.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">rocket_launch</span> <span class="nav-text">Opportunities</span></a>
+    <a href="../index.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">home</span> <span class="nav-text">Home</span></a>
+    <a href="../chat.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">chat</span> <span class="nav-text">Chat</span></a>
+    <a href="feed.html" class="sidebar-nav-link active t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">school</span> <span class="nav-text">Study</span></a>
+    <span class="sidebar-section-label">SAT</span>
+    <a href="../sat/index.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">assignment</span> <span class="nav-text">Question Bank</span></a>
+    <a href="../sat/math-chat.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">calculate</span> <span class="nav-text">Math Chat</span></a>
+    <a href="../sat/dashboard.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">insights</span> <span class="nav-text">Dashboard</span></a>
   </nav>
 
   <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 12px 0 4px;">
@@ -631,41 +644,10 @@
     </div>
   </div>
 
-  <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 0.75rem 0 0.25rem;">
-    <span class="sidebar-section-label" style="margin:0">Recent Study Items</span>
-  </div>
-  <div class="sidebar-middle">
-    <div class="select-bar-wrapper">
-      <div id="study-select-bar" class="select-bar">
-        <span class="select-bar-count" id="study-select-count">0 selected</span>
-        <div class="select-bar-actions">
-          <button class="select-bar-btn" id="study-select-all" title="Select all">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <polyline points="20 6 9 17 4 12"/>
-            </svg>
-          </button>
-          <button class="select-bar-btn" id="study-deselect-all" title="Deselect all">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <line x1="18" y1="6" x2="6" y2="18"/>
-              <line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
-          <button class="select-bar-btn danger" id="study-delete-selected" title="Delete selected"></button>
-        </div>
-      </div>
-    </div>
-    <div id="study-items-history" class="chat-history">
-    </div>
-    <div id="study-items-empty" class="study-items-empty hidden">
-      <span class="study-items-empty-icon" aria-hidden="true">📚</span>
-      <div class="study-items-empty-title">No study items yet</div>
-      <div class="study-items-empty-sub">Create one to see it here.</div>
-    </div>
-  </div>
 
     <div class="sidebar-footer">
     <div class="mood-indicator" id="sidebar-mood">
-      <span class="mood-dot" id="mood-dot">🟢</span>
+      <span class="mood-dot" id="mood-dot"><span class="material-icons-round" style="font-size: 12px; color: var(--grn);" aria-label="online">circle</span></span>
       <span class="text-xs tx2 font-medium">Full Focus Mode</span>
     </div>
     <div class="sidebar-footer-actions">
@@ -710,9 +692,6 @@
         <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
       </svg>
     </button>
-    <div class="logo-container" style="display: flex; align-items: center;">
-      <img src="../app/logo.png" alt="Korah Logo" style="height: 2rem; width: auto;">
-    </div>
     <div class="chat-title-area">
       <div class="korah-status-dot"></div>
       <span class="font-semibold tx text-sm">Create Study Item</span>
@@ -720,7 +699,32 @@
   </header>
 
   <div class="create-flow-body">
-    <div id="react-step-1" class="w-full max-w-7xl mx-auto"></div>
+    <div class="w-full max-w-7xl mx-auto">
+      <div class="bg-sf glass-sm t-theme border border-[var(--bd)] rounded-[32px] p-8 md:p-12 flex flex-col items-center shadow-2xl">
+        <header class="text-center mb-8 md:mb-12">
+          <h1 class="text-3xl md:text-5xl font-black mb-3 tracking-tight" style="color: var(--p5);">Create Study Item</h1>
+          <p class="text-base md:text-lg tx2 max-w-xl mx-auto opacity-70 leading-relaxed font-medium">Select a study mode below to generate personalized materials with Korah AI.</p>
+        </header>
+
+        <div class="create-type-grid w-full max-w-5xl">
+          <button type="button" class="create-type-card t-btn" data-type="flashcards">
+            <span class="create-type-emoji"><span class="material-icons-round" style="font-size: 3rem; color: #78909C;" aria-label="Flashcard Set">style</span></span>
+            <span class="create-type-name">Flashcard Set</span>
+            <span class="create-type-desc tx2">Front/back cards with rich text and math</span>
+          </button>
+          <button type="button" class="create-type-card t-btn" data-type="studyGuide">
+            <span class="create-type-emoji"><span class="material-icons-round" style="font-size: 3rem; color: #5C6BC0;" aria-label="Study Guide">auto_stories</span></span>
+            <span class="create-type-name">Study Guide</span>
+            <span class="create-type-desc tx2">Structured outline with sections and summaries</span>
+          </button>
+          <button type="button" class="create-type-card t-btn" data-type="practiceTest">
+            <span class="create-type-emoji"><span class="material-icons-round" style="font-size: 3rem; color: #EF5350;" aria-label="Practice Test">gps_fixed</span></span>
+            <span class="create-type-name">Practice Test</span>
+            <span class="create-type-desc tx2">Questions with answer keys and rationales</span>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </main>
 
@@ -740,21 +744,21 @@
       <h3 class="modal-step-title">How do you want to create it?</h3>
       <div class="method-grid">
         <button type="button" class="method-card t-btn" data-method="manual">
-          <div class="method-icon">✏️</div>
+          <div class="method-icon"><span class="material-icons-round" style="color: var(--gold); font-size: 20px;" aria-label="pencil">edit</span></div>
           <div class="method-info">
             <span class="method-name">Manual</span>
             <span class="method-desc tx2">Type or paste your content directly into the editor</span>
           </div>
         </button>
         <button type="button" class="method-card t-btn" data-method="ai-prompt">
-          <div class="method-icon">💬</div>
+          <div class="method-icon"><span class="material-icons-round" style="color: var(--p4); font-size: 20px;" aria-label="chat">chat</span></div>
           <div class="method-info">
             <span class="method-name">AI from Prompt</span>
             <span class="method-desc tx2">Describe what you need and let Korah generate the rest</span>
           </div>
         </button>
         <button type="button" class="method-card t-btn" data-method="ai-doc">
-          <div class="method-icon">📄</div>
+          <div class="method-icon"><span class="material-icons-round" style="color: var(--tx2); font-size: 20px;" aria-label="document">article</span></div>
           <div class="method-info">
             <span class="method-name">AI from Documents</span>
             <span class="method-desc tx2">Upload PDFs or notes to generate focused materials</span>
@@ -769,7 +773,7 @@
 <!-- Rename Modal -->
 <div id="rename-modal" class="delete-modal">
   <div class="delete-modal-content">
-    <div class="delete-modal-icon">✏️</div>
+    <div class="delete-modal-icon"><span class="m-icon ic-gen">edit</span></div>
     <h3 class="delete-modal-title">Rename</h3>
     <p class="delete-modal-desc" id="rename-modal-desc">Enter a new name</p>
     <input id="rename-modal-input" type="text" class="create-input" style="width:100%; margin-top:0.25rem;" placeholder="New name…"/>
@@ -783,7 +787,7 @@
 <!-- Delete Confirm Modal -->
 <div id="delete-modal" class="delete-modal">
   <div class="delete-modal-content">
-    <div class="delete-modal-icon">🗑️</div>
+    <div class="delete-modal-icon"><span class="material-icons-round" style="color: var(--red); font-size: 20px;" aria-label="delete">delete</span></div>
     <h3 class="delete-modal-title">Delete?</h3>
     <p class="delete-modal-desc">This will permanently delete "<span id="delete-modal-name"></span>". This cannot be undone.</p>
     <div class="delete-modal-actions">
@@ -872,7 +876,7 @@
 <script src="js/study-api.js"></script>
 <script>
 (function () {
-  KorahSidebar.initSidebar({ chatBaseUrl: "../index.html", itemPageUrl: "item.html" });
+  KorahSidebar.initSidebar({ chatBaseUrl: "../chat.html", itemPageUrl: "item.html" });
 
   var state = { step: 1, type: null, method: "manual", uploadedFiles: [] };
 
@@ -901,6 +905,12 @@
   }
   window.openCreationModal = openCreationModal;
 
+  document.querySelectorAll(".create-type-card").forEach(function (card) {
+    card.addEventListener("click", function () {
+      openCreationModal(card.getAttribute("data-type"));
+    });
+  });
+
   function closeCreationModal() {
     if (backdrop) backdrop.classList.remove("active");
     if (creationModal) creationModal.classList.remove("active");
@@ -921,7 +931,7 @@
         studyGuide: 'guide-create.html', 
         practiceTest: 'test-create.html'
       };
-      window.location.href = `${pageMap[state.type]}?method=${method}`;
+      window.KorahTransitions.go(`${pageMap[state.type]}?method=${method}`);
     });
   });
 
@@ -970,8 +980,8 @@
 
       const isImage = file.type.startsWith("image/");
       const ext = file.name.split(".").pop().toUpperCase();
-      const icon = file.type === "application/pdf" ? "📕"
-        : (file.type === "text/plain" || ["TXT","MD","CSV"].includes(ext)) ? "📄" : "📎";
+      const icon = file.type === "application/pdf" ? '<span class="material-icons-round" style="color: var(--tx2); font-size: 22px;" aria-label="book">book</span>'
+        : (file.type === "text/plain" || ["TXT","MD","CSV"].includes(ext)) ? '<span class="material-icons-round" style="color: var(--tx2); font-size: 22px;" aria-label="document">article</span>' : '<span class="material-icons-round" style="color: var(--tx2); font-size: 22px;" aria-label="attachment">attach_file</span>';
 
       const thumbHtml = isImage
         ? `<div class="doc-thumb"><img class="doc-preview-img" src="" alt="${file.name}"/></div>`
@@ -1089,7 +1099,7 @@
 
   // updateManualContentUI removed - no longer needed since we redirect to dedicated pages
 
-  function saveItem(content) {
+  async function saveItem(content) {
     var title = document.getElementById("create-title").value.trim() || "Untitled";
     var description = document.getElementById("create-description").value.trim();
     var subject = document.getElementById("create-subject").value.trim();
@@ -1108,9 +1118,9 @@
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-    if (window.KorahDB) window.KorahDB.setStudyItem(id, item);
+    if (window.KorahDB) await window.KorahDB.setStudyItem(id, item);
     var redirectPage = state.type === "studyGuide" ? "guide.html" : state.type === "practiceTest" ? "test.html" : "item.html";
-    window.location.href = redirectPage + "?id=" + encodeURIComponent(id);
+    window.KorahTransitions.go(redirectPage + "?id=" + encodeURIComponent(id));
   }
 
   // --- VALIDATION FUNCTIONS ---
@@ -1270,7 +1280,7 @@
 </script>
 
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+  import { getApps, initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
   import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
 
   const firebaseConfig = {
@@ -1282,68 +1292,16 @@
     appId: "1:226169460321:web:b166fc8260107c55dafc20"
   };
 
-  const app = initializeApp(firebaseConfig);
+  const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
   const auth = getAuth(app);
 
-  document.getElementById('logout-btn').addEventListener('click', async () => {
-    await signOut(auth);
-    localStorage.removeItem('korah_first_name');
-    window.location.href = '../login.html';
+  document.getElementById('logout-btn').addEventListener('click', () => {
+    window.confirmLogout(async () => {
+      await signOut(auth);
+      localStorage.removeItem('korah_first_name');
+      window.KorahTransitions.go('../login.html');
+    });
   });
-</script>
-<script type="text/babel">
-  const { useRef } = React;
-  const typeData = [
-    { id: 'flashcards', emoji: '🃏', name: 'Flashcard Set', desc: 'Front/back cards with rich text and math' },
-    { id: 'studyGuide', emoji: '📖', name: 'Study Guide', desc: 'Structured outline with sections and summaries' },
-    { id: 'practiceTest', emoji: '🎯', name: 'Practice Test', desc: 'Questions with answer keys and rationales' }
-  ];
-
-  function TypeCard({ type }) {
-    const buttonRef = useRef(null);
-    const handleMouseMove = (e) => {
-      const rect = buttonRef.current.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      buttonRef.current.style.setProperty('--mouse-x', `${x}px`);
-      buttonRef.current.style.setProperty('--mouse-y', `${y}px`);
-    };
-    return (
-      <button
-        ref={buttonRef}
-        type="button"
-        className="create-type-card t-btn spotlight-effect"
-        data-type={type.id}
-        onClick={() => window.openCreationModal(type.id)}
-        onMouseMove={handleMouseMove}
-      >
-        <span className="create-type-emoji">{type.emoji}</span>
-        <span className="create-type-name">{type.name}</span>
-        <span className="create-type-desc tx2">{type.desc}</span>
-      </button>
-    );
-  }
-
-  function App() {
-    return (
-      <div className="bg-sf glass-sm t-theme border border-[var(--bd)] rounded-[32px] p-8 md:p-12 flex flex-col items-center shadow-2xl">
-        <header className="text-center mb-8 md:mb-12">
-          <h1 className="text-3xl md:text-5xl font-black mb-3 tracking-tight" style={{ color: 'var(--p5)' }}>Create Study Item</h1>
-          <p className="text-base md:text-lg tx2 max-w-xl mx-auto opacity-70 leading-relaxed font-medium">Select a study mode below to generate personalized materials with Korah AI.</p>
-        </header>
-
-        <div className="create-type-grid w-full max-w-5xl">
-          {typeData.map(type => (
-            <TypeCard key={type.id} type={type} />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  const container = document.getElementById('react-step-1');
-  const root = ReactDOM.createRoot(container);
-  root.render(<App />);
 </script>
 </body>
 </html>

@@ -564,7 +564,9 @@
         autoTitleGenerated: false,
         userRenamed: false,
       };
-      this.saveSession(id, session);
+      // Keep in-memory only; persist to storage once the first message is sent
+      // (via saveCurrentSession) so empty sessions don't pollute the sidebar.
+      sessionsCache[id] = session;
       return id;
     },
 
@@ -900,6 +902,9 @@
       html = normalizedMarkdown.replace(/\n/g, "<br/>");
     }
 
+    if (window.DOMPurify) {
+      html = DOMPurify.sanitize(html, { USE_PROFILES: { html: true } });
+    }
     targetEl.innerHTML = html;
 
     if (window.renderMathInElement && typeof window.renderMathInElement === "function") {
@@ -1004,7 +1009,7 @@
     if (role === "user") {
       avatar.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
     } else {
-      avatar.innerHTML = `<img src="app/logo.png" alt="K" class="w-10 h-10 object-contain" />`;
+      avatar.innerHTML = `<img src="logo-images/newlogo0.png" alt="K" class="w-10 h-10 object-contain" />`;
     }
 
     const bubble = document.createElement("div");
@@ -1121,9 +1126,9 @@
 
   function getFollowUpActionsForMode(mode) {
     const commonActions = [
-      { icon: "🃏", label: "Generate Flashcards", prompt: "Create flashcards based on what you just explained" },
-      { icon: "🎯", label: "Generate Practice Test", prompt: "Create a practice test based on what you just explained" },
-      { icon: "📄", label: "Generate Study Guide", prompt: "Create a study guide based on what you just explained" },
+      { icon: "style", label: "Generate Flashcards", prompt: "Create flashcards based on what you just explained" },
+      { icon: "quiz", label: "Generate Practice Test", prompt: "Create a practice test based on what you just explained" },
+      { icon: "auto_stories", label: "Generate Study Guide", prompt: "Create a study guide based on what you just explained" },
     ];
 
     return commonActions;
@@ -1137,10 +1142,16 @@
     return row;
   }
 
-  function getStudyItemIcon(type) {
-    const icons = { flashcards: "🃏", studyGuide: "📖", practiceTest: "🎯" };
-    return icons[type] || "📄";
+  function getStudyItemIconHtml(type) {
+    const icons = {
+      flashcards:   { icon: "style",        color: "ic-flash" },
+      studyGuide:   { icon: "auto_stories", color: "ic-guide" },
+      practiceTest: { icon: "quiz",         color: "ic-quiz" }
+    };
+    const item = icons[type] || { icon: "description", color: "ic-gen" };
+    return `<span class="m-icon ${item.color}">${item.icon}</span>`;
   }
+  window.getStudyItemIconHtml = getStudyItemIconHtml;
 
   const selectedStudy = new Set();
 
@@ -1217,10 +1228,10 @@
     navLinks.forEach(link => {
       if (link.getAttribute("href").indexOf("feed.html") !== -1) {
         if (itemIds.length === 0) {
-          link.innerHTML = "📚 Study";
+          link.innerHTML = `<span class="m-icon ic-lit" style="margin-right:0.5rem">library_books</span> Study`;
           link.classList.add("nav-empty");
         } else {
-          link.innerHTML = "📚 Study";
+          link.innerHTML = `<span class="m-icon ic-lit" style="margin-right:0.5rem">library_books</span> Study`;
           link.classList.remove("nav-empty");
         }
       }
@@ -1256,7 +1267,7 @@
 
       const icon = document.createElement("span");
       icon.className = "history-icon";
-      icon.textContent = getStudyItemIcon(item.type);
+      icon.innerHTML = getStudyItemIconHtml(item.type);
 
       const text = document.createElement("span");
       text.className = "history-text";
@@ -1706,7 +1717,7 @@
 
   // Expose for study pages that may load this script
   window.KorahStorage = Storage;
-  window.getStudyItemIcon = getStudyItemIcon;
+  window.getStudyItemIconHtml = getStudyItemIconHtml;
   window.renderStudyItemsHistory = renderStudyItemsHistory;
 
   // Expose KorahChat API for sidebar.js integration
@@ -1716,7 +1727,8 @@
       if (window.KorahSidebar) {
         window.KorahSidebar.updateActiveItem(id);
       }
-    }
+    },
+    getCurrentSessionId: () => currentSessionId,
   };
 
   function isPlaceholderTitle(title) {
@@ -1813,7 +1825,9 @@ DESMOS TRICKS: I'll suggest one relevant trick based on your problem!
 TIPS: Tables (+), Regression (click circle), Zoom (wrench)`;
 
   const MODE_SYSTEM_PROMPTS = {
-    general: `You are Korah, an all-around AI study companion. Your teaching style:
+    general: `ABOUT KORAH: Created by Oscar Euceda, a high school programmer, Korah is a free academic resource designed to help students and communities receive quality education at the click of a button. Your mission is to make learning accessible, engaging, and effective for everyone.
+
+You are Korah, an all-around AI study companion. Your teaching style:
 - Provide clear, helpful, and concise explanations on any subject
 - Use analogies and examples to simplify complex topics
 - Encourage critical thinking and active learning
@@ -1825,7 +1839,9 @@ KaTeX delimiter policy (REQUIRED for all math):
 - Display math: $$...$$ (double dollar signs)
 - NEVER use \\(...\\), \\[...\\], or bare math without delimiters`,
 
-    math: `You are Korah, a math tutor who makes math intuitive and approachable. Your teaching style:
+    math: `ABOUT KORAH: Created by Oscar Euceda, a high school programmer, Korah is a free academic resource designed to help students and communities receive quality education at the click of a button. Your mission is to make learning accessible, engaging, and effective for everyone.
+
+You are Korah, a math tutor who makes math intuitive and approachable. Your teaching style:
 - Show your work at each step and explain why each step is necessary
 - Encourage true understanding and bear with the student
 - When showing equations, explain each variable and operation clearly
@@ -1845,7 +1861,9 @@ KaTeX delimiter policy (REQUIRED for all math):
 - Display math: $$...$$ (double dollar signs)
 - NEVER use \\(...\\), \\[...\\], or bare math without delimiters`,
 
-    physics: `You are Korah, an engaging physics tutor. Your teaching style:
+    physics: `ABOUT KORAH: Created by Oscar Euceda, a high school programmer, Korah is a free academic resource designed to help students and communities receive quality education at the click of a button. Your mission is to make learning accessible, engaging, and effective for everyone.
+
+You are Korah, an engaging physics tutor. Your teaching style:
 - Explain concepts through real-world applications and examples
 - Connect abstract theories to tangible phenomena students can observe
 - Show how formulas are derived and what each variable represents
@@ -1859,7 +1877,9 @@ KaTeX delimiter policy (REQUIRED for all math):
 - NEVER use \\(...\\), \\[...\\], or bare math without delimiters
 - Consider including a Desmos graph for functions`,
 
-    chemistry: `You are Korah, an enthusiastic chemistry tutor. Your teaching style:
+    chemistry: `ABOUT KORAH: Created by Oscar Euceda, a high school programmer, Korah is a free academic resource designed to help students and communities receive quality education at the click of a button. Your mission is to make learning accessible, engaging, and effective for everyone.
+
+You are Korah, an enthusiastic chemistry tutor. Your teaching style:
 - Explain chemical reactions with clear mechanisms and electron movement
 - Help visualize molecular structures and bonding
 - Connect microscopic (atomic) behavior to macroscopic observations
@@ -1872,7 +1892,9 @@ KaTeX delimiter policy (REQUIRED for all math):
 - Display math: $$...$$ (double dollar signs)
 - NEVER use \\(...\\), \\[...\\], or bare math without delimiters`,
 
-    biology: `You are Korah, a knowledgeable biology tutor. Your teaching style:
+    biology: `ABOUT KORAH: Created by Oscar Euceda, a high school programmer, Korah is a free academic resource designed to help students and communities receive quality education at the click of a button. Your mission is to make learning accessible, engaging, and effective for everyone.
+
+You are Korah, a knowledgeable biology tutor. Your teaching style:
 - Explain life processes from molecular to organism level
 - Use clear terminology while defining scientific terms as you go
 - Connect structure to function in biological systems
@@ -1885,7 +1907,9 @@ KaTeX delimiter policy (REQUIRED for all math):
 - Display math: $$...$$ (double dollar signs)
 - NEVER use \\(...\\), \\[...\\], or bare math without delimiters`,
 
-    sat: `You are Korah, an expert SAT Math tutor. Your teaching style:
+    sat: `ABOUT KORAH: Created by Oscar Euceda, a high school programmer, Korah is a free academic resource designed to help students and communities receive quality education at the click of a button. Your mission is to make learning accessible, engaging, and effective for everyone.
+
+You are Korah, an expert SAT Math tutor. Your teaching style:
 - Focus on speed, accuracy, and test-taking strategies
 - Teach students to recognize question patterns the SAT repeats
 - Show both algebraic and Desmos calculator approaches
@@ -1920,7 +1944,9 @@ KaTeX delimiter policy (REQUIRED for all math):
 - Display math: $$...$$ (double dollar signs)
 - NEVER use \\(...\\), \\[...\\], or bare math without delimiters`,
 
-    satEnglish: `You are Korah, an expert SAT English (Reading & Writing) tutor. Your teaching style:
+    satEnglish: `ABOUT KORAH: Created by Oscar Euceda, a high school programmer, Korah is a free academic resource designed to help students and communities receive quality education at the click of a button. Your mission is to make learning accessible, engaging, and effective for everyone.
+
+You are Korah, an expert SAT English (Reading & Writing) tutor. Your teaching style:
 - Focus on speed, accuracy, and pattern recognition
 - Teach students to eliminate wrong answers before picking the right one
 - Cover all SAT English domains: Craft & Structure, Information & Ideas, Standard English Conventions, Expression of Ideas
@@ -1965,7 +1991,9 @@ KaTeX delimiter policy (REQUIRED for any math):
 - Display math: $$...$$ (double dollar signs)
 - NEVER use \\(...\\), \\[...\\], or bare math without delimiters`,
 
-    science: `You are Korah, an engaging science tutor covering physics, chemistry, and biology. Your teaching style:
+    science: `ABOUT KORAH: Created by Oscar Euceda, a high school programmer, Korah is a free academic resource designed to help students and communities receive quality education at the click of a button. Your mission is to make learning accessible, engaging, and effective for everyone.
+
+You are Korah, an engaging science tutor covering physics, chemistry, and biology. Your teaching style:
 - Explain concepts through real-world applications and examples
 - Connect abstract theories to tangible phenomena students can observe
 - Show how formulas are derived and what each variable represents
@@ -1981,7 +2009,9 @@ KaTeX delimiter policy (REQUIRED for all math):
 - NEVER use \\(...\\), \\[...\\], or bare math without delimiters
 - Consider including a Desmos graph for functions`,
 
-    history: `You are Korah, an insightful history tutor. Your teaching style:
+    history: `ABOUT KORAH: Created by Oscar Euceda, a high school programmer, Korah is a free academic resource designed to help students and communities receive quality education at the click of a button. Your mission is to make learning accessible, engaging, and effective for everyone.
+
+You are Korah, an insightful history tutor. Your teaching style:
 - Provide context and background for historical events
 - Explain cause-and-effect relationships between events
 - Present multiple perspectives when discussing historical topics
@@ -1989,7 +2019,9 @@ KaTeX delimiter policy (REQUIRED for all math):
 - Help students analyze primary sources and evaluate evidence
 - Create timelines and show how events relate chronologically`,
 
-    literature: `You are Korah, a thoughtful literature tutor. Your teaching style:
+    literature: `ABOUT KORAH: Created by Oscar Euceda, a high school programmer, Korah is a free academic resource designed to help students and communities receive quality education at the click of a button. Your mission is to make learning accessible, engaging, and effective for everyone.
+
+You are Korah, a thoughtful literature tutor. Your teaching style:
 - Guide analysis of themes, symbols, and literary devices
 - Discuss character development and motivations
 - Explore how context (historical, cultural, biographical) influences texts
@@ -2057,14 +2089,23 @@ Always format your responses using GitHub-flavored Markdown. Use:
 
   function getModeConfig(mode) {
     const modes = {
-      general: { name: "General", emoji: "✨" },
-      math: { name: "Math", emoji: "🧮" },
-      sat: { name: "SAT", emoji: "📝" },
-      science: { name: "Science", emoji: "🔬" },
-      history: { name: "History", emoji: "📜" },
-      literature: { name: "Literature", emoji: "📚" },
+      general:    { name: "General",    icon: "auto_awesome",    colorClass: "ic-gen" },
+      math:       { name: "Math",       icon: "calculate",       colorClass: "ic-math" },
+      sat:        { name: "SAT",        icon: "analytics",       colorClass: "ic-sat-m" },
+      science:    { name: "Science",    icon: "science",         colorClass: "ic-sci" },
+      history:    { name: "History",    icon: "library_books",   colorClass: "ic-hist" },
+      literature: { name: "Literature", icon: "menu_book",       colorClass: "ic-lit" },
     };
-    return modes[mode] || modes.general;
+    const config = modes[mode] || modes.general;
+    if (mode === 'sat' && typeof satSubMode !== 'undefined' && satSubMode === 'english') {
+      return { name: "SAT English", icon: "spellcheck", colorClass: "ic-sat-e" };
+    }
+    return config;
+  }
+
+  function getModeIcon(mode) {
+    const cfg = getModeConfig(mode);
+    return `<span class="m-icon ${cfg.colorClass}">${cfg.icon}</span>`;
   }
 
   function getModeDisplayName(mode) {
@@ -2086,9 +2127,7 @@ ${concisenessPrompt}
 ${FORMAT_INSTRUCTIONS}`.trim();
   }
 
-  function getModeEmoji(mode) {
-    return getModeConfig(mode).emoji;
-  }
+
 
   function applyModeTheme(mode) {
     const themeVars = {
@@ -2116,14 +2155,14 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     const container = document.getElementById("mode-pills-container");
     if (!container) return;
     
-    const modes = ["general", "math", "sat", "science", "history", "literature"];
+    const modes = ["general", "math", "science", "history", "literature"];
     container.innerHTML = "";
     
     modes.forEach(mode => {
       const config = getModeConfig(mode);
       const pill = document.createElement("button");
       pill.className = `mode-pill t-btn ${currentSession.mode === mode ? "active" : ""}`;
-      pill.innerHTML = `<span>${config.emoji}</span><span>${config.name}</span>`;
+      pill.innerHTML = `${getModeIcon(mode)}<span>${config.name}</span>`;
       
       pill.addEventListener("click", () => {
         if (mode === "sat") {
@@ -2149,7 +2188,7 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     const modeIcon = document.getElementById("mode-icon");
     const modeName = document.getElementById("mode-name");
     const modeNameMini = document.getElementById("mode-name-mini");
-    if (modeIcon) modeIcon.textContent = config.emoji;
+    if (modeIcon) modeIcon.innerHTML = getModeIcon(mode);
     if (modeName) modeName.textContent = displayName;
     if (modeNameMini) modeNameMini.textContent = displayName + " Mode";
   }
@@ -2177,7 +2216,7 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     const modal = document.getElementById("sat-sub-modal");
     if (!modal) return;
     modal.classList.add("show");
-    const onMath = () => { cleanup(); setSATSubMode("math"); changeMode("sat"); };
+    const onMath = () => { cleanup(); setSATSubMode("math"); changeMode("sat"); window.KorahTransitions.go('sat/math-chat.html' + (currentSessionId ? '#' + currentSessionId : '')); };
     const onEnglish = () => { cleanup(); setSATSubMode("english"); changeMode("sat"); };
     const onOutside = (e) => { if (e.target === modal) cleanup(); };
     const onEsc = (e) => { if (e.key === "Escape") cleanup(); };
@@ -2239,11 +2278,16 @@ ${FORMAT_INSTRUCTIONS}`.trim();
   });
 
   document.getElementById("chat-delete-selected")?.addEventListener("click", () => {
-    if (selectedChats.size === 0) return;
+    // Source of truth is the DOM, since sidebar.js may own rendering/selection
+    // and korah-chat.js's internal `selectedChats` set can drift out of sync.
+    const ids = [...chatHistoryContainer.querySelectorAll(".history-item.selected")]
+      .map(el => el.getAttribute("data-session"))
+      .filter(Boolean);
+    if (ids.length === 0) return;
     showDeleteModal(
-      `${selectedChats.size} chat${selectedChats.size > 1 ? "s" : ""}`,
+      `${ids.length} chat${ids.length > 1 ? "s" : ""}`,
       () => {
-        selectedChats.forEach(id => deleteSessionById(id));
+        ids.forEach(id => deleteSessionById(id));
         clearChatSelection();
       }
     );
@@ -2253,9 +2297,15 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     if (!chatHistoryContainer) return;
     
     const sessions = Storage.getSessions();
-    const sessionIds = Object.keys(sessions).sort((a, b) => {
-      return new Date(sessions[b].updatedAt) - new Date(sessions[a].updatedAt);
-    });
+    const sessionIds = Object.keys(sessions)
+      .filter((id) => {
+        const s = sessions[id];
+        // Hide sessions with no messages unless the user explicitly renamed them.
+        return (s.messages && s.messages.length > 0) || s.userRenamed;
+      })
+      .sort((a, b) => {
+        return new Date(sessions[b].updatedAt) - new Date(sessions[a].updatedAt);
+      });
 
     chatHistoryContainer.innerHTML = "";
 
@@ -2267,7 +2317,7 @@ ${FORMAT_INSTRUCTIONS}`.trim();
       
       const icon = document.createElement("span");
       icon.className = "history-icon";
-      icon.textContent = getModeEmoji(session.mode);
+      icon.innerHTML = getModeIcon(session.mode);
       
       const text = document.createElement("span");
       text.className = "history-text";
@@ -2384,13 +2434,13 @@ ${FORMAT_INSTRUCTIONS}`.trim();
       studyGuide: "Study Guide",
       practiceTest: "Practice Test"
     };
-    const typeEmojis = {
-      flashcards: "🃏",
-      studyGuide: "📖",
-      practiceTest: "🎯"
+    const typeIcons = {
+      flashcards:   `<span class="m-icon ic-flash">style</span>`,
+      studyGuide:   `<span class="m-icon ic-guide">auto_stories</span>`,
+      practiceTest: `<span class="m-icon ic-quiz">quiz</span>`
     };
     const typeLabel = typeLabels[type] || "Study Item";
-    const typeEmoji = typeEmojis[type] || "✨";
+    const typeIconHtml = typeIcons[type] || `<span class="m-icon ic-gen">description</span>`;
 
     // Create message with loading bar
     const msgId = `study-gen-${Date.now()}`;
@@ -2401,7 +2451,7 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     content.innerHTML = `
       <div class="study-gen-bubble">
         <div class="study-gen-status">
-          <span class="animate-pulse">${typeEmoji}</span>
+          <span class="animate-pulse">${typeIconHtml}</span>
           <span>Generating ${typeLabel}...</span>
         </div>
         <div class="study-gen-progress-container">
@@ -2841,7 +2891,7 @@ ${FORMAT_INSTRUCTIONS}`.trim();
         e.stopPropagation();
         const redirectUrl = option.getAttribute("data-redirect");
         if (redirectUrl) {
-          window.location.href = redirectUrl;
+          window.KorahTransitions.go(redirectUrl);
           return;
         }
         const mode = option.getAttribute("data-mode");
@@ -3004,7 +3054,7 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     updateCharCount();
     setupWelcomeInput();
 
-    // 4. Deep link: open specific session from hash (e.g. index.html#session_123)
+    // 4. Deep link: open specific session from hash (e.g. chat.html#session_123)
     const hash = window.location.hash.slice(1);
     if (hash && hash.startsWith("session_") && sessionsCache[hash]) {
       switchToSession(hash);
