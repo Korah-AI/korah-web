@@ -2278,11 +2278,16 @@ ${FORMAT_INSTRUCTIONS}`.trim();
   });
 
   document.getElementById("chat-delete-selected")?.addEventListener("click", () => {
-    if (selectedChats.size === 0) return;
+    // Source of truth is the DOM, since sidebar.js may own rendering/selection
+    // and korah-chat.js's internal `selectedChats` set can drift out of sync.
+    const ids = [...chatHistoryContainer.querySelectorAll(".history-item.selected")]
+      .map(el => el.getAttribute("data-session"))
+      .filter(Boolean);
+    if (ids.length === 0) return;
     showDeleteModal(
-      `${selectedChats.size} chat${selectedChats.size > 1 ? "s" : ""}`,
+      `${ids.length} chat${ids.length > 1 ? "s" : ""}`,
       () => {
-        selectedChats.forEach(id => deleteSessionById(id));
+        ids.forEach(id => deleteSessionById(id));
         clearChatSelection();
       }
     );
