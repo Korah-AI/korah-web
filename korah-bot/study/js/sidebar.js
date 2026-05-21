@@ -256,15 +256,7 @@ function showSidebarDeleteModal(name, onConfirm) {
 
   // ── Render Chat History ──
   function _getChatLogoPath() {
-    for (const s of document.querySelectorAll('script[src]')) {
-      if (s.src && s.src.includes('sidebar.js')) {
-        const url = new URL(s.src);
-        const parts = url.pathname.split('/');
-        parts.splice(-3); // remove study/js/sidebar.js, leaving root path
-        return url.origin + parts.join('/') + '/logo-images/newlogo11.png';
-      }
-    }
-    return 'logo-images/newlogo11.png';
+    return '/korah-bot/logo-images/newlogo11.png';
   }
 
   function renderChatHistory(container, baseUrl) {
