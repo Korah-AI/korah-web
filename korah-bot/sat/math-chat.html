@@ -593,6 +593,34 @@
       window.SatMathChat.initSession();
     }
 
+    // ─── Handoff from SAT questions player ──────────────────────────────
+    // questions.html stashes the full problem in sessionStorage.korahSatHandoff
+    // before navigating here. Seed the welcome input so the user's first send
+    // includes stem, choices, correct answer, and serialized inline SVGs.
+    try {
+      const raw = sessionStorage.getItem('korahSatHandoff');
+      if (raw) {
+        sessionStorage.removeItem('korahSatHandoff');
+        const payload = JSON.parse(raw);
+        const promptText =
+          `Help me visualize and solve this SAT question on the Desmos graph.\n\n` +
+          (payload.contextBlock || payload.stem || '');
+        const welcomeInput = document.getElementById('welcome-chat-input');
+        const chatInput    = document.getElementById('chat-input');
+        if (welcomeInput) {
+          welcomeInput.value = promptText;
+          welcomeInput.dispatchEvent(new Event('input', { bubbles: true }));
+          welcomeInput.focus();
+        } else if (chatInput) {
+          chatInput.value = promptText;
+          chatInput.dispatchEvent(new Event('input', { bubbles: true }));
+          chatInput.focus();
+        }
+        // TODO(sat-math): if you want the model to auto-reply, also click the send
+        //   button here (window.SatMathChat?.sendCurrentInput?.()).
+      }
+    } catch (e) { console.warn('[SatMath] handoff load failed', e); }
+
     // Override new-chat-btn to create a new SAT math session in-place
     document.getElementById('new-chat-btn')?.addEventListener('click', (e) => {
       e.stopImmediatePropagation();

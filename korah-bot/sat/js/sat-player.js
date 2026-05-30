@@ -1700,6 +1700,8 @@
   // END QUESTION NAVIGATOR
   // ─────────────────────────────────────────────────
 
+  window.KorahSATPlayer = { getCurrentQuestion };
+
   renderHeader();
   renderQuestion();
 

@@ -365,7 +365,6 @@ function showSidebarDeleteModal(name, onConfirm) {
 
     const navLinks = document.querySelectorAll(".sidebar-nav-link");
     navLinks.forEach(link => {
-      if (link.hasAttribute('data-sat-link')) return; // Skip SAT links
       const href = link.getAttribute("href");
       if (href.includes("sat/")) return; // Skip SAT section links
       if (href.includes("feed.html")) {
@@ -787,88 +786,6 @@ function showSidebarDeleteModal(name, onConfirm) {
   // ── Timer Widget ──
   let _timerWidgetInitialized = false;
   let _timerUnsubscribe = null;
-  let _satDropdownInitialized = false;
-
-  function initSatDropdown() {
-    if (_satDropdownInitialized) return;
-    const satLink = document.querySelector('[data-sat-link="true"]');
-    if (!satLink) return;
-    _satDropdownInitialized = true;
-
-    const satHref = satLink.getAttribute('href') || 'sat/index.html';
-    const satDir = satHref.endsWith('index.html')
-      ? satHref.slice(0, -'index.html'.length)
-      : satHref.replace(/[^/]*$/, '');
-    const satIndexHref = `${satDir}index.html`;
-    const satMathChatHref = `${satDir}math-chat.html`;
-    const satDashboardHref = `${satDir}dashboard.html`;
-    
-
-    // Wrap SAT item so it can "reveal" like the Pomodoro idle panel.
-    const wrapper = document.createElement('div');
-    wrapper.className = 'sat-dropdown-wrapper';
-    wrapper.style.position = 'relative';
-
-    satLink.parentNode.insertBefore(wrapper, satLink);
-    wrapper.appendChild(satLink);
-
-    // Replace the anchor with a button trigger (so click toggles, not navigates).
-    const trigger = document.createElement('button');
-    trigger.type = 'button';
-    trigger.className = satLink.className + ' sat-redirect-trigger';
-    trigger.setAttribute('data-sat-link', 'true');
-    trigger.setAttribute('aria-expanded', 'false');
-    trigger.innerHTML = satLink.innerHTML;
-
-    wrapper.replaceChild(trigger, satLink);
-
-    const panel = document.createElement('div');
-    panel.className = 'sat-more-dropdown';
-    panel.id = 'sat-idle-panel';
-    panel.innerHTML = `
-      <ul class="more-dropdown-list">
-        <li>
-          <a class="more-dropdown-item" href="${satMathChatHref}" id="sat-math-chat-link">
-            <span class="material-icons-round">calculate</span>
-            <span>SAT Math Chat</span>
-          </a>
-        </li>
-        <li>
-          <a class="more-dropdown-item" href="${satIndexHref}">
-            <span class="material-icons-round">assignment</span>
-            <span>SAT Questionbank</span>
-          </a>
-        </li>
-        <li>
-          <a class="more-dropdown-item" href="${satDashboardHref}">
-            <span class="material-icons-round">insights</span>
-            <span>SAT Dashboard</span>
-          </a>
-        </li>
-      </ul>
-    `;
-    wrapper.appendChild(panel);
-    panel.querySelector('#sat-math-chat-link')?.addEventListener('click', () => {
-      localStorage.setItem('korah_sidebar_collapsed', 'true');
-    });
-
-    const close = () => {
-      trigger.setAttribute('aria-expanded', 'false');
-      panel.classList.remove('more-dropdown-open');
-    };
-
-    trigger.addEventListener('click', () => {
-      const willOpen = !panel.classList.contains('more-dropdown-open');
-      trigger.setAttribute('aria-expanded', String(willOpen));
-      panel.classList.toggle('more-dropdown-open', willOpen);
-    });
-
-    // Close when clicking outside
-    document.addEventListener('click', (e) => {
-      if (!wrapper.contains(e.target)) close();
-    });
-  }
-
   function initTimerWidget() {
     if (_timerWidgetInitialized) return;
     _timerWidgetInitialized = true;
@@ -1566,13 +1483,6 @@ function showSidebarDeleteModal(name, onConfirm) {
           if (dropdown) dropdown.classList.remove('more-dropdown-open');
           if (btn) btn.classList.remove('is-active');
         }
-        const satWrapper = sidebar?.querySelector('.sat-dropdown-wrapper');
-        if (satWrapper) {
-          const satTrigger = satWrapper.querySelector('.sat-redirect-trigger');
-          const satPanel = satWrapper.querySelector('.sat-more-dropdown');
-          if (satTrigger) satTrigger.setAttribute('aria-expanded', 'false');
-          if (satPanel) satPanel.classList.remove('more-dropdown-open');
-        }
       }
     });
 
@@ -1714,9 +1624,6 @@ function showSidebarDeleteModal(name, onConfirm) {
       
       // Initialize timer widget
       initTimerWidget();
-
-      // Initialize SAT dropdown
-      initSatDropdown();
 
       // Initialize settings modal
       initSettingsModal();
