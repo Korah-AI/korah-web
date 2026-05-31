@@ -2,14 +2,14 @@
   const root = document.getElementById('sidebar-root');
   if (!root) return;
 
-  const res = await fetch('/korah-bot/sidebar.html');
+  const res = await fetch('/sidebar.html');
   const html = await res.text();
   root.innerHTML = html;
 
   const path = window.location.pathname;
   root.querySelectorAll('.sidebar-nav-link').forEach(a => {
     const href = a.getAttribute('href') || '';
-    a.classList.toggle('active', path.endsWith(href.replace('/korah-bot', '')));
+    a.classList.toggle('active', path.endsWith(href));
   });
 
   if (window.Alpine) {
