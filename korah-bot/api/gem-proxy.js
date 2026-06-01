@@ -142,8 +142,12 @@ export default async function handler(req, res) {
               if (jsonStr === '[DONE]') continue;
               
               const data = JSON.parse(jsonStr);
-              const content = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-              
+              // Gemini 2.5 Flash emits thinking tokens in parts with thought:true before
+              // the real response parts. Skip them so only the actual answer reaches clients.
+              const parts = data.candidates?.[0]?.content?.parts || [];
+              const realPart = parts.find(p => !p.thought && p.text != null);
+              const content = realPart?.text || '';
+
               if (content) {
                 const openAiChunk = {
                   choices: [{
@@ -165,7 +169,9 @@ export default async function handler(req, res) {
     } else {
       // 3. Translate Non-Streaming Response (Gemini -> OpenAI)
       const data = await response.json();
-      const content = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      const allParts = data.candidates?.[0]?.content?.parts || [];
+      const realPart = allParts.find(p => !p.thought && p.text != null) || allParts[0];
+      const content = realPart?.text || '';
       
       const openAiResponse = {
         choices: [{

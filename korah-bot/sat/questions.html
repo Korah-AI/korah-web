@@ -439,11 +439,11 @@ html[data-theme="light"] {
 
   <!-- Sub-row: chat history / new -->
   <div class="ask-korah-subrow">
-    <button class="ask-korah-subbtn" type="button">
+    <button class="ask-korah-subbtn" type="button" data-action="history">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="15" y2="18"/></svg>
       <span>Chat History</span>
     </button>
-    <button class="ask-korah-subbtn" type="button">
+    <button class="ask-korah-subbtn" type="button" data-action="new">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       <span>New</span>
     </button>
@@ -712,6 +712,8 @@ html[data-theme="light"] {
   const footer   = document.querySelector('.ask-korah-footer');
   const disclaim = document.querySelector('.ask-korah-disclaimer');
   const suggestionBtns = document.querySelectorAll('.ask-korah-suggestion:not(.ask-korah-suggestion-math)');
+  const newChatBtn  = document.querySelector('.ask-korah-subbtn[data-action="new"]');
+  const historyBtn  = document.querySelector('.ask-korah-subbtn[data-action="history"]');
 
   if (!panel || !openBtn) return;
 
@@ -858,6 +860,23 @@ html[data-theme="light"] {
     }
   }
 
+  // ─── Chat persistence (localStorage per question) ─────────────────────
+  const CHAT_LS_KEY = (id) => `korahSatChat_${id}`;
+  const MAX_STORED_SESSIONS = 8;
+
+  function saveCurrentChat() {
+    if (!chatHistory.length || !currentQ?.id) return;
+    try {
+      const existing = JSON.parse(localStorage.getItem(CHAT_LS_KEY(currentQ.id)) || '[]');
+      existing.unshift({ ts: Date.now(), messages: JSON.parse(JSON.stringify(chatHistory)) });
+      localStorage.setItem(CHAT_LS_KEY(currentQ.id), JSON.stringify(existing.slice(0, MAX_STORED_SESSIONS)));
+    } catch(_) {}
+  }
+
+  function loadStoredSessions(qid) {
+    try { return JSON.parse(localStorage.getItem(CHAT_LS_KEY(qid)) || '[]'); } catch(_) { return []; }
+  }
+
   // ─── Panel state ───────────────────────────────────────────────────────
   let currentQ = null;
   let activeTab = 'chat';            // 'chat' | 'explanation'
@@ -866,17 +885,19 @@ html[data-theme="light"] {
   let explanationLoaded = false;     // current question's Korah explanation already rendered?
   let explanationLoading = false;
   let lastQuestionId = null;
-  let cachedKorahExplanation = null; // last fetched/generated step explanation
+  let cachedKorahExplanation = null;
+  let showingHistory = false;
 
   function openPanel() {
     currentQ = readCurrentQuestion();
-    // Reset state if the question changed since the last open.
     if (currentQ.id !== lastQuestionId) {
+      if (chatHistory.length) saveCurrentChat();
       chatHistory = [];
       explanationLoaded = false;
       cachedKorahExplanation = null;
       msgsEl.innerHTML = '';
       lastQuestionId = currentQ.id;
+      showingHistory = false;
     }
     mathHint.classList.toggle('is-hidden', !currentQ.isMath);
     panel.classList.add('open');
@@ -886,9 +907,11 @@ html[data-theme="light"] {
   }
 
   function closePanel() {
+    if (chatHistory.length) saveCurrentChat();
     panel.classList.remove('open');
     panel.setAttribute('aria-hidden', 'true');
     document.body.classList.remove('ask-korah-open');
+    showingHistory = false;
   }
 
   openBtn.addEventListener('click', openPanel);
@@ -939,6 +962,70 @@ html[data-theme="light"] {
 
   tabChat.addEventListener('click', () => showTab('chat'));
   tabExpl.addEventListener('click', () => showTab('explanation'));
+
+  // ─── New / History buttons ────────────────────────────────────────────
+  if (newChatBtn) {
+    newChatBtn.addEventListener('click', () => {
+      if (activeTab !== 'chat') showTab('chat');
+      if (chatHistory.length) saveCurrentChat();
+      chatHistory = [];
+      msgsEl.innerHTML = '';
+      showingHistory = false;
+      welcome.classList.remove('is-hidden');
+      footer.style.display = 'flex';
+      disclaim.style.display = 'block';
+    });
+  }
+
+  if (historyBtn) {
+    historyBtn.addEventListener('click', () => {
+      if (activeTab !== 'chat') showTab('chat');
+      showingHistory = !showingHistory;
+      if (showingHistory) renderHistoryPanel();
+      else {
+        msgsEl.innerHTML = '';
+        welcome.classList.toggle('is-hidden', chatHistory.length > 0);
+        chatHistory.forEach(m => appendChatMessage(m.role, m.content, false));
+      }
+    });
+  }
+
+  function renderHistoryPanel() {
+    msgsEl.innerHTML = '';
+    welcome.classList.add('is-hidden');
+    footer.style.display = 'none';
+    disclaim.style.display = 'none';
+
+    const sessions = loadStoredSessions(currentQ?.id);
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;flex-direction:column;gap:0.5rem;';
+
+    const heading = document.createElement('div');
+    heading.style.cssText = 'font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--tx3);padding:0.25rem 0;';
+    heading.textContent = sessions.length ? `Saved conversations (${sessions.length})` : 'No saved conversations yet';
+    wrap.appendChild(heading);
+
+    sessions.forEach((session, idx) => {
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.style.cssText = 'background:var(--sf2);border:1px solid var(--bd);border-radius:0.5rem;padding:0.625rem 0.75rem;text-align:left;cursor:pointer;color:var(--tx);font-size:0.85rem;';
+      const preview = session.messages.find(m => m.role === 'user')?.content || '';
+      const date = new Date(session.ts).toLocaleString([], { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+      item.innerHTML = `<div style="font-weight:600;color:var(--tx3);font-size:0.72rem;">${escapeHtml(date)}</div><div style="margin-top:0.25rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(preview.slice(0, 90))}</div>`;
+      item.addEventListener('click', () => {
+        chatHistory = session.messages.slice();
+        showingHistory = false;
+        footer.style.display = 'flex';
+        disclaim.style.display = 'block';
+        msgsEl.innerHTML = '';
+        welcome.classList.add('is-hidden');
+        chatHistory.forEach(m => appendChatMessage(m.role, m.content, false));
+      });
+      wrap.appendChild(item);
+    });
+
+    msgsEl.appendChild(wrap);
+  }
 
   // ─── Chat tab ──────────────────────────────────────────────────────────
   suggestionBtns.forEach(btn => {
@@ -1042,12 +1129,28 @@ RULES:
   }
 
   function parseExplanationJSON(raw) {
-    let s = (raw || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+    if (!raw) return null;
+    // Strip code fences, then find the first { that looks like the root object.
+    let s = raw.trim()
+      .replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+
     const brace = s.indexOf('{');
     if (brace === -1) return null;
     s = s.substring(brace);
+
+    // Fast path — valid JSON as-is.
     try { return JSON.parse(s); } catch (_) {}
-    // Balanced-brace fallback.
+
+    // Repair: LaTeX backslashes inside JSON strings must be double-escaped.
+    // e.g. \frac → \\frac. We only touch backslashes not already doubled.
+    const repaired = s.replace(/"((?:[^"\\]|\\[\s\S])*?)"/g, (_, inner) => {
+      // Re-escape single backslashes that aren't already escape sequences.
+      const fixed = inner.replace(/\\(?!["\\/bfnrtu])/g, '\\\\');
+      return `"${fixed}"`;
+    });
+    try { const r = JSON.parse(repaired); if (r?.steps) return r; } catch (_) {}
+
+    // Balanced-brace fallback — extract just the outermost object.
     let depth = 0, end = -1, inStr = false, esc = false;
     for (let i = 0; i < s.length; i++) {
       const ch = s[i];
@@ -1059,7 +1162,15 @@ RULES:
       else if (ch === '}') { depth--; if (depth === 0) { end = i; break; } }
     }
     if (end !== -1) {
-      try { return JSON.parse(s.substring(0, end + 1)); } catch (_) {}
+      const chunk = s.substring(0, end + 1);
+      try { return JSON.parse(chunk); } catch (_) {}
+      // One more attempt with the same LaTeX repair on the chunk.
+      try {
+        const fixed = chunk.replace(/"((?:[^"\\]|\\[\s\S])*?)"/g, (_, inner) => {
+          return `"${inner.replace(/\\(?!["\\/bfnrtu])/g, '\\\\')}"`;
+        });
+        return JSON.parse(fixed);
+      } catch (_) {}
     }
     return null;
   }
@@ -1135,8 +1246,35 @@ RULES:
     }
     const card = document.createElement('div');
     card.className = 'explain-cb-body';
-    renderMarkdownAndMath(card, text);
+    renderHtmlAndMath(card, text);
     body.appendChild(card);
+  }
+
+  // Renders content that may be HTML (from the CB question bank) rather than markdown.
+  // DOMPurify-sanitizes, sets innerHTML, then runs KaTeX auto-render.
+  function renderHtmlAndMath(container, text) {
+    if (!container || !text) return;
+    // If the text doesn't look like HTML, fall through to the markdown path.
+    const looksLikeHtml = /<[a-zA-Z][\s\S]*?>/.test(text);
+    if (!looksLikeHtml) {
+      renderMarkdownAndMath(container, text);
+      return;
+    }
+    const sanitized = window.DOMPurify
+      ? DOMPurify.sanitize(text, { USE_PROFILES: { html: true } })
+      : text;
+    container.innerHTML = sanitized;
+    if (typeof renderMathInElement === 'function') {
+      renderMathInElement(container, {
+        delimiters: [
+          { left: '$$', right: '$$', display: true },
+          { left: '$',  right: '$',  display: false },
+          { left: '\\(', right: '\\)', display: false },
+          { left: '\\[', right: '\\]', display: true }
+        ],
+        throwOnError: false
+      });
+    }
   }
 
   async function renderKorahExplanation(body) {
@@ -1173,9 +1311,17 @@ RULES:
         systemPrompt: buildExplanationSystemPrompt(),
         temperature: 0.2,
       });
-      const parsed = parseExplanationJSON(raw);
+      let parsed = parseExplanationJSON(raw);
+      // Fallback: if JSON parsing failed but we have some raw text, wrap it in a
+      // single step so the user still gets a useful response.
       if (!parsed || !Array.isArray(parsed.steps) || parsed.steps.length === 0) {
-        throw new Error('Model returned no parseable steps');
+        const trimmed = (raw || '').trim();
+        if (trimmed.length > 20) {
+          parsed = { answer: currentQ.correct || '', steps: [{ title: 'Explanation', body: trimmed }] };
+          console.warn('[AskKorah] JSON parse failed; showing raw response as fallback step');
+        } else {
+          throw new Error('Model returned no parseable steps');
+        }
       }
       body.innerHTML = '';
       drawExplanation(body, parsed, /*fromCache*/ false);
