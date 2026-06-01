@@ -605,19 +605,22 @@
         const promptText =
           `Help me visualize and solve this SAT question on the Desmos graph.\n\n` +
           (payload.contextBlock || payload.stem || '');
-        const welcomeInput = document.getElementById('welcome-chat-input');
-        const chatInput    = document.getElementById('chat-input');
-        if (welcomeInput) {
-          welcomeInput.value = promptText;
-          welcomeInput.dispatchEvent(new Event('input', { bubbles: true }));
-          welcomeInput.focus();
-        } else if (chatInput) {
-          chatInput.value = promptText;
-          chatInput.dispatchEvent(new Event('input', { bubbles: true }));
-          chatInput.focus();
+        if (window.SatMathChat?.sendMessage) {
+          window.SatMathChat.sendMessage(promptText);
+        } else {
+          // Fallback: populate input if sendMessage isn't available yet
+          const welcomeInput = document.getElementById('welcome-chat-input');
+          const chatInput    = document.getElementById('chat-input');
+          if (welcomeInput) {
+            welcomeInput.value = promptText;
+            welcomeInput.dispatchEvent(new Event('input', { bubbles: true }));
+            welcomeInput.focus();
+          } else if (chatInput) {
+            chatInput.value = promptText;
+            chatInput.dispatchEvent(new Event('input', { bubbles: true }));
+            chatInput.focus();
+          }
         }
-        // TODO(sat-math): if you want the model to auto-reply, also click the send
-        //   button here (window.SatMathChat?.sendCurrentInput?.()).
       }
     } catch (e) { console.warn('[SatMath] handoff load failed', e); }
 

@@ -1038,7 +1038,7 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
     createNewSession();
   }
 
-  window.SatMathChat = { initSession, switchToSession, newChat, createNewSession };
+  window.SatMathChat = { initSession, switchToSession, newChat, createNewSession, sendMessage };
 
   async function sendMessage(text) {
     console.log('sendMessage called', { text, inputValue: input?.value, welcomeInputValue: welcomeInput?.value });
