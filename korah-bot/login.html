@@ -5,281 +5,438 @@
 <script src="transitions/page-transitions.js"></script>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Korah AI — Login</title>
+<title>Korah A.I — Login</title>
 <link rel="icon" type="image/png" href="logo-images/newlogo0.png">
 
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
 <script src="https://cdn.tailwindcss.com"></script>
 
+<!-- 🪨 FOUC PREVENTION & BASE VARS -->
 <style>
   [x-cloak] { display: none !important; }
+  
+  html:not(.korah-page-ready) { background: #06040f !important; }
+  html:not(.korah-page-ready) body { opacity: 0 !important; }
 
   :root {
-    --bg: #04020c;
-    --sf: rgba(14, 8, 36, 0.72);
-    --bd: rgba(139, 92, 246, 0.18);
+    --bg: #0a0520;
+    --bd: rgba(139, 92, 246, 0.25);
     --bd-focus: rgba(139, 92, 246, 0.55);
     --tx: #f0eaff;
     --tx2: #a89dc0;
     --tx3: #6b5f88;
     --p4: #8b5cf6;
     --p5: #a78bfa;
-    --ac: #f0abfc;
     --glow: rgba(139, 92, 246, 0.4);
-    --cb: rgba(10, 5, 28, 0.2);
+    --cb: rgba(139, 92, 246, 0.08); /* 🪨 Ice-Glass for Card */
     --cu: rgba(91, 33, 182, 0.28);
+    --grad: linear-gradient(160deg, #372080 0%, #2d1a6e 40%, #23165c 100%);
   }
 
-  * { box-sizing: border-box; margin: 0; }
+  [data-theme="light"] {
+    --bg: #faf8ff;
+    --bd: rgba(109, 40, 217, 0.18);
+    --bd-focus: rgba(109, 40, 217, 0.55);
+    --tx: #1a0a3c;
+    --tx2: #5a4a7a;
+    --tx3: #9080aa;
+    --p4: #8b5cf6;
+    --p5: #7c3aed;
+    --glow: rgba(109, 40, 217, 0.15);
+    --cb: rgba(255, 255, 255, 0.92);
+    --cu: rgba(109, 40, 217, 0.12);
+  }
 
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* 🪨 SCROLLBAR & PAGE FLOW */
+  html { overflow-x: hidden; overflow-y: auto !important; }
   body {
     font-family: 'Plus Jakarta Sans', sans-serif;
-    background: var(--bg);
+    background: #000;
     color: var(--tx);
     min-height: 100vh;
     overflow-x: hidden;
-    overflow-y: auto;
+    overflow-y: auto !important;
   }
 
-  /* ── Galaxy canvas ── */
-  #galaxy-bg {
-    position: fixed; inset: 0; z-index: 0;
-  }
-  #galaxy-bg canvas {
-    width: 100% !important; height: 100% !important;
-    display: block;
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: rgba(10, 5, 32, 0.5); }
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(to bottom, var(--p4), #5b21b6);
+    border-radius: 4px;
   }
 
-  /* ── Layout ── */
-  .login-container {
-    position: relative; z-index: 1;
+  /* 🪨 LAYOUT SHELL (Unified Purple Background) */
+  .kl-shell {
+    display: flex;
+    flex-direction: row;
+    width: 100vw;
     min-height: 100vh;
-    display: flex; align-items: center; justify-content: center;
-    padding: 16px;
-    overflow-y: auto;
+    position: relative;
+    z-index: 10;
+    background: var(--grad);
   }
 
-  @media (max-height: 700px) {
-    .login-container { align-items: flex-start; padding: 12px 16px; }
+  .kl-shell::after {
+    content: '';
+    position: absolute;
+    top: 10%;
+    bottom: 10%;
+    left: 46%;
+    width: 1px;
+    background: linear-gradient(transparent, rgba(139,92,246,0.1), transparent);
+    pointer-events: none;
+    z-index: 2;
   }
 
-  /* ── Card ── */
+  .kl-auth-panel {
+    flex: 0 0 46%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    position: relative;
+    z-index: 1;
+    background: #0a0618;
+    /* 🪨 Divider removed for smooth layout */
+  }
+
+  .kl-auth-panel::before {
+    content: '';
+    position: absolute;
+    width: 500px;
+    height: 500px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle, rgba(139,92,246,0.07) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  .kl-auth-panel::after {
+    content: '';
+    position: absolute;
+    top: 38.2%;
+    left: 15%;
+    right: 15%;
+    height: 0.5px;
+    background: rgba(139,92,246,0.08);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .kl-hero-panel {
+    flex: 0 0 54%;
+    padding: 2.5rem;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0a0618;
+  }
+
+  /* 🪨 SPACE WINDOW (Isolated Starfield Stage) */
+  .kl-hero-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: #000; /* 🪨 Plain black stage for stars */
+    border-radius: 2rem;
+    border: 1px solid rgba(139, 92, 246, 0.15);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 50px rgba(0,0,0,0.8);
+  }
+
+  /* 🪨 INTERNAL CANVASES */
+  #staticStarField, #shootingStarCanvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+  #staticStarField { z-index: 0; }
+  #shootingStarCanvas { z-index: 3; }
+
+  /* 🪨 BLACK HOLE STAGE */
+  .kl-bh-stage {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+  }
+
+  .kl-bh-wrap {
+    position: relative;
+    width: clamp(20rem, 40vw, 30rem);
+    height: clamp(20rem, 40vw, 30rem);
+    transform: rotate(-12deg);
+  }
+
+  .kl-bh-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    mix-blend-mode: screen;
+  }
+  .kl-bh-canvas-b { opacity: 0; }
+
+  .kl-bh-singularity {
+    position: absolute;
+    width: 25%;
+    height: 25%;
+    background: #000;
+    border-radius: 50%;
+    z-index: 1;
+  }
+
+  /* 🪨 TITLES & BREATHING ANIMATION */
+  .kl-hero-title {
+    position: absolute;
+    top: 4.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    font-size: clamp(0.8rem, 1.8vw, 1.4rem);
+    font-weight: 900;
+    letter-spacing: 0.25em;
+    text-indent: 0.25em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--p4);
+    animation: kl-breath 4s ease-in-out infinite;
+  }
+
+  @keyframes kl-breath {
+    0%, 100% { text-shadow: 0 0 10px rgba(139, 92, 246, 0.3); opacity: 0.8; }
+    50% { text-shadow: 0 0 25px rgba(139, 92, 246, 0.6); opacity: 1; }
+  }
+
+  .login-title {
+    font-size: 2.25rem;
+    font-weight: 900;
+    text-align: center;
+    margin-bottom: 0.25rem;
+    letter-spacing: -0.02em;
+  }
+
+  /* 🪨 LOGIN CARD (Stars Behind) */
   .login-card {
-    background: var(--cb);
-    backdrop-filter: blur(32px) saturate(1.4);
-    -webkit-backdrop-filter: blur(32px) saturate(1.4);
+    background: transparent;
     border: 1px solid var(--bd);
-    border-radius: 24px;
-    padding: 36px 32px;
-    width: 100%; max-width: 420px;
-    box-shadow:
-      0 0 0 1px rgba(139, 92, 246, 0.08),
-      0 30px 60px -12px rgba(0, 0, 0, 0.6),
-      0 0 80px -20px rgba(139, 92, 246, 0.2);
+    border-radius: 1.5rem;
+    padding: 2.5rem;
+    width: 100%;
+    max-width: 27rem;
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+    position: relative;
+    z-index: 2;
+    overflow: hidden;
+    transition: box-shadow 0.3s ease;
     animation: cardIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
+  .login-card:has(.form-input:focus) {
+    box-shadow: 0 30px 60px -12px rgba(0,0,0,0.65);
+  }
+
+  @keyframes cardBorder {
+    0%, 100% { border-color: var(--bd); }
+    50% { border-color: rgba(139,92,246,0.35); }
+  }
+
+  .login-card:not(:has(.form-input:focus)) {
+    animation: cardIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) both,
+               cardBorder 4s ease-in-out infinite 0.6s;
+  }
+
+  .login-star-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    border-radius: inherit;
+    pointer-events: none;
+  }
+
+  .login-card-inner {
+    position: relative;
+    z-index: 2;
+  }
+
+  .login-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+    background: rgba(6, 2, 15, 0.35);
+    pointer-events: none;
+  }
+
   @keyframes cardIn {
-    from { opacity: 0; transform: translateY(24px) scale(0.97); }
-    to   { opacity: 1; transform: translateY(0)    scale(1); }
+    from { opacity: 0; transform: translateY(1.5rem) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
   }
 
-  /* ── Logo ── */
-  .logo-wrap {
-    display: flex; justify-content: center; margin-bottom: 8px;
-  }
-  .logo-icon {
-    width: 68px; height: 68px; border-radius: 16px;
-    /* background: linear-gradient(135deg, rgba(91,33,182,0.7), rgba(139,92,246,0.5)); */
-    display: flex; align-items: center; justify-content: center;
-    /* box-shadow: 0 0 40px var(--glow), inset 0 1px 0 rgba(255,255,255,0.1);
-    border: 1px solid rgba(139,92,246,0.3); */
-  }
-  .logo-icon img { width: 38px; height: 38px; object-fit: contain; }
-
-  /* ── Headline ── */
-  .login-title {
-    font-size: 34px; font-weight: 900; text-align: center;
-    margin: 0 0 4px;
-    color: white;
-    letter-spacing: -0.5px;
-  }
-  .login-subtitle {
-    color: white; text-align: center; font-size: 14px;
-    margin-bottom: 26px; line-height: 1.5;
-  }
-
-  /* ── Tabs ── */
+  /* 🪨 FORMS & TABS */
   .tabs {
-    display: flex; gap: 3px;
-    background: rgba(255,255,255,0.04);
-    padding: 3px; border-radius: 12px;
-    margin-bottom: 24px;
+    display: flex;
+    background: rgba(255,255,255,0.03);
+    padding: 0.25rem;
+    border-radius: 0.75rem;
+    margin-bottom: 1.5rem;
     border: 1px solid var(--bd);
   }
   .tab {
-    flex: 1; padding: 9px 8px; border-radius: 9px;
-    font-size: 13px; font-weight: 600;
-    cursor: pointer; transition: all 0.22s ease;
-    background: transparent; color: white;
-    border: 1px solid transparent; font-family: inherit;
+    flex: 1;
+    padding: 0.6rem;
+    border-radius: 0.6rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    background: transparent;
+    color: var(--tx2);
+    border: none;
+    transition: all 0.2s ease;
   }
-  .tab:hover:not(.active) { color: var(--tx2); background: rgba(255,255,255,0.04); }
   .tab.active {
-    background: var(--cu); color: white;
-    border-color: var(--bd);
-    box-shadow: 0 2px 12px rgba(139,92,246,0.15);
+    background: var(--cu);
+    color: var(--tx);
+    box-shadow: 0 4px 12px rgba(139,92,246,0.15);
   }
 
-  /* ── Form ── */
-  .form-group { margin-bottom: 14px; }
-  .form-row { display: flex; gap: 10px; }
-  .form-row > .form-group { flex: 1; margin-bottom: 14px; }
+  .form-group { margin-bottom: 1rem; }
   .form-label {
-    display: block; font-size: 11px; font-weight: 700;
-    color: var(--tx3); margin-bottom: 6px; letter-spacing: 0.05em; text-transform: uppercase;
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: var(--tx3);
+    margin-bottom: 0.4rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
   .form-input {
-    width: 100%; padding: 11px 14px; border-radius: 10px;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border-radius: 0.7rem;
     border: 1px solid var(--bd);
     background: rgba(255,255,255,0.04);
-    color: var(--tx); font-size: 14px; font-family: inherit;
-    transition: border-color 0.2s, box-shadow 0.2s; background: 0.2s;
+    color: var(--tx);
+    font-size: 0.9rem;
+    transition: background 0.2s, box-shadow 0.2s;
   }
+  .form-input::placeholder { transition: opacity 0.2s; }
   .form-input:focus {
     outline: none;
     border-color: var(--bd-focus);
-    background: rgba(139,92,246,0.06);
-    box-shadow: 0 0 0 3px rgba(139,92,246,0.12);
+    background: rgba(139,92,246,0.08);
+    box-shadow: 0 0 15px rgba(139,92,246,0.15);
   }
-  .form-input::placeholder { color: var(--tx3); }
-  .form-input:hover:not(:focus) { border-color: rgba(139,92,246,0.3); }
+  .form-input:focus::placeholder { opacity: 0.3; }
+  .input-error {
+    display: block;
+    font-size: 0.7rem;
+    color: rgba(200, 60, 85, 0.85);
+    margin-top: 0.2rem;
+    padding: 0.15rem 0.5rem;
+    background: rgba(200, 60, 85, 0.05);
+    border-radius: 0.25rem;
+    border-left: 2px solid rgba(200, 60, 85, 0.2);
+  }
+  .login-card.has-errors .form-input { border-color: rgba(200, 60, 85, 0.8); }
+  .login-card.has-errors .form-input:focus { border-color: rgba(200, 60, 85, 0.8); }
+  /* 🪨 TAB CROSSFADE */
+  .form-container { position: relative; }
 
-  /* ── Buttons ── */
+  .form-fade-enter {
+    animation: formIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  .form-fade-leave {
+    animation: formOut 0.25s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    position: absolute;
+    top: 0; left: 0; right: 0;
+  }
+  @keyframes formIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes formOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-10px); } }
+
   .btn {
-    width: 100%; padding: 12px 16px; border-radius: 10px;
-    font-size: 14px; font-weight: 700; font-family: inherit;
-    cursor: pointer; transition: all 0.22s; border: none;
-    letter-spacing: 0.01em;
+    width: 100%;
+    padding: 0.8rem;
+    border-radius: 0.7rem;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), filter 0.2s, box-shadow 0.2s;
   }
-  .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; filter: none !important; }
-
-  .btn-primary {
-    background: linear-gradient(135deg, #5b21b6, var(--p4));
-    color: white;
-    box-shadow: 0 4px 20px rgba(91,33,182,0.4);
-  }
-  .btn-primary:not(:disabled):hover {
-    filter: brightness(1.15);
-    transform: translateY(-1px);
-    box-shadow: 0 8px 28px rgba(91,33,182,0.5);
-  }
-  .btn-primary:not(:disabled):active { transform: translateY(0); }
+  .btn-primary { background: linear-gradient(135deg, #5b21b6, var(--p4)); color: white; }
+  .btn-primary:hover:not(:disabled) { filter: brightness(1.1); transform: translateY(-1px); box-shadow: 0 8px 20px rgba(91,33,182,0.4); }
 
   .btn-google {
-    background: rgba(255,255,255,0.05);
-    color: var(--tx); border: 1px solid var(--bd);
-    display: flex; align-items: center; justify-content: center; gap: 9px;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+    background: rgba(255,255,255,0.05); color: var(--tx); border: 1px solid var(--bd);
+    display: flex; align-items: center; justify-content: center; gap: 0.6rem;
   }
-  .btn-google:hover { background: rgba(255,255,255,0.09); border-color: rgba(139,92,246,0.35); }
+  .btn-google:active { transform: scale(0.97); }
 
-  /* ── Divider ── */
   .divider {
-    display: flex; align-items: center; gap: 12px;
-    margin: 20px 0; color: white; font-size: 11px; font-weight: 600;
-    text-transform: uppercase; letter-spacing: 0.08em;
+    display: flex; align-items: center; gap: 1rem;
+    margin: 1.5rem 0; color: var(--tx3); font-size: 0.7rem; font-weight: 700;
+    text-transform: uppercase;
   }
-  .divider::before, .divider::after {
-    content: ''; flex: 1; height: 1px;
-    background: linear-gradient(to right, transparent, var(--bd));
-  }
-  .divider::after { background: linear-gradient(to left, transparent, var(--bd)); }
+  .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--bd); }
 
-  /* ── Error ── */
-  .error-msg {
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.28);
-    color: #fca5a5; padding: 10px 14px; border-radius: 8px;
-    font-size: 12px; margin-bottom: 14px;
+  /* 🪨 RESPONSIVE BREAKPOINTS */
+  @media (max-width: 64rem) {
+    .kl-auth-panel { flex: 0 0 50%; }
+    .kl-hero-panel { flex: 0 0 50%; }
   }
 
-  /* ── Top logo ── */
-  .top-logo {
-    position: fixed; top: 18px; left: 18px; z-index: 20;
-    opacity: 0.9;
+  @media (max-width: 48rem) {
+    .kl-shell { flex-direction: column; min-height: 100vh; background: var(--grad); }
+    .kl-hero-panel { display: none; }
+    .kl-auth-panel { 
+      width: 100%; 
+      padding: 1.5rem; 
+      min-height: 100vh; 
+      display: flex; 
+      flex-direction: column; 
+      justify-content: center;
+    }
+    .login-card { 
+      max-width: 100%; padding: 2.5rem 1.5rem; border-radius: 1.5rem; min-height: auto;
+      border: 1px solid var(--bd); display: block;
+      background: transparent;
+    }
+    
+    /* 🪨 Mobile Sync (Inherit Hero Breathing style) */
+    .login-title {
+      font-size: 2.25rem; text-transform: uppercase; letter-spacing: 0.25em; text-indent: 0.25em;
+      color: var(--p4); animation: kl-breath 4s ease-in-out infinite;
+    }
   }
-  .top-logo img { height: 30px; width: auto; object-fit: contain; }
 
-  /* ── Spinner ── */
   .spinner {
-    width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3);
+    width: 1rem; height: 1rem; border: 2px solid rgba(255,255,255,0.3);
     border-top-color: white; border-radius: 50%;
     animation: spin 0.7s linear infinite; display: inline-block;
-    vertical-align: middle; margin-right: 6px;
+    margin-right: 0.5rem; vertical-align: middle;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
-
-  /* ── Slide transitions ── */
-  .form-slide-enter { animation: slideIn 0.25s ease both; }
-  @keyframes slideIn {
-    from { opacity: 0; transform: translateX(12px); }
-    to   { opacity: 1; transform: translateX(0); }
-  }
-
-  @media (max-width: 480px) {
-    .login-card { padding: 28px 20px; border-radius: 18px; }
-    .login-title { font-size: 28px; }
-    .form-row { flex-direction: column; gap: 0; }
-    .form-row > .form-group { flex: unset; }
-  }
-
-  @media (min-width: 768px) {
-    .top-logo img { height: 36px; }
-    .login-card { padding: 44px 40px; }
-    .logo-icon { width: 76px; height: 76px; }
-    .logo-icon img { width: 110px; height: 110px; }
-    .login-title { font-size: 40px; }
-    .login-subtitle { font-size: 15px; }
-    .form-input { padding: 13px 16px; font-size: 15px; }
-    .btn { padding: 13px 20px; font-size: 15px; }
-  }
-
-  @media (max-height: 700px) {
-    .login-card { padding: 20px 24px; border-radius: 16px; }
-    .logo-wrap { margin-bottom: 4px; }
-    .logo-icon { width: 48px; height: 48px; }
-    .logo-icon img { width: 72px; height: 72px; }
-    .login-title { font-size: 26px; margin-bottom: 2px; }
-    .login-subtitle { font-size: 12px; margin-bottom: 14px; }
-    .tabs { margin-bottom: 14px; }
-    .form-group { margin-bottom: 10px; }
-    .form-row > .form-group { margin-bottom: 10px; }
-    .divider { margin: 12px 0; }
-    .btn { padding: 10px 16px; }
-    .form-input { padding: 9px 12px; }
-  }
-
-  @media (max-height: 600px) {
-    .login-card { padding: 14px 20px; }
-    .logo-wrap { display: none; }
-    .login-title { font-size: 22px; }
-    .login-subtitle { display: none; }
-    .tabs { margin-bottom: 10px; }
-    .form-group { margin-bottom: 8px; }
-    .form-row > .form-group { margin-bottom: 8px; }
-    .divider { margin: 8px 0; }
-  }
 </style>
-</head>
-<body>
-<style>
-  html:not(.korah-page-ready) { background: #06040f !important; }
-  html[data-theme="light"]:not(.korah-page-ready) { background: #d2d2d2 !important; }
-  html:not(.korah-page-ready) body { opacity: 0 !important; }
-</style>
+
 <script>
   (function() {
     const t = localStorage.getItem('korah_theme') || 'dark';
@@ -288,104 +445,119 @@
     }
   })();
 </script>
+</head>
+<body>
 
-<!-- Galaxy WebGL background -->
-<div id="galaxy-bg"></div>
+<div class="kl-shell">
+  <!-- 🪨 AUTH PANEL -->
+  <div class="kl-auth-panel">
+    <div class="login-card" x-data="loginApp" :class="hasError ? 'has-errors' : ''" x-cloak>
+      <canvas id="loginStarField" class="login-star-canvas"></canvas>
+      <div class="login-card-inner">
+        <div class="text-center mb-6">
+          <h1 class="login-title">Korah A.I</h1>
+          <p class="text-sm text-tx2 opacity-70">Sign in to continue your journey</p>
+        </div>
 
-<!-- Top-left logo -->
-<div class="top-logo">
-  <img src="logo-images/newlogo0.png" alt="Korah Logo">
-</div>
+        <div class="tabs">
+          <button class="tab" :class="{ active: tab === 'login' }" @click="switchTab('login')">Sign In</button>
+          <button class="tab" :class="{ active: tab === 'register' }" @click="switchTab('register')">Create Account</button>
+        </div>
 
-<!-- Login card -->
-<div class="login-container">
-  <div class="login-card" x-data="loginApp" x-cloak>
+        <div class="form-container">
+          <form x-show="tab === 'login'" @submit.prevent="handleLogin" @invalid.capture="hasError = true"
+            x-transition:enter="form-fade-enter"
+            x-transition:leave="form-fade-leave">
+            <div class="form-group">
+              <label class="form-label">Email</label>
+              <input type="email" class="form-input" @input="clearError()" x-model="loginEmail" placeholder="you@example.com" required>
+              <span class="input-error" x-show="error && errorField === 'email'" x-text="error"></span>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Password</label>
+              <input type="password" class="form-input" @input="clearError()" x-model="loginPassword" placeholder="Your password" required>
+              <span class="input-error" x-show="error && errorField === 'password'" x-text="error"></span>
+            </div>
+            <button type="submit" class="btn btn-primary" :disabled="loading">
+              <span x-show="loading" class="spinner"></span>
+              <span x-text="loading ? 'Signing in...' : 'Sign In'"></span>
+            </button>
+          </form>
 
-    <div class="logo-wrap">
-      <div class="logo-icon">
-        <img src="logo-images/newlogo0.png" alt="Korah"/>
+          <form x-show="tab === 'register'" @submit.prevent="handleRegister" @invalid.capture="hasError = true"
+            x-transition:enter="form-fade-enter"
+            x-transition:leave="form-fade-leave">
+            <div class="flex gap-3 mb-4">
+              <div class="flex-1">
+                <label class="form-label">First Name</label>
+                <input type="text" class="form-input" @input="clearError()" x-model="regFirst" placeholder="John" required>
+                <span class="input-error" x-show="error && errorField === 'first'" x-text="error"></span>
+              </div>
+              <div class="flex-1">
+                <label class="form-label">Last Name</label>
+                <input type="text" class="form-input" @input="clearError()" x-model="regLast" placeholder="Doe" required>
+                <span class="input-error" x-show="error && errorField === 'last'" x-text="error"></span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email</label>
+              <input type="email" class="form-input" @input="clearError()" x-model="regEmail" placeholder="you@example.com" required>
+              <span class="input-error" x-show="error && errorField === 'regEmail'" x-text="error"></span>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Password</label>
+              <input type="password" class="form-input" @input="clearError()" x-model="regPassword" placeholder="6+ characters" required minlength="6">
+              <span class="input-error" x-show="error && errorField === 'regPassword'" x-text="error"></span>
+            </div>
+            <button type="submit" class="btn btn-primary" :disabled="loading">
+              <span x-show="loading" class="spinner"></span>
+              <span x-text="loading ? 'Creating...' : 'Create Account'"></span>
+            </button>
+          </form>
+        </div>
+
+        <div class="divider">or</div>
+
+        <button class="btn btn-google" @click="handleGoogle" :disabled="loading">
+          <svg width="18" height="18" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+          </svg>
+          Continue with Google
+        </button>
       </div>
     </div>
+  </div>
 
-    <h1 class="login-title">Korah A.I</h1>
-    <p class="login-subtitle">Sign in to continue your learning journey</p>
-
-    <!-- Tabs -->
-    <div class="tabs">
-      <button class="tab" :class="{ active: tab === 'login' }" @click="switchTab('login')">Sign In</button>
-      <button class="tab" :class="{ active: tab === 'register' }" @click="switchTab('register')">Create Account</button>
+  <!-- 🪨 HERO PANEL -->
+  <div class="kl-hero-panel" aria-hidden="true">
+    <div class="kl-hero-inner">
+      <div class="kl-hero-title">KORAH A.I</div>
+      
+      <!-- 🪨 Isolated Starfield -->
+      <canvas id="staticStarField"></canvas>
+      <canvas id="shootingStarCanvas"></canvas>
+      
+      <div class="kl-bh-stage">
+        <div class="kl-bh-wrap">
+          <div class="kl-bh-singularity"></div>
+          <img class="kl-bh-canvas" src="assests/gargantua-transparent.gif" alt=""/>
+          <img class="kl-bh-canvas kl-bh-canvas-b" src="assests/gargantua-transparent.gif" alt=""/>
+        </div>
+      </div>
     </div>
-
-    <!-- Error message -->
-    <div class="error-msg" x-show="error" x-text="error" x-transition></div>
-
-    <!-- Login form -->
-    <form x-show="tab === 'login'" @submit.prevent="handleLogin" class="form-slide-enter">
-      <div class="form-group">
-        <label class="form-label">Email</label>
-        <input type="email" class="form-input" x-model="loginEmail" placeholder="you@example.com" required :disabled="loading">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Password</label>
-        <input type="password" class="form-input" x-model="loginPassword" placeholder="Enter your password" required :disabled="loading">
-      </div>
-      <button type="submit" class="btn btn-primary" :disabled="loading">
-        <span x-show="loading"><span class="spinner"></span>Signing in…</span>
-        <span x-show="!loading">Sign In</span>
-      </button>
-    </form>
-
-    <!-- Register form -->
-    <form x-show="tab === 'register'" @submit.prevent="handleRegister" class="form-slide-enter">
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label">First Name</label>
-          <input type="text" class="form-input" x-model="regFirst" placeholder="John" required :disabled="loading">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Last Name</label>
-          <input type="text" class="form-input" x-model="regLast" placeholder="Doe" required :disabled="loading">
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Email</label>
-        <input type="email" class="form-input" x-model="regEmail" placeholder="you@example.com" required :disabled="loading">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Password</label>
-        <input type="password" class="form-input" x-model="regPassword" placeholder="Create a password (6+ chars)" required minlength="6" :disabled="loading">
-      </div>
-      <button type="submit" class="btn btn-primary" :disabled="loading">
-        <span x-show="loading"><span class="spinner"></span>Creating account…</span>
-        <span x-show="!loading">Create Account</span>
-      </button>
-    </form>
-
-    <div class="divider">or continue with</div>
-
-    <button class="btn btn-google" @click="handleGoogle" :disabled="loading">
-      <svg width="18" height="18" viewBox="0 0 24 24">
-        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-      </svg>
-      Continue with Google
-    </button>
-
   </div>
 </div>
 
 <script type="module">
-  /* ─────────────── Firebase Auth ─────────────── */
+  /* 🪨 FIREBASE & AUTH */
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
   import {
     getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword,
     signInWithPopup, GoogleAuthProvider, onAuthStateChanged
   } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
-
-  /* ─────────────── Galaxy (OGL) ─────────────── */
-  import { Renderer, Program, Mesh, Color, Triangle } from 'https://esm.sh/ogl@1.0.7';
 
   const firebaseConfig = {
     apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
@@ -400,281 +572,363 @@
   const auth  = getAuth(app);
   const gProv = new GoogleAuthProvider();
 
-  function redirectToApp() { window.KorahTransitions.go('index.html'); }
-  onAuthStateChanged(auth, u => { if (u) redirectToApp(); });
+  onAuthStateChanged(auth, u => { if (u) window.KorahTransitions.go('index.html'); });
 
-  function getErrorMessage(code) {
-    const m = {
-      'auth/email-already-in-use': 'This email is already registered.',
-      'auth/invalid-email': 'Invalid email address.',
-      'auth/operation-not-allowed': 'Operation not allowed.',
-      'auth/weak-password': 'Password must be at least 6 characters.',
-      'auth/user-disabled': 'This account has been disabled.',
-      'auth/user-not-found': 'No account found with this email.',
-      'auth/wrong-password': 'Incorrect password.',
-      'auth/invalid-credential': 'Invalid email or password.',
-      'auth/popup-closed-by-user': 'Sign-in was cancelled.',
-      'auth/account-exists-with-different-credential': 'An account already exists with a different sign-in method.'
-    };
-    return m[code] || 'An error occurred. Please try again.';
+  /* 🪨 DYNAMIC SIZING & HIGH-DPI RENDERING */
+  const bhWrap    = document.querySelector('.kl-bh-wrap');
+  const heroInner = document.querySelector('.kl-hero-inner');
+
+  function setupCanvas(canvas) {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+    return { w: rect.width, h: rect.height };
   }
 
-  /* ── Alpine component — registered before Alpine boots ── */
+  function getBhCenter() {
+    if (!bhWrap || !heroInner) return { x: 0, y: 0 };
+    const ir = heroInner.getBoundingClientRect();
+    const wr = bhWrap.getBoundingClientRect();
+    return { 
+      x: (wr.left - ir.left) + wr.width / 2, 
+      y: (wr.top - ir.top) + wr.height / 2 
+    };
+  }
+
+  function getBhSize() { return bhWrap ? bhWrap.offsetWidth / 2 : 100; }
+
+  /* 🪨 GIF CROSSFADE */
+  function initGargantua() {
+    const imgA = document.querySelector('.kl-bh-canvas');
+    const imgB = document.querySelector('.kl-bh-canvas-b');
+    if (!imgA || !imgB) return;
+    const src = 'assests/gargantua-transparent.gif';
+    let ready = 0;
+    const onLoad = () => {
+      ready++;
+      if (ready < 2) return;
+      let toggle = false, last = performance.now();
+      const crossFade = t => {
+        if (t - last >= 105) {
+          toggle = !toggle; last = t;
+          imgA.style.opacity = toggle ? '0' : '1';
+          imgB.style.opacity = toggle ? '1' : '0';
+        }
+        requestAnimationFrame(crossFade);
+      };
+      requestAnimationFrame(crossFade);
+    };
+    imgA.onload = onLoad; imgB.onload = onLoad;
+    imgA.src = src; setTimeout(() => imgB.src = src, 105);
+  }
+  initGargantua();
+
+  /* 🪨 STATIC STARS (LOCALIZED & SHARP) */
+  function renderStaticStarfield() {
+    const sCanvas = document.getElementById('staticStarField');
+    if (!sCanvas) return;
+    const sctx = sCanvas.getContext('2d');
+    let stars = [], S_W, S_H;
+    function resize() {
+      const sz = setupCanvas(sCanvas);
+      S_W = sz.w; S_H = sz.h;
+      stars = [];
+      const count = Math.floor((S_W * S_H) / 2500);
+      const bh = getBhCenter(), exR = getBhSize() * 0.9;
+      for (let i = 0; i < count * 2 && stars.length < count; i++) {
+        const x = Math.random() * S_W, y = Math.random() * S_H;
+        if (Math.sqrt((x-bh.x)**2 + (y-bh.y)**2) < exR) continue;
+        stars.push({ x, y, r: Math.random()*1.5+0.5, spd: 1+Math.random()*2, ph: Math.random()*Math.PI*2, noise: (Math.random()-0.5)*2 });
+      }
+    }
+    function draw(t) {
+      sctx.clearRect(0,0,S_W,S_H);
+      const bh = getBhCenter(), bhR = getBhSize(), lensR = bhR * 2.2;
+      stars.forEach(s => {
+        const dx = s.x - bh.x, dy = s.y - bh.y, dist = Math.sqrt(dx*dx + dy*dy);
+        let dX = s.x, dY = s.y;
+        if (dist < lensR) {
+          const defl = 12000 / (dist * dist + 100);
+          dX -= (dx / dist) * Math.min(defl, dist * 0.95);
+          dY -= (dy / dist) * Math.min(defl, dist * 0.95);
+        }
+        const a = 0.25 + 0.75 * (0.5 + 0.5 * Math.sin(t/1000 * s.spd + s.ph));
+        sctx.beginPath(); sctx.arc(dX + s.noise, dY + s.noise, s.r, 0, Math.PI*2);
+        sctx.fillStyle = `rgba(255,255,255,${a})`; sctx.fill();
+      });
+      requestAnimationFrame(draw);
+    }
+    window.addEventListener('resize', resize); resize(); requestAnimationFrame(draw);
+  }
+  renderStaticStarfield();
+
+  /* 🪨 SPAGHETTI PHYSICS (ZOOM-RESILIENT) */
+  const cCanvas = document.getElementById('shootingStarCanvas');
+  if (cCanvas) {
+    const ctx = cCanvas.getContext('2d');
+    let activeStar = null, spawnTimer = null, C_W, C_H;
+
+    function resize() {
+      const sz = setupCanvas(cCanvas);
+      C_W = sz.w; C_H = sz.h;
+    }
+
+    function schedule(d) { if (spawnTimer) clearTimeout(spawnTimer); spawnTimer = setTimeout(spawn, d); }
+
+    function spawn() {
+      if (activeStar || document.hidden) return;
+      const bh = getBhCenter(), maxD = Math.max(C_W, C_H);
+      const ang = Math.random() * Math.PI * 2, r = maxD * (0.8 + Math.random()*0.4);
+      const x = bh.x + Math.cos(ang)*r, y = bh.y + Math.sin(ang)*r;
+      const toC = Math.atan2(bh.y-y, bh.x-x);
+      const spd = 6 + Math.random()*6;
+      activeStar = {
+        x, y, vx: Math.cos(toC + (Math.random()-0.5)*0.6)*spd, vy: Math.sin(toC + (Math.random()-0.5)*0.6)*spd,
+        base: 1.5 + Math.random()*2, trail: [], captured: false, orbitalDist: 0, orbitalAng: 0,
+        frames: 0, baseAngVel: 0, currentAngVel: 0, captureLerp: 0, initialDist: 0, 
+        capturedAngle: 0, smearing: false, smearFrames: 0
+      };
+    }
+
+    function draw(t) {
+      ctx.clearRect(0, 0, C_W, C_H);
+      const bh = getBhCenter(), bhR = getBhSize(), exR = bhR * 0.9, s = activeStar;
+      if (s) {
+        let dx = bh.x - s.x, dy = bh.y - s.y, dist = Math.sqrt(dx*dx + dy*dy);
+        if (!s.captured && dist < exR) {
+          s.captured = true; s.initialDist = dist; s.orbitalDist = dist;
+          s.orbitalAng = Math.atan2(s.y - bh.y, s.x - bh.x); 
+          const approachSpeed = Math.sqrt(s.vx*s.vx + s.vy*s.vy);
+          s.baseAngVel = approachSpeed / dist; s.currentAngVel = s.baseAngVel;
+          s.captureLerp = 0; s.capturedAngle = 0; s.smearing = false; s.smearFrames = 0;
+        }
+        if (s.captured && !s.smearing) {
+          const accelFactor = Math.min(5.0, Math.pow(s.initialDist / s.orbitalDist, 2.0));
+          s.currentAngVel = s.baseAngVel * accelFactor;
+          const oldAng = s.orbitalAng; s.orbitalAng -= s.currentAngVel; s.orbitalDist *= 0.9992; 
+          let aDiff = oldAng - s.orbitalAng;
+          while (aDiff < 0) aDiff += Math.PI * 2;
+          while (aDiff > Math.PI * 2) aDiff -= Math.PI * 2;
+          s.capturedAngle += aDiff;
+          s.captureLerp = Math.min(1, s.captureLerp + 0.011); 
+          const lerpFactor = 1 - Math.pow(1 - s.captureLerp, 3);
+          const theta = s.orbitalAng, sin = Math.sin(theta);
+          const vScale = sin > 0 ? 0.28 - Math.pow(sin, 0.8) * 0.14 : 0.28 + Math.pow(Math.abs(sin), 0.8) * 0.24;
+          const tilt = -12 * Math.PI / 180;
+          const lx = Math.cos(theta) * s.orbitalDist, ly = Math.sin(theta) * s.orbitalDist * vScale;
+          const targetX = bh.x + (lx * Math.cos(tilt) - ly * Math.sin(tilt)), targetY = bh.y + (lx * Math.sin(tilt) + ly * Math.cos(tilt));
+          const ballisticX = s.x + (s.vx * (1 - lerpFactor)), ballisticY = s.y + (s.vy * (1 - lerpFactor));
+          s.x = ballisticX * (1 - lerpFactor) + targetX * lerpFactor; s.y = ballisticY * (1 - lerpFactor) + targetY * lerpFactor;
+          const distRatio = Math.max(0, (bhR * 0.45 - s.orbitalDist) / (bhR * 0.15)), pSurge = Math.pow(distRatio, 2) * 1.2;
+          if (pSurge > 0.1) { s.x += (Math.random() - 0.5) * pSurge * 5.0; s.y += (Math.random() - 0.5) * pSurge * 5.0; }
+        } else if (!s.captured) {
+          const g = 8000 / (dist * dist + 100); s.vx += (dx / dist) * g; s.vy += (dy / dist) * g; s.x += s.vx; s.y += s.vy;
+        }
+        s.trail.push({ x: s.x, y: s.y }); if (s.trail.length > 50) s.trail.shift();
+        const thinningFactor = s.captured ? Math.pow(s.orbitalDist / s.initialDist, 2.8) : 1;
+        let op = 1.0;
+        if (s.captured && s.smearing) { s.smearFrames++; op = Math.max(0, 1 - Math.pow(s.smearFrames / 30, 1.5)); }
+        ctx.globalAlpha = op;
+        const distRatio = Math.max(0, (bhR * 0.45 - s.orbitalDist) / (bhR * 0.15)), plasmaSurge = s.captured ? Math.pow(distRatio, 2) * 1.2 : 0; 
+        if (op > 0.01 && thinningFactor > 0.005) {
+          if (s.trail.length > 2) {
+            for (let i = 1; i < s.trail.length; i++) {
+              const frac = i / s.trail.length; ctx.beginPath(); ctx.moveTo(s.trail[i-1].x, s.trail[i-1].y); ctx.lineTo(s.trail[i].x, s.trail[i].y);
+              ctx.strokeStyle = `rgba(255,255,255,${(frac * 0.8) + (plasmaSurge * 0.4)})`; ctx.lineWidth = s.base * (0.3 + 0.7 * frac) * thinningFactor; ctx.stroke();
+            }
+          }
+          const flareRad = ((s.base * 4) * thinningFactor) + (plasmaSurge * 12 * thinningFactor);
+          const grad = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, flareRad);
+          grad.addColorStop(0, `rgba(255,255,255,1)`); grad.addColorStop(0.4, `rgba(255,255,255,${0.4 + (plasmaSurge * 0.5)})`); grad.addColorStop(1, 'rgba(255,255,255,0)');
+          ctx.beginPath(); ctx.arc(s.x, s.y, flareRad, 0, Math.PI * 2); ctx.fillStyle = grad; ctx.fill();
+          ctx.beginPath(); ctx.arc(s.x, s.y, (s.base * 0.8) * thinningFactor, 0, Math.PI * 2); ctx.fillStyle = '#fff'; ctx.fill();
+        }
+        s.frames++;
+        const criteriaMet = s.captured && (thinningFactor < 0.04 || (s.orbitalDist < bhR * 0.38 && s.capturedAngle > Math.PI * 2.2));
+        const off = dist > Math.max(C_W, C_H) * 1.5;
+        if (!s.smearing && (criteriaMet || off || s.frames > 3500)) { s.smearing = true; s.smearFrames = 0; }
+        if (s.smearing && s.smearFrames >= 30) { activeStar = null; schedule(2500 + Math.random()*2500); }
+      }
+      requestAnimationFrame(draw);
+    }
+    window.addEventListener('resize', resize); resize(); schedule(500); requestAnimationFrame(draw);
+  }
+
+  /* 🪨 LOGIN CARD STARFIELD (chat-style, edge-biased) */
+  function renderLoginStarfield() {
+    const canvas = document.getElementById('loginStarField');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let stars = [], w, h;
+
+    class Star {
+      constructor() {
+        const cx = w / 2, cy = h / 2;
+        const edgeInner = Math.min(w, h) * 0.35;
+        const inRing = Math.random() < 0.8;
+        if (inRing) {
+          const ang = Math.random() * Math.PI * 2;
+          const r = edgeInner + Math.random() * (Math.min(w, h) * 0.5 - edgeInner);
+          this.x = cx + Math.cos(ang) * r;
+          this.y = cy + Math.sin(ang) * r;
+        } else {
+          this.x = Math.random() * w;
+          this.y = Math.random() * h;
+        }
+        this.size = Math.random() * 1.5 + 0.2;
+        this.opacity = Math.random() * 0.7 + 0.1;
+        this.twinkleSpeed = Math.random() * 0.015 + 0.005;
+        this.twinkleDir = Math.random() > 0.5 ? 1 : -1;
+      }
+      update() {
+        this.opacity += this.twinkleSpeed * this.twinkleDir;
+        if (this.opacity > 0.9 || this.opacity < 0.1) this.twinkleDir *= -1;
+      }
+      draw() {
+        ctx.globalAlpha = this.opacity;
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        if (this.size > 1.1) {
+          ctx.shadowBlur = 5;
+          ctx.shadowColor = '#ffffff';
+        } else ctx.shadowBlur = 0;
+      }
+    }
+
+    function resize() {
+      const sz = setupCanvas(canvas);
+      w = sz.w; h = sz.h;
+      const count = Math.floor((w * h) / 3000);
+      stars = [];
+      for (let i = 0; i < count; i++) stars.push(new Star());
+    }
+
+    function animate() {
+      ctx.clearRect(0, 0, w, h);
+      stars.forEach(s => { s.update(); s.draw(); });
+      ctx.globalAlpha = 1;
+      ctx.shadowBlur = 0;
+      requestAnimationFrame(animate);
+    }
+
+    window.addEventListener('resize', resize);
+    resize();
+    animate();
+  }
+
+  document.addEventListener('alpine:init', () => setTimeout(renderLoginStarfield, 50));
+
+  /* 🪨 ALPINE APP */
   document.addEventListener('alpine:init', () => {
     Alpine.data('loginApp', () => ({
-      tab: 'login',
-      error: '',
-      loading: false,
+      tab: 'login', error: '', errorField: '', loading: false, hasError: false,
       loginEmail: '', loginPassword: '',
       regFirst: '', regLast: '', regEmail: '', regPassword: '',
-
-      switchTab(t) { this.tab = t; this.error = ''; },
-
+      showError(msg, field) { 
+        this.error = msg; 
+        this.errorField = field; 
+        this.hasError = true;
+      },
+      clearError() { 
+        this.error = ''; 
+        this.errorField = ''; 
+        this.hasError = false;
+      },
+      switchTab(t) { 
+        this.tab = t; 
+        this.clearError(); 
+      },
       async handleLogin() {
-        this.error = ''; this.loading = true;
+        this.error = ''; this.hasError = false;
+        this.loading = true;
+        if (!this.loginEmail.trim()) {
+          this.showError("Email is required.", 'email');
+          this.loading = false; return;
+        }
+        if (!this.loginEmail.includes('@')) {
+          this.showError("Enter a valid email.", 'email');
+          this.loading = false; return;
+        }
+        if (!this.loginPassword.trim()) {
+          this.showError("Password is required.", 'password');
+          this.loading = false; return;
+        }
         try {
           await signInWithEmailAndPassword(auth, this.loginEmail, this.loginPassword);
-          localStorage.setItem('korah_first_name', this.loginEmail.split('@')[0]);
-        } catch (e) { this.error = getErrorMessage(e.code); }
+        }
+        catch (err) { this.showError("Invalid email or password.", 'email'); }
         this.loading = false;
       },
-
       async handleRegister() {
-        this.error = ''; this.loading = true;
+        this.error = ''; this.hasError = false;
+        this.loading = true;
+        if (!this.regFirst.trim()) {
+          this.showError("First name is required.", 'first');
+          this.loading = false; return;
+        }
+        if (!this.regLast.trim()) {
+          this.showError("Last name is required.", 'last');
+          this.loading = false; return;
+        }
+        if (!this.regEmail.trim()) {
+          this.showError("Email is required.", 'regEmail');
+          this.loading = false; return;
+        }
+        if (!this.regEmail.includes('@')) {
+          this.showError("Enter a valid email.", 'regEmail');
+          this.loading = false; return;
+        }
+        if (!this.regPassword.trim()) {
+          this.showError("Password is required.", 'regPassword');
+          this.loading = false; return;
+        }
+        if (this.regPassword.length < 6) {
+          this.showError("Password must be 6+ characters.", 'regPassword');
+          this.loading = false; return;
+        }
         try {
           await createUserWithEmailAndPassword(auth, this.regEmail, this.regPassword);
           localStorage.setItem('korah_first_name', this.regFirst);
-        } catch (e) { this.error = getErrorMessage(e.code); }
+        } catch (err) { this.showError("Registration failed.", 'regEmail'); }
         this.loading = false;
       },
-
       async handleGoogle() {
-        this.error = ''; this.loading = true;
+        this.loading = true; this.error = ''; this.hasError = false;
+        let popupRef = null;
+        const origOpen = window.open;
+        window.open = (url, name, features) => {
+          popupRef = origOpen.call(window, url, name, features);
+          window.open = origOpen;
+          return popupRef;
+        };
         try {
-          const result = await signInWithPopup(auth, gProv);
-          const name = result.user.displayName?.split(' ')[0] || 'there';
-          localStorage.setItem('korah_first_name', name);
-        } catch (e) { this.error = getErrorMessage(e.code); }
+          await Promise.race([
+            signInWithPopup(auth, gProv),
+            new Promise((_, reject) => {
+              const timer = setInterval(() => {
+                if (popupRef && popupRef.closed) {
+                  clearInterval(timer);
+                  reject(new Error('popup-closed'));
+                }
+              }, 100);
+            })
+          ]);
+        } catch (e) {
+          if (e.message !== 'popup-closed') this.showError("Google sign-in failed.", 'email');
+        }
         this.loading = false;
       }
     }));
   });
 
-  /* ─────────────── Galaxy WebGL ─────────────── */
-  const vertexShader = `
-    attribute vec2 uv;
-    attribute vec2 position;
-    varying vec2 vUv;
-    void main() {
-      vUv = uv;
-      gl_Position = vec4(position, 0, 1);
-    }
-  `;
-
-  const fragmentShader = `
-    precision highp float;
-
-    uniform float uTime;
-    uniform vec3 uResolution;
-    uniform vec2 uFocal;
-    uniform vec2 uRotation;
-    uniform float uStarSpeed;
-    uniform float uDensity;
-    uniform float uHueShift;
-    uniform float uSpeed;
-    uniform vec2 uMouse;
-    uniform float uGlowIntensity;
-    uniform float uSaturation;
-    uniform bool uMouseRepulsion;
-    uniform float uTwinkleIntensity;
-    uniform float uRotationSpeed;
-    uniform float uRepulsionStrength;
-    uniform float uMouseActiveFactor;
-    uniform float uAutoCenterRepulsion;
-
-    varying vec2 vUv;
-
-    #define NUM_LAYER 4.0
-    #define STAR_COLOR_CUTOFF 0.2
-    #define MAT45 mat2(0.7071,-0.7071,0.7071,0.7071)
-    #define PERIOD 3.0
-
-    float Hash21(vec2 p) {
-      p = fract(p * vec2(123.34, 456.21));
-      p += dot(p, p + 45.32);
-      return fract(p.x * p.y);
-    }
-    float tri(float x) { return abs(fract(x) * 2.0 - 1.0); }
-    float tris(float x) {
-      float t = fract(x);
-      return 1.0 - smoothstep(0.0, 1.0, abs(2.0 * t - 1.0));
-    }
-    float trisn(float x) {
-      float t = fract(x);
-      return 2.0 * (1.0 - smoothstep(0.0, 1.0, abs(2.0 * t - 1.0))) - 1.0;
-    }
-    vec3 hsv2rgb(vec3 c) {
-      vec4 K = vec4(1.0, 2.0/3.0, 1.0/3.0, 3.0);
-      vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
-      return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
-    }
-    float Star(vec2 uv, float flare) {
-      float d = length(uv);
-      float m = (0.05 * uGlowIntensity) / d;
-      float rays = smoothstep(0.0, 1.0, 1.0 - abs(uv.x * uv.y * 1000.0));
-      m += rays * flare * uGlowIntensity;
-      uv *= MAT45;
-      rays = smoothstep(0.0, 1.0, 1.0 - abs(uv.x * uv.y * 1000.0));
-      m += rays * 0.3 * flare * uGlowIntensity;
-      m *= smoothstep(1.0, 0.2, d);
-      return m;
-    }
-    vec3 StarLayer(vec2 uv) {
-      vec3 col = vec3(0.0);
-      vec2 gv = fract(uv) - 0.5;
-      vec2 id = floor(uv);
-      for (int y = -1; y <= 1; y++) {
-        for (int x = -1; x <= 1; x++) {
-          vec2 offset = vec2(float(x), float(y));
-          vec2 si = id + offset;
-          float seed = Hash21(si);
-          float size = fract(seed * 345.32);
-          float glossLocal = tri(uStarSpeed / (PERIOD * seed + 1.0));
-          float flareSize = smoothstep(0.9, 1.0, size) * glossLocal;
-          float red = smoothstep(STAR_COLOR_CUTOFF, 1.0, Hash21(si + 1.0)) + STAR_COLOR_CUTOFF;
-          float blu = smoothstep(STAR_COLOR_CUTOFF, 1.0, Hash21(si + 3.0)) + STAR_COLOR_CUTOFF;
-          float grn = min(red, blu) * seed;
-          vec3 base = vec3(red, grn, blu);
-          float hue = atan(base.g - base.r, base.b - base.r) / (2.0 * 3.14159) + 0.5;
-          hue = fract(hue + uHueShift / 360.0);
-          float sat = length(base - vec3(dot(base, vec3(0.299, 0.587, 0.114)))) * uSaturation;
-          float val = max(max(base.r, base.g), base.b);
-          base = hsv2rgb(vec3(hue, sat, val));
-          vec2 pad = vec2(tris(seed * 34.0 + uTime * uSpeed / 10.0), tris(seed * 38.0 + uTime * uSpeed / 30.0)) - 0.5;
-          float star = Star(gv - offset - pad, flareSize);
-          float twinkle = trisn(uTime * uSpeed + seed * 6.2831) * 0.5 + 1.0;
-          twinkle = mix(1.0, twinkle, uTwinkleIntensity);
-          star *= twinkle;
-          col += star * size * base;
-        }
-      }
-      return col;
-    }
-    void main() {
-      vec2 focalPx = uFocal * uResolution.xy;
-      vec2 uv = (vUv * uResolution.xy - focalPx) / uResolution.y;
-      vec2 mouseNorm = uMouse - vec2(0.5);
-      if (uAutoCenterRepulsion > 0.0) {
-        vec2 centerUV = vec2(0.0);
-        float centerDist = length(uv - centerUV);
-        vec2 repulsion = normalize(uv - centerUV) * (uAutoCenterRepulsion / (centerDist + 0.1));
-        uv += repulsion * 0.05;
-      } else if (uMouseRepulsion) {
-        vec2 mousePosUV = (uMouse * uResolution.xy - focalPx) / uResolution.y;
-        float mouseDist = length(uv - mousePosUV);
-        vec2 repulsion = normalize(uv - mousePosUV) * (uRepulsionStrength / (mouseDist + 0.1));
-        uv += repulsion * 0.05 * uMouseActiveFactor;
-      } else {
-        uv += mouseNorm * 0.1 * uMouseActiveFactor;
-      }
-      float autoRotAngle = uTime * uRotationSpeed;
-      mat2 autoRot = mat2(cos(autoRotAngle), -sin(autoRotAngle), sin(autoRotAngle), cos(autoRotAngle));
-      uv = autoRot * uv;
-      uv = mat2(uRotation.x, -uRotation.y, uRotation.y, uRotation.x) * uv;
-      vec3 col = vec3(0.0);
-      for (float i = 0.0; i < 1.0; i += 1.0 / NUM_LAYER) {
-        float depth = fract(i + uStarSpeed * uSpeed);
-        float scale = mix(20.0 * uDensity, 0.5 * uDensity, depth);
-        float fade = depth * smoothstep(1.0, 0.9, depth);
-        col += StarLayer(uv * scale + i * 453.32) * fade;
-      }
-      gl_FragColor = vec4(col, 1.0);
-    }
-  `;
-
-  function initGalaxy() {
-    const ctn = document.getElementById('galaxy-bg');
-    const renderer = new Renderer({ alpha: false });
-    const gl = renderer.gl;
-    gl.clearColor(0.016, 0.008, 0.047, 1);
-
-    let program;
-    function resize() {
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      if (program) {
-        program.uniforms.uResolution.value = new Color(
-          gl.canvas.width, gl.canvas.height, gl.canvas.width / gl.canvas.height
-        );
-      }
-    }
-    window.addEventListener('resize', resize);
-
-    const geometry = new Triangle(gl);
-    program = new Program(gl, {
-      vertex: vertexShader,
-      fragment: fragmentShader,
-      uniforms: {
-        uTime:               { value: 0 },
-        uResolution:         { value: new Color(1, 1, 1) },
-        uFocal:              { value: new Float32Array([0.5, 0.5]) },
-        uRotation:           { value: new Float32Array([1.0, 0.0]) },
-        uStarSpeed:          { value: 0.5 },
-        uDensity:            { value: 1.0 },
-        uHueShift:           { value: 140 },
-        uSpeed:              { value: 1.0 },
-        uMouse:              { value: new Float32Array([0.5, 0.5]) },
-        uGlowIntensity:      { value: 0.3 },
-        uSaturation:         { value: 0.0 },
-        uMouseRepulsion:     { value: true },
-        uTwinkleIntensity:   { value: 0.3 },
-        uRotationSpeed:      { value: 0.06 },
-        uRepulsionStrength:  { value: 2.0 },
-        uMouseActiveFactor:  { value: 0.0 },
-        uAutoCenterRepulsion:{ value: 0.0 },
-      }
-    });
-
-    resize();
-    const mesh = new Mesh(gl, { geometry, program });
-    ctn.appendChild(gl.canvas);
-
-    const targetMouse  = { x: 0.5, y: 0.5 };
-    const smoothMouse  = { x: 0.5, y: 0.5 };
-    let targetActive   = 0, smoothActive = 0;
-
-    window.addEventListener('mousemove', e => {
-      targetMouse.x = e.clientX / window.innerWidth;
-      targetMouse.y = 1 - e.clientY / window.innerHeight;
-      targetActive  = 1;
-    });
-    window.addEventListener('mouseleave', () => { targetActive = 0; });
-
-    const lerp = (a, b, t) => a + (b - a) * t;
-
-    function update(t) {
-      requestAnimationFrame(update);
-      const s = t * 0.001;
-      program.uniforms.uTime.value      = s;
-      program.uniforms.uStarSpeed.value = (s * 0.5) / 10.0;
-
-      smoothMouse.x = lerp(smoothMouse.x, targetMouse.x, 0.05);
-      smoothMouse.y = lerp(smoothMouse.y, targetMouse.y, 0.05);
-      smoothActive  = lerp(smoothActive, targetActive, 0.05);
-
-      program.uniforms.uMouse.value[0]         = smoothMouse.x;
-      program.uniforms.uMouse.value[1]         = smoothMouse.y;
-      program.uniforms.uMouseActiveFactor.value = smoothActive;
-
-      renderer.render({ scene: mesh });
-    }
-    requestAnimationFrame(update);
-  }
-
-  initGalaxy();
+  document.documentElement.classList.add('korah-page-ready');
 </script>
 
-<!-- Alpine must appear AFTER the module so alpine:init fires after our data registration -->
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-
 </body>
 </html>
