@@ -73,7 +73,7 @@
   .kl-shell {
     display: flex;
     flex-direction: row;
-    width: 100vw;
+    width: 100%;
     min-height: 100vh;
     position: relative;
     z-index: 10;
@@ -117,18 +117,6 @@
     z-index: -1;
   }
 
-  .kl-auth-panel::after {
-    content: '';
-    position: absolute;
-    top: 38.2%;
-    left: 15%;
-    right: 15%;
-    height: 0.5px;
-    background: rgba(139,92,246,0.08);
-    pointer-events: none;
-    z-index: 0;
-  }
-
   .kl-hero-panel {
     flex: 0 0 54%;
     padding: 2.5rem;
@@ -137,7 +125,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #0a0618;
+    background: #070512;
   }
 
   /* 🪨 SPACE WINDOW (Isolated Starfield Stage) */
@@ -152,7 +140,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 0 50px rgba(0,0,0,0.8);
+    box-shadow: 0 0 50px rgba(0,0,0,0.8), inset 0 0 80px rgba(0,0,0,0.6);
   }
 
   /* 🪨 INTERNAL CANVASES */
@@ -228,8 +216,18 @@
     font-size: 2.25rem;
     font-weight: 900;
     text-align: center;
-    margin-bottom: 0.25rem;
+    margin-bottom: 0;
     letter-spacing: -0.02em;
+  }
+
+  .login-subtitle {
+    color: var(--tx2);
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.5;
+    text-align: center;
+    opacity: 0.7;
+    margin-top: 0.5rem;
   }
 
   /* 🪨 LOGIN CARD (Stars Behind) */
@@ -237,10 +235,10 @@
     background: transparent;
     border: 1px solid var(--bd);
     border-radius: 1.5rem;
-    padding: 2.5rem;
+    padding: 2rem;
     width: 100%;
     max-width: 27rem;
-    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5), 0 0 20px var(--glow);
     position: relative;
     z-index: 2;
     overflow: hidden;
@@ -283,7 +281,9 @@
     inset: 0;
     z-index: 1;
     border-radius: inherit;
-    background: rgba(6, 2, 15, 0.35);
+    background: radial-gradient(ellipse at center, rgba(6,2,15,0.30) 0%, rgba(6,2,15,0.60) 100%);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     pointer-events: none;
   }
 
@@ -298,7 +298,7 @@
     background: rgba(255,255,255,0.03);
     padding: 0.25rem;
     border-radius: 0.75rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.75rem;
     border: 1px solid var(--bd);
   }
   .tab {
@@ -316,10 +316,12 @@
   .tab.active {
     background: var(--cu);
     color: var(--tx);
-    box-shadow: 0 4px 12px rgba(139,92,246,0.15);
+    box-shadow: inset 0 0 0 1px rgba(139,92,246,0.4), 0 4px 12px rgba(139,92,246,0.15);
   }
+  .tab:not(.active):hover { color: var(--tx); background: rgba(255,255,255,0.02); }
+  .tab:active { transform: scale(0.97); }
 
-  .form-group { margin-bottom: 1rem; }
+  .form-group { margin-bottom: 0.75rem; }
   .form-label {
     display: block;
     font-size: 0.7rem;
@@ -331,7 +333,7 @@
   }
   .form-input {
     width: 100%;
-    padding: 0.75rem 1rem;
+    padding: 0.875rem 1rem;
     border-radius: 0.7rem;
     border: 1px solid var(--bd);
     background: rgba(255,255,255,0.04);
@@ -339,7 +341,7 @@
     font-size: 0.9rem;
     transition: background 0.2s, box-shadow 0.2s;
   }
-  .form-input::placeholder { transition: opacity 0.2s; }
+  .form-input::placeholder { color: var(--tx3); opacity: 0.7; transition: opacity 0.2s; }
   .form-input:focus {
     outline: none;
     border-color: var(--bd-focus);
@@ -349,16 +351,16 @@
   .form-input:focus::placeholder { opacity: 0.3; }
   .input-error {
     display: block;
-    font-size: 0.7rem;
-    color: rgba(200, 60, 85, 0.85);
+    font-size: 0.75rem;
+    color: rgba(200, 60, 85, 0.8);
     margin-top: 0.2rem;
-    padding: 0.15rem 0.5rem;
-    background: rgba(200, 60, 85, 0.05);
-    border-radius: 0.25rem;
-    border-left: 2px solid rgba(200, 60, 85, 0.2);
+    padding: 0.1rem 0.4rem;
+    background: rgba(200, 60, 85, 0.03);
+    border-radius: 0.2rem;
+    border-left: 1.5px solid rgba(200, 60, 85, 0.15);
   }
-  .login-card.has-errors .form-input { border-color: rgba(200, 60, 85, 0.8); }
-  .login-card.has-errors .form-input:focus { border-color: rgba(200, 60, 85, 0.8); }
+  .input-invalid { border-color: rgba(200, 60, 85, 0.8) !important; }
+  .input-invalid:focus { border-color: rgba(200, 60, 85, 0.8) !important; box-shadow: 0 0 15px rgba(200,60,85,0.15) !important; }
   /* 🪨 TAB CROSSFADE */
   .form-container { position: relative; }
 
@@ -384,17 +386,23 @@
   }
   .btn-primary { background: linear-gradient(135deg, #5b21b6, var(--p4)); color: white; }
   .btn-primary:hover:not(:disabled) { filter: brightness(1.1); transform: translateY(-1px); box-shadow: 0 8px 20px rgba(91,33,182,0.4); }
+  .btn-primary:active:not(:disabled) { transform: scale(0.98); }
 
   .btn-google {
     background: rgba(255,255,255,0.05); color: var(--tx); border: 1px solid var(--bd);
     display: flex; align-items: center; justify-content: center; gap: 0.6rem;
   }
+  .btn-google:hover:not(:disabled) { border-color: var(--bd-focus); background: rgba(255,255,255,0.08); transform: translateY(-1px); }
   .btn-google:active { transform: scale(0.97); }
+
+  .btn:disabled { cursor: not-allowed; pointer-events: none; }
+  .btn-primary:disabled { filter: none; transform: none; box-shadow: none; }
+  .btn-google:disabled { transform: none; border-color: var(--bd); }
 
   .divider {
     display: flex; align-items: center; gap: 1rem;
-    margin: 1.5rem 0; color: var(--tx3); font-size: 0.7rem; font-weight: 700;
-    text-transform: uppercase;
+    margin: 1rem 0; color: var(--tx3); font-size: 0.7rem; font-weight: 700;
+    opacity: 0.8; text-transform: uppercase;
   }
   .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--bd); }
 
@@ -404,8 +412,15 @@
     .kl-hero-panel { flex: 0 0 50%; }
   }
 
+  @media (prefers-reduced-motion: reduce) {
+    .kl-hero-title, .login-card:not(:has(.form-input:focus)) { animation: none !important; }
+    .login-card::before { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+  }
+  @media (max-width: 24rem) { .name-fields-row { flex-direction: column; } }
   @media (max-width: 48rem) {
+    .tab { padding: 0.75rem; }
     .kl-shell { flex-direction: column; min-height: 100vh; background: var(--grad); }
+    .kl-shell::after { display: none; }
     .kl-hero-panel { display: none; }
     .kl-auth-panel { 
       width: 100%; 
@@ -416,17 +431,24 @@
       justify-content: center;
     }
     .login-card { 
-      max-width: 100%; padding: 2.5rem 1.5rem; border-radius: 1.5rem; min-height: auto;
+      max-width: 100%; padding: 2rem 1.25rem; border-radius: 1.5rem; min-height: auto;
       border: 1px solid var(--bd); display: block;
       background: transparent;
     }
-    
-    /* 🪨 Mobile Sync (Inherit Hero Breathing style) */
     .login-title {
       font-size: 2.25rem; text-transform: uppercase; letter-spacing: 0.25em; text-indent: 0.25em;
       color: var(--p4); animation: kl-breath 4s ease-in-out infinite;
     }
+    
   }
+
+  .password-toggle {
+    position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%);
+    background: none; border: none; cursor: pointer;
+    opacity: 0.4; padding: 0.25rem; line-height: 0;
+    transition: opacity 0.2s; z-index: 3;
+  }
+  .password-toggle:hover { opacity: 0.8; }
 
   .spinner {
     width: 1rem; height: 1rem; border: 2px solid rgba(255,255,255,0.3);
@@ -451,12 +473,12 @@
 <div class="kl-shell">
   <!-- 🪨 AUTH PANEL -->
   <div class="kl-auth-panel">
-    <div class="login-card" x-data="loginApp" :class="hasError ? 'has-errors' : ''" x-cloak>
+    <div class="login-card" x-data="loginApp" x-cloak>
       <canvas id="loginStarField" class="login-star-canvas"></canvas>
       <div class="login-card-inner">
-        <div class="text-center mb-6">
+        <div class="text-center mb-4">
           <h1 class="login-title">Korah A.I</h1>
-          <p class="text-sm text-tx2 opacity-70">Sign in to continue your journey</p>
+          <p class="login-subtitle" x-text="tab === 'login' ? 'Sign in to continue your journey' : 'Create your Korah account'"></p>
         </div>
 
         <div class="tabs">
@@ -464,69 +486,91 @@
           <button class="tab" :class="{ active: tab === 'register' }" @click="switchTab('register')">Create Account</button>
         </div>
 
-        <div class="form-container">
-          <form x-show="tab === 'login'" @submit.prevent="handleLogin" @invalid.capture="hasError = true"
+        <div class="form-container" x-ref="formContainer">
+          <form x-show="tab === 'login'" novalidate @submit.prevent="handleLogin"
             x-transition:enter="form-fade-enter"
             x-transition:leave="form-fade-leave">
             <div class="form-group">
               <label class="form-label">Email</label>
-              <input type="email" class="form-input" @input="clearError()" x-model="loginEmail" placeholder="you@example.com" required>
-              <span class="input-error" x-show="error && errorField === 'email'" x-text="error"></span>
+              <input type="email" class="form-input" :class="{ 'input-invalid': fieldErr.email || showAllErrors }" @input="clearError()" x-model="loginEmail" placeholder="you@example.com" required>
+              <div style="min-height: 1.125rem;"><span class="input-error" x-show="fieldErr.email" x-text="fieldErr.email"></span></div>
             </div>
-            <div class="form-group">
+            <div class="form-group" style="position: relative;">
               <label class="form-label">Password</label>
-              <input type="password" class="form-input" @input="clearError()" x-model="loginPassword" placeholder="Your password" required>
-              <span class="input-error" x-show="error && errorField === 'password'" x-text="error"></span>
+              <div style="position: relative;">
+                <input :type="showLoginPassword ? 'text' : 'password'" class="form-input" :class="{ 'input-invalid': fieldErr.password || showAllErrors }" @input="clearError()" x-model="loginPassword" placeholder="Your password" required>
+                <button type="button" class="password-toggle" @click="showLoginPassword = !showLoginPassword" tabindex="-1">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path x-show="!showLoginPassword" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle x-show="!showLoginPassword" cx="12" cy="12" r="3"/>
+                    <path x-show="showLoginPassword" d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                    <line x-show="showLoginPassword" x1="1" y1="1" x2="23" y2="23"/>
+                  </svg>
+                </button>
+              </div>
+              <div style="min-height: 1.125rem;"><span class="input-error" x-show="fieldErr.password" x-text="fieldErr.password"></span></div>
+              <div style="min-height: 1.125rem; text-align: center;"><span class="input-error" x-show="fieldErr.general" x-text="fieldErr.general"></span></div>
             </div>
-            <button type="submit" class="btn btn-primary" :disabled="loading">
-              <span x-show="loading" class="spinner"></span>
-              <span x-text="loading ? 'Signing in...' : 'Sign In'"></span>
+            <button type="submit" class="btn btn-primary" :disabled="loadingPrimary">
+              <span x-show="loadingPrimary" class="spinner"></span>
+              <span x-text="loadingPrimary ? 'Signing in...' : 'Sign In'"></span>
             </button>
           </form>
 
-          <form x-show="tab === 'register'" @submit.prevent="handleRegister" @invalid.capture="hasError = true"
+          <form x-show="tab === 'register'" novalidate @submit.prevent="handleRegister"
             x-transition:enter="form-fade-enter"
             x-transition:leave="form-fade-leave">
-            <div class="flex gap-3 mb-4">
+              <div class="flex gap-3 mb-3 name-fields-row">
               <div class="flex-1">
                 <label class="form-label">First Name</label>
-                <input type="text" class="form-input" @input="clearError()" x-model="regFirst" placeholder="John" required>
-                <span class="input-error" x-show="error && errorField === 'first'" x-text="error"></span>
+                <input type="text" class="form-input" :class="{ 'input-invalid': fieldErr.first || showAllErrors }" @input="clearError()" x-model="regFirst" placeholder="John" required>
+                <div style="min-height: 1.125rem;"><span class="input-error" x-show="fieldErr.first" x-text="fieldErr.first"></span></div>
               </div>
               <div class="flex-1">
                 <label class="form-label">Last Name</label>
-                <input type="text" class="form-input" @input="clearError()" x-model="regLast" placeholder="Doe" required>
-                <span class="input-error" x-show="error && errorField === 'last'" x-text="error"></span>
+                <input type="text" class="form-input" :class="{ 'input-invalid': fieldErr.last || showAllErrors }" @input="clearError()" x-model="regLast" placeholder="Doe" required>
+                <div style="min-height: 1.125rem;"><span class="input-error" x-show="fieldErr.last" x-text="fieldErr.last"></span></div>
               </div>
             </div>
             <div class="form-group">
               <label class="form-label">Email</label>
-              <input type="email" class="form-input" @input="clearError()" x-model="regEmail" placeholder="you@example.com" required>
-              <span class="input-error" x-show="error && errorField === 'regEmail'" x-text="error"></span>
+              <input type="email" class="form-input" :class="{ 'input-invalid': fieldErr.regEmail || showAllErrors }" @input="clearError()" x-model="regEmail" placeholder="you@example.com" required>
+              <div style="min-height: 1.125rem;"><span class="input-error" x-show="fieldErr.regEmail" x-text="fieldErr.regEmail"></span></div>
             </div>
-            <div class="form-group">
+            <div class="form-group" style="position: relative;">
               <label class="form-label">Password</label>
-              <input type="password" class="form-input" @input="clearError()" x-model="regPassword" placeholder="6+ characters" required minlength="6">
-              <span class="input-error" x-show="error && errorField === 'regPassword'" x-text="error"></span>
+              <div style="position: relative;">
+                <input :type="showRegPassword ? 'text' : 'password'" class="form-input" :class="{ 'input-invalid': fieldErr.regPassword || showAllErrors }" @input="clearError()" x-model="regPassword" placeholder="6+ characters" required minlength="6">
+                <button type="button" class="password-toggle" @click="showRegPassword = !showRegPassword" tabindex="-1">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path x-show="!showRegPassword" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle x-show="!showRegPassword" cx="12" cy="12" r="3"/>
+                    <path x-show="showRegPassword" d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                    <line x-show="showRegPassword" x1="1" y1="1" x2="23" y2="23"/>
+                  </svg>
+                </button>
+              </div>
+              <div style="min-height: 1.125rem;"><span class="input-error" x-show="fieldErr.regPassword" x-text="fieldErr.regPassword"></span></div>
+              <div style="min-height: 1.125rem; text-align: center;"><span class="input-error" x-show="fieldErr.general" x-text="fieldErr.general"></span></div>
             </div>
-            <button type="submit" class="btn btn-primary" :disabled="loading">
-              <span x-show="loading" class="spinner"></span>
-              <span x-text="loading ? 'Creating...' : 'Create Account'"></span>
+            <button type="submit" class="btn btn-primary" :disabled="loadingPrimary">
+              <span x-show="loadingPrimary" class="spinner"></span>
+              <span x-text="loadingPrimary ? 'Creating...' : 'Create Account'"></span>
             </button>
           </form>
         </div>
 
         <div class="divider">or</div>
 
-        <button class="btn btn-google" @click="handleGoogle" :disabled="loading">
-          <svg width="18" height="18" viewBox="0 0 24 24">
+        <button class="btn btn-google" @click="handleGoogle" :disabled="loadingGoogle">
+          <span x-show="loadingGoogle" class="spinner"></span>
+          <svg x-show="!loadingGoogle" width="18" height="18" viewBox="0 0 24 24">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
             <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
             <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
             <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
           </svg>
-          Continue with Google
+          <span x-text="loadingGoogle ? (tab === 'login' ? 'Signing in...' : 'Creating account...') : 'Continue with Google'"></span>
         </button>
+        <div style="min-height: 1.125rem; text-align: center;"><span class="input-error" x-show="fieldErr.google" x-text="fieldErr.google"></span></div>
       </div>
     </div>
   </div>
@@ -612,6 +656,7 @@
       if (ready < 2) return;
       let toggle = false, last = performance.now();
       const crossFade = t => {
+        if (document.hidden) { requestAnimationFrame(crossFade); return; }
         if (t - last >= 105) {
           toggle = !toggle; last = t;
           imgA.style.opacity = toggle ? '0' : '1';
@@ -645,6 +690,7 @@
       }
     }
     function draw(t) {
+      if (document.hidden) { requestAnimationFrame(draw); return; }
       sctx.clearRect(0,0,S_W,S_H);
       const bh = getBhCenter(), bhR = getBhSize(), lensR = bhR * 2.2;
       stars.forEach(s => {
@@ -766,18 +812,8 @@
 
     class Star {
       constructor() {
-        const cx = w / 2, cy = h / 2;
-        const edgeInner = Math.min(w, h) * 0.35;
-        const inRing = Math.random() < 0.8;
-        if (inRing) {
-          const ang = Math.random() * Math.PI * 2;
-          const r = edgeInner + Math.random() * (Math.min(w, h) * 0.5 - edgeInner);
-          this.x = cx + Math.cos(ang) * r;
-          this.y = cy + Math.sin(ang) * r;
-        } else {
-          this.x = Math.random() * w;
-          this.y = Math.random() * h;
-        }
+        this.x = Math.random() * w;
+        this.y = Math.random() * h;
         this.size = Math.random() * 1.5 + 0.2;
         this.opacity = Math.random() * 0.7 + 0.1;
         this.twinkleSpeed = Math.random() * 0.015 + 0.005;
@@ -803,12 +839,13 @@
     function resize() {
       const sz = setupCanvas(canvas);
       w = sz.w; h = sz.h;
-      const count = Math.floor((w * h) / 3000);
+      const count = Math.floor((w * h) / 2000);
       stars = [];
       for (let i = 0; i < count; i++) stars.push(new Star());
     }
 
     function animate() {
+      if (document.hidden) { requestAnimationFrame(animate); return; }
       ctx.clearRect(0, 0, w, h);
       stars.forEach(s => { s.update(); s.draw(); });
       ctx.globalAlpha = 1;
@@ -826,79 +863,78 @@
   /* 🪨 ALPINE APP */
   document.addEventListener('alpine:init', () => {
     Alpine.data('loginApp', () => ({
-      tab: 'login', error: '', errorField: '', loading: false, hasError: false,
-      loginEmail: '', loginPassword: '',
+      tab: 'login', fieldErr: {}, showAllErrors: false, loadingPrimary: false, loadingGoogle: false,
+      loginEmail: '', loginPassword: '', showLoginPassword: false, showRegPassword: false,
       regFirst: '', regLast: '', regEmail: '', regPassword: '',
-      showError(msg, field) { 
-        this.error = msg; 
-        this.errorField = field; 
-        this.hasError = true;
-      },
       clearError() { 
-        this.error = ''; 
-        this.errorField = ''; 
-        this.hasError = false;
+        this.fieldErr = {}; 
+        this.showAllErrors = false; 
       },
-      switchTab(t) { 
-        this.tab = t; 
-        this.clearError(); 
-      },
+      switchTab(t) { this.tab = t; this.clearError(); },
       async handleLogin() {
-        this.error = ''; this.hasError = false;
-        this.loading = true;
-        if (!this.loginEmail.trim()) {
-          this.showError("Email is required.", 'email');
-          this.loading = false; return;
+        this.fieldErr = {};
+        this.loadingPrimary = true;
+        const eEmpty = !this.loginEmail.trim();
+        const pEmpty = !this.loginPassword.trim();
+        if (eEmpty && pEmpty) {
+          this.showAllErrors = true;
+          this.fieldErr.general = "Please fill in all fields.";
+          this.loadingPrimary = false; return;
         }
-        if (!this.loginEmail.includes('@')) {
-          this.showError("Enter a valid email.", 'email');
-          this.loading = false; return;
-        }
-        if (!this.loginPassword.trim()) {
-          this.showError("Password is required.", 'password');
-          this.loading = false; return;
-        }
+        if (eEmpty) this.fieldErr.email = "Email is required.";
+        if (!eEmpty && !this.loginEmail.includes('@')) this.fieldErr.email = "Enter a valid email.";
+        if (pEmpty) this.fieldErr.password = "Password is required.";
+        if (this.fieldErr.email || this.fieldErr.password) { this.loadingPrimary = false; return; }
         try {
           await signInWithEmailAndPassword(auth, this.loginEmail, this.loginPassword);
         }
-        catch (err) { this.showError("Invalid email or password.", 'email'); }
-        this.loading = false;
+        catch (err) {
+          this.loadingPrimary = false;
+          const code = err.code;
+          if (code === 'auth/invalid-email') { this.fieldErr.email = "Invalid email."; return; }
+          if (code === 'auth/user-not-found') { this.fieldErr.email = "Email not found."; return; }
+          if (code === 'auth/user-disabled') { this.fieldErr.email = "Account disabled."; return; }
+          if (code === 'auth/wrong-password') { this.fieldErr.password = "Invalid password."; return; }
+          this.fieldErr.email = "Invalid email or password."; this.fieldErr.password = "Invalid email or password.";
+        }
+        this.loadingPrimary = false;
       },
       async handleRegister() {
-        this.error = ''; this.hasError = false;
-        this.loading = true;
-        if (!this.regFirst.trim()) {
-          this.showError("First name is required.", 'first');
-          this.loading = false; return;
+        this.fieldErr = {};
+        this.loadingPrimary = true;
+        const fEmpty = !this.regFirst.trim();
+        const lEmpty = !this.regLast.trim();
+        const eEmpty = !this.regEmail.trim();
+        const pEmpty = !this.regPassword.trim();
+        if (fEmpty && lEmpty && eEmpty && pEmpty) {
+          this.showAllErrors = true;
+          this.fieldErr.general = "Please fill in all fields.";
+          this.loadingPrimary = false; return;
         }
-        if (!this.regLast.trim()) {
-          this.showError("Last name is required.", 'last');
-          this.loading = false; return;
-        }
-        if (!this.regEmail.trim()) {
-          this.showError("Email is required.", 'regEmail');
-          this.loading = false; return;
-        }
-        if (!this.regEmail.includes('@')) {
-          this.showError("Enter a valid email.", 'regEmail');
-          this.loading = false; return;
-        }
-        if (!this.regPassword.trim()) {
-          this.showError("Password is required.", 'regPassword');
-          this.loading = false; return;
-        }
-        if (this.regPassword.length < 6) {
-          this.showError("Password must be 6+ characters.", 'regPassword');
-          this.loading = false; return;
-        }
+        if (fEmpty) this.fieldErr.first = "First name is required.";
+        if (lEmpty) this.fieldErr.last = "Last name is required.";
+        if (eEmpty) this.fieldErr.regEmail = "Email is required.";
+        if (!eEmpty && !this.regEmail.includes('@')) this.fieldErr.regEmail = "Enter a valid email.";
+        if (pEmpty) this.fieldErr.regPassword = "Password is required.";
+        if (!pEmpty && this.regPassword.length < 6) this.fieldErr.regPassword = "Password must be 6+ characters.";
+        if (this.fieldErr.first || this.fieldErr.last || this.fieldErr.regEmail || this.fieldErr.regPassword) { this.loadingPrimary = false; return; }
         try {
           await createUserWithEmailAndPassword(auth, this.regEmail, this.regPassword);
           localStorage.setItem('korah_first_name', this.regFirst);
-        } catch (err) { this.showError("Registration failed.", 'regEmail'); }
-        this.loading = false;
+        } catch (err) {
+          this.loadingPrimary = false;
+          const code = err.code;
+          if (code === 'auth/email-already-in-use') { this.fieldErr.regEmail = "Email already in use."; return; }
+          if (code === 'auth/invalid-email') { this.fieldErr.regEmail = "Invalid email."; return; }
+          if (code === 'auth/weak-password') { this.fieldErr.regPassword = "Password too weak."; return; }
+          this.fieldErr.regEmail = "Registration failed.";
+          return;
+        }
+        this.loadingPrimary = false;
       },
       async handleGoogle() {
-        this.loading = true; this.error = ''; this.hasError = false;
+        this.loadingPrimary = true; this.loadingGoogle = true;
+        this.fieldErr = {};
         let popupRef = null;
         const origOpen = window.open;
         window.open = (url, name, features) => {
@@ -919,9 +955,14 @@
             })
           ]);
         } catch (e) {
-          if (e.message !== 'popup-closed') this.showError("Google sign-in failed.", 'email');
+          this.loadingPrimary = false; this.loadingGoogle = false;
+          if (e.message !== 'popup-closed') {
+            const msg = this.tab === 'login' ? "Failed Login: Try again in a few seconds." : "Failed Registration: Try again in a few seconds.";
+            this.fieldErr.google = msg;
+          }
+          return;
         }
-        this.loading = false;
+        this.loadingPrimary = false; this.loadingGoogle = false;
       }
     }));
   });

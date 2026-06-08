@@ -1442,3 +1442,106 @@ After implementing all steps, verify:
 - [ ] **Verify light mode:** White inner box, constellation canvas visible, dots roaming, constellation forms after 3-5s
 - [ ] **Verify reduced motion:** Static Korah shown, no animation
 - [ ] **Verify mobile:** Card fills full screen, no horizontal scroll
+
+
+
+Implementation Plan - Restructure UI-UX.md for Agent Prompting                                
+    2                                                                                                    
+    3     This plan proposes an overhaul of UI-UX.md to transform it from a verbose listing of individual
+    4     CSS styles into a high-signal, compact documentation manual and developer prompt. It will guide
+    5     AI agents and engineers on how to approach the codebase, think about design, and execute UI/UX 
+    6     updates to fit the "Korah Vibe."                                                               
+    7                                                                                                    
+    8     ## User Review Required                                                                        
+    9                                                                                                    
+   10     │ [!IMPORTANT]                                                                                 
+   11     │ Based on our deep-dive discussion, the restructured  UI-UX.md  will contain the following key
+   12     │ rules:                                                                                       
+   13     │                                                                                              
+   14     │ 1. Surgical Code Rule (Strict): Agents must never rewrite entire HTML bodies (to avoid       
+   15     │ deleting crucial scripts or structures) or duplicate listeners. They must search ( grep ) for
+   16     │ existing helpers and listeners before adding code.                                           
+   17     │ 2. Surgical Reversions & Git Safety (Double Confirmation): Agents are forbidden from using   
+   18     │ blanket git reverts or file checkouts unless explicitly ordered. If ordered, they must ask   
+   19     the                                                                                            
+   20     │ user twice to confirm (e.g. Are you sure? followed by Double-confirming: Are you absolutely  
+   21     │ sure?) before executing the revert. Otherwise, they must only perform surgical text-based    
+   22     │ reversions of their own lines.                                                               
+   23     │ 3. The  !important  Approval Rule:                                                           
+   24     │     • Agents must try radical approaches (increasing selector specificity, chaining          
+   25     selectors)                                                                                     
+   26     │     to make CSS override correctly without  !important .                                     
+   27     │     • Using  !important  is a last-resort. If they must use it, they must explain why to you 
+   28     │     and obtain explicit approval. This approval is valid only for that specific task.        
+   29     │ 4. No-Dependency Rule: Agents are forbidden from installing new packages ( npm install ) or  
+   30     │ adding new script CDNs (external libraries) without permission. If a library is needed, they 
+   31     │ must explain why, propose the CDN link, and wait for your approval.                          
+   32     │ 5. No Backend Access: Agents are forbidden from touching Firebase connection, auth, or  
+   firestore-sync logic unless explicitly permitted. If permitted, all scripting must use try-  
+   34     │ catch and optional chaining to prevent uncaught page crashes.                                
+   35     │ 6. Mandatory Responsiveness Checklist: All additions must scale smoothly across Desktop      
+   36     │ (1200px+), Tablet (768px), and Mobile (375px) without layout breaks. Agents must explicitly  
+   37     │ list their verification steps in their post-execution report.                                
+   38     │ 7. "Caveman" Code Comments: Agents must write comments using minimum words, describing what  
+   39     │ the code does for major functions only. No long sentences or line-by-line commentary.        
+   40     │ 8. Coworker Collaboration Guide:                                                             
+   41     │     • Deep-dive into pages to identify large/small UI/UX improvement recommendations.        
+   42     │     • Present recommendations in a clean, token-efficient table with columns:  Element ,     
+   43     │     Current Function ,  Proposed Change ,  Function If Change Happens , and  Why .           
+   44     │                                                                                              
+   45                                                                                                    
+   46     ## Proposed Changes                                                                            
+   47                                                                                                    
+   48     ### Documentation Updates                                                                      
+   49                                                                                                    
+   50     #### [MODIFY] UI-UX.md                                                                         
+   51                                                                                                    
+   52     We will restructure this document into the following clean, dense, and agent-optimized         
+   53     structure:                                                                                     
+   54                                                                                                    
+   55     1. 0 · The Core Commandments: (Highly detailed agent prompt block, including safety, surgical  
+   56     editing, backend boundaries, dependency limitations, last-resort  !important  approval, and    
+   57     confirmation scripts).                                                                         
+   58     2. 1 · Developer-to-Developer Collaboration & Tone: (Rules for design partners, UX             
+   59     recommendations table format, and token-efficient communication style).                        
+   60     3. 2 · Code Comments & Styling Rules: (Guidelines for "Caveman" style comments, CSS Modularity 
+   61     hierarchy, and TailwindCDN boundaries. Includes flexible AlpineJS guidelines allowing minor    
+   62     inline code depending on task extent).                                                         
+   63     4. 3 · The Korah Aesthetic & Vibe: (Premium design details, "Linear-style" transitions, and    
+   64     what constitutes "off-brand" UI/UX. Includes typography rules for Plus Jakarta Sans and        
+>  65     Playfair Display, noting that agents can propose outside fonts if they look better but must ask you first).                                                                                    
+   67     5. 4 · Codebase Architecture & File Map:                                                       
+   68         • Directory hierarchy ( /app ,  /sat ,  /study ,  /transitions ).                          
+   69         • Routing rules ( window.KorahTransitions.go(url) ).                                       
+   70         • FOUC prevention logic.                                                                   
+   71         • Asset paths and dynamic loaders ( sidebar-loader.js ).                                   
+   72     6. 5 · Design Tokens & CSS Variables:                                                          
+   73         • Custom CSS variables for dark/light themes.                                              
+   74         • Typography scale, font weights, and letter-spacings.                                     
+   75     7. 6 · Layout & Split Patterns:                                                                
+   76         • Master layout containers.                                                                
+   77         • Split panel structures.                                                                  
+   78         • Breakpoints for responsive design.                                                       
+   79     8. 7 · Core Components Directory & CSS Cheat Sheet:                                            
+   80         • Fast-reference CSS utility classes.                                                      
+   81         • Structural mapping of key components (Sidebar, Messages, Input Areas, Modals, Feed, Timer,
+   82         Study Renderers, SAT player, Math Chat).                                                   
+   83         • High-level design notes and file references indicating where styling and scripting lives 
+   84         for each component.                                                                        
+   85     9. 8 · Theme & Accessibility Guidelines:                                                       
+   86         • Light/Dark mode guidelines and contrast rules.                                           
+   87         • Focus styling and keyboard accessibility.                                                
+   88     10. 9 · Quality Assurance Checklist: Mandatory responsive check procedures and post-execution  
+   89     declaration text.                                                                              
+   90                                                                                                    
+   91     ## Verification Plan                                                                           
+   92                                                                                                    
+   93     ### Automated Tests                                                                            
+   94                                                                                                    
+   95     • None applicable, as this is a markdown documentation change.                                 
+   96                                                                                                    
+   97     ### Manual Verification                                                                        
+>  98                                  
+ Verify that UI-UX.md reads correctly, has no typos, maintains Markdown link formatting, and  
+  100     accurately represents the codebase structure (Firebase, Alpine, page-transitions, and css file 
+> 101     order). 
