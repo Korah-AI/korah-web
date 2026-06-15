@@ -304,7 +304,7 @@ Each component entry includes: class names, states, dark/light notes, and page s
 | 6.26 | Scrollbars | Custom purple scrollbar across chat, doc panel, SAT nav | korah-chat.css, sat.css | — |
 | 6.27 | Skeleton | Loading placeholder rows for sidebar history | korah-chat.css | study/js/sidebar.js |
 | 6.28 | Utilities | Color/text/bg helpers, transition shortcuts, visibility | korah.css, korah-chat.css | — |
-| 6.29 | Login | Auth page with black hole hero, login/signup form | korah.css | login.html |
+| 6.29 | Login | Auth page with black hole hero, login/signup form; shooting star physics (fly-by / slingshot / spaghettification capture) | korah.css | login.html |
 | 6.30 | Landing | Marketing page with nav, hero stats, feature sections | (inline) | landing/index.html |
 | 6.31 | Productivity | Todo list, focus timer, mini stats, celebration overlay | korah-chat.css | productivity.html |
 | 6.32 | FAQ | Accordion Q&A, category cards, email tooltip | support/support.css | support/index.html |
@@ -914,7 +914,17 @@ Visibility:
                             Black hole background layers (hero panel)
 .kl-bh-singularity          The black center of the black hole
 #staticStarField            Gravitational lensing stars (Dark mode only)
-#shootingStarCanvas         Spaghetti physics shooting stars
+#shootingStarCanvas         Three-tier shooting star physics (dark mode only)
+
+**Tiers** (random on spawn, 2000ms schedule):
+- **Tier 0 — Safe fly-by** (`gPower=1.0, vAcc=1.0`): straight pass, no capture
+- **Tier 1 — Slingshot** (`gPower=1.85, vAcc=1.003`): gravity bend around black hole; exclusion zone guard pushes star outside `bhR*1.15` via squared ease-in position push + velocity redirect
+- **Tier 2 — Capture** (`gPower=2.5, vAcc=1.003`): spaghettification triggers when `dist < exR` — kills orbit, streaks into singularity with size decay + trail fade
+
+**Probability:** 60% safe, 25% slingshot, 10% capture (default fallback 5% unused)
+**Exclusion zone guard:** tier 1 only — recalculates distance after gravity update, applies `d*d*0.15` push + `dot*d*0.4` velocity redirect when `nd < bhR*1.15`
+**Theme guard:** `spawn()` returns early in light mode; MutationObserver clears `activeStar` + cancels `spawnTimer` on light switch, restarts on dark switch
+**Loop:** runs continuously in light mode but returns immediately (constant draw, minimal perf impact)
 .kl-hero-title              "KORAH A.I" text with kl-breath animation
 
 **Login card:**
@@ -1101,6 +1111,25 @@ Visibility:
 .assistant-content, .study-guide-markdown
                             Study guide reader overlay with AI assistant sidebar
 
+6.36 · Black Hole: Accretion and Halo Orbit [Dark Mode]
+
+**Physics Logic:**
+Uses "Angled-Rail Spline" to trace lensed light precisely.
+Elliptical base provides momentum to fix "stop-and-redirect" snaps.
+
+**"Perfect One" Configuration:**
+Hump Power: 2.0         Smooth natural rise
+Halo Peak: 0.35         Inner lip tracing
+Disk Bow: 0.11          Accretion angle
+Spiral Pull: 0.9989     Inward decay
+Thinning Exp: 3.3       Shredded death speed
+
+**Code Pattern:**
+baseLy = sinT * R * 0.11
+if (sinT < 0) ly -= Math.pow(1 - cosT*cosT, 2.0) * 0.35 * R
+lx = cosT * R
+thin = Math.pow(dist/init, 3.3)
+
 7 · Dark / Light Mode Rules
 
 Never hardcode a color in a new component. Always use a CSS variable.
@@ -1136,7 +1165,7 @@ Before declaring a task "Done", you MUST generate a **Task-Specific Deep-Dive Ch
 10 · Maintaining This Document
 This file is a living document. When you:
 
-Create a new component: add it to §6 with all states documented
+Create a new component: MANDATORY — document in §6 (table + detail section) before any code is written. If a component not in this file is found in the codebase, fix it immediately.
 Establish a new animation: add it to the keyframe table in §4
 Add a new page with new CSS: note its scope with a page tag
 Find something documented here that no longer matches the code: update this file and note the change in your ## What I did section

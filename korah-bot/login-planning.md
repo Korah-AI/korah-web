@@ -1,5 +1,7 @@
 # Korah Login - Master Technical Roadmap
 
+# Before implementing any task, check in with the user to see if they want to continue. If you finish a task and then are about to go to the next one, ask the user first if they want to continue and are satisfied with the end result of that task (If they want to continue then do your best to assist them to get the end-result they want)
+
 This document provides complete context and implementation logic for UI/UX and physics improvements to `login.html`.
 
 ## 0. Implementation Context (For Agents)
@@ -16,26 +18,17 @@ The `constellationCanvas` logic follows these phases:
 
 ## 1. Dark Mode: Atmospheric Physics & Depth
 
-### 1.1 Randomized Physics Trajectories (DEPENDENCY)
-**Note:** Only implement this section AFTER the user confirms the "Halo Orbit" fix is complete. A separate technical plan for the halo orbit will be pasted here once finalized.
-
-Trajectories must be randomized across three risk layers in the `spawn()` function.
-*   **Safe Layer:** Target offset > `bhR * 2`. Linear travel, slight curve.
-*   **Graze Layer:** Target offset `bhR * 1.1` to `bhR * 1.5`. Extreme bending.
-*   **Capture Layer:** Target offset < `bhR`. Trigger `s.captured = true`.
-*   **Constraint:** Maintain the "Spaghetti" smearing logic for captures.
-
-### 1.2 Space Aesthetics (Subtle Depth)
+### 1.1 Space Aesthetics (Subtle Depth)
 *   **Nebula Glow:** Add 2-3 semi-transparent radial gradients to `staticStarField`. Use `var(--p4)` at 5-8% opacity. **Must be subtle.**
 *   **Panel Blending:** Replace the 1px divider in `.kl-shell::after` with a wide, soft gradient bleed (`background: linear-gradient(...)`) to fuse the hero and auth panels.
 *   **Loading Fix:** Set `background: var(--bg)` directly on `.kl-hero-inner` via CSS to prevent the white/black flash during canvas setup.
-
+*   **Logo Implementation:** Add a "space korah logo" in the black hole hero, somewhere in the surrounding space like possibly in the background on a rocket flying by or another way. The korah logo needs to be like a "astronaut" korah with a helmet. This is just a potential idea to add for logo placement, since the logo NEEDS to be in there.
 ---
 
 ## 2. Light Mode: Premium Brand Constellations
 
 ### 2.1 Logo Mapping & Reveal
-*   **Precision:** Replace zodiac signs with coordinates for **Korah Logo** variations (K-icon, Wordmark).
+*   **Precision:** Replace zodiac signs with coordinates for **Korah Logo** variations (K-icon, Wordmark). (This is for all related korah logos that match the "study" flow of korah and possibly just some other funny korah logos or just him looking cool.)
 *   **Logo Reveal:** When `formDone` is true, fade in a `.logo-overlay` image behind the dots at `opacity: 0.12`. It should feel like a ghost image, not a solid block.
 *   **Text Removal:** Remove the `labelAlpha` and `fillText` logic that displays names under the constellation.
 
