@@ -18,11 +18,8 @@ The `constellationCanvas` logic follows these phases:
 
 ## 1. Dark Mode: Atmospheric Physics & Depth
 
-### 1.1 Space Aesthetics (Subtle Depth)
-*   **Nebula Glow:** Add 2-3 semi-transparent radial gradients to `staticStarField`. Use `var(--p4)` at 5-8% opacity. **Must be subtle.**
-*   **Panel Blending:** Replace the 1px divider in `.kl-shell::after` with a wide, soft gradient bleed (`background: linear-gradient(...)`) to fuse the hero and auth panels.
-*   **Loading Fix:** Set `background: var(--bg)` directly on `.kl-hero-inner` via CSS to prevent the white/black flash during canvas setup.
-*   **Logo Implementation:** Add a "space korah logo" in the black hole hero, somewhere in the surrounding space like possibly in the background on a rocket flying by or another way. The korah logo needs to be like a "astronaut" korah with a helmet. This is just a potential idea to add for logo placement, since the logo NEEDS to be in there.
+### 1.1 Logo Implementation
+*   **Logo Implementation:** Add a "space korah logo" in the black hole hero, somewhere in the surrounding space like possibly in the background on a rocket flying by or another way. The korah logo needs to be like a "astronaut" korah with a helmet. This is just a potential idea to add for logo placement, since the logo NEEDS to be in there. *****Do NOT DO. STILL IN THE WORKS*****
 ---
 
 ## 2. Light Mode: Premium Brand Constellations
