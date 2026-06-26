@@ -82,6 +82,52 @@
     display: none;
   }
 
+  [data-theme="dark"] .kl-hero-title { color: #fff; }
+  [data-theme="dark"] .login-card,
+  [data-theme="dark"] .login-card:has(.form-input:focus) {
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.03);
+  }
+
+  /* ── Electric border (vanilla port of @BalintFerenczy / React Bits) ── */
+  [data-theme="dark"] .login-card { overflow: visible; }
+  .electric-border-canvas {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 4;
+    display: none;
+  }
+  [data-theme="dark"] .electric-border-canvas { display: block; }
+  .electric-border-glow {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 0;
+    display: none;
+  }
+  [data-theme="dark"] .electric-border-glow { display: block; }
+  .electric-border-glow > div {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+  }
+  .electric-border-glow .eb-soft  { border: 2px solid rgba(168,85,247,0.6); filter: blur(1px); }
+  .electric-border-glow .eb-hard  { border: 2px solid #a855f7; filter: blur(4px); }
+  .electric-border-glow .eb-halo  {
+    inset: -5%;
+    z-index: -1;
+    opacity: 0.3;
+    filter: blur(32px);
+    background: linear-gradient(-30deg, #a855f7, transparent, #a855f7);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .electric-border-canvas { display: none !important; }
+  }
+
   /* 🪨 THEME TOGGLE (debug) */
   .theme-toggle-btn {
     position: absolute; top: 1rem; right: 1rem; z-index: 20;
@@ -530,6 +576,12 @@
   <div class="kl-auth-panel">
     <div class="login-card" x-data="loginApp" x-cloak>
       <canvas id="loginStarField" class="login-star-canvas"></canvas>
+      <canvas id="electricBorderCanvas" class="electric-border-canvas" aria-hidden="true"></canvas>
+      <div class="electric-border-glow" aria-hidden="true">
+        <div class="eb-soft"></div>
+        <div class="eb-hard"></div>
+        <div class="eb-halo"></div>
+      </div>
       <div class="login-card-inner">
         <div class="text-center mb-4">
           <h1 class="login-title">Korah A.I</h1>
@@ -1068,6 +1120,149 @@
   }
 
   document.addEventListener('alpine:init', () => setTimeout(renderLoginStarfield, 50));
+
+  /* ════════════════════════════════════════════════════════════════
+     ⚡ ELECTRIC BORDER — vanilla port of @BalintFerenczy / React Bits
+     https://codepen.io/BalintFerenczy/pen/KwdoyEN
+  ════════════════════════════════════════════════════════════════ */
+  function initElectricBorder() {
+    const canvas = document.getElementById('electricBorderCanvas');
+    const container = document.querySelector('.login-card');
+    if (!canvas || !container) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const color = '#a855f7';
+    const speed = 1;
+    const chaos = 0.12;
+    const borderRadius = 24;
+
+    const octaves = 10;
+    const lacunarity = 1.6;
+    const gain = 0.7;
+    const amplitude = chaos;
+    const frequency = 10;
+    const baseFlatness = 0;
+    const displacement = 60;
+    const borderOffset = 60;
+
+    let timeAcc = 0;
+    let lastFrame = 0;
+    let raf = 0;
+    let lastDpr = Math.min(window.devicePixelRatio || 1, 2);
+    let width = 0, height = 0;
+
+    function rnd(x) { return (Math.sin(x * 12.9898) * 43758.5453) % 1; }
+    function noise2D(x, y) {
+      const i = Math.floor(x), j = Math.floor(y);
+      const fx = x - i, fy = y - j;
+      const a = rnd(i + j * 57);
+      const b = rnd(i + 1 + j * 57);
+      const c = rnd(i + (j + 1) * 57);
+      const d = rnd(i + 1 + (j + 1) * 57);
+      const ux = fx * fx * (3 - 2 * fx);
+      const uy = fy * fy * (3 - 2 * fy);
+      return a * (1 - ux) * (1 - uy) + b * ux * (1 - uy) + c * (1 - ux) * uy + d * ux * uy;
+    }
+    function octavedNoise(x, time, seed) {
+      let y = 0, amp = amplitude, freq = frequency;
+      for (let i = 0; i < octaves; i++) {
+        let oa = amp;
+        if (i === 0) oa *= baseFlatness;
+        y += oa * noise2D(freq * x + seed * 100, time * freq * 0.3);
+        freq *= lacunarity;
+        amp *= gain;
+      }
+      return y;
+    }
+    function getCornerPoint(cx, cy, r, startAngle, arcLen, p) {
+      const a = startAngle + p * arcLen;
+      return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
+    }
+    function getRoundedRectPoint(t, left, top, w, h, r) {
+      const sw = w - 2 * r, sh = h - 2 * r;
+      const arc = (Math.PI * r) / 2;
+      const total = 2 * sw + 2 * sh + 4 * arc;
+      const dist = t * total;
+      let acc = 0;
+      if (dist <= acc + sw) { const p = (dist - acc) / sw; return { x: left + r + p * sw, y: top }; }
+      acc += sw;
+      if (dist <= acc + arc) { const p = (dist - acc) / arc; return getCornerPoint(left + w - r, top + r, r, -Math.PI / 2, Math.PI / 2, p); }
+      acc += arc;
+      if (dist <= acc + sh) { const p = (dist - acc) / sh; return { x: left + w, y: top + r + p * sh }; }
+      acc += sh;
+      if (dist <= acc + arc) { const p = (dist - acc) / arc; return getCornerPoint(left + w - r, top + h - r, r, 0, Math.PI / 2, p); }
+      acc += arc;
+      if (dist <= acc + sw) { const p = (dist - acc) / sw; return { x: left + w - r - p * sw, y: top + h }; }
+      acc += sw;
+      if (dist <= acc + arc) { const p = (dist - acc) / arc; return getCornerPoint(left + r, top + h - r, r, Math.PI / 2, Math.PI / 2, p); }
+      acc += arc;
+      if (dist <= acc + sh) { const p = (dist - acc) / sh; return { x: left, y: top + h - r - p * sh }; }
+      acc += sh;
+      const p = (dist - acc) / arc;
+      return getCornerPoint(left + r, top + r, r, Math.PI, Math.PI / 2, p);
+    }
+
+    function updateSize() {
+      const rect = container.getBoundingClientRect();
+      width = rect.width + borderOffset * 2;
+      height = rect.height + borderOffset * 2;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      canvas.style.width = width + 'px';
+      canvas.style.height = height + 'px';
+      lastDpr = dpr;
+    }
+
+    function draw(now) {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      if (dpr !== lastDpr) updateSize();
+
+      const dt = lastFrame ? (now - lastFrame) / 1000 : 0;
+      timeAcc += dt * speed;
+      lastFrame = now;
+
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.scale(dpr, dpr);
+
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      const left = borderOffset, top = borderOffset;
+      const bw = width - 2 * borderOffset;
+      const bh = height - 2 * borderOffset;
+      const maxR = Math.min(bw, bh) / 2;
+      const r = Math.min(borderRadius, maxR);
+      const perimeter = 2 * (bw + bh) + 2 * Math.PI * r;
+      const samples = Math.max(64, Math.floor(perimeter / 2));
+
+      ctx.beginPath();
+      for (let i = 0; i <= samples; i++) {
+        const p = i / samples;
+        const pt = getRoundedRectPoint(p, left, top, bw, bh, r);
+        const nx = octavedNoise(p * 8, timeAcc, 0);
+        const ny = octavedNoise(p * 8, timeAcc, 1);
+        const x = pt.x + nx * displacement;
+        const y = pt.y + ny * displacement;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.stroke();
+
+      raf = requestAnimationFrame(draw);
+    }
+
+    const ro = new ResizeObserver(updateSize);
+    ro.observe(container);
+    updateSize();
+    raf = requestAnimationFrame(draw);
+  }
+
+  document.addEventListener('alpine:init', () => setTimeout(initElectricBorder, 60));
 
   /* ════════════════════════════════════════════════════════════════
      🌟 CONSTELLATION SYSTEM — light mode hero canvas
