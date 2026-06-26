@@ -374,7 +374,7 @@
     inset: 0;
     z-index: 1;
     border-radius: inherit;
-    background: radial-gradient(ellipse at center, rgba(6,2,15,0.30) 0%, rgba(6,2,15,0.60) 100%);
+    background: radial-gradient(ellipse at center, rgba(40,22,80,0.35) 0%, rgba(20,10,45,0.55) 100%);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     pointer-events: none;
@@ -501,6 +501,46 @@
   }
   .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--bd); }
 
+  /* 🪨 CENTERED CARD MODE (blackhole disabled, stars fill background) */
+  .kl-shell { justify-content: center; }
+  .kl-shell::after { display: none; }
+  .kl-hero-panel {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    flex: none;
+    padding: 0;
+    z-index: 0;
+    background: transparent;
+  }
+  .kl-hero-inner {
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+  }
+  .kl-auth-panel {
+    flex: 1 1 100%;
+    background: transparent;
+    z-index: 1;
+  }
+  .kl-auth-panel::before { display: none; }
+
+  /* 🪨 TITLE LOGO ROW */
+  .login-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+  }
+  .login-title-logo {
+    width: clamp(2rem, 4vw, 2.75rem);
+    height: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 8px rgba(139,92,246,0.35));
+  }
+  .login-title-logo-l { transform: rotate(-14deg); }
+  .login-title-logo-r { transform: rotate(14deg); }
+
   /* 🪨 RESPONSIVE BREAKPOINTS */
   @media (max-width: 64rem) {
     .kl-auth-panel { flex: 0 0 50%; }
@@ -584,7 +624,11 @@
       </div>
       <div class="login-card-inner">
         <div class="text-center mb-4">
-          <h1 class="login-title">Korah A.I</h1>
+          <div class="login-title-row">
+            <img src="logo-images/newlogo3.png" alt="" class="login-title-logo login-title-logo-l"/>
+            <h1 class="login-title">Korah A.I</h1>
+            <img src="logo-images/newlogo5.png" alt="" class="login-title-logo login-title-logo-r"/>
+          </div>
           <p class="login-subtitle" x-text="tab === 'login' ? 'Sign in to continue your journey' : 'Create your Korah account'"></p>
         </div>
 
@@ -685,8 +729,8 @@
   <!-- 🪨 HERO PANEL -->
   <div class="kl-hero-panel" aria-hidden="true">
     <div class="kl-hero-inner">
-      <div class="kl-hero-title">KORAH A.I</div>
-      <button id="themeToggle" class="theme-toggle-btn" title="Toggle theme">🌙</button>
+      <!-- <div class="kl-hero-title">KORAH A.I</div> -->
+      <!-- <button id="themeToggle" class="theme-toggle-btn" title="Toggle theme">🌙</button> -->
       
       <!-- dark mode: isolated star field + shooting stars -->
       <canvas id="staticStarField"></canvas>
@@ -695,12 +739,14 @@
       <!-- light mode: constellation canvas -->
       <canvas id="constellationCanvas"></canvas>
 
+      <!--
       <div class="kl-bh-stage">
         <div class="kl-bh-wrap">
           <img class="kl-bh-canvas" src="assests/gargantua-transparent.gif" alt=""/>
           <img class="kl-bh-canvas kl-bh-canvas-b" src="assests/gargantua-transparent.gif" alt=""/>
         </div>
       </div>
+      -->
     </div>
   </div>
 </div>
