@@ -256,7 +256,7 @@ function showSidebarDeleteModal(name, onConfirm) {
 
   // ── Render Chat History ──
   function _getChatLogoPath() {
-    return '/korah-bot/logo-images/newlogo11.png';
+    return '../logo-images/newlogo12.png';
   }
 
   function renderChatHistory(container, baseUrl) {
