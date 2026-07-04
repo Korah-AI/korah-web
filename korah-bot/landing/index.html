@@ -218,15 +218,41 @@
   }
   .code-toast-close:hover { color: var(--tx); border-color: var(--p4); }
   @media (max-width: 640px) {
-    .code-toast { bottom: 1rem; left: 1rem; right: 1rem; max-width: none; }
+    .code-toast {
+      bottom: 1rem;
+      left: 1rem;
+      right: 1rem;
+      width: auto;
+      max-width: none;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem 0.75rem 0.75rem;
+      border-radius: 0.9375rem;
+    }
+    .code-toast-logo { height: 2.75rem; width: 2.75rem; }
+    .code-toast-body { gap: 0.2rem; }
+    .code-toast-eyebrow { font-size: 0.625rem; letter-spacing: 0.08em; }
+    .code-toast-title { font-size: 0.9375rem; }
+    .code-toast-sub {
+      font-size: 0.75rem;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .code-toast-sub-full { display: none; }
+    .code-toast-sub-mobile { display: inline; }
   }
+  .code-toast-sub-mobile { display: none; }
 </style>
 <a href="../code/code.html" id="codeToast" class="code-toast" aria-label="Announcing Korah CODE Internship">
   <img src="../logo-images/newlogo12.png" alt="Korah CODE" class="code-toast-logo">
   <div class="code-toast-body">
     <span class="code-toast-eyebrow">New · Applications Open</span>
     <span class="code-toast-title">Korah <span class="purple">CODE</span> Internship</span>
-    <span class="code-toast-sub">We just launched a 5 week software engineering internship for highschoolers. Learn more →</span>
+    <span class="code-toast-sub">
+      <span class="code-toast-sub-full">We just launched a 5 week software engineering internship for highschoolers. Learn more →</span>
+      <span class="code-toast-sub-mobile">5-week SWE internship for highschoolers →</span>
+    </span>
   </div>
   <button type="button" class="code-toast-close" aria-label="Dismiss"
     onclick="event.preventDefault();event.stopPropagation();document.getElementById('codeToast').remove();sessionStorage.setItem('korah_code_toast_dismissed','1');">×</button>
