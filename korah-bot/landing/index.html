@@ -123,6 +123,123 @@
   })();
 </script>
 
+<!-- ═══ CODE ANNOUNCEMENT TOAST ═══ -->
+<style>
+  .code-toast {
+    position: fixed;
+    bottom: 1.75rem;
+    left: 1.75rem;
+    z-index: 1001;
+    display: flex;
+    align-items: center;
+    gap: 1.125rem;
+    padding: 1rem 1.5rem 1rem 1rem;
+    background: color-mix(in srgb, var(--bg2) 55%, transparent);
+    border: 1px solid var(--bd);
+    border-radius: 1.125rem;
+    box-shadow: 0 1.25rem 3.5rem rgba(0,0,0,0.35), 0 0 2rem rgba(139,92,246,0.28);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    text-decoration: none;
+    width: 30rem;
+    max-width: calc(100vw - 3rem);
+    transform: translateY(1.5rem);
+    opacity: 0;
+    transition: transform 0.5s cubic-bezier(0.16,1,0.3,1), opacity 0.5s, border-color 0.25s, box-shadow 0.25s;
+  }
+  .code-toast.visible { transform: translateY(0); opacity: 1; }
+  .code-toast:hover {
+    border-color: var(--p4);
+    box-shadow: 0 1rem 3rem rgba(0,0,0,0.4), 0 0 2rem rgba(139,92,246,0.4);
+  }
+  .code-toast-logo {
+    height: 3.75rem;
+    width: 3.75rem;
+    object-fit: contain;
+    flex-shrink: 0;
+    filter: drop-shadow(0 0 0.5rem rgba(139,92,246,0.4));
+  }
+  .code-toast-body { display: flex; flex-direction: column; gap: 0.3rem; min-width: 0; }
+  .code-toast-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.6875rem;
+    font-weight: 800;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--tx);
+  }
+  [data-theme="light"] .code-toast-eyebrow { color: var(--p4); }
+  .code-toast-eyebrow::before {
+    content: '';
+    width: 0.4375rem;
+    height: 0.4375rem;
+    border-radius: 50%;
+    background: var(--p4);
+    box-shadow: 0 0 0.5rem var(--p4);
+    animation: code-toast-pulse 1.8s ease-in-out infinite;
+  }
+  @keyframes code-toast-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.3); }
+  }
+  .code-toast-title {
+    font-size: 1.0625rem;
+    font-weight: 800;
+    color: var(--tx);
+    line-height: 1.25;
+    letter-spacing: -0.005em;
+  }
+  .code-toast-title .purple { color: var(--p4); }
+  .code-toast-sub {
+    font-size: 0.8125rem;
+    color: var(--tx2);
+    line-height: 1.4;
+  }
+  .code-toast-close {
+    position: absolute;
+    top: -0.5rem;
+    right: -0.5rem;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    background: var(--bg2);
+    border: 1px solid var(--bd);
+    color: var(--tx2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    padding: 0;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .code-toast-close:hover { color: var(--tx); border-color: var(--p4); }
+  @media (max-width: 640px) {
+    .code-toast { bottom: 1rem; left: 1rem; right: 1rem; max-width: none; }
+  }
+</style>
+<a href="../code/code.html" id="codeToast" class="code-toast" aria-label="Announcing Korah CODE Internship">
+  <img src="../logo-images/newlogo12.png" alt="Korah CODE" class="code-toast-logo">
+  <div class="code-toast-body">
+    <span class="code-toast-eyebrow">New · Applications Open</span>
+    <span class="code-toast-title">Korah <span class="purple">CODE</span> Internship</span>
+    <span class="code-toast-sub">We just launched a 5 week software engineering internship for highschoolers. Learn more →</span>
+  </div>
+  <button type="button" class="code-toast-close" aria-label="Dismiss"
+    onclick="event.preventDefault();event.stopPropagation();document.getElementById('codeToast').remove();sessionStorage.setItem('korah_code_toast_dismissed','1');">×</button>
+</a>
+<script>
+  (function() {
+    var toast = document.getElementById('codeToast');
+    if (!toast) return;
+    if (sessionStorage.getItem('korah_code_toast_dismissed') === '1') { toast.remove(); return; }
+    setTimeout(function() { toast.classList.add('visible'); }, 1200);
+  })();
+</script>
+
 <!-- Shooting Star background and twinkling stars -->
 <div class="stars-container" id="starField" :style="theme === 'light' ? 'opacity:0;pointer-events:none' : 'opacity:1'" style="transition:opacity 0.4s"></div>
 <canvas id="constellation-canvas" style="position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; opacity:0; transition:opacity 0.5s; z-index:-1;"></canvas>
@@ -491,6 +608,8 @@
       <a href="#sat"      class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Desmos Tutoring</a>
       <a href="#progress" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Progress</a>
       <a href="#chat"     class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Questionbank</a>
+      <a href="#tutoring" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Tutoring</a>
+      <a href="../code/code.html" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Korah CODE</a>
       <a href="../index.html" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Web App</a>
     </div>
     <div>
