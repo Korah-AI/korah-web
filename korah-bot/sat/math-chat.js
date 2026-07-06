@@ -755,6 +755,31 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
     renderWelcomeAttachments();
   }
 
+  function makeFileCard(f, onRemove) {
+    const card = document.createElement('div');
+    card.className = 'input-file-card';
+    if (f.type === 'image' && f.dataUrl) {
+      const img = document.createElement('img');
+      img.className = 'input-file-card-thumb';
+      img.src = f.dataUrl;
+      img.alt = f.name;
+      card.appendChild(img);
+    } else {
+      const icon = document.createElement('div');
+      icon.className = 'input-file-card-icon';
+      const ext = (f.name || '').split('.').pop().toUpperCase();
+      icon.innerHTML = `<span style="font-size:1.5rem;line-height:1">${getFileIcon(f.type, f.name)}</span><span class="input-file-card-label">${ext}</span>`;
+      card.appendChild(icon);
+    }
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'input-file-card-remove';
+    removeBtn.title = 'Remove';
+    removeBtn.textContent = '×';
+    removeBtn.addEventListener('click', onRemove);
+    card.appendChild(removeBtn);
+    return card;
+  }
+
   function renderInputFilesBar() {
     const bar = document.getElementById('input-files-bar');
     if (!bar) return;
@@ -762,13 +787,9 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
     bar.classList.add('show');
     bar.innerHTML = '';
     attachedFiles.forEach((f, i) => {
-      const chip = document.createElement('div');
-      chip.className = 'input-file-chip';
-      chip.innerHTML = `<span>${getFileIcon(f.type, f.name)}</span><span class="input-file-chip-name">${f.name}</span><button class="input-file-chip-remove" title="Remove">×</button>`;
-      chip.querySelector('.input-file-chip-remove').addEventListener('click', () => {
+      bar.appendChild(makeFileCard(f, () => {
         attachedFiles.splice(i, 1); renderInputFilesBar(); renderWelcomeAttachments();
-      });
-      bar.appendChild(chip);
+      }));
     });
   }
 
@@ -777,13 +798,9 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
     if (!container) return;
     container.innerHTML = '';
     attachedFiles.forEach((f, i) => {
-      const chip = document.createElement('div');
-      chip.className = 'input-file-chip';
-      chip.innerHTML = `<span>${getFileIcon(f.type, f.name)}</span><span class="input-file-chip-name">${f.name}</span><button class="input-file-chip-remove" title="Remove">×</button>`;
-      chip.querySelector('.input-file-chip-remove').addEventListener('click', () => {
+      container.appendChild(makeFileCard(f, () => {
         attachedFiles.splice(i, 1); renderInputFilesBar(); renderWelcomeAttachments();
-      });
-      container.appendChild(chip);
+      }));
     });
   }
 

@@ -2161,18 +2161,23 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     if (isSending) return;
     const raw = typeof prefillText === "string" ? prefillText : input.value;
     const text = raw.trim();
-    if (!text) return;
+    if (!text && attachedFiles.length === 0) return;
 
     if (text.length > MAX_CHARS) {
       appendMessage("assistant", `Please keep messages under ${MAX_CHARS} characters.`, true);
       return;
     }
 
+    // Capture and clear attached files before state changes
+    const pendingFiles = [...attachedFiles];
+    clearAttachedFiles();
+
     // NEW: Detect study item request
     const studyReq = detectStudyRequest(text);
 
-    appendMessage("user", text, false, [], null, null);
-    history.push({ role: "user", content: text });
+    appendMessage("user", text, false, [], null, null, pendingFiles.length ? pendingFiles : null);
+    const userContent = buildUserContent(text, pendingFiles);
+    history.push({ role: "user", content: userContent });
     saveCurrentSession();
 
     input.value = "";
@@ -2345,6 +2350,185 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     setTyping(false);
     saveCurrentSession();
   }
+
+  // ── File Attachments ──────────────────────────────────────────────────────
+  let attachedFiles = [];
+  const MAX_FILE_SIZE = 4 * 1024 * 1024;
+  const MAX_IMAGE_DIMENSION = 1024;
+
+  function getFileIcon(type, name) {
+    if (type === 'image') return '🖼️';
+    const ext = (name || '').split('.').pop().toLowerCase();
+    if (ext === 'pdf') return '📕';
+    return '📄';
+  }
+
+  function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / 1048576).toFixed(1) + ' MB';
+  }
+
+  function resizeImage(file) {
+    return new Promise((resolve) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        const { width, height } = img;
+        if (width <= MAX_IMAGE_DIMENSION && height <= MAX_IMAGE_DIMENSION && file.size < 300000) {
+          const reader = new FileReader();
+          reader.onload = () => { URL.revokeObjectURL(url); resolve(reader.result); };
+          reader.readAsDataURL(file);
+          return;
+        }
+        const scale = Math.min(MAX_IMAGE_DIMENSION / width, MAX_IMAGE_DIMENSION / height);
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(width * scale);
+        canvas.height = Math.round(height * scale);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(url);
+        resolve(canvas.toDataURL('image/jpeg', 0.85));
+      };
+      img.src = url;
+    });
+  }
+
+  function processFile(file) {
+    return new Promise(async (resolve) => {
+      const isImage = file.type.startsWith('image/');
+      const isText = file.type === 'text/plain' || ['txt','md','csv'].includes(file.name.split('.').pop().toLowerCase());
+      const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+      if (isPDF && file.size > MAX_FILE_SIZE) {
+        resolve({ file, name: file.name, size: file.size, type: 'error', dataUrl: null, content: null, error: 'File too large (max 4 MB)' });
+        return;
+      }
+      if (isImage) {
+        const dataUrl = await resizeImage(file);
+        resolve({ file, name: file.name, size: file.size, type: 'image', dataUrl, content: null });
+      } else if (isPDF) {
+        const reader = new FileReader();
+        reader.onload = () => resolve({ file, name: file.name, size: file.size, type: 'pdf', dataUrl: reader.result, content: null });
+        reader.readAsDataURL(file);
+      } else if (isText) {
+        const reader = new FileReader();
+        reader.onload = () => resolve({ file, name: file.name, size: file.size, type: 'text', dataUrl: null, content: reader.result });
+        reader.readAsText(file);
+      } else {
+        resolve({ file, name: file.name, size: file.size, type: 'other', dataUrl: null, content: null });
+      }
+    });
+  }
+
+  async function handleNewFiles(fileList) {
+    const MAX_FILES = 5;
+    const remaining = MAX_FILES - attachedFiles.length;
+    const toProcess = Array.from(fileList).slice(0, Math.max(0, remaining));
+    const errors = [];
+    for (const file of toProcess) {
+      const processed = await processFile(file);
+      if (processed.type === 'error') {
+        errors.push(`${processed.name}: ${processed.error}`);
+      } else {
+        attachedFiles.push(processed);
+      }
+    }
+    if (errors.length > 0) alert('Some files were skipped:\n' + errors.join('\n'));
+    renderInputFilesBar();
+    renderWelcomeAttachments();
+  }
+
+  function clearAttachedFiles() {
+    attachedFiles = [];
+    renderInputFilesBar();
+    renderWelcomeAttachments();
+  }
+
+  function makeFileCard(f, onRemove) {
+    const card = document.createElement('div');
+    card.className = 'input-file-card';
+    if (f.type === 'image' && f.dataUrl) {
+      const img = document.createElement('img');
+      img.className = 'input-file-card-thumb';
+      img.src = f.dataUrl;
+      img.alt = f.name;
+      card.appendChild(img);
+    } else {
+      const icon = document.createElement('div');
+      icon.className = 'input-file-card-icon';
+      const ext = (f.name || '').split('.').pop().toUpperCase();
+      icon.innerHTML = `<span style="font-size:1.5rem;line-height:1">${getFileIcon(f.type, f.name)}</span><span class="input-file-card-label">${ext}</span>`;
+      card.appendChild(icon);
+    }
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'input-file-card-remove';
+    removeBtn.title = 'Remove';
+    removeBtn.textContent = '×';
+    removeBtn.addEventListener('click', onRemove);
+    card.appendChild(removeBtn);
+    return card;
+  }
+
+  function renderInputFilesBar() {
+    const bar = document.getElementById('input-files-bar');
+    if (!bar) return;
+    if (attachedFiles.length === 0) { bar.classList.remove('show'); bar.innerHTML = ''; return; }
+    bar.classList.add('show');
+    bar.innerHTML = '';
+    attachedFiles.forEach((f, i) => {
+      bar.appendChild(makeFileCard(f, () => {
+        attachedFiles.splice(i, 1); renderInputFilesBar(); renderWelcomeAttachments();
+      }));
+    });
+  }
+
+  function renderWelcomeAttachments() {
+    const container = document.getElementById('welcome-attachments');
+    if (!container) return;
+    container.innerHTML = '';
+    attachedFiles.forEach((f, i) => {
+      container.appendChild(makeFileCard(f, () => {
+        attachedFiles.splice(i, 1); renderInputFilesBar(); renderWelcomeAttachments();
+      }));
+    });
+  }
+
+  function buildUserContent(text, files) {
+    if (!files || files.length === 0) return text;
+    const textParts = [text];
+    const multimodalParts = [];
+    files.forEach(f => {
+      if (f.type === 'text' && f.content) {
+        textParts.push(`\n\n--- Content of ${f.name} ---\n${f.content}\n--- End of ${f.name} ---`);
+      } else if ((f.type === 'image' || f.type === 'pdf') && f.dataUrl) {
+        multimodalParts.push({ type: 'image_url', image_url: { url: f.dataUrl } });
+      } else {
+        textParts.push(`\n[Attached: ${f.name}]`);
+      }
+    });
+    const fullText = textParts.join('');
+    return multimodalParts.length > 0
+      ? [{ type: 'text', text: fullText }, ...multimodalParts]
+      : fullText;
+  }
+
+  function setupFileAttachment() {
+    const fileInput = document.getElementById('doc-file-input');
+    const attachBtn = document.getElementById('attach-file-btn');
+    const welcomeAttachBtn = document.getElementById('welcome-attach-btn');
+    const dragOverlay = document.getElementById('drag-overlay');
+
+    attachBtn?.addEventListener('click', () => fileInput?.click());
+    welcomeAttachBtn?.addEventListener('click', () => fileInput?.click());
+
+    fileInput?.addEventListener('change', (e) => {
+      if (e.target.files?.length) { handleNewFiles(e.target.files); e.target.value = ''; }
+    });
+
+    document.addEventListener('dragover', (e) => { e.preventDefault(); dragOverlay?.classList.add('active'); }, true);
+    document.addEventListener('dragleave', (e) => { if (e.clientX === 0 && e.clientY === 0) dragOverlay?.classList.remove('active'); }, true);
+    document.addEventListener('drop', (e) => { e.preventDefault(); dragOverlay?.classList.remove('active'); if (e.dataTransfer.files?.length) handleNewFiles(e.dataTransfer.files); }, true);
+  }
+  // ──────────────────────────────────────────────────────────────────────────
 
   sendBtn.addEventListener("click", () => sendMessage());
 
@@ -2589,6 +2773,7 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     resizeInput();
     updateCharCount();
     setupWelcomeInput();
+    setupFileAttachment();
 
     // 4. Deep link: open specific session from hash (e.g. chat.html#session_123)
     const hash = window.location.hash.slice(1);

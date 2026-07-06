@@ -53,6 +53,10 @@
     if (t === 'light' || (t === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches)) {
       document.documentElement.setAttribute('data-theme', 'light');
     }
+    // Auto-collapse sidebar on this split-view page to maximise space
+    if (window.innerWidth > 768) {
+      localStorage.setItem('korah_sidebar_collapsed', 'true');
+    }
   })();
 </script>
 
@@ -143,15 +147,36 @@
       <div id="chat-body" class="chat-body">
       
       <div id="messages-container">
-        <div id="welcome-screen" class="welcome-screen">
-          <h1 class="welcome-title font-display text-4xl font-black tx">
-            Desmos Chat
-          </h1>
-          <p class="welcome-subtitle tx2">
-            Learn regressions, key skills, and exam tips
-          </p>
-          
-          <div class="welcome-input-container bg-sf2 glass-sm bd" style="margin-top: 1.2rem;">
+        <div id="welcome-screen" class="welcome-screen sat-welcome-v2">
+          <div class="sat-welcome-center">
+            <img src="../logo-images/newlogo3.png" alt="Korah" class="sat-welcome-logo"/>
+            <p class="sat-welcome-tagline tx2">ask me anything, i'll help you cook</p>
+
+            <div class="sat-prompt-list">
+              <button class="sat-prompt-row quick-prompt-btn" data-prompt="Quiz me on SAT math strategies — give me a timed practice problem to work through">
+                <span class="sat-prompt-text"><strong class="sat-prompt-bold">Teach me</strong> what a regression is</span>
+                <svg class="sat-prompt-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+              <button class="sat-prompt-row quick-prompt-btn" data-prompt="Explain how to use Desmos to solve SAT math problems faster, with examples">
+                <span class="sat-prompt-text"><strong class="sat-prompt-bold">Explain</strong> how to use Desmos on the SAT</span>
+                <svg class="sat-prompt-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+              <button class="sat-prompt-row quick-prompt-btn" data-prompt="Help me study for the digital SAT math section — what are the most important topics to focus on?">
+                <span class="sat-prompt-text"><strong class="sat-prompt-bold">Give me strategies</strong> for the math section</span>
+                <svg class="sat-prompt-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+              <button class="sat-prompt-row quick-prompt-btn" data-prompt="What are the best strategies for improving my SAT math score, especially using the calculator?">
+                <span class="sat-prompt-text"><strong class="sat-prompt-bold">Tips for</strong> improving my math score</span>
+                <svg class="sat-prompt-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+              <button class="sat-prompt-row quick-prompt-btn" data-prompt="Show me a practice question on linear equations and walk me through solving it on the Desmos graph">
+                <span class="sat-prompt-text"><strong class="sat-prompt-bold">Give me</strong> an example regression problem</span>
+                <svg class="sat-prompt-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="welcome-input-container bg-sf2 glass-sm bd sat-welcome-input-bar">
             <textarea id="welcome-chat-input" class="welcome-textarea tx"
               placeholder="Ask me about any SAT Math topic..." rows="1"></textarea>
             <div id="welcome-attachments" class="welcome-attachments"></div>
@@ -165,21 +190,6 @@
                 </svg>
               </button>
             </div>
-          </div>
-
-          <div class="sat-quick-prompts">
-            <button class="quick-prompt-btn" data-prompt="Explain linear equations">
-              Linear Equations
-            </button>
-            <button class="quick-prompt-btn" data-prompt="Explain quadratic functions">
-              Quadratics
-            </button>
-            <button class="quick-prompt-btn" data-prompt="Explain systems of equations">
-              Systems
-            </button>
-            <button class="quick-prompt-btn" data-prompt="Explain trigonometry for SAT">
-              Trigonometry
-            </button>
           </div>
         </div>
         
