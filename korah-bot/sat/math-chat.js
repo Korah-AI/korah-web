@@ -1034,7 +1034,7 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
     document.getElementById('chat-input-area')?.classList.add('hidden');
     if (satMathCalculator) { satMathCalculator.setBlank(); graphExpressions = []; updateGraphContextIndicator(); }
     const chatTitleEl = document.getElementById('chat-title');
-    if (chatTitleEl) chatTitleEl.textContent = 'SAT Math';
+    if (chatTitleEl) chatTitleEl.textContent = 'Desmos Chat';
     createNewSession();
   }
 

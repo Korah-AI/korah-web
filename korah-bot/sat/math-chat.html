@@ -107,8 +107,8 @@
 <div id="main-area-wrapper" class="main-area-wrapper sat-math-layout">
     
     <header class="chat-topbar bg-sf glass-sm t-theme bd">
-      <button id="sidebar-toggle" @click="toggleSidebar()" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <button id="sidebar-toggle" @click="toggleSidebar()" class="sidebar-toggle-btn t-btn" aria-label="Toggle sidebar">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
           <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
         </svg>
       </button>
@@ -116,7 +116,7 @@
 
       <div class="chat-title-area">
         <span class="korah-status-dot"></span>
-        <span class="font-semibold tx text-sm" id="chat-title">SAT Math</span>
+        <span class="font-semibold tx text-sm" id="chat-title">Desmos Chat</span>
       </div>
 
       <div class="mode-indicator">
@@ -124,11 +124,16 @@
       </div>
 
       <div class="topbar-actions">
-        <button class="topbar-btn t-btn tx2" id="sat-graph-clear" title="Clear graph">
+        <button class="topbar-btn t-btn" id="new-chat-topbar-btn" title="New chat" style="color:white;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+        </button>
+        <button class="topbar-btn t-btn" id="sat-graph-clear" title="Clear graph" style="color:white;">
           ↺
         </button>
-        <button class="topbar-btn t-btn tx2" id="clear-chat-btn" title="Clear chat">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <button class="topbar-btn t-btn" id="clear-chat-btn" title="Clear chat">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
             <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
           </svg>
         </button>
@@ -153,7 +158,7 @@
             <p class="sat-welcome-tagline tx2">ask me anything, i'll help you cook</p>
 
             <div class="sat-prompt-list">
-              <button class="sat-prompt-row quick-prompt-btn" data-prompt="Quiz me on SAT math strategies — give me a timed practice problem to work through">
+              <button class="sat-prompt-row quick-prompt-btn" data-prompt="Teach me what a regression is and how to use it on the SAT. Show me a clear example on the Desmos graph.">
                 <span class="sat-prompt-text"><strong class="sat-prompt-bold">Teach me</strong> what a regression is</span>
                 <svg class="sat-prompt-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
@@ -169,7 +174,7 @@
                 <span class="sat-prompt-text"><strong class="sat-prompt-bold">Tips for</strong> improving my math score</span>
                 <svg class="sat-prompt-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
-              <button class="sat-prompt-row quick-prompt-btn" data-prompt="Show me a practice question on linear equations and walk me through solving it on the Desmos graph">
+              <button class="sat-prompt-row quick-prompt-btn" data-prompt="Give me an example SAT regression problem and walk me through solving it on the Desmos graph, including how to set up the regression equation.">
                 <span class="sat-prompt-text"><strong class="sat-prompt-bold">Give me</strong> an example regression problem</span>
                 <svg class="sat-prompt-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
@@ -300,6 +305,19 @@
       <div class="settings-actions">
         <button id="settings-save" class="settings-btn primary">Save Settings</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Generic Confirm Modal -->
+<div id="confirm-modal" class="delete-modal">
+  <div class="delete-modal-content">
+    <div class="delete-modal-icon"><span class="material-icons-round" style="color: #FFA726; font-size: 20px;">help_outline</span></div>
+    <h3 class="delete-modal-title" id="confirm-modal-title">Are you sure?</h3>
+    <p class="delete-modal-desc" id="confirm-modal-desc"></p>
+    <div class="delete-modal-actions">
+      <button id="confirm-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
+      <button id="confirm-modal-ok" class="delete-modal-btn confirm t-btn">Confirm</button>
     </div>
   </div>
 </div>
@@ -641,6 +659,58 @@
       if (window.SatMathChat) window.SatMathChat.newChat();
     }, true);
   }, { once: true });
+</script>
+<script>
+  // ── Topbar confirm modals ──
+  (function() {
+    const modal = document.getElementById('confirm-modal');
+    const titleEl = document.getElementById('confirm-modal-title');
+    const descEl  = document.getElementById('confirm-modal-desc');
+    const okBtn   = document.getElementById('confirm-modal-ok');
+    const cancelBtn = document.getElementById('confirm-modal-cancel');
+    let pendingCb = null;
+
+    function showConfirm(title, desc, cb) {
+      titleEl.textContent = title;
+      descEl.textContent  = desc;
+      pendingCb = cb;
+      modal.classList.add('show');
+    }
+
+    okBtn.addEventListener('click', () => {
+      modal.classList.remove('show');
+      if (pendingCb) { pendingCb(); pendingCb = null; }
+    });
+
+    cancelBtn.addEventListener('click', () => {
+      modal.classList.remove('show');
+      pendingCb = null;
+    });
+
+    // Intercept a button: capture phase blocks original handler, confirmed flag lets it through
+    function interceptWithConfirm(btnId, title, desc) {
+      const btn = document.getElementById(btnId);
+      if (!btn) return;
+      btn.addEventListener('click', (e) => {
+        if (btn._confirmed) { btn._confirmed = false; return; }
+        e.stopImmediatePropagation();
+        showConfirm(title, desc, () => {
+          btn._confirmed = true;
+          btn.click();
+        });
+      }, true);
+    }
+
+    interceptWithConfirm('sat-graph-clear', 'Clear Graph?', 'This will remove all expressions from the Desmos graph.');
+    interceptWithConfirm('clear-chat-btn',  'Clear Chat?',  'This will start a new session and clear all messages in this conversation.');
+
+    // New chat topbar button
+    document.getElementById('new-chat-topbar-btn')?.addEventListener('click', () => {
+      showConfirm('New Chat?', 'Starting a new chat will save the current session to your history.', () => {
+        if (window.SatMathChat) window.SatMathChat.newChat();
+      });
+    });
+  })();
 </script>
 </body>
 </html>
