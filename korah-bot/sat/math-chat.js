@@ -269,21 +269,22 @@ OUTPUT FORMAT:
 Output ONLY the explanation text — pure Markdown + KaTeX. NO JSON, NO code fences, NO field names.
 
 STYLE:
+- Write like a sharp, warm tutor talking to one student — not a worksheet or a template.
 - Confident, finished walkthrough. Do NOT think out loud. Do NOT show "let me re-check" moments.
 - If you need to verify, do it silently. Only the final clean explanation appears in your output.
 - Do NOT type Desmos commands or instruct the student to "type $x_1 = [1,2,3]$". The graph is already on screen — reference what it shows.
 - Be concise. Clarity over length.
+- Vary your openings. Do NOT start every reply the same way. Jump into the actual idea.
 
-STRUCTURE:
-**Step 1 — Understand the problem.** Restate what is given and what is being asked.
-**Step 2 — Strategy.** One sentence on the approach (e.g., "Read m and b from the regression on the graph").
-**Step 3 — Solve.** Walk through the math, referencing what the graph shows ("The regression line fits m = -4 and b = 30…"). Use the EXACT values that appear in the loaded state below.
-**Step 4 — Answer.** State the final answer clearly.
-**Step 5 — SAT Tip.** One short test-day tip.
+STRUCTURE (a guide, NOT a rigid template):
+A good explanation usually understands the problem, picks a strategy, works the math, states the answer, and ends with a quick SAT tip — but let the problem dictate the shape. A one-step problem should NOT be forced into five headed sections; a hard multi-part one may need more. Do NOT mechanically emit the same bold headers every time ("Step 1 — Understand", "Step 2 — Strategy", …). Use headers only when they genuinely help the student follow along, and word them naturally.
+- Always reference the EXACT values that appear in the loaded graph state below ("the regression fits $m = -4$ and $b = 30$…").
+- Always land on a clear final answer.
+- End with one short, genuinely useful test-day tip when it fits.
 
 TEXT FORMATTING:
 - Markdown headings, **bold**, *italic*
-- KaTeX for math: $inline$ or $$display$$. Every variable, coefficient, equation goes in dollar signs.
+- KaTeX for math: $inline$ or $$display$$. EVERY variable, coefficient, number-in-context, and equation goes inside dollar signs — no bare $x$ or $m$ floating in prose.
 - NEVER use \\\\(...\\\\) or \\\\[...\\\\]
 - NEVER include raw JSON, code blocks, or Desmos input syntax`;
 
@@ -1094,22 +1095,92 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
 
     // Show pulsing "Thinking" indicator while waiting for first content
     let thinkingIndicator = null;
+    let dotInterval = null;
+    let phraseInterval = null;
+
+    const THINKING_PHRASES = [
+      'Cooking up',
+      'Combobulating',
+      'Thinking super duper hard',
+      'Brainstorming',
+      'Crunching numbers',
+      'Connecting the dots',
+      'On it',
+      'Doing the math',
+      'Figuring it out',
+    ];
+
+    const startDotCycle = (labelOrLabels, el) => {
+      if (dotInterval) clearInterval(dotInterval);
+      if (phraseInterval) clearInterval(phraseInterval);
+      const labels = Array.isArray(labelOrLabels) ? labelOrLabels : [labelOrLabels];
+      let dots = 0;
+      let labelIdx = 0;
+      let currentLabel = labels[labelIdx];
+      const span = el.querySelector('.thinking-shimmer-text');
+
+      dotInterval = setInterval(() => {
+        dots = (dots % 3) + 1;
+        if (span) span.textContent = currentLabel + '.'.repeat(dots);
+      }, 700);
+
+      if (labels.length > 1) {
+        phraseInterval = setInterval(() => {
+          const remaining = labels.filter((_, i) => i !== labelIdx);
+          labelIdx = labels.indexOf(remaining[Math.floor(Math.random() * remaining.length)]);
+          currentLabel = labels[labelIdx];
+          dots = 0;
+          if (span) span.textContent = currentLabel + '.';
+        }, 5000);
+      }
+    };
+
     if (contentElement) {
       thinkingIndicator = document.createElement("div");
       thinkingIndicator.className = "thinking-indicator";
-      thinkingIndicator.innerHTML = `
-        <span style="font-size: 0.8125rem; font-weight: 600; margin-right: 0.5rem;">Korah is thinking...</span>
-        <div class="thinking-dot"></div>
-        <div class="thinking-dot"></div>
-        <div class="thinking-dot"></div>
-      `;
+      thinkingIndicator.innerHTML = `<span class="thinking-shimmer-text">Cooking up.</span>`;
       contentElement.appendChild(thinkingIndicator);
+      startDotCycle(THINKING_PHRASES, thinkingIndicator);
     }
 
     let currentTypedText = "";
     let charBuffer = [];
     let typewriterActive = false;
     let lastBufferedLength = 0;
+
+    // ── Throttled mid-stream render ──
+    // renderMarkdownAndMath (marked + DOMPurify + KaTeX) is O(n) over the whole
+    // accumulated string, so calling it every typewriter tick is O(n²) and
+    // re-typesets every equation each time. Instead we advance currentTypedText
+    // cheaply every tick and repaint at most once per RENDER_THROTTLE_MS,
+    // aligned to an animation frame. The final clean render still happens once
+    // at stream end.
+    const RENDER_THROTTLE_MS = 120;
+    let lastRenderTime = 0;
+    let renderPending = false;   // rAF/timeout is scheduled
+    let renderStopped = false;   // finalize has taken over; suppress late paints
+    let renderTimer = null;
+
+    const flushRender = () => {
+      renderPending = false;
+      if (renderStopped) return;
+      lastRenderTime = performance.now();
+      if (contentElement) renderMarkdownAndMath(contentElement, currentTypedText);
+    };
+
+    const scheduleRender = () => {
+      if (renderPending || renderStopped) return;
+      renderPending = true;
+      const elapsed = performance.now() - lastRenderTime;
+      if (elapsed >= RENDER_THROTTLE_MS) {
+        requestAnimationFrame(flushRender);
+      } else {
+        renderTimer = setTimeout(
+          () => requestAnimationFrame(flushRender),
+          RENDER_THROTTLE_MS - elapsed
+        );
+      }
+    };
 
     const typeNextChar = () => {
       if (charBuffer.length === 0) {
@@ -1118,19 +1189,24 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
       }
 
       typewriterActive = true;
-      const charsToType = charBuffer.length > 20 ? 2 : 1;
-      for (let i = 0; i < charsToType; i++) {
-        if (charBuffer.length > 0) {
-          currentTypedText += charBuffer.shift();
-        }
+      // Scale characters-per-tick to how much text is waiting so the display
+      // keeps pace with the stream instead of lagging a fixed 1–2 chars behind.
+      // Gemini already streams at a natural pace; the typewriter should smooth
+      // it, not throttle it.
+      let charsToType;
+      if (charBuffer.length > 200) charsToType = 12;
+      else if (charBuffer.length > 100) charsToType = 6;
+      else if (charBuffer.length > 40) charsToType = 3;
+      else charsToType = 1;
+      for (let i = 0; i < charsToType && charBuffer.length > 0; i++) {
+        currentTypedText += charBuffer.shift();
       }
 
-      if (contentElement) {
-        renderMarkdownAndMath(contentElement, currentTypedText);
-      }
+      // Cheap: just queue a throttled repaint instead of rendering every tick.
+      scheduleRender();
 
-      let delay = 5;
-      if (charBuffer.length > 50) delay = 0;
+      // Near-zero pacing: once chars are in the buffer, don't sit on them.
+      const delay = charBuffer.length > 40 ? 0 : 3;
 
       setTimeout(typeNextChar, delay);
     };
@@ -1182,14 +1258,10 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
     contentElement.innerHTML = '';
     const ind = document.createElement('div');
     ind.className = 'thinking-indicator graph-loading-indicator';
-    ind.innerHTML = `
-      <span style="font-size: 0.8125rem; font-weight: 600; margin-right: 0.5rem;">Drawing graph…</span>
-      <div class="thinking-dot"></div>
-      <div class="thinking-dot"></div>
-      <div class="thinking-dot"></div>
-    `;
+    ind.innerHTML = `<span class="thinking-shimmer-text">Drawing Graph.</span>`;
     contentElement.appendChild(ind);
     thinkingIndicator = ind;
+    startDotCycle('Drawing Graph', ind);
   };
 
   try {
@@ -1255,6 +1327,8 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
       if (!firstChunkSeen && fullText.length > 0) {
         firstChunkSeen = true;
         if (contentElement) contentElement.innerHTML = '';
+        if (dotInterval) { clearInterval(dotInterval); dotInterval = null; }
+        if (phraseInterval) { clearInterval(phraseInterval); phraseInterval = null; }
         thinkingIndicator = null;
       }
       if (contentElement && fullText) {
@@ -1265,7 +1339,7 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
       }
     }, {
       systemPrompt: buildPhase3SystemPrompt(loadedState, classifierStrategy),
-      temperature: 0.2,
+      temperature: 0.65,
       _phaseTag: 'Phase 3 (respond)',
     });
     console.log(`🟢 [Phase 3] done in ${Math.round(performance.now() - phase3T0)}ms (${phase3FullText.length} chars)`);
@@ -1275,9 +1349,17 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
     // Wait for the typewriter to drain so the final render reflects the full text.
     // (Cheap busy-wait alternative would be ugly; instead, force one final render.)
     if (contentElement && phase3FullText) {
+      // Take over from the throttled mid-stream renderer and do one clean pass.
+      renderStopped = true;
+      if (renderTimer) { clearTimeout(renderTimer); renderTimer = null; }
       renderMarkdownAndMath(contentElement, phase3FullText);
       charBuffer = [];
       typewriterActive = false;
+      // Append action buttons now that the message is complete
+      const bubble = contentElement.closest('.msg-bubble');
+      if (bubble && !bubble.querySelector('.msg-actions')) {
+        bubble.appendChild(buildMessageActions(contentElement, streamingRow));
+      }
     }
 
     chatBody.scrollTop = chatBody.scrollHeight;
@@ -1555,8 +1637,8 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
       bubble.appendChild(suggestionsDiv);
     }
 
-    // Message action buttons for assistant replies
-    if (role === 'assistant' && !isError) {
+    // Message action buttons for assistant replies — deferred for streaming rows
+    if (role === 'assistant' && !isError && !contentId) {
       bubble.appendChild(buildMessageActions(content, row));
     }
 
