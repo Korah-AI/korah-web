@@ -1387,20 +1387,82 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
     return fullReply;
   }
 
+  // Action buttons (copy / feedback / regenerate) shown under assistant replies
+  const MSG_ACTION_ICONS = {
+    copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>',
+    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>',
+    up: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>',
+    down: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"></path></svg>',
+    regen: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>',
+  };
+
+  function buildMessageActions(contentEl, row) {
+    const bar = document.createElement('div');
+    bar.className = 'msg-actions';
+
+    const mkBtn = (icon, title) => {
+      const b = document.createElement('button');
+      b.className = 'msg-action-btn t-btn';
+      b.type = 'button';
+      b.title = title;
+      b.setAttribute('aria-label', title);
+      b.innerHTML = MSG_ACTION_ICONS[icon];
+      return b;
+    };
+
+    const copyBtn = mkBtn('copy', 'Copy');
+    copyBtn.addEventListener('click', () => {
+      const txt = (contentEl.innerText || '').trim();
+      if (navigator.clipboard) navigator.clipboard.writeText(txt).catch(() => {});
+      copyBtn.classList.add('copied');
+      copyBtn.innerHTML = MSG_ACTION_ICONS.check;
+      setTimeout(() => {
+        copyBtn.classList.remove('copied');
+        copyBtn.innerHTML = MSG_ACTION_ICONS.copy;
+      }, 1400);
+    });
+
+    const upBtn = mkBtn('up', 'Good response');
+    const downBtn = mkBtn('down', 'Bad response');
+    upBtn.addEventListener('click', () => {
+      upBtn.classList.toggle('active');
+      downBtn.classList.remove('active');
+    });
+    downBtn.addEventListener('click', () => {
+      downBtn.classList.toggle('active');
+      upBtn.classList.remove('active');
+    });
+
+    const regenBtn = mkBtn('regen', 'Regenerate');
+    regenBtn.addEventListener('click', () => {
+      let n = row.previousElementSibling;
+      while (n && !(n.classList?.contains('msg-row') && n.classList?.contains('user'))) {
+        n = n.previousElementSibling;
+      }
+      const txt = n ? (n.querySelector('.msg-bubble')?.innerText || '').trim() : '';
+      if (txt && typeof sendMessage === 'function') sendMessage(txt);
+    });
+
+    bar.append(copyBtn, upBtn, downBtn, regenBtn);
+    return bar;
+  }
+
   function addMessage(role, text, isError = false, contentId = null, suggestions = [], fileAttachments = []) {
     const row = document.createElement('div');
     row.className = `msg-row ${role === 'user' ? 'user' : 'assistant'}`;
 
-    const avatar = document.createElement('div');
-    avatar.className = `msg-avatar ${role === 'user' ? 'user-av' : 'korah-av'}`;
-    if (role === 'user') {
-      avatar.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
-    } else {
-      avatar.innerHTML = `<img src="../logo-images/newlogo0.png" alt="K" class="w-10 h-10 object-contain" />`;
-    }
-
     const bubble = document.createElement('div');
     bubble.className = `msg-bubble ${role === 'user' ? 'user' : 'korah'}${isError ? ' error' : ''}`;
+
+    // Assistant replies get an inline logo + name header
+    if (role === 'assistant') {
+      const header = document.createElement('div');
+      header.className = 'msg-header';
+      header.innerHTML =
+        '<span class="msg-header-avatar"><img src="../logo-images/newlogo0.png" alt="Korah" /></span>' +
+        '<span class="msg-header-name">Korah AI</span>';
+      bubble.appendChild(header);
+    }
 
     // Show file attachment cards for user messages
     if (role === 'user' && fileAttachments && fileAttachments.length > 0) {
@@ -1476,7 +1538,11 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
       bubble.appendChild(suggestionsDiv);
     }
 
-    row.appendChild(avatar);
+    // Message action buttons for assistant replies
+    if (role === 'assistant' && !isError) {
+      bubble.appendChild(buildMessageActions(content, row));
+    }
+
     row.appendChild(bubble);
 
     messagesList?.appendChild(row);
