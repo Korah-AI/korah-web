@@ -369,8 +369,6 @@ function showSidebarDeleteModal(name, onConfirm) {
       if (href.includes("sat/")) return; // Skip SAT section links
       if (href.includes("feed.html")) {
         link.innerHTML = "<span class='material-icons-round' style='font-size: 1.25rem;'>school</span> <span class='nav-text'>Study</span>";
-        if (itemIds.length === 0) link.classList.add("nav-empty");
-        else link.classList.remove("nav-empty");
       } else if (href.includes("chat.html") && !href.includes("math-chat")) {
         link.innerHTML = "<span class='material-icons-round' style='font-size: 1.25rem;'>chat</span> <span class='nav-text'>Chat</span>";
       }

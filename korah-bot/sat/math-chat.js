@@ -831,7 +831,7 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
     currentSessionId = id;
     currentSession = {
       id,
-      title: 'SAT Math Chat',
+      title: 'Desmos Chat',
       mode: 'sat-math',
       messages: [],
       createdAt: new Date().toISOString(),
@@ -1600,7 +1600,7 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
   }
 
   function init() {
-    console.log('SAT Math chat initializing...', {
+    console.log('Desmos Chat initializing...', {
       input: !!input,
       welcomeInput: !!welcomeInput,
       sendBtn: !!sendBtn,
@@ -1625,7 +1625,7 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
     init();
   }
   } catch (e) {
-    console.error('SAT Math Chat Error:', e);
+    console.error('Desmos Chat Error:', e);
   }
 
   function initResizeHandle() {
