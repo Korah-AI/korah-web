@@ -2154,27 +2154,35 @@ ${FORMAT_INSTRUCTIONS}`.trim();
   function renderModePills() {
     const container = document.getElementById("mode-pills-container");
     if (!container) return;
-    
-    const modes = ["general", "math", "science", "history", "literature"];
+
+    const satTopics = [
+      { label: "Heart of Algebra", icon: "functions",      colorClass: "ic-math", prompt: "Help me practice Heart of Algebra for the SAT" },
+      { label: "Reading",          icon: "auto_stories",   colorClass: "ic-lit",  prompt: "Help me improve my SAT Reading comprehension" },
+      { label: "Writing & Grammar",icon: "spellcheck",     colorClass: "ic-gen",  prompt: "Help me practice SAT Writing and Language questions" },
+      { label: "Data Analysis",    icon: "bar_chart",      colorClass: "ic-sci",  prompt: "Help me with SAT Data Analysis and statistics" },
+      { label: "Geometry & Trig",  icon: "change_history", colorClass: "ic-hist", prompt: "Help me study Geometry and Trigonometry for the SAT" },
+      { label: "Advanced Math",    icon: "calculate",      colorClass: "ic-math", prompt: "Help me practice Advanced Math for the SAT" },
+    ];
+
     container.innerHTML = "";
-    
-    modes.forEach(mode => {
-      const config = getModeConfig(mode);
+
+    satTopics.forEach(({ label, icon, colorClass, prompt }) => {
       const pill = document.createElement("button");
-      pill.className = `mode-pill t-btn ${currentSession.mode === mode ? "active" : ""}`;
-      pill.innerHTML = `${getModeIcon(mode)}<span>${config.name}</span>`;
-      
+      pill.className = "mode-pill t-btn";
+      pill.innerHTML = `<span class="m-icon ${colorClass}">${icon}</span><span>${label}</span>`;
+
       pill.addEventListener("click", () => {
-        if (mode === "sat") {
-          showSATSubModal();
-        } else {
-          changeMode(mode);
+        const input = document.getElementById("welcome-chat-input");
+        if (input) {
+          input.value = prompt;
+          input.dispatchEvent(new Event("input"));
+          input.focus();
         }
       });
-      
+
       container.appendChild(pill);
     });
-    
+
     // Update the large mode text in welcome screen
     const modeNameLarge = document.getElementById("welcome-mode-name");
     if (modeNameLarge) {
