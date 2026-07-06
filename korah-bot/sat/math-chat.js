@@ -2,7 +2,7 @@ console.log('math-chat.js loading...');
 (() => {
   try {
   console.log('math-chat.js try block entered');
-  const API_ENDPOINT = "/api/gem-proxy";
+  const API_ENDPOINT = "/api/r";
   const MODEL = "gemini-2.5-flash";
 
   const input = document.getElementById("chat-input");
@@ -158,6 +158,13 @@ Concretely, you SHOULD pick a template whenever ANY of these apply:
 - The problem involves dilations, vertical/horizontal stretches → nonrigid-transformations-dilations
 - The problem mentions concavity, concave up/down, rate of change → concavity-discovery / concavity-rate-of-change
 
+DRAW A GRAPH EVEN WHEN NOT EXPLICITLY ASKED:
+The student does NOT have to say "graph this" or "use Desmos" for you to pick a template. Any request that would be clearer WITH a worked example on the graph should get one. This includes broad, instructional, or meta questions — pick the template that best DEMONSTRATES the concept so Phase 2/3 can draw a concrete example.
+- "Explain how to use Desmos to solve SAT math problems faster, with examples" → pick a representative problem-solver template (e.g., linear-functions) so an actual example is drawn and walked through. Do NOT return null just because the question is phrased as a how-to.
+- "Show me a strategy for linear systems" / "give me an example of a quadratic vertex problem" → pick the matching template and let a real example render.
+- "How do I read slope off a graph?" → pick a linear template so the concept is shown on screen, not just described.
+If a request asks for examples or a demonstration and ANY template could illustrate it, PICK THAT TEMPLATE.
+
 Only return stateId: null if the problem is COMPLETELY non-mathematical (e.g., "hi" or "what is Korah?") or if it's a math problem in a category clearly outside the template list (e.g., a 3D geometry problem about volumes, or a probability/statistics question with no graph utility). When in doubt — PICK A TEMPLATE.
 
 ═══════════════════════════════════════════
@@ -273,11 +280,13 @@ STYLE:
 - Confident, finished walkthrough. Do NOT think out loud. Do NOT show "let me re-check" moments.
 - If you need to verify, do it silently. Only the final clean explanation appears in your output.
 - Do NOT type Desmos commands or instruct the student to "type $x_1 = [1,2,3]$". The graph is already on screen — reference what it shows.
-- Be concise. Clarity over length.
+- Be concise. Default SHORT — most answers should be a few tight sentences or a handful of quick steps, not an essay. Clarity over length, always.
+- Do NOT over-explain. Trust the student. Skip obvious algebra narration ("now we subtract 3 from both sides, giving…") unless the step is genuinely the hard part. Say the key move and the result.
+- Prefer a couple of short paragraphs or a compact list over long walls of text. Cut throat-clearing, restatement, and filler.
 - Vary your openings. Do NOT start every reply the same way. Jump into the actual idea.
 
 STRUCTURE (a guide, NOT a rigid template):
-A good explanation usually understands the problem, picks a strategy, works the math, states the answer, and ends with a quick SAT tip — but let the problem dictate the shape. A one-step problem should NOT be forced into five headed sections; a hard multi-part one may need more. Do NOT mechanically emit the same bold headers every time ("Step 1 — Understand", "Step 2 — Strategy", …). Use headers only when they genuinely help the student follow along, and word them naturally.
+A good explanation usually understands the problem, picks a strategy, works the math, states the answer, and ends with a quick SAT tip — but let the problem dictate the shape, and keep it lean. A one-step problem should NOT be forced into five headed sections — a sentence or two may be the whole answer; a hard multi-part one may need more. Do NOT mechanically emit the same bold headers every time ("Step 1 — Understand", "Step 2 — Strategy", …). Use headers only when they genuinely help the student follow along, and word them naturally.
 - Always reference the EXACT values that appear in the loaded graph state below ("the regression fits $m = -4$ and $b = 30$…").
 - Always land on a clear final answer.
 - End with one short, genuinely useful test-day tip when it fits.

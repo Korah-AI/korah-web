@@ -22,6 +22,21 @@
 * Add mood based option like "full focus mode" to match how it is in korah and depending on the mood tips and advice or positive things show up for the user.
 
 
+# API Route Map (korah-bot)
+
+Endpoint names are intentionally short to avoid leaking provider/source info in DevTools.
+
+| Route | File | Purpose |
+|-------|------|---------|
+| `POST /api/r` | `api/r.js` | Gemini AI proxy (translates OpenAI-format → Gemini) |
+| `GET /api/sat/q` | `api/sat/q.js` | SAT question list (filtered stubs + first batch detailed) |
+| `GET /api/sat/qi` | `api/sat/qi.js` | Single SAT question detail (lazy-loaded on navigation) |
+| `GET /api/sat/s` | `api/sat/s.js` | Question bank stats (counts by domain/difficulty) |
+
+Client files that call these routes: `app/korah-chat.js`, `sat/math-chat.js`, `study/js/study-api.js`, `sat/questions.html`, `sat/js/sat-player.js`, `sat/js/sat-bank.js`.
+
+> Do NOT rename these back to descriptive names (e.g. `gem-proxy`, `sat/questions`). The short names are intentional.
+
 TIPS FOR DEVELOPMENT SOURCE CONTROL
 * You can't use LiveServer to preview your changes. As you go, you're gonna have to make a commit, wait a bit, then check Korah.app. 
 * If you make a mistake just use `git reset --hard HEAD~1  \n  git push --force-with-lease origin BRANCH-NAME` and it'll revert the branch to what it was before your last commit. The next time you commit, it'll update the website.

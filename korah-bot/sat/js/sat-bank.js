@@ -279,7 +279,7 @@
       const assessmentParam = state.assessment && state.assessment !== "SAT"
         ? `?assessment=${encodeURIComponent(state.assessment)}`
         : "";
-      const response = await fetch(`/api/sat/stats${assessmentParam}`, {
+      const response = await fetch(`/api/sat/s${assessmentParam}`, {
         method: "GET",
         headers: { Accept: "application/json" },
       });

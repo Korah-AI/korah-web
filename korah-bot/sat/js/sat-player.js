@@ -773,7 +773,7 @@
   }
 
   // ── Lazy detail loading ──────────────────────────────────────────────────
-  // /api/sat/questions ships the full filtered list, but only the first
+  // /api/sat/q ships the full filtered list, but only the first
   // batchSize entries are fully detailed. Everything beyond ships as a stub
   // (loaded: false). We hydrate stubs on demand as the user navigates, and
   // prefetch a small window around the current question so navigation feels
@@ -789,7 +789,7 @@
 
     const promise = (async () => {
       try {
-        const resp = await fetch(`/api/sat/question?id=${encodeURIComponent(detailKey)}`, {
+        const resp = await fetch(`/api/sat/qi?id=${encodeURIComponent(detailKey)}`, {
           method: "GET",
           headers: { Accept: "application/json" },
         });
@@ -1211,7 +1211,7 @@
 
     let response;
     try {
-      response = await fetch(`/api/sat/questions?${params.toString()}`, {
+      response = await fetch(`/api/sat/q?${params.toString()}`, {
         method: "GET",
         headers: { Accept: "application/json" },
       });
