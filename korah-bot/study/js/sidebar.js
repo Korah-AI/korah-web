@@ -370,7 +370,7 @@ function showSidebarDeleteModal(name, onConfirm) {
       if (href.includes("feed.html")) {
         link.innerHTML = "<span class='material-icons-round' style='font-size: 1.25rem;'>school</span> <span class='nav-text'>Study</span>";
       } else if (href.includes("chat.html") && !href.includes("math-chat")) {
-        link.innerHTML = "<span class='material-icons-round' style='font-size: 1.25rem;'>chat</span> <span class='nav-text'>Chat</span>";
+        link.innerHTML = "<span class='material-icons-round' style='font-size: 1.25rem;'>chat</span> <span class='nav-text'>Ask Korah</span>";
       }
       // All other links (productivity) remain unchanged
     });
