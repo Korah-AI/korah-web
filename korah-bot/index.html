@@ -465,6 +465,35 @@
     0% { left: -100%; }
     100% { left: 100%; }
   }
+
+  /* ── Spotlight glow + cursor tilt (see ui-components/SPOTLIGHT-TILT-CARDS.md) ── */
+  .countdown-card, .stat-card, .plan-card, .plan-side,
+  .weakness-card, .gauge-card, .tip-card { position: relative; }
+  .countdown-card::before, .stat-card::before, .plan-card::before, .plan-side::before,
+  .weakness-card::before, .gauge-card::before, .tip-card::before {
+    content: ""; position: absolute; inset: 0;
+    border-radius: inherit;      /* rounds the glow without clipping child shadows */
+    pointer-events: none; z-index: 0;
+    opacity: var(--spotlight-opacity, 0);
+    transition: opacity .5s ease-in-out;
+    background: radial-gradient(
+      circle at var(--spotlight-x, 50%) var(--spotlight-y, 50%),
+      var(--spotlight-color, rgba(139, 92, 246, .3)), transparent 80%);
+  }
+  /* Glow inherits each card's own accent color */
+  .countdown-card, .plan-card, .tip-card { --spotlight-color: rgba(251, 191, 36, .3); }
+  .gauge-card    { --spotlight-color: rgba(59, 130, 246, .32); }
+  .plan-side     { --spotlight-color: rgba(16, 185, 129, .3); }
+  .weakness-card { --spotlight-color: rgba(239, 68, 68, .32); }
+  .stat-card:nth-child(1) { --spotlight-color: rgba(56, 189, 248, .32); }
+  .stat-card:nth-child(2) { --spotlight-color: rgba(16, 185, 129, .32); }
+  .stat-card:nth-child(3) { --spotlight-color: rgba(167, 139, 250, .32); }
+  .stat-card:nth-child(4) { --spotlight-color: rgba(251, 146, 60, .32); }
+  /* Tilt is set instantly per frame from JS (no transform transition) so it tracks
+     the cursor 1:1 — a transition here makes it chase/lag behind fast movement.
+     JS eases only the reset-to-flat. will-change keeps the card composited/smooth. */
+  .countdown-card, .stat-card, .plan-card, .plan-side,
+  .weakness-card, .gauge-card, .tip-card { will-change: transform; }
 </style>
 </head>
 
@@ -1412,6 +1441,52 @@
       e.preventDefault();
       dragOverlay.classList.remove('active');
     }, true);
+  })();
+</script>
+
+<!-- Spotlight glow + cursor tilt (see ui-components/SPOTLIGHT-TILT-CARDS.md).
+     One delegated handler drives the glow (CSS vars on the ::before) and the tilt. -->
+<script>
+  (function () {
+    var SPOTLIGHT_SELECTOR = ".countdown-card, .stat-card, .plan-card, .plan-side, .weakness-card, .gauge-card, .tip-card";
+    var TILT_SELECTOR = SPOTLIGHT_SELECTOR;
+    var MAX_TILT = 10; // degrees
+
+    document.addEventListener("pointermove", function (e) {
+      var card = e.target.closest && e.target.closest(SPOTLIGHT_SELECTOR);
+      if (!card) return;
+      var rect = card.getBoundingClientRect();
+      var relX = e.clientX - rect.left;
+      var relY = e.clientY - rect.top;
+
+      card.style.setProperty("--spotlight-x", relX + "px");
+      card.style.setProperty("--spotlight-y", relY + "px");
+      card.style.setProperty("--spotlight-opacity", "0.6");
+
+      if (card.matches(TILT_SELECTOR)) {
+        // The large plan-card tilts less than the smaller stat/info cards.
+        var maxTilt = card.classList.contains("plan-card") ? 4 : MAX_TILT;
+        var rotY = ((relX / rect.width) - 0.5) * 2 * maxTilt;
+        var rotX = (0.5 - (relY / rect.height)) * 2 * maxTilt;
+        // transform 0s => the tilt snaps to the cursor each frame (no chase/lag).
+        card.style.setProperty("transition", "transform 0s, border-color .2s, box-shadow .2s", "important");
+        card.style.setProperty("transform",
+          "perspective(600px) rotateX(" + rotX.toFixed(2) + "deg) rotateY(" +
+          rotY.toFixed(2) + "deg) scale(1.02)", "important");
+      }
+    }, { passive: true });
+
+    document.addEventListener("pointerout", function (e) {
+      var card = e.target.closest && e.target.closest(SPOTLIGHT_SELECTOR);
+      if (!card) return;
+      if (e.relatedTarget && card.contains(e.relatedTarget)) return;
+      card.style.setProperty("--spotlight-opacity", "0");
+      if (card.matches(TILT_SELECTOR)) {
+        // Ease only the return to flat.
+        card.style.setProperty("transition", "transform .3s cubic-bezier(0.22, 1, 0.36, 1), border-color .2s, box-shadow .2s", "important");
+        card.style.removeProperty("transform");
+      }
+    }, { passive: true });
   })();
 </script>
 </body>
