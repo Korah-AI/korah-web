@@ -271,6 +271,27 @@ export async function initSatAnalytics(app, uid) {
     return result;
   }
 
+  /**
+   * Latest attempt outcome per question, keyed by canonical id
+   * (detailKey || questionId). Used by the player to apply the
+   * Completed / Result / Time Spent session filters.
+   * @returns {Promise<Map<string, { correct: boolean, timeSpent: number }>>}
+   */
+  async function getLatestOutcomes() {
+    const q = query(attemptsCol, orderBy("ts", "desc"));
+    const snap = await getDocs(q);
+    const map = new Map();
+    snap.forEach((d) => {
+      const data = d.data();
+      const id = resolveStoredQuestionId(data);
+      // Descending by ts → first seen per id is the most recent attempt.
+      if (id && !map.has(id)) {
+        map.set(id, { correct: Boolean(data.correct), timeSpent: Number(data.timeSpent) || 0 });
+      }
+    });
+    return map;
+  }
+
   async function getAllSkillStats() {
     const snap = await getDocs(skillsCol);
     const out = [];
@@ -376,6 +397,7 @@ export async function initSatAnalytics(app, uid) {
     getBookmarks,
     getMissedQuestionIds,
     getMissedBySection,
+    getLatestOutcomes,
     getAllSkillStats,
     getRecentAttempts,
     suggestSkills,

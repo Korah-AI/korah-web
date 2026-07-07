@@ -140,12 +140,18 @@
   <div class="sat-page sat-bank-page" style="padding: 20px;">
     <section class="sat-bank-shell">
       <section class="sat-bank-header">
-        <p class="sat-eyebrow grad-text">Korah SAT</p>
-        <h1 class="sat-bank-title">Question Bank</h1>
-        <p class="sat-bank-desc">
-          Pick a section and domain, choose how many questions you want, and start practicing —
-          every question is sourced directly from the <strong>Official College Board Question Bank</strong>.
-        </p>
+        <div class="sat-bank-header-text">
+          <div class="sat-eyebrow-row">
+            <img src="../logo-images/newlogo12.png" class="sat-eyebrow-logo" alt="Korah logo"/>
+            <p class="sat-eyebrow">Korah SAT Prep</p>
+          </div>
+          <h1 class="sat-bank-title">Question Bank</h1>
+          <p class="sat-bank-desc">
+            Pick a section and domain, choose how many questions you want, and start cooking up. <br>
+            We get all of our questions fresh from <strong> College Board</strong>, so you get the real SAT experience.
+          </p>
+        </div>
+        <img src="../logo-images/newlogo3.png" class="sat-bank-header-deco" alt=""/>
       </section>
         
 
@@ -154,27 +160,16 @@
           <input id="limitInput" type="text" class="sat-limit-input" placeholder="Question Limit: None" />
           <div id="selectionSummary" class="sat-inline-selection">Choose a section and domain</div>
           <div class="sat-toolbar-actions">
-            <a href="./dashboard.html" class="sat-button sat-button-ghost t-btn" style="text-decoration:none; color: white;" aria-label="Open analytics dashboard">Dashboard</a>
-            <button id="clearFiltersBtn" class="sat-button sat-button-ghost t-btn" type="button" aria-label="Clear filters" style = "color: white;">Clear</button>
-            <button id="startSelectedBtn" class="sat-button sat-button-primary t-btn" type="button" aria-label="Start practice session">Start practice</button>
+            <button id="filtersToggle" class="sat-filters-toggle t-btn" type="button" aria-expanded="false" aria-controls="filterRow" aria-label="Toggle filters">
+              <svg class="sat-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+              <span>Filters</span>
+              <span id="filtersBadge" class="sat-filters-badge" hidden>0</span>
+              <svg class="sat-ico sat-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
           </div>
         </div>
-        <div class="sat-filter-row">
-          <div class="sat-filter-group" role="group" aria-label="Assessment">
-            <span class="sat-filter-label">Assessment</span>
-            <div class="sat-chip" style="display: flex; align-items: center; gap: 0.5rem; width: 100%; padding: 0.5rem; cursor: default;">
-              <span>SAT</span>
-            </div>
-          </div>
-          <div class="sat-filter-group" role="group" aria-label="Difficulty">
-            <span class="sat-filter-label">Difficulty</span>
-            <div class="sat-difficulty-chips" id="difficultyChips">
-              <button class="sat-chip" type="button" data-difficulty="E" aria-pressed="false">Easy</button>
-              <button class="sat-chip" type="button" data-difficulty="M" aria-pressed="false">Medium</button>
-              <button class="sat-chip" type="button" data-difficulty="H" aria-pressed="false">Hard</button>
-            </div>
-          </div>
-        </div>
+        <!-- Filter buttons are rendered by sat-bank.js from the FILTERS config -->
+        <div class="sat-filter-row" id="filterRow" hidden></div>
       </section>
 
       <section class="sat-bank-layout">
@@ -188,6 +183,19 @@
 
 
 </div><!-- end .main-area-wrapper -->
+
+<!-- Bottom selection pill — appears when the user selects topics -->
+<div id="selectionPill" class="sat-selection-pill" hidden>
+  <span class="sat-pill-count" id="pillCountLabel">0 topics selected</span>
+  <button id="pillRandomize" class="sat-pill-btn sat-pill-randomize t-btn" type="button" aria-pressed="false">
+    <svg class="sat-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+    <span>Randomize</span>
+  </button>
+  <button id="pillStart" class="sat-pill-btn sat-pill-start t-btn" type="button">
+    <span>Start</span>
+    <svg class="sat-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+  </button>
+</div>
 
 <!-- Settings Modal -->
 <div id="settings-modal" class="settings-modal">

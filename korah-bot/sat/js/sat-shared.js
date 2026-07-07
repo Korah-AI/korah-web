@@ -105,6 +105,20 @@
 
   const VALID_DIFFICULTIES = ["E", "M", "H"];
   const VALID_ASSESSMENTS = ["SAT", "PSAT/NMSQT", "PSAT"];
+  // Per-question filters applied client-side by the player. First value is the
+  // default ("no filter"). See docs/sat-bank-filters.md.
+  const SESSION_FILTERS = {
+    timespent: ["any", "lt30", "30to60", "gt60"],
+    saved: ["all", "saved", "unsaved"],
+    completed: ["all", "completed", "incomplete"],
+    result: ["all", "correct", "incorrect"],
+  };
+
+  function parseSessionFilter(params, key) {
+    const allowed = SESSION_FILTERS[key];
+    const raw = (params.get(key) || "").trim().toLowerCase();
+    return allowed.includes(raw) ? raw : allowed[0];
+  }
 
   function parseOpenSatV1Query(search) {
     const params = new URLSearchParams(search || window.location.search);
@@ -128,6 +142,9 @@
     const questionIdsRaw = params.get("questionIds") || params.get("ids");
     const questionIds = questionIdsRaw ? questionIdsRaw.split(",").map(id => id.trim()).filter(Boolean) : [];
 
+    const randomRaw = (params.get("random") || "").trim().toLowerCase();
+    const random = randomRaw === "1" || randomRaw === "true";
+
     return {
       sections: sections.length > 0 ? sections : ["english", "math"],
       domains: domains.length > 0 ? domains : ["any"],
@@ -136,6 +153,11 @@
       assessment,
       limit: effectiveLimit,
       questionIds,
+      random,
+      timespent: parseSessionFilter(params, "timespent"),
+      saved: parseSessionFilter(params, "saved"),
+      completed: parseSessionFilter(params, "completed"),
+      result: parseSessionFilter(params, "result"),
     };
   }
 
@@ -169,6 +191,16 @@
     if (state.limit !== null && state.limit !== undefined) {
       params.set("limit", String(state.limit));
     }
+    if (state.random) {
+      params.set("random", "1");
+    }
+    // Per-question filters — only emit when non-default (first allowed value).
+    Object.keys(SESSION_FILTERS).forEach((key) => {
+      const value = state[key];
+      if (value && value !== SESSION_FILTERS[key][0]) {
+        params.set(key, value);
+      }
+    });
     return `./questions.html?${params.toString()}`;
   }
 
