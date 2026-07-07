@@ -5,6 +5,15 @@ console.log('math-chat.js loading...');
   const API_ENDPOINT = "/api/r";
   const MODEL = "gemini-2.5-flash";
 
+  // Classification + state adaptation happen in a SINGLE API call (see
+  // runMergedClassifyAdapt): the model receives all problem-solver skeletons
+  // inline and, in one shot, picks the template AND fills it for the student's
+  // problem. This deletes the old Phase-1 classification round-trip. The ~17 KB
+  // of skeletons rides along uncached — Gemini 2.5's implicit caching discounts
+  // the stable prefix for free. The call carries both classification (wants to
+  // stay strict) and adaptation (wants a little freedom), so keep temp low.
+  const MERGED_TEMPERATURE = 0.2;
+
   const input = document.getElementById("chat-input");
   const welcomeInput = document.getElementById("welcome-chat-input");
   const sendBtn = document.getElementById("send-btn");
@@ -54,6 +63,22 @@ console.log('math-chat.js loading...');
     const res = await fetch(`./desmos-json/templates/${id}.json`);
     _templateCache[id] = await res.json();
     return _templateCache[id];
+  }
+
+  // Load every problem-solver skeleton (visualizers have no skeleton — they load
+  // their verified example as-is). Used by the merged pipeline, which hands the
+  // model all skeletons at once so it can classify AND fill one in a single call.
+  let _allSkeletons = null;
+  async function loadAllSkeletons() {
+    if (_allSkeletons) return _allSkeletons;
+    const index = await loadTemplateIndex();
+    const solverIds = index.filter(t => t.type === 'problem-solver').map(t => t.id);
+    const results = await Promise.all(solverIds.map(async id => {
+      try { return { id, skeleton: await loadTemplate(id) }; }
+      catch (e) { console.warn(`Failed to load skeleton "${id}":`, e); return null; }
+    }));
+    _allSkeletons = results.filter(Boolean);
+    return _allSkeletons;
   }
 
   function buildTemplateIndexBlock(index) {
@@ -128,144 +153,6 @@ console.log('math-chat.js loading...');
     return matches || [];
   }
 
-  // ─── Phase 1 (classifier) ──────────────────────────────────────────────
-  // Pure template selection. Tiny output. Streams but feels instant.
-  const PHASE1_CLASSIFIER_PROMPT_BASE = `You are the classifier stage of Korah, an SAT Math tutor. Your ONLY job is to pick the best matching Desmos template id for the student's problem.
-
-Output a single raw JSON object — NO code fences, NO commentary, NO extra fields:
-
-{
-  "stateId": "id_from_template_list_or_null",
-  "strategy": "one short sentence (max 20 words) on which template fits and why"
-}
-
-═══════════════════════════════════════════
-BIAS STRONGLY TOWARD PICKING A TEMPLATE
-═══════════════════════════════════════════
-
-Korah's whole value is teaching SAT math through Desmos. ALMOST EVERY SAT MATH PROBLEM maps to one of the templates below. Default to picking a template. Only return null as an absolute last resort.
-
-Concretely, you SHOULD pick a template whenever ANY of these apply:
-- The problem involves a linear function, line, slope, y-intercept → linear-functions / linear-equations-in-two-variables
-- The problem involves an equation in one variable with unknown constants and asks about "infinitely many solutions" or "no solutions" → linear-equations-in-one-variable
-- The problem gives an inequality and asks which (x,y) pairs satisfy it → linear-equalities-in-one-or-two-variables
-- The problem gives a system of two equations and asks for a value at the intersection → system-of-two-linear-equations
-- The problem is a polynomial identity like (ax+...)(...) = ... where the equation holds "for all x" → equivalent-expressions
-- The problem is a quadratic in vertex form, or asks about vertex/parabola shape → quadratic-from-vertex-point
-- The problem involves symmetry, even/odd functions, reflection → 3-types-of-symmetry
-- The problem involves the unit circle, sin θ, cos θ, angles, radians → unit-circle
-- The problem involves sine/cosine waves, period, amplitude, phase → sine-cosine-sinuoids-graphs
-- The problem involves dilations, vertical/horizontal stretches → nonrigid-transformations-dilations
-- The problem mentions concavity, concave up/down, rate of change → concavity-discovery / concavity-rate-of-change
-
-DRAW A GRAPH EVEN WHEN NOT EXPLICITLY ASKED:
-The student does NOT have to say "graph this" or "use Desmos" for you to pick a template. Any request that would be clearer WITH a worked example on the graph should get one. This includes broad, instructional, or meta questions — pick the template that best DEMONSTRATES the concept so Phase 2/3 can draw a concrete example.
-- "Explain how to use Desmos to solve SAT math problems faster, with examples" → pick a representative problem-solver template (e.g., linear-functions) so an actual example is drawn and walked through. Do NOT return null just because the question is phrased as a how-to.
-- "Show me a strategy for linear systems" / "give me an example of a quadratic vertex problem" → pick the matching template and let a real example render.
-- "How do I read slope off a graph?" → pick a linear template so the concept is shown on screen, not just described.
-If a request asks for examples or a demonstration and ANY template could illustrate it, PICK THAT TEMPLATE.
-
-Only return stateId: null if the problem is COMPLETELY non-mathematical (e.g., "hi" or "what is Korah?") or if it's a math problem in a category clearly outside the template list (e.g., a 3D geometry problem about volumes, or a probability/statistics question with no graph utility). When in doubt — PICK A TEMPLATE.
-
-═══════════════════════════════════════════
-RULES
-═══════════════════════════════════════════
-
-- stateId must be EXACTLY an "id" from the AVAILABLE TEMPLATES list below, or null.
-- "visualizer" templates are for conceptual questions (e.g., "what is concavity?", "show me the unit circle"). Pick these when the student asks to UNDERSTAND a concept rather than solve a specific problem.
-- "problem-solver" templates are for actual SAT problems with concrete numbers/equations to solve. Prefer these when the student pastes or describes an SAT-style problem.
-- Do NOT explain the math. Do NOT write a tutoring response. Just classify.
-- Output ONLY the JSON object. Nothing else.`;
-
-  async function buildPhase1SystemPrompt() {
-    const index = await loadTemplateIndex();
-    const block = buildTemplateIndexBlock(index);
-    return PHASE1_CLASSIFIER_PROMPT_BASE + '\n\n' + block;
-  }
-
-function buildPhase2SystemPrompt() {
-  return `You are adapting a Desmos calculator state to fit a SPECIFIC STUDENT PROBLEM.
-
-═══════════════════════════════════════════
-CRITICAL: YOU MUST ADAPT, NOT COPY
-═══════════════════════════════════════════
-
-You are NOT allowed to output the example verbatim. The example uses ITS OWN numbers and ITS OWN problem text — none of that is the student's problem. You MUST:
-
-1. Read the student's actual problem (numbers, equations, coefficients, constraints).
-2. Use the TEMPLATE as your structural guide — same expression types in the same order.
-3. Fill EVERY {{PLACEHOLDER}} with values from the STUDENT'S problem (not from the example).
-4. Rewrite EVERY text node so it describes the STUDENT'S problem (not the example's). Use the student's numbers, the student's variable names, the student's question.
-5. Replace the example's numeric values in tables/expressions with the student's numeric values.
-
-If your output is byte-for-byte the same as the example, you have FAILED THIS TASK.
-
-═══════════════════════════════════════════
-INPUTS YOU WILL RECEIVE
-═══════════════════════════════════════════
-
-- PROBLEM: the student's actual SAT problem
-- FULL WORKING EXAMPLE: real Desmos JSON for a DIFFERENT problem of the same type — use ONLY for syntax/structure reference
-- TEMPLATE: the structural skeleton with {{PLACEHOLDER}} slots showing where to put the student's values
-
-The example exists so you can see what valid Desmos JSON looks like — NOT for you to copy. The template tells you the shape; the STUDENT'S PROBLEM provides the content.
-
-═══════════════════════════════════════════
-HOW TO ADAPT, STEP BY STEP
-═══════════════════════════════════════════
-
-For each expression in the template:
-- If it's a text node: rewrite the text to describe the student's specific problem using PLAIN TEXT ONLY (use their numbers, their setup, their question). Do NOT carry over the example's text. Do NOT include any LaTeX, backslashes, or math syntax — plain English sentences only. If the template text node contains LaTeX or math, convert it to a readable English sentence instead.
-- If it's a table: replace ALL values with the student's data. Keep the same column structure (x_{1}, y_{1}) and order.
-- If it's a regression/equation: substitute the student's coefficients, constants, and unknowns. Use the example's syntax (tilde, subscripts) but the student's numbers.
-- If it has regressionParameters: keep the parameter list but use the student's unknown letters.
-
-═══════════════════════════════════════════
-CRITICAL DESMOS RULES (violations will break the graph)
-═══════════════════════════════════════════
-
-- Table data columns must use SUBSCRIPT notation: x_{1}, y_{1} (NOT bare x or y)
-- A table must appear BEFORE any expression that uses its columns
-- Regressions use TILDE (\\sim) not equals
-- Text nodes use ONLY {type, id, text}. NO color field on text nodes.
-- Every id must be unique within the expressions.list
-- LaTeX backslashes must be properly JSON-escaped (\\\\frac, \\\\sim, \\\\left, etc.)
-- Do NOT include "graph", "viewport", or other top-level fields beyond version/randomSeed/expressions
-
-TEXT NODES VS EXPRESSION NODES — THIS IS CRITICAL:
-- A { "type": "text" } node MUST contain ONLY plain human-readable text in the "text" field.
-  - NO LaTeX, NO backslashes, NO $...$, NO \\frac, NO \\sim, NO subscripts like x_{1}.
-  - Plain English sentences only. Example: "The slope is -4 and the y-intercept is 30."
-- If you need to display a mathematical formula or equation, use a { "type": "expression" } node with a "latex" key instead.
-  - Example: { "type": "expression", "id": "5", "color": "#000000", "latex": "y=-4x+30" }
-- NEVER put LaTeX syntax inside a "text" node. The Desmos text widget renders plain text only — LaTeX in a text node will display as raw garbled characters, not formatted math.
-
-WHAT YOU CAN DO:
-- Add new expressions or text nodes if the student's problem needs them
-- Omit template slots if they're not needed
-- Use the example's id values or generate new unique ones
-- Choose appropriate colors from the example's palette
-
-═══════════════════════════════════════════
-OUTPUT FORMAT
-═══════════════════════════════════════════
-
-Output a single raw JSON object — the full Desmos state — with NO surrounding text, no code fences, no commentary.
-
-Shape:
-{
-  "version": 11,
-  "randomSeed": "32-char hex",
-  "expressions": {
-    "list": [ ...your adapted expressions for THE STUDENT'S problem... ]
-  }
-}
-
-REMINDER: every text node, every numeric value, every coefficient must reflect the STUDENT'S problem — not the example's. If unsure, prefer the student's data over the example's.
-
-If the template genuinely cannot represent the student's problem (very rare — only if the classifier picked wrong), output exactly: null`;
-}
-
   // ─── Phase 3 (tutoring response) ────────────────────────────────────────
   // Streams a chat-facing markdown explanation. Grounded in the loaded Desmos
   // state when one was loaded, so the model can reference exact values.
@@ -310,62 +197,6 @@ TEXT FORMATTING:
       context += `\n\n=== NO GRAPH LOADED ===\nNo Desmos graph was loaded for this problem. Solve it algebraically with clear steps.`;
     }
     return base + context;
-  }
-
-  // Phase 1 caller: non-streaming feel (small JSON output, parsed at the end).
-  async function runPhase1Classification(problem) {
-    console.log('🔵 [Phase 1] classifier starting…');
-    const t0 = performance.now();
-    let fullText = '';
-    try {
-      await callAPI(problem, (_chunk, full) => { fullText = full; }, {
-        systemPrompt: (await buildPhase1SystemPrompt()),
-        temperature: 0.1,
-        _phaseTag: 'Phase 1 (classify)',
-      });
-    } catch (e) {
-      console.error('🔵 [Phase 1] API call failed:', e);
-      return null;
-    }
-    const dt = Math.round(performance.now() - t0);
-    console.log(`🔵 [Phase 1] raw response (${dt}ms, ${fullText.length} chars):`, fullText.slice(0, 300));
-
-    let s = fullText.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
-    const braceIdx = s.indexOf('{');
-    if (braceIdx === -1) {
-      console.warn('🔵 [Phase 1] no JSON object found in response');
-      return null;
-    }
-    s = s.substring(braceIdx);
-
-    let parsed = null;
-    try { parsed = JSON.parse(s); } catch (e) { console.warn('🔵 [Phase 1] direct JSON.parse failed:', e.message); }
-    if (!parsed) {
-      // Last-resort: find balanced braces.
-      let depth = 0, end = -1, inStr = false, esc = false;
-      for (let i = 0; i < s.length; i++) {
-        const ch = s[i];
-        if (esc) { esc = false; continue; }
-        if (ch === '\\') { esc = true; continue; }
-        if (ch === '"') { inStr = !inStr; continue; }
-        if (inStr) continue;
-        if (ch === '{') depth++;
-        else if (ch === '}') { depth--; if (depth === 0) { end = i; break; } }
-      }
-      if (end !== -1) {
-        try { parsed = JSON.parse(s.substring(0, end + 1)); } catch (e) { console.warn('🔵 [Phase 1] balanced-brace parse failed:', e.message); }
-      }
-    }
-    if (!parsed) {
-      console.warn('🔵 [Phase 1] could not parse JSON, returning null');
-      return null;
-    }
-    const out = {
-      stateId: typeof parsed.stateId === 'string' ? parsed.stateId : null,
-      strategy: typeof parsed.strategy === 'string' ? parsed.strategy : '',
-    };
-    console.log('🔵 [Phase 1] parsed:', out);
-    return out;
   }
 
   function initializeSATGraph() {
@@ -526,118 +357,170 @@ TEXT FORMATTING:
     return { ok: true, errors: [] };
   }
 
-  // Run Phase 2: hand the model the example + template + problem, ask it to adapt.
-  // Returns a parsed Desmos state (or null on failure).
-  async function runPhase2Adaptation(problem, stateId) {
-    console.log(`🟡 [Phase 2] adapting template "${stateId}"…`);
+  // ─── Merged classify + adapt pipeline ───────────────────────────────────
+  // Locate and parse the first JSON object in a model response, tolerating code
+  // fences, leading junk, and trailing text (the merged call nests a large
+  // Desmos state, so the parse must survive messy output).
+  function extractJSONObject(fullText) {
+    let s = (fullText || '').trim()
+      .replace(/^```(?:json)?\s*/i, '')
+      .replace(/\s*```\s*$/i, '')
+      .trim();
+    if (s === 'null') return null;
+    const braceIdx = s.indexOf('{');
+    if (braceIdx === -1) return null;
+    s = s.substring(braceIdx);
+
+    try { return JSON.parse(s); } catch (_) {}
+
+    // Fallback: extract the first balanced-brace region in case of trailing junk.
+    let depth = 0, end = -1, inStr = false, esc = false;
+    for (let i = 0; i < s.length; i++) {
+      const ch = s[i];
+      if (esc) { esc = false; continue; }
+      if (ch === '\\') { esc = true; continue; }
+      if (ch === '"') { inStr = !inStr; continue; }
+      if (inStr) continue;
+      if (ch === '{') depth++;
+      else if (ch === '}') { depth--; if (depth === 0) { end = i; break; } }
+    }
+    if (end !== -1) {
+      try { return JSON.parse(s.substring(0, end + 1)); }
+      catch (e) { console.warn('extractJSONObject: brace-extraction parse failed:', e.message); }
+    }
+    return null;
+  }
+
+  function buildSkeletonsBlock(skeletons) {
+    return skeletons.map(({ id, skeleton }) =>
+      `─── SKELETON id="${id}" ───\n${JSON.stringify(skeleton, null, 2)}`
+    ).join('\n\n');
+  }
+
+  async function buildMergedSystemPrompt() {
+    const index = await loadTemplateIndex();
+    const skeletons = await loadAllSkeletons();
+    const indexBlock = buildTemplateIndexBlock(index);
+    const skeletonsBlock = buildSkeletonsBlock(skeletons);
+
+    // Static prefix FIRST (templates never change per-message), student problem
+    // LAST — so Gemini 2.5 implicit caching can discount this stable prefix.
+    return `You are Korah's SAT Math graph engine. In ONE step you must (1) pick the best Desmos template for the student's problem and (2) if it is a "problem-solver" template, fill its skeleton with the student's numbers to produce a ready-to-render Desmos state.
+
+Output a SINGLE raw JSON object — NO code fences, NO commentary, NO extra fields:
+
+{
+  "stateId": "id_from_template_list_or_null",
+  "strategy": "one short sentence (max 20 words) on which template fits and why",
+  "adaptedState": <Desmos state object, OR null>
+}
+
+Rules for "adaptedState":
+- If the chosen template's type is "problem-solver": adaptedState MUST be the fully-filled Desmos state (see ADAPTATION RULES). Never null in this case.
+- If the chosen template's type is "visualizer": set adaptedState to null (the app loads that template's verified example as-is).
+- If stateId is null: set adaptedState to null.
+
+═══════════════════════════════════════════
+STEP 1 — CLASSIFY (pick stateId)
+═══════════════════════════════════════════
+
+Korah's whole value is teaching SAT math through Desmos. ALMOST EVERY SAT MATH PROBLEM maps to one of the templates below. Default to picking a template. Only return null as an absolute last resort.
+
+You SHOULD pick a template whenever any of these apply:
+- Linear function, line, slope, y-intercept → linear-functions / linear-equations-in-two-variables
+- Equation in one variable with unknown constants asking "infinitely many / no solutions" → linear-equations-in-one-variable
+- Inequality asking which (x,y) pairs satisfy it → linear-equalities-in-one-or-two-variables
+- System of two equations asking for a value at the intersection → system-of-two-linear-equations
+- Polynomial identity (ax+...)(...) = ... that holds "for all x" → equivalent-expressions
+- Quadratic in vertex form, or vertex/parabola shape → quadratic-from-vertex-point
+- Symmetry, even/odd functions, reflection → 3-types-of-symmetry
+- Unit circle, sin θ, cos θ, angles, radians → unit-circle
+- Sine/cosine waves, period, amplitude, phase → sine-cosine-sinuoids-graphs
+- Dilations, vertical/horizontal stretches → nonrigid-transformations-dilations
+- Concavity, concave up/down, rate of change → concavity-discovery / concavity-rate-of-change
+
+Draw a graph EVEN WHEN NOT EXPLICITLY ASKED: any request that would be clearer with a worked example on the graph should get one, including broad/how-to questions ("show me a strategy for linear systems"). Pick the template that best DEMONSTRATES the concept.
+
+"visualizer" templates are for conceptual questions ("what is concavity?", "show me the unit circle"). "problem-solver" templates are for concrete SAT problems with numbers/equations to solve — prefer these when the student pastes a problem.
+
+Only return stateId: null if the input is COMPLETELY non-mathematical ("hi", "what is Korah?") or clearly outside the template list (3D volume geometry, pure probability/statistics with no graph utility). When in doubt — PICK A TEMPLATE.
+
+═══════════════════════════════════════════
+STEP 2 — ADAPT (only for problem-solver templates)
+═══════════════════════════════════════════
+
+Take the matching SKELETON (below, keyed by id) and fill it in for the STUDENT'S problem. You are NOT allowed to invent a structure — use the chosen skeleton as your structural guide (same expression types, same order).
+
+1. Fill EVERY {{PLACEHOLDER}} with a value from the STUDENT'S problem.
+2. Rewrite EVERY text node to describe the STUDENT'S problem (their numbers, their variables, their question) in PLAIN ENGLISH ONLY.
+3. Replace all example/skeleton numeric values with the student's numeric values.
+4. Keep regressionParameters' letters aligned to the student's unknowns.
+
+CRITICAL DESMOS RULES (violations break the graph):
+- Table data columns MUST use subscript notation: x_{1}, y_{1} (never bare x or y).
+- A table must appear BEFORE any expression that uses its columns.
+- Regressions use TILDE (\\sim), not equals.
+- Text nodes use ONLY {type, id, text} — NO color field, NO LaTeX, NO backslashes, NO $...$, NO subscripts. Plain English sentences only. To show a formula, use an {type:"expression", latex:"..."} node instead.
+- Every id must be unique within expressions.list.
+- LaTeX backslashes must be JSON-escaped (\\\\frac, \\\\sim, \\\\left, …).
+- adaptedState top-level fields: version, randomSeed, expressions only. NO "graph"/"viewport".
+
+adaptedState shape:
+{ "version": 11, "randomSeed": "32-char hex", "expressions": { "list": [ ...adapted for THE STUDENT'S problem... ] } }
+
+Every text node, numeric value, and coefficient must reflect the STUDENT'S problem — not the skeleton's placeholders and not any example.
+
+${indexBlock}
+
+═══════════════════════════════════════════
+PROBLEM-SOLVER SKELETONS (fill the one matching your chosen stateId)
+═══════════════════════════════════════════
+
+${skeletonsBlock}`;
+  }
+
+  // Run the merged classify+adapt call. Returns { stateId, strategy, adaptedState }
+  // (adaptedState may be null for visualizer / null classifications) or null on
+  // total failure. Parsing mirrors the legacy phases; validation/fallback of the
+  // adaptedState sub-field happens at the call site (in sendMessage).
+  async function runMergedClassifyAdapt(problem) {
+    console.log('[Merged] classify+adapt starting…');
     const t0 = performance.now();
-    let example, template;
+    let systemPrompt;
     try {
-      [example, template] = await Promise.all([loadExample(stateId), loadTemplate(stateId)]);
+      systemPrompt = await buildMergedSystemPrompt();
     } catch (e) {
-      console.error(`🟡 [Phase 2] failed to load example/template for ${stateId}:`, e);
+      console.error('[Merged] failed to build system prompt:', e);
       return null;
     }
-
-    const userContent =
-`═══════════════════════════════════════════
-STUDENT'S PROBLEM — this is what you must solve
-═══════════════════════════════════════════
-${problem}
-
-═══════════════════════════════════════════
-TEMPLATE — YOUR WORKING FILE. Adapt this.
-═══════════════════════════════════════════
-This is the file you must fill in. Replace EVERY {{PLACEHOLDER}} with a value from the STUDENT'S PROBLEM above. Rewrite EVERY text node so it describes the student's problem (using their numbers, their variables, their question).
-
-${JSON.stringify(template, null, 2)}
-
-═══════════════════════════════════════════
-REFERENCE EXAMPLE — for syntax only. DO NOT copy.
-═══════════════════════════════════════════
-This is a FULLY-FILLED-IN version of the template, but for a DIFFERENT problem (not the student's). Use it ONLY to see what valid Desmos JSON looks like — what fields exist, how subscripts are written, how regressions are formatted. The numbers, variables, and text in the example belong to a DIFFERENT problem and must NOT appear in your output.
-
-${JSON.stringify(example, null, 2)}
-
-═══════════════════════════════════════════
-YOUR TASK
-═══════════════════════════════════════════
-1. Start with the TEMPLATE.
-2. For each {{PLACEHOLDER}}, look at the STUDENT'S PROBLEM and write the correct value there.
-3. For each text node in the template, write text that explains the STUDENT'S PROBLEM (not the example's).
-4. Keep the same expression types, ordering, and structure as the template.
-5. Use the REFERENCE EXAMPLE only to confirm Desmos syntax — never copy its content.
-6. Output the completed JSON. Nothing else.
-
-If your output looks anything like the REFERENCE EXAMPLE's content, you have failed. Your output should reflect the STUDENT'S PROBLEM.`;
 
     let fullText = '';
     try {
-      await callAPI(userContent, (_chunk, full) => { fullText = full; }, {
-        systemPrompt: buildPhase2SystemPrompt(),
-        temperature: 0.2,
-        _phaseTag: 'Phase 2 (adapt)',
+      await callAPI(problem, (_chunk, full) => { fullText = full; }, {
+        systemPrompt,
+        temperature: MERGED_TEMPERATURE,
+        _phaseTag: 'Merged (classify+adapt)',
       });
     } catch (e) {
-      console.error('🟡 [Phase 2] API call failed:', e);
+      console.error('[Merged] API call failed:', e);
       return null;
     }
     const dt = Math.round(performance.now() - t0);
-    console.log(`🟡 [Phase 2] raw response (${dt}ms, ${fullText.length} chars):`, fullText.slice(0, 200) + '…');
+    console.log(`[Merged] raw response (${dt}ms, ${fullText.length} chars):`, fullText.slice(0, 200) + '…');
 
-    // Strip code fences if present, then locate the JSON.
-    let s = fullText.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
-    if (s === 'null') return null;
-    const braceIdx = s.indexOf('{');
-    if (braceIdx === -1) {
-      console.warn('Phase 2: no JSON object found in response:', s.slice(0, 200));
+    const parsed = extractJSONObject(fullText);
+    if (!parsed) {
+      console.warn('[Merged] could not parse JSON, returning null');
       return null;
     }
-    s = s.substring(braceIdx);
 
-    // Try direct JSON.parse first (model usually outputs proper escapes for Desmos LaTeX).
-    let parsed = null;
-    try { parsed = JSON.parse(s); } catch (_) {}
-
-    if (!parsed) {
-      // Fallback: balanced brace extraction in case there's trailing junk.
-      let depth = 0, end = -1, inStr = false, esc = false;
-      for (let i = 0; i < s.length; i++) {
-        const ch = s[i];
-        if (esc) { esc = false; continue; }
-        if (ch === '\\') { esc = true; continue; }
-        if (ch === '"') { inStr = !inStr; continue; }
-        if (inStr) continue;
-        if (ch === '{') depth++;
-        else if (ch === '}') { depth--; if (depth === 0) { end = i; break; } }
-      }
-      if (end !== -1) {
-        try { parsed = JSON.parse(s.substring(0, end + 1)); } catch (e) {
-          console.warn('Phase 2: JSON.parse failed even after brace extraction:', e.message);
-        }
-      }
-    }
-
-    if (!parsed) return null;
-
-    const leftoverSlots = stripPlaceholders(parsed);
-    if (leftoverSlots.length > 0) {
-      console.warn('🟡 [Phase 2] model left unfilled placeholders:', leftoverSlots);
-    }
-
-    // Detect the failure mode where the model just copied the example verbatim
-    // (a common shortcut). Compare expressions.list as JSON.
-    try {
-      const adaptedExprs = JSON.stringify(parsed?.expressions?.list ?? []);
-      const exampleExprs = JSON.stringify(example?.expressions?.list ?? []);
-      if (adaptedExprs === exampleExprs) {
-        console.warn('🟡 [Phase 2] ⚠️ model returned the example VERBATIM — no adaptation happened. Treating as failure so the fallback uses the example anyway (same outcome, but flagged).');
-        return null;
-      }
-    } catch (_) {}
-
-    console.log('🟡 [Phase 2] parsed adapted state with', parsed?.expressions?.list?.length ?? 0, 'expressions ✓');
-    return parsed;
+    const out = {
+      stateId: typeof parsed.stateId === 'string' ? parsed.stateId : null,
+      strategy: typeof parsed.strategy === 'string' ? parsed.strategy : '',
+      adaptedState: (parsed.adaptedState && typeof parsed.adaptedState === 'object') ? parsed.adaptedState : null,
+    };
+    console.log('[Merged] parsed:', { stateId: out.stateId, strategy: out.strategy, hasState: !!out.adaptedState });
+    return out;
   }
 
   function renderGraphUpdates(container) {
@@ -1276,49 +1159,60 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
   try {
     const userContent = buildUserContent(fullMessage, pendingFiles);
 
-    // ── PHASE 1: silent classification ──
-    const classification = await runPhase1Classification(userContent);
-    const stateId = classification?.stateId || null;
-    const classifierStrategy = classification?.strategy || '';
-
-    // ── PHASE 2: graph loading (silent, shows "Drawing graph…" indicator) ──
+    // ── CLASSIFY + LOAD GRAPH (single merged call) ──
+    // One silent call returns { stateId, strategy, adaptedState }. It replaces
+    // the old two round-trips (classify, then adapt). The verified example is
+    // still the fallback whenever the adapted state is missing, verbatim, or
+    // fails validation — so the graph stays robust even if the model slips.
     let loadedState = null;
+    const merged = await runMergedClassifyAdapt(userContent);
+    const stateId = merged?.stateId || null;
+    const classifierStrategy = merged?.strategy || '';
+
     if (stateId) {
       showDrawingIndicator();
       try {
         const index = await loadTemplateIndex();
         const entry = index.find(e => e.id === stateId);
         if (!entry) {
-          console.warn(`🔵 [Phase 1] stateId "${stateId}" not found in template index — skipping graph`);
+          console.warn(`[Merged] stateId "${stateId}" not found in template index — skipping graph`);
         } else if (entry.type === 'visualizer') {
-          console.log(`🟡 [Phase 2] visualizer "${stateId}" — loading example as-is (no adaptation API call)`);
+          console.log(`[Merged] visualizer "${stateId}" — loading example as-is`);
           const example = await loadExample(stateId);
-          const result = loadDesmosState(example);
-          if (result.ok) { loadedState = example; console.log('🟡 [Phase 2] visualizer loaded ✓'); }
-          else console.warn('🟡 [Phase 2] visualizer load failed:', result.errors);
+          if (loadDesmosState(example).ok) { loadedState = example; console.log('[Merged] visualizer loaded'); }
+          else console.warn('[Merged] visualizer load failed');
         } else if (entry.type === 'problem-solver') {
-          const adapted = await runPhase2Adaptation(userMessage, stateId);
+          const adapted = merged.adaptedState;
+          // Verbatim guard: catch the model returning the verified example
+          // unchanged (a known shortcut). Compare expressions.list.
+          let verbatim = false;
           if (adapted) {
-            const result = loadDesmosState(adapted);
-            if (result.ok) {
-              loadedState = adapted;
-              console.log('🟡 [Phase 2] adapted state loaded ✓');
-            } else {
-              console.warn('🟡 [Phase 2] adapted state failed validation, falling back to verified example:', result.errors);
-              const example = await loadExample(stateId);
-              if (loadDesmosState(example).ok) { loadedState = example; console.log('🟡 [Phase 2] fallback example loaded ✓'); }
-            }
+            try {
+              const example0 = await loadExample(stateId);
+              verbatim = JSON.stringify(adapted?.expressions?.list ?? []) === JSON.stringify(example0?.expressions?.list ?? []);
+            } catch (_) {}
+          }
+          // Any unfilled {{PLACEHOLDER}} means the model didn't finish adapting —
+          // it would render literally on the graph, so fall back instead.
+          const leftoverSlots = adapted ? stripPlaceholders(adapted) : [];
+          if (adapted && !verbatim && leftoverSlots.length === 0 && loadDesmosState(adapted).ok) {
+            loadedState = adapted;
+            console.log('[Merged] adapted state loaded');
           } else {
-            console.warn('🟡 [Phase 2] returned null; falling back to verified example.');
+            const reason = !adapted ? 'no state'
+              : verbatim ? 'verbatim copy'
+              : leftoverSlots.length ? `unfilled placeholders: ${leftoverSlots.join(', ')}`
+              : 'validation failed';
+            console.warn(`[Merged] adapted state unusable (${reason}); falling back to verified example.`);
             const example = await loadExample(stateId);
-            if (loadDesmosState(example).ok) { loadedState = example; console.log('🟡 [Phase 2] fallback example loaded ✓'); }
+            if (loadDesmosState(example).ok) { loadedState = example; console.log('[Merged] fallback example loaded'); }
           }
         }
       } catch (e) {
-        console.error('🟡 [Phase 2] failed to resolve/load template:', e);
+        console.error('[Merged] failed to resolve/load template:', e);
       }
     } else {
-      console.log('⚪ [Phase 2] skipped (stateId is null — no template selected)');
+      console.log('[Merged] skipped graph (stateId is null — no template selected)');
     }
 
     // ── PHASE 3: streamed tutoring response, grounded in the loaded state ──
@@ -1389,8 +1283,7 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
   }
 
   async function callAPI(userContent, onChunk = null, options = {}) {
-    const systemPrompt = options.systemPrompt
-      ?? (await buildPhase1SystemPrompt());
+    const systemPrompt = options.systemPrompt ?? '';
     const temperature = options.temperature ?? 0.2;
     const phaseTag = options._phaseTag || 'callAPI';
     console.log(`📡 [${phaseTag}] → POST ${API_ENDPOINT} (model=${MODEL}, temp=${temperature}, sysPromptLen=${systemPrompt.length})`);
