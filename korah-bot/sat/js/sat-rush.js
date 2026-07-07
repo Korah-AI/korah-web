@@ -89,6 +89,41 @@
   const $ = (id) => document.getElementById(id);
   const views = { onboarding: $("rushOnboarding"), player: $("rushPlayer"), celebration: $("rushCelebration") };
 
+  // ── Desmos ────────────────────────────────────────────────────────────────
+  const rushCalcBtn = $("rushCalcBtn");
+  const rushDesmosPanel = $("rushDesmosPanel");
+  const rushDesmosContainer = $("rushDesmosContainer");
+  let desmosInstance = null;
+  let desmosActive = false;
+
+  function initDesmos() {
+    if (!rushDesmosContainer || !window.Desmos) return;
+    if (!desmosInstance) {
+      desmosInstance = Desmos.GraphingCalculator(rushDesmosContainer, {
+        expressionsCollapsed: false, border: false, settingsMenu: true,
+      });
+    } else {
+      desmosInstance.resize();
+    }
+  }
+
+  function destroyDesmos() {
+    desmosActive = false;
+    if (desmosInstance) { desmosInstance.destroy(); desmosInstance = null; }
+    if (rushDesmosContainer) rushDesmosContainer.innerHTML = "";
+    if (rushDesmosPanel) rushDesmosPanel.style.display = "none";
+    if (rushCalcBtn) rushCalcBtn.classList.remove("is-active");
+  }
+
+  function toggleDesmos() {
+    desmosActive = !desmosActive;
+    if (rushDesmosPanel) rushDesmosPanel.style.display = desmosActive ? "block" : "none";
+    if (rushCalcBtn) rushCalcBtn.classList.toggle("is-active", desmosActive);
+    if (desmosActive) initDesmos();
+  }
+
+  if (rushCalcBtn) rushCalcBtn.addEventListener("click", toggleDesmos);
+
   function showView(name) {
     Object.entries(views).forEach(([k, el]) => {
       const active = k === name;
@@ -325,6 +360,8 @@
     rush.perDomain = {};
 
     showView("player");
+    destroyDesmos();
+    if (rushCalcBtn) rushCalcBtn.style.display = sel.subject === "math" ? "flex" : "none";
     $("rushLoading").hidden = false;
     $("rushQuestionArea").hidden = true;
     $("rushErrorBox").hidden = true;
@@ -676,6 +713,7 @@
 
   function finishSession() {
     stopTimer();
+    destroyDesmos();
     hideOverlay();
     renderCelebration();
     showView("celebration");
@@ -735,6 +773,7 @@
   });
 
   function resetOnboarding() {
+    destroyDesmos();
     STEP_IDS.forEach((id, i) => {
       const el = $(id);
       el.hidden = i !== 0;

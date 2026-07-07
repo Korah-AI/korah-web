@@ -18,8 +18,10 @@
   let hasRevealed = false; // animate progress/accuracy once on first data load
 
   const sectionColumns = document.getElementById("sectionColumns");
-  const selectionSummary = document.getElementById("selectionSummary");
   const limitInput = document.getElementById("limitInput");
+  const limitDropdown = document.getElementById("limitDropdown");
+  const limitToggle = document.getElementById("limitToggle");
+  const limitToggleLabel = document.getElementById("limitToggleLabel");
   const filtersToggle = document.getElementById("filtersToggle");
   const filtersBadge = document.getElementById("filtersBadge");
   const filterRow = document.getElementById("filterRow");
@@ -156,28 +158,6 @@
     }
   }
 
-  function renderSummary() {
-    const sectionsLabel = state.sections.length === 0 || state.sections.includes("any")
-      ? "All sections"
-      : state.sections.length === 1
-        ? OPENSAT_CATALOG.sections.find((s) => s.key === state.sections[0])?.label || state.sections[0]
-        : `${state.sections.length} sections`;
-
-    let domainLabel = "Any domain";
-    if (state.skills.length > 0 && !state.skills.includes("any")) {
-      domainLabel = `${state.skills.length} skills`;
-    } else if (state.domains.length > 0 && !state.domains.includes("any")) {
-      domainLabel = state.domains.length === 1 ? state.domains[0] : `${state.domains.length} domains`;
-    }
-
-    const limitLabel = state.limit === null || state.limit === "" ? "No limit" : `${state.limit} questions`;
-    const difficultyLabel = state.difficulties.length === 0
-      ? "Any difficulty"
-      : state.difficulties.map((d) => ({ E: "Easy", M: "Medium", H: "Hard" }[d] || d)).join("/");
-    const assessmentLabel = state.assessment && state.assessment !== "SAT" ? ` · ${state.assessment}` : "";
-    selectionSummary.textContent = `${sectionsLabel} · ${domainLabel} · ${difficultyLabel} · ${limitLabel}${assessmentLabel}`;
-  }
-
   function renderPill() {
     const n = state.skills.length;
     if (n > 0) {
@@ -196,12 +176,19 @@
     filterRow.querySelectorAll("[data-filter-btn]").forEach((b) => b.setAttribute("aria-expanded", "false"));
   }
 
+  function closeLimitMenu() {
+    limitDropdown.classList.remove("is-open");
+    limitToggle.classList.remove("is-open");
+    limitToggle.setAttribute("aria-expanded", "false");
+  }
+
   function toggleMenu(key) {
     const dd = filterRow.querySelector(`.sat-filter-dd[data-filter="${key}"]`);
     if (!dd) return;
     const willOpen = !dd.classList.contains("is-open");
     closeMenus();
     if (willOpen) {
+      closeLimitMenu();
       dd.classList.add("is-open");
       dd.querySelector("[data-filter-btn]").setAttribute("aria-expanded", "true");
     }
@@ -532,7 +519,9 @@
     state.random = false;
     state.placeholders = { timespent: "any", saved: "all", completed: "all", result: "all" };
     limitInput.value = "";
+    limitToggleLabel.textContent = "Question Limit";
     closeMenus();
+    closeLimitMenu();
     if (hadAssessment) fetchGlobalStats(); // reload counts for the SAT set
     renderAll();
   }
@@ -540,7 +529,6 @@
   function renderAll() {
     renderSections();
     updateFilterUI();
-    renderSummary();
     renderPill();
   }
 
@@ -595,14 +583,32 @@
       const parsed = Number(val);
       state.limit = Number.isFinite(parsed) && parsed > 0 ? parsed : null;
     }
-    renderSummary();
+    limitToggleLabel.textContent = state.limit !== null ? `Limit: ${state.limit}` : "Question Limit";
+  });
+
+  limitToggle.addEventListener("click", () => {
+    const willOpen = !limitDropdown.classList.contains("is-open");
+    limitDropdown.classList.toggle("is-open", willOpen);
+    limitToggle.classList.toggle("is-open", willOpen);
+    limitToggle.setAttribute("aria-expanded", willOpen ? "true" : "false");
+    if (willOpen) {
+      closeMenus();
+      setTimeout(() => limitInput.focus(), 50);
+    }
   });
 
   // ── Filters toggle (show/hide the filter row) ──
   filtersToggle.addEventListener("click", () => {
     const willOpen = filterRow.hasAttribute("hidden");
-    if (willOpen) filterRow.removeAttribute("hidden");
-    else { filterRow.setAttribute("hidden", ""); closeMenus(); }
+    closeLimitMenu();
+    if (willOpen) {
+      filterRow.removeAttribute("hidden");
+      filterRow.classList.add("is-entering");
+      filterRow.addEventListener("animationend", () => filterRow.classList.remove("is-entering"), { once: true });
+    } else {
+      filterRow.setAttribute("hidden", "");
+      closeMenus();
+    }
     filtersToggle.setAttribute("aria-expanded", willOpen ? "true" : "false");
     filtersToggle.classList.toggle("is-open", willOpen);
   });
@@ -620,6 +626,9 @@
   document.addEventListener("click", (event) => {
     if (!filterRow.contains(event.target) && !filtersToggle.contains(event.target)) {
       closeMenus();
+    }
+    if (!limitDropdown.contains(event.target)) {
+      closeLimitMenu();
     }
   });
 
