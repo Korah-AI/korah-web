@@ -110,6 +110,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
   import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
   import { setupKorahDB } from "./app/data/firestore-store.js";
+  import { startAuthGuard } from './auth-guard.js';
 
   const firebaseConfig = {
     apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
@@ -123,10 +124,10 @@
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
 
-  // Redirect unauthenticated users to login page
+  // Redirect unauthenticated users to landing page
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
-      window.KorahTransitions.go('login.html');
+      window.KorahTransitions.go('landing/index.html');
       return;
     }
     // Set up Firestore and expose window.KorahDB before notifying the app.
@@ -135,6 +136,7 @@
     // Cache so korah-chat.js can pick it up even in edge-case timing.
     window._korahReadyFired = detail;
     window.dispatchEvent(new CustomEvent('korahReady', { detail }));
+    startAuthGuard(auth, 'landing/index.html');
   });
 
   document.getElementById('logout-btn').addEventListener('click', () => {

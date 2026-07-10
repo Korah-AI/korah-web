@@ -64,6 +64,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
   import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
   import { setupKorahDB } from "../app/data/firestore-store.js";
+  import { startAuthGuard } from '../auth-guard.js';
 
   const firebaseConfig = {
     apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
@@ -79,13 +80,14 @@
 
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
-      window.KorahTransitions.go('../login.html');
+      window.KorahTransitions.go('../landing/index.html');
       return;
     }
     await setupKorahDB(app, user.uid);
     const detail = { uid: user.uid };
     window._korahReadyFired = detail;
     window.dispatchEvent(new CustomEvent('korahReady', { detail }));
+    startAuthGuard(auth, '../landing/index.html');
   });
 
   document.getElementById('logout-btn').addEventListener('click', () => {

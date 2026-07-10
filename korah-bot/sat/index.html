@@ -61,6 +61,7 @@
   import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
   import { setupKorahDB } from "../app/data/firestore-store.js";
   import { initSatAnalytics } from "./js/sat-analytics.js";
+  import { startAuthGuard } from '../auth-guard.js';
 
   const firebaseConfig = {
     apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
@@ -76,7 +77,7 @@
 
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
-      window.KorahTransitions.go('../login.html');
+      window.KorahTransitions.go('../landing/index.html');
       return;
     }
     // Set up Firestore and expose window.KorahDB before notifying the app.
@@ -96,6 +97,7 @@
     } catch (e) {
       console.warn("[SAT] onboarding check failed", e);
     }
+    startAuthGuard(auth, '../landing/index.html');
   });
 
   document.getElementById('logout-btn').addEventListener('click', () => {

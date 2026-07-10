@@ -517,6 +517,7 @@
   import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
   import { setupKorahDB } from "./app/data/firestore-store.js";
   import { initSatAnalytics } from "./sat/js/sat-analytics.js";
+  import { startAuthGuard } from './auth-guard.js';
 
   const firebaseConfig = {
     apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
@@ -552,6 +553,7 @@
     const firstName = (localStorage.getItem('korah_first_name') || user.displayName || user.email?.split('@')[0] || 'there').toLowerCase();
     const nameEl = document.getElementById('greeting-name');
     if (nameEl) nameEl.textContent = firstName;
+    startAuthGuard(auth, 'landing/index.html');
   });
 
   document.getElementById('logout-btn').addEventListener('click', () => {
