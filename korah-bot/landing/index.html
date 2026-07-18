@@ -362,7 +362,7 @@ window.addEventListener('DOMContentLoaded', function () {
           </p>
 
           <div style="display:flex;align-items:center;justify-content:center;gap:0.75rem;flex-wrap:wrap;margin-bottom:2.5rem;">
-            <div data-electric="#a855f7" style="display:inline-flex;border-radius:9999px;">
+            <div data-electric="#10b981" data-electric-2="#22d3ee" style="display:inline-flex;border-radius:9999px;">
               <button type="button" onclick="startWaitlist()"
                 style="display:inline-flex;align-items:center;justify-content:center;height:3.25rem;padding:0 2rem;border-radius:9999px;background:#10b981;color:#fff;font-size:0.9375rem;font-weight:700;cursor:pointer;font-family:inherit;border:none;transition:transform 0.3s,opacity 0.3s;"
                 onmouseover="this.style.transform='translateY(-2px)';this.style.opacity='0.88'" onmouseout="this.style.transform='';this.style.opacity='1'">
@@ -983,8 +983,8 @@ window.addEventListener('load', function() {
     return cornerPoint(left + radius, top + radius, radius, Math.PI, Math.PI / 2, p);
   }
 
-  function setupElectric(el, color, borderRadius) {
-    var speed = 1, chaos = 0.12;
+  function setupElectric(el, color, color2, borderRadius) {
+    var speed = 0.6, chaos = 0.15;
     var cs = getComputedStyle(el);
     if (cs.position === 'static') el.style.position = 'relative';
     el.style.overflow = 'visible';
@@ -1005,11 +1005,11 @@ window.addEventListener('load', function() {
     layers.className = 'eb-glow';
     layers.style.cssText = 'position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:0;';
     var l1 = document.createElement('div');
-    l1.style.cssText = 'position:absolute;inset:0;border-radius:inherit;pointer-events:none;border:2px solid ' + hexToRgba(color, 0.6) + ';filter:blur(1px);';
+    l1.style.cssText = 'position:absolute;inset:0;border-radius:inherit;pointer-events:none;border:2px solid ' + hexToRgba(color2, 0.85) + ';filter:blur(1px);';
     var l2 = document.createElement('div');
-    l2.style.cssText = 'position:absolute;inset:0;border-radius:inherit;pointer-events:none;border:2px solid ' + color + ';filter:blur(4px);';
+    l2.style.cssText = 'position:absolute;inset:0;border-radius:inherit;pointer-events:none;border:2px solid ' + color + ';filter:blur(5px);';
     var l3 = document.createElement('div');
-    l3.style.cssText = 'position:absolute;inset:-5%;border-radius:inherit;pointer-events:none;z-index:-1;opacity:0.3;filter:blur(32px);background:linear-gradient(-30deg, ' + color + ', transparent, ' + color + ');';
+    l3.style.cssText = 'position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:-1;opacity:0.6;filter:blur(14px);background:linear-gradient(-30deg, ' + color + ', transparent, ' + color2 + ');';
     layers.appendChild(l1); layers.appendChild(l2); layers.appendChild(l3);
 
     el.appendChild(layers);
@@ -1020,7 +1020,7 @@ window.addEventListener('load', function() {
     if (!ctx) return;
 
     var octaves = 10, lacunarity = 1.6, gain = 0.7, frequency = 10;
-    var displacement = 60, borderOffset = 60;
+    var displacement = 28, borderOffset = 28;
     var width = 0, height = 0, lastDpr = Math.min(window.devicePixelRatio || 1, 2);
     var time = 0, lastFrame = 0;
 
@@ -1046,17 +1046,23 @@ window.addEventListener('load', function() {
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.scale(dpr, dpr);
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 1;
+      var grad = ctx.createLinearGradient(0, 0, width, height);
+      grad.addColorStop(0, color2);
+      grad.addColorStop(0.5, color);
+      grad.addColorStop(1, color2);
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = 1.6;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
+      ctx.shadowColor = color2;
+      ctx.shadowBlur = 8;
 
       var left = borderOffset, top = borderOffset;
       var bw = width - 2 * borderOffset, bh = height - 2 * borderOffset;
       var maxRadius = Math.min(bw, bh) / 2;
       var radius = Math.min(borderRadius, maxRadius);
       var perim = 2 * (bw + bh) + 2 * Math.PI * radius;
-      var samples = Math.max(64, Math.floor(perim / 2));
+      var samples = Math.floor(perim / 2);
 
       ctx.beginPath();
       for (var i = 0; i <= samples; i++) {
@@ -1080,8 +1086,9 @@ window.addEventListener('load', function() {
   function initElectric() {
     document.querySelectorAll('[data-electric]').forEach(function (el) {
       var color = el.getAttribute('data-electric') || '#5227FF';
+      var color2 = el.getAttribute('data-electric-2') || color;
       var br = parseFloat(getComputedStyle(el).borderRadius) || 24;
-      setupElectric(el, color, br);
+      setupElectric(el, color, color2, br);
     });
   }
 
