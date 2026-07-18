@@ -124,149 +124,6 @@
   })();
 </script>
 
-<!-- ═══ CODE ANNOUNCEMENT TOAST ═══ -->
-<style>
-  .code-toast {
-    position: fixed;
-    bottom: 1.75rem;
-    left: 1.75rem;
-    z-index: 1001;
-    display: flex;
-    align-items: center;
-    gap: 1.125rem;
-    padding: 1rem 1.5rem 1rem 1rem;
-    background: color-mix(in srgb, var(--bg2) 55%, transparent);
-    border: 1px solid var(--bd);
-    border-radius: 1.125rem;
-    box-shadow: 0 1.25rem 3.5rem rgba(0,0,0,0.35), 0 0 2rem rgba(139,92,246,0.28);
-    backdrop-filter: blur(18px) saturate(140%);
-    -webkit-backdrop-filter: blur(18px) saturate(140%);
-    text-decoration: none;
-    width: 30rem;
-    max-width: calc(100vw - 3rem);
-    transform: translateY(1.5rem);
-    opacity: 0;
-    transition: transform 0.5s cubic-bezier(0.16,1,0.3,1), opacity 0.5s, border-color 0.25s, box-shadow 0.25s;
-  }
-  .code-toast.visible { transform: translateY(0); opacity: 1; }
-  .code-toast:hover {
-    border-color: var(--p4);
-    box-shadow: 0 1rem 3rem rgba(0,0,0,0.4), 0 0 2rem rgba(139,92,246,0.4);
-  }
-  .code-toast-logo {
-    height: 3.75rem;
-    width: 3.75rem;
-    object-fit: contain;
-    flex-shrink: 0;
-    filter: drop-shadow(0 0 0.5rem rgba(139,92,246,0.4));
-  }
-  .code-toast-body { display: flex; flex-direction: column; gap: 0.3rem; min-width: 0; }
-  .code-toast-eyebrow {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.6875rem;
-    font-weight: 800;
-    letter-spacing: 0.09em;
-    text-transform: uppercase;
-    color: var(--tx);
-  }
-  [data-theme="light"] .code-toast-eyebrow { color: var(--p4); }
-  .code-toast-eyebrow::before {
-    content: '';
-    width: 0.4375rem;
-    height: 0.4375rem;
-    border-radius: 50%;
-    background: var(--p4);
-    box-shadow: 0 0 0.5rem var(--p4);
-    animation: code-toast-pulse 1.8s ease-in-out infinite;
-  }
-  @keyframes code-toast-pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.5; transform: scale(1.3); }
-  }
-  .code-toast-title {
-    font-size: 1.0625rem;
-    font-weight: 800;
-    color: var(--tx);
-    line-height: 1.25;
-    letter-spacing: -0.005em;
-  }
-  .code-toast-title .purple { color: var(--p4); }
-  .code-toast-sub {
-    font-size: 0.8125rem;
-    color: var(--tx2);
-    line-height: 1.4;
-  }
-  .code-toast-close {
-    position: absolute;
-    top: -0.5rem;
-    right: -0.5rem;
-    width: 1.5rem;
-    height: 1.5rem;
-    border-radius: 50%;
-    background: var(--bg2);
-    border: 1px solid var(--bd);
-    color: var(--tx2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 1rem;
-    line-height: 1;
-    padding: 0;
-    transition: color 0.2s, border-color 0.2s;
-  }
-  .code-toast-close:hover { color: var(--tx); border-color: var(--p4); }
-  @media (max-width: 640px) {
-    .code-toast {
-      bottom: 1rem;
-      left: 1rem;
-      right: 1rem;
-      width: auto;
-      max-width: none;
-      gap: 0.75rem;
-      padding: 0.75rem 1rem 0.75rem 0.75rem;
-      border-radius: 0.9375rem;
-    }
-    .code-toast-logo { height: 2.75rem; width: 2.75rem; }
-    .code-toast-body { gap: 0.2rem; }
-    .code-toast-eyebrow { font-size: 0.625rem; letter-spacing: 0.08em; }
-    .code-toast-title { font-size: 0.9375rem; }
-    .code-toast-sub {
-      font-size: 0.75rem;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-    .code-toast-sub-full { display: none; }
-    .code-toast-sub-mobile { display: inline; }
-  }
-  .code-toast-sub-mobile { display: none; }
-</style>
-<a href="../code/code.html" id="codeToast" class="code-toast" aria-label="Announcing Korah CODE Internship">
-  <img src="../logo-images/newlogo12.png" alt="Korah CODE" class="code-toast-logo">
-  <div class="code-toast-body">
-    <span class="code-toast-eyebrow">New · Applications Open</span>
-    <span class="code-toast-title">Korah <span class="purple">CODE</span> Internship</span>
-    <span class="code-toast-sub">
-      <span class="code-toast-sub-full">We just launched a 5 week software engineering internship for highschoolers. Learn more →</span>
-      <span class="code-toast-sub-mobile">5-week SWE internship for highschoolers →</span>
-    </span>
-  </div>
-  <button type="button" class="code-toast-close" aria-label="Dismiss"
-    onclick="event.preventDefault();event.stopPropagation();document.getElementById('codeToast').remove();sessionStorage.setItem('korah_code_toast_dismissed','1');">×</button>
-</a>
-<script>
-  (function() {
-    var toast = document.getElementById('codeToast');
-    if (!toast) return;
-    if (sessionStorage.getItem('korah_code_toast_dismissed') === '1') { toast.remove(); return; }
-    setTimeout(function() { toast.classList.add('visible'); }, 1200);
-  })();
-</script>
-
 <!-- Shooting Star background and twinkling stars -->
 <div class="stars-container" id="starField" :style="theme === 'light' ? 'opacity:0;pointer-events:none' : 'opacity:1'" style="transition:opacity 0.4s"></div>
 <canvas id="constellation-canvas" style="position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; opacity:0; transition:opacity 0.5s; z-index:-1;"></canvas>
@@ -342,36 +199,6 @@
     flex-direction: column;
     align-items: center;
     perspective: 1300px;
-    margin-top: 2.5rem;
-  }
-  @media (max-width: 900px) {
-    .phone-stage { margin-top: 0; }
-  }
-  .phone-caption {
-    position: relative;
-    z-index: 6;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-top: 2rem;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 0.9375rem;
-    font-weight: 700;
-    color: #fff;
-    background: #ef4444;
-    padding: 0.8rem 1.5rem;
-    border-radius: 9999px;
-    text-decoration: none;
-    transition: transform 0.3s, opacity 0.3s;
-    animation: waitlist-fade-up 0.9s cubic-bezier(0.16,1,0.3,1) 4.5s both;
-  }
-  .phone-caption:hover {
-    transform: translateY(-2px);
-    opacity: 0.88;
-  }
-  @keyframes waitlist-fade-up {
-    from { opacity: 0; transform: translateY(1.25rem); }
-    to   { opacity: 1; transform: translateY(0); }
   }
   .phone-glow {
     position: absolute;
@@ -414,7 +241,7 @@
   .phone-body {
     position: relative;
     width: min(clamp(16rem, 28vw, 21.5rem), 36vh);
-    aspect-ratio: 9 / 17.6;
+    aspect-ratio: 921 / 1850;
     border-radius: 2.75rem;
     background: linear-gradient(145deg, #4a4a52 0%, #232329 45%, #17171c 100%);
     padding: 0.55rem;
@@ -463,28 +290,6 @@
     z-index: 3;
     box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
   }
-  /* Placeholder screen content — swap for a real app screenshot */
-  .phone-screen-placeholder {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
-    background: linear-gradient(135deg, rgba(139,92,246,0.1) 0%, rgba(99,102,241,0.1) 100%);
-    border: 2px dashed rgba(139,92,246,0.25);
-    border-radius: 2.25rem;
-    color: rgba(220,214,255,0.5);
-    font-size: 0.7rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-  .phone-screen-placeholder .material-icons-round {
-    font-size: 2.5rem;
-    color: rgba(139,92,246,0.55);
-  }
   .phone-glare {
     position: absolute;
     inset: 0;
@@ -497,15 +302,15 @@
     animation: phone-glare-sweep 6.5s ease-in-out 2.4s infinite;
   }
   @keyframes phone-glare-sweep {
-    0%, 15%   { background-position: 115% 0; }
-    55%, 100% { background-position: -115% 0; }
+    0%, 15%   { background-position: 140% 0; }
+    55%, 100% { background-position: -180% 0; }
   }
 
   @media (max-width: 900px) {
     .phone-body { width: min(clamp(14.5rem, 62vw, 19rem), 36vh); }
   }
   @media (prefers-reduced-motion: reduce) {
-    .phone-float, .phone-glow, .phone-glare, .phone-caption,
+    .phone-float, .phone-glow, .phone-glare,
     .hero-grid > div:first-child {
       animation: none !important;
     }
@@ -545,7 +350,7 @@ window.addEventListener('DOMContentLoaded', function () {
         <h1 class="tx" style="font-size:clamp(2.25rem,7vw,5.5rem);font-weight:900;letter-spacing:-0.02em;line-height:1.05;margin:0 0 0.5rem;">
           The First
         </h1>
-        <h1 style="font-size:clamp(2.25rem,7vw,5.5rem);font-weight:900;letter-spacing:-0.02em;line-height:1.05;margin:0 0 1.5rem;background:linear-gradient(135deg,#6db8e6,#3d92cf);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-shadow:none;">
+        <h1 style="font-size:clamp(2.25rem,7vw,5.5rem);font-weight:900;letter-spacing:-0.02em;line-height:1.05;margin:0 0 1.5rem;background:linear-gradient(135deg,#5296c4,#2a6f9c);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-shadow:none;">
           AI Desmos Tutor
         </h1>
         <p class="tx2" style="font-size:clamp(0.9rem,1.8vw,1.125rem);line-height:1.65;max-width:36rem;margin:0 auto 2rem;">
@@ -599,16 +404,12 @@ window.addEventListener('DOMContentLoaded', function () {
             <div class="phone-side-btn power"></div>
             <div class="phone-screen">
               <div class="phone-island"></div>
-              <div class="phone-screen-placeholder">
-                <span class="material-icons-round">smartphone</span>
-                <span>App Preview</span>
-              </div>
+              <img src="../logo-images/phone-preview.png" alt="Korah app preview" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:translateY(3.1%);">
               <div class="phone-glare"></div>
             </div>
           </div>
         </div>
       </div>
-      <a href="#" class="phone-caption">Korah for iPhone · Join The Waitlist Now →</a>
     </div>
 
   </div>
