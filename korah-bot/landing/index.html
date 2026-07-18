@@ -362,7 +362,7 @@ window.addEventListener('DOMContentLoaded', function () {
           </p>
 
           <div style="display:flex;align-items:center;justify-content:center;gap:0.75rem;flex-wrap:wrap;margin-bottom:2.5rem;">
-            <div data-electric="#34d399" style="display:inline-flex;border-radius:9999px;">
+            <div data-electric="#a855f7" style="display:inline-flex;border-radius:9999px;">
               <button type="button" onclick="startWaitlist()"
                 style="display:inline-flex;align-items:center;justify-content:center;height:3.25rem;padding:0 2rem;border-radius:9999px;background:#10b981;color:#fff;font-size:0.9375rem;font-weight:700;cursor:pointer;font-family:inherit;border:none;transition:transform 0.3s,opacity 0.3s;"
                 onmouseover="this.style.transform='translateY(-2px)';this.style.opacity='0.88'" onmouseout="this.style.transform='';this.style.opacity='1'">
@@ -912,8 +912,17 @@ window.addEventListener('load', function() {
     50%      { transform: translateY(-0.8rem) rotateX(2.5deg); }
   }
 
-  /* Electric border wrapper (vanilla port of ui-components/electric) */
+  /* Electric border wrapper (vanilla port of ui-components/electric, tuned to
+     match korah-bot/login.html: purple, dark-theme only, hidden if reduced motion) */
   .eb-content { position: relative; border-radius: inherit; z-index: 1; }
+  .eb-canvas-holder, .eb-glow { display: none; }
+  html[data-theme="dark"] .eb-canvas-holder,
+  html:not([data-theme="light"]) .eb-canvas-holder,
+  html[data-theme="dark"] .eb-glow,
+  html:not([data-theme="light"]) .eb-glow { display: block; }
+  @media (prefers-reduced-motion: reduce) {
+    .eb-canvas-holder { display: none !important; }
+  }
 </style>
 
 <script>
@@ -939,7 +948,9 @@ window.addEventListener('load', function() {
   function octavedNoise(x, octaves, lacunarity, gain, baseAmplitude, baseFrequency, time, seed) {
     var y = 0, amplitude = baseAmplitude, frequency = baseFrequency;
     for (var i = 0; i < octaves; i++) {
-      y += amplitude * noise2D(frequency * x + seed * 100, time * frequency * 0.3);
+      var oa = amplitude;
+      if (i === 0) oa *= 0; // baseFlatness = 0, matches login.html
+      y += oa * noise2D(frequency * x + seed * 100, time * frequency * 0.3);
       frequency *= lacunarity;
       amplitude *= gain;
     }
@@ -973,7 +984,7 @@ window.addEventListener('load', function() {
   }
 
   function setupElectric(el, color, borderRadius) {
-    var speed = 1, chaos = 0.14;
+    var speed = 1, chaos = 0.12;
     var cs = getComputedStyle(el);
     if (cs.position === 'static') el.style.position = 'relative';
     el.style.overflow = 'visible';
@@ -984,19 +995,21 @@ window.addEventListener('load', function() {
     while (el.firstChild) content.appendChild(el.firstChild);
 
     var holder = document.createElement('div');
+    holder.className = 'eb-canvas-holder';
     holder.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:2;';
     var canvas = document.createElement('canvas');
     canvas.style.display = 'block';
     holder.appendChild(canvas);
 
     var layers = document.createElement('div');
+    layers.className = 'eb-glow';
     layers.style.cssText = 'position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:0;';
     var l1 = document.createElement('div');
     l1.style.cssText = 'position:absolute;inset:0;border-radius:inherit;pointer-events:none;border:2px solid ' + hexToRgba(color, 0.6) + ';filter:blur(1px);';
     var l2 = document.createElement('div');
     l2.style.cssText = 'position:absolute;inset:0;border-radius:inherit;pointer-events:none;border:2px solid ' + color + ';filter:blur(4px);';
     var l3 = document.createElement('div');
-    l3.style.cssText = 'position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:-1;transform:scale(1.1);opacity:0.3;filter:blur(32px);background:linear-gradient(-30deg, ' + color + ', transparent, ' + color + ');';
+    l3.style.cssText = 'position:absolute;inset:-5%;border-radius:inherit;pointer-events:none;z-index:-1;opacity:0.3;filter:blur(32px);background:linear-gradient(-30deg, ' + color + ', transparent, ' + color + ');';
     layers.appendChild(l1); layers.appendChild(l2); layers.appendChild(l3);
 
     el.appendChild(layers);
@@ -1043,7 +1056,7 @@ window.addEventListener('load', function() {
       var maxRadius = Math.min(bw, bh) / 2;
       var radius = Math.min(borderRadius, maxRadius);
       var perim = 2 * (bw + bh) + 2 * Math.PI * radius;
-      var samples = Math.floor(perim / 2);
+      var samples = Math.max(64, Math.floor(perim / 2));
 
       ctx.beginPath();
       for (var i = 0; i <= samples; i++) {
