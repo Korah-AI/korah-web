@@ -123,6 +123,7 @@ export async function initSatAnalytics(app, uid) {
    * @param {string} [a.legacyQuestionId] — prior frontend/question id for compatibility
    * @param {boolean} a.correct
    * @param {number} a.timeSpent    — in seconds
+   * @param {string} [a.mode]       — surface that recorded it: "player" | "rush"
    */
   async function recordAttempt(a) {
     if (!a || !a.questionId) return;
@@ -155,6 +156,7 @@ export async function initSatAnalytics(app, uid) {
       xp,
       ts: nowIso,
       timeSpent,
+      mode: a.mode || "player",
     });
 
     // Skill aggregate
@@ -292,6 +294,22 @@ export async function initSatAnalytics(app, uid) {
     return map;
   }
 
+  /**
+   * Every attempt in the log, newest first. The dashboard's Progress Report
+   * derives trends and time splits from this in memory, so range filtering
+   * needs no refetch. Older docs have no `mode`; treat those as "player".
+   */
+  async function getAllAttempts() {
+    const q = query(attemptsCol, orderBy("ts", "desc"));
+    const snap = await getDocs(q);
+    const out = [];
+    snap.forEach((d) => {
+      const data = d.data();
+      out.push({ ...data, questionId: resolveStoredQuestionId(data) });
+    });
+    return out;
+  }
+
   async function getAllSkillStats() {
     const snap = await getDocs(skillsCol);
     const out = [];
@@ -398,6 +416,7 @@ export async function initSatAnalytics(app, uid) {
     getMissedQuestionIds,
     getMissedBySection,
     getLatestOutcomes,
+    getAllAttempts,
     getAllSkillStats,
     getRecentAttempts,
     suggestSkills,

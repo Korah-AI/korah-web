@@ -642,6 +642,7 @@
         assessment: "SAT",
         correct,
         timeSpent: rush.qElapsed,
+        mode: "rush",
       }).then((res) => {
         if (res && typeof res.xp === "number") rush.stats.xp += res.xp;
       }).catch((e) => console.warn("[Rush] recordAttempt failed", e));

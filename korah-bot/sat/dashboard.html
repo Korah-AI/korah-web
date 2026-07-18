@@ -464,6 +464,107 @@
      the cursor 1:1 — a transition here makes it chase/lag behind fast movement.
      JS eases only the reset-to-flat. will-change keeps the card composited/smooth. */
   .countdown-card, .stat-card, .section-card, .progress-card { will-change: transform; }
+
+  /* ── Progress Report (mirrors the mobile Analytics tab) ── */
+  .range-chips { margin-left: auto; display: inline-flex; gap: 6px; }
+  .range-chips button {
+    font-size: 12px; font-weight: 700; color: var(--tx2); font-family: inherit;
+    background: var(--bg, rgba(255,255,255,.04));
+    border: 1px solid rgba(139,92,246,.22); border-radius: 999px;
+    padding: 6px 12px; cursor: pointer; transition: all .2s;
+  }
+  .range-chips button:hover { border-color: rgba(167,139,250,.5); color: var(--tx); }
+  .range-chips button.active { background: rgba(139,92,246,.16); color: #c4b5fd; border-color: rgba(167,139,250,.45); }
+
+  .report-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 40px; align-items: stretch; }
+  @media (max-width: 880px) { .report-grid { grid-template-columns: 1fr; } }
+  .report-span2 { grid-column: 1 / -1; }
+  .report-hint { font-size: 11px; color: var(--tx2); margin-top: 12px; }
+
+  .trend-panel    { --spotlight-color: rgba(56,189,248,.3);
+    background: linear-gradient(135deg, rgba(56,189,248,.06), rgba(34,211,238,.02)) !important;
+    border-color: rgba(56,189,248,.22) !important; }
+  .pace-panel     { --spotlight-color: rgba(34,197,94,.3);
+    background: linear-gradient(135deg, rgba(34,197,94,.08), rgba(74,222,128,.03)) !important;
+    border-color: rgba(34,197,94,.25) !important; }
+  .momentum-panel { --spotlight-color: rgba(45,212,191,.3);
+    background: linear-gradient(135deg, rgba(45,212,191,.08), rgba(94,234,212,.03)) !important;
+    border-color: rgba(45,212,191,.25) !important; }
+  .time-panel     { --spotlight-color: rgba(251,146,60,.3);
+    background: linear-gradient(135deg, rgba(251,146,60,.08), rgba(249,115,22,.03)) !important;
+    border-color: rgba(251,146,60,.25) !important; }
+  .pacing-panel   { --spotlight-color: rgba(99,102,241,.3);
+    background: linear-gradient(135deg, rgba(99,102,241,.08), rgba(129,140,248,.03)) !important;
+    border-color: rgba(99,102,241,.25) !important; }
+  .neglected-panel{ --spotlight-color: rgba(139,92,246,.3); }
+  .retry-panel    { --spotlight-color: rgba(232,121,249,.3);
+    background: linear-gradient(135deg, rgba(232,121,249,.08), rgba(240,171,252,.03)) !important;
+    border-color: rgba(232,121,249,.25) !important; }
+  .heatmap-panel  { --spotlight-color: rgba(34,197,94,.3); }
+
+  .trend-legend { display: flex; gap: 10px; margin-bottom: 14px; }
+  .trend-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 999px;
+    font-variant-numeric: tabular-nums;
+  }
+  .trend-chip.good { background: rgba(34,197,94,.1); color: #22c55e; border: 1px solid rgba(34,197,94,.3); }
+  .trend-chip.bad  { background: rgba(239,68,68,.1); color: #ef4444; border: 1px solid rgba(239,68,68,.3); }
+
+  .trend-chart { display: flex; align-items: flex-end; gap: 4px; height: 160px; }
+  .trend-col { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: flex-end; height: 100%; }
+  .trend-seg { width: 100%; border-radius: 2px; margin-top: 1px; min-height: 2px; }
+  .trend-axis { display: flex; justify-content: space-between; font-size: 10px; color: var(--tx2); margin-top: 8px; font-variant-numeric: tabular-nums; }
+
+  .mini-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .mini-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+  .mini-stat {
+    border-radius: 12px; padding: 12px 14px;
+    background: rgba(255,255,255,.03); border: 1px solid rgba(139,92,246,.16);
+  }
+  .mini-stat.hl { background: rgba(45,212,191,.1); border-color: rgba(45,212,191,.3); }
+  .mini-stat .m-label { font-size: 11px; font-weight: 700; color: var(--tx2); text-transform: uppercase; letter-spacing: .7px; }
+  .mini-stat .m-value { font-size: 22px; font-weight: 800; color: var(--tx); margin-top: 4px; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+  .mini-stat .m-sub { font-size: 11px; color: var(--tx2); margin-top: 2px; }
+  .pace-target { font-size: 15px; font-weight: 800; color: #22c55e; margin-top: 14px; }
+  .delta-row { display: flex; gap: 14px; margin-top: 12px; flex-wrap: wrap; }
+  .delta-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; }
+  .delta-chip .material-icons-round { font-size: 14px; }
+  .delta-chip.up { color: #22c55e; } .delta-chip.down { color: #ef4444; } .delta-chip.flat { color: var(--tx2); }
+
+  .donut-wrap { display: flex; align-items: center; gap: 18px; }
+  .report-donut {
+    width: 118px; height: 118px; flex-shrink: 0; border-radius: 50%;
+    background: rgba(139,92,246,.12); position: relative;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .report-donut::after { content: ''; position: absolute; inset: 15px; border-radius: 50%; background: var(--sf); }
+  .donut-center { position: relative; z-index: 1; text-align: center; }
+  .donut-center .d-value { font-size: 16px; font-weight: 800; color: var(--tx); font-variant-numeric: tabular-nums; }
+  .donut-center .d-label { font-size: 10px; color: var(--tx2); }
+  .donut-legend { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+  .donut-legend .l-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--tx2); }
+  .donut-legend .l-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .donut-legend .l-val { margin-left: auto; font-weight: 700; color: var(--tx); font-variant-numeric: tabular-nums; }
+
+  .difficulty-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .difficulty-cols .d-col-head { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .8px; margin-bottom: 10px; }
+  .difficulty-cols .d-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--tx2); padding: 6px 0; }
+  .difficulty-cols .d-row .material-icons-round { font-size: 15px; }
+  .difficulty-cols .d-row .d-val { margin-left: auto; font-weight: 700; color: var(--tx); font-variant-numeric: tabular-nums; }
+
+  .quad-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .quad-tile { border-radius: 12px; padding: 12px 14px; border: 1px solid; }
+  .quad-tile .q-label { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; }
+  .quad-tile .q-label .material-icons-round { font-size: 14px; }
+  .quad-tile .q-value { font-size: 20px; font-weight: 800; color: var(--tx); margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .quad-tile .q-sub { font-size: 10px; color: var(--tx2); margin-top: 2px; }
+
+  .heat-grid { display: flex; gap: 4px; }
+  .heat-week { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+  .heat-cell { width: 100%; aspect-ratio: 1; border-radius: 3px; background: rgba(139,92,246,.1); }
+  .heat-scale { display: flex; align-items: center; gap: 5px; justify-content: flex-end; margin-top: 10px; font-size: 10px; color: var(--tx2); }
+  .heat-scale .heat-cell { width: 10px; flex: none; }
 </style>
 </head>
 
@@ -746,6 +847,83 @@
       </div>
     </section>
 
+    <!-- Progress Report (mirrors the mobile Analytics tab) -->
+    <h2 class="home-section-head">
+      <span class="material-icons-round">query_stats</span> Progress Report
+      <span class="range-chips" id="reportRangeChips">
+        <button type="button" data-days="7">7 days</button>
+        <button type="button" data-days="30">30 days</button>
+        <button type="button" data-days="" class="active">All time</button>
+      </span>
+    </h2>
+    <section class="report-grid" id="reportGrid">
+      <div class="panel-card trend-panel report-span2">
+        <h3>Activity Trend</h3>
+        <div class="trend-legend" id="trendLegend"></div>
+        <div class="trend-chart" id="trendChart"><div class="empty-hint" style="width:100%;">No attempts in this range yet.</div></div>
+        <div class="trend-axis" id="trendAxis"></div>
+        <div class="report-hint">Each bar is one week. Darker segments are harder questions. Wrong stacks under correct.</div>
+      </div>
+
+      <div class="panel-card pace-panel">
+        <h3>Goal Pace</h3>
+        <div id="paceBody"><div class="empty-hint">Set your scores to see your pace.</div></div>
+      </div>
+
+      <div class="panel-card momentum-panel">
+        <h3>Momentum</h3>
+        <div id="momentumBody"></div>
+        <div class="report-hint">Trailing 7 days vs the 7 before.</div>
+      </div>
+
+      <div class="panel-card time-panel">
+        <h3>Study Time by Section</h3>
+        <div class="donut-wrap">
+          <div class="report-donut" id="sectionDonut"><div class="donut-center" id="sectionDonutCenter"></div></div>
+          <div class="donut-legend" id="sectionDonutLegend"></div>
+        </div>
+        <div class="report-hint">Question-facing time only.</div>
+      </div>
+
+      <div class="panel-card time-panel">
+        <h3>Study Time by Activity</h3>
+        <div class="donut-wrap">
+          <div class="report-donut" id="activityDonut"><div class="donut-center" id="activityDonutCenter"></div></div>
+          <div class="donut-legend" id="activityDonutLegend"></div>
+        </div>
+        <div class="report-hint">Questions vs Practice Rush.</div>
+      </div>
+
+      <div class="panel-card time-panel">
+        <h3>Time per Difficulty</h3>
+        <div class="difficulty-cols" id="difficultyTimes"></div>
+        <div class="report-hint">Average time per question.</div>
+      </div>
+
+      <div class="panel-card pacing-panel">
+        <h3>Pacing</h3>
+        <div class="quad-grid" id="quadGrid"></div>
+        <div class="report-hint" id="pacingHeadline"></div>
+      </div>
+
+      <div class="panel-card neglected-panel">
+        <h3>Going Stale</h3>
+        <div id="neglectedList"><div class="empty-hint">Nothing is going stale. Nice.</div></div>
+      </div>
+
+      <div class="panel-card retry-panel">
+        <h3>First Try vs Retry</h3>
+        <div id="retryBody"><div class="empty-hint">Retry missed questions to see if reviews stick.</div></div>
+      </div>
+
+      <div class="panel-card heatmap-panel report-span2">
+        <h3>Consistency</h3>
+        <div class="heat-grid" id="heatGrid"></div>
+        <div class="heat-scale" id="heatScale"></div>
+        <div class="report-hint">Last 12 weeks of practice. One column per week.</div>
+      </div>
+    </section>
+
     <!-- What to study next + Domain breakdown -->
     <h2 class="home-section-head">
       <span class="material-icons-round">flag</span> Study These Next
@@ -927,6 +1105,9 @@
 
     tick();
     setInterval(tick, 1000);
+    // The Progress Report's goal-pace card falls back to the next official
+    // SAT date when the profile has no test date saved.
+    window.KorahNextSatDate = getNextDate;
   })();
 
   // Streak / gems hydration from localStorage (same as home)
@@ -999,7 +1180,7 @@
     const a = window.KorahSATAnalytics;
     if (!a) return;
 
-    const [profile, totals, suggestions, domains, recent, allMissedIds, bookmarks, missedBySection] = await Promise.all([
+    const [profile, totals, suggestions, domains, recent, allMissedIds, bookmarks, missedBySection, allAttempts] = await Promise.all([
       a.getProfile(),
       a.getTotals(),
       a.suggestSkills(6),
@@ -1008,6 +1189,7 @@
       a.getMissedQuestionIds(100),
       a.getBookmarks(),
       a.getMissedBySection(50),
+      a.getAllAttempts(),
     ]);
 
     // Helper to filter missed IDs by domain/skill (requires metadata which we have in 'recent' or would need to fetch)
@@ -1298,8 +1480,345 @@
           </div>`;
       }).join("");
     }
+
+    // Progress Report (parsed once; range chips re-render from this cache)
+    REPORT.profile = profile;
+    REPORT.attempts = allAttempts
+      .map((r) => ({ ...r, _d: new Date(r.ts) }))
+      .filter((r) => !isNaN(r._d.getTime()));
+    renderSatReport();
   }
   window.renderSatDashboard = renderSatDashboard;
+
+  // ── Progress Report (mirrors the mobile Analytics tab) ──
+  // One cache of the full attempt log; every panel below derives from it in
+  // memory, so the range chips re-render instantly with no refetch.
+  const REPORT = { attempts: [], profile: null, days: null };
+
+  function reportFiltered() {
+    if (!REPORT.days) return REPORT.attempts;
+    const cutoff = Date.now() - REPORT.days * 86400000;
+    return REPORT.attempts.filter((r) => r._d.getTime() >= cutoff);
+  }
+
+  function fmtDur(sec) {
+    if (sec < 60) return `${sec}s`;
+    const m = Math.floor(sec / 60);
+    if (m < 60) return `${m}m`;
+    return `${Math.floor(m / 60)}h ${m % 60}m`;
+  }
+  function fmtShortDur(sec) {
+    if (sec < 60) return `${sec}s`;
+    return `${Math.floor(sec / 60)}m ${String(sec % 60).padStart(2, "0")}s`;
+  }
+  function catalogSkills() {
+    const cat = window.KorahSAT?.OPENSAT_CATALOG;
+    if (!cat) return [];
+    const out = [];
+    for (const s of cat.sections)
+      for (const d of s.domains)
+        for (const sk of d.skills)
+          out.push({ skillCd: sk.code, skillName: sk.key, domain: d.key, section: s.key });
+    return out;
+  }
+
+  function renderSatReport() {
+    const grid = document.getElementById("reportGrid");
+    const head = grid?.previousElementSibling;
+    if (!grid) return;
+    const hasData = REPORT.attempts.length > 0;
+    grid.style.display = hasData ? "" : "none";
+    if (head) head.style.display = hasData ? "" : "none";
+    if (!hasData) return;
+
+    const filtered = reportFiltered();
+    const timeOf = (r) => Math.max(0, Number(r.timeSpent) || 0);
+    const diffOf = (r) => (["E", "M", "H"].includes(r.difficulty) ? r.difficulty : "E");
+
+    // ── Activity trend ──
+    const correctCount = filtered.filter((r) => r.correct).length;
+    const wrongCount = filtered.length - correctCount;
+    document.getElementById("trendLegend").innerHTML = `
+      <span class="trend-chip good"><span class="material-icons-round" style="font-size:14px;">check_circle</span>${correctCount} Correct</span>
+      <span class="trend-chip bad"><span class="material-icons-round" style="font-size:14px;">cancel</span>${wrongCount} Wrong</span>`;
+
+    const weekKey = (d) => { const w = new Date(d); w.setHours(0, 0, 0, 0); w.setDate(w.getDate() - w.getDay()); return w.getTime(); };
+    const weekMap = new Map();
+    for (const r of filtered) {
+      const k = weekKey(r._d);
+      const b = weekMap.get(k) || { correct: { E: 0, M: 0, H: 0 }, wrong: { E: 0, M: 0, H: 0 } };
+      (r.correct ? b.correct : b.wrong)[diffOf(r)]++;
+      weekMap.set(k, b);
+    }
+    const chartEl = document.getElementById("trendChart");
+    const axisEl = document.getElementById("trendAxis");
+    const weekKeys = [...weekMap.keys()].sort((a, b) => a - b);
+    if (!weekKeys.length) {
+      chartEl.innerHTML = `<div class="empty-hint" style="width:100%;">No attempts in this range yet.</div>`;
+      axisEl.innerHTML = "";
+    } else {
+      const buckets = [];
+      const cursor = new Date(weekKeys[0]);
+      while (cursor.getTime() <= weekKeys[weekKeys.length - 1]) {
+        buckets.push({ t: cursor.getTime(), b: weekMap.get(cursor.getTime()) || null });
+        cursor.setDate(cursor.getDate() + 7);
+      }
+      const totalOf = (b) => b ? ["E", "M", "H"].reduce((s, d) => s + b.correct[d] + b.wrong[d], 0) : 0;
+      const maxTotal = Math.max(1, ...buckets.map((x) => totalOf(x.b)));
+      // Stack (bottom → top): wrong H/M/E, then correct H/M/E — DOM renders
+      // top-first, so emit in reverse. Harder = darker.
+      const SEGS = [
+        ["correct", "E", "rgba(34,197,94,.45)"], ["correct", "M", "rgba(34,197,94,.72)"], ["correct", "H", "rgba(34,197,94,1)"],
+        ["wrong", "E", "rgba(239,68,68,.45)"], ["wrong", "M", "rgba(239,68,68,.72)"], ["wrong", "H", "rgba(239,68,68,1)"],
+      ];
+      chartEl.innerHTML = buckets.map(({ b }) => {
+        const segs = SEGS.map(([kind, d, color]) => {
+          const n = b ? b[kind][d] : 0;
+          if (!n) return "";
+          return `<div class="trend-seg" style="height:${(n / maxTotal * 100).toFixed(1)}%; background:${color};"></div>`;
+        }).join("");
+        return `<div class="trend-col">${segs}</div>`;
+      }).join("");
+      const fmtWeek = (t) => new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+      axisEl.innerHTML = `<span>${fmtWeek(buckets[0].t)}</span><span>${fmtWeek(buckets[buckets.length - 1].t)}</span>`;
+    }
+
+    // ── Goal pace ──
+    const p = REPORT.profile;
+    const paceEl = document.getElementById("paceBody");
+    const gap = (p?.currentScore != null && p?.goalScore != null) ? Math.max(0, p.goalScore - p.currentScore) : null;
+    if (gap == null) {
+      paceEl.innerHTML = `<div class="empty-hint">Set your current and goal scores (Edit Goal above) and this card starts pacing you to test day.</div>`;
+    } else {
+      let daysLeft = null;
+      if (p?.testDate) {
+        const td = new Date(p.testDate);
+        if (!isNaN(td)) daysLeft = Math.max(0, Math.ceil((td.getTime() - Date.now()) / 86400000));
+      }
+      if (daysLeft == null && typeof window.KorahNextSatDate === "function") {
+        const nd = window.KorahNextSatDate();
+        if (nd) daysLeft = Math.max(0, Math.ceil((nd.getTime() - Date.now()) / 86400000));
+      }
+      const recent14 = REPORT.attempts.filter((r) => r._d.getTime() >= Date.now() - 14 * 86400000).length;
+      const pace = (recent14 / 14).toFixed(1);
+      let cells = `
+        <div class="mini-stat"><div class="m-label">Points to go</div><div class="m-value">${gap <= 0 ? "Done" : gap}</div></div>`;
+      if (daysLeft != null) cells += `
+        <div class="mini-stat"><div class="m-label">Days left</div><div class="m-value">${daysLeft}</div></div>`;
+      cells += `
+        <div class="mini-stat"><div class="m-label">Q/day, last 14</div><div class="m-value">${pace}</div></div>`;
+      let target = "";
+      if (gap > 0) {
+        const raw = gap / Math.max(1, daysLeft ?? 60) * 1.5;
+        const suggested = Math.ceil(Math.min(60, Math.max(8, raw)) / 5) * 5;
+        target = `<div class="pace-target">Aim for ~${suggested} questions a day</div>
+          <div class="report-hint">A rough pace from your score gap and calendar, not a promise. Consistency beats volume.</div>`;
+      } else {
+        target = `<div class="pace-target">Goal reached! Keep your edge sharp.</div>`;
+      }
+      paceEl.innerHTML = `<div class="mini-grid three">${cells}</div>${target}`;
+    }
+
+    // ── Momentum (always trailing windows, independent of range) ──
+    const now = Date.now();
+    const thisWeek = REPORT.attempts.filter((r) => r._d.getTime() >= now - 7 * 86400000);
+    const lastWeek = REPORT.attempts.filter((r) => r._d.getTime() >= now - 14 * 86400000 && r._d.getTime() < now - 7 * 86400000);
+    const accOf = (list) => list.length ? list.filter((r) => r.correct).length / list.length : null;
+    const accThis = accOf(thisWeek), accLast = accOf(lastWeek);
+    const volDelta = thisWeek.length - lastWeek.length;
+    const accStr = (v) => v == null ? "No attempts" : `${pct(v)}% accuracy`;
+    let deltas = `<span class="delta-chip ${volDelta > 0 ? "up" : volDelta < 0 ? "down" : "flat"}">
+      <span class="material-icons-round">${volDelta > 0 ? "trending_up" : volDelta < 0 ? "trending_down" : "trending_flat"}</span>
+      ${volDelta === 0 ? "Same volume" : `${Math.abs(volDelta)} ${volDelta > 0 ? "more" : "fewer"} questions`}</span>`;
+    if (accThis != null && accLast != null) {
+      const pts = Math.round((accThis - accLast) * 100);
+      deltas += `<span class="delta-chip ${pts > 0 ? "up" : pts < 0 ? "down" : "flat"}">
+        <span class="material-icons-round">${pts > 0 ? "trending_up" : pts < 0 ? "trending_down" : "trending_flat"}</span>
+        ${pts === 0 ? "Accuracy flat" : `Accuracy ${pts > 0 ? "up" : "down"} ${Math.abs(pts)}%`}</span>`;
+    }
+    document.getElementById("momentumBody").innerHTML = `
+      <div class="mini-grid">
+        <div class="mini-stat hl"><div class="m-label">This week</div><div class="m-value">${thisWeek.length}</div><div class="m-sub">${accStr(accThis)}</div></div>
+        <div class="mini-stat"><div class="m-label">Last week</div><div class="m-value">${lastWeek.length}</div><div class="m-sub">${accStr(accLast)}</div></div>
+      </div>
+      <div class="delta-row">${deltas}</div>`;
+
+    // ── Study time donuts ──
+    const donut = (donutId, centerId, legendId, slices, centerLabel) => {
+      const total = slices.reduce((s, x) => s + x.v, 0);
+      const donutEl = document.getElementById(donutId);
+      if (total > 0) {
+        let acc = 0;
+        const stops = slices.filter((x) => x.v > 0).map((x) => {
+          const from = acc / total * 100; acc += x.v;
+          return `${x.color} ${from.toFixed(2)}% ${(acc / total * 100).toFixed(2)}%`;
+        });
+        donutEl.style.background = `conic-gradient(${stops.join(", ")})`;
+      } else {
+        donutEl.style.background = "rgba(139,92,246,.12)";
+      }
+      document.getElementById(centerId).innerHTML =
+        `<div class="d-value">${fmtDur(total)}</div><div class="d-label">${centerLabel}</div>`;
+      document.getElementById(legendId).innerHTML = slices.map((x) => `
+        <div class="l-row"><span class="l-dot" style="background:${x.color};"></span>${escHtml(x.label)}<span class="l-val">${fmtDur(x.v)}</span></div>`).join("");
+    };
+    const secSum = (pred) => filtered.filter(pred).reduce((s, r) => s + timeOf(r), 0);
+    donut("sectionDonut", "sectionDonutCenter", "sectionDonutLegend", [
+      { label: "English", v: secSum((r) => r.section === "english"), color: "#38bdf8" },
+      { label: "Math", v: secSum((r) => r.section === "math"), color: "#10b981" },
+    ], "question time");
+    donut("activityDonut", "activityDonutCenter", "activityDonutLegend", [
+      { label: "Questions", v: secSum((r) => r.mode !== "rush"), color: "#fb923c" },
+      { label: "Rush", v: secSum((r) => r.mode === "rush"), color: "#e879f9" },
+    ], "total");
+
+    // ── Time per difficulty ──
+    const DIFF_META = { E: ["eco", "#22c55e", "Easy"], M: ["local_fire_department", "#f59e0b", "Medium"], H: ["bolt", "#ef4444", "Hard"] };
+    const diffCol = (label, color, section) => {
+      const rows = ["E", "M", "H"].map((d) => {
+        const subset = filtered.filter((r) => r.section === section && diffOf(r) === d && timeOf(r) > 0);
+        const avg = subset.length ? Math.round(subset.reduce((s, r) => s + timeOf(r), 0) / subset.length) : 0;
+        const [icon, c, name] = DIFF_META[d];
+        return `<div class="d-row"><span class="material-icons-round" style="color:${c};">${icon}</span>${name}
+          <span class="d-val">${subset.length ? fmtShortDur(avg) : "—"}</span></div>`;
+      }).join("");
+      return `<div><div class="d-col-head" style="color:${color};">${label}</div>${rows}</div>`;
+    };
+    document.getElementById("difficultyTimes").innerHTML =
+      diffCol("Reading & Writing", "rgba(56,189,248,.9)", "english") + diffCol("Math", "rgba(16,185,129,.9)", "math");
+
+    // ── Pacing quadrant (fast/slow vs your own median per difficulty) ──
+    const timed = filtered.filter((r) => timeOf(r) > 0);
+    const quadEl = document.getElementById("quadGrid");
+    const headlineEl = document.getElementById("pacingHeadline");
+    if (timed.length < 4) {
+      quadEl.innerHTML = "";
+      headlineEl.textContent = "Answer a few timed questions to see your pacing.";
+    } else {
+      const medians = {};
+      for (const d of ["E", "M", "H"]) {
+        const times = timed.filter((r) => diffOf(r) === d).map(timeOf).sort((a, b) => a - b);
+        if (times.length) medians[d] = times[Math.floor(times.length / 2)];
+      }
+      const q = { fastRight: 0, fastWrong: 0, slowRight: 0, slowWrong: 0 };
+      for (const r of timed) {
+        const median = medians[diffOf(r)];
+        if (median == null) continue;
+        const fast = timeOf(r) < median;
+        if (fast && r.correct) q.fastRight++;
+        else if (fast && !r.correct) q.fastWrong++;
+        else if (!fast && r.correct) q.slowRight++;
+        else q.slowWrong++;
+      }
+      const total = q.fastRight + q.fastWrong + q.slowRight + q.slowWrong;
+      const tile = (label, icon, n, rgb) => `
+        <div class="quad-tile" style="background:rgba(${rgb},.1); border-color:rgba(${rgb},.3);">
+          <div class="q-label" style="color:rgb(${rgb});"><span class="material-icons-round">${icon}</span>${label}</div>
+          <div class="q-value">${total ? Math.round(n / total * 100) : 0}%</div>
+          <div class="q-sub">${n} question${n === 1 ? "" : "s"}</div>
+        </div>`;
+      quadEl.innerHTML =
+        tile("Quick + right", "bolt", q.fastRight, "34,197,94") +
+        tile("Quick + wrong", "error_outline", q.fastWrong, "239,68,68") +
+        tile("Slow + right", "schedule", q.slowRight, "45,212,191") +
+        tile("Slow + wrong", "hourglass_bottom", q.slowWrong, "245,158,11");
+      const problems = [[q.fastWrong, "You miss most when you answer fast. Slow down and re-read."],
+                        [q.slowWrong, "Long, wrong answers are your biggest leak. Flag and move on."],
+                        [q.slowRight, "Accuracy is there. Now work on speed."]];
+      problems.sort((a, b) => b[0] - a[0]);
+      headlineEl.textContent = (total && problems[0][0] / total >= 0.25) ? problems[0][1] : "Balanced pacing. Keep it up.";
+    }
+
+    // ── Going stale ──
+    const lastSeen = new Map();
+    for (const r of REPORT.attempts) {   // newest first, so first write wins
+      if (r.skillCd && !lastSeen.has(r.skillCd)) lastSeen.set(r.skillCd, r._d.getTime());
+    }
+    const stale = [], untouched = [];
+    for (const sk of catalogSkills()) {
+      const seen = lastSeen.get(sk.skillCd);
+      if (seen != null) {
+        const days = Math.floor((now - seen) / 86400000);
+        if (days >= 10) stale.push({ ...sk, days });
+      } else {
+        untouched.push({ ...sk, days: null });
+      }
+    }
+    stale.sort((a, b) => b.days - a.days);
+    const neglected = stale.concat(untouched).slice(0, 3);
+    document.getElementById("neglectedList").innerHTML = neglected.length ? neglected.map((sk) => `
+      <div class="skill-row">
+        <div class="recent-icon"><span class="material-icons-round" style="color:#a78bfa; font-size:16px;">bedtime</span></div>
+        <div class="skill-meta">
+          <div class="skill-name">${escHtml(sk.skillName)}</div>
+          <div class="skill-sub">${escHtml(sk.domain)} · ${sk.days != null ? `${sk.days} days ago` : "never attempted"}</div>
+        </div>
+        <a class="practice-btn" href="${practiceHrefForSkill(sk.skillCd, sk.domain)}">Practice</a>
+      </div>`).join("") : `<div class="empty-hint">Nothing is going stale. Nice.</div>`;
+
+    // ── First try vs retry ──
+    let firstA = 0, firstC = 0, retryA = 0, retryC = 0;
+    const seenQ = new Set();
+    for (let i = filtered.length - 1; i >= 0; i--) {   // oldest first
+      const r = filtered[i];
+      const id = r.questionId || "";
+      if (!id) continue;
+      if (!seenQ.has(id)) { seenQ.add(id); firstA++; if (r.correct) firstC++; }
+      else { retryA++; if (r.correct) retryC++; }
+    }
+    const retryEl = document.getElementById("retryBody");
+    if (retryA > 0 && firstA > 0) {
+      const f = firstC / firstA, rt = retryC / retryA;
+      retryEl.innerHTML = `
+        <div class="mini-grid">
+          <div class="mini-stat"><div class="m-label">First try</div><div class="m-value">${pct(f)}%</div><div class="m-sub">${firstA} question${firstA === 1 ? "" : "s"}</div></div>
+          <div class="mini-stat"><div class="m-label">Retries</div><div class="m-value">${pct(rt)}%</div><div class="m-sub">${retryA} attempt${retryA === 1 ? "" : "s"}</div></div>
+        </div>
+        <div class="report-hint">${rt >= f
+          ? "Retries beat first tries. Reviews are sticking, so keep redoing misses."
+          : "Retries score below first tries. Read the explanation before re-attempting."}</div>`;
+    } else {
+      retryEl.innerHTML = `<div class="empty-hint">Retry missed questions to see if reviews stick.</div>`;
+    }
+
+    // ── Consistency heatmap (last 12 weeks, all attempts) ──
+    const perDay = new Map();
+    for (const r of REPORT.attempts) {
+      const d = new Date(r._d); d.setHours(0, 0, 0, 0);
+      perDay.set(d.getTime(), (perDay.get(d.getTime()) || 0) + 1);
+    }
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const thisWeekStart = new Date(today); thisWeekStart.setDate(thisWeekStart.getDate() - thisWeekStart.getDay());
+    const maxHeat = Math.max(1, ...perDay.values());
+    let heatHtml = "";
+    for (let w = -11; w <= 0; w++) {
+      const ws = new Date(thisWeekStart); ws.setDate(ws.getDate() + w * 7);
+      let cells = "";
+      for (let d = 0; d < 7; d++) {
+        const day = new Date(ws); day.setDate(day.getDate() + d);
+        if (day.getTime() > today.getTime()) { cells += `<div class="heat-cell" style="background:transparent;"></div>`; continue; }
+        const n = perDay.get(day.getTime()) || 0;
+        const bg = n ? `rgba(34,197,94,${(0.25 + (n / maxHeat) * 0.75).toFixed(2)})` : "";
+        cells += `<div class="heat-cell"${bg ? ` style="background:${bg};"` : ""} title="${day.toLocaleDateString()} · ${n} question${n === 1 ? "" : "s"}"></div>`;
+      }
+      heatHtml += `<div class="heat-week">${cells}</div>`;
+    }
+    document.getElementById("heatGrid").innerHTML = heatHtml;
+    document.getElementById("heatScale").innerHTML = `Less
+      <div class="heat-cell"></div>
+      <div class="heat-cell" style="background:rgba(34,197,94,.4);"></div>
+      <div class="heat-cell" style="background:rgba(34,197,94,.7);"></div>
+      <div class="heat-cell" style="background:rgba(34,197,94,1);"></div> More`;
+  }
+
+  // Range chips
+  document.getElementById("reportRangeChips")?.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-days]");
+    if (!btn) return;
+    document.querySelectorAll("#reportRangeChips button").forEach((b) => b.classList.toggle("active", b === btn));
+    REPORT.days = btn.dataset.days ? Number(btn.dataset.days) : null;
+    renderSatReport();
+  });
 
   (function () {
     const modal       = document.getElementById("sat-onboarding-modal");

@@ -1094,6 +1094,7 @@
         assessment: query.assessment || "SAT",
         correct: isCorrect,
         timeSpent: state.stopwatchElapsed,
+        mode: "player",
       }).catch((e) => console.warn("[SAT] recordAttempt failed", e));
     }
   });
