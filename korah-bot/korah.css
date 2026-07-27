@@ -67,7 +67,7 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; isolation: isolate; }
 .grad-text {
     background: linear-gradient(135deg, var(--p4), var(--ac));
     -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-    filter: drop-shadow(0 0 24px var(--glow));
+    filter: drop-shadow(0 0 1.5rem var(--glow));
 }
 .grad-bg { background: linear-gradient(135deg, #5b21b6, var(--p4)) }
 .grad-bg-intro { background: linear-gradient(135deg, var(--p4), var(--ac)) }
@@ -79,7 +79,7 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; isolation: isolate; }
     width: min(42.5rem, 90vw);
     height: auto;
     opacity: .09;
-    filter: blur(1px) drop-shadow(0 0 80px rgba(139,92,246,.6));
+    filter: blur(0.0625rem) drop-shadow(0 0 5rem rgba(139,92,246,.6));
     z-index: 0;
     animation: floatanim 7s ease-in-out infinite;
 }
@@ -116,13 +116,13 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; isolation: isolate; }
 .t-btn    { transition: transform .2s, box-shadow .2s, filter .2s, background-color .2s, color .2s }
 
   /* Backdrop blur (FIX #3 PERF: reduced usage, only critical elements) */
-.glass    { backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px) }
-.glass-sm { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px) }
+.glass    { backdrop-filter: blur(1.25rem); -webkit-backdrop-filter: blur(1.25rem) }
+.glass-sm { backdrop-filter: blur(0.75rem); -webkit-backdrop-filter: blur(0.75rem) }
 
   /* Glow box shadows */
-.shadow-glow    { box-shadow: 0 0 20px var(--glow) }
-.shadow-glow-lg { box-shadow: 0 0 36px var(--glow) }
-.shadow-card    { box-shadow: 0 25px 60px rgba(0,0,0,.5) }
+.shadow-glow    { box-shadow: 0 0 1.25rem var(--glow) }
+.shadow-glow-lg { box-shadow: 0 0 2.25rem var(--glow) }
+.shadow-card    { box-shadow: 0 1.5625rem 3.75rem rgba(0,0,0,.5) }
 
 :root {
   --nav-h: clamp(3.75rem, 8vw, 5.125rem);
@@ -130,7 +130,7 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; isolation: isolate; }
 
 /* Nav scroll state */
 #navbar { height: var(--nav-h); transition: background .4s, box-shadow .4s }
-#navbar.scrolled { background: var(--nb); box-shadow: 0 2px 40px rgba(0,0,0,.18) }
+#navbar.scrolled { background: var(--nb); box-shadow: 0 0.125rem 2.5rem rgba(0,0,0,.18) }
 #navbar.scrolled::after { opacity: 1 }
 #navbar::after { content:''; position:absolute; bottom:0; left:0; right:0; height:1px;
     background:linear-gradient(90deg,transparent,var(--p4),transparent); opacity:0; transition:opacity .4s }
@@ -154,7 +154,7 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; isolation: isolate; }
 
   /* Mascot bubble */
 #mascot-bubble { transition: opacity .35s cubic-bezier(.23,1,.32,1), transform .35s cubic-bezier(.23,1,.32,1) }
-#mascot-bubble.hidden { opacity:0; transform: translateY(10px) scale(.95); pointer-events:none }
+#mascot-bubble.hidden { opacity:0; transform: translateY(0.625rem) scale(.95); pointer-events:none }
 #mascot-bubble.shown  { opacity:1; transform: translateY(0) scale(1); pointer-events:all }
 
   /* FIX #9 CSS: removed .card-face.back duplicate — single declaration now */
@@ -175,22 +175,22 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; isolation: isolate; }
 .tilt-card:hover::after { opacity:1 }
 
   /* Scroll reveal */
-.reveal { opacity:0; transform:translateY(32px); transition: opacity .8s cubic-bezier(.23,1,.32,1), transform .8s cubic-bezier(.23,1,.32,1) }
+.reveal { opacity:0; transform:translateY(2rem); transition: opacity .8s cubic-bezier(.23,1,.32,1), transform .8s cubic-bezier(.23,1,.32,1) }
 .reveal.visible { opacity:1; transform:none }
 .rd1 { transition-delay:.1s } .rd2 { transition-delay:.2s } .rd3 { transition-delay:.3s } .rd4 { transition-delay:.4s }
 
   /* Timer digits */
-.timer-display { font-family: 'Plus Jakarta Sans', sans-serif; letter-spacing: 2px }
+.timer-display { font-family: 'Plus Jakarta Sans', sans-serif; letter-spacing: 0.125rem }
 
   /* FIX #17 CSS: removed dead .timer-ring rule entirely */
 
   /* Theme toggle pill */
 .theme-toggle::after {
-    content:'☀️'; position:absolute; top:50%; left:4px;
-    transform:translateY(-50%); font-size:14px; line-height:1; transition:transform .3s
+    content:'☀️'; position:absolute; top:50%; left:0.25rem;
+    transform:translateY(-50%); font-size:0.875rem; line-height:1; transition:transform .3s
 }
 [data-theme="light"] .theme-toggle::after {
-    content:'🌙'; transform:translateY(-50%) translateX(18px)
+    content:'🌙'; transform:translateY(-50%) translateX(1.125rem)
 } 
 
   /* Scroll hint line */
@@ -201,9 +201,9 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; isolation: isolate; }
 .float-card { animation: floatanim 5s ease-in-out infinite; will-change:transform }
 .float-card:nth-child(2) { animation-delay:1.2s }
 .float-card:nth-child(3) { animation-delay:2.4s }
-.float-card-1 { top: -20px; left: -110px }
-.float-card-2 { bottom: 20px; right: -120px; animation-delay: 1.2s }
-.float-card-3 { top: 110px; right: -100px; animation-delay: 2.4s }
+.float-card-1 { top: -1.25rem; left: -6.875rem }
+.float-card-2 { bottom: 1.25rem; right: -7.5rem; animation-delay: 1.2s }
+.float-card-3 { top: 6.875rem; right: -6.25rem; animation-delay: 2.4s }
 
   /* Mood btn active bg (can't do rgba in Tailwind JIT without safelist) */
 .mood-btn.gm.active { background: rgba(34,197,94,.12) }
@@ -218,18 +218,18 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; isolation: isolate; }
 
   /* Active nav pill */
 .nav-link.active { color: var(--tx) !important; font-weight: 600 !important; }
-.nav-link.active .nav-link-icon { filter: drop-shadow(0 0 6px rgba(139, 92, 246, 0.5)); }
+.nav-link.active .nav-link-icon { filter: drop-shadow(0 0 0.375rem rgba(139, 92, 246, 0.5)); }
 .nav-link[href*="opportunities"]:hover {
   background: rgba(139,92,246,0.2) !important;
-  transform: translateY(-1px);
+  transform: translateY(-0.0625rem);
   transition: all 0.2s ease;
 }
 
 .nav-indicator {
     position: absolute;
-    inset-block: 6px;
+    inset-block: 0.375rem;
     left: 0;
-    border-radius: 9999px;
+    border-radius: 624.938rem;
     background: rgba(139,92,246,0.15);
     border: 1px solid rgba(139,92,246,0.3);
     transition: transform 0.35s cubic-bezier(.23,1,.32,1),
@@ -257,14 +257,14 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; isolation: isolate; }
 [data-theme="light"] .chat-body::-webkit-scrollbar-thumb:hover { background: var(--p4); }
 
   /* Intro speech bubble tail */
-#intro-speech::after { content:''; position:absolute; bottom:-10px; left:20px; width:0; height:0;
-    border-left:10px solid transparent; border-right:10px solid transparent;
-    border-top:10px solid var(--bd) }
+#intro-speech::after { content:''; position:absolute; bottom:-0.625rem; left:1.25rem; width:0; height:0;
+    border-left:0.625rem solid transparent; border-right:0.625rem solid transparent;
+    border-top:0.625rem solid var(--bd) }
 
   /* ── CINEMATIC INTRO ── */
 #intro-overlay { background: transparent }
 #intro-overlay.done { pointer-events:none }
-@keyframes intro-particle { 0%{opacity:0;transform:scale(0)} 50%{opacity:1} 100%{opacity:0;transform:scale(1.5) translateY(-60px)} }
+@keyframes intro-particle { 0%{opacity:0;transform:scale(0)} 50%{opacity:1} 100%{opacity:0;transform:scale(1.5) translateY(-3.75rem)} }
 @keyframes intro-sweep-up { from{clip-path:inset(0 0 0% 0)} to{clip-path:inset(0 0 100% 0)} }
 
 /* Shooting Stars and Twinkling Stars */
@@ -282,9 +282,9 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; isolation: isolate; }
 
 .shooting-star {
   position: absolute;
-  height: 1.5px;
+  height: 0.09375rem;
   background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(167,139,250,0.8) 40%, rgba(255,255,255,1) 100%);
-  border-radius: 999px;
+  border-radius: 62.4375rem;
   opacity: 0;
   transform-origin: left center;
   animation: shoot var(--dur) ease-in var(--delay) infinite;
@@ -311,12 +311,23 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; isolation: isolate; }
   0%   { opacity: 0; transform: rotate(var(--angle, 35deg)) translateX(0); }
   10%  { opacity: 1; }
   80%  { opacity: 1; }
-  100% { opacity: 0; transform: rotate(var(--angle, 35deg)) translateX(600px); }
+  100% { opacity: 0; transform: rotate(var(--angle, 35deg)) translateX(37.5rem); }
 }
 
 @keyframes twinkle {
   0%, 100% { opacity: 0; transform: scale(0.5); }
   50% { opacity: 0.8; transform: scale(1); }
+}
+
+@keyframes floatanim {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes shoot {
+  0% { transform: translateX(0) translateY(0) rotate(-45deg) scale(0); opacity: 1; }
+  70% { opacity: 1; }
+  100% { transform: translateX(-62.5rem) translateY(62.5rem) rotate(-45deg) scale(1); opacity: 0; }
 }
 
 /* Footer links hover fix */
