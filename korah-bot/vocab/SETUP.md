@@ -2,7 +2,7 @@
 
 Reference notes on how the vocabulary practice section of the MySATPrep open-source project works. Source: `open-source/MySATPrep` (Next.js 15 App Router).
 
-The accompanying `cleaned_sat_vocabulary.json` is the static word database used by every practice mode (~800 SAT words). It is gitignored; pull a fresh copy from the upstream repo's `src/static-data/` if it goes missing.
+The accompanying `cleaned_sat_vocabulary.json` is the static word database used by every practice mode (~800 SAT words). It is a tracked copy of the upstream repo's `src/static-data/cleaned_sat_vocabulary.json`.
 
 ---
 
