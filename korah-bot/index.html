@@ -1491,5 +1491,73 @@
     }, { passive: true });
   })();
 </script>
+
+<!-- Question bank drop toast -->
+<style>
+  #qb-drop-toast {
+    position: fixed; left: 1.25rem; bottom: 1.25rem; z-index: 9999;
+    display: none; align-items: center; gap: 0.875rem;
+    max-width: 22.5rem; padding: 0.875rem 2.25rem 0.875rem 0.875rem;
+    border-radius: 1rem; border: 0.0625rem solid rgba(255,255,255,.18);
+    background: rgba(255,255,255,.08);
+    backdrop-filter: blur(1.5rem) saturate(180%);
+    -webkit-backdrop-filter: blur(1.5rem) saturate(180%);
+    box-shadow: 0 0.75rem 2rem rgba(0,0,0,.28), inset 0 0.0625rem 0 rgba(255,255,255,.22);
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    color: var(--tx); text-decoration: none; cursor: pointer;
+    opacity: 0; transform: translateY(0.75rem);
+    transition: opacity .35s ease, transform .35s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  #qb-drop-toast.is-visible { opacity: 1; transform: translateY(0); }
+  #qb-drop-toast img { width: 2.5rem; height: 2.5rem; object-fit: contain; flex-shrink: 0; }
+  #qb-drop-toast .qb-drop-body { display: flex; flex-direction: column; gap: 0.1875rem; }
+  #qb-drop-toast .qb-drop-header { font-size: 0.9375rem; font-weight: 800; line-height: 1.25; color: #fff; letter-spacing: -0.01em; }
+  #qb-drop-toast .qb-drop-text { font-size: 0.875rem; font-weight: 600; line-height: 1.35; }
+  #qb-drop-toast .qb-drop-link { color: #a78bfa; font-weight: 700; }
+  #qb-drop-toast .qb-drop-close {
+    position: absolute; top: 0.5rem; right: 0.5rem;
+    width: 1.375rem; height: 1.375rem; display: flex; align-items: center; justify-content: center;
+    border: none; background: transparent; color: var(--tx2);
+    font-size: 1rem; line-height: 1; cursor: pointer; border-radius: 62.4375rem;
+    font-family: inherit;
+  }
+  #qb-drop-toast .qb-drop-close:hover { color: var(--tx); background: var(--sf2); }
+  @media (max-width: 30rem) { #qb-drop-toast { left: 0.75rem; right: 0.75rem; max-width: none; } }
+</style>
+<a id="qb-drop-toast" href="https://drive.google.com/drive/folders/1gX9Uv60y5y1zEVBF-dwf5IL80jNKflqq" target="_blank" rel="noopener">
+  <img src="logo-images/newlogo12.png" alt="Korah"/>
+  <span class="qb-drop-body">
+    <span class="qb-drop-header">300+ New SAT Problems</span>
+    <span class="qb-drop-text">Looking for the new SAT questionbank drop? <span class="qb-drop-link">Click here for the Google Drive!</span></span>
+  </span>
+  <button type="button" class="qb-drop-close" aria-label="Dismiss">&times;</button>
+</a>
+<script>
+(function () {
+  var KEY = 'korah-qb-drop-toast-seen';
+  try { if (localStorage.getItem(KEY)) return; } catch (e) {}
+
+  var toast = document.getElementById('qb-drop-toast');
+  if (!toast) return;
+
+  function dismiss() {
+    try { localStorage.setItem(KEY, '1'); } catch (e) {}
+    toast.classList.remove('is-visible');
+    setTimeout(function () { toast.style.display = 'none'; }, 350);
+  }
+
+  toast.querySelector('.qb-drop-close').addEventListener('click', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    dismiss();
+  });
+  toast.addEventListener('click', dismiss);
+
+  setTimeout(function () {
+    toast.style.display = 'flex';
+    requestAnimationFrame(function () { toast.classList.add('is-visible'); });
+  }, 1200);
+}());
+</script>
 </body>
 </html>
