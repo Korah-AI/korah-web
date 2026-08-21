@@ -1262,8 +1262,10 @@ RULES:
       renderMarkdownAndMath(container, text);
       return;
     }
+    // CB rationales carry MathML equations and SVG figures. An html-only profile
+    // strips those tags but keeps their text, collapsing e.g. a fraction into "12".
     const sanitized = window.DOMPurify
-      ? DOMPurify.sanitize(text, { USE_PROFILES: { html: true } })
+      ? DOMPurify.sanitize(text, { USE_PROFILES: { html: true, mathMl: true, svg: true } })
       : text;
     container.innerHTML = sanitized;
     if (typeof renderMathInElement === 'function') {
