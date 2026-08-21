@@ -65,6 +65,7 @@
   import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
   import { setupKorahDB } from "../app/data/firestore-store.js";
   import { startAuthGuard } from '../auth-guard.js';
+  import { initGuestGate, startGuestSession, showGuestToastOnce } from '../guest-gate.js';
 
   const firebaseConfig = {
     apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
@@ -80,14 +81,17 @@
 
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
-      window.KorahTransitions.go('../landing/index.html');
+      // Guests get the page and a working Desmos graph; the chat side is gated.
+      startGuestSession();
+      initGuestGate('../');
+      showGuestToastOnce();
       return;
     }
     await setupKorahDB(app, user.uid);
     const detail = { uid: user.uid };
     window._korahReadyFired = detail;
     window.dispatchEvent(new CustomEvent('korahReady', { detail }));
-    startAuthGuard(auth, '../landing/index.html');
+    startAuthGuard(auth, '../index.html');
   });
 
   document.getElementById('logout-btn').addEventListener('click', () => {
@@ -104,7 +108,7 @@
 <div id="sidebar-root"></div>
 
 <!-- Hidden file input for attachments -->
-<input type="file" id="doc-file-input" class="hidden" multiple accept=".pdf,.txt,.png,.jpg,.jpeg,.gif,.webp,.md"/>
+<input type="file" id="doc-file-input" data-requires-auth class="hidden" multiple accept=".pdf,.txt,.png,.jpg,.jpeg,.gif,.webp,.md"/>
 
 <div id="main-area-wrapper" class="main-area-wrapper sat-math-layout">
     
@@ -126,7 +130,7 @@
       </div>
 
       <div class="topbar-actions">
-        <button class="topbar-btn t-btn" id="new-chat-topbar-btn" title="New chat" style="color:white;">
+        <button class="topbar-btn t-btn" id="new-chat-topbar-btn" data-requires-auth title="New chat" style="color:white;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 5v14M5 12h14"/>
           </svg>
@@ -134,7 +138,7 @@
         <button class="topbar-btn t-btn" id="sat-graph-clear" title="Clear graph" style="color:white;">
           ↺
         </button>
-        <button class="topbar-btn t-btn" id="clear-chat-btn" title="Clear chat">
+        <button class="topbar-btn t-btn" id="clear-chat-btn" data-requires-auth title="Clear chat">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
             <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
           </svg>
@@ -160,23 +164,23 @@
             <p class="sat-welcome-tagline tx2">ask me anything, i'll help you cook</p>
 
             <div class="sat-prompt-list">
-              <button class="sat-prompt-row quick-prompt-btn" data-prompt="Teach me what a regression is and how to use it on the SAT. Show me a clear example on the Desmos graph.">
+              <button class="sat-prompt-row quick-prompt-btn" data-requires-auth data-prompt="Teach me what a regression is and how to use it on the SAT. Show me a clear example on the Desmos graph.">
                 <span class="sat-prompt-text"><strong class="sat-prompt-bold">Teach me</strong> what a regression is</span>
                 <svg class="sat-prompt-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
-              <button class="sat-prompt-row quick-prompt-btn" data-prompt="Explain how to use Desmos to solve SAT math problems faster, with examples">
+              <button class="sat-prompt-row quick-prompt-btn" data-requires-auth data-prompt="Explain how to use Desmos to solve SAT math problems faster, with examples">
                 <span class="sat-prompt-text"><strong class="sat-prompt-bold">Explain</strong> how to use Desmos on the SAT</span>
                 <svg class="sat-prompt-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
-              <button class="sat-prompt-row quick-prompt-btn" data-prompt="Help me study for the digital SAT math section — what are the most important topics to focus on?">
+              <button class="sat-prompt-row quick-prompt-btn" data-requires-auth data-prompt="Help me study for the digital SAT math section — what are the most important topics to focus on?">
                 <span class="sat-prompt-text"><strong class="sat-prompt-bold">Give me strategies</strong> for the math section</span>
                 <svg class="sat-prompt-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
-              <button class="sat-prompt-row quick-prompt-btn" data-prompt="What are the best strategies for improving my SAT math score, especially using the calculator?">
+              <button class="sat-prompt-row quick-prompt-btn" data-requires-auth data-prompt="What are the best strategies for improving my SAT math score, especially using the calculator?">
                 <span class="sat-prompt-text"><strong class="sat-prompt-bold">Tips for</strong> improving my math score</span>
                 <svg class="sat-prompt-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
-              <button class="sat-prompt-row quick-prompt-btn" data-prompt="Give me an example SAT regression problem and walk me through solving it on the Desmos graph, including how to set up the regression equation.">
+              <button class="sat-prompt-row quick-prompt-btn" data-requires-auth data-prompt="Give me an example SAT regression problem and walk me through solving it on the Desmos graph, including how to set up the regression equation.">
                 <span class="sat-prompt-text"><strong class="sat-prompt-bold">Give me</strong> an example regression problem</span>
                 <svg class="sat-prompt-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
@@ -184,14 +188,14 @@
           </div>
 
           <div class="welcome-input-container bg-sf2 glass-sm bd sat-welcome-input-bar">
-            <textarea id="welcome-chat-input" class="welcome-textarea tx"
+            <textarea id="welcome-chat-input" data-requires-auth class="welcome-textarea tx"
               placeholder="Ask me about any SAT Math topic..." rows="1"></textarea>
             <div id="welcome-attachments" class="welcome-attachments"></div>
             <div class="welcome-input-actions">
-              <button id="welcome-attach-btn" class="welcome-tool-btn t-btn tx3" title="Attach file">
+              <button id="welcome-attach-btn" data-requires-auth class="welcome-tool-btn t-btn tx3" title="Attach file">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44,11.05l-9.19,9.19a6,6,0,0,1-8.49-8.49l9.19-9.19a4,4,0,0,1,5.66,5.66l-9.2,9.19a2,2,0,0,1-2.83-2.83l8.49-8.48"/></svg>
               </button>
-              <button id="welcome-send-btn" class="welcome-send-btn grad-bg t-btn" aria-label="Send message">
+              <button id="welcome-send-btn" data-requires-auth class="welcome-send-btn grad-bg t-btn" aria-label="Send message">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                   <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
                 </svg>
@@ -207,16 +211,16 @@
     <div class="chat-input-area t-theme hidden" id="chat-input-area">
       <div class="input-wrapper">
         <div id="input-files-bar" class="input-files-bar"></div>
-        <textarea id="chat-input" class="chat-textarea tx" placeholder="Ask a question..." rows="1"></textarea>
+        <textarea id="chat-input" data-requires-auth class="chat-textarea tx" placeholder="Ask a question..." rows="1"></textarea>
         <div class="input-actions-row">
           <div class="input-actions-left">
-            <button class="input-action-btn t-btn" id="attach-file-btn" title="Attach file">
+            <button class="input-action-btn t-btn" id="attach-file-btn" data-requires-auth title="Attach file">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
               </svg>
             </button>
           </div>
-          <button id="send-btn" class="send-btn-circle t-btn">
+          <button id="send-btn" data-requires-auth class="send-btn-circle t-btn">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
             </svg>
@@ -300,7 +304,7 @@
         <div class="settings-item">
           <div class="settings-item-label">Clear All Data</div>
           <div class="settings-item-control">
-            <button id="settings-clear-data" class="settings-btn danger">Clear Data</button>
+            <button id="settings-clear-data" data-requires-auth class="settings-btn danger">Clear Data</button>
           </div>
         </div>
       </div>

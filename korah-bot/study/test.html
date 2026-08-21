@@ -1594,6 +1594,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
   import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
   import { startAuthGuard } from '../auth-guard.js';
+  import { startGuestSession, showAuthWall } from '../guest-gate.js';
 
   const firebaseConfig = {
     apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
@@ -1608,8 +1609,13 @@
   const auth = getAuth(app);
 
   onAuthStateChanged(auth, (user) => {
-    if (!user) { window.KorahTransitions.go('../landing/index.html'); return; }
-    startAuthGuard(auth, '../landing/index.html');
+    if (!user) {
+      // No redirect: render the empty shell, then hard-block with the auth wall.
+      startGuestSession();
+      showAuthWall('../');
+      return;
+    }
+    startAuthGuard(auth, '../index.html');
   });
 
   document.getElementById('logout-btn').addEventListener('click', () => {

@@ -1193,7 +1193,7 @@ function showSidebarDeleteModal(name, onConfirm) {
           localStorage.clear();
 
           // Redirect to index to ensure all in-memory states are reset
-          const resolvedBaseUrl = document.getElementById('new-chat-btn')?.getAttribute('data-base-url') || (window.location.pathname.includes('/study/') || window.location.pathname.includes('/sat/') ? '../index.html' : 'index.html');
+          const resolvedBaseUrl = document.getElementById('new-chat-btn')?.getAttribute('data-base-url') || (window.location.pathname.includes('/study/') || window.location.pathname.includes('/sat/') ? '../home.html' : 'home.html');
           window.KorahTransitions.go(resolvedBaseUrl);
 
         } catch (err) {
