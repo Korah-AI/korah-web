@@ -200,6 +200,7 @@ export function showAuthWall(base = '') {
       background: var(--sf, #16151c); border: 0.0625rem solid var(--bd2, rgba(139,92,246,0.3));
       box-shadow: 0 1.5rem 4rem rgba(0,0,0,0.5), 0 0 2rem rgba(139,92,246,0.2);
       transform: translateY(1rem) scale(0.97); transition: transform .4s cubic-bezier(0.34,1.56,0.64,1);
+      display: flex; flex-direction: column; align-items: center;
     }
     #auth-wall.is-visible .aw-card { transform: translateY(0) scale(1); }
     #auth-wall .aw-logo {
@@ -212,20 +213,33 @@ export function showAuthWall(base = '') {
     }
     #auth-wall .aw-desc {
       font-size: 0.9375rem; line-height: 1.6; margin: 0 0 1.75rem;
-      color: var(--tx2, #a1a1aa);
+      color: #fff;
     }
     #auth-wall .aw-primary {
+      position: relative; overflow: hidden; isolation: isolate;
       display: block; width: 100%; padding: 0.8125rem 1.25rem; border-radius: 0.75rem;
-      background: linear-gradient(135deg, var(--p4, #8b5cf6), var(--p5, #a78bfa));
+      background: var(--p4, #8b5cf6);
       color: #fff; font-size: 0.9375rem; font-weight: 700; text-decoration: none;
-      border: none; cursor: pointer; transition: filter .2s ease, transform .2s ease;
+      border: none; cursor: pointer;
+      transition: transform .3s cubic-bezier(0.34,1.56,0.64,1), box-shadow .3s ease;
     }
-    #auth-wall .aw-primary:hover { filter: brightness(1.1); transform: translateY(-0.0625rem); }
+    #auth-wall .aw-primary::before {
+      content: ''; position: absolute; inset: 0; z-index: 0;
+      background: #a78bfa;
+      transform: scaleX(0); transform-origin: left center;
+      transition: transform .4s ease;
+    }
+    #auth-wall .aw-primary-label { position: relative; z-index: 1; }
+    #auth-wall .aw-primary:hover {
+      transform: scale(1.06);
+      box-shadow: 0 0.75rem 2rem rgba(139,92,246,.45);
+    }
+    #auth-wall .aw-primary:hover::before { transform: scaleX(1); }
     #auth-wall .aw-secondary {
       display: inline-block; margin-top: 1rem; font-size: 0.8125rem; font-weight: 600;
-      color: var(--tx3, #71717a); text-decoration: none;
+      color: #fff; text-decoration: none;
     }
-    #auth-wall .aw-secondary:hover { color: var(--tx2, #a1a1aa); }
+    #auth-wall .aw-secondary:hover { color: #fff; }
   `;
   document.head.appendChild(style);
 
@@ -239,8 +253,8 @@ export function showAuthWall(base = '') {
       <img class="aw-logo" src="${basePath}logo-images/newlogo12.png" alt="Korah"/>
       <h2 class="aw-title" id="aw-title">This feature requires you to have an account.</h2>
       <p class="aw-desc">Make one for free now!</p>
-      <a class="aw-primary" href="${basePath}login.html">Create a free account</a>
-      <a class="aw-secondary" href="${basePath}index.html">Back to Korah</a>
+      <a class="aw-primary" href="${basePath}login.html"><span class="aw-primary-label">Create a free account</span></a>
+      <a class="aw-secondary" href="${basePath}home.html">Back to Korah</a>
     </div>
   `;
   document.body.appendChild(wall);
