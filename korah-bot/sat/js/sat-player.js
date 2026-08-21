@@ -773,7 +773,7 @@
   }
 
   // ── Lazy detail loading ──────────────────────────────────────────────────
-  // /api/sat/questions ships the full filtered list, but only the first
+  // /api/sat/q ships the full filtered list, but only the first
   // batchSize entries are fully detailed. Everything beyond ships as a stub
   // (loaded: false). We hydrate stubs on demand as the user navigates, and
   // prefetch a small window around the current question so navigation feels
@@ -789,7 +789,7 @@
 
     const promise = (async () => {
       try {
-        const resp = await fetch(`/api/sat/question?id=${encodeURIComponent(detailKey)}`, {
+        const resp = await fetch(`/api/sat/qi?id=${encodeURIComponent(detailKey)}`, {
           method: "GET",
           headers: { Accept: "application/json" },
         });
@@ -855,6 +855,17 @@
     if (query.assessment && query.assessment !== "SAT") {
       chips.push(`<span class="sat-filter-chip">${query.assessment}</span>`);
     }
+    // Per-question session filters (default value → no chip).
+    const SESSION_FILTER_LABELS = {
+      saved: { saved: "Saved", unsaved: "Not saved" },
+      completed: { completed: "Completed", incomplete: "Not completed" },
+      result: { correct: "Correct", incorrect: "Incorrect" },
+      timespent: { lt30: "Under 30s", "30to60": "30–60s", gt60: "Over 60s" },
+    };
+    Object.keys(SESSION_FILTER_LABELS).forEach((key) => {
+      const label = SESSION_FILTER_LABELS[key][query[key]];
+      if (label) chips.push(`<span class="sat-filter-chip">${label}</span>`);
+    });
     sessionFilterChips.innerHTML = chips.join("");
   }
 
@@ -1083,6 +1094,7 @@
         assessment: query.assessment || "SAT",
         correct: isCorrect,
         timeSpent: state.stopwatchElapsed,
+        mode: "player",
       }).catch((e) => console.warn("[SAT] recordAttempt failed", e));
     }
   });
@@ -1158,6 +1170,60 @@
     }
   });
 
+  // ── Per-question session filters (Saved / Completed / Result / Time Spent) ──
+  // These describe the user's own history, so they can't be pushed to the
+  // stateless /api/sat/q adapter. The player filters the fetched pool locally
+  // against Firestore analytics. See docs/sat-bank-filters.md.
+  function sessionFiltersActive() {
+    return query.saved !== "all" || query.completed !== "all" ||
+           query.result !== "all" || query.timespent !== "any";
+  }
+
+  function whenAnalyticsReady() {
+    return new Promise((resolve) => {
+      if (window.KorahSATAnalytics) return resolve(window.KorahSATAnalytics);
+      let settled = false;
+      const finish = () => { if (!settled) { settled = true; resolve(window.KorahSATAnalytics || null); } };
+      window.addEventListener("korahSATAnalyticsReady", finish, { once: true });
+      setTimeout(finish, 4000);
+    });
+  }
+
+  async function applySessionFilters(list) {
+    if (!sessionFiltersActive() || !list.length) return list;
+    const analytics = await whenAnalyticsReady();
+    // No analytics (e.g. signed out) → no history: outcomes/saved stay empty,
+    // which still yields sensible results (e.g. "Saved only" → none).
+    const outcomes = analytics
+      ? await analytics.getLatestOutcomes().catch(() => new Map())
+      : new Map();
+    const savedSet = new Set();
+    if (analytics && query.saved !== "all") {
+      try {
+        (await analytics.getBookmarks()).forEach((b) => b.questionId && savedSet.add(b.questionId));
+      } catch (_) { /* treat as no saved questions */ }
+    }
+    return list.filter((q) => {
+      const key = q.detailKey || q.id;
+      const outcome = outcomes.get(key);
+      const attempted = Boolean(outcome);
+      if (query.saved === "saved" && !savedSet.has(key)) return false;
+      if (query.saved === "unsaved" && savedSet.has(key)) return false;
+      if (query.completed === "completed" && !attempted) return false;
+      if (query.completed === "incomplete" && attempted) return false;
+      if (query.result === "correct" && !(attempted && outcome.correct)) return false;
+      if (query.result === "incorrect" && !(attempted && !outcome.correct)) return false;
+      if (query.timespent !== "any") {
+        if (!attempted) return false;
+        const t = outcome.timeSpent;
+        if (query.timespent === "lt30" && !(t < 30)) return false;
+        if (query.timespent === "30to60" && !(t >= 30 && t <= 60)) return false;
+        if (query.timespent === "gt60" && !(t > 60)) return false;
+      }
+      return true;
+    });
+  }
+
   // RESTORED: loadQuestions with full validation
   async function loadQuestions() {
     const sections = query.sections;
@@ -1204,14 +1270,17 @@
     if (query.questionIds && query.questionIds.length > 0) {
       params.set("questionIds", query.questionIds.join(","));
     }
-    if (query.limit !== null && query.limit !== undefined) {
+    // When per-question session filters are active we filter the pool locally
+    // after fetching, so ask the adapter for the full pool and apply the limit
+    // ourselves — otherwise the server could trim before we ever filter.
+    if (query.limit !== null && query.limit !== undefined && !sessionFiltersActive()) {
       params.set("limit", String(query.limit));
     }
 
 
     let response;
     try {
-      response = await fetch(`/api/sat/questions?${params.toString()}`, {
+      response = await fetch(`/api/sat/q?${params.toString()}`, {
         method: "GET",
         headers: { Accept: "application/json" },
       });
@@ -1267,6 +1336,21 @@
     }
 
     questions = Array.isArray(payload?.questions) ? payload.questions : [];
+    // Apply per-question session filters (Saved / Completed / Result / Time
+    // Spent) against the user's analytics — the adapter can't see this history.
+    questions = await applySessionFilters(questions);
+    // Randomize the order when the user chose "Randomize" in the bank pill.
+    if (query.random && questions.length > 1) {
+      for (let i = questions.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [questions[i], questions[j]] = [questions[j], questions[i]];
+      }
+    }
+    // The server skips its limit when session filters are active (see above),
+    // so apply it here — after filtering and shuffling — for a correct count.
+    if (sessionFiltersActive() && query.limit && questions.length > query.limit) {
+      questions = questions.slice(0, query.limit);
+    }
     loadState = questions.length ? "success" : "empty";
     state.currentIndex = 0;
     startStopwatch();
@@ -1699,6 +1783,8 @@
   // ─────────────────────────────────────────────────
   // END QUESTION NAVIGATOR
   // ─────────────────────────────────────────────────
+
+  window.KorahSATPlayer = { getCurrentQuestion };
 
   renderHeader();
   renderQuestion();

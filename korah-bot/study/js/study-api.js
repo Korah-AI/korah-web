@@ -5,7 +5,7 @@
  */
 
 (function (global) {
-  var CHAT_PROXY = "/api/gem-proxy";
+  var CHAT_PROXY = "/api/r";
   var MODEL = "gemini-2.5-flash";
 
   function clampInt(value, fallback, min, max) {

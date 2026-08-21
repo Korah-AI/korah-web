@@ -2,8 +2,17 @@ console.log('math-chat.js loading...');
 (() => {
   try {
   console.log('math-chat.js try block entered');
-  const API_ENDPOINT = "/api/gem-proxy";
+  const API_ENDPOINT = "/api/r";
   const MODEL = "gemini-2.5-flash";
+
+  // Classification + state adaptation happen in a SINGLE API call (see
+  // runMergedClassifyAdapt): the model receives all problem-solver skeletons
+  // inline and, in one shot, picks the template AND fills it for the student's
+  // problem. This deletes the old Phase-1 classification round-trip. The ~17 KB
+  // of skeletons rides along uncached — Gemini 2.5's implicit caching discounts
+  // the stable prefix for free. The call carries both classification (wants to
+  // stay strict) and adaptation (wants a little freedom), so keep temp low.
+  const MERGED_TEMPERATURE = 0.2;
 
   const input = document.getElementById("chat-input");
   const welcomeInput = document.getElementById("welcome-chat-input");
@@ -54,6 +63,22 @@ console.log('math-chat.js loading...');
     const res = await fetch(`./desmos-json/templates/${id}.json`);
     _templateCache[id] = await res.json();
     return _templateCache[id];
+  }
+
+  // Load every problem-solver skeleton (visualizers have no skeleton — they load
+  // their verified example as-is). Used by the merged pipeline, which hands the
+  // model all skeletons at once so it can classify AND fill one in a single call.
+  let _allSkeletons = null;
+  async function loadAllSkeletons() {
+    if (_allSkeletons) return _allSkeletons;
+    const index = await loadTemplateIndex();
+    const solverIds = index.filter(t => t.type === 'problem-solver').map(t => t.id);
+    const results = await Promise.all(solverIds.map(async id => {
+      try { return { id, skeleton: await loadTemplate(id) }; }
+      catch (e) { console.warn(`Failed to load skeleton "${id}":`, e); return null; }
+    }));
+    _allSkeletons = results.filter(Boolean);
+    return _allSkeletons;
   }
 
   function buildTemplateIndexBlock(index) {
@@ -128,137 +153,6 @@ console.log('math-chat.js loading...');
     return matches || [];
   }
 
-  // ─── Phase 1 (classifier) ──────────────────────────────────────────────
-  // Pure template selection. Tiny output. Streams but feels instant.
-  const PHASE1_CLASSIFIER_PROMPT_BASE = `You are the classifier stage of Korah, an SAT Math tutor. Your ONLY job is to pick the best matching Desmos template id for the student's problem.
-
-Output a single raw JSON object — NO code fences, NO commentary, NO extra fields:
-
-{
-  "stateId": "id_from_template_list_or_null",
-  "strategy": "one short sentence (max 20 words) on which template fits and why"
-}
-
-═══════════════════════════════════════════
-BIAS STRONGLY TOWARD PICKING A TEMPLATE
-═══════════════════════════════════════════
-
-Korah's whole value is teaching SAT math through Desmos. ALMOST EVERY SAT MATH PROBLEM maps to one of the templates below. Default to picking a template. Only return null as an absolute last resort.
-
-Concretely, you SHOULD pick a template whenever ANY of these apply:
-- The problem involves a linear function, line, slope, y-intercept → linear-functions / linear-equations-in-two-variables
-- The problem involves an equation in one variable with unknown constants and asks about "infinitely many solutions" or "no solutions" → linear-equations-in-one-variable
-- The problem gives an inequality and asks which (x,y) pairs satisfy it → linear-equalities-in-one-or-two-variables
-- The problem gives a system of two equations and asks for a value at the intersection → system-of-two-linear-equations
-- The problem is a polynomial identity like (ax+...)(...) = ... where the equation holds "for all x" → equivalent-expressions
-- The problem is a quadratic in vertex form, or asks about vertex/parabola shape → quadratic-from-vertex-point
-- The problem involves symmetry, even/odd functions, reflection → 3-types-of-symmetry
-- The problem involves the unit circle, sin θ, cos θ, angles, radians → unit-circle
-- The problem involves sine/cosine waves, period, amplitude, phase → sine-cosine-sinuoids-graphs
-- The problem involves dilations, vertical/horizontal stretches → nonrigid-transformations-dilations
-- The problem mentions concavity, concave up/down, rate of change → concavity-discovery / concavity-rate-of-change
-
-Only return stateId: null if the problem is COMPLETELY non-mathematical (e.g., "hi" or "what is Korah?") or if it's a math problem in a category clearly outside the template list (e.g., a 3D geometry problem about volumes, or a probability/statistics question with no graph utility). When in doubt — PICK A TEMPLATE.
-
-═══════════════════════════════════════════
-RULES
-═══════════════════════════════════════════
-
-- stateId must be EXACTLY an "id" from the AVAILABLE TEMPLATES list below, or null.
-- "visualizer" templates are for conceptual questions (e.g., "what is concavity?", "show me the unit circle"). Pick these when the student asks to UNDERSTAND a concept rather than solve a specific problem.
-- "problem-solver" templates are for actual SAT problems with concrete numbers/equations to solve. Prefer these when the student pastes or describes an SAT-style problem.
-- Do NOT explain the math. Do NOT write a tutoring response. Just classify.
-- Output ONLY the JSON object. Nothing else.`;
-
-  async function buildPhase1SystemPrompt() {
-    const index = await loadTemplateIndex();
-    const block = buildTemplateIndexBlock(index);
-    return PHASE1_CLASSIFIER_PROMPT_BASE + '\n\n' + block;
-  }
-
-function buildPhase2SystemPrompt() {
-  return `You are adapting a Desmos calculator state to fit a SPECIFIC STUDENT PROBLEM.
-
-═══════════════════════════════════════════
-CRITICAL: YOU MUST ADAPT, NOT COPY
-═══════════════════════════════════════════
-
-You are NOT allowed to output the example verbatim. The example uses ITS OWN numbers and ITS OWN problem text — none of that is the student's problem. You MUST:
-
-1. Read the student's actual problem (numbers, equations, coefficients, constraints).
-2. Use the TEMPLATE as your structural guide — same expression types in the same order.
-3. Fill EVERY {{PLACEHOLDER}} with values from the STUDENT'S problem (not from the example).
-4. Rewrite EVERY text node so it describes the STUDENT'S problem (not the example's). Use the student's numbers, the student's variable names, the student's question.
-5. Replace the example's numeric values in tables/expressions with the student's numeric values.
-
-If your output is byte-for-byte the same as the example, you have FAILED THIS TASK.
-
-═══════════════════════════════════════════
-INPUTS YOU WILL RECEIVE
-═══════════════════════════════════════════
-
-- PROBLEM: the student's actual SAT problem
-- FULL WORKING EXAMPLE: real Desmos JSON for a DIFFERENT problem of the same type — use ONLY for syntax/structure reference
-- TEMPLATE: the structural skeleton with {{PLACEHOLDER}} slots showing where to put the student's values
-
-The example exists so you can see what valid Desmos JSON looks like — NOT for you to copy. The template tells you the shape; the STUDENT'S PROBLEM provides the content.
-
-═══════════════════════════════════════════
-HOW TO ADAPT, STEP BY STEP
-═══════════════════════════════════════════
-
-For each expression in the template:
-- If it's a text node: rewrite the text to describe the student's specific problem using PLAIN TEXT ONLY (use their numbers, their setup, their question). Do NOT carry over the example's text. Do NOT include any LaTeX, backslashes, or math syntax — plain English sentences only. If the template text node contains LaTeX or math, convert it to a readable English sentence instead.
-- If it's a table: replace ALL values with the student's data. Keep the same column structure (x_{1}, y_{1}) and order.
-- If it's a regression/equation: substitute the student's coefficients, constants, and unknowns. Use the example's syntax (tilde, subscripts) but the student's numbers.
-- If it has regressionParameters: keep the parameter list but use the student's unknown letters.
-
-═══════════════════════════════════════════
-CRITICAL DESMOS RULES (violations will break the graph)
-═══════════════════════════════════════════
-
-- Table data columns must use SUBSCRIPT notation: x_{1}, y_{1} (NOT bare x or y)
-- A table must appear BEFORE any expression that uses its columns
-- Regressions use TILDE (\\sim) not equals
-- Text nodes use ONLY {type, id, text}. NO color field on text nodes.
-- Every id must be unique within the expressions.list
-- LaTeX backslashes must be properly JSON-escaped (\\\\frac, \\\\sim, \\\\left, etc.)
-- Do NOT include "graph", "viewport", or other top-level fields beyond version/randomSeed/expressions
-
-TEXT NODES VS EXPRESSION NODES — THIS IS CRITICAL:
-- A { "type": "text" } node MUST contain ONLY plain human-readable text in the "text" field.
-  - NO LaTeX, NO backslashes, NO $...$, NO \\frac, NO \\sim, NO subscripts like x_{1}.
-  - Plain English sentences only. Example: "The slope is -4 and the y-intercept is 30."
-- If you need to display a mathematical formula or equation, use a { "type": "expression" } node with a "latex" key instead.
-  - Example: { "type": "expression", "id": "5", "color": "#000000", "latex": "y=-4x+30" }
-- NEVER put LaTeX syntax inside a "text" node. The Desmos text widget renders plain text only — LaTeX in a text node will display as raw garbled characters, not formatted math.
-
-WHAT YOU CAN DO:
-- Add new expressions or text nodes if the student's problem needs them
-- Omit template slots if they're not needed
-- Use the example's id values or generate new unique ones
-- Choose appropriate colors from the example's palette
-
-═══════════════════════════════════════════
-OUTPUT FORMAT
-═══════════════════════════════════════════
-
-Output a single raw JSON object — the full Desmos state — with NO surrounding text, no code fences, no commentary.
-
-Shape:
-{
-  "version": 11,
-  "randomSeed": "32-char hex",
-  "expressions": {
-    "list": [ ...your adapted expressions for THE STUDENT'S problem... ]
-  }
-}
-
-REMINDER: every text node, every numeric value, every coefficient must reflect the STUDENT'S problem — not the example's. If unsure, prefer the student's data over the example's.
-
-If the template genuinely cannot represent the student's problem (very rare — only if the classifier picked wrong), output exactly: null`;
-}
-
   // ─── Phase 3 (tutoring response) ────────────────────────────────────────
   // Streams a chat-facing markdown explanation. Grounded in the loaded Desmos
   // state when one was loaded, so the model can reference exact values.
@@ -269,21 +163,24 @@ OUTPUT FORMAT:
 Output ONLY the explanation text — pure Markdown + KaTeX. NO JSON, NO code fences, NO field names.
 
 STYLE:
+- Write like a sharp, warm tutor talking to one student — not a worksheet or a template.
 - Confident, finished walkthrough. Do NOT think out loud. Do NOT show "let me re-check" moments.
 - If you need to verify, do it silently. Only the final clean explanation appears in your output.
 - Do NOT type Desmos commands or instruct the student to "type $x_1 = [1,2,3]$". The graph is already on screen — reference what it shows.
-- Be concise. Clarity over length.
+- Be concise. Default SHORT — most answers should be a few tight sentences or a handful of quick steps, not an essay. Clarity over length, always.
+- Do NOT over-explain. Trust the student. Skip obvious algebra narration ("now we subtract 3 from both sides, giving…") unless the step is genuinely the hard part. Say the key move and the result.
+- Prefer a couple of short paragraphs or a compact list over long walls of text. Cut throat-clearing, restatement, and filler.
+- Vary your openings. Do NOT start every reply the same way. Jump into the actual idea.
 
-STRUCTURE:
-**Step 1 — Understand the problem.** Restate what is given and what is being asked.
-**Step 2 — Strategy.** One sentence on the approach (e.g., "Read m and b from the regression on the graph").
-**Step 3 — Solve.** Walk through the math, referencing what the graph shows ("The regression line fits m = -4 and b = 30…"). Use the EXACT values that appear in the loaded state below.
-**Step 4 — Answer.** State the final answer clearly.
-**Step 5 — SAT Tip.** One short test-day tip.
+STRUCTURE (a guide, NOT a rigid template):
+A good explanation usually understands the problem, picks a strategy, works the math, states the answer, and ends with a quick SAT tip — but let the problem dictate the shape, and keep it lean. A one-step problem should NOT be forced into five headed sections — a sentence or two may be the whole answer; a hard multi-part one may need more. Do NOT mechanically emit the same bold headers every time ("Step 1 — Understand", "Step 2 — Strategy", …). Use headers only when they genuinely help the student follow along, and word them naturally.
+- Always reference the EXACT values that appear in the loaded graph state below ("the regression fits $m = -4$ and $b = 30$…").
+- Always land on a clear final answer.
+- End with one short, genuinely useful test-day tip when it fits.
 
 TEXT FORMATTING:
 - Markdown headings, **bold**, *italic*
-- KaTeX for math: $inline$ or $$display$$. Every variable, coefficient, equation goes in dollar signs.
+- KaTeX for math: $inline$ or $$display$$. EVERY variable, coefficient, number-in-context, and equation goes inside dollar signs — no bare $x$ or $m$ floating in prose.
 - NEVER use \\\\(...\\\\) or \\\\[...\\\\]
 - NEVER include raw JSON, code blocks, or Desmos input syntax`;
 
@@ -300,62 +197,6 @@ TEXT FORMATTING:
       context += `\n\n=== NO GRAPH LOADED ===\nNo Desmos graph was loaded for this problem. Solve it algebraically with clear steps.`;
     }
     return base + context;
-  }
-
-  // Phase 1 caller: non-streaming feel (small JSON output, parsed at the end).
-  async function runPhase1Classification(problem) {
-    console.log('🔵 [Phase 1] classifier starting…');
-    const t0 = performance.now();
-    let fullText = '';
-    try {
-      await callAPI(problem, (_chunk, full) => { fullText = full; }, {
-        systemPrompt: (await buildPhase1SystemPrompt()),
-        temperature: 0.1,
-        _phaseTag: 'Phase 1 (classify)',
-      });
-    } catch (e) {
-      console.error('🔵 [Phase 1] API call failed:', e);
-      return null;
-    }
-    const dt = Math.round(performance.now() - t0);
-    console.log(`🔵 [Phase 1] raw response (${dt}ms, ${fullText.length} chars):`, fullText.slice(0, 300));
-
-    let s = fullText.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
-    const braceIdx = s.indexOf('{');
-    if (braceIdx === -1) {
-      console.warn('🔵 [Phase 1] no JSON object found in response');
-      return null;
-    }
-    s = s.substring(braceIdx);
-
-    let parsed = null;
-    try { parsed = JSON.parse(s); } catch (e) { console.warn('🔵 [Phase 1] direct JSON.parse failed:', e.message); }
-    if (!parsed) {
-      // Last-resort: find balanced braces.
-      let depth = 0, end = -1, inStr = false, esc = false;
-      for (let i = 0; i < s.length; i++) {
-        const ch = s[i];
-        if (esc) { esc = false; continue; }
-        if (ch === '\\') { esc = true; continue; }
-        if (ch === '"') { inStr = !inStr; continue; }
-        if (inStr) continue;
-        if (ch === '{') depth++;
-        else if (ch === '}') { depth--; if (depth === 0) { end = i; break; } }
-      }
-      if (end !== -1) {
-        try { parsed = JSON.parse(s.substring(0, end + 1)); } catch (e) { console.warn('🔵 [Phase 1] balanced-brace parse failed:', e.message); }
-      }
-    }
-    if (!parsed) {
-      console.warn('🔵 [Phase 1] could not parse JSON, returning null');
-      return null;
-    }
-    const out = {
-      stateId: typeof parsed.stateId === 'string' ? parsed.stateId : null,
-      strategy: typeof parsed.strategy === 'string' ? parsed.strategy : '',
-    };
-    console.log('🔵 [Phase 1] parsed:', out);
-    return out;
   }
 
   function initializeSATGraph() {
@@ -516,118 +357,170 @@ TEXT FORMATTING:
     return { ok: true, errors: [] };
   }
 
-  // Run Phase 2: hand the model the example + template + problem, ask it to adapt.
-  // Returns a parsed Desmos state (or null on failure).
-  async function runPhase2Adaptation(problem, stateId) {
-    console.log(`🟡 [Phase 2] adapting template "${stateId}"…`);
+  // ─── Merged classify + adapt pipeline ───────────────────────────────────
+  // Locate and parse the first JSON object in a model response, tolerating code
+  // fences, leading junk, and trailing text (the merged call nests a large
+  // Desmos state, so the parse must survive messy output).
+  function extractJSONObject(fullText) {
+    let s = (fullText || '').trim()
+      .replace(/^```(?:json)?\s*/i, '')
+      .replace(/\s*```\s*$/i, '')
+      .trim();
+    if (s === 'null') return null;
+    const braceIdx = s.indexOf('{');
+    if (braceIdx === -1) return null;
+    s = s.substring(braceIdx);
+
+    try { return JSON.parse(s); } catch (_) {}
+
+    // Fallback: extract the first balanced-brace region in case of trailing junk.
+    let depth = 0, end = -1, inStr = false, esc = false;
+    for (let i = 0; i < s.length; i++) {
+      const ch = s[i];
+      if (esc) { esc = false; continue; }
+      if (ch === '\\') { esc = true; continue; }
+      if (ch === '"') { inStr = !inStr; continue; }
+      if (inStr) continue;
+      if (ch === '{') depth++;
+      else if (ch === '}') { depth--; if (depth === 0) { end = i; break; } }
+    }
+    if (end !== -1) {
+      try { return JSON.parse(s.substring(0, end + 1)); }
+      catch (e) { console.warn('extractJSONObject: brace-extraction parse failed:', e.message); }
+    }
+    return null;
+  }
+
+  function buildSkeletonsBlock(skeletons) {
+    return skeletons.map(({ id, skeleton }) =>
+      `─── SKELETON id="${id}" ───\n${JSON.stringify(skeleton, null, 2)}`
+    ).join('\n\n');
+  }
+
+  async function buildMergedSystemPrompt() {
+    const index = await loadTemplateIndex();
+    const skeletons = await loadAllSkeletons();
+    const indexBlock = buildTemplateIndexBlock(index);
+    const skeletonsBlock = buildSkeletonsBlock(skeletons);
+
+    // Static prefix FIRST (templates never change per-message), student problem
+    // LAST — so Gemini 2.5 implicit caching can discount this stable prefix.
+    return `You are Korah's SAT Math graph engine. In ONE step you must (1) pick the best Desmos template for the student's problem and (2) if it is a "problem-solver" template, fill its skeleton with the student's numbers to produce a ready-to-render Desmos state.
+
+Output a SINGLE raw JSON object — NO code fences, NO commentary, NO extra fields:
+
+{
+  "stateId": "id_from_template_list_or_null",
+  "strategy": "one short sentence (max 20 words) on which template fits and why",
+  "adaptedState": <Desmos state object, OR null>
+}
+
+Rules for "adaptedState":
+- If the chosen template's type is "problem-solver": adaptedState MUST be the fully-filled Desmos state (see ADAPTATION RULES). Never null in this case.
+- If the chosen template's type is "visualizer": set adaptedState to null (the app loads that template's verified example as-is).
+- If stateId is null: set adaptedState to null.
+
+═══════════════════════════════════════════
+STEP 1 — CLASSIFY (pick stateId)
+═══════════════════════════════════════════
+
+Korah's whole value is teaching SAT math through Desmos. ALMOST EVERY SAT MATH PROBLEM maps to one of the templates below. Default to picking a template. Only return null as an absolute last resort.
+
+You SHOULD pick a template whenever any of these apply:
+- Linear function, line, slope, y-intercept → linear-functions / linear-equations-in-two-variables
+- Equation in one variable with unknown constants asking "infinitely many / no solutions" → linear-equations-in-one-variable
+- Inequality asking which (x,y) pairs satisfy it → linear-equalities-in-one-or-two-variables
+- System of two equations asking for a value at the intersection → system-of-two-linear-equations
+- Polynomial identity (ax+...)(...) = ... that holds "for all x" → equivalent-expressions
+- Quadratic in vertex form, or vertex/parabola shape → quadratic-from-vertex-point
+- Symmetry, even/odd functions, reflection → 3-types-of-symmetry
+- Unit circle, sin θ, cos θ, angles, radians → unit-circle
+- Sine/cosine waves, period, amplitude, phase → sine-cosine-sinuoids-graphs
+- Dilations, vertical/horizontal stretches → nonrigid-transformations-dilations
+- Concavity, concave up/down, rate of change → concavity-discovery / concavity-rate-of-change
+
+Draw a graph EVEN WHEN NOT EXPLICITLY ASKED: any request that would be clearer with a worked example on the graph should get one, including broad/how-to questions ("show me a strategy for linear systems"). Pick the template that best DEMONSTRATES the concept.
+
+"visualizer" templates are for conceptual questions ("what is concavity?", "show me the unit circle"). "problem-solver" templates are for concrete SAT problems with numbers/equations to solve — prefer these when the student pastes a problem.
+
+Only return stateId: null if the input is COMPLETELY non-mathematical ("hi", "what is Korah?") or clearly outside the template list (3D volume geometry, pure probability/statistics with no graph utility). When in doubt — PICK A TEMPLATE.
+
+═══════════════════════════════════════════
+STEP 2 — ADAPT (only for problem-solver templates)
+═══════════════════════════════════════════
+
+Take the matching SKELETON (below, keyed by id) and fill it in for the STUDENT'S problem. You are NOT allowed to invent a structure — use the chosen skeleton as your structural guide (same expression types, same order).
+
+1. Fill EVERY {{PLACEHOLDER}} with a value from the STUDENT'S problem.
+2. Rewrite EVERY text node to describe the STUDENT'S problem (their numbers, their variables, their question) in PLAIN ENGLISH ONLY.
+3. Replace all example/skeleton numeric values with the student's numeric values.
+4. Keep regressionParameters' letters aligned to the student's unknowns.
+
+CRITICAL DESMOS RULES (violations break the graph):
+- Table data columns MUST use subscript notation: x_{1}, y_{1} (never bare x or y).
+- A table must appear BEFORE any expression that uses its columns.
+- Regressions use TILDE (\\sim), not equals.
+- Text nodes use ONLY {type, id, text} — NO color field, NO LaTeX, NO backslashes, NO $...$, NO subscripts. Plain English sentences only. To show a formula, use an {type:"expression", latex:"..."} node instead.
+- Every id must be unique within expressions.list.
+- LaTeX backslashes must be JSON-escaped (\\\\frac, \\\\sim, \\\\left, …).
+- adaptedState top-level fields: version, randomSeed, expressions only. NO "graph"/"viewport".
+
+adaptedState shape:
+{ "version": 11, "randomSeed": "32-char hex", "expressions": { "list": [ ...adapted for THE STUDENT'S problem... ] } }
+
+Every text node, numeric value, and coefficient must reflect the STUDENT'S problem — not the skeleton's placeholders and not any example.
+
+${indexBlock}
+
+═══════════════════════════════════════════
+PROBLEM-SOLVER SKELETONS (fill the one matching your chosen stateId)
+═══════════════════════════════════════════
+
+${skeletonsBlock}`;
+  }
+
+  // Run the merged classify+adapt call. Returns { stateId, strategy, adaptedState }
+  // (adaptedState may be null for visualizer / null classifications) or null on
+  // total failure. Parsing mirrors the legacy phases; validation/fallback of the
+  // adaptedState sub-field happens at the call site (in sendMessage).
+  async function runMergedClassifyAdapt(problem) {
+    console.log('[Merged] classify+adapt starting…');
     const t0 = performance.now();
-    let example, template;
+    let systemPrompt;
     try {
-      [example, template] = await Promise.all([loadExample(stateId), loadTemplate(stateId)]);
+      systemPrompt = await buildMergedSystemPrompt();
     } catch (e) {
-      console.error(`🟡 [Phase 2] failed to load example/template for ${stateId}:`, e);
+      console.error('[Merged] failed to build system prompt:', e);
       return null;
     }
-
-    const userContent =
-`═══════════════════════════════════════════
-STUDENT'S PROBLEM — this is what you must solve
-═══════════════════════════════════════════
-${problem}
-
-═══════════════════════════════════════════
-TEMPLATE — YOUR WORKING FILE. Adapt this.
-═══════════════════════════════════════════
-This is the file you must fill in. Replace EVERY {{PLACEHOLDER}} with a value from the STUDENT'S PROBLEM above. Rewrite EVERY text node so it describes the student's problem (using their numbers, their variables, their question).
-
-${JSON.stringify(template, null, 2)}
-
-═══════════════════════════════════════════
-REFERENCE EXAMPLE — for syntax only. DO NOT copy.
-═══════════════════════════════════════════
-This is a FULLY-FILLED-IN version of the template, but for a DIFFERENT problem (not the student's). Use it ONLY to see what valid Desmos JSON looks like — what fields exist, how subscripts are written, how regressions are formatted. The numbers, variables, and text in the example belong to a DIFFERENT problem and must NOT appear in your output.
-
-${JSON.stringify(example, null, 2)}
-
-═══════════════════════════════════════════
-YOUR TASK
-═══════════════════════════════════════════
-1. Start with the TEMPLATE.
-2. For each {{PLACEHOLDER}}, look at the STUDENT'S PROBLEM and write the correct value there.
-3. For each text node in the template, write text that explains the STUDENT'S PROBLEM (not the example's).
-4. Keep the same expression types, ordering, and structure as the template.
-5. Use the REFERENCE EXAMPLE only to confirm Desmos syntax — never copy its content.
-6. Output the completed JSON. Nothing else.
-
-If your output looks anything like the REFERENCE EXAMPLE's content, you have failed. Your output should reflect the STUDENT'S PROBLEM.`;
 
     let fullText = '';
     try {
-      await callAPI(userContent, (_chunk, full) => { fullText = full; }, {
-        systemPrompt: buildPhase2SystemPrompt(),
-        temperature: 0.2,
-        _phaseTag: 'Phase 2 (adapt)',
+      await callAPI(problem, (_chunk, full) => { fullText = full; }, {
+        systemPrompt,
+        temperature: MERGED_TEMPERATURE,
+        _phaseTag: 'Merged (classify+adapt)',
       });
     } catch (e) {
-      console.error('🟡 [Phase 2] API call failed:', e);
+      console.error('[Merged] API call failed:', e);
       return null;
     }
     const dt = Math.round(performance.now() - t0);
-    console.log(`🟡 [Phase 2] raw response (${dt}ms, ${fullText.length} chars):`, fullText.slice(0, 200) + '…');
+    console.log(`[Merged] raw response (${dt}ms, ${fullText.length} chars):`, fullText.slice(0, 200) + '…');
 
-    // Strip code fences if present, then locate the JSON.
-    let s = fullText.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
-    if (s === 'null') return null;
-    const braceIdx = s.indexOf('{');
-    if (braceIdx === -1) {
-      console.warn('Phase 2: no JSON object found in response:', s.slice(0, 200));
+    const parsed = extractJSONObject(fullText);
+    if (!parsed) {
+      console.warn('[Merged] could not parse JSON, returning null');
       return null;
     }
-    s = s.substring(braceIdx);
 
-    // Try direct JSON.parse first (model usually outputs proper escapes for Desmos LaTeX).
-    let parsed = null;
-    try { parsed = JSON.parse(s); } catch (_) {}
-
-    if (!parsed) {
-      // Fallback: balanced brace extraction in case there's trailing junk.
-      let depth = 0, end = -1, inStr = false, esc = false;
-      for (let i = 0; i < s.length; i++) {
-        const ch = s[i];
-        if (esc) { esc = false; continue; }
-        if (ch === '\\') { esc = true; continue; }
-        if (ch === '"') { inStr = !inStr; continue; }
-        if (inStr) continue;
-        if (ch === '{') depth++;
-        else if (ch === '}') { depth--; if (depth === 0) { end = i; break; } }
-      }
-      if (end !== -1) {
-        try { parsed = JSON.parse(s.substring(0, end + 1)); } catch (e) {
-          console.warn('Phase 2: JSON.parse failed even after brace extraction:', e.message);
-        }
-      }
-    }
-
-    if (!parsed) return null;
-
-    const leftoverSlots = stripPlaceholders(parsed);
-    if (leftoverSlots.length > 0) {
-      console.warn('🟡 [Phase 2] model left unfilled placeholders:', leftoverSlots);
-    }
-
-    // Detect the failure mode where the model just copied the example verbatim
-    // (a common shortcut). Compare expressions.list as JSON.
-    try {
-      const adaptedExprs = JSON.stringify(parsed?.expressions?.list ?? []);
-      const exampleExprs = JSON.stringify(example?.expressions?.list ?? []);
-      if (adaptedExprs === exampleExprs) {
-        console.warn('🟡 [Phase 2] ⚠️ model returned the example VERBATIM — no adaptation happened. Treating as failure so the fallback uses the example anyway (same outcome, but flagged).');
-        return null;
-      }
-    } catch (_) {}
-
-    console.log('🟡 [Phase 2] parsed adapted state with', parsed?.expressions?.list?.length ?? 0, 'expressions ✓');
-    return parsed;
+    const out = {
+      stateId: typeof parsed.stateId === 'string' ? parsed.stateId : null,
+      strategy: typeof parsed.strategy === 'string' ? parsed.strategy : '',
+      adaptedState: (parsed.adaptedState && typeof parsed.adaptedState === 'object') ? parsed.adaptedState : null,
+    };
+    console.log('[Merged] parsed:', { stateId: out.stateId, strategy: out.strategy, hasState: !!out.adaptedState });
+    return out;
   }
 
   function renderGraphUpdates(container) {
@@ -755,6 +648,31 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
     renderWelcomeAttachments();
   }
 
+  function makeFileCard(f, onRemove) {
+    const card = document.createElement('div');
+    card.className = 'input-file-card';
+    if (f.type === 'image' && f.dataUrl) {
+      const img = document.createElement('img');
+      img.className = 'input-file-card-thumb';
+      img.src = f.dataUrl;
+      img.alt = f.name;
+      card.appendChild(img);
+    } else {
+      const icon = document.createElement('div');
+      icon.className = 'input-file-card-icon';
+      const ext = (f.name || '').split('.').pop().toUpperCase();
+      icon.innerHTML = `<span style="font-size:1.5rem;line-height:1">${getFileIcon(f.type, f.name)}</span><span class="input-file-card-label">${ext}</span>`;
+      card.appendChild(icon);
+    }
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'input-file-card-remove';
+    removeBtn.title = 'Remove';
+    removeBtn.textContent = '×';
+    removeBtn.addEventListener('click', onRemove);
+    card.appendChild(removeBtn);
+    return card;
+  }
+
   function renderInputFilesBar() {
     const bar = document.getElementById('input-files-bar');
     if (!bar) return;
@@ -762,13 +680,9 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
     bar.classList.add('show');
     bar.innerHTML = '';
     attachedFiles.forEach((f, i) => {
-      const chip = document.createElement('div');
-      chip.className = 'input-file-chip';
-      chip.innerHTML = `<span>${getFileIcon(f.type, f.name)}</span><span class="input-file-chip-name">${f.name}</span><button class="input-file-chip-remove" title="Remove">×</button>`;
-      chip.querySelector('.input-file-chip-remove').addEventListener('click', () => {
+      bar.appendChild(makeFileCard(f, () => {
         attachedFiles.splice(i, 1); renderInputFilesBar(); renderWelcomeAttachments();
-      });
-      bar.appendChild(chip);
+      }));
     });
   }
 
@@ -777,13 +691,9 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
     if (!container) return;
     container.innerHTML = '';
     attachedFiles.forEach((f, i) => {
-      const chip = document.createElement('div');
-      chip.className = 'input-file-chip';
-      chip.innerHTML = `<span>${getFileIcon(f.type, f.name)}</span><span class="input-file-chip-name">${f.name}</span><button class="input-file-chip-remove" title="Remove">×</button>`;
-      chip.querySelector('.input-file-chip-remove').addEventListener('click', () => {
+      container.appendChild(makeFileCard(f, () => {
         attachedFiles.splice(i, 1); renderInputFilesBar(); renderWelcomeAttachments();
-      });
-      container.appendChild(chip);
+      }));
     });
   }
 
@@ -831,7 +741,7 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
     currentSessionId = id;
     currentSession = {
       id,
-      title: 'SAT Math Chat',
+      title: 'Desmos Chat',
       mode: 'sat-math',
       messages: [],
       createdAt: new Date().toISOString(),
@@ -1017,7 +927,7 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
     document.getElementById('chat-input-area')?.classList.add('hidden');
     if (satMathCalculator) { satMathCalculator.setBlank(); graphExpressions = []; updateGraphContextIndicator(); }
     const chatTitleEl = document.getElementById('chat-title');
-    if (chatTitleEl) chatTitleEl.textContent = 'SAT Math';
+    if (chatTitleEl) chatTitleEl.textContent = 'Desmos Chat';
     createNewSession();
   }
 
@@ -1038,7 +948,7 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
     createNewSession();
   }
 
-  window.SatMathChat = { initSession, switchToSession, newChat, createNewSession };
+  window.SatMathChat = { initSession, switchToSession, newChat, createNewSession, sendMessage };
 
   async function sendMessage(text) {
     console.log('sendMessage called', { text, inputValue: input?.value, welcomeInputValue: welcomeInput?.value });
@@ -1077,22 +987,92 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
 
     // Show pulsing "Thinking" indicator while waiting for first content
     let thinkingIndicator = null;
+    let dotInterval = null;
+    let phraseInterval = null;
+
+    const THINKING_PHRASES = [
+      'Cooking up',
+      'Combobulating',
+      'Thinking super duper hard',
+      'Brainstorming',
+      'Crunching numbers',
+      'Connecting the dots',
+      'On it',
+      'Doing the math',
+      'Figuring it out',
+    ];
+
+    const startDotCycle = (labelOrLabels, el) => {
+      if (dotInterval) clearInterval(dotInterval);
+      if (phraseInterval) clearInterval(phraseInterval);
+      const labels = Array.isArray(labelOrLabels) ? labelOrLabels : [labelOrLabels];
+      let dots = 0;
+      let labelIdx = 0;
+      let currentLabel = labels[labelIdx];
+      const span = el.querySelector('.thinking-shimmer-text');
+
+      dotInterval = setInterval(() => {
+        dots = (dots % 3) + 1;
+        if (span) span.textContent = currentLabel + '.'.repeat(dots);
+      }, 700);
+
+      if (labels.length > 1) {
+        phraseInterval = setInterval(() => {
+          const remaining = labels.filter((_, i) => i !== labelIdx);
+          labelIdx = labels.indexOf(remaining[Math.floor(Math.random() * remaining.length)]);
+          currentLabel = labels[labelIdx];
+          dots = 0;
+          if (span) span.textContent = currentLabel + '.';
+        }, 5000);
+      }
+    };
+
     if (contentElement) {
       thinkingIndicator = document.createElement("div");
       thinkingIndicator.className = "thinking-indicator";
-      thinkingIndicator.innerHTML = `
-        <span style="font-size: 0.8125rem; font-weight: 600; margin-right: 0.5rem;">Korah is thinking...</span>
-        <div class="thinking-dot"></div>
-        <div class="thinking-dot"></div>
-        <div class="thinking-dot"></div>
-      `;
+      thinkingIndicator.innerHTML = `<span class="thinking-shimmer-text">Cooking up.</span>`;
       contentElement.appendChild(thinkingIndicator);
+      startDotCycle(THINKING_PHRASES, thinkingIndicator);
     }
 
     let currentTypedText = "";
     let charBuffer = [];
     let typewriterActive = false;
     let lastBufferedLength = 0;
+
+    // ── Throttled mid-stream render ──
+    // renderMarkdownAndMath (marked + DOMPurify + KaTeX) is O(n) over the whole
+    // accumulated string, so calling it every typewriter tick is O(n²) and
+    // re-typesets every equation each time. Instead we advance currentTypedText
+    // cheaply every tick and repaint at most once per RENDER_THROTTLE_MS,
+    // aligned to an animation frame. The final clean render still happens once
+    // at stream end.
+    const RENDER_THROTTLE_MS = 120;
+    let lastRenderTime = 0;
+    let renderPending = false;   // rAF/timeout is scheduled
+    let renderStopped = false;   // finalize has taken over; suppress late paints
+    let renderTimer = null;
+
+    const flushRender = () => {
+      renderPending = false;
+      if (renderStopped) return;
+      lastRenderTime = performance.now();
+      if (contentElement) renderMarkdownAndMath(contentElement, currentTypedText);
+    };
+
+    const scheduleRender = () => {
+      if (renderPending || renderStopped) return;
+      renderPending = true;
+      const elapsed = performance.now() - lastRenderTime;
+      if (elapsed >= RENDER_THROTTLE_MS) {
+        requestAnimationFrame(flushRender);
+      } else {
+        renderTimer = setTimeout(
+          () => requestAnimationFrame(flushRender),
+          RENDER_THROTTLE_MS - elapsed
+        );
+      }
+    };
 
     const typeNextChar = () => {
       if (charBuffer.length === 0) {
@@ -1101,19 +1081,24 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
       }
 
       typewriterActive = true;
-      const charsToType = charBuffer.length > 20 ? 2 : 1;
-      for (let i = 0; i < charsToType; i++) {
-        if (charBuffer.length > 0) {
-          currentTypedText += charBuffer.shift();
-        }
+      // Scale characters-per-tick to how much text is waiting so the display
+      // keeps pace with the stream instead of lagging a fixed 1–2 chars behind.
+      // Gemini already streams at a natural pace; the typewriter should smooth
+      // it, not throttle it.
+      let charsToType;
+      if (charBuffer.length > 200) charsToType = 12;
+      else if (charBuffer.length > 100) charsToType = 6;
+      else if (charBuffer.length > 40) charsToType = 3;
+      else charsToType = 1;
+      for (let i = 0; i < charsToType && charBuffer.length > 0; i++) {
+        currentTypedText += charBuffer.shift();
       }
 
-      if (contentElement) {
-        renderMarkdownAndMath(contentElement, currentTypedText);
-      }
+      // Cheap: just queue a throttled repaint instead of rendering every tick.
+      scheduleRender();
 
-      let delay = 5;
-      if (charBuffer.length > 50) delay = 0;
+      // Near-zero pacing: once chars are in the buffer, don't sit on them.
+      const delay = charBuffer.length > 40 ? 0 : 3;
 
       setTimeout(typeNextChar, delay);
     };
@@ -1165,62 +1150,69 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
     contentElement.innerHTML = '';
     const ind = document.createElement('div');
     ind.className = 'thinking-indicator graph-loading-indicator';
-    ind.innerHTML = `
-      <span style="font-size: 0.8125rem; font-weight: 600; margin-right: 0.5rem;">Drawing graph…</span>
-      <div class="thinking-dot"></div>
-      <div class="thinking-dot"></div>
-      <div class="thinking-dot"></div>
-    `;
+    ind.innerHTML = `<span class="thinking-shimmer-text">Drawing Graph.</span>`;
     contentElement.appendChild(ind);
     thinkingIndicator = ind;
+    startDotCycle('Drawing Graph', ind);
   };
 
   try {
     const userContent = buildUserContent(fullMessage, pendingFiles);
 
-    // ── PHASE 1: silent classification ──
-    const classification = await runPhase1Classification(userContent);
-    const stateId = classification?.stateId || null;
-    const classifierStrategy = classification?.strategy || '';
-
-    // ── PHASE 2: graph loading (silent, shows "Drawing graph…" indicator) ──
+    // ── CLASSIFY + LOAD GRAPH (single merged call) ──
+    // One silent call returns { stateId, strategy, adaptedState }. It replaces
+    // the old two round-trips (classify, then adapt). The verified example is
+    // still the fallback whenever the adapted state is missing, verbatim, or
+    // fails validation — so the graph stays robust even if the model slips.
     let loadedState = null;
+    const merged = await runMergedClassifyAdapt(userContent);
+    const stateId = merged?.stateId || null;
+    const classifierStrategy = merged?.strategy || '';
+
     if (stateId) {
       showDrawingIndicator();
       try {
         const index = await loadTemplateIndex();
         const entry = index.find(e => e.id === stateId);
         if (!entry) {
-          console.warn(`🔵 [Phase 1] stateId "${stateId}" not found in template index — skipping graph`);
+          console.warn(`[Merged] stateId "${stateId}" not found in template index — skipping graph`);
         } else if (entry.type === 'visualizer') {
-          console.log(`🟡 [Phase 2] visualizer "${stateId}" — loading example as-is (no adaptation API call)`);
+          console.log(`[Merged] visualizer "${stateId}" — loading example as-is`);
           const example = await loadExample(stateId);
-          const result = loadDesmosState(example);
-          if (result.ok) { loadedState = example; console.log('🟡 [Phase 2] visualizer loaded ✓'); }
-          else console.warn('🟡 [Phase 2] visualizer load failed:', result.errors);
+          if (loadDesmosState(example).ok) { loadedState = example; console.log('[Merged] visualizer loaded'); }
+          else console.warn('[Merged] visualizer load failed');
         } else if (entry.type === 'problem-solver') {
-          const adapted = await runPhase2Adaptation(userMessage, stateId);
+          const adapted = merged.adaptedState;
+          // Verbatim guard: catch the model returning the verified example
+          // unchanged (a known shortcut). Compare expressions.list.
+          let verbatim = false;
           if (adapted) {
-            const result = loadDesmosState(adapted);
-            if (result.ok) {
-              loadedState = adapted;
-              console.log('🟡 [Phase 2] adapted state loaded ✓');
-            } else {
-              console.warn('🟡 [Phase 2] adapted state failed validation, falling back to verified example:', result.errors);
-              const example = await loadExample(stateId);
-              if (loadDesmosState(example).ok) { loadedState = example; console.log('🟡 [Phase 2] fallback example loaded ✓'); }
-            }
+            try {
+              const example0 = await loadExample(stateId);
+              verbatim = JSON.stringify(adapted?.expressions?.list ?? []) === JSON.stringify(example0?.expressions?.list ?? []);
+            } catch (_) {}
+          }
+          // Any unfilled {{PLACEHOLDER}} means the model didn't finish adapting —
+          // it would render literally on the graph, so fall back instead.
+          const leftoverSlots = adapted ? stripPlaceholders(adapted) : [];
+          if (adapted && !verbatim && leftoverSlots.length === 0 && loadDesmosState(adapted).ok) {
+            loadedState = adapted;
+            console.log('[Merged] adapted state loaded');
           } else {
-            console.warn('🟡 [Phase 2] returned null; falling back to verified example.');
+            const reason = !adapted ? 'no state'
+              : verbatim ? 'verbatim copy'
+              : leftoverSlots.length ? `unfilled placeholders: ${leftoverSlots.join(', ')}`
+              : 'validation failed';
+            console.warn(`[Merged] adapted state unusable (${reason}); falling back to verified example.`);
             const example = await loadExample(stateId);
-            if (loadDesmosState(example).ok) { loadedState = example; console.log('🟡 [Phase 2] fallback example loaded ✓'); }
+            if (loadDesmosState(example).ok) { loadedState = example; console.log('[Merged] fallback example loaded'); }
           }
         }
       } catch (e) {
-        console.error('🟡 [Phase 2] failed to resolve/load template:', e);
+        console.error('[Merged] failed to resolve/load template:', e);
       }
     } else {
-      console.log('⚪ [Phase 2] skipped (stateId is null — no template selected)');
+      console.log('[Merged] skipped graph (stateId is null — no template selected)');
     }
 
     // ── PHASE 3: streamed tutoring response, grounded in the loaded state ──
@@ -1238,6 +1230,8 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
       if (!firstChunkSeen && fullText.length > 0) {
         firstChunkSeen = true;
         if (contentElement) contentElement.innerHTML = '';
+        if (dotInterval) { clearInterval(dotInterval); dotInterval = null; }
+        if (phraseInterval) { clearInterval(phraseInterval); phraseInterval = null; }
         thinkingIndicator = null;
       }
       if (contentElement && fullText) {
@@ -1248,7 +1242,7 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
       }
     }, {
       systemPrompt: buildPhase3SystemPrompt(loadedState, classifierStrategy),
-      temperature: 0.2,
+      temperature: 0.65,
       _phaseTag: 'Phase 3 (respond)',
     });
     console.log(`🟢 [Phase 3] done in ${Math.round(performance.now() - phase3T0)}ms (${phase3FullText.length} chars)`);
@@ -1258,9 +1252,17 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
     // Wait for the typewriter to drain so the final render reflects the full text.
     // (Cheap busy-wait alternative would be ugly; instead, force one final render.)
     if (contentElement && phase3FullText) {
+      // Take over from the throttled mid-stream renderer and do one clean pass.
+      renderStopped = true;
+      if (renderTimer) { clearTimeout(renderTimer); renderTimer = null; }
       renderMarkdownAndMath(contentElement, phase3FullText);
       charBuffer = [];
       typewriterActive = false;
+      // Append action buttons now that the message is complete
+      const bubble = contentElement.closest('.msg-bubble');
+      if (bubble && !bubble.querySelector('.msg-actions')) {
+        bubble.appendChild(buildMessageActions(contentElement, streamingRow));
+      }
     }
 
     chatBody.scrollTop = chatBody.scrollHeight;
@@ -1281,8 +1283,7 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
   }
 
   async function callAPI(userContent, onChunk = null, options = {}) {
-    const systemPrompt = options.systemPrompt
-      ?? (await buildPhase1SystemPrompt());
+    const systemPrompt = options.systemPrompt ?? '';
     const temperature = options.temperature ?? 0.2;
     const phaseTag = options._phaseTag || 'callAPI';
     console.log(`📡 [${phaseTag}] → POST ${API_ENDPOINT} (model=${MODEL}, temp=${temperature}, sysPromptLen=${systemPrompt.length})`);
@@ -1387,20 +1388,82 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
     return fullReply;
   }
 
+  // Action buttons (copy / feedback / regenerate) shown under assistant replies
+  const MSG_ACTION_ICONS = {
+    copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>',
+    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>',
+    up: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>',
+    down: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"></path></svg>',
+    regen: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>',
+  };
+
+  function buildMessageActions(contentEl, row) {
+    const bar = document.createElement('div');
+    bar.className = 'msg-actions';
+
+    const mkBtn = (icon, title) => {
+      const b = document.createElement('button');
+      b.className = 'msg-action-btn t-btn';
+      b.type = 'button';
+      b.title = title;
+      b.setAttribute('aria-label', title);
+      b.innerHTML = MSG_ACTION_ICONS[icon];
+      return b;
+    };
+
+    const copyBtn = mkBtn('copy', 'Copy');
+    copyBtn.addEventListener('click', () => {
+      const txt = (contentEl.innerText || '').trim();
+      if (navigator.clipboard) navigator.clipboard.writeText(txt).catch(() => {});
+      copyBtn.classList.add('copied');
+      copyBtn.innerHTML = MSG_ACTION_ICONS.check;
+      setTimeout(() => {
+        copyBtn.classList.remove('copied');
+        copyBtn.innerHTML = MSG_ACTION_ICONS.copy;
+      }, 1400);
+    });
+
+    const upBtn = mkBtn('up', 'Good response');
+    const downBtn = mkBtn('down', 'Bad response');
+    upBtn.addEventListener('click', () => {
+      upBtn.classList.toggle('active');
+      downBtn.classList.remove('active');
+    });
+    downBtn.addEventListener('click', () => {
+      downBtn.classList.toggle('active');
+      upBtn.classList.remove('active');
+    });
+
+    const regenBtn = mkBtn('regen', 'Regenerate');
+    regenBtn.addEventListener('click', () => {
+      let n = row.previousElementSibling;
+      while (n && !(n.classList?.contains('msg-row') && n.classList?.contains('user'))) {
+        n = n.previousElementSibling;
+      }
+      const txt = n ? (n.querySelector('.msg-bubble')?.innerText || '').trim() : '';
+      if (txt && typeof sendMessage === 'function') sendMessage(txt);
+    });
+
+    bar.append(copyBtn, upBtn, downBtn, regenBtn);
+    return bar;
+  }
+
   function addMessage(role, text, isError = false, contentId = null, suggestions = [], fileAttachments = []) {
     const row = document.createElement('div');
     row.className = `msg-row ${role === 'user' ? 'user' : 'assistant'}`;
 
-    const avatar = document.createElement('div');
-    avatar.className = `msg-avatar ${role === 'user' ? 'user-av' : 'korah-av'}`;
-    if (role === 'user') {
-      avatar.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
-    } else {
-      avatar.innerHTML = `<img src="../logo-images/newlogo0.png" alt="K" class="w-10 h-10 object-contain" />`;
-    }
-
     const bubble = document.createElement('div');
     bubble.className = `msg-bubble ${role === 'user' ? 'user' : 'korah'}${isError ? ' error' : ''}`;
+
+    // Assistant replies get an inline logo + name header
+    if (role === 'assistant') {
+      const header = document.createElement('div');
+      header.className = 'msg-header';
+      header.innerHTML =
+        '<span class="msg-header-avatar"><img src="../logo-images/newlogo0.png" alt="Korah" /></span>' +
+        '<span class="msg-header-name">Korah AI</span>';
+      bubble.appendChild(header);
+    }
 
     // Show file attachment cards for user messages
     if (role === 'user' && fileAttachments && fileAttachments.length > 0) {
@@ -1476,7 +1539,11 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
       bubble.appendChild(suggestionsDiv);
     }
 
-    row.appendChild(avatar);
+    // Message action buttons for assistant replies — deferred for streaming rows
+    if (role === 'assistant' && !isError && !contentId) {
+      bubble.appendChild(buildMessageActions(content, row));
+    }
+
     row.appendChild(bubble);
 
     messagesList?.appendChild(row);
@@ -1600,7 +1667,7 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
   }
 
   function init() {
-    console.log('SAT Math chat initializing...', {
+    console.log('Desmos Chat initializing...', {
       input: !!input,
       welcomeInput: !!welcomeInput,
       sendBtn: !!sendBtn,
@@ -1625,7 +1692,7 @@ If your output looks anything like the REFERENCE EXAMPLE's content, you have fai
     init();
   }
   } catch (e) {
-    console.error('SAT Math Chat Error:', e);
+    console.error('Desmos Chat Error:', e);
   }
 
   function initResizeHandle() {

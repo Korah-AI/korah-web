@@ -4,7 +4,7 @@ Read this entire file before touching a single line of code.
 This is your operating manual, design system, and component library in one document.
 When this file and what you see in the codebase conflict — the codebase wins. This doc describes intent; the CSS files describe reality.
 
-Talk like a caveman, minimum words, you get to the point (Or use tables). Little words, only main points when finished planning but when finished adding something to the code, use a normal amount of words to explain what you did. 
+**Talk like a caveman**, minimum words, you get to the point (Or use tables). Little words, only main points when finished planning but when finished adding something to the code, use a normal amount of words to explain what you did. 
 
 0 · Agent Operating Procedure
 Follow this sequence for every task, without exception.
@@ -13,6 +13,19 @@ Follow this sequence for every task, without exception.
 3. ASK if you cannot find something or the task is ambiguous — pause mid-task, do not guess
 4. IMPLEMENT using existing classes wherever possible
 5. FLAG what you built and why at the end of your response
+
+### 0.1 · The Core Commandments (Strict Rules)
+These rules are absolute. Violation results in immediate task failure.
+
+1.  **Surgical Code Rule (Strict):** Never rewrite entire HTML bodies. Only perform surgical edits to specific lines. Always `grep` for existing helpers, listeners, and scripts (`addEventListener`, `x-data`, `x-on`, `KorahDB`, `KorahTransitions`, `onclick`) in both the current file AND all related JS files before adding code to avoid duplication.
+2.  **Surgical Reversions & Git Safety (Double Confirmation):** Blanket `git revert` or file checkouts are forbidden unless explicitly ordered. If ordered, you must ask twice ("Are you sure?" → "Are you absolutely sure?"). "Your own lines" = code you added this session only. For reverting others' code, ask the user.
+3.  **The !important Approval Rule:** Exhaust all radical CSS approaches before using `!important`. Try in order: (a) `html[data-theme="dark"]` prefix for specificity, (b) chain 3+ parent selectors, (c) nest inside higher-specificity block, (d) duplicate variable with higher-specificity fallback. If all fail, explain why and obtain per-task approval. Approval does not carry to other tasks.
+4.  **No-Dependency Rule:** No `npm install` or new CDN scripts without permission. This covers: Google Fonts, icon libraries, utility libs, chart libs, animation libs, and any external `<script>` beyond the existing Firebase, Alpine, Tailwind, and DOMPurify CDNs. Propose the exact URL and explain why existing tools can't do the job.
+5.  **No Backend Access:** Do NOT touch: `study-firebase-init.js`, `firestore-store.js`, Firebase config in any page, `onAuthStateChanged`, `setupKorahDB()`, `signInWithEmailAndPassword`, `createUserWithEmailAndPassword`, or `KorahDB.*` CRUD — unless explicitly permitted. If permitted, use `try-catch` + optional chaining on every Firebase call to prevent page crashes.
+6.  **Mandatory Responsiveness Checklist:** All additions must scale at Desktop (1200px+), Tablet (768px), and Mobile (375px) without layout breaks. Run the §11 QA checklist before declaring done. List pass/fail per breakpoint in your report.
+7.  **"Caveman" Code Comments:** Minimum words. Describe *what* not *how*. No line-by-line commentary. Good: `// Fade in sidebar`. Bad: 3+ sentences explaining mechanics.
+8.  **Coworker Collaboration Guide:** Deep-dive pages for UI/UX improvements. Present in a compact table: | Element | Current Function | Proposed Change | Function If Change Happens | Why |. See §0.2 and Collaborative Reflection Questions (end of doc) for full guidelines.
+
 The Grep Rule
 Before writing any CSS class or HTML class attribute, run a search:
 bashgrep -r "class-name-you-are-about-to-write" ./
@@ -35,6 +48,26 @@ New classes created (and why they were needed)
 Existing classes reused
 Any judgment calls made without asking
 
+### 0.2 · Developer-to-Developer Collaboration & Tone
+
+**UX Recommendations Table Format**
+When deep-diving into pages to suggest improvements, present findings in this exact table — no preamble:
+
+| Element | Current Function | Proposed Change | Function If Change Happens | Why |
+
+Use short phrases, not full sentences. After the table, ask which items to implement.
+
+**Rules for Design Partners**
+- Always explain the *why* behind each recommendation (performance, consistency, UX, brand alignment)
+- When disagreeing with a direction, propose 1–2 alternatives with tradeoffs — not just "I don't think that works"
+- Push back on: accessibility violations, layout breakage, brand drift. Defer on: subjective visual preference
+- If a change would break existing functionality, flag it immediately with the specific risk
+- Use the Collaborative Reflection Questions (end of document) when evaluating decisions together
+
+**Communication Tone**
+- During planning / exploration: few words, bullet points or tables
+- After executing changes: normal sentences explaining what you did, why, and tradeoffs
+- Flag ambiguity mid-task — do not guess and plow forward
 
 1 · What Korah Is
 Korah is a premium AI study platform. Every UI decision should serve one north star:
@@ -94,10 +127,30 @@ cssbackdrop-filter: blur(1.5625rem);
 background: var(--sf);
 Utility classes: .glass (strong blur) · .glass-sm (lighter blur)
 
+### 2.1 · Code Comments & Styling Rules
+
+**"Caveman" Code Comments** (see §0.1 Rule 7)
+Minimum words. Describe what major functions do only. No line-by-line commentary.
+
+**TailwindCDN Boundaries**
+Tailwind config lives in `korah.js` (inline `tailwind.config`). You may use utility classes in HTML. Do NOT:
+- Modify the CDN script URL (`https://cdn.tailwindcss.com`)
+- Use `@apply` directives — rely on CSS variables and the existing class system
+- Override `theme.extend` values in `korah.js` without asking
+
+**AlpineJS Guidelines**
+Alpine drives all interactivity (sidebar, theme, modals, dropdowns). You may add small `x-data`, `x-show`, `x-on:click` attributes inline for component-local state.
+You must NOT:
+- Create large Alpine components inline — put them in `korah.js` or a page-specific JS file
+- Duplicate listeners or helpers that already exist — grep before adding
+- Remove or modify `x-cloak` or `data-theme` attributes on `<html>`
+
 3 · Typography Scale
 Use this named scale. Rem values are the standard — deviate only when the component's visual context demands it, and flag the deviation.
 NameRemUse2xs0.5625remSection labels, badges, uppercase capsxs0.625remTimestamps, tiny metadata, scrollbar labelssm0.6875remSub-labels, helper text, nav textbase-sm0.75remSecondary body, card descriptionsbase0.8125remPrimary body text in UI elementsbase-lg0.875remSettings labels, readable prosemd0.9375remChat input, message bodylg1remNav icons, standard interactive labelsxl1.125remSub-headings, modal titles2xl1.25remSection headings, timers3xl1.5remPage titlesdisplayclamp(2rem, 5vw, 3.5rem)Welcome screen hero, SAT bank h1
-Font: 'Plus Jakarta Sans', sans-serif everywhere. Monospace: 'JetBrains Mono', monospace for code previews only.
+Font: 'Plus Jakarta Sans', sans-serif for all UI. 'Playfair Display', serif for display/hero headings (available via `font-display` utility in Tailwind config). 'JetBrains Mono', monospace for code previews only.
+
+If you believe an outside font would look better, propose the font family and a CDN link — do not add it without explicit approval.
 Weight conventions:
 
 500 — body, list items
@@ -170,8 +223,94 @@ SAT Player Structure [SAT]
 Responsive Strategy
 BreakpointBehaviormax-width: 40remMobile chat: sidebar off-canvas, compact paddingmax-width: 48remSidebar goes fixed/overlay, mobile navmax-width: 64remDoc panel goes fixed overlaymax-width: 56.25rem [SAT]Split layout stacks verticallymax-width: 52.5rem [SAT]SAT page compact paddingmax-width: 48rem [SAT]Mobile: topbar collapses icons to more-menumax-width: 30rem [SAT]Ultra-compact SAT topbar
 
+### 5.1 · Codebase Architecture & File Map
+
+**Directory Hierarchy (under `korah-bot/`)**
+```
+korah-bot/
+├── index.html              App home
+├── chat.html               Main chat page
+├── login.html              Auth page
+├── productivity.html       Productivity dashboard
+├── app/                    Core app modules (chat engine, timer, Firestore)
+├── sat/                    SAT prep (player, bank, analytics)
+├── study/                  Study tools (feed, guides, tests, flashcards)
+├── transitions/            Page-transition engine + FOUC prevention CSS
+├── sidebar.html            Sidebar HTML template
+├── sidebar-loader.js       Dynamic sidebar injector
+├── korah.js                Tailwind config + Alpine root components
+├── korah.css               CSS variables + semantic color classes
+├── support/                Support / FAQ
+├── opportunities/          STEM opportunities
+├── landing/                Marketing pages
+└── release/                Release notes
+```
+
+**Routing Rules**
+All navigation goes through the transition system:
+```
+window.KorahTransitions.go('path/to/page.html')
+window.KorahTransitions.replace('path/to/page.html')
+window.KorahTransitions.goInstant('path/to/page.html')   /* skip animation */
+```
+Do NOT use `window.location.href` or bare `<a href>` links — they cause a hard reload. The transition engine intercepts same-origin anchor clicks automatically. See `transitions/page-transitions.js` for implementation.
+
+**FOUC Prevention Logic**
+Four layers prevent flash-of-unstyled-content:
+1. Inline `<script>` in every `<head>` sets `data-theme` from localStorage before CSS paints.
+2. `page-transitions.css` hides `<body>` (`opacity: 0`) until `.korah-page-ready` is set.
+3. `page-transitions.js` sets `.korah-page-ready` after `window.load` + 50ms settlement.
+4. Alpine `x-cloak` hides uninitialized components.
+Do not remove or modify any of these layers — breaking one causes visible flash.
+
+**Asset Paths & Dynamic Loaders**
+- Sidebar: `<div id="sidebar-root"></div>` → loaded by `sidebar-loader.js` (fetches `sidebar.html`, rewrites relative paths, calls `Alpine.initTree()`).
+- Script load order (every page): `page-transitions.js` (sync) → Alpine CDN (defer) → `sidebar-loader.js` (defer) → Tailwind CDN → page-specific JS.
+- Firebase init: `study/js/study-firebase-init.js` (type="module") — initializes Firebase app, sets up auth listener, calls `setupKorahDB()`, dispatches `korahReady` event.
+
+**Layout note:** `main-content` and `main-area-wrapper` are the shared flex column/row containers — see §5 Layout System for structure.
+
 6 · Component Library
 Each component entry includes: class names, states, dark/light notes, and page scope where relevant. [ALL] = present in korah-chat.css. [SAT] = SAT pages only.
+
+**File Reference Map** — quick overview of every component, what it does, and where it lives:
+| § | Component | What It Is | CSS | JS / HTML |
+|---|---|---|---|---|
+| 6.1 | Glass Panels | Blurred backdrop surface for cards, sidebars, modals | korah-chat.css | — |
+| 6.2 | Sidebar | Collapsible nav panel with chat history | korah-chat.css | sidebar.html, sidebar-loader.js, korah.js (app()), study/js/sidebar.js |
+| 6.3 | New Chat | Primary CTA button in sidebar header | korah-chat.css | korah.js |
+| 6.4 | Topbar | Fixed top bar with mode selector, tutoring toggle | korah-chat.css | korah.js (app()) |
+| 6.5 | Messages | Chat bubble list with avatars, markdown content | korah-chat.css | app/korah-chat.js |
+| 6.6 | Typing | Animated dots for AI thinking / typing state | korah-chat.css | app/korah-chat.js |
+| 6.7 | Welcome | Centered hero on home screen with mode pills, mood picker | korah-chat.css | korah.js (chatWidget()) |
+| 6.8 | Chat Input | Fixed bottom textarea with file upload, send button | korah-chat.css | app/korah-chat.js |
+| 6.9 | Doc Panel | Right-side file panel with drag-drop upload | korah-chat.css | app/korah-chat.js |
+| 6.10 | Modals | Settings panel and delete confirmation overlay | korah-chat.css | korah.js (app()) |
+| 6.11 | Dropdowns | Positioned menu with items, separators, sub-panels | korah-chat.css | korah.js (app()) |
+| 6.12 | Toast | Bottom-center "pro tip" notification | korah-chat.css | app/korah-chat.js |
+| 6.13 | Feed | Card grid for study feed items | korah-chat.css | study/feed.html |
+| 6.14 | Study | Flashcards, guides, practice tests, generation progress | korah-chat.css | app/korah-chat.js, study/js/study-api.js |
+| 6.15 | Timer | Sidebar timer with presets, circular progress, celebration | korah-chat.css | app/timer-manager.js, korah.js (timer()) |
+| 6.16 | Toggles | Settings toggle and SAT mode switch | korah-chat.css | korah.js |
+| 6.17 | Buttons | Icon buttons, SAT primary/secondary/ghost, chips | korah-chat.css, sat.css | — |
+| 6.18 | Checkboxes | Chat history multi-select and SAT answer checkboxes | korah-chat.css, sat.css | — |
+| 6.19 | SAT Section Cards | Section selection grid with colored headers | sat.css, sat-math.css, sat-player-theme.css | sat/js/sat-player.js, sat/js/sat-bank.js, sat/js/sat-analytics.js |
+| 6.20 | SAT Question Panel | Question stem, passage card, answer choices | sat.css, sat-math.css, sat-player-theme.css | sat/js/sat-player.js, sat/js/sat-bank.js, sat/js/sat-analytics.js |
+| 6.21 | SAT Question Navigator | Grid of question pills with stats, legend | sat.css, sat-math.css, sat-player-theme.css | sat/js/sat-player.js, sat/js/sat-bank.js, sat/js/sat-analytics.js |
+| 6.22 | SAT Reference Panel | Draggable overlay with formulas/reference | sat.css, sat-math.css, sat-player-theme.css | sat/js/sat-player.js, sat/js/sat-bank.js, sat/js/sat-analytics.js |
+| 6.23 | SAT Player Split | Desmos + question side-by-side layout | sat.css, sat-math.css, sat-player-theme.css | sat/js/sat-player.js, sat/js/sat-bank.js, sat/js/sat-analytics.js |
+| 6.24 | SAT Topbar + Footer | Progress bar, timer, nav buttons | sat.css, sat-math.css, sat-player-theme.css | sat/js/sat-player.js, sat/js/sat-bank.js, sat/js/sat-analytics.js |
+| 6.25 | BG FX | Star field, ambient particles, glowing orbs | korah-chat.css, sat.css | app/korah-chat.js |
+| 6.26 | Scrollbars | Custom purple scrollbar across chat, doc panel, SAT nav | korah-chat.css, sat.css | — |
+| 6.27 | Skeleton | Loading placeholder rows for sidebar history | korah-chat.css | study/js/sidebar.js |
+| 6.28 | Utilities | Color/text/bg helpers, transition shortcuts, visibility | korah.css, korah-chat.css | — |
+| 6.29 | Login | Auth page with black hole hero, login/signup form; shooting star physics (fly-by / slingshot / spaghettification capture) | korah.css | login.html |
+| 6.30 | Landing | Marketing page with nav, hero stats, feature sections | (inline) | landing/index.html |
+| 6.31 | Productivity | Todo list, focus timer, mini stats, celebration overlay | korah-chat.css | productivity.html |
+| 6.32 | FAQ | Accordion Q&A, category cards, email tooltip | support/support.css | support/index.html |
+| 6.33 | Opportunities | Search/filter, card grid with badges, empty state | (inline) | opportunities/opportunities.html |
+| 6.34 | Release | Version cards with countdown, mascot, changelog | release/release.css | release/release.js |
+| 6.35 | Study Player | Item viewer with stages, progress bar, guide reader overlay | korah-chat.css | study/item.html, study/guide.html, study/js/sidebar.js |
 
 6.1 · Glass Panels [ALL]
 The base visual unit. Cards, sidebars, modals, topbars all build on this.
@@ -322,7 +461,7 @@ Welcome input:
 .welcome-attachments        file chip row (hidden when empty)
 .welcome-input-actions      bottom action row
 .welcome-right-actions      send + project buttons
-.welcome-send-btn           circular send button, background: var(--mg) or var(--p4)
+.welcome-send-btn           circular some button, background: var(--mg) or var(--p4)
 Suggestion chips:
 .suggestion-grid            flex wrap, justify: center
 .suggestion-chip            rounded pill, hover: translateY(-0.125rem)
@@ -370,7 +509,7 @@ Mood picker:
 .doc-panel-empty-hint
 
 .doc-card                   individual file card
-.doc-card:hover             translateY(-0.125rem), border: var(--p4)
+.doc-card-inner:hover       translateY(-0.125rem), border: var(--p4)
 .doc-card::before           spotlight radial gradient (--mouse-x, --mouse-y)
 .doc-card-preview           thumbnail area, height: 8.75rem
 .doc-card-preview img       covers, scale on hover
@@ -407,6 +546,11 @@ Settings modal:
 .settings-btn.primary       gradient purple CTA
 .settings-btn.danger        red bordered button
 .settings-save-btn          footer save button
+Custom select (inside settings items):
+.settings-select-trigger, .settings-select-menu,
+.settings-select-option, .settings-custom-select,
+.settings-item-control, .settings-item-label
+                      -- Custom styled select dropdown inside settings modal items (shared with study player)
 Delete confirmation modal:
 .delete-modal               fixed overlay, display: none → .show
 .delete-modal.show          animation: fadeIn
@@ -508,6 +652,8 @@ Study generation progress:
 .study-gen-progress-bar.loading  triggers animation
 .study-gen-success          revealed on completion (display: none → .show flex)
 .study-gen-btn              "View in Study Hub" CTA
+.study-modern               Modern study item wrapper
+.create-input, .create-textarea  Shared create/edit inputs (also in productivity)
 
 6.15 · Timer Widget [ALL]
 The timer lives in the sidebar and has two display modes: idle (collapsed) and active (running/paused).
@@ -749,6 +895,240 @@ Transition helpers:
 .t-btn:active       scale(0.95)
 Visibility:
 .is-hidden [SAT]    display: none !important
+.anim-delay-100 through .anim-delay-800  Animation delay stagger helpers (100ms–800ms)
+.tx-mg, .tx-mr, .tx-my  Mood text colors (green, red, yellow)
+.bg-base3, .radial-glow-bg, .grad-bg-intro  Additional background variants
+.shadow-card          Card box shadow utility
+.chat-body            Chat scroll container
+.theme-toggle         Small theme switch button
+.step-num             Step number circle (used in SAT questions)
+
+6.29 · Hero & Login Elements [NEW]
+
+**Page shell:**
+.kl-shell                   Full-height flex row: hero (left) + auth (right)
+.kl-hero-panel              Left panel — black hole + "KORAH A.I" title
+.kl-hero-inner              Centered hero content wrapper
+.kl-auth-panel              Right panel — login/signup form
+.kl-bh-wrap, .kl-bh-canvas, .kl-bh-canvas-b, .kl-bh-stage
+                            Black hole background layers (hero panel)
+.kl-bh-singularity          The black center of the black hole
+#staticStarField            Gravitational lensing stars (Dark mode only)
+#shootingStarCanvas         Three-tier shooting star physics (dark mode only)
+
+**Tiers** (random on spawn, 2000ms schedule):
+- **Tier 0 — Safe fly-by** (`gPower=1.0, vAcc=1.0`): straight pass, no capture
+- **Tier 1 — Slingshot** (`gPower=1.85, vAcc=1.003`): gravity bend around black hole; exclusion zone guard pushes star outside `bhR*1.15` via squared ease-in position push + velocity redirect
+- **Tier 2 — Capture** (`gPower=2.5, vAcc=1.003`): spaghettification triggers when `dist < exR` — kills orbit, streaks into singularity with size decay + trail fade
+
+**Probability:** 60% safe, 25% slingshot, 10% capture (default fallback 5% unused)
+**Exclusion zone guard:** tier 1 only — recalculates distance after gravity update, applies `d*d*0.15` push + `dot*d*0.4` velocity redirect when `nd < bhR*1.15`
+**Theme guard:** `spawn()` returns early in light mode; MutationObserver clears `activeStar` + cancels `spawnTimer` on light switch, restarts on dark switch
+**Loop:** runs continuously in light mode but returns immediately (constant draw, minimal perf impact)
+.kl-hero-title              "KORAH A.I" text with kl-breath animation
+
+**Login card:**
+.login-card                 Isolated starfield background inside the auth panel
+.login-card-inner           Card interior (form content)
+.login-star-canvas          Inline starfield canvas (inside card)
+.login-title, .login-subtitle  Heading + subtitle
+
+**Auth form:**
+.tabs, .tab                 Login / Signup tab switcher
+.form-container             Form wrapper
+.form-group, .form-label, .form-input  Field group
+.input-error                Red error text below field
+.name-fields-row            First/last name side-by-side row
+.btn, .btn-primary          Auth submit button (purple gradient)
+.btn-google                 Google sign-in button
+.password-toggle            Show/hide password icon
+.spinner                    Loading spinner inside button
+
+**Misc:**
+.divider                    "or" divider between Google and email
+.text-center                Centered text utility
+
+6.30 · Landing Page Components [NEW]
+
+**Shared nav (also used on support & opportunities):**
+.nav-links, .nav-link, .nav-link-icon, .nav-link-text,
+.nav-pill, .nav-indicator   Pill-style nav with hover indicator underline
+
+**Hero stats:**
+.hero-stat-label, .hero-stat-num  Hero stats row (label + number)
+.reveal                     Scroll-reveal animation trigger
+.stat-divider               Vertical divider between stats
+
+**Browser mockup:**
+.mock-browser, .mock-browser-bar  Browser chrome mockup with dot bar
+.mock-dot, .mock-side       Window control dots + sidebar
+
+**Feature content:**
+.feature-section            Feature content section
+.bullet-list, .bullet-dot   Bullet list with animated dot
+
+6.31 · Productivity Dashboard [NEW]
+
+**Page layout:**
+.prod-page, .prod-scroll    Full-page scroll container
+.prod-section-head          Section heading row
+.prod-stats-col             Stats column layout
+.prod-mini-stat             Compact stat card
+.prod-timer-grid            Timer + todo side-by-side grid
+.prod-todo-card             Todo list card container
+
+**Todo list:**
+.todo-list, .todo-item, .todo-text, .todo-chip,
+.todo-checkbox, .todo-delete, .todo-due-badge
+                            Todo item: checkbox, text, due badge, delete button
+.todo-input-row, .todo-add-btn, .todo-text-input
+                            Add-todo inline form row
+.todo-tabs, .todo-tab       "All / Active / Completed" filter tabs
+.todo-empty                 Empty state (hidden via .hidden)
+
+**Timer (productivity-specific, distinct from §6.15):**
+.timer-card                 Timer card container
+.timer-circle-container, .timer-circle-bg, .timer-circle-progress,
+.timer-svg                  Circular SVG progress ring
+.timer-display              Large time display
+.timer-status-label         "Focus" / "Break" status label
+.timer-controls, .timer-btn-primary, .timer-btn-secondary
+                            Play/pause/reset button row
+.timer-presets              Preset duration pills row
+.preset, .preset-pill       Individual preset pill
+
+**Mini stats / mood:**
+.mini-value, .mini-sub, .mini-label, .mini-stat-purple,
+.mini-stat-green, .mini-stat-amber, .mini-wm
+                            Compact stat card with colored left accent
+.mood-dot, .mood-indicator  Current mood dot indicator
+
+**Priority dropdown:**
+.priority-dropdown, .priority-dropdown-menu, .priority-opt
+                            Todo priority picker (low/med/high)
+
+**Celebration overlay:**
+.prod-celebration-overlay, .prod-celebration-card,
+.prod-celebration-emoji, .prod-celebration-title,
+.prod-celebration-msg, .prod-celebration-stats,
+.prod-celebration-stat, .prod-celebration-stat-lbl,
+.prod-celebration-stat-val, .prod-celebration-actions,
+.prod-cta-primary, .prod-cta-secondary
+                            Full-screen celebration on streak/timer completion,
+                            with stats row + action buttons
+
+6.32 · Support / FAQ Page [NEW]
+
+.faq-card                   FAQ card container
+.faq-scroll-container       Scrollable FAQ list
+.accordion-header, .accordion-chevron, .accordion-content
+                            Accordion: click header to toggle content, chevron rotates
+.hero-glass                 Hero section glass backdrop
+.explore-card               Category explore card
+.t-hover                    Hover transition utility
+.tapped                     Tap state utility
+.email-tooltip-trigger      Shows email on click
+
+6.33 · Opportunities Page [NEW]
+
+**Hero:**
+.opp-hero, .opp-hero-left, .opp-hero-right,
+.opp-hero-title, .opp-hero-sub, .opp-hero-actions
+                            Hero section: left text + right illustration
+
+**Search & filters:**
+.opp-search-wrap, .opp-search-icon, .opp-search
+                            Search bar with icon
+.opp-filters, .opp-filters-header, .opp-filter-row,
+.opp-filter-label           Inline filter controls
+.opp-chip-group, .opp-chip, .opp-clear-btn
+                            Filter tag chips + clear all
+.opp-results-bar            "Showing X of Y" results strip
+
+**Card grid:**
+.opp-grid                   Auto-fill card grid
+.opp-card, .opp-card-top, .opp-card-name, .opp-card-org,
+.opp-card-desc, .opp-card-meta, .opp-card-footer
+                            Opportunity card: icon top, name, org, description, meta, footer
+.opp-cat-badge, .opp-cost-pill, .opp-deadline,
+.opp-meta-tag, .opp-badge-count
+                            Card badges: category, cost (free/$), deadline, meta tags
+
+**Controls:**
+.opp-learn-btn, .opp-submit-link  Card CTA buttons
+.opp-dropdown-wrap, .opp-dropdown-btn, .opp-dropdown-chevron,
+.opp-dropdown-menu, .opp-dropdown-item
+                            Sort/filter dropdown
+
+**Empty state:**
+.opp-empty, .opp-empty-icon, .opp-empty-title, .opp-empty-sub
+                            No-results state
+
+.opp-body                   Main content wrapper
+
+6.34 · Release Notes [NEW]
+
+.release-card               Version release card
+.release-label, .release-date  Version label + date badge
+.content-wrapper            Centered content constraint
+.prerelease-body            Pre-release notice body
+.countdown-timer            Countdown to next release
+.mascot-container, .korah-mascot  Mascot illustration area
+.text-content, .description  Body text containers
+.footer-note                Footer note text
+.title                      Page title
+
+6.35 · Study Player / Item Viewer [NEW]
+
+**Player shell:**
+.study-player, .study-modern, .study-feed-body  Player container (study item / guide)
+
+**Hero & stage:**
+.player-hero, .player-hero-head, .player-body,
+.player-stage, .player-stage-top, .player-sub,
+.player-title, .player-modes
+                            Hero area: title, mode badges, stage indicator
+.player-content-eyebrow, .player-content-text,
+.player-list-item-title, .player-list-item-body
+                            Stage content renderer classes
+
+**Controls & progress:**
+.player-controls, .player-nav-btn, .player-util-btn
+                            Prev/next nav + utility buttons
+.player-progress-track, .player-progress-fill, .player-progress-text
+                            Stage progress bar
+
+**Item meta & edit:**
+.item-body, .item-meta-bar, .item-actions  Item meta row + action buttons
+.item-edit-field, .item-edit-form, .item-edit-grid,
+.item-edit-label, .item-edit-modal-content,
+.item-edit-remove, .item-edit-row-head
+                            Inline edit modal for item fields
+
+**Guide reader overlay:**
+.guide-reader-body, .guide-reader-head, .guide-reader-modal,
+.guide-reader-dialog, .guide-reader-close,
+.assistant-content, .study-guide-markdown
+                            Study guide reader overlay with AI assistant sidebar
+
+6.36 · Black Hole: Accretion and Halo Orbit [Dark Mode]
+
+**Physics Logic:**
+Uses "Angled-Rail Spline" to trace lensed light precisely.
+Elliptical base provides momentum to fix "stop-and-redirect" snaps.
+
+**"Perfect One" Configuration:**
+Hump Power: 2.0         Smooth natural rise
+Halo Peak: 0.35         Inner lip tracing
+Disk Bow: 0.11          Accretion angle
+Spiral Pull: 0.9989     Inward decay
+Thinning Exp: 3.3       Shredded death speed
+
+**Code Pattern:**
+baseLy = sinT * R * 0.11
+if (sinT < 0) ly -= Math.pow(1 - cosT*cosT, 2.0) * 0.35 * R
+lx = cosT * R
+thin = Math.pow(dist/init, 3.3)
 
 7 · Dark / Light Mode Rules
 
@@ -777,12 +1157,15 @@ font-variant-numeric: tabular-nums on all timer/counter displays.
 
 
 9 · What To Do When You Are Stuck
-SituationActionCan't find a class for something that probably existsGrep more broadly. Still can't find it? Pause and ask.Need a new animationCheck keyframe library (§4). Still nothing? Create it, flag it.Component looks wrong in light modeAdd html[data-theme="light"] overrides. Do not add !important to fight existing rules.SAT and chat CSS seem to conflictkorah-chat.css wins. Move the rule there if it's shared.Need a layout that doesn't existAsk first. Do not invent a layout structure that conflicts with existing flex/grid containers.Task would require more than 2 !important overridesStop. There is a structural problem. Ask.
+SituationActionCan't find a class for something that probably existsGrep more broadly. Still can't find it? Pause and ask.Need a new animation Check keyframe library (§4). Still nothing? Create it, flag it.Component looks wrong in light mode Add html[data-theme="light"] overrides. Do not add !important to fight existing rules.SAT and chat CSS seem to conflict korah-chat.css wins. Move the rule there if it's shared.Need a layout that doesn't exist Ask first. Do not invent a layout structure that conflicts with existing flex/grid containers.Task would require more than 2 !important overrides Stop. There is a structural problem. Ask.
+
+### 9.1 · Task-Specific Validation Protocol
+Before declaring a task "Done", you MUST generate a **Task-Specific Deep-Dive Checklist** based on the unique complexity of the task (e.g., "Verify contrast on light mode scrollbar", "Check animation overlap on mobile").
 
 10 · Maintaining This Document
 This file is a living document. When you:
 
-Create a new component: add it to §6 with all states documented
+Create a new component: MANDATORY — document in §6 (table + detail section) before any code is written. If a component not in this file is found in the codebase, fix it immediately.
 Establish a new animation: add it to the keyframe table in §4
 Add a new page with new CSS: note its scope with a page tag
 Find something documented here that no longer matches the code: update this file and note the change in your ## What I did section
@@ -790,6 +1173,44 @@ Find something documented here that no longer matches the code: update this file
 The goal is that any agent reading this file can orient themselves in the codebase in under 5 minutes.
 
 Always make sure each new thing works completely and check for any bugs or Bed code formating.
+
+11 · Quality Assurance Checklist
+
+Before declaring any task DONE, run through this checklist:
+
+**Responsiveness**
+- [ ] Test at 1200px+ (desktop)
+- [ ] Test at 768px (tablet)
+- [ ] Test at 375px (mobile)
+- [ ] No horizontal scrollbars or overflow at any breakpoint
+- [ ] All controls visible and tappable
+
+**Theme**
+- [ ] Test in dark mode
+- [ ] Test in light mode
+- [ ] No hardcoded colors — only CSS variables used
+- [ ] Light mode looks intentional (not broken dark-mode defaults)
+
+**Accessibility**
+- [ ] `:focus-visible` rings on all interactive elements
+- [ ] Color is never the sole state indicator
+- [ ] Mobile touch targets ≥ 2.75rem × 2.75rem
+
+**Code Hygiene**
+- [ ] No `!important` without explicit approval (per §0.1 Rule 3)
+- [ ] No new npm packages or CDN scripts without permission (per §0.1 Rule 4)
+- [ ] Grepped for existing classes before creating new ones (per §0.1 Rule 1)
+- [ ] No duplicate listeners or helpers exist (per §0.1 Rule 1)
+
+**Post-Execution Declaration**
+After completing the task and verifying the checklist, include this exact block at the end of your response:
+```
+## QA Verification
+- Responsiveness: [pass/fail at each breakpoint]
+- Theme: [dark pass / light pass]
+- Accessibility: [focus rings, color-independence, touch targets]
+- Code hygiene: [no !important, no new deps, no duplicates]
+```
 
 Reflection Questions
 Use these questions to guide design decisions:

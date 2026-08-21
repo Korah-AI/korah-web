@@ -1,6 +1,6 @@
 (() => {
   const MAX_CHARS = 10000;
-  const API_ENDPOINT = "/api/gem-proxy";
+  const API_ENDPOINT = "/api/r";
   const MODEL = "gemini-2.5-flash";
 
   const input = document.getElementById("chat-input");
@@ -44,476 +44,6 @@
   // These are kept in sync by Firestore realtime listeners set up in initApp().
   let sessionsCache   = {}; // { [id]: conversationDoc }
   let studyItemsCache = {}; // { [id]: studyItemDoc }
-
-  // ═══ Document Attachment State ═══
-  // Each entry: { file, name, size, type: 'image'|'text'|'other', dataUrl, content }
-  let attachedFiles = [];
-
-  function getFileIcon(fileType, fileName) {
-    if (fileType === 'image') return '🖼️';
-    const ext = (fileName || '').split('.').pop().toLowerCase();
-    if (ext === 'pdf') return '📕';
-    if (['doc','docx'].includes(ext)) return '📝';
-    if (['txt','md'].includes(ext)) return '📄';
-    return '📎';
-  }
-
-  function getFileSvgIcon(fileType, fileName) {
-    const ext = (fileName || '').split('.').pop().toLowerCase();
-    if (fileType === 'image') {
-      return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`;
-    }
-    if (ext === 'pdf') {
-      return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>`;
-    }
-    if (['doc','docx'].includes(ext)) {
-      return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>`;
-    }
-    if (['txt','md'].includes(ext)) {
-      return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`;
-    }
-    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>`;
-  }
-
-  function formatFileSize(bytes) {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / 1048576).toFixed(1) + ' MB';
-  }
-
-  function getFileMetadata(processedFile) {
-    return {
-      name: processedFile.name,
-      size: processedFile.size,
-      type: processedFile.type
-    };
-  }
-
-  const MAX_FILE_SIZE = 4 * 1024 * 1024; // 4 MB per file
-  const MAX_IMAGE_DIMENSION = 1024;
-
-  function resizeImage(file) {
-    return new Promise((resolve) => {
-      const img = new Image();
-      const url = URL.createObjectURL(file);
-      img.onload = () => {
-        URL.revokeObjectURL(url);
-        let { width, height } = img;
-        if (width <= MAX_IMAGE_DIMENSION && height <= MAX_IMAGE_DIMENSION && file.size < 300000) {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result);
-          reader.readAsDataURL(file);
-          return;
-        }
-        const scale = Math.min(MAX_IMAGE_DIMENSION / width, MAX_IMAGE_DIMENSION / height);
-        width = Math.round(width * scale);
-        height = Math.round(height * scale);
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', 0.7));
-      };
-      img.onerror = () => {
-        URL.revokeObjectURL(url);
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.readAsDataURL(file);
-      };
-      img.src = url;
-    });
-  }
-
-  function processFile(file) {
-    return new Promise(async (resolve) => {
-      const isImage = file.type.startsWith('image/');
-      const isText = file.type === 'text/plain' || ['txt','md','csv'].includes(file.name.split('.').pop().toLowerCase());
-      const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-
-      if (isPDF && file.size > MAX_FILE_SIZE) {
-        resolve({ file, name: file.name, size: file.size, type: 'error', dataUrl: null, content: null, error: 'File too large (max 4 MB)' });
-        return;
-      }
-
-      if (isImage) {
-        const dataUrl = await resizeImage(file);
-        resolve({ file, name: file.name, size: file.size, type: 'image', dataUrl, content: null });
-      } else if (isPDF) {
-        const reader = new FileReader();
-        reader.onload = () => resolve({ file, name: file.name, size: file.size, type: 'pdf', dataUrl: reader.result, content: null });
-        reader.readAsDataURL(file);
-      } else if (isText) {
-        const reader = new FileReader();
-        reader.onload = () => resolve({ file, name: file.name, size: file.size, type: 'text', dataUrl: null, content: reader.result });
-        reader.readAsText(file);
-      } else {
-        resolve({ file, name: file.name, size: file.size, type: 'other', dataUrl: null, content: null });
-      }
-    });
-  }
-
-  async function handleNewFiles(fileList) {
-    const MAX_FILES = 5;
-    const remaining = MAX_FILES - attachedFiles.length;
-    const toProcess = Array.from(fileList).slice(0, Math.max(0, remaining));
-    const errors = [];
-    for (const file of toProcess) {
-      const processed = await processFile(file);
-      if (processed.type === 'error') {
-        errors.push(`${processed.name}: ${processed.error}`);
-      } else {
-        attachedFiles.push(processed);
-      }
-    }
-    if (errors.length > 0) {
-      alert('Some files were skipped:\n' + errors.join('\n'));
-    }
-    renderDocPanel();
-    renderInputFilesBar();
-    renderWelcomeAttachments();
-    // Expand panel when files are added
-    if (attachedFiles.length > 0) {
-      expandDocPanel();
-    }
-  }
-
-  // ═══ Document Panel State ═══
-  let isDocPanelExpanded = false;
-
-  function getSidebar() {
-    return document.getElementById('sidebar');
-  }
-
-  function isSidebarExpanded() {
-    const sidebar = getSidebar();
-    return sidebar && !sidebar.classList.contains('collapsed');
-  }
-
-  function collapseSidebar() {
-    const sidebar = getSidebar();
-    if (sidebar) {
-      sidebar.classList.add('collapsed');
-      localStorage.setItem('korah_sidebar_collapsed', 'true');
-    }
-  }
-
-  function expandDocPanel() {
-    if (isSidebarExpanded()) {
-      collapseSidebar();
-    }
-    const panel = document.getElementById('doc-panel');
-    const tab = document.getElementById('doc-panel-tab');
-    if (panel) {
-      panel.classList.remove('collapsed');
-      panel.classList.add('expanded');
-      isDocPanelExpanded = true;
-    }
-    if (tab) {
-      tab.classList.add('panel-open');
-    }
-  }
-
-  function collapseDocPanel() {
-    const panel = document.getElementById('doc-panel');
-    const tab = document.getElementById('doc-panel-tab');
-    if (panel) {
-      panel.classList.remove('expanded');
-      panel.classList.add('collapsed');
-      isDocPanelExpanded = false;
-    }
-    if (tab) {
-      tab.classList.remove('panel-open');
-    }
-  }
-
-  function toggleDocPanel() {
-    if (isDocPanelExpanded) {
-      collapseDocPanel();
-    } else {
-      expandDocPanel();
-    }
-  }
-
-  function removeAttachedFile(index) {
-    attachedFiles.splice(index, 1);
-    renderDocPanel();
-    renderInputFilesBar();
-    renderWelcomeAttachments();
-  }
-
-  function clearAttachedFiles() {
-    attachedFiles = [];
-    renderDocPanel();
-    renderInputFilesBar();
-    renderWelcomeAttachments();
-    collapseDocPanel();
-  }
-
-  function updateDocCountBadges() {
-    const count = attachedFiles.length;
-    const topbarBadge = document.getElementById('doc-count-badge');
-    const tabBadge = document.getElementById('doc-tab-badge');
-    
-    if (topbarBadge) {
-      topbarBadge.textContent = count;
-      topbarBadge.classList.toggle('hidden', count === 0);
-    }
-    if (tabBadge) {
-      tabBadge.textContent = count;
-      tabBadge.classList.remove('show');
-    }
-  }
-
-  function renderDocPanel() {
-    const list = document.getElementById('doc-panel-list');
-    if (!list) return;
-    
-    updateDocCountBadges();
-    
-    if (attachedFiles.length === 0) {
-      list.innerHTML = `
-        <div class="doc-panel-empty">
-          <span class="doc-panel-empty-icon">📄</span>
-          <span class="doc-panel-empty-text">Drop or add documents</span>
-          <span class="doc-panel-empty-hint">PDFs, images, text files</span>
-        </div>
-      `;
-      return;
-    }
-    
-    list.innerHTML = '';
-    attachedFiles.forEach((f, i) => {
-      const card = document.createElement('div');
-      card.className = 'doc-card';
-      let previewHtml = '';
-      if (f.type === 'image' && f.dataUrl) {
-        previewHtml = `<div class="doc-card-preview"><img src="${f.dataUrl}" alt="${f.name}"/></div>`;
-      } else if (f.type === 'text' && f.content) {
-        const escaped = f.content.slice(0, 400).replace(/</g,'&lt;').replace(/>/g,'&gt;');
-        previewHtml = `<div class="doc-card-preview"><div class="doc-text-preview">${escaped}</div></div>`;
-      } else {
-        const icon = getFileIcon(f.type, f.name);
-        const ext = f.name.split('.').pop().toUpperCase();
-        previewHtml = `<div class="doc-card-preview"><div class="doc-icon-preview">${icon}<span>${ext}</span></div></div>`;
-      }
-      card.innerHTML = `
-        ${previewHtml}
-        <div class="doc-card-info">
-          <span class="doc-card-name" title="${f.name}">${f.name}</span>
-          <span class="doc-card-size">${formatFileSize(f.size)}</span>
-          <button class="doc-card-remove t-btn" title="Remove">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
-        </div>`;
-      card.querySelector('.doc-card-remove').addEventListener('click', () => removeAttachedFile(i));
-      // Spotlight effect
-      function updateSpotlight(clientX, clientY) {
-        const rect = card.getBoundingClientRect();
-        const x = clientX - rect.left;
-        const y = clientY - rect.top;
-        card.style.setProperty('--mouse-x', `${x}px`);
-        card.style.setProperty('--mouse-y', `${y}px`);
-      }
-      card.addEventListener('mousemove', e => {
-        updateSpotlight(e.clientX, e.clientY);
-      });
-      card.addEventListener('touchmove', e => {
-        if (e.touches.length > 0) {
-          updateSpotlight(e.touches[0].clientX, e.touches[0].clientY);
-        }
-      });
-      list.appendChild(card);
-    });
-  }
-
-  function renderInputFilesBar() {
-    const bar = document.getElementById('input-files-bar');
-    if (!bar) return;
-    if (attachedFiles.length === 0) {
-      bar.classList.remove('show');
-      bar.innerHTML = '';
-      return;
-    }
-    bar.classList.add('show');
-    bar.innerHTML = '';
-    attachedFiles.forEach((f, i) => {
-      const chip = document.createElement('div');
-      chip.className = 'input-file-chip';
-      chip.innerHTML = `
-        <span>${getFileIcon(f.type, f.name)}</span>
-        <span class="input-file-chip-name">${f.name}</span>
-        <button class="input-file-chip-remove" title="Remove">×</button>`;
-      chip.querySelector('.input-file-chip-remove').addEventListener('click', () => removeAttachedFile(i));
-      bar.appendChild(chip);
-    });
-  }
-
-  function renderWelcomeAttachments() {
-    const container = document.getElementById('welcome-attachments');
-    if (!container) return;
-    if (attachedFiles.length === 0) {
-      container.innerHTML = '';
-      return;
-    }
-    container.innerHTML = '';
-    attachedFiles.forEach((f, i) => {
-      const card = document.createElement('div');
-      card.className = 'msg-attachment-card';
-      const svgIcon = getFileSvgIcon(f.type, f.name);
-      card.innerHTML = `
-        <div class="msg-attachment-card-icon">${svgIcon}</div>
-        <div class="msg-attachment-card-info">
-          <span class="msg-attachment-card-name">${f.name}</span>
-          <span class="msg-attachment-card-size">${formatFileSize(f.size)}</span>
-        </div>
-        <button class="msg-attachment-card-remove" title="Remove">×</button>
-      `;
-      card.querySelector('.msg-attachment-card-remove').addEventListener('click', () => {
-        removeAttachedFile(i);
-        renderWelcomeAttachments();
-      });
-      container.appendChild(card);
-    });
-  }
-
-  // Build API messages array, enriching the last user message with file content
-  function buildApiMessages(hist, files) {
-    if (!files || files.length === 0) return hist;
-    const lastMsg = hist[hist.length - 1];
-    if (!lastMsg || lastMsg.role !== 'user') return hist;
-    const textParts = [lastMsg.content];
-    const multimodalParts = [];
-    files.forEach(f => {
-      if (f.type === 'text' && f.content) {
-        textParts.push(`\n\n--- Content of ${f.name} ---\n${f.content}\n--- End of ${f.name} ---`);
-      } else if ((f.type === 'image' || f.type === 'pdf') && f.dataUrl) {
-        multimodalParts.push({ type: 'image_url', image_url: { url: f.dataUrl } });
-      } else {
-        textParts.push(`\n[Attached file: ${f.name}]`);
-      }
-    });
-    const fullText = textParts.join('');
-    const content = multimodalParts.length > 0
-      ? [{ type: 'text', text: fullText }, ...multimodalParts]
-      : fullText;
-    return [...hist.slice(0, -1), { role: 'user', content }];
-  }
-
-  function setupDocumentAttachment() {
-    const attachBtn  = document.getElementById('attach-file-btn');
-    const fileInput  = document.getElementById('doc-file-input');
-    const mainContent = document.getElementById('main-content');
-    const dragOverlay = document.getElementById('drag-overlay');
-    
-    // Panel toggle buttons
-    const docPanelToggle = document.getElementById('doc-panel-toggle');
-    const docPanelTab = document.getElementById('doc-panel-tab');
-    const docAddBtn = document.getElementById('doc-add-btn');
-    const docAddBtnCollapsed = document.getElementById('doc-add-btn-collapsed');
-    const docAddBtnHeader = document.getElementById('doc-add-btn-header');
-
-    // File input button
-    if (attachBtn && fileInput) {
-      attachBtn.addEventListener('click', () => {
-        if (toolsMenu) toolsMenu.classList.remove('show');
-        fileInput.click();
-      });
-      fileInput.addEventListener('change', (e) => {
-        if (e.target.files.length) handleNewFiles(e.target.files);
-        e.target.value = '';
-      });
-    }
-
-    // Panel toggle buttons
-    if (docPanelToggle) {
-      docPanelToggle.addEventListener('click', toggleDocPanel);
-    }
-    if (docPanelTab) {
-      docPanelTab.addEventListener('click', toggleDocPanel);
-    }
-    
-    // Add document buttons
-    if (docAddBtn && fileInput) {
-      docAddBtn.addEventListener('click', () => fileInput.click());
-    }
-    if (docAddBtnCollapsed && fileInput) {
-      docAddBtnCollapsed.addEventListener('click', () => fileInput.click());
-    }
-    if (docAddBtnHeader && fileInput) {
-      docAddBtnHeader.addEventListener('click', () => fileInput.click());
-    }
-
-    // Drag & Drop on main chat area
-    if (mainContent) {
-      let dragCounter = 0;
-      mainContent.addEventListener('dragenter', (e) => {
-        if (!e.dataTransfer.types.includes('Files')) return;
-        e.preventDefault();
-        dragCounter++;
-        if (dragOverlay) dragOverlay.classList.add('active');
-      });
-      mainContent.addEventListener('dragleave', () => {
-        dragCounter--;
-        if (dragCounter <= 0) {
-          dragCounter = 0;
-          if (dragOverlay) dragOverlay.classList.remove('active');
-        }
-      });
-      mainContent.addEventListener('dragover', (e) => e.preventDefault());
-      mainContent.addEventListener('drop', (e) => {
-        e.preventDefault();
-        dragCounter = 0;
-        if (dragOverlay) dragOverlay.classList.remove('active');
-        if (e.dataTransfer.files.length) {
-          expandDocPanel();
-          handleNewFiles(e.dataTransfer.files);
-        }
-      });
-    }
-    
-    // Drag & Drop on document panel
-    const docPanel = document.getElementById('doc-panel');
-    if (docPanel) {
-      let panelDragCounter = 0;
-      
-      docPanel.addEventListener('dragenter', (e) => {
-        if (!e.dataTransfer.types.includes('Files')) return;
-        e.preventDefault();
-        e.stopPropagation();
-        panelDragCounter++;
-        docPanel.classList.add('drag-over');
-      });
-      
-      docPanel.addEventListener('dragleave', (e) => {
-        e.stopPropagation();
-        panelDragCounter--;
-        if (panelDragCounter <= 0) {
-          panelDragCounter = 0;
-          docPanel.classList.remove('drag-over');
-        }
-      });
-      
-      docPanel.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-      });
-      
-      docPanel.addEventListener('drop', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        panelDragCounter = 0;
-        docPanel.classList.remove('drag-over');
-        if (e.dataTransfer.files.length) {
-          expandDocPanel();
-          handleNewFiles(e.dataTransfer.files);
-        }
-      });
-    }
-    
-    // Initialize panel state
-    collapseDocPanel();
-  }
 
   // ═══ Storage Shim ═══
   // Synchronous reads from in-memory cache; async fire-and-forget writes via KorahDB.
@@ -790,7 +320,6 @@
         welcomeInput.focus();
       }
       initWelcomeFeatures();
-      renderWelcomeAttachments();
     } else {
       // Clear intervals when welcome screen is hidden
       if (placeholderInterval) {
@@ -808,7 +337,6 @@
   function setupWelcomeInput() {
     const welcomeInput = document.getElementById("welcome-chat-input");
     const welcomeSendBtn = document.getElementById("welcome-send-btn");
-    const welcomeAttachBtn = document.getElementById("welcome-attach-btn");
 
     if (welcomeInput) {
       welcomeInput.addEventListener("input", () => {
@@ -832,11 +360,6 @@
       });
     }
 
-    if (welcomeAttachBtn) {
-      welcomeAttachBtn.addEventListener("click", () => {
-        document.getElementById("doc-file-input")?.click();
-      });
-    }
   }
 
   function setTyping(show) {
@@ -1000,24 +523,82 @@
     renderDesmosGraphs(container);
   }
 
+  // Action buttons (copy / feedback / regenerate) shown under assistant replies
+  const MSG_ACTION_ICONS = {
+    copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>',
+    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>',
+    up: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>',
+    down: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"></path></svg>',
+    regen: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>',
+  };
+
+  function buildMessageActions(contentEl, row) {
+    const bar = document.createElement("div");
+    bar.className = "msg-actions";
+
+    const mkBtn = (icon, title) => {
+      const b = document.createElement("button");
+      b.className = "msg-action-btn t-btn";
+      b.type = "button";
+      b.title = title;
+      b.setAttribute("aria-label", title);
+      b.innerHTML = MSG_ACTION_ICONS[icon];
+      return b;
+    };
+
+    const copyBtn = mkBtn("copy", "Copy");
+    copyBtn.addEventListener("click", () => {
+      const txt = (contentEl.innerText || "").trim();
+      if (navigator.clipboard) navigator.clipboard.writeText(txt).catch(() => {});
+      copyBtn.classList.add("copied");
+      copyBtn.innerHTML = MSG_ACTION_ICONS.check;
+      setTimeout(() => {
+        copyBtn.classList.remove("copied");
+        copyBtn.innerHTML = MSG_ACTION_ICONS.copy;
+      }, 1400);
+    });
+
+    const upBtn = mkBtn("up", "Good response");
+    const downBtn = mkBtn("down", "Bad response");
+    upBtn.addEventListener("click", () => {
+      upBtn.classList.toggle("active");
+      downBtn.classList.remove("active");
+    });
+    downBtn.addEventListener("click", () => {
+      downBtn.classList.toggle("active");
+      upBtn.classList.remove("active");
+    });
+
+    const regenBtn = mkBtn("regen", "Regenerate");
+    regenBtn.addEventListener("click", () => {
+      let n = row.previousElementSibling;
+      while (n && !(n.classList?.contains("msg-row") && n.classList?.contains("user"))) {
+        n = n.previousElementSibling;
+      }
+      const txt = n ? (n.querySelector(".msg-bubble")?.innerText || "").trim() : "";
+      if (txt && typeof sendMessage === "function") sendMessage(txt);
+    });
+
+    bar.append(copyBtn, upBtn, downBtn, regenBtn);
+    return bar;
+  }
+
   function buildMessageRow(role, text, isError = false, suggestions = [], contentId = null, studyItem = null, fileAttachments = null) {
     const row = document.createElement("div");
     row.className = `msg-row ${role === "user" ? "user" : "assistant"}`;
 
-    const avatar = document.createElement("div");
-    avatar.className = `msg-avatar ${role === "user" ? "user-av" : "korah-av"}`;
-    if (role === "user") {
-      avatar.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
-    } else {
-      avatar.innerHTML = `<img src="logo-images/newlogo0.png" alt="K" class="w-10 h-10 object-contain" />`;
-    }
-
     const bubble = document.createElement("div");
     bubble.className = `msg-bubble ${role === "user" ? "user" : "korah"}${isError ? " error" : ""}`;
 
-    const label = document.createElement("div");
-    label.className = "msg-label";
-    label.innerHTML = '<span class="msg-label-dot"></span>' + (role === "user" ? "You" : "Korah AI");
+    // Assistant replies get an inline logo + name header
+    let header = null;
+    if (role === "assistant") {
+      header = document.createElement("div");
+      header.className = "msg-header";
+      header.innerHTML =
+        '<span class="msg-header-avatar"><img src="logo-images/newlogo0.png" alt="Korah" /></span>' +
+        '<span class="msg-header-name">Korah AI</span>';
+    }
 
     const content = document.createElement("div");
     if (contentId) content.id = contentId;
@@ -1030,51 +611,7 @@
       content.textContent = text;
     }
 
-    bubble.appendChild(label);
-
-    // Show file attachment cards for user messages
-    if (role === 'user' && fileAttachments && fileAttachments.length > 0) {
-      const attachDiv = document.createElement('div');
-      attachDiv.className = 'msg-attachments';
-      fileAttachments.forEach(f => {
-        const card = document.createElement('div');
-        const isImage = f.type === 'image' && f.dataUrl;
-        card.className = 'msg-attachment-card' + (isImage ? ' has-preview' : '');
-        card.title = f.name;
-        if (isImage) {
-          card.innerHTML = `
-            <img class="msg-attachment-card-thumb" src="${f.dataUrl}" alt="${f.name}" />
-            <div class="msg-attachment-card-info">
-              <span class="msg-attachment-card-name">${f.name}</span>
-              <span class="msg-attachment-card-size">${formatFileSize(f.size)}</span>
-            </div>
-          `;
-          card.addEventListener('click', () => {
-            const win = window.open();
-            win.document.write(`<img src="${f.dataUrl}" style="max-width:100%;max-height:100vh;display:block;margin:auto;" />`);
-          });
-        } else {
-          const svgIcon = getFileSvgIcon(f.type, f.name);
-          card.innerHTML = `
-            <div class="msg-attachment-card-icon">${svgIcon}</div>
-            <div class="msg-attachment-card-info">
-              <span class="msg-attachment-card-name">${f.name}</span>
-              <span class="msg-attachment-card-size">${formatFileSize(f.size)}</span>
-            </div>
-          `;
-          if (f.dataUrl) {
-            card.addEventListener('click', () => {
-              const a = document.createElement('a');
-              a.href = f.dataUrl;
-              a.download = f.name;
-              a.click();
-            });
-          }
-        }
-        attachDiv.appendChild(card);
-      });
-      bubble.appendChild(attachDiv);
-    }
+    if (header) bubble.appendChild(header);
 
     bubble.appendChild(content);
 
@@ -1119,7 +656,11 @@
       bubble.appendChild(suggestionsDiv);
     }
 
-    row.appendChild(avatar);
+    // Message action buttons for assistant replies
+    if (role === "assistant" && !isError) {
+      bubble.appendChild(buildMessageActions(content, row));
+    }
+
     row.appendChild(bubble);
     return row;
   }
@@ -2154,27 +1695,35 @@ ${FORMAT_INSTRUCTIONS}`.trim();
   function renderModePills() {
     const container = document.getElementById("mode-pills-container");
     if (!container) return;
-    
-    const modes = ["general", "math", "science", "history", "literature"];
+
+    const satTopics = [
+      { label: "Heart of Algebra", icon: "functions",      colorClass: "ic-math", prompt: "Help me practice Heart of Algebra for the SAT" },
+      { label: "Reading",          icon: "auto_stories",   colorClass: "ic-lit",  prompt: "Help me improve my SAT Reading comprehension" },
+      { label: "Writing & Grammar",icon: "spellcheck",     colorClass: "ic-gen",  prompt: "Help me practice SAT Writing and Language questions" },
+      { label: "Data Analysis",    icon: "bar_chart",      colorClass: "ic-sci",  prompt: "Help me with SAT Data Analysis and statistics" },
+      { label: "Geometry & Trig",  icon: "change_history", colorClass: "ic-hist", prompt: "Help me study Geometry and Trigonometry for the SAT" },
+      { label: "Advanced Math",    icon: "calculate",      colorClass: "ic-math", prompt: "Help me practice Advanced Math for the SAT" },
+    ];
+
     container.innerHTML = "";
-    
-    modes.forEach(mode => {
-      const config = getModeConfig(mode);
+
+    satTopics.forEach(({ label, icon, colorClass, prompt }) => {
       const pill = document.createElement("button");
-      pill.className = `mode-pill t-btn ${currentSession.mode === mode ? "active" : ""}`;
-      pill.innerHTML = `${getModeIcon(mode)}<span>${config.name}</span>`;
-      
+      pill.className = "mode-pill t-btn";
+      pill.innerHTML = `<span class="m-icon ${colorClass}">${icon}</span><span>${label}</span>`;
+
       pill.addEventListener("click", () => {
-        if (mode === "sat") {
-          showSATSubModal();
-        } else {
-          changeMode(mode);
+        const input = document.getElementById("welcome-chat-input");
+        if (input) {
+          input.value = prompt;
+          input.dispatchEvent(new Event("input"));
+          input.focus();
         }
       });
-      
+
       container.appendChild(pill);
     });
-    
+
     // Update the large mode text in welcome screen
     const modeNameLarge = document.getElementById("welcome-mode-name");
     if (modeNameLarge) {
@@ -2612,7 +2161,7 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     if (isSending) return;
     const raw = typeof prefillText === "string" ? prefillText : input.value;
     const text = raw.trim();
-    if (!text) return;
+    if (!text && attachedFiles.length === 0) return;
 
     if (text.length > MAX_CHARS) {
       appendMessage("assistant", `Please keep messages under ${MAX_CHARS} characters.`, true);
@@ -2621,16 +2170,14 @@ ${FORMAT_INSTRUCTIONS}`.trim();
 
     // Capture and clear attached files before state changes
     const pendingFiles = [...attachedFiles];
-    const hasFiles = pendingFiles.length > 0;
     clearAttachedFiles();
 
     // NEW: Detect study item request
     const studyReq = detectStudyRequest(text);
 
-    // Display message with file chips; store with file metadata
-    appendMessage("user", text, false, [], null, null, hasFiles ? pendingFiles : null);
-    const fileAttachments = hasFiles ? pendingFiles.map(getFileMetadata) : null;
-    history.push({ role: "user", content: text, fileAttachments });
+    appendMessage("user", text, false, [], null, null, pendingFiles.length ? pendingFiles : null);
+    const userContent = buildUserContent(text, pendingFiles);
+    history.push({ role: "user", content: userContent });
     saveCurrentSession();
 
     input.value = "";
@@ -2676,8 +2223,7 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     const historyIndex = history.length - 1;
     saveCurrentSession();
 
-    // Build API messages: strip the empty assistant placeholder, then enrich last user msg with files
-    const apiMessages = buildApiMessages(history.slice(0, -1), pendingFiles);
+    const apiMessages = history.slice(0, -1);
 
     try {
       let previousLength = 0;
@@ -2800,11 +2346,189 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     input.value = "";
     resizeInput();
     updateCharCount();
-    clearAttachedFiles();
     setWelcomeVisibility(true);
     setTyping(false);
     saveCurrentSession();
   }
+
+  // ── File Attachments ──────────────────────────────────────────────────────
+  let attachedFiles = [];
+  const MAX_FILE_SIZE = 4 * 1024 * 1024;
+  const MAX_IMAGE_DIMENSION = 1024;
+
+  function getFileIcon(type, name) {
+    if (type === 'image') return '🖼️';
+    const ext = (name || '').split('.').pop().toLowerCase();
+    if (ext === 'pdf') return '📕';
+    return '📄';
+  }
+
+  function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / 1048576).toFixed(1) + ' MB';
+  }
+
+  function resizeImage(file) {
+    return new Promise((resolve) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        const { width, height } = img;
+        if (width <= MAX_IMAGE_DIMENSION && height <= MAX_IMAGE_DIMENSION && file.size < 300000) {
+          const reader = new FileReader();
+          reader.onload = () => { URL.revokeObjectURL(url); resolve(reader.result); };
+          reader.readAsDataURL(file);
+          return;
+        }
+        const scale = Math.min(MAX_IMAGE_DIMENSION / width, MAX_IMAGE_DIMENSION / height);
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(width * scale);
+        canvas.height = Math.round(height * scale);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(url);
+        resolve(canvas.toDataURL('image/jpeg', 0.85));
+      };
+      img.src = url;
+    });
+  }
+
+  function processFile(file) {
+    return new Promise(async (resolve) => {
+      const isImage = file.type.startsWith('image/');
+      const isText = file.type === 'text/plain' || ['txt','md','csv'].includes(file.name.split('.').pop().toLowerCase());
+      const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+      if (isPDF && file.size > MAX_FILE_SIZE) {
+        resolve({ file, name: file.name, size: file.size, type: 'error', dataUrl: null, content: null, error: 'File too large (max 4 MB)' });
+        return;
+      }
+      if (isImage) {
+        const dataUrl = await resizeImage(file);
+        resolve({ file, name: file.name, size: file.size, type: 'image', dataUrl, content: null });
+      } else if (isPDF) {
+        const reader = new FileReader();
+        reader.onload = () => resolve({ file, name: file.name, size: file.size, type: 'pdf', dataUrl: reader.result, content: null });
+        reader.readAsDataURL(file);
+      } else if (isText) {
+        const reader = new FileReader();
+        reader.onload = () => resolve({ file, name: file.name, size: file.size, type: 'text', dataUrl: null, content: reader.result });
+        reader.readAsText(file);
+      } else {
+        resolve({ file, name: file.name, size: file.size, type: 'other', dataUrl: null, content: null });
+      }
+    });
+  }
+
+  async function handleNewFiles(fileList) {
+    const MAX_FILES = 5;
+    const remaining = MAX_FILES - attachedFiles.length;
+    const toProcess = Array.from(fileList).slice(0, Math.max(0, remaining));
+    const errors = [];
+    for (const file of toProcess) {
+      const processed = await processFile(file);
+      if (processed.type === 'error') {
+        errors.push(`${processed.name}: ${processed.error}`);
+      } else {
+        attachedFiles.push(processed);
+      }
+    }
+    if (errors.length > 0) alert('Some files were skipped:\n' + errors.join('\n'));
+    renderInputFilesBar();
+    renderWelcomeAttachments();
+  }
+
+  function clearAttachedFiles() {
+    attachedFiles = [];
+    renderInputFilesBar();
+    renderWelcomeAttachments();
+  }
+
+  function makeFileCard(f, onRemove) {
+    const card = document.createElement('div');
+    card.className = 'input-file-card';
+    if (f.type === 'image' && f.dataUrl) {
+      const img = document.createElement('img');
+      img.className = 'input-file-card-thumb';
+      img.src = f.dataUrl;
+      img.alt = f.name;
+      card.appendChild(img);
+    } else {
+      const icon = document.createElement('div');
+      icon.className = 'input-file-card-icon';
+      const ext = (f.name || '').split('.').pop().toUpperCase();
+      icon.innerHTML = `<span style="font-size:1.5rem;line-height:1">${getFileIcon(f.type, f.name)}</span><span class="input-file-card-label">${ext}</span>`;
+      card.appendChild(icon);
+    }
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'input-file-card-remove';
+    removeBtn.title = 'Remove';
+    removeBtn.textContent = '×';
+    removeBtn.addEventListener('click', onRemove);
+    card.appendChild(removeBtn);
+    return card;
+  }
+
+  function renderInputFilesBar() {
+    const bar = document.getElementById('input-files-bar');
+    if (!bar) return;
+    if (attachedFiles.length === 0) { bar.classList.remove('show'); bar.innerHTML = ''; return; }
+    bar.classList.add('show');
+    bar.innerHTML = '';
+    attachedFiles.forEach((f, i) => {
+      bar.appendChild(makeFileCard(f, () => {
+        attachedFiles.splice(i, 1); renderInputFilesBar(); renderWelcomeAttachments();
+      }));
+    });
+  }
+
+  function renderWelcomeAttachments() {
+    const container = document.getElementById('welcome-attachments');
+    if (!container) return;
+    container.innerHTML = '';
+    attachedFiles.forEach((f, i) => {
+      container.appendChild(makeFileCard(f, () => {
+        attachedFiles.splice(i, 1); renderInputFilesBar(); renderWelcomeAttachments();
+      }));
+    });
+  }
+
+  function buildUserContent(text, files) {
+    if (!files || files.length === 0) return text;
+    const textParts = [text];
+    const multimodalParts = [];
+    files.forEach(f => {
+      if (f.type === 'text' && f.content) {
+        textParts.push(`\n\n--- Content of ${f.name} ---\n${f.content}\n--- End of ${f.name} ---`);
+      } else if ((f.type === 'image' || f.type === 'pdf') && f.dataUrl) {
+        multimodalParts.push({ type: 'image_url', image_url: { url: f.dataUrl } });
+      } else {
+        textParts.push(`\n[Attached: ${f.name}]`);
+      }
+    });
+    const fullText = textParts.join('');
+    return multimodalParts.length > 0
+      ? [{ type: 'text', text: fullText }, ...multimodalParts]
+      : fullText;
+  }
+
+  function setupFileAttachment() {
+    const fileInput = document.getElementById('doc-file-input');
+    const attachBtn = document.getElementById('attach-file-btn');
+    const welcomeAttachBtn = document.getElementById('welcome-attach-btn');
+    const dragOverlay = document.getElementById('drag-overlay');
+
+    attachBtn?.addEventListener('click', () => fileInput?.click());
+    welcomeAttachBtn?.addEventListener('click', () => fileInput?.click());
+
+    fileInput?.addEventListener('change', (e) => {
+      if (e.target.files?.length) { handleNewFiles(e.target.files); e.target.value = ''; }
+    });
+
+    document.addEventListener('dragover', (e) => { e.preventDefault(); dragOverlay?.classList.add('active'); }, true);
+    document.addEventListener('dragleave', (e) => { if (e.clientX === 0 && e.clientY === 0) dragOverlay?.classList.remove('active'); }, true);
+    document.addEventListener('drop', (e) => { e.preventDefault(); dragOverlay?.classList.remove('active'); if (e.dataTransfer.files?.length) handleNewFiles(e.dataTransfer.files); }, true);
+  }
+  // ──────────────────────────────────────────────────────────────────────────
 
   sendBtn.addEventListener("click", () => sendMessage());
 
@@ -2863,14 +2587,10 @@ ${FORMAT_INSTRUCTIONS}`.trim();
       history.length = 0;
       history.push(...currentSession.messages);
       applyModeTheme(currentSession.mode);
-      clearAttachedFiles();
       loadSessionMessages();
       renderChatHistory();
     });
   }
-
-  // ═══ Document Attachment Setup ═══
-  setupDocumentAttachment();
 
   // Mode selector functionality
   const modeSelectorBtn = document.getElementById("mode-selector-btn");
@@ -3053,6 +2773,7 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     resizeInput();
     updateCharCount();
     setupWelcomeInput();
+    setupFileAttachment();
 
     // 4. Deep link: open specific session from hash (e.g. chat.html#session_123)
     const hash = window.location.hash.slice(1);

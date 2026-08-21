@@ -32,6 +32,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script src="../sidebar-loader.js" defer></script>
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="../app/korah-chat.css"/>
 <link rel="stylesheet" href="./sat.css"/>
@@ -52,6 +53,10 @@
     if (t === 'light' || (t === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches)) {
       document.documentElement.setAttribute('data-theme', 'light');
     }
+    // Auto-collapse sidebar on this split-view page to maximise space
+    if (window.innerWidth > 768) {
+      localStorage.setItem('korah_sidebar_collapsed', 'true');
+    }
   })();
 </script>
 
@@ -59,6 +64,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
   import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
   import { setupKorahDB } from "../app/data/firestore-store.js";
+  import { startAuthGuard } from '../auth-guard.js';
 
   const firebaseConfig = {
     apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
@@ -74,13 +80,14 @@
 
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
-      window.KorahTransitions.go('../login.html');
+      window.KorahTransitions.go('../landing/index.html');
       return;
     }
     await setupKorahDB(app, user.uid);
     const detail = { uid: user.uid };
     window._korahReadyFired = detail;
     window.dispatchEvent(new CustomEvent('korahReady', { detail }));
+    startAuthGuard(auth, '../landing/index.html');
   });
 
   document.getElementById('logout-btn').addEventListener('click', () => {
@@ -94,124 +101,7 @@
 
 <canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
 
-<div class="sidebar-overlay" :class="{ show: mobileOpen }" @click="mobileOpen = false"></div>
-<aside id="sidebar" class="sidebar bg-sf glass t-theme"
-  :class="{ collapsed: sidebarCollapsed, 'mobile-open': mobileOpen }"
-  x-effect="window.KorahSidebar?.onCollapseChange?.(sidebarCollapsed)"
-  @resize.window="if (window.innerWidth > 768) { mobileOpen = false; const overlay = document.querySelector('.sidebar-overlay'); if (overlay) overlay.classList.remove('show'); }">
-  <div class="sidebar-header">
-    <a href="../index.html" class="flex items-center gap-2.5 no-underline">
-      <div class="w-12 h-12 rounded-xl flex items-center justify-center font-display text-xl">
-        <span class="logo-letter">
-          <img src="../logo-images/newlogo0.png" alt="Korah"/>
-        </span>
-      </div>
-      <div class="flex flex-col leading-tight">
-        <span class="font-display text-[19px] font-bold tx">Korah</span>
-        <span class="text-[9px] font-semibold tracking-[2.5px] uppercase tx-p4">Study Smarter</span>
-      </div>
-    </a>
-    <button id="new-chat-btn" class="new-chat-btn text-white text-xs font-bold px-4 py-2 rounded-full border-none cursor-pointer shadow-glow t-btn">
-      <span class="new-chat-icon">+</span> <span class="new-chat-text">New Chat</span>
-    </button>
-  </div>
-
-  <nav class="sidebar-nav">
-    <span class="sidebar-section-label">HOME</span>
-    <a href="../index.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">home</span> <span class="nav-text">Home</span></a>
-    <a href="../chat.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">chat</span> <span class="nav-text">Chat</span></a>
-    <a href="../study/feed.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">school</span> <span class="nav-text">Study</span></a>
-    <span class="sidebar-section-label">SAT</span>
-    <a href="index.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">assignment</span> <span class="nav-text">Question Bank</span></a>
-    <a href="math-chat.html" class="sidebar-nav-link active t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">calculate</span> <span class="nav-text">Math Chat</span></a>
-    <a href="dashboard.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">insights</span> <span class="nav-text">Dashboard</span></a>
-  </nav>
-
-  <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 0.75rem 0 0.25rem;">
-    <span class="sidebar-section-label" style="margin:0">Recent Chats</span>
-  </div>
-  <div class="sidebar-middle">
-    <div class="select-bar-wrapper">
-      <div id="chat-select-bar" class="select-bar">
-        <span class="select-bar-count" id="chat-select-count">0 selected</span>
-        <div class="select-bar-actions">
-          <button class="select-bar-btn" id="chat-select-all" title="Select all">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <polyline points="20 6 9 17 4 12"/>
-            </svg>
-          </button>
-          <button class="select-bar-btn" id="chat-deselect-all" title="Deselect all">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <line x1="18" y1="6" x2="6" y2="18"/>
-              <line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
-          <button class="select-bar-btn danger" id="chat-delete-selected" title="Delete selected"></button>
-        </div>
-      </div>
-    </div>
-    <div id="chat-history" class="chat-history">
-      <div class="skeleton-item">
-        <div class="skeleton-icon"></div>
-        <div class="skeleton-text"></div>
-      </div>
-      <div class="skeleton-item">
-        <div class="skeleton-icon"></div>
-        <div class="skeleton-text"></div>
-      </div>
-      <div class="skeleton-item">
-        <div class="skeleton-icon"></div>
-        <div class="skeleton-text"></div>
-      </div>
-      <div class="skeleton-item">
-        <div class="skeleton-icon"></div>
-        <div class="skeleton-text"></div>
-      </div>
-      <div class="skeleton-item">
-        <div class="skeleton-icon"></div>
-        <div class="skeleton-text"></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="sidebar-footer">
-    <div class="mood-indicator" id="sidebar-mood">
-      <span class="mood-dot" id="mood-dot"><span class="m-icon" style="font-size:0.75rem;color:var(--grn)">fiber_manual_record</span></span>
-      <span class="text-xs tx2 font-medium">Full Focus Mode</span>
-    </div>
-    <div class="sidebar-footer-actions">
-      <button id="logout-btn" class="theme-toggle-small t-btn" title="Log out">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-          <polyline points="16 17 21 12 16 7"/>
-          <line x1="21" y1="12" x2="9" y2="12"/>
-        </svg>
-      </button>
-      <button id="settings-btn" class="theme-toggle-small t-btn" title="Settings">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-        </svg>
-      </button>
-      <button @click="theme = theme === 'dark' ? 'light' : 'dark'; localStorage.setItem('korah_theme', theme)" class="theme-toggle-small t-btn" title="Toggle theme">
-        <svg x-show="theme==='light'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" style="color:var(--p5)">
-          <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/>
-        </svg>
-        <svg x-show="theme==='dark'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--p4)">
-          <circle cx="12" cy="12" r="5"/>
-          <line x1="12" y1="1" x2="12" y2="3"/>
-          <line x1="12" y1="21" x2="12" y2="23"/>
-          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-          <line x1="1" y1="12" x2="3" y2="12"/>
-          <line x1="21" y1="12" x2="23" y2="12"/>
-          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-        </svg>
-      </button>
-    </div>
-  </div>
-</aside>
+<div id="sidebar-root"></div>
 
 <!-- Hidden file input for attachments -->
 <input type="file" id="doc-file-input" class="hidden" multiple accept=".pdf,.txt,.png,.jpg,.jpeg,.gif,.webp,.md"/>
@@ -219,8 +109,8 @@
 <div id="main-area-wrapper" class="main-area-wrapper sat-math-layout">
     
     <header class="chat-topbar bg-sf glass-sm t-theme bd">
-      <button id="sidebar-toggle" @click="toggleSidebar()" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <button id="sidebar-toggle" @click="toggleSidebar()" class="sidebar-toggle-btn t-btn" aria-label="Toggle sidebar">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
           <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
         </svg>
       </button>
@@ -228,7 +118,7 @@
 
       <div class="chat-title-area">
         <span class="korah-status-dot"></span>
-        <span class="font-semibold tx text-sm" id="chat-title">SAT Math</span>
+        <span class="font-semibold tx text-sm" id="chat-title">Desmos Chat</span>
       </div>
 
       <div class="mode-indicator">
@@ -236,11 +126,16 @@
       </div>
 
       <div class="topbar-actions">
-        <button class="topbar-btn t-btn tx2" id="sat-graph-clear" title="Clear graph">
+        <button class="topbar-btn t-btn" id="new-chat-topbar-btn" title="New chat" style="color:white;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+        </button>
+        <button class="topbar-btn t-btn" id="sat-graph-clear" title="Clear graph" style="color:white;">
           ↺
         </button>
-        <button class="topbar-btn t-btn tx2" id="clear-chat-btn" title="Clear chat">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <button class="topbar-btn t-btn" id="clear-chat-btn" title="Clear chat">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
             <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
           </svg>
         </button>
@@ -259,15 +154,36 @@
       <div id="chat-body" class="chat-body">
       
       <div id="messages-container">
-        <div id="welcome-screen" class="welcome-screen">
-          <h1 class="welcome-title font-display text-4xl font-black tx">
-            SAT Math Chat
-          </h1>
-          <p class="welcome-subtitle tx2">
-            Learn regressions, key skills, and exam tips
-          </p>
-          
-          <div class="welcome-input-container bg-sf2 glass-sm bd" style="margin-top: 1.2rem;">
+        <div id="welcome-screen" class="welcome-screen sat-welcome-v2">
+          <div class="sat-welcome-center">
+            <img src="../logo-images/newlogo3.png" alt="Korah" class="sat-welcome-logo"/>
+            <p class="sat-welcome-tagline tx2">ask me anything, i'll help you cook</p>
+
+            <div class="sat-prompt-list">
+              <button class="sat-prompt-row quick-prompt-btn" data-prompt="Teach me what a regression is and how to use it on the SAT. Show me a clear example on the Desmos graph.">
+                <span class="sat-prompt-text"><strong class="sat-prompt-bold">Teach me</strong> what a regression is</span>
+                <svg class="sat-prompt-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+              <button class="sat-prompt-row quick-prompt-btn" data-prompt="Explain how to use Desmos to solve SAT math problems faster, with examples">
+                <span class="sat-prompt-text"><strong class="sat-prompt-bold">Explain</strong> how to use Desmos on the SAT</span>
+                <svg class="sat-prompt-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+              <button class="sat-prompt-row quick-prompt-btn" data-prompt="Help me study for the digital SAT math section — what are the most important topics to focus on?">
+                <span class="sat-prompt-text"><strong class="sat-prompt-bold">Give me strategies</strong> for the math section</span>
+                <svg class="sat-prompt-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+              <button class="sat-prompt-row quick-prompt-btn" data-prompt="What are the best strategies for improving my SAT math score, especially using the calculator?">
+                <span class="sat-prompt-text"><strong class="sat-prompt-bold">Tips for</strong> improving my math score</span>
+                <svg class="sat-prompt-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+              <button class="sat-prompt-row quick-prompt-btn" data-prompt="Give me an example SAT regression problem and walk me through solving it on the Desmos graph, including how to set up the regression equation.">
+                <span class="sat-prompt-text"><strong class="sat-prompt-bold">Give me</strong> an example regression problem</span>
+                <svg class="sat-prompt-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="welcome-input-container bg-sf2 glass-sm bd sat-welcome-input-bar">
             <textarea id="welcome-chat-input" class="welcome-textarea tx"
               placeholder="Ask me about any SAT Math topic..." rows="1"></textarea>
             <div id="welcome-attachments" class="welcome-attachments"></div>
@@ -281,21 +197,6 @@
                 </svg>
               </button>
             </div>
-          </div>
-
-          <div class="sat-quick-prompts">
-            <button class="quick-prompt-btn" data-prompt="Explain linear equations">
-              Linear Equations
-            </button>
-            <button class="quick-prompt-btn" data-prompt="Explain quadratic functions">
-              Quadratics
-            </button>
-            <button class="quick-prompt-btn" data-prompt="Explain systems of equations">
-              Systems
-            </button>
-            <button class="quick-prompt-btn" data-prompt="Explain trigonometry for SAT">
-              Trigonometry
-            </button>
           </div>
         </div>
         
@@ -410,10 +311,23 @@
   </div>
 </div>
 
+<!-- Generic Confirm Modal -->
+<div id="confirm-modal" class="delete-modal">
+  <div class="delete-modal-content">
+    <div class="delete-modal-icon"><span class="material-icons-round" style="color: #FFA726; font-size: 1.25rem;">help_outline</span></div>
+    <h3 class="delete-modal-title" id="confirm-modal-title">Are you sure?</h3>
+    <p class="delete-modal-desc" id="confirm-modal-desc"></p>
+    <div class="delete-modal-actions">
+      <button id="confirm-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
+      <button id="confirm-modal-ok" class="delete-modal-btn confirm t-btn">Confirm</button>
+    </div>
+  </div>
+</div>
+
 <!-- Rename Modal -->
 <div id="rename-modal" class="delete-modal">
   <div class="delete-modal-content">
-    <div class="delete-modal-icon"><span class="material-icons-round" style="color: #FFA726; font-size: 20px;" aria-label="rename">edit</span></div>
+    <div class="delete-modal-icon"><span class="material-icons-round" style="color: #FFA726; font-size: 1.25rem;" aria-label="rename">edit</span></div>
     <h3 class="delete-modal-title">Rename</h3>
     <p class="delete-modal-desc" id="rename-modal-desc">Enter a new name</p>
     <input id="rename-modal-input" type="text" class="create-input" style="width:100%; margin-top:0.25rem;" placeholder="New name..."/>
@@ -427,7 +341,7 @@
 <!-- Delete Confirm Modal -->
 <div id="delete-modal" class="delete-modal">
   <div class="delete-modal-content">
-    <div class="delete-modal-icon"><span class="material-icons-round" style="color: var(--red); font-size: 20px;" aria-label="delete">delete</span></div>
+    <div class="delete-modal-icon"><span class="material-icons-round" style="color: var(--red); font-size: 1.25rem;" aria-label="delete">delete</span></div>
     <h3 class="delete-modal-title">Delete?</h3>
     <p class="delete-modal-desc">This will permanently delete <span id="delete-modal-name"></span>. This cannot be undone.</p>
     <div class="delete-modal-actions">
@@ -439,7 +353,7 @@
 
 <!-- Pro Tip Toast Notification -->
 <div id="pro-tip-toast" class="pro-tip-toast">
-  <span class="pro-tip-toast-icon"><span class="material-icons-round" style="color: #FFC107; font-size: 20px;" aria-label="light bulb">lightbulb</span></span>
+  <span class="pro-tip-toast-icon"><span class="material-icons-round" style="color: #FFC107; font-size: 1.25rem;" aria-label="light bulb">lightbulb</span></span>
   <div class="pro-tip-toast-content">
     <div class="pro-tip-toast-label">Pro Tip</div>
     <div class="pro-tip-toast-text" id="pro-tip-text"></div>
@@ -449,16 +363,17 @@
 
 <!-- Early Development Warning Toast -->
 <div id="early-dev-toast" class="pro-tip-toast" style="
-  border-color: rgba(245,158,11,0.55);
-  box-shadow: 0 0.75rem 2.5rem rgba(0,0,0,.55), 0 0 1.5rem rgba(245,158,11,0.25), inset 0 1px 0 rgba(245,158,11,0.15);
+  background: rgba(8, 4, 20, 0.72);
+  border-color: rgba(245,158,11,0.4);
+  box-shadow: 0 0.75rem 2.5rem rgba(0,0,0,.5), 0 0 1.5rem rgba(245,158,11,0.2), inset 0 1px 0 rgba(255,255,255,0.12);
   max-width: 24rem;
 ">
-  <span class="pro-tip-toast-icon"><span class="material-icons-round" style="color: var(--red); font-size: 20px; filter: drop-shadow(0 0 0.375rem rgba(248,113,113,0.7));" aria-label="warning">warning</span></span>
+  <span class="pro-tip-toast-icon"><span class="material-icons-round" style="color: var(--red); font-size: 1.25rem; filter: drop-shadow(0 0 0.375rem rgba(248,113,113,0.7));" aria-label="warning">warning</span></span>
   <div class="pro-tip-toast-content">
-    <div class="pro-tip-toast-label" style="color: #f59e0b; text-shadow: 0 0 0.5rem rgba(245,158,11,0.4);">Early Development</div>
-    <div class="pro-tip-toast-text">SAT Math Chat is still in early development and may return broken or incorrect outputs. Always double-check responses.</div>
+    <div class="pro-tip-toast-label" style="color: #ffffff;">Early Development</div>
+    <div class="pro-tip-toast-text">Desmos Chat is still in early development and may return broken or incorrect outputs. Always double-check responses.</div>
   </div>
-  <button class="pro-tip-toast-close" id="early-dev-toast-close" title="Dismiss" style="color: #f59e0b;">×</button>
+  <button class="pro-tip-toast-close" id="early-dev-toast-close" title="Dismiss" style="color: rgba(255,255,255,0.7);">×</button>
 </div>
 
 <!-- Feature Intro Carousel Modal -->
@@ -470,70 +385,70 @@
     <div class="feature-intro-slides" id="feature-intro-slides">
       <!-- Slide 1 -->
       <div class="feature-intro-slide active" data-slide="0">
-        <div style="display:grid; grid-template-columns:1fr auto; gap:28px; align-items:center; width:100%; text-align:left;">
-          <div style="display:flex; flex-direction:column; gap:12px;">
-            <h2 class="feature-intro-title" style="text-align:left;">Welcome to Math Chat</h2>
+        <div style="display:grid; grid-template-columns:1fr auto; gap:1.75rem; align-items:center; width:100%; text-align:left;">
+          <div style="display:flex; flex-direction:column; gap:0.75rem;">
+            <h2 class="feature-intro-title" style="text-align:left;">Welcome to Desmos Chat</h2>
             <p class="feature-intro-desc" style="text-align:left;">
               Here, you'll learn SAT math with an AI powered Desmos graph;
               tricks, tips, and visualizers will all help you ace your next exam.
             </p>
-            <p class="feature-intro-desc" style="text-align:left; font-size:13px; margin-top:2px;"><strong>Here's a quick look at what you can do.</strong></p>
+            <p class="feature-intro-desc" style="text-align:left; font-size:0.8125rem; margin-top:0.125rem;"><strong>Here's a quick look at what you can do.</strong></p>
           </div>
-          <img src="../logo-images/newlogo10.png" alt="SAT Math Chat" style="width:160px; height:160px; object-fit:contain; filter:drop-shadow(0 10px 28px rgba(139,92,246,.4)); flex-shrink:0;"/>
+          <img src="../logo-images/newlogo10.png" alt="Desmos Chat" style="width:10rem; height:10rem; object-fit:contain; filter:drop-shadow(0 0.625rem 1.75rem rgba(139,92,246,.4)); flex-shrink:0;"/>
         </div>
       </div>
 
       <!-- Slide 2 -->
       <div class="feature-intro-slide" data-slide="1">
-        <div class="feature-intro-icon-large"><img src="../logo-images/newlogo2.png" alt="Desmos Calculator" style="width: 56px; height: 56px; object-fit: contain;"/></div>
+        <div class="feature-intro-icon-large"><img src="../logo-images/newlogo2.png" alt="Desmos Calculator" style="width: 3.5rem; height: 3.5rem; object-fit: contain;"/></div>
         <h2 class="feature-intro-title">Interactive Desmos Calculator</h2>
         <p class="feature-intro-desc">
           Ask Korah about any SAT problem, equation, or dataset and watch it appear on the
           Desmos graph instantly. Zoom, pan, and interact with your graphs to build
           deeper understanding of mathematical relationships.
         </p>
-        <div style="background: rgba(139,92,246,0.08); border: 2px dashed rgba(139,92,246,0.3); border-radius: 12px; display: flex; align-items: center; justify-content: center; min-height: 140px;">
+        <div style="background: rgba(139,92,246,0.08); border: 0.125rem dashed rgba(139,92,246,0.3); border-radius: 0.75rem; display: flex; align-items: center; justify-content: center; min-height: 8.75rem;">
           <img src="../logo-images/desmosdemo.png" alt="Desmos Calculator Demo" style="width: 100%; height: 100%; object-fit: contain;">
         </div>
       </div>
 
       <!-- Slide 3 -->
       <div class="feature-intro-slide" data-slide="2">
-        <div class="feature-intro-icon-large"><img src="../logo-images/newlogo5.png" alt="Regressions" style="width: 56px; height: 56px; object-fit: contain;"/></div>
+        <div class="feature-intro-icon-large"><img src="../logo-images/newlogo5.png" alt="Regressions" style="width: 3.5rem; height: 3.5rem; object-fit: contain;"/></div>
         <h2 class="feature-intro-title">Regressions & Desmos Tricks</h2>
         <p class="feature-intro-desc">
           Today, nearly every top scorer on the SAT uses the calculator and regressions to solve every problem on the math section. Korah will teach you how to do the same exact thing, just ask.
         </p>
-        <div class="feature-intro-img-placeholder" style="background: rgba(139,92,246,0.08); border: 2px dashed rgba(139,92,246,0.3); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+        <div class="feature-intro-img-placeholder" style="background: rgba(139,92,246,0.08); border: 0.125rem dashed rgba(139,92,246,0.3); border-radius: 0.75rem; display: flex; align-items: center; justify-content: center;">
           <img src="../logo-images/regressions.png" alt="Regression Example" style="width: 100%; height: 100%; object-fit: contain;">
         </div>
       </div>
 
       <!-- Slide 4 -->
       <div class="feature-intro-slide" data-slide="3">
-        <div class="feature-intro-icon-large"><img src="../logo-images/newlogo11.png" alt="Solve Problems" style="width: 56px; height: 56px; object-fit: contain;"/></div>
+        <div class="feature-intro-icon-large"><img src="../logo-images/newlogo11.png" alt="Solve Problems" style="width: 3.5rem; height: 3.5rem; object-fit: contain;"/></div>
         <h2 class="feature-intro-title">Solve SAT Problems Faster</h2>
         <p class="feature-intro-desc">
           Instead of solving by hand, use the Desmos calculator to solve problems at lightning speed. Apply algebraic reasoning and regressions through methods for any type of equation.
         </p>
-        <div class="feature-intro-img-placeholder" style="background: rgba(139,92,246,0.08); border: 2px dashed rgba(139,92,246,0.3); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+        <div class="feature-intro-img-placeholder" style="background: rgba(139,92,246,0.08); border: 0.125rem dashed rgba(139,92,246,0.3); border-radius: 0.75rem; display: flex; align-items: center; justify-content: center;">
           <img src="../logo-images/exponential.png" alt="Feature Example Coming Soon" style="width: 100%; height: 100%; object-fit: contain;">
         </div>
       </div>
 
       <!-- Slide 5 -->
       <div class="feature-intro-slide" data-slide="4">
-        <div style="display:grid; grid-template-columns:1fr auto; gap:28px; align-items:center; width:100%; text-align:left;">
-          <div style="display:flex; flex-direction:column; gap:12px;">
+        <div style="display:grid; grid-template-columns:1fr auto; gap:1.75rem; align-items:center; width:100%; text-align:left;">
+          <div style="display:flex; flex-direction:column; gap:0.75rem;">
             <h2 class="feature-intro-title" style="text-align:left;">Help Us Improve</h2>
             <p class="feature-intro-desc" style="text-align:left;">
-              SAT Math Chat is new and still in active development. Some features may not
+              Desmos Chat is new and still in active development. Some features may not
               work perfectly yet. If you encounter any bugs or have feedback, please
               report them to:
             </p>
             <a href="mailto:oscareucedaf1@gmail.com" class="feature-intro-email" style="align-self:flex-start;">oscareucedaf1@gmail.com</a>
           </div>
-          <img src="../logo-images/newlogo12.png" alt="Help Improve" style="width:130px; height:130px; object-fit:contain; filter:drop-shadow(0 10px 28px rgba(139,92,246,.4)); flex-shrink:0;"/>
+          <img src="../logo-images/newlogo12.png" alt="Help Improve" style="width:8.125rem; height:8.125rem; object-fit:contain; filter:drop-shadow(0 0.625rem 1.75rem rgba(139,92,246,.4)); flex-shrink:0;"/>
         </div>
       </div>
     </div>
@@ -709,12 +624,95 @@
       window.SatMathChat.initSession();
     }
 
+    // ─── Handoff from SAT questions player ──────────────────────────────
+    // questions.html stashes the full problem in sessionStorage.korahSatHandoff
+    // before navigating here. Seed the welcome input so the user's first send
+    // includes stem, choices, correct answer, and serialized inline SVGs.
+    try {
+      const raw = sessionStorage.getItem('korahSatHandoff');
+      if (raw) {
+        sessionStorage.removeItem('korahSatHandoff');
+        const payload = JSON.parse(raw);
+        const promptText =
+          `Help me visualize and solve this SAT question on the Desmos graph.\n\n` +
+          (payload.contextBlock || payload.stem || '');
+        if (window.SatMathChat?.sendMessage) {
+          window.SatMathChat.sendMessage(promptText);
+        } else {
+          // Fallback: populate input if sendMessage isn't available yet
+          const welcomeInput = document.getElementById('welcome-chat-input');
+          const chatInput    = document.getElementById('chat-input');
+          if (welcomeInput) {
+            welcomeInput.value = promptText;
+            welcomeInput.dispatchEvent(new Event('input', { bubbles: true }));
+            welcomeInput.focus();
+          } else if (chatInput) {
+            chatInput.value = promptText;
+            chatInput.dispatchEvent(new Event('input', { bubbles: true }));
+            chatInput.focus();
+          }
+        }
+      }
+    } catch (e) { console.warn('[SatMath] handoff load failed', e); }
+
     // Override new-chat-btn to create a new SAT math session in-place
     document.getElementById('new-chat-btn')?.addEventListener('click', (e) => {
       e.stopImmediatePropagation();
       if (window.SatMathChat) window.SatMathChat.newChat();
     }, true);
   }, { once: true });
+</script>
+<script>
+  // ── Topbar confirm modals ──
+  (function() {
+    const modal = document.getElementById('confirm-modal');
+    const titleEl = document.getElementById('confirm-modal-title');
+    const descEl  = document.getElementById('confirm-modal-desc');
+    const okBtn   = document.getElementById('confirm-modal-ok');
+    const cancelBtn = document.getElementById('confirm-modal-cancel');
+    let pendingCb = null;
+
+    function showConfirm(title, desc, cb) {
+      titleEl.textContent = title;
+      descEl.textContent  = desc;
+      pendingCb = cb;
+      modal.classList.add('show');
+    }
+
+    okBtn.addEventListener('click', () => {
+      modal.classList.remove('show');
+      if (pendingCb) { pendingCb(); pendingCb = null; }
+    });
+
+    cancelBtn.addEventListener('click', () => {
+      modal.classList.remove('show');
+      pendingCb = null;
+    });
+
+    // Intercept a button: capture phase blocks original handler, confirmed flag lets it through
+    function interceptWithConfirm(btnId, title, desc) {
+      const btn = document.getElementById(btnId);
+      if (!btn) return;
+      btn.addEventListener('click', (e) => {
+        if (btn._confirmed) { btn._confirmed = false; return; }
+        e.stopImmediatePropagation();
+        showConfirm(title, desc, () => {
+          btn._confirmed = true;
+          btn.click();
+        });
+      }, true);
+    }
+
+    interceptWithConfirm('sat-graph-clear', 'Clear Graph?', 'This will remove all expressions from the Desmos graph.');
+    interceptWithConfirm('clear-chat-btn',  'Clear Chat?',  'This will start a new session and clear all messages in this conversation.');
+
+    // New chat topbar button
+    document.getElementById('new-chat-topbar-btn')?.addEventListener('click', () => {
+      showConfirm('New Chat?', 'Starting a new chat will save the current session to your history.', () => {
+        if (window.SatMathChat) window.SatMathChat.newChat();
+      });
+    });
+  })();
 </script>
 </body>
 </html>

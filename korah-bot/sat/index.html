@@ -32,6 +32,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script src="../sidebar-loader.js" defer></script>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="../study/js/sidebar.js"></script>
 <link rel="stylesheet" href="../app/korah-chat.css"/>
@@ -60,6 +61,7 @@
   import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
   import { setupKorahDB } from "../app/data/firestore-store.js";
   import { initSatAnalytics } from "./js/sat-analytics.js";
+  import { startAuthGuard } from '../auth-guard.js';
 
   const firebaseConfig = {
     apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
@@ -75,7 +77,7 @@
 
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
-      window.KorahTransitions.go('../login.html');
+      window.KorahTransitions.go('../landing/index.html');
       return;
     }
     // Set up Firestore and expose window.KorahDB before notifying the app.
@@ -95,6 +97,7 @@
     } catch (e) {
       console.warn("[SAT] onboarding check failed", e);
     }
+    startAuthGuard(auth, '../landing/index.html');
   });
 
   document.getElementById('logout-btn').addEventListener('click', () => {
@@ -107,126 +110,7 @@
 </script>
 
 <canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
-<div class="sidebar-overlay" @click="mobileOpen = false; document.querySelector('.sidebar-overlay').classList.remove('show')"></div>
-
-<!-- ═══ SIDEBAR ═══ -->
-<aside id="sidebar" class="sidebar bg-sf glass t-theme"
-  :class="{ collapsed: sidebarCollapsed, 'mobile-open': mobileOpen }"
-  x-effect="window.KorahSidebar?.onCollapseChange?.(sidebarCollapsed)"
-  @resize.window="if (window.innerWidth > 768) { mobileOpen = false; const overlay = document.querySelector('.sidebar-overlay'); if (overlay) overlay.classList.remove('show'); }">
-  <div class="sidebar-header">
-    <a href="../index.html" class="flex items-center gap-2.5 no-underline">
-      <div class="w-12 h-12 rounded-xl flex items-center justify-center font-display text-xl">
-        <span class="logo-letter">
-          <img src="../logo-images/newlogo0.png" alt="Korah"/>
-        </span>
-      </div>
-      <div class="flex flex-col leading-tight">
-        <span class="font-display text-[19px] font-bold tx">Korah</span>
-        <span class="text-[9px] font-semibold tracking-[2.5px] uppercase tx-p4">Study Smarter</span>
-      </div>
-    </a>
-    <button id="new-chat-btn" class="new-chat-btn text-white text-xs font-bold px-4 py-2 rounded-full border-none cursor-pointer shadow-glow t-btn">
-      <span class="new-chat-icon">+</span> <span class="new-chat-text">New Chat</span>
-    </button>
-  </div>
-
-  <nav class="sidebar-nav">
-    <span class="sidebar-section-label">HOME</span>
-    <a href="../index.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">home</span> <span class="nav-text">Home</span></a>
-    <a href="../chat.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">chat</span> <span class="nav-text">Chat</span></a>
-    <a href="../study/feed.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">school</span> <span class="nav-text">Study</span></a>
-    <span class="sidebar-section-label">SAT</span>
-    <a href="index.html" class="sidebar-nav-link active t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">assignment</span> <span class="nav-text">Question Bank</span></a>
-    <a href="math-chat.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">calculate</span> <span class="nav-text">Math Chat</span></a>
-    <a href="dashboard.html" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">insights</span> <span class="nav-text">Dashboard</span></a>
-  </nav>
-
-  <div class="flex items-center justify-between px-1 flex-shrink-0" style="margin: 0.75rem 0 0.25rem;">
-    <span class="sidebar-section-label" style="margin:0">Recent Chats</span>
-  </div>
-  <div class="sidebar-middle">
-    <div class="select-bar-wrapper">
-      <div id="chat-select-bar" class="select-bar">
-        <span class="select-bar-count" id="chat-select-count">0 selected</span>
-        <div class="select-bar-actions">
-          <button class="select-bar-btn" id="chat-select-all" title="Select all">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <polyline points="20 6 9 17 4 12"/>
-            </svg>
-          </button>
-          <button class="select-bar-btn" id="chat-deselect-all" title="Deselect all">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <line x1="18" y1="6" x2="6" y2="18"/>
-              <line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
-          <button class="select-bar-btn danger" id="chat-delete-selected" title="Delete selected"></button>
-        </div>
-      </div>
-    </div>
-    <div id="chat-history" class="chat-history">
-      <div class="skeleton-item">
-        <div class="skeleton-icon"></div>
-        <div class="skeleton-text"></div>
-      </div>
-      <div class="skeleton-item">
-        <div class="skeleton-icon"></div>
-        <div class="skeleton-text"></div>
-      </div>
-      <div class="skeleton-item">
-        <div class="skeleton-icon"></div>
-        <div class="skeleton-text"></div>
-      </div>
-      <div class="skeleton-item">
-        <div class="skeleton-icon"></div>
-        <div class="skeleton-text"></div>
-      </div>
-<div class="skeleton-item">
-        <div class="skeleton-icon"></div>
-        <div class="skeleton-text"></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="sidebar-footer">
-    <div class="mood-indicator" id="sidebar-mood">
-      <span class="mood-dot" id="mood-dot"><span class="material-icons-round" style="font-size: 12px; color: var(--grn);" aria-label="online">circle</span></span>
-      <span class="text-xs tx2 font-medium">Full Focus Mode</span>
-    </div>
-    <div class="sidebar-footer-actions">
-      <button id="logout-btn" class="theme-toggle-small t-btn" title="Log out">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-          <polyline points="16 17 21 12 16 7"/>
-          <line x1="21" y1="12" x2="9" y2="12"/>
-        </svg>
-      </button>
-      <button id="settings-btn" class="theme-toggle-small t-btn" title="Settings">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-        </svg>
-      </button>
-      <button @click="theme = theme === 'dark' ? 'light' : 'dark'; localStorage.setItem('korah_theme', theme)" class="theme-toggle-small t-btn" title="Toggle theme">
-        <svg x-show="theme==='light'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" style="color:var(--p5)">
-          <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/>
-        </svg>
-        <svg x-show="theme==='dark'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--p4)">
-          <circle cx="12" cy="12" r="5"/>
-          <line x1="12" y1="1" x2="12" y2="3"/>
-          <line x1="12" y1="21" x2="12" y2="23"/>
-          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-          <line x1="1" y1="12" x2="3" y2="12"/>
-          <line x1="21" y1="12" x2="23" y2="12"/>
-          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-        </svg>
-      </button>
-    </div>
-  </div>
-</aside>
+<div id="sidebar-root"></div>
 
 <!-- Hidden file input for document attachment -->
 <input type="file" id="doc-file-input" class="hidden" multiple accept=".pdf,.txt,.png,.jpg,.jpeg,.gif,.webp,.md"/>
@@ -255,44 +139,46 @@
   </header>
 
   <!-- SAT Content -->
-  <div class="sat-page sat-bank-page" style="padding: 20px;">
+  <div class="sat-page sat-bank-page" style="padding: 1.25rem;">
     <section class="sat-bank-shell">
       <section class="sat-bank-header">
-        <p class="sat-eyebrow grad-text">Korah SAT</p>
-        <h1 class="sat-bank-title">Question Bank</h1>
-        <p class="sat-bank-desc">
-          Pick a section and domain, choose how many questions you want, and start practicing —
-          every question is sourced directly from the <strong>Official College Board Question Bank</strong>.
-        </p>
+        <div class="sat-bank-header-text">
+          <div class="sat-eyebrow-row">
+            <img src="../logo-images/newlogo12.png" class="sat-eyebrow-logo" alt="Korah logo"/>
+            <p class="sat-eyebrow">Korah SAT Prep</p>
+          </div>
+          <h1 class="sat-bank-title">Question Bank</h1>
+          <p class="sat-bank-desc">
+            Pick a section and domain, choose how many questions you want, and start cooking up. <br>
+            We get all of our questions fresh from <strong> College Board</strong>, so you get the real SAT experience.
+          </p>
+        </div>
+        <img src="../logo-images/newlogo3.png" class="sat-bank-header-deco" alt=""/>
       </section>
         
 
       <section class="sat-bank-controls">
         <div class="sat-session-bar">
-          <input id="limitInput" type="text" class="sat-limit-input" placeholder="Question Limit: None" />
-          <div id="selectionSummary" class="sat-inline-selection">Choose a section and domain</div>
-          <div class="sat-toolbar-actions">
-            <a href="./dashboard.html" class="sat-button sat-button-ghost t-btn" style="text-decoration:none; color: white;" aria-label="Open analytics dashboard">Dashboard</a>
-            <button id="clearFiltersBtn" class="sat-button sat-button-ghost t-btn" type="button" aria-label="Clear filters" style = "color: white;">Clear</button>
-            <button id="startSelectedBtn" class="sat-button sat-button-primary t-btn" type="button" aria-label="Start practice session">Start practice</button>
-          </div>
-        </div>
-        <div class="sat-filter-row">
-          <div class="sat-filter-group" role="group" aria-label="Assessment">
-            <span class="sat-filter-label">Assessment</span>
-            <div class="sat-chip" style="display: flex; align-items: center; gap: 0.5rem; width: 100%; padding: 0.5rem; cursor: default;">
-              <span>SAT</span>
+          <div class="sat-limit-dd" id="limitDropdown">
+            <button id="limitToggle" class="sat-filters-toggle t-btn" type="button" aria-expanded="false" aria-label="Set question limit">
+              <svg class="sat-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+              <span id="limitToggleLabel">Question Limit</span>
+              <svg class="sat-ico sat-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div id="limitMenu" class="sat-limit-menu">
+              <div class="sat-filter-note">Number of questions</div>
+              <input id="limitInput" type="text" class="sat-limit-input" placeholder="e.g. 20 (blank = no limit)" />
             </div>
           </div>
-          <div class="sat-filter-group" role="group" aria-label="Difficulty">
-            <span class="sat-filter-label">Difficulty</span>
-            <div class="sat-difficulty-chips" id="difficultyChips">
-              <button class="sat-chip" type="button" data-difficulty="E" aria-pressed="false">Easy</button>
-              <button class="sat-chip" type="button" data-difficulty="M" aria-pressed="false">Medium</button>
-              <button class="sat-chip" type="button" data-difficulty="H" aria-pressed="false">Hard</button>
-            </div>
-          </div>
+          <button id="filtersToggle" class="sat-filters-toggle t-btn" type="button" aria-expanded="false" aria-controls="filterRow" aria-label="Toggle filters">
+            <svg class="sat-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+            <span>Filters</span>
+            <span id="filtersBadge" class="sat-filters-badge" hidden>0</span>
+            <svg class="sat-ico sat-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
         </div>
+        <!-- Filter buttons are rendered by sat-bank.js from the FILTERS config -->
+        <div class="sat-filter-row" id="filterRow" hidden></div>
       </section>
 
       <section class="sat-bank-layout">
@@ -306,6 +192,19 @@
 
 
 </div><!-- end .main-area-wrapper -->
+
+<!-- Bottom selection pill — appears when the user selects topics -->
+<div id="selectionPill" class="sat-selection-pill" hidden>
+  <span class="sat-pill-count" id="pillCountLabel">0 topics selected</span>
+  <button id="pillRandomize" class="sat-pill-btn sat-pill-randomize t-btn" type="button" aria-pressed="false">
+    <svg class="sat-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+    <span>Randomize</span>
+  </button>
+  <button id="pillStart" class="sat-pill-btn sat-pill-start t-btn" type="button">
+    <span>Start</span>
+    <svg class="sat-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+  </button>
+</div>
 
 <!-- Settings Modal -->
 <div id="settings-modal" class="settings-modal">
@@ -385,16 +284,16 @@
 
 <!-- SAT Onboarding Modal -->
 <div id="sat-onboarding-modal" class="goal-modal">
-  <div class="delete-modal-content" style="max-width: 440px;">
-    <div class="delete-modal-icon"><span class="material-icons-round" style="color: #EF5350; font-size: 20px;" aria-label="target">gps_fixed</span></div>
+  <div class="delete-modal-content" style="max-width: 27.5rem;">
+    <div class="delete-modal-icon"><span class="material-icons-round" style="color: #EF5350; font-size: 1.25rem;" aria-label="target">gps_fixed</span></div>
     <h3 class="delete-modal-title">Set your SAT goal</h3>
     <p class="delete-modal-desc">Tell us where you're starting and where you'd like to be. We'll use this to suggest what to study next.</p>
-    <div style="display:flex; flex-direction:column; gap:14px; margin-top:8px; text-align:left;">
-      <label style="display:flex; flex-direction:column; gap:6px; font-size:13px; font-weight:600; color:var(--tx2);">
-        Current SAT score <span style="font-weight:400; color:var(--tx3); font-size:12px;">(leave blank if you haven't taken one)</span>
+    <div style="display:flex; flex-direction:column; gap:0.875rem; margin-top:0.5rem; text-align:left;">
+      <label style="display:flex; flex-direction:column; gap:0.375rem; font-size:0.8125rem; font-weight:600; color:var(--tx2);">
+        Current SAT score <span style="font-weight:400; color:var(--tx3); font-size:0.75rem;">(leave blank if you haven't taken one)</span>
         <input id="sat-onboarding-current" type="number" min="400" max="1600" step="10" placeholder="e.g. 1200" class="create-input" style="width:100%;"/>
       </label>
-      <label style="display:flex; flex-direction:column; gap:6px; font-size:13px; font-weight:600; color:var(--tx2);">
+      <label style="display:flex; flex-direction:column; gap:0.375rem; font-size:0.8125rem; font-weight:600; color:var(--tx2);">
         Goal SAT score
         <input id="sat-onboarding-goal" type="number" min="400" max="1600" step="10" placeholder="e.g. 1500" class="create-input" style="width:100%;"/>
       </label>
@@ -438,10 +337,10 @@
 <!-- Rename Modal -->
 <div id="rename-modal" class="delete-modal">
   <div class="delete-modal-content">
-    <div class="delete-modal-icon"><span class="material-icons-round" style="color: #FFA726; font-size: 20px;" aria-label="rename">edit</span></div>
+    <div class="delete-modal-icon"><span class="material-icons-round" style="color: #FFA726; font-size: 1.25rem;" aria-label="rename">edit</span></div>
     <h3 class="delete-modal-title">Rename</h3>
     <p class="delete-modal-desc" id="rename-modal-desc">Enter a new name</p>
-    <input id="rename-modal-input" type="text" class="create-input" style="width:100%; margin-top:4px;" placeholder="New name…"/>
+    <input id="rename-modal-input" type="text" class="create-input" style="width:100%; margin-top:0.25rem;" placeholder="New name…"/>
     <div class="delete-modal-actions">
       <button id="rename-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
       <button id="rename-modal-confirm" class="delete-modal-btn confirm t-btn" style="background:rgba(139,92,246,.12); color:var(--p5); border-color:rgba(139,92,246,.3);">Rename</button>
@@ -452,7 +351,7 @@
 <!-- Delete Confirm Modal -->
 <div id="delete-modal" class="delete-modal">
   <div class="delete-modal-content">
-    <div class="delete-modal-icon"><span class="material-icons-round" style="color: var(--red); font-size: 20px;" aria-label="delete">delete</span></div>
+    <div class="delete-modal-icon"><span class="material-icons-round" style="color: var(--red); font-size: 1.25rem;" aria-label="delete">delete</span></div>
     <h3 class="delete-modal-title">Delete?</h3>
     <p class="delete-modal-desc">This will permanently delete <span id="delete-modal-name"></span>. This cannot be undone.</p>
     <div class="delete-modal-actions">

@@ -57,6 +57,28 @@ export async function setupKorahDB(app, uid) {
 
   const studyRefFor  = (type, id) => doc(db, `users/${uid}/${TYPE_TO_COL[type] || "flashcardSets"}`, id);
   const studyRefAny  = (col, id)  => doc(db, `users/${uid}/${col}`, id);
+  // Top-level (global) collection so the first user pays the API cost and
+  // every subsequent user reads the cached explanation for free. The bank of
+  // College Board questions is fixed and the explanation does not vary by user.
+  // NOTE: firestore.rules must allow read for any authed user and ideally
+  // restrict writes to a Cloud Function (or `if !exists()` create-once rule).
+  const satExplainRef = (id) => doc(db, `satExplanations`, id);
+
+  // ─── SAT Explanation Cache ────────────────────────────────────────────────
+  // Per-question step-by-step explanation, cached globally so each question's
+  // API call happens once across ALL users. Stored as
+  // { steps: [{title, body}], answer, summary, model, createdAt }.
+
+  async function getSatExplanation(questionId) {
+    if (!questionId) return null;
+    const snap = await getDoc(satExplainRef(questionId));
+    return snap.exists() ? snap.data() : null;
+  }
+
+  async function setSatExplanation(questionId, data) {
+    if (!questionId) return;
+    await setDoc(satExplainRef(questionId), { ...data, createdAt: new Date().toISOString() }, { merge: true });
+  }
 
   // ─── Conversations ────────────────────────────────────────────────────────
 
@@ -316,6 +338,9 @@ export async function setupKorahDB(app, uid) {
     deleteStudyItems,
     onStudyItemsChange,
     fetchStudyItems,
+    // sat explanations
+    getSatExplanation,
+    setSatExplanation,
     // migration
     migrateFromLocalStorage,
     // actions
