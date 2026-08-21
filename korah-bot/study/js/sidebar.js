@@ -256,7 +256,7 @@ function showSidebarDeleteModal(name, onConfirm) {
 
   // ── Render Chat History ──
   function _getChatLogoPath() {
-    return '../logo-images/newlogo12.png';
+    return 'logo-images/newlogo5.png';
   }
 
   function renderChatHistory(container, baseUrl) {
