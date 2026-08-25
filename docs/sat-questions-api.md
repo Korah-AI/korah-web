@@ -1,4 +1,4 @@
-# SAT Questions API — `/api/sat/questions`
+# SAT Questions API — `/api/sat/q`
 
 Vercel serverless handler that fetches SAT questions directly from the **College Board question bank API** and returns them in a normalized shape for the Korah SAT player frontend.
 
@@ -7,7 +7,7 @@ Vercel serverless handler that fetches SAT questions directly from the **College
 ## Endpoint
 
 ```
-GET /api/sat/questions
+GET /api/sat/q
 ```
 
 **Max duration:** 60 seconds
@@ -76,7 +76,7 @@ GET /api/sat/questions
 - `stem`, `options[].text`, `paragraph`, and `explanation` contain HTML (including MathML for math questions).
 - `type` is `"mcq"` (multiple choice) or `"spr"` (student-produced response). SPR questions have no `options`.
 - `paragraph` contains the passage/stimulus HTML (used in reading questions). Empty string when there is no stimulus.
-- `loaded: false` means the question is a **stub** — `stem`, `options`, `correctAnswer`, and `explanation` are empty. The frontend hydrates stubs on demand via `/api/sat/question?id=…` as the user navigates.
+- `loaded: false` means the question is a **stub** — `stem`, `options`, `correctAnswer`, and `explanation` are empty. The frontend hydrates stubs on demand via `/api/sat/qi?id=…` as the user navigates.
 - `batchSize` tells the frontend how many questions at the start of the array are fully loaded.
 - When `questionIds` is supplied the response only contains `count`, `questions`, and `batchSize` (no filter fields).
 
