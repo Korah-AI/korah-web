@@ -5,10 +5,10 @@
 <script src="../transitions/page-transitions.js"></script>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<meta name="description" content="Korah CODE — Coding Opportunity for Development & Engineering. A software development internship program building real product with the Korah team."/>
-<meta property="og:title" content="Korah CODE — Coding Opportunity for Development & Engineering"/>
-<meta property="og:description" content="A software development internship program for students who want to ship real product."/>
-<title>Korah CODE — Coding Opportunity for Development & Engineering</title>
+<meta name="description" content="The work of the Korah CODE interns — projects, shipped features, and the mission behind the internship."/>
+<meta property="og:title" content="Korah CODE Interns — The Work"/>
+<meta property="og:description" content="Projects, shipped features, and the mission behind the Korah CODE internship."/>
+<title>Korah CODE Interns — The Work</title>
 <link rel="icon" type="image/png" href="../logo-images/newlogo0.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
@@ -124,7 +124,7 @@
   }
   .code-cta.ghost:hover { border-color: var(--p4); }
 
-  /* ── Meta badges (duration / commitment / format) ── */
+  /* ── Meta badges ── */
   .meta-row {
     display: flex;
     flex-wrap: wrap;
@@ -160,6 +160,16 @@
     margin: 0 0 2rem;
     line-height: 1.65;
   }
+  .section-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--tx2);
+    margin: 0 0 0.75rem;
+  }
+  .section-eyebrow img { height: 1.25rem; width: auto; }
 
   /* ── About card ── */
   .about-card {
@@ -176,6 +186,43 @@
     margin: 0 0 1rem;
   }
   .about-card p:last-child { margin-bottom: 0; }
+
+  /* ── Mission card (logo beside text) ── */
+  .mission-card {
+    margin-top: 3.5rem;
+    padding: clamp(1.75rem, 3.5vw, 2.75rem);
+    border: 1px solid var(--bd);
+    border-radius: 1.25rem;
+    background:
+      radial-gradient(ellipse at 100% 0%, rgba(139,92,246,0.16) 0%, transparent 60%),
+      var(--bg2);
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: clamp(1.5rem, 4vw, 3rem);
+    align-items: center;
+  }
+  .mission-card img {
+    height: clamp(5rem, 12vw, 9rem);
+    width: auto;
+    object-fit: contain;
+  }
+  .mission-quote {
+    font-size: clamp(1.125rem, 2.2vw, 1.5rem);
+    font-weight: 700;
+    line-height: 1.55;
+    letter-spacing: -0.01em;
+    color: var(--tx);
+    margin: 0 0 1rem;
+  }
+  .mission-card p.mission-body {
+    color: var(--tx2);
+    line-height: 1.75;
+    font-size: 1.0625rem;
+    margin: 0;
+  }
+  @media (max-width: 48rem) {
+    .mission-card { grid-template-columns: 1fr; }
+  }
 
   /* ── Bento (two side-by-side list cards) ── */
   .bento {
@@ -226,6 +273,226 @@
     margin-top: 0.6rem;
   }
 
+  /* ── Image placeholders (replace src with a real image) ── */
+  .ph {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    border: 1px dashed var(--bd);
+    border-radius: 0.875rem;
+    background: var(--sf2);
+    color: var(--tx3);
+    font-size: 0.8125rem;
+  }
+  .ph.square { aspect-ratio: 1 / 1; border-radius: 50%; }
+  .ph.wide { aspect-ratio: 21 / 9; }
+
+  /* ── Project carousel ── */
+  .carousel {
+    position: relative;
+    border: 1px solid var(--bd);
+    border-radius: 1.25rem;
+    background: var(--bg2);
+    overflow: hidden;
+  }
+  .carousel-viewport {
+    overflow: hidden;
+    touch-action: pan-y;
+    cursor: grab;
+  }
+  .carousel-viewport.dragging { cursor: grabbing; }
+  .carousel-track {
+    display: flex;
+    /* Transition is toggled off in JS while a drag is in progress. */
+    transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform;
+  }
+  .project-slide {
+    flex: 0 0 100%;
+    min-width: 0;
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: clamp(1.25rem, 3vw, 2.5rem);
+    align-items: center;
+    padding: clamp(1.25rem, 3vw, 2.25rem);
+    box-sizing: border-box;
+    opacity: 0.35;
+    transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .project-slide.is-active { opacity: 1; }
+  .project-slide .ph { border-radius: 1rem; }
+  .project-slide img { pointer-events: none; user-select: none; }
+  @media (max-width: 48rem) {
+    .project-slide { grid-template-columns: 1fr; }
+  }
+  .project-slide h3 {
+    font-size: clamp(1.375rem, 2.5vw, 1.875rem);
+    font-weight: 800;
+    color: var(--tx);
+    margin: 0 0 0.375rem;
+    letter-spacing: -0.01em;
+  }
+  .project-slide .creator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--tx2);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    margin: 0 0 1rem;
+  }
+  .project-slide .creator .material-icons-round { font-size: 1.125rem; color: var(--p5); }
+  .project-slide p.blurb {
+    color: var(--tx2);
+    font-size: 1rem;
+    line-height: 1.7;
+    margin: 0 0 1.25rem;
+  }
+  .tag-row { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .tag {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--p5);
+    background: var(--bd2);
+    border: 1px solid var(--bd);
+    border-radius: 624.938rem;
+    padding: 0.25rem 0.75rem;
+  }
+
+  /* Controls */
+  .carousel-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0 clamp(1.25rem, 3vw, 2.25rem) clamp(1.25rem, 3vw, 1.75rem);
+  }
+  .carousel-dots { display: flex; align-items: center; gap: 0.5rem; }
+  .carousel-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    padding: 0;
+    border: none;
+    border-radius: 624.938rem;
+    background: var(--bd);
+    cursor: pointer;
+    transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1), background 0.45s;
+  }
+  .carousel-dot.is-active { width: 1.75rem; background: var(--p4); }
+  .carousel-arrows { display: flex; gap: 0.5rem; }
+  .carousel-arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    border: 1px solid var(--bd);
+    background: var(--sf2);
+    color: var(--tx);
+    cursor: pointer;
+    transition: border-color 0.25s, transform 0.25s, background 0.25s;
+  }
+  .carousel-arrow:hover { border-color: var(--p4); transform: translateY(-0.125rem); }
+  .carousel-arrow .material-icons-round { font-size: 1.25rem; }
+  /* Autoplay progress line — hidden once the visitor takes over. */
+  .carousel-progress {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 0.1875rem;
+    width: 100%;
+    transform: scaleX(0);
+    transform-origin: left;
+    background: linear-gradient(90deg, var(--p4), var(--ac));
+  }
+  .carousel.is-playing .carousel-progress {
+    animation: carousel-fill 6s linear infinite;
+  }
+  @keyframes carousel-fill {
+    from { transform: scaleX(0); }
+    to   { transform: scaleX(1); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .carousel-track { transition: none; }
+    .carousel.is-playing .carousel-progress { animation: none; }
+  }
+
+  /* ── Feature rows ── */
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+    gap: 1.25rem;
+  }
+  .feature-card {
+    border: 1px solid var(--bd);
+    border-radius: 1.25rem;
+    background: var(--bg2);
+    padding: clamp(1.25rem, 2.5vw, 1.75rem);
+  }
+  .feature-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 0.875rem;
+    background: var(--bd2);
+    border: 1px solid var(--bd);
+    margin-bottom: 1rem;
+  }
+  .feature-icon .material-icons-round { color: var(--p4); font-size: 1.375rem; }
+  .feature-card h3 {
+    font-size: 1.0625rem;
+    font-weight: 800;
+    color: var(--tx);
+    margin: 0 0 0.5rem;
+  }
+  .feature-card p {
+    color: var(--tx2);
+    font-size: 0.9375rem;
+    line-height: 1.65;
+    margin: 0;
+  }
+  .feature-card .shipped {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 0.875rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--grn);
+  }
+  .feature-card .shipped .material-icons-round { font-size: 0.95rem; }
+
+  /* ── Cohort cards ── */
+  .cohort-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+    gap: 1.25rem;
+  }
+  .cohort-card {
+    border: 1px solid var(--bd);
+    border-radius: 1.25rem;
+    background: var(--bg2);
+    padding: 1.5rem 1.25rem;
+    text-align: center;
+  }
+  .cohort-card .ph { width: 6.5rem; margin: 0 auto 1rem; }
+  .cohort-card h3 {
+    font-size: 1.0625rem;
+    font-weight: 800;
+    color: var(--tx);
+    margin: 0 0 0.25rem;
+  }
+  .cohort-card p {
+    color: var(--tx3);
+    font-size: 0.8125rem;
+    margin: 0;
+    line-height: 1.5;
+  }
+
   /* ── Final CTA strip ── */
   .final-cta {
     margin-top: 4rem;
@@ -236,6 +503,13 @@
       radial-gradient(ellipse at 50% 0%, rgba(139,92,246,0.16) 0%, transparent 60%),
       var(--bg2);
     text-align: center;
+  }
+  .final-cta img {
+    height: clamp(3.5rem, 8vw, 5rem);
+    width: auto;
+    object-fit: contain;
+    margin: 0 auto 1.25rem;
+    display: block;
   }
   .final-cta h3 {
     font-size: clamp(1.5rem, 3vw, 2.125rem);
@@ -381,9 +655,8 @@
     <a href="../index.html#sat"      class="nav-link nav-pill text-[0.84375rem] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx hover:bg-[var(--bd)]"><span class="material-icons-round nav-link-icon">calculate</span><span class="nav-link-text">Desmos Tutoring</span></a>
     <a href="../index.html#progress" class="nav-link nav-pill text-[0.84375rem] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx hover:bg-[var(--bd)]"><span class="material-icons-round nav-link-icon">insights</span><span class="nav-link-text">Progress</span></a>
     <a href="../index.html#chat"     class="nav-link nav-pill text-[0.84375rem] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx hover:bg-[var(--bd)]"><span class="material-icons-round nav-link-icon">assignment</span><span class="nav-link-text">Questionbank</span></a>
-    <a href="../index.html#tutoring" class="nav-link nav-pill text-[0.84375rem] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx hover:bg-[var(--bd)]"><span class="material-icons-round nav-link-icon">school</span><span class="nav-link-text">Tutoring</span></a>
-    <a href="./code.html" class="nav-link nav-pill text-[0.84375rem] font-medium px-4 py-1.5 rounded-full t-btn" style="color:#fff; background:var(--p4); border: 1px solid var(--p4);"><span class="material-icons-round nav-link-icon" style="color:#fff">code</span><span class="nav-link-text">Korah CODE</span></a>
-    <a href="./interns.html" class="nav-link nav-pill text-[0.84375rem] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx hover:bg-[var(--bd)]"><span class="material-icons-round nav-link-icon">workspace_premium</span><span class="nav-link-text">Intern Work</span></a>
+    <a href="./code.html" class="nav-link nav-pill text-[0.84375rem] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx hover:bg-[var(--bd)]"><span class="material-icons-round nav-link-icon">code</span><span class="nav-link-text">Korah CODE</span></a>
+    <a href="./interns.html" class="nav-link nav-pill text-[0.84375rem] font-medium px-4 py-1.5 rounded-full t-btn" style="color:#fff; background:var(--p4); border: 1px solid var(--p4);"><span class="material-icons-round nav-link-icon" style="color:#fff">workspace_premium</span><span class="nav-link-text">Intern Work</span></a>
   </div>
 
   <div class="flex items-center gap-3 justify-self-end" style="grid-column:3;">
@@ -423,15 +696,15 @@
     </div>
     <div class="letter-glitch-content">
       <div class="letter-glitch-eyebrow">
-        <span class="pill">NEW</span>
-        <span>Applications now open</span>
+        <span class="pill">FALL 26' </span>
+        <span>Application Opens Soon</span>
       </div>
       <h1 class="letter-glitch-title">
-        Korah <span class="purple">CODE</span> Internship
+        Korah <span class="purple">CODE</span> Internship Showcase
       </h1>
-      <a href="#code-hero" class="letter-glitch-btn"
+      <a href="#intro" class="letter-glitch-btn"
          onclick="event.preventDefault(); window.scrollBy({ top: window.innerHeight * 0.55, behavior: 'smooth' });">
-        Learn more <span class="material-icons-round" style="font-size:1.1rem;">arrow_downward</span>
+        See the work <span class="material-icons-round" style="font-size:1.1rem;">arrow_downward</span>
       </a>
     </div>
   </section>
@@ -582,71 +855,356 @@
   </script>
 
   <!-- ═══ HERO ═══ -->
-  <section class="code-hero" id="code-hero">
+  <section class="code-hero" id="intro">
     <div class="code-hero-top">
       <div>
         <h1 class="code-title">
-          Korah <span class="purple">CODE</span> Internship
-          <span class="expansion">(<span class="purple">C</span>oding <span class="purple">O</span>pportunities for <span class="purple">D</span>evelopment and <span class="purple">E</span>ngineering)</span>
+          Projects by our <span class="purple">Interns</span>
+          <span class="expansion">Korah Coding Opportunities for Development and Engineering</span>
         </h1>
         <p class="code-sub">
-          A hands-on software engineering internship meant for highschoolers seeking to pursue computer science or adjacent majors in college. Contribute to a codebase used by thousands of users, and learn while impacting other students just like you.
+          During this internship, a select group of highschoolers chosen from a diverse applicant pool from across the nation get to spend 6 weeks learning and applying software engineering fundamentals using agentic programming. Weekly, interns are given lessons, various rigorous technical tasks both inside and outside of the Korah AI app, and work together to add their updates to the website. 
         </p>
 
         <div class="code-cta-row" style="display:flex;flex-wrap:wrap;align-items:center;gap:0.75rem;">
           <img src="../logo-images/newlogo12.png" alt="Korah CODE" class="code-hero-logo-mobile">
-          <a href="#apply" class="code-cta">
-            Apply Now <span class="material-icons-round" style="font-size:1.1rem;">arrow_forward</span>
+          <a href="#projects" class="code-cta">
+            View projects <span class="material-icons-round" style="font-size:1.1rem;">arrow_forward</span>
           </a>
-          <a href="#about" class="code-cta ghost">Learn More</a>
+          <a href="./code.html" class="code-cta ghost">Inquire for information</a>
         </div>
       </div>
       <img src="../logo-images/newlogo12.png" alt="Korah CODE" class="code-hero-logo">
     </div>
 
     <div class="meta-row">
-      <span class="meta-badge"><span class="material-icons-round">schedule</span> 5 Weeks</span>
-      <span class="meta-badge"><span class="material-icons-round">public</span> Remote</span>
-      <span class="meta-badge"><span class="material-icons-round">groups</span> 5-6 Interns</span>
-      <span class="meta-badge"><span class="material-icons-round">event</span> Application Due July 12th</span>
+      <span class="meta-badge"><span class="material-icons-round">event</span> Cohort Summer 2026</span>
+      <span class="meta-badge"><span class="material-icons-round">groups</span> 4 Interns</span>
+      <span class="meta-badge"><span class="material-icons-round">schedule</span> 6 Weeks</span>
+      <span class="meta-badge"><span class="material-icons-round">rocket_launch</span> X Features Shipped</span>
     </div>
   </section>
 
-  <!-- ═══ ABOUT ═══ -->
-  <section id="about" class="about-card">
-    <h2 class="section-heading">About the Program</h2>
+  <!-- ═══ MISSION ═══ -->
+  <section class="mission-card" id="mission">
+    <img src="../logo-images/newlogo12.png" alt="Korah CODE">
+    <div>
+      <p class="section-eyebrow">Our mission</p>
+      <p class="mission-quote">
+        “Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.”
+      </p>
+      <p class="mission-body">
+        Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+      </p>
+    </div>
+  </section>
+
+  <!-- ═══ WHAT THE INTERNSHIP IS ═══ -->
+  <section class="about-card" id="what-is">
+    <p class="section-eyebrow"><img src="../logo-images/newlogo0.png" alt=""> What Korah CODE is</p>
+    <h2 class="section-heading">What is the Korah CODE internship?</h2>
     <p>
       AI slop. Vibecoding. Ever heard of it? In the modern era, too many people are given the most powerful tools to create beautfiul software, but not many truly know what they're doing. Korah CODE is meant to teach the coming generation of programmers the art of Agentic Programming: how to use AI to assist you in producing actually good code, not slop.
     </p>
     <p>
       During this internship, you'll get to contribute to a real-world, impactful codebase in many creative ways. I will personally mentor you and give you advice on how to apply the skills you learn in a way that benefits you exponentially (like making a passion project or softwares that bring profit.) You'll be tasked with two major projects that will be actually used by users, and given various lessons and assignments throughout your internship. Be prepared to be challenged with real tasks, collaborate with your team to complete assignments, and spend time designing your own creative solutions to given problems.
     </p>
-    <p>
-      Only a handful of applicants will be selected for this internship. All programming will be done using HTML, CSS, and JS. The selection criteria is relatively light: experience with HTML/CSS/JS and experience with web development. Applicants are highly encouraged to provide their resume, Github username, or digital portfolio. 
+    <img class="ph wide" alt="Placeholder — team / program photo">
+    <p style="margin-top:1.25rem;">
+      Only a handful of applicants will be selected for this internship. All programming will be done using HTML, CSS, and JS. The selection criteria is relatively light: experience with HTML/CSS/JS and experience with web development. Applicants are highly encouraged to provide their resume, Github username, or digital portfolio.
     </p>
   </section>
 
-  <!-- ═══ LEARN + PERKS — SIDE-BY-SIDE BENTO ═══ -->
-  <section style="margin-top: 4.5rem;">
-    <div class="bento">
+  <!-- ═══ PROJECTS ═══ -->
+  <section id="projects" style="margin-top:4.5rem;">
+    <p class="section-eyebrow"><img src="../logo-images/newlogo12.png" alt=""> The work</p>
+    <h2 class="section-heading">Projects produced during the internship</h2>
+    <p class="section-sub">
+      Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+    </p>
+
+    <div class="carousel is-playing" id="projectCarousel">
+      <div class="carousel-viewport" id="carouselViewport">
+        <div class="carousel-track" id="carouselTrack">
+
+          <article class="project-slide is-active">
+            <img class="ph" alt="Placeholder — project 1 screenshot">
+            <div>
+              <h3>Project Lorem One</h3>
+              <p class="creator"><span class="material-icons-round">person</span> Built by Lorem Ipsum</p>
+              <p class="blurb">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.</p>
+              <div class="tag-row"><span class="tag">HTML</span><span class="tag">CSS</span><span class="tag">JavaScript</span></div>
+            </div>
+          </article>
+
+          <article class="project-slide">
+            <img class="ph" alt="Placeholder — project 2 screenshot">
+            <div>
+              <h3>Project Ipsum Two</h3>
+              <p class="creator"><span class="material-icons-round">person</span> Built by Dolor Amet</p>
+              <p class="blurb">Quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit.</p>
+              <div class="tag-row"><span class="tag">UI</span><span class="tag">Animation</span></div>
+            </div>
+          </article>
+
+          <article class="project-slide">
+            <img class="ph" alt="Placeholder — project 3 screenshot">
+            <div>
+              <h3>Project Dolor Three</h3>
+              <p class="creator"><span class="material-icons-round">person</span> Built by Consectetur Elit</p>
+              <p class="blurb">Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum sed ut perspiciatis.</p>
+              <div class="tag-row"><span class="tag">API</span><span class="tag">Data</span></div>
+            </div>
+          </article>
+
+          <article class="project-slide">
+            <img class="ph" alt="Placeholder — project 4 screenshot">
+            <div>
+              <h3>Project Sit Four</h3>
+              <p class="creator"><span class="material-icons-round">person</span> Built by Sed Eiusmod</p>
+              <p class="blurb">Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione.</p>
+              <div class="tag-row"><span class="tag">Design</span><span class="tag">Frontend</span></div>
+            </div>
+          </article>
+
+        </div>
+      </div>
+
+      <div class="carousel-bar">
+        <div class="carousel-dots" id="carouselDots"></div>
+        <div class="carousel-arrows">
+          <button class="carousel-arrow" id="carouselPrev" aria-label="Previous project"><span class="material-icons-round">arrow_back</span></button>
+          <button class="carousel-arrow" id="carouselNext" aria-label="Next project"><span class="material-icons-round">arrow_forward</span></button>
+        </div>
+      </div>
+
+      <div class="carousel-progress"></div>
+    </div>
+
+    <script>
+      (function () {
+        const carousel = document.getElementById('projectCarousel');
+        const viewport = document.getElementById('carouselViewport');
+        const track = document.getElementById('carouselTrack');
+        const dotsWrap = document.getElementById('carouselDots');
+        const slides = Array.from(track.children);
+        const AUTOPLAY_MS = 6000;
+
+        let index = 0;
+        let timer = null;
+        let userTookOver = false;
+
+        /* Dots */
+        const dots = slides.map((_, i) => {
+          const dot = document.createElement('button');
+          dot.className = 'carousel-dot' + (i === 0 ? ' is-active' : '');
+          dot.setAttribute('aria-label', `Go to project ${i + 1}`);
+          dot.addEventListener('click', () => { stopAutoplay(); goTo(i); });
+          dotsWrap.appendChild(dot);
+          return dot;
+        });
+
+        function render() {
+          track.style.transform = `translateX(${-index * 100}%)`;
+          slides.forEach((s, i) => s.classList.toggle('is-active', i === index));
+          dots.forEach((d, i) => d.classList.toggle('is-active', i === index));
+        }
+
+        function goTo(i) {
+          index = (i + slides.length) % slides.length;
+          render();
+        }
+
+        function stopAutoplay() {
+          userTookOver = true;
+          clearInterval(timer);
+          timer = null;
+          carousel.classList.remove('is-playing');
+        }
+
+        /* Autoplay runs until the visitor swipes, clicks an arrow, or picks a dot. */
+        function startAutoplay() {
+          if (userTookOver || timer) return;
+          timer = setInterval(() => goTo(index + 1), AUTOPLAY_MS);
+          carousel.classList.add('is-playing');
+        }
+
+        document.getElementById('carouselPrev').addEventListener('click', () => { stopAutoplay(); goTo(index - 1); });
+        document.getElementById('carouselNext').addEventListener('click', () => { stopAutoplay(); goTo(index + 1); });
+
+        /* Drag / swipe — the track follows the pointer, then snaps to the
+           nearest slide once the gesture passes a fifth of the viewport. */
+        let dragStartX = 0;
+        let dragDelta = 0;
+        let dragging = false;
+
+        viewport.addEventListener('pointerdown', (e) => {
+          dragging = true;
+          dragDelta = 0;
+          dragStartX = e.clientX;
+          viewport.setPointerCapture(e.pointerId);
+          viewport.classList.add('dragging');
+          track.style.transition = 'none';
+        });
+
+        viewport.addEventListener('pointermove', (e) => {
+          if (!dragging) return;
+          dragDelta = e.clientX - dragStartX;
+          const percent = (dragDelta / viewport.offsetWidth) * 100;
+          track.style.transform = `translateX(${-index * 100 + percent}%)`;
+        });
+
+        function endDrag(e) {
+          if (!dragging) return;
+          dragging = false;
+          viewport.classList.remove('dragging');
+          if (e.pointerId !== undefined && viewport.hasPointerCapture(e.pointerId)) {
+            viewport.releasePointerCapture(e.pointerId);
+          }
+          track.style.transition = '';
+          const threshold = viewport.offsetWidth / 5;
+          if (Math.abs(dragDelta) > threshold) {
+            stopAutoplay();
+            goTo(index + (dragDelta < 0 ? 1 : -1));
+          } else {
+            render();
+          }
+        }
+
+        viewport.addEventListener('pointerup', endDrag);
+        viewport.addEventListener('pointercancel', endDrag);
+
+        render();
+        startAutoplay();
+      })();
+    </script>
+  </section>
+
+  <!-- ═══ FEATURES SHIPPED ═══ -->
+  <section id="features" style="margin-top:4.5rem;">
+    <p class="section-eyebrow"><img src="../logo-images/newlogo0.png" alt=""> In production</p>
+    <h2 class="section-heading">Features shipped by the interns</h2>
+    <p class="section-sub">
+      Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam.
+    </p>
+
+    <div class="feature-grid">
+
+      <div class="feature-card">
+        <div class="feature-icon"><span class="material-icons-round">calculate</span></div>
+        <h3>Lorem Ipsum Feature</h3>
+        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore.</p>
+        <span class="shipped"><span class="material-icons-round">check_circle</span> Shipped</span>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon"><span class="material-icons-round">insights</span></div>
+        <h3>Dolor Sit Feature</h3>
+        <p>Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo.</p>
+        <span class="shipped"><span class="material-icons-round">check_circle</span> Shipped</span>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon"><span class="material-icons-round">assignment</span></div>
+        <h3>Consectetur Feature</h3>
+        <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</p>
+        <span class="shipped"><span class="material-icons-round">check_circle</span> Shipped</span>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon"><span class="material-icons-round">bolt</span></div>
+        <h3>Adipiscing Feature</h3>
+        <p>Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim.</p>
+        <span class="shipped"><span class="material-icons-round">check_circle</span> Shipped</span>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon"><span class="material-icons-round">school</span></div>
+        <h3>Tempor Feature</h3>
+        <p>Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur.</p>
+        <span class="shipped"><span class="material-icons-round">check_circle</span> Shipped</span>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon"><span class="material-icons-round">palette</span></div>
+        <h3>Incididunt Feature</h3>
+        <p>Magni dolores eos qui ratione voluptatem sequi nesciunt, neque porro quisquam est qui dolorem.</p>
+        <span class="shipped"><span class="material-icons-round">check_circle</span> Shipped</span>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══ THE COHORT ═══ -->
+  <section id="cohort" style="margin-top:4.5rem;">
+    <p class="section-eyebrow"><img src="../logo-images/newlogo12.png" alt=""> The team</p>
+    <h2 class="section-heading">Meet the interns</h2>
+    <p class="section-sub">
+      Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore.
+    </p>
+
+    <div class="cohort-grid">
+      <div class="cohort-card">
+        <img class="ph square" alt="Placeholder — intern headshot">
+        <h3>Lorem Ipsum</h3>
+        <p>Dolor sit amet, consectetur</p>
+      </div>
+      <div class="cohort-card">
+        <img class="ph square" alt="Placeholder — intern headshot">
+        <h3>Dolor Amet</h3>
+        <p>Adipiscing elit, sed do</p>
+      </div>
+      <div class="cohort-card">
+        <img class="ph square" alt="Placeholder — intern headshot">
+        <h3>Consectetur Elit</h3>
+        <p>Eiusmod tempor incididunt</p>
+      </div>
+      <div class="cohort-card">
+        <img class="ph square" alt="Placeholder — intern headshot">
+        <h3>Sed Eiusmod</h3>
+        <p>Ut labore et dolore magna</p>
+      </div>
+      <div class="cohort-card">
+        <img class="ph square" alt="Placeholder — intern headshot">
+        <h3>Tempor Labore</h3>
+        <p>Aliqua ut enim ad minim</p>
+      </div>
+      <div class="cohort-card">
+        <img class="ph square" alt="Placeholder — intern headshot">
+        <h3>Magna Aliqua</h3>
+        <p>Veniam quis nostrud exercitation</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ BENEFITS ═══ -->
+  <section id="benefits" style="margin-top:4.5rem;">
+    <p class="section-eyebrow"><img src="../logo-images/newlogo0.png" alt=""> Why it's worth it</p>
+    <h2 class="section-heading">Benefits of the internship</h2>
+    <p class="section-sub">
+      Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+    </p>
+
+    <div class="bento" style="margin-top:0;">
 
       <div class="bento-card">
-        <h3>What's In It For You?</h3>
+        <h3>What interns gain</h3>
         <ul class="bento-list">
-          <li>A concrete, impactful extracurricular for college applications</li>
-          <li>Propose, design, and implement your own features</li>
-          <li>Ship code that's used by real users and students</li>
-          <li>Early exposure to basic software engineering to prep for college</li>
-          <li>A final summary/report written by me describing your work — reference it in essays or interviews</li>
+          <li>Lorem ipsum dolor sit amet, consectetur adipiscing elit</li>
+          <li>Sed do eiusmod tempor incididunt ut labore et dolore magna</li>
+          <li>Ut enim ad minim veniam, quis nostrud exercitation</li>
+          <li>Duis aute irure dolor in reprehenderit in voluptate velit</li>
+          <li>Excepteur sint occaecat cupidatat non proident</li>
         </ul>
       </div>
 
       <div class="bento-card">
-        <h3>What You'll Learn</h3>
+        <h3>What they walk away with</h3>
         <ul class="bento-list">
-          <li>Understanding, updating, and creating program architectures and features</li>
-          <li>Proper data structures and algorithms applied to real problems</li>
-          <li>Debugging and problem-solving under real constraints</li>
+          <li>Nemo enim ipsam voluptatem quia voluptas sit aspernatur</li>
+          <li>Magni dolores eos qui ratione voluptatem sequi nesciunt</li>
+          <li>Neque porro quisquam est qui dolorem ipsum quia dolor</li>
+          <li>Sed quia non numquam eius modi tempora incidunt</li>
         </ul>
       </div>
 
@@ -655,10 +1213,11 @@
 
   <!-- ═══ FINAL CTA ═══ -->
   <section id="apply" class="final-cta">
-    <h3>Ready to build?</h3>
-    <p>Applications are reviewed on a rolling basis. Tell us about yourself.</p>
-    <a href="https://forms.gle/zp22n5c4MHQQzjw49" target="_blank" rel="noopener" class="code-cta">
-      Apply to Korah CODE <span class="material-icons-round" style="font-size:1.1rem;">arrow_forward</span>
+    <img src="../logo-images/newlogo12.png" alt="Korah CODE">
+    <h3>Want to build the next one?</h3>
+    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.</p>
+    <a href="./code.html" class="code-cta">
+      Learn about Korah CODE <span class="material-icons-round" style="font-size:1.1rem;">arrow_forward</span>
     </a>
   </section>
 
