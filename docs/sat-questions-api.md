@@ -22,6 +22,7 @@ GET /api/sat/q
 | `difficulties` (or `difficulty`) | string | `"any"` | Comma-separated difficulty codes: `E`, `M`, `H` |
 | `limit` | string/number | `null` (no limit) | Max total questions to return. Accepts integers, `"none"`, `"unlimited"`, `"max"` |
 | `assessment` | string | `"SAT"` | Assessment type: `SAT`, `PSAT/NMSQT`, or `PSAT` |
+| `since` | number | — | Epoch-ms cutoff on the question's `createDate`. Keeps only questions created at or after it. Ignored when absent, empty, or unparseable |
 | `questionIds` (or `ids`) | string | — | Comma-separated list of specific question IDs to fetch (bypasses all other filters) |
 
 ## Response Shape

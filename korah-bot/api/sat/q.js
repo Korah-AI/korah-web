@@ -71,6 +71,12 @@ function normalizeListParam(value) {
   return items.length > 0 ? items : "any";
 }
 
+function parseSince(value) {
+  if (value === undefined || value === null || value === "") return null;
+  const parsed = Number(String(value).trim());
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
 function normalizeDifficulties(value) {
   const str = String(value || "").trim().toUpperCase();
   if (!str || str === "ANY") return null;
@@ -117,6 +123,7 @@ export default async function handler(req, res) {
     req.query?.difficulties || req.query?.difficulty
   );
   const limit = parseLimit(req.query?.limit); // null = all matching
+  const since = parseSince(req.query?.since); // epoch ms createDate cutoff; null = no cutoff
   const assessmentKey = String(req.query?.assessment || "SAT").toUpperCase();
   const asmtEventId = ASSESSMENTS[assessmentKey] ?? ASSESSMENTS.SAT;
 
@@ -200,6 +207,7 @@ export default async function handler(req, res) {
       let out = arr;
       if (skillFilter) out = out.filter((q) => skillFilter.has(q.skill_cd));
       if (difficulties) out = out.filter((q) => difficulties.includes(q.difficulty));
+      if (since) out = out.filter((q) => Number(q.createDate) >= since);
       return out;
     }
 
