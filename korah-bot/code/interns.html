@@ -107,22 +107,29 @@
     height: 3.25rem;
     padding: 0 2rem;
     border-radius: 624.938rem;
-    background: var(--p4);
+    background-image: linear-gradient(to right, var(--ac) 50%, transparent 50%);
+    background-color: var(--p4);
+    background-size: 200% 100%;
+    background-position: 100% 0;
     color: #fff;
     font-size: 0.9375rem;
     font-weight: 700;
     text-decoration: none;
-    transition: transform 0.25s, opacity 0.25s, box-shadow 0.25s;
+    transition: transform 0.25s ease, box-shadow 0.25s ease, background-position 0.4s ease;
     box-shadow: 0 0.625rem 1.875rem rgba(139,92,246,0.35);
   }
-  .code-cta:hover { transform: translateY(-0.125rem); opacity: 0.93; }
+  .code-cta:hover { transform: scale(1.06); background-position: 0 0; }
   .code-cta.ghost {
-    background: transparent;
+    background-image: linear-gradient(to right, var(--p4) 50%, transparent 50%);
+    background-color: transparent;
+    background-size: 200% 100%;
+    background-position: 100% 0;
     color: var(--tx);
     border: 1px solid var(--bd);
     box-shadow: none;
+    transition: transform 0.25s ease, border-color 0.25s ease, color 0.25s ease, background-position 0.4s ease;
   }
-  .code-cta.ghost:hover { border-color: var(--p4); }
+  .code-cta.ghost:hover { border-color: var(--p4); color: #fff; background-position: 0 0; }
 
   /* ── Meta badges ── */
   .meta-row {
@@ -136,14 +143,17 @@
     align-items: center;
     gap: 0.45rem;
     padding: 0.5rem 0.875rem;
-    border: 1px solid var(--bd);
+    border: 1px solid transparent;
     border-radius: 624.938rem;
-    background: var(--sf2);
-    color: var(--tx);
+    background: var(--p4);
+    color: #fff;
     font-size: 0.8125rem;
     font-weight: 600;
   }
-  .meta-badge .material-icons-round { font-size: 1rem; color: var(--p5); }
+  .meta-badge:nth-child(2) { background: var(--ac); }
+  .meta-badge:nth-child(3) { background: var(--gold); }
+  .meta-badge:nth-child(4) { background: var(--grn); }
+  .meta-badge .material-icons-round { font-size: 1rem; color: #fff; }
 
   /* ── Section heading ── */
   .section-heading {
@@ -164,12 +174,12 @@
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 0.9375rem;
+    font-size: 1.1875rem;
     font-weight: 600;
-    color: var(--tx2);
+    color: var(--tx);
     margin: 0 0 0.75rem;
   }
-  .section-eyebrow img { height: 1.25rem; width: auto; }
+  .section-eyebrow img { height: 1.5rem; width: auto; }
 
   /* ── About card ── */
   .about-card {
@@ -215,7 +225,7 @@
     margin: 0 0 1rem;
   }
   .mission-card p.mission-body {
-    color: var(--tx2);
+    color: var(--tx);
     line-height: 1.75;
     font-size: 1.0625rem;
     margin: 0;
@@ -282,7 +292,7 @@
     border: 1px dashed var(--bd);
     border-radius: 0.875rem;
     background: var(--sf2);
-    color: var(--tx3);
+    color: var(--tx);
     font-size: 0.8125rem;
   }
   .ph.square { aspect-ratio: 1 / 1; border-radius: 50%; }
@@ -337,14 +347,14 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    color: var(--tx2);
+    color: var(--tx);
     font-size: 0.9375rem;
     font-weight: 600;
     margin: 0 0 1rem;
   }
-  .project-slide .creator .material-icons-round { font-size: 1.125rem; color: var(--p5); }
+  .project-slide .creator .material-icons-round { font-size: 1.125rem; color: #fff; }
   .project-slide p.blurb {
-    color: var(--tx2);
+    color: var(--tx);
     font-size: 1rem;
     line-height: 1.7;
     margin: 0 0 1.25rem;
@@ -353,12 +363,15 @@
   .tag {
     font-size: 0.8125rem;
     font-weight: 600;
-    color: var(--p5);
-    background: var(--bd2);
-    border: 1px solid var(--bd);
+    color: #fff;
+    background: var(--p4);
+    border: 1px solid transparent;
     border-radius: 624.938rem;
     padding: 0.25rem 0.75rem;
   }
+  .tag:nth-child(2) { background: var(--ac); }
+  .tag:nth-child(3) { background: var(--gold); }
+  .tag:nth-child(4) { background: var(--grn); }
 
   /* Controls */
   .carousel-bar {
@@ -375,11 +388,15 @@
     padding: 0;
     border: none;
     border-radius: 624.938rem;
-    background: var(--bd);
+    background: var(--p4);
+    opacity: 0.4;
     cursor: pointer;
-    transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1), background 0.45s;
+    transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s;
   }
-  .carousel-dot.is-active { width: 1.75rem; background: var(--p4); }
+  .carousel-dot:nth-child(2) { background: var(--ac); }
+  .carousel-dot:nth-child(3) { background: var(--gold); }
+  .carousel-dot:nth-child(4) { background: var(--grn); }
+  .carousel-dot.is-active { width: 1.75rem; opacity: 1; }
   .carousel-arrows { display: flex; gap: 0.5rem; }
   .carousel-arrow {
     display: inline-flex;
@@ -389,12 +406,15 @@
     height: 2.5rem;
     border-radius: 50%;
     border: 1px solid var(--bd);
-    background: var(--sf2);
+    background-image: linear-gradient(to right, var(--p4) 50%, transparent 50%);
+    background-color: var(--bd2);
+    background-size: 200% 100%;
+    background-position: 100% 0;
     color: var(--tx);
     cursor: pointer;
-    transition: border-color 0.25s, transform 0.25s, background 0.25s;
+    transition: border-color 0.25s, transform 0.25s ease, color 0.25s ease, background-position 0.4s ease;
   }
-  .carousel-arrow:hover { border-color: var(--p4); transform: translateY(-0.125rem); }
+  .carousel-arrow:hover { border-color: var(--p4); transform: scale(1.12); color: #fff; background-position: 0 0; }
   .carousel-arrow .material-icons-round { font-size: 1.25rem; }
   /* Autoplay progress line — hidden once the visitor takes over. */
   .carousel-progress {
@@ -405,7 +425,7 @@
     width: 100%;
     transform: scaleX(0);
     transform-origin: left;
-    background: linear-gradient(90deg, var(--p4), var(--ac));
+    background: var(--p4);
   }
   .carousel.is-playing .carousel-progress {
     animation: carousel-fill 6s linear infinite;
@@ -438,11 +458,11 @@
     width: 2.75rem;
     height: 2.75rem;
     border-radius: 0.875rem;
-    background: var(--bd2);
-    border: 1px solid var(--bd);
+    background: var(--p4);
+    border: 1px solid var(--p4);
     margin-bottom: 1rem;
   }
-  .feature-icon .material-icons-round { color: var(--p4); font-size: 1.375rem; }
+  .feature-icon .material-icons-round { color: #fff; font-size: 1.375rem; }
   .feature-card h3 {
     font-size: 1.0625rem;
     font-weight: 800;
@@ -450,7 +470,7 @@
     margin: 0 0 0.5rem;
   }
   .feature-card p {
-    color: var(--tx2);
+    color: var(--tx);
     font-size: 0.9375rem;
     line-height: 1.65;
     margin: 0;
@@ -487,7 +507,7 @@
     margin: 0 0 0.25rem;
   }
   .cohort-card p {
-    color: var(--tx3);
+    color: var(--tx);
     font-size: 0.8125rem;
     margin: 0;
     line-height: 1.5;
@@ -611,15 +631,37 @@
     height: 3.25rem;
     padding: 0 2rem;
     border-radius: 624.938rem;
-    background: #fff;
+    background-image: linear-gradient(to right, var(--p4) 50%, transparent 50%);
+    background-color: #fff;
+    background-size: 200% 100%;
+    background-position: 100% 0;
     color: #000;
     font-size: 0.9375rem;
     font-weight: 700;
     text-decoration: none;
-    transition: transform 0.25s, box-shadow 0.25s;
+    transition: transform 0.25s ease, box-shadow 0.25s ease, color 0.25s ease, background-position 0.4s ease;
     box-shadow: 0 0.625rem 1.875rem rgba(0,0,0,0.4);
   }
-  .letter-glitch-btn:hover { transform: translateY(-0.125rem); box-shadow: 0 0.875rem 2.25rem rgba(0,0,0,0.5); }
+  .letter-glitch-btn:hover { transform: scale(1.06); box-shadow: 0 0.875rem 2.25rem rgba(0,0,0,0.5); color: #fff; background-position: 0 0; }
+
+  /* ── Nav buttons (scale + left-to-right fill on hover, no vertical translate) ── */
+  .nav-btn { transition: transform 0.25s ease, border-color 0.25s ease, color 0.25s ease, background-position 0.4s ease; }
+  .nav-btn:hover { transform: scale(1.06); }
+  .nav-btn-ghost {
+    background-image: linear-gradient(to right, var(--p4) 50%, transparent 50%);
+    background-size: 200% 100%;
+    background-position: 100% 0;
+  }
+  .nav-btn-ghost:hover { color: #fff; border-color: var(--p4); background-position: 0 0; }
+  .nav-btn-solid {
+    background-image: linear-gradient(to right, var(--ac) 50%, transparent 50%);
+    background-color: var(--p4);
+    background-size: 200% 100%;
+    background-position: 100% 0;
+  }
+  .nav-btn-solid:hover { background-position: 0 0; }
+  .icon-btn-fill { transition: transform 0.25s ease, border-color 0.25s ease, background-color 0.25s ease; }
+  .icon-btn-fill:hover { transform: scale(1.12); }
   /* Section margin handles navbar clearance — strip body padding-top */
   .code-body.has-glitch { padding-top: 0; }
 </style>
@@ -661,7 +703,7 @@
 
   <div class="flex items-center gap-3 justify-self-end" style="grid-column:3;">
     <button @click="theme = theme==='dark' ? 'light' : 'dark'; localStorage.setItem('korah_theme', theme)"
-        class="flex items-center justify-center w-9 h-9 rounded-xl bg-sf2 border bd cursor-pointer t-btn hover:border-p4 hover:bg-[var(--bd2)] t-theme"
+        class="flex items-center justify-center w-9 h-9 rounded-xl bg-sf2 border bd cursor-pointer t-btn icon-btn-fill hover:border-p4 hover:bg-[var(--bd2)] t-theme"
         aria-label="Toggle theme">
       <svg x-show="theme==='light'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" style="color:var(--p5)">
         <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/>
@@ -678,11 +720,11 @@
         <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
       </svg>
     </button>
-    <button class="text-[0.75rem] lg:text-[0.8125rem] font-semibold px-3 lg:px-5 py-2 lg:py-2.5 rounded-full cursor-pointer border bd tx2 bg-transparent t-btn hover:tx-p4 hover:border-p4 hover:bg-[var(--bd2)]"
+    <button class="text-[0.75rem] lg:text-[0.8125rem] font-semibold px-3 lg:px-5 py-2 lg:py-2.5 rounded-full cursor-pointer border bd tx2 bg-transparent t-btn nav-btn nav-btn-ghost"
       onclick="window.KorahTransitions.go('../login.html')">
       Log in
     </button>
-    <button onclick="window.KorahTransitions.go('../home.html')" class="text-[0.75rem] lg:text-[0.8125rem] font-semibold px-3 lg:px-5 py-2 lg:py-2.5 rounded-full cursor-pointer border-none text-white t-btn hover:-translate-y-px" style="background:var(--p4);">Open App</button>
+    <button onclick="window.KorahTransitions.go('../home.html')" class="text-[0.75rem] lg:text-[0.8125rem] font-semibold px-3 lg:px-5 py-2 lg:py-2.5 rounded-full cursor-pointer border-none text-white t-btn nav-btn nav-btn-solid">Open App</button>
   </div>
 </nav>
 

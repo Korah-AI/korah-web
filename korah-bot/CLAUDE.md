@@ -105,3 +105,10 @@ Creating a *new* doc is a separate task. Ask first — don't add one unprompted.
 
 See `../README.md` for the API route map and the source-control tips (there is no
 working local preview — you commit and check the deployed site).
+
+**Button hover convention:** buttons should scale up on hover (`transform: scale(...)`),
+never `translateY`/`-translate-y-px` (that "lift" pattern reads as dated). Pair the
+scale with a left-to-right color fill using a hard-edged two-stop background
+(`linear-gradient(to right, <fill> 50%, transparent 50%)` at `background-size: 200% 100%`,
+animating `background-position` from `100% 0` to `0 0`) rather than a soft blended
+gradient.
