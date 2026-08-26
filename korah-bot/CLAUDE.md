@@ -108,7 +108,16 @@ working local preview — you commit and check the deployed site).
 
 **Button hover convention:** buttons should scale up on hover (`transform: scale(...)`),
 never `translateY`/`-translate-y-px` (that "lift" pattern reads as dated). Pair the
-scale with a left-to-right color fill using a hard-edged two-stop background
-(`linear-gradient(to right, <fill> 50%, transparent 50%)` at `background-size: 200% 100%`,
-animating `background-position` from `100% 0` to `0 0`) rather than a soft blended
-gradient.
+scale with a left-to-right color fill on hover using a `::before` layer animated
+with `clip-path: inset(0 100% 0 0)` → `inset(0 0 0 0)` (button needs
+`position: relative; overflow: hidden`). Wrap the button's visible content
+(text/icons) in a `.btn-label` span with `position: relative; z-index: 1` so it
+stays above the fill — an absolutely positioned `::before` paints above plain
+inline content otherwise.
+
+Two techniques were tried and rejected for this: a `background-position`-animated
+hard-edge gradient (`linear-gradient(to right, <fill> 50%, transparent 50%)` at
+`background-size: 200% 100%`) leaves a stray sliver of fill color bleeding through
+rounded corners due to sub-pixel rounding; a `::before` fill with `z-index: -1`
+(instead of wrapping the label) rendered the fill/label stacking incorrectly.
+Stick to the `clip-path` + `.btn-label` approach above.

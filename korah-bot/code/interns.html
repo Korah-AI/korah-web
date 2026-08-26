@@ -100,36 +100,49 @@
     margin: 0 0 2rem;
   }
 
+  /* ── Button fill-on-hover (shared) ──
+     A ::before layer reveals left-to-right via clip-path (no gradient seam
+     at rounded corners). The visible label is wrapped in .btn-label, kept
+     above the fill with position:relative + z-index — an absolutely
+     positioned ::before otherwise paints above plain inline text/icons. */
+  .code-cta, .letter-glitch-btn, .carousel-arrow, .nav-btn { position: relative; overflow: hidden; }
+  .code-cta::before, .letter-glitch-btn::before, .carousel-arrow::before, .nav-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    clip-path: inset(0 100% 0 0);
+    transition: clip-path 0.4s ease;
+  }
+  .code-cta:hover::before, .letter-glitch-btn:hover::before, .carousel-arrow:hover::before, .nav-btn:hover::before {
+    clip-path: inset(0 0 0 0);
+  }
+  .btn-label { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 0.5rem; }
+
   .code-cta {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
     height: 3.25rem;
     padding: 0 2rem;
     border-radius: 624.938rem;
-    background-image: linear-gradient(to right, var(--ac) 50%, transparent 50%);
-    background-color: var(--p4);
-    background-size: 200% 100%;
-    background-position: 100% 0;
+    background: var(--p4);
     color: #fff;
     font-size: 0.9375rem;
     font-weight: 700;
     text-decoration: none;
-    transition: transform 0.25s ease, box-shadow 0.25s ease, background-position 0.4s ease;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
     box-shadow: 0 0.625rem 1.875rem rgba(139,92,246,0.35);
   }
-  .code-cta:hover { transform: scale(1.06); background-position: 0 0; }
+  .code-cta::before { background: var(--ac); }
+  .code-cta:hover { transform: scale(1.06); }
   .code-cta.ghost {
-    background-image: linear-gradient(to right, var(--p4) 50%, transparent 50%);
-    background-color: transparent;
-    background-size: 200% 100%;
-    background-position: 100% 0;
+    background: transparent;
     color: var(--tx);
     border: 1px solid var(--bd);
     box-shadow: none;
-    transition: transform 0.25s ease, border-color 0.25s ease, color 0.25s ease, background-position 0.4s ease;
+    transition: transform 0.25s ease, border-color 0.25s ease, color 0.25s ease;
   }
-  .code-cta.ghost:hover { border-color: var(--p4); color: #fff; background-position: 0 0; }
+  .code-cta.ghost::before { background: var(--p4); }
+  .code-cta.ghost:hover { border-color: var(--p4); color: #fff; }
 
   /* ── Meta badges ── */
   .meta-row {
@@ -406,15 +419,13 @@
     height: 2.5rem;
     border-radius: 50%;
     border: 1px solid var(--bd);
-    background-image: linear-gradient(to right, var(--p4) 50%, transparent 50%);
-    background-color: var(--bd2);
-    background-size: 200% 100%;
-    background-position: 100% 0;
+    background: var(--bd2);
     color: var(--tx);
     cursor: pointer;
-    transition: border-color 0.25s, transform 0.25s ease, color 0.25s ease, background-position 0.4s ease;
+    transition: border-color 0.25s, transform 0.25s ease, color 0.25s ease;
   }
-  .carousel-arrow:hover { border-color: var(--p4); transform: scale(1.12); color: #fff; background-position: 0 0; }
+  .carousel-arrow::before { background: var(--p4); }
+  .carousel-arrow:hover { border-color: var(--p4); transform: scale(1.12); color: #fff; }
   .carousel-arrow .material-icons-round { font-size: 1.25rem; }
   /* Autoplay progress line — hidden once the visitor takes over. */
   .carousel-progress {
@@ -425,7 +436,7 @@
     width: 100%;
     transform: scaleX(0);
     transform-origin: left;
-    background: var(--p4);
+    background: #fff;
   }
   .carousel.is-playing .carousel-progress {
     animation: carousel-fill 6s linear infinite;
@@ -627,39 +638,27 @@
   .letter-glitch-btn {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
     height: 3.25rem;
     padding: 0 2rem;
     border-radius: 624.938rem;
-    background-image: linear-gradient(to right, var(--p4) 50%, transparent 50%);
-    background-color: #fff;
-    background-size: 200% 100%;
-    background-position: 100% 0;
+    background: #fff;
     color: #000;
     font-size: 0.9375rem;
     font-weight: 700;
     text-decoration: none;
-    transition: transform 0.25s ease, box-shadow 0.25s ease, color 0.25s ease, background-position 0.4s ease;
+    transition: transform 0.25s ease, box-shadow 0.25s ease, color 0.25s ease;
     box-shadow: 0 0.625rem 1.875rem rgba(0,0,0,0.4);
   }
-  .letter-glitch-btn:hover { transform: scale(1.06); box-shadow: 0 0.875rem 2.25rem rgba(0,0,0,0.5); color: #fff; background-position: 0 0; }
+  .letter-glitch-btn::before { background: var(--p4); }
+  .letter-glitch-btn:hover { transform: scale(1.06); box-shadow: 0 0.875rem 2.25rem rgba(0,0,0,0.5); color: #fff; }
 
   /* ── Nav buttons (scale + left-to-right fill on hover, no vertical translate) ── */
-  .nav-btn { transition: transform 0.25s ease, border-color 0.25s ease, color 0.25s ease, background-position 0.4s ease; }
+  .nav-btn { transition: transform 0.25s ease, border-color 0.25s ease, color 0.25s ease; }
   .nav-btn:hover { transform: scale(1.06); }
-  .nav-btn-ghost {
-    background-image: linear-gradient(to right, var(--p4) 50%, transparent 50%);
-    background-size: 200% 100%;
-    background-position: 100% 0;
-  }
-  .nav-btn-ghost:hover { color: #fff; border-color: var(--p4); background-position: 0 0; }
-  .nav-btn-solid {
-    background-image: linear-gradient(to right, var(--ac) 50%, transparent 50%);
-    background-color: var(--p4);
-    background-size: 200% 100%;
-    background-position: 100% 0;
-  }
-  .nav-btn-solid:hover { background-position: 0 0; }
+  .nav-btn-ghost::before { background: var(--p4); }
+  .nav-btn-ghost:hover { color: #fff; border-color: var(--p4); }
+  .nav-btn-solid { background: var(--p4); }
+  .nav-btn-solid::before { background: var(--ac); }
   .icon-btn-fill { transition: transform 0.25s ease, border-color 0.25s ease, background-color 0.25s ease; }
   .icon-btn-fill:hover { transform: scale(1.12); }
   /* Section margin handles navbar clearance — strip body padding-top */
@@ -722,9 +721,9 @@
     </button>
     <button class="text-[0.75rem] lg:text-[0.8125rem] font-semibold px-3 lg:px-5 py-2 lg:py-2.5 rounded-full cursor-pointer border bd tx2 bg-transparent t-btn nav-btn nav-btn-ghost"
       onclick="window.KorahTransitions.go('../login.html')">
-      Log in
+      <span class="btn-label">Log in</span>
     </button>
-    <button onclick="window.KorahTransitions.go('../home.html')" class="text-[0.75rem] lg:text-[0.8125rem] font-semibold px-3 lg:px-5 py-2 lg:py-2.5 rounded-full cursor-pointer border-none text-white t-btn nav-btn nav-btn-solid">Open App</button>
+    <button onclick="window.KorahTransitions.go('../home.html')" class="text-[0.75rem] lg:text-[0.8125rem] font-semibold px-3 lg:px-5 py-2 lg:py-2.5 rounded-full cursor-pointer border-none text-white t-btn nav-btn nav-btn-solid"><span class="btn-label">Open App</span></button>
   </div>
 </nav>
 
@@ -746,7 +745,7 @@
       </h1>
       <a href="#intro" class="letter-glitch-btn"
          onclick="event.preventDefault(); window.scrollBy({ top: window.innerHeight * 0.55, behavior: 'smooth' });">
-        See the work <span class="material-icons-round" style="font-size:1.1rem;">arrow_downward</span>
+        <span class="btn-label">See the work <span class="material-icons-round" style="font-size:1.1rem;">arrow_downward</span></span>
       </a>
     </div>
   </section>
@@ -911,9 +910,9 @@
         <div class="code-cta-row" style="display:flex;flex-wrap:wrap;align-items:center;gap:0.75rem;">
           <img src="../logo-images/newlogo12.png" alt="Korah CODE" class="code-hero-logo-mobile">
           <a href="#projects" class="code-cta">
-            View projects <span class="material-icons-round" style="font-size:1.1rem;">arrow_forward</span>
+            <span class="btn-label">View projects <span class="material-icons-round" style="font-size:1.1rem;">arrow_forward</span></span>
           </a>
-          <a href="./code.html" class="code-cta ghost">Inquire for information</a>
+          <a href="./code.html" class="code-cta ghost"><span class="btn-label">Inquire for information</span></a>
         </div>
       </div>
       <img src="../logo-images/newlogo12.png" alt="Korah CODE" class="code-hero-logo">
@@ -1015,8 +1014,8 @@
       <div class="carousel-bar">
         <div class="carousel-dots" id="carouselDots"></div>
         <div class="carousel-arrows">
-          <button class="carousel-arrow" id="carouselPrev" aria-label="Previous project"><span class="material-icons-round">arrow_back</span></button>
-          <button class="carousel-arrow" id="carouselNext" aria-label="Next project"><span class="material-icons-round">arrow_forward</span></button>
+          <button class="carousel-arrow" id="carouselPrev" aria-label="Previous project"><span class="btn-label material-icons-round">arrow_back</span></button>
+          <button class="carousel-arrow" id="carouselNext" aria-label="Next project"><span class="btn-label material-icons-round">arrow_forward</span></button>
         </div>
       </div>
 
@@ -1259,7 +1258,7 @@
     <h3>Want to build the next one?</h3>
     <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.</p>
     <a href="./code.html" class="code-cta">
-      Learn about Korah CODE <span class="material-icons-round" style="font-size:1.1rem;">arrow_forward</span>
+      <span class="btn-label">Learn about Korah CODE <span class="material-icons-round" style="font-size:1.1rem;">arrow_forward</span></span>
     </a>
   </section>
 
