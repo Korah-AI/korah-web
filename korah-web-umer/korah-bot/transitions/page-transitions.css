@@ -1,0 +1,67 @@
+/* Korah full-page transitions: root fade only, no layout morphing. */
+@view-transition {
+  navigation: auto;
+}
+
+/* 
+   THEME BACKGROUNDS (Loading Phase Only):
+   Ensures the browser paints a themed color immediately while the page is NOT ready.
+*/
+html:not(.korah-page-ready) {
+  background-color: #06040f !important; /* Default Dark during load */
+}
+
+html[data-theme="light"]:not(.korah-page-ready) {
+  background-color: #d2d2d2 !important; /* Nice Grey during Light Mode transitions */
+}
+
+/* Once the page is ready, we set background to transparent to allow the actual page CSS to show through */
+html.korah-page-ready {
+  background-color: transparent !important;
+}
+
+/* 
+   ENFORCED HIDING:
+   Ensures body starts at 0 opacity. Removed only when .korah-page-ready is added.
+*/
+html:not(.korah-page-ready) body {
+  opacity: 0 !important;
+}
+
+/* 
+   GLOBAL REVEAL:
+   This ensures that no matter what, once the page is ready, it's visible.
+*/
+html.korah-page-ready body {
+  opacity: 1 !important;
+}
+
+/* Native Transition Animations */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.5s;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  animation-fill-mode: both;
+}
+
+::view-transition-old(root) { animation-name: korah-page-fade-out; }
+::view-transition-new(root) { animation-name: korah-page-fade-in; }
+
+@keyframes korah-page-fade-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes korah-page-fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+/* FALLBACK LOGIC (for non-native transition browsers) */
+html.korah-transition-fallback.korah-page-ready body {
+  transition: opacity 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html.korah-transition-fallback.korah-page-exiting body {
+  opacity: 0 !important;
+  transition-duration: 0.18s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 0.01ms; }
+  html.korah-transition-fallback.korah-page-ready body,
+  html.korah-transition-fallback.korah-page-exiting body { transition-duration: 0.01ms; }
+}

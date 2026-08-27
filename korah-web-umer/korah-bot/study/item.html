@@ -1,0 +1,1623 @@
+<!DOCTYPE html>
+<html lang="en" x-data="{
+  theme: localStorage.getItem('korah_theme') || 'dark',
+  sidebarCollapsed: window.innerWidth <= 768 ? false : localStorage.getItem('korah_sidebar_collapsed') === 'true',
+  mobileOpen: false,
+  getEffectiveTheme() {
+    if (this.theme === 'system') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return this.theme;
+  },
+  toggleSidebar() {
+    if (window.innerWidth <= 768) {
+      this.mobileOpen = !this.mobileOpen;
+      const overlay = document.querySelector('.sidebar-overlay');
+      if (overlay) overlay.classList.toggle('show', this.mobileOpen);
+    } else {
+      if (this.sidebarCollapsed) {
+        const dp = document.getElementById('doc-panel');
+        if (dp?.classList.contains('expanded')) {
+          dp.classList.remove('expanded');
+          dp.classList.add('collapsed');
+          const tab = document.getElementById('doc-panel-tab');
+          if (tab) tab.classList.remove('panel-open');
+        }
+      }
+      this.sidebarCollapsed = !this.sidebarCollapsed;
+      localStorage.setItem('korah_sidebar_collapsed', this.sidebarCollapsed);
+    }
+  }
+}" :data-theme="getEffectiveTheme()" x-cloak>
+  <head>
+<link rel="stylesheet" href="../transitions/page-transitions.css"/>
+<script src="../transitions/page-transitions.js"></script>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Korah AI — Study Item</title>
+  <link rel="icon" type="image/png" href="../logo-images/newlogo0.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <script src="../sidebar-loader.js" defer></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../app/korah-chat.css"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css"/>
+  <style>
+    .study-modern .chat-topbar,
+    .study-modern .feed-empty {
+      border-radius: 1.125rem;
+    }
+    .study-modern .study-feed-body {
+      padding: 1.75rem 1.5rem 2rem;
+      max-width: 61.25rem;
+      margin: 0 auto;
+      width: 100%;
+    }
+    .study-player {
+      display: flex;
+      flex-direction: column;
+      gap: 0.875rem;
+    }
+    .player-hero {
+      border: 1px solid rgba(167, 139, 250, 0.24);
+      backdrop-filter: blur(1rem);
+      border-radius: 1.25rem;
+      background: linear-gradient(180deg, rgba(124, 58, 237, 0.34), rgba(15, 9, 35, 0.6));
+      padding: 1.25rem 1.375rem;
+    }
+    .player-hero-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .player-title {
+      margin: 0.625rem 0 0;
+      font-size: 2.5rem;
+      line-height: 1.08;
+      max-width: 47.5rem;
+      font-family: "Plus Jakarta Sans", sans-serif;
+      font-weight: 700;
+      color: var(--tx);
+    }
+    .player-sub {
+      margin: 0.75rem 0 0;
+      color: var(--tx2);
+      line-height: 1.6;
+      font-size: 0.9375rem;
+    }
+    .player-modes {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.625rem;
+    }
+    .player-mode-btn {
+      border: 1px solid var(--bd);
+      border-radius: 0.75rem;
+      min-height: 2.875rem;
+      background: rgba(124, 58, 237, 0.14);
+      color: var(--tx);
+      font-size: 0.9375rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: border-color .2s ease, transform .2s ease, background .2s ease, color .2s ease;
+    }
+    .player-mode-btn:hover {
+      transform: translateY(-1px);
+      border-color: var(--p4);
+      background: rgba(124, 58, 237, 0.24);
+    }
+    .player-mode-btn.active {
+      border-color: rgba(167, 139, 250, 0.88);
+      background: rgba(124, 58, 237, 0.5);
+      color: #fff;
+    }
+    .player-stage {
+      border: 1px solid rgba(167, 139, 250, 0.18);
+      border-radius: 1.125rem;
+      background: rgba(22, 16, 44, 0.56);
+      min-height: 23.125rem;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .player-stage-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.625rem;
+      padding: 1rem 1.125rem 0;
+      color: var(--tx2);
+      font-size: 0.8125rem;
+      font-weight: 700;
+    }
+    .player-body {
+      flex: 1;
+      padding: 1.125rem 1.125rem 1.375rem;
+      display: flex;
+      align-items: stretch;
+    }
+    .player-content-card {
+      width: 100%;
+      border-radius: 1rem;
+      border: 1px solid rgba(167, 139, 250, 0.24);
+      background: rgba(22, 16, 44, 0.8);
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.875rem;
+      justify-content: center;
+    }
+    .player-content-eyebrow {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: rgba(196, 181, 253, 0.94);
+      font-weight: 700;
+    }
+    .player-content-text {
+      font-size: 1.5rem;
+      line-height: 1.5;
+      color: var(--tx);
+      white-space: pre-wrap;
+    }
+    .player-content-answer {
+      border-top: 1px solid rgba(167, 139, 250, 0.28);
+      padding-top: 0.875rem;
+      color: var(--tx2);
+      white-space: pre-wrap;
+      line-height: 1.55;
+      font-size: 1.125rem;
+    }
+    .player-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.625rem;
+      width: 100%;
+    }
+    .player-list-item {
+      border: 1px solid rgba(167, 139, 250, 0.24);
+      border-radius: 0.75rem;
+      background: rgba(17, 24, 39, 0.62);
+      padding: 0.75rem 0.875rem;
+    }
+    .player-list-item-title {
+      font-size: 0.8125rem;
+      font-weight: 700;
+      color: rgba(196, 181, 253, 0.94);
+      margin-bottom: 0.4375rem;
+    }
+    .player-list-item-body {
+      font-size: 0.9375rem;
+      line-height: 1.55;
+      color: var(--tx);
+      white-space: pre-wrap;
+    }
+    .player-controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 0.625rem;
+      margin-top: 0.125rem;
+    }
+    .player-nav-btn {
+      min-width: 4.5rem;
+      height: 3.25rem;
+      padding: 0 1.125rem;
+      border-radius: 62.4375rem;
+      border: 1px solid var(--bd);
+      background: var(--sf2);
+      color: var(--tx);
+      cursor: pointer;
+      font-size: 1.5rem;
+      font-weight: 700;
+      transition: transform .2s ease, border-color .2s ease, background .2s ease, box-shadow .2s ease;
+    }
+    .player-nav-btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      border-color: var(--p4);
+      background: var(--cu);
+      box-shadow: 0 0.5rem 1.5rem rgba(124, 58, 237, 0.24);
+    }
+    .player-nav-btn:active:not(:disabled) {
+      transform: translateY(0);
+    }
+    .player-nav-btn:disabled {
+      opacity: .45;
+      cursor: not-allowed;
+    }
+    .player-util-btn {
+      height: 2.5rem;
+      padding: 0 0.875rem;
+      border-radius: 62.4375rem;
+      border: 1px solid var(--bd);
+      background: var(--sf2);
+      color: var(--tx2);
+      font-size: 0.8125rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .player-util-btn:hover {
+      border-color: var(--p4);
+      color: var(--p5);
+      background: var(--cu);
+    }
+    .player-progress-text {
+      min-width: 5rem;
+      text-align: center;
+      color: var(--tx2);
+      font-weight: 700;
+      font-size: 0.875rem;
+    }
+    .player-progress-track {
+      width: 100%;
+      border-radius: 62.4375rem;
+      height: 0.5rem;
+      background: rgba(167, 139, 250, 0.22);
+      overflow: hidden;
+    }
+    .player-progress-fill {
+      display: block;
+      height: 100%;
+      width: 0;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--p4) 0%, #38bdf8 100%);
+      transition: width .2s ease;
+    }
+    .study-guide-markdown {
+      width: 100%;
+      border: 1px solid rgba(167, 139, 250, 0.24);
+      border-radius: 0.875rem;
+      background: rgba(17, 24, 39, 0.62);
+      padding: 1rem;
+      overflow: auto;
+      max-height: 28.75rem;
+    }
+    .guide-open-card {
+      width: 100%;
+      border: 1px solid rgba(167, 139, 250, 0.24);
+      border-radius: 1rem;
+      background: rgba(22, 16, 44, 0.8);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.875rem;
+    }
+    .guide-open-btn {
+      display: inline-flex;
+      align-self: flex-start;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.625rem 1rem;
+      border-radius: 62.4375rem;
+      border: 1px solid rgba(167, 139, 250, 0.38);
+      background: rgba(124, 58, 237, 0.22);
+      color: var(--tx);
+      font-weight: 700;
+      font-size: 0.8125rem;
+      cursor: pointer;
+    }
+    .guide-open-btn:hover {
+      background: rgba(124, 58, 237, 0.35);
+      border-color: rgba(167, 139, 250, 0.8);
+    }
+    .guide-reader-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1100;
+      padding: 1.125rem;
+    }
+    .guide-reader-modal.show {
+      display: flex;
+    }
+    .guide-reader-dialog {
+      width: min(60rem, 100%);
+      max-height: calc(100vh - 2.25rem);
+      border: 1px solid var(--bd);
+      border-radius: 1.125rem;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .guide-reader-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.625rem;
+      padding: 0.875rem 1rem;
+      border-bottom: 1px solid var(--bd);
+    }
+    .guide-reader-close {
+      border: 1px solid var(--bd);
+      border-radius: 62.4375rem;
+      background: var(--sf2);
+      color: var(--tx2);
+      width: 2.125rem;
+      height: 2.125rem;
+      font-size: 1.125rem;
+      cursor: pointer;
+    }
+    .guide-reader-body {
+      padding: 1rem;
+      overflow-y: auto;
+    }
+    .test-form {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 0.875rem;
+    }
+    .test-config {
+      border: 1px solid rgba(167, 139, 250, 0.24);
+      border-radius: 0.875rem;
+      padding: 0.875rem;
+      background: rgba(17, 24, 39, 0.62);
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.625rem;
+    }
+    .test-config-field label {
+      display: block;
+      font-size: 0.6875rem;
+      color: var(--tx2);
+      margin-bottom: 0.375rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-weight: 700;
+    }
+    .test-config-field input {
+      width: 100%;
+      min-height: 2.375rem;
+      border-radius: 0.625rem;
+      border: 1px solid var(--bd);
+      background: var(--sf2);
+      color: var(--tx);
+      padding: 0.5rem 0.625rem;
+    }
+    .test-config-field input:focus {
+      outline: none;
+      border-color: var(--p4);
+    }
+    .test-config-actions {
+      grid-column: 1 / -1;
+      display: flex;
+      justify-content: flex-end;
+    }
+    .test-start-btn {
+      border: 1px solid rgba(167, 139, 250, 0.35);
+      background: rgba(124, 58, 237, 0.25);
+      color: var(--tx);
+      border-radius: 62.4375rem;
+      padding: 0.625rem 1rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .test-question {
+      border: 1px solid rgba(167, 139, 250, 0.24);
+      border-radius: 0.875rem;
+      background: rgba(17, 24, 39, 0.62);
+      padding: 0.875rem;
+    }
+    .test-question-title {
+      font-weight: 700;
+      margin-bottom: 0.625rem;
+    }
+    .test-options {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .test-option {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      color: var(--tx);
+      line-height: 1.45;
+    }
+    .test-textarea {
+      width: 100%;
+      min-height: 5.625rem;
+      border: 1px solid var(--bd);
+      border-radius: 0.625rem;
+      background: var(--bg2);
+      color: var(--tx);
+      padding: 0.625rem;
+      resize: vertical;
+      font-family: "Plus Jakarta Sans", sans-serif;
+      font-size: 0.875rem;
+    }
+    .test-submit-row {
+      display: flex;
+      justify-content: flex-end;
+    }
+    .test-submit-btn {
+      border: 1px solid rgba(167, 139, 250, 0.35);
+      background: rgba(124, 58, 237, 0.25);
+      color: var(--tx);
+      border-radius: 62.4375rem;
+      padding: 0.625rem 1rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .test-score {
+      border: 1px solid rgba(167, 139, 250, 0.26);
+      border-radius: 0.75rem;
+      padding: 0.625rem 0.75rem;
+      color: var(--tx2);
+      font-size: 0.8125rem;
+      background: rgba(124, 58, 237, 0.1);
+    }
+    /* Practice Test UI Enhancements */
+    .test-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(11.25rem, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .test-summary-card {
+      background: rgba(124, 58, 237, 0.08);
+      border: 1px solid rgba(167, 139, 250, 0.2);
+      border-radius: 1rem;
+      padding: 1.125rem;
+      text-align: center;
+      transition: border-color 0.2s ease;
+    }
+    .test-summary-card:hover {
+      border-color: var(--p4);
+    }
+    .test-summary-val {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--tx);
+      display: block;
+      margin-bottom: 0.25rem;
+      line-height: 1;
+    }
+    .test-summary-lbl {
+      font-size: 0.75rem;
+      color: var(--tx2);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .test-action-card {
+      border: 1px solid rgba(167, 139, 250, 0.24);
+      border-radius: 1rem;
+      background: rgba(22, 16, 44, 0.6);
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+    .test-config-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(8.75rem, 1fr));
+      gap: 1rem;
+    }
+    .test-ai-box {
+      margin-top: 1rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid rgba(167, 139, 250, 0.15);
+    }
+    .test-btn-primary {
+      background: var(--p4);
+      color: #fff;
+      border: none;
+      border-radius: 62.4375rem;
+      padding: 0.75rem 1.5rem;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 0.9375rem;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .test-btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 0.25rem 0.75rem rgba(124, 58, 237, 0.4);
+    }
+    .test-btn-outline {
+      background: transparent;
+      border: 1px solid var(--p4);
+      color: var(--p4);
+      border-radius: 62.4375rem;
+      padding: 0.625rem 1.25rem;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 0.875rem;
+    }
+    .test-btn-outline:hover {
+      background: rgba(124, 58, 237, 0.1);
+    }
+    /* Pool Preview Styles */
+    .test-pool-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 2rem 0 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--bd);
+    }
+    .test-pool-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--tx);
+    }
+    .test-preview-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .test-preview-item {
+      padding: 1rem;
+      border-radius: 0.875rem;
+      background: rgba(124, 58, 237, 0.04);
+      border: 1px solid var(--bd2);
+      transition: background 0.2s ease;
+    }
+    .test-preview-item:hover {
+      background: rgba(124, 58, 237, 0.08);
+    }
+    .test-preview-q {
+      font-weight: 600;
+      color: var(--tx);
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
+    .test-preview-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .test-preview-badge {
+      font-size: 0.5625rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 0.125rem 0.375rem;
+      border-radius: 0.25rem;
+      background: var(--p4);
+      color: #fff;
+    }
+    .test-preview-a {
+      margin-top: 0.625rem;
+      padding-top: 0.625rem;
+      border-top: 1px solid rgba(167, 139, 250, 0.1);
+      font-size: 0.8125rem;
+      color: var(--tx2);
+      display: none;
+    }
+    .test-preview-item.revealed .test-preview-a {
+      display: block;
+    }
+    .item-edit-modal-content {
+      max-width: 47.5rem;
+      max-height: calc(100vh - 2.5rem);
+      overflow-y: auto;
+      align-items: stretch;
+      text-align: left;
+    }
+    #item-edit-modal {
+      align-items: flex-start;
+      overflow-y: auto;
+    }
+    .item-edit-form {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      width: 100%;
+      margin-top: 0.25rem;
+    }
+    .item-edit-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.625rem;
+    }
+    .item-edit-field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.375rem;
+    }
+    .item-edit-field.full {
+      grid-column: 1 / -1;
+    }
+    .item-edit-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--tx2);
+    }
+    .item-edit-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.625rem;
+    }
+    .item-edit-row {
+      border: 1px solid var(--bd);
+      border-radius: 0.75rem;
+      background: var(--sf2);
+      padding: 0.625rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .item-edit-row-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--tx2);
+    }
+    .item-edit-remove {
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      background: rgba(239, 68, 68, 0.12);
+      color: var(--red);
+      border-radius: 0.5rem;
+      padding: 0.25rem 0.5rem;
+      font-size: 0.6875rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .item-edit-remove:hover {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: var(--red);
+    }
+    .item-edit-add {
+      align-self: flex-start;
+      padding: 0.5rem 0.75rem;
+      border-radius: 0.625rem;
+      border: 1px solid var(--bd);
+      background: var(--sf2);
+      color: var(--tx2);
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .item-edit-add:hover {
+      border-color: var(--p4);
+      color: var(--p5);
+      background: var(--cu);
+    }
+    @media (max-width: 56.25rem) {
+      .study-modern .study-feed-body {
+        padding: 1.25rem 0.75rem 1.5rem;
+      }
+      .player-title {
+        font-size: 1.875rem;
+      }
+      .player-modes {
+        grid-template-columns: 1fr;
+      }
+      .player-content-text {
+        font-size: 1.25rem;
+      }
+      .test-config {
+        grid-template-columns: 1fr;
+      }
+    }
+    @media (max-width: 48rem) {
+      .item-edit-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    #flashcard-wrapper,
+    .flashcard-wrapper {
+      --border-radius: 1rem;
+      --back-bg: rgba(15, 9, 35, 0.85);
+      --front-bg: rgba(22, 16, 44, 0.9);
+      --box-shadow: 0 0 2.5rem 0 rgba(0, 0, 0, 0.4);
+      perspective: 87.5rem;
+      transform: none !important;
+      width: min(100%, 47.5rem);
+      aspect-ratio: 3 / 2;
+      max-height: 100%;
+      min-height: 17.5rem;
+      border-radius: var(--border-radius);
+      position: relative;
+      margin: 0 auto;
+    }
+    #flashcard,
+    .flashcard {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      border-radius: inherit;
+      transform-style: preserve-3d;
+      transition: transform .62s cubic-bezier(.22, .61, .36, 1);
+      background: transparent;
+    }
+    .flashcard__front,
+    .flashcard__back {
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      border-radius: inherit;
+      backface-visibility: hidden;
+      box-shadow: var(--box-shadow);
+      border: 1px solid rgba(167, 139, 250, 0.24);
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.875rem;
+      justify-content: center;
+      overflow: auto;
+    }
+    .flashcard__front {
+      background-color: var(--front-bg);
+      color: var(--tx);
+    }
+    .flashcard__back {
+      background-color: var(--back-bg);
+      color: var(--tx2);
+      transform: rotateY(180deg);
+    }
+    .flashcard[data-flip='true'] {
+      transform: rotateY(180deg);
+    }
+    .stage-slide-out-next {
+      pointer-events: none;
+      animation: stage-slide-out-next .22s cubic-bezier(.4, 0, .2, 1) forwards;
+    }
+    .stage-slide-in-next {
+      animation: stage-slide-in-next .28s cubic-bezier(.22, .61, .36, 1) both;
+    }
+    @keyframes stage-slide-out-next {
+      from {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+      }
+      to {
+        opacity: 0;
+        transform: translateX(-2.125rem) scale(.985);
+      }
+    }
+    @keyframes stage-slide-in-next {
+      from {
+        opacity: 0;
+        transform: translateX(2.125rem) scale(.985);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+      }
+    }
+  </style>
+</head>
+<body class="bg-base tx study-modern">
+<style>
+  html:not(.korah-page-ready) { background: #06040f !important; }
+  html[data-theme="light"]:not(.korah-page-ready) { background: #d2d2d2 !important; }
+  html:not(.korah-page-ready) body { opacity: 0 !important; }
+</style>
+
+<script>
+  (function() {
+    const t = localStorage.getItem('korah_theme') || 'dark';
+    if (t === 'light' || (t === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  })();
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
+
+<canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
+<div id="sidebar-root"></div>
+
+
+<main id="main-content" class="main-content">
+  <header class="chat-topbar bg-sf glass-sm t-theme bd" style="opacity: 0.95;">
+    <button id="sidebar-toggle" @click="toggleSidebar()" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+    <div class="chat-title-area">
+      <div class="korah-status-dot"></div>
+      <span class="font-semibold tx text-sm" id="item-page-title">Flashcards</span>
+    </div>
+    <div class="topbar-actions">
+      <a href="feed.html" class="feed-card-btn t-btn" style="padding: 0.5rem 0.875rem;">Back to Feed</a>
+    </div>
+  </header>
+
+  <div id="item-content-area" class="study-feed-body">
+    <div id="item-not-found" class="feed-empty hidden">
+      <p class="tx2">Study item not found. It may have been deleted.</p>
+      <a href="feed.html" class="feed-card-btn t-btn" style="margin-top: 0.75rem; display: inline-block;">Back to Study Feed</a>
+    </div>
+    <div id="item-detail" class="study-player hidden">
+      <section class="player-hero">
+        <div class="player-hero-head">
+          <div>
+            <div class="item-meta-bar">
+              <span id="item-type-badge" class="feed-card-type"></span>
+              <span id="item-source-badge" class="feed-card-source"></span>
+              <span id="item-updated" class="tx3 text-xs"></span>
+            </div>
+            <h1 id="item-title" class="player-title"></h1>
+          </div>
+          <div class="item-actions">
+            <a id="item-action-chat" href="#" class="feed-card-btn t-btn" style="text-align:center; display:inline-flex; align-items:center; justify-content:center;">Send to Chat</a>
+            <button id="item-action-edit" class="feed-card-btn t-btn" style="border: 0.0625rem solid var(--p4); color: var(--p5); background: var(--cu); cursor: pointer;">Edit Item</button>
+            <button id="item-action-duplicate" class="feed-card-btn t-btn" style="border: 0.0625rem solid var(--bd); background: var(--sf2); cursor: pointer;">Duplicate</button>
+          </div>
+        </div>
+        <p id="item-description" class="player-sub"></p>
+      </section>
+      <div id="item-mode-tabs" class="player-modes"></div>
+      <section class="player-stage">
+        <div class="player-stage-top">
+          <span id="item-stage-label"></span>
+          <span id="item-stage-context"></span>
+        </div>
+        <div id="item-body" class="item-body player-body">
+        </div>
+      </section>
+      <div class="player-controls">
+        <button id="item-prev-btn" class="player-nav-btn" type="button" aria-label="Previous item">←</button>
+        <div id="item-progress-text" class="player-progress-text">0 / 0</div>
+        <button id="item-next-btn" class="player-nav-btn" type="button" aria-label="Next item">→</button>
+        <button id="item-toggle-btn" class="player-util-btn" type="button">Reveal</button>
+        <button id="item-shuffle-btn" class="player-util-btn" type="button">Shuffle</button>
+      </div>
+      <div class="player-progress-track">
+        <span id="item-progress-bar" class="player-progress-fill"></span>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Settings Modal -->
+<div id="settings-modal" class="settings-modal">
+  <div class="settings-modal-content">
+    <div class="settings-header">
+      <h2 class="settings-title">Settings</h2>
+      <button class="settings-close" id="settings-close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="settings-body">
+      <div class="settings-section">
+        <h3 class="settings-section-title">Appearance</h3>
+        <div class="settings-item">
+          <div class="settings-item-label">Theme</div>
+          <div class="settings-item-control">
+            <div class="settings-custom-select" id="settings-theme-custom-select">
+              <div class="settings-select-trigger" id="settings-theme-trigger">
+                <div class="flex items-center gap-2">
+                  <span class="material-icons-round trigger-icon">dark_mode</span>
+                  <span class="trigger-text">Dark Mode</span>
+                </div>
+                <span class="material-icons-round">expand_more</span>
+              </div>
+              <div class="settings-select-menu" id="settings-theme-menu">
+                <div class="settings-select-option" data-value="dark">
+                  <span class="material-icons-round">dark_mode</span>
+                  <span>Dark Mode</span>
+                  <span class="material-icons-round check-icon">check</span>
+                </div>
+                <div class="settings-select-option" data-value="light">
+                  <span class="material-icons-round">light_mode</span>
+                  <span>Light Mode</span>
+                  <span class="material-icons-round check-icon">check</span>
+                </div>
+                <div class="settings-select-option" data-value="system">
+                  <span class="material-icons-round">settings_suggest</span>
+                  <span>System</span>
+                  <span class="material-icons-round check-icon">check</span>
+                </div>
+              </div>
+              <input type="hidden" id="settings-theme-select" value="dark">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3 class="settings-section-title">Profile</h3>
+        <div class="settings-item">
+          <div class="settings-item-label">Display Name</div>
+          <div class="settings-item-control">
+            <input type="text" id="settings-name-input" class="settings-input" placeholder="Your name">
+          </div>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3 class="settings-section-title">Data</h3>
+        <div class="settings-item">
+          <div class="settings-item-label">Clear All Data</div>
+          <div class="settings-item-control">
+            <button id="settings-clear-data" class="settings-btn danger">Clear Data</button>
+          </div>
+        </div>
+      </div>
+      <div class="settings-actions">
+        <button id="settings-save" class="settings-btn primary">Save Settings</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Item Modal -->
+<div id="item-edit-modal" class="delete-modal">
+  <div class="delete-modal-content item-edit-modal-content">
+    <h3 class="delete-modal-title">Edit Study Item</h3>
+    <p class="delete-modal-desc">Make sure you save your changes!.</p>
+    <form id="item-edit-form" class="item-edit-form">
+      <div class="item-edit-grid">
+        <div class="item-edit-field full">
+          <label for="item-edit-title" class="item-edit-label">Title</label>
+          <input id="item-edit-title" type="text" class="create-input" placeholder="Item title"/>
+        </div>
+        <div class="item-edit-field full">
+          <label for="item-edit-description" class="item-edit-label">Description</label>
+          <textarea id="item-edit-description" class="create-input create-textarea" rows="2" placeholder="Short description"></textarea>
+        </div>
+        <div class="item-edit-field">
+          <label for="item-edit-subject" class="item-edit-label">Subject</label>
+          <input id="item-edit-subject" type="text" class="create-input" placeholder="e.g. Biology"/>
+        </div>
+        <div class="item-edit-field">
+          <label for="item-edit-tags" class="item-edit-label">Tags (comma-separated)</label>
+          <input id="item-edit-tags" type="text" class="create-input" placeholder="e.g. exam, chapter5"/>
+        </div>
+        <div class="item-edit-field full">
+          <label id="item-edit-content-label" class="item-edit-label">Content</label>
+          <div id="item-edit-dynamic-fields"></div>
+        </div>
+      </div>
+      <div class="delete-modal-actions">
+        <button id="item-edit-cancel" type="button" class="delete-modal-btn cancel t-btn">Cancel</button>
+        <button id="item-edit-save" type="submit" class="delete-modal-btn confirm t-btn" style="background:rgba(139,92,246,.12); color:var(--p5); border-color:rgba(139,92,246,.3);">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Rename Modal -->
+<div id="rename-modal" class="delete-modal">
+  <div class="delete-modal-content">
+    <div class="delete-modal-icon"><span class="material-icons-round" style="color: #FFA726; font-size: 1.25rem;" aria-label="rename">edit</span></div>
+    <h3 class="delete-modal-title">Rename</h3>
+    <p class="delete-modal-desc" id="rename-modal-desc">Enter a new name</p>
+    <input id="rename-modal-input" type="text" class="create-input" style="width:100%; margin-top:0.25rem;" placeholder="New name…"/>
+    <div class="delete-modal-actions">
+      <button id="rename-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
+      <button id="rename-modal-confirm" class="delete-modal-btn confirm t-btn" style="background:rgba(139,92,246,.12); color:var(--p5); border-color:rgba(139,92,246,.3);">Rename</button>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- Delete Confirm Modal -->
+<div id="delete-modal" class="delete-modal">
+  <div class="delete-modal-content">
+    <div class="delete-modal-icon"><span class="material-icons-round" style="color: var(--red); font-size: 1.25rem;" aria-label="delete">delete</span></div>
+    <h3 class="delete-modal-title">Delete?</h3>
+    <p class="delete-modal-desc">This will permanently delete "<span id="delete-modal-name"></span>". This cannot be undone.</p>
+    <div class="delete-modal-actions">
+      <button id="delete-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
+      <button id="delete-modal-confirm" class="delete-modal-btn confirm t-btn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="js/study-firebase-init.js"></script>
+<script src="../app/timer-manager.js"></script>
+<script src="js/sidebar.js"></script>
+<script src="js/study-api.js"></script>
+<script>
+(function () {
+  KorahSidebar.initSidebar({ chatBaseUrl: "../chat.html", itemPageUrl: "item.html" });
+
+  var TYPE_LABELS = { flashcards: "Flashcards", studyGuide: "Study Guide", practiceTest: "Practice Test" };
+  var SOURCE_LABELS = { manual: "Manual", "ai-prompt": "AI from prompt", "ai-doc": "AI from Docs", "chatbot-request": "From Chatbot" };
+
+  var params = new URLSearchParams(window.location.search);
+  var id = params.get("id");
+  var duplicate = params.get("duplicate") === "1";
+
+  var currentItem = null;
+  var editDraft = null;
+  var notFoundEl = document.getElementById("item-not-found");
+  var detailEl = document.getElementById("item-detail");
+  var modeTabsEl = document.getElementById("item-mode-tabs");
+  var stageLabelEl = document.getElementById("item-stage-label");
+  // Increase text size for key elements
+  if (stageLabelEl) stageLabelEl.style.fontSize = "1.25em";
+  if (detailEl) detailEl.style.fontSize = "1.15em";
+  var stageContextEl = document.getElementById("item-stage-context");
+  var prevBtn = document.getElementById("item-prev-btn");
+  var nextBtn = document.getElementById("item-next-btn");
+  var toggleBtn = document.getElementById("item-toggle-btn");
+  var shuffleBtn = document.getElementById("item-shuffle-btn");
+  var progressTextEl = document.getElementById("item-progress-text");
+  var progressBarEl = document.getElementById("item-progress-bar");
+  var viewState = {
+    itemId: null,
+    mode: "",
+    index: 0,
+    reveal: false,
+    order: []
+  };
+  var stageTransitionState = { nextEnter: false, animating: false };
+
+  function clone(obj) {
+    return JSON.parse(JSON.stringify(obj || {}));
+  }
+
+  function renderMath(el) {
+    if (window.renderMathInElement) {
+      window.renderMathInElement(el, {
+        delimiters: [
+          { left: "$$", right: "$$", display: true },
+          { left: "\\[", right: "\\]", display: true },
+          { left: "\\(", right: "\\)", display: false },
+          { left: "$", right: "$", display: false },
+        ],
+        throwOnError: false,
+      });
+    }
+  }
+
+  function getModesForType(type) {
+    if (type === "flashcards") return [{ id: "flashcards", label: "Flashcards" }, { id: "learn", label: "Learn" }, { id: "review", label: "Review" }];
+    return [];
+  }
+
+  function shuffleArray(list) {
+    var arr = list.slice();
+    for (var i = arr.length - 1; i > 0; i -= 1) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = arr[i];
+      arr[i] = arr[j];
+      arr[j] = tmp;
+    }
+    return arr;
+  }
+
+  function setProgress(current, total) {
+    if (!total || total < 1) {
+      progressTextEl.textContent = "0 / 0";
+      progressBarEl.style.width = "0%";
+      return;
+    }
+    progressTextEl.textContent = current + " / " + total;
+    progressBarEl.style.width = Math.round((current / total) * 100) + "%";
+  }
+
+  function setControls(config) {
+    prevBtn.style.display = config.showNav ? "" : "none";
+    nextBtn.style.display = config.showNav ? "" : "none";
+    toggleBtn.style.display = config.showToggle ? "" : "none";
+    shuffleBtn.style.display = config.showShuffle ? "" : "none";
+    prevBtn.disabled = !!config.disablePrev;
+    nextBtn.disabled = !!config.disableNext;
+    toggleBtn.textContent = config.toggleLabel || "Reveal";
+  }
+
+  function renderModeTabs(itemData) {
+    var modes = getModesForType(itemData.type);
+    if (!modes.length) {
+      modeTabsEl.innerHTML = "";
+      modeTabsEl.style.display = "none";
+      return;
+    }
+    modeTabsEl.style.display = "";
+    if (!modes.some(function (m) { return m.id === viewState.mode; })) {
+      viewState.mode = modes[0].id;
+      viewState.index = 0;
+      viewState.reveal = false;
+    }
+    modeTabsEl.innerHTML = "";
+    modes.forEach(function (mode) {
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "player-mode-btn" + (mode.id === viewState.mode ? " active" : "");
+      btn.textContent = mode.label;
+      btn.addEventListener("click", function () {
+        viewState.mode = mode.id;
+        viewState.index = 0;
+        viewState.reveal = false;
+        renderItem(currentItem);
+      });
+      modeTabsEl.appendChild(btn);
+    });
+  }
+
+  function syncFlashcardFlipUi() {
+    var cardEl = document.getElementById("flashcard");
+    if (!cardEl) return false;
+    cardEl.setAttribute("data-flip", viewState.reveal ? "true" : "false");
+    cardEl.setAttribute("aria-label", "Flashcard, currently showing " + (viewState.reveal ? "back" : "front") + " side");
+    toggleBtn.textContent = viewState.reveal ? "Hide Answer" : (viewState.mode === "flashcards" ? "Flip Card" : "Reveal Answer");
+    return true;
+  }
+
+  function renderFlashcards(itemData, bodyEl) {
+    var cards = (itemData.content && itemData.content.cards) || [];
+    if (!cards.length) {
+      bodyEl.innerHTML = '<p class="tx2">No flashcards yet. Edit this item to add cards.</p>';
+      setControls({ showNav: false, showToggle: false, showShuffle: false });
+      setProgress(0, 0);
+      stageLabelEl.textContent = "Flashcards";
+      stageContextEl.textContent = "";
+      return;
+    }
+    if (viewState.order.length !== cards.length) {
+      viewState.order = cards.map(function (_, i) { return i; });
+      viewState.index = 0;
+    }
+
+    if (viewState.mode === "review") {
+      var list = document.createElement("div");
+      list.className = "player-list";
+      cards.forEach(function (card, i) {
+        var item = document.createElement("div");
+        item.className = "player-list-item";
+        item.innerHTML = '<div class="player-list-item-title">Card ' + (i + 1) + '</div><div class="player-list-item-body"></div>';
+        item.querySelector(".player-list-item-body").textContent = (card.front || "") + (card.back ? "\n\n" + card.back : "");
+        list.appendChild(item);
+        renderMath(item);
+      });
+      bodyEl.appendChild(list);
+      setControls({ showNav: false, showToggle: false, showShuffle: true });
+      setProgress(cards.length, cards.length);
+      stageLabelEl.textContent = "Review all cards";
+      stageContextEl.textContent = cards.length + " cards";
+      return;
+    }
+
+    if (viewState.index >= cards.length) viewState.index = 0;
+    var realIndex = viewState.order[viewState.index];
+    var currentCard = cards[realIndex] || {};
+    var wrapper = document.createElement("div");
+    wrapper.id = "flashcard-wrapper";
+    wrapper.className = "flashcard-wrapper";
+
+    var card = document.createElement("div");
+    card.id = "flashcard";
+    card.className = "flashcard";
+    card.setAttribute("data-flip", viewState.reveal ? "true" : "false");
+    card.setAttribute("role", "region");
+    card.setAttribute("aria-label", "Flashcard, currently showing " + (viewState.reveal ? "back" : "front") + " side");
+    card.setAttribute("aria-live", "polite");
+    card.tabIndex = 0;
+
+    var front = document.createElement("div");
+    front.className = "flashcard__front";
+    front.innerHTML = '<div class="player-content-eyebrow">Prompt</div><div class="player-content-text"></div>';
+    front.querySelector(".player-content-text").textContent = currentCard.front || "";
+
+    var back = document.createElement("div");
+    back.className = "flashcard__back";
+    back.innerHTML = '<div class="player-content-eyebrow">Answer</div><div class="player-content-text"></div>';
+    back.querySelector(".player-content-text").textContent = currentCard.back || "";
+
+    card.appendChild(front);
+    card.appendChild(back);
+    wrapper.appendChild(card);
+
+    if (viewState.mode === "flashcards") {
+      card.addEventListener("click", function () {
+        viewState.reveal = !viewState.reveal;
+        syncFlashcardFlipUi();
+      });
+      card.addEventListener("keydown", function (event) {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        viewState.reveal = !viewState.reveal;
+        syncFlashcardFlipUi();
+      });
+    }
+
+    bodyEl.appendChild(wrapper);
+    renderMath(front);
+    renderMath(back);
+    stageLabelEl.textContent = viewState.mode === "learn" ? "Learn mode" : "Flashcard mode";
+    stageContextEl.textContent = "Card " + (viewState.index + 1) + " of " + cards.length;
+    setProgress(viewState.index + 1, cards.length);
+    setControls({
+      showNav: true,
+      showToggle: true,
+      showShuffle: true,
+      disablePrev: cards.length <= 1,
+      disableNext: cards.length <= 1,
+      toggleLabel: viewState.reveal ? "Hide Answer" : (viewState.mode === "flashcards" ? "Flip Card" : "Reveal Answer"),
+    });
+  }
+
+  function renderItem(itemData) {
+    if (!itemData) {
+      notFoundEl.classList.remove("hidden");
+      detailEl.classList.add("hidden");
+      return;
+    }
+    if (itemData.type === "studyGuide") {
+      window.KorahTransitions.replace("guide.html?id=" + encodeURIComponent(itemData.id));
+      return;
+    }
+    if (itemData.type === "practiceTest") {
+      window.KorahTransitions.replace("test.html?id=" + encodeURIComponent(itemData.id));
+      return;
+    }
+
+    notFoundEl.classList.add("hidden");
+    detailEl.classList.remove("hidden");
+    document.getElementById("item-page-title").textContent = itemData.title || "Untitled";
+    document.getElementById("item-type-badge").textContent = (KorahSidebar.getTypeEmoji(itemData.type) + " " + (TYPE_LABELS[itemData.type] || itemData.type));
+    document.getElementById("item-source-badge").textContent = SOURCE_LABELS[itemData.source || "manual"] || itemData.source;
+    var updated = itemData.updatedAt || itemData.createdAt;
+    document.getElementById("item-updated").textContent = updated ? "Updated " + new Date(updated).toLocaleString() : "";
+    document.getElementById("item-title").textContent = itemData.title || "Untitled";
+    document.getElementById("item-description").textContent = itemData.description || "";
+    document.getElementById("item-action-chat").href = "../chat.html?study=" + encodeURIComponent(itemData.id);
+    document.getElementById("item-action-duplicate").onclick = function () {
+      window.KorahTransitions.go("item.html?id=" + encodeURIComponent(itemData.id) + "&duplicate=1");
+    };
+
+    var bodyEl = document.getElementById("item-body");
+    if (viewState.itemId !== itemData.id) {
+      viewState.itemId = itemData.id;
+      viewState.mode = "";
+      viewState.index = 0;
+      viewState.reveal = false;
+      viewState.order = [];
+    }
+
+    renderModeTabs(itemData);
+    bodyEl.innerHTML = "";
+    if (itemData.type === "flashcards") {
+      renderFlashcards(itemData, bodyEl);
+    } else {
+      bodyEl.innerHTML = '<p class="tx2">No content yet. Edit this item to add content.</p>';
+      setControls({ showNav: false, showToggle: false, showShuffle: false });
+      setProgress(0, 0);
+      stageLabelEl.textContent = "Content";
+      stageContextEl.textContent = "";
+    }
+    if (stageTransitionState.nextEnter && bodyEl.firstElementChild) {
+      bodyEl.firstElementChild.classList.add("stage-slide-in-next");
+    }
+    stageTransitionState.nextEnter = false;
+  }
+
+  function goToNextWithAnimation(itemData, total) {
+    var bodyEl = document.getElementById("item-body");
+    var stageEl = bodyEl ? bodyEl.firstElementChild : null;
+    if (!stageEl) {
+      viewState.index = (viewState.index + 1) % total;
+      viewState.reveal = false;
+      renderItem(itemData);
+      return;
+    }
+    stageTransitionState.animating = true;
+    nextBtn.disabled = true;
+    stageEl.classList.add("stage-slide-out-next");
+    window.setTimeout(function () {
+      viewState.index = (viewState.index + 1) % total;
+      viewState.reveal = false;
+      stageTransitionState.nextEnter = true;
+      renderItem(itemData);
+      stageTransitionState.animating = false;
+      nextBtn.disabled = total <= 1;
+    }, 220);
+  }
+
+  prevBtn.addEventListener("click", function () {
+    if (!currentItem) return;
+    var total = 1;
+    if (currentItem.type === "flashcards") total = ((currentItem.content || {}).cards || []).length || 1;
+    if (currentItem.type === "studyGuide") total = parseGuideSections(currentItem.content || {}).length || 1;
+    if (currentItem.type === "practiceTest") total = ((currentItem.content || {}).questions || []).length || 1;
+    viewState.index = (viewState.index - 1 + total) % total;
+    viewState.reveal = false;
+    renderItem(currentItem);
+  });
+
+  nextBtn.addEventListener("click", function () {
+    if (!currentItem) return;
+    if (stageTransitionState.animating) return;
+    var total = 1;
+    if (currentItem.type === "flashcards") total = ((currentItem.content || {}).cards || []).length || 1;
+    if (currentItem.type === "studyGuide") total = parseGuideSections(currentItem.content || {}).length || 1;
+    if (currentItem.type === "practiceTest") total = ((currentItem.content || {}).questions || []).length || 1;
+    goToNextWithAnimation(currentItem, total);
+  });
+
+  toggleBtn.addEventListener("click", function () {
+    if (!currentItem) return;
+    viewState.reveal = !viewState.reveal;
+    if (currentItem.type === "flashcards" && (viewState.mode === "flashcards" || viewState.mode === "learn") && syncFlashcardFlipUi()) {
+      return;
+    }
+    renderItem(currentItem);
+  });
+
+  shuffleBtn.addEventListener("click", function () {
+    if (!currentItem) return;
+    var total = 0;
+    if (currentItem.type === "flashcards") total = ((currentItem.content || {}).cards || []).length;
+    if (currentItem.type === "practiceTest") total = ((currentItem.content || {}).questions || []).length;
+    if (!total) return;
+    viewState.order = Array.from({ length: total }, function (_, i) { return i; });
+    for (var i = viewState.order.length - 1; i > 0; i -= 1) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = viewState.order[i];
+      viewState.order[i] = viewState.order[j];
+      viewState.order[j] = tmp;
+    }
+    viewState.index = 0;
+    viewState.reveal = false;
+    renderItem(currentItem);
+  });
+
+  var editModal = document.getElementById("item-edit-modal");
+  var editForm = document.getElementById("item-edit-form");
+  var editCancelBtn = document.getElementById("item-edit-cancel");
+  var editActionBtn = document.getElementById("item-action-edit");
+  var editContentLabel = document.getElementById("item-edit-content-label");
+  var editDynamicWrap = document.getElementById("item-edit-dynamic-fields");
+  var editModalContent = editModal ? editModal.querySelector(".item-edit-modal-content") : null;
+
+  function renderEditRows(kind, rows) {
+    editDynamicWrap.innerHTML = "";
+    var list = document.createElement("div");
+    list.className = "item-edit-list";
+    var isFlashcards = kind === "flashcards";
+    var leftLabel = isFlashcards ? "Front" : "Question";
+    var rightLabel = isFlashcards ? "Back" : "Answer (optional)";
+    var addLabel = isFlashcards ? "+ Add Card" : "+ Add Question";
+
+    rows.forEach(function (row, index) {
+      var rowEl = document.createElement("div");
+      rowEl.className = "item-edit-row";
+      rowEl.innerHTML =
+        '<div class="item-edit-row-head"><span>' + (isFlashcards ? "Card " : "Question ") + (index + 1) + '</span><button type="button" class="item-edit-remove" data-remove-index="' + index + '">Remove</button></div>' +
+        '<label class="item-edit-label">' + leftLabel + '</label>' +
+        '<textarea class="create-input create-textarea" rows="2" data-field="' + (isFlashcards ? "front" : "text") + '" data-index="' + index + '"></textarea>' +
+        '<label class="item-edit-label">' + rightLabel + '</label>' +
+        '<textarea class="create-input create-textarea" rows="2" data-field="' + (isFlashcards ? "back" : "answer") + '" data-index="' + index + '"></textarea>';
+      rowEl.querySelectorAll("textarea")[0].value = isFlashcards ? (row.front || "") : (row.text || "");
+      rowEl.querySelectorAll("textarea")[1].value = isFlashcards ? (row.back || "") : (row.answer || "");
+      list.appendChild(rowEl);
+    });
+
+    var addBtn = document.createElement("button");
+    addBtn.type = "button";
+    addBtn.className = "item-edit-add";
+    addBtn.id = "item-edit-add-row";
+    addBtn.textContent = addLabel;
+    editDynamicWrap.appendChild(list);
+    editDynamicWrap.appendChild(addBtn);
+  }
+
+  function renderEditContentFields() {
+    if (!editDraft) return;
+    editDynamicWrap.innerHTML = "";
+    editContentLabel.textContent = editDraft.type === "flashcards" ? "Flashcards" : editDraft.type === "practiceTest" ? "Practice Test" : "Study Guide";
+
+    if (editDraft.type === "studyGuide") {
+      var markdown = getStudyGuideMarkdown(editDraft.content || {});
+      var textarea = document.createElement("textarea");
+      textarea.id = "item-edit-markdown";
+      textarea.className = "create-input create-textarea";
+      textarea.rows = 14;
+      textarea.placeholder = "Write markdown content for this study guide...";
+      textarea.value = markdown;
+      editDynamicWrap.appendChild(textarea);
+      return;
+    }
+
+    if (editDraft.type === "flashcards") {
+      editDraft.content = editDraft.content || {};
+      editDraft.content.cards = editDraft.content.cards && editDraft.content.cards.length ? editDraft.content.cards : [{ front: "", back: "" }];
+      renderEditRows("flashcards", editDraft.content.cards);
+      return;
+    }
+
+    editDraft.content = editDraft.content || {};
+    editDraft.content.questions = editDraft.content.questions && editDraft.content.questions.length ? editDraft.content.questions : [{ text: "", answer: "" }];
+    renderEditRows("practiceTest", editDraft.content.questions);
+  }
+
+  function openEditModal() {
+    if (!currentItem) return;
+    editDraft = clone(currentItem);
+    document.getElementById("item-edit-title").value = editDraft.title || "";
+    document.getElementById("item-edit-description").value = editDraft.description || "";
+    document.getElementById("item-edit-subject").value = editDraft.subject || "";
+    document.getElementById("item-edit-tags").value = (editDraft.tags || []).join(", ");
+    renderEditContentFields();
+    editModal.scrollTop = 0;
+    if (editModalContent) editModalContent.scrollTop = 0;
+    if (editDynamicWrap) editDynamicWrap.scrollTop = 0;
+    editModal.classList.add("show");
+  }
+
+  function closeEditModal() {
+    editModal.classList.remove("show");
+    editDraft = null;
+  }
+
+  if (editActionBtn) {
+    editActionBtn.addEventListener("click", openEditModal);
+  }
+
+  if (editCancelBtn) {
+    editCancelBtn.addEventListener("click", closeEditModal);
+  }
+
+  if (editModal) {
+    editModal.addEventListener("click", function (e) {
+      if (e.target === editModal) closeEditModal();
+    });
+  }
+
+  if (editDynamicWrap) {
+    editDynamicWrap.addEventListener("input", function (e) {
+      if (!editDraft) return;
+      var target = e.target;
+      var index = parseInt(target.getAttribute("data-index"), 10);
+      var field = target.getAttribute("data-field");
+      if (Number.isNaN(index) || !field) return;
+      if (editDraft.type === "flashcards" && editDraft.content && editDraft.content.cards && editDraft.content.cards[index]) {
+        editDraft.content.cards[index][field] = target.value;
+      }
+      if (editDraft.type === "practiceTest" && editDraft.content && editDraft.content.questions && editDraft.content.questions[index]) {
+        editDraft.content.questions[index][field] = target.value;
+      }
+    });
+
+    editDynamicWrap.addEventListener("click", function (e) {
+      if (!editDraft) return;
+      var removeIndex = e.target.getAttribute("data-remove-index");
+      if (removeIndex !== null) {
+        var i = parseInt(removeIndex, 10);
+        if (!Number.isNaN(i)) {
+          if (editDraft.type === "flashcards" && editDraft.content && editDraft.content.cards) {
+            editDraft.content.cards.splice(i, 1);
+            if (!editDraft.content.cards.length) editDraft.content.cards.push({ front: "", back: "" });
+          }
+          if (editDraft.type === "practiceTest" && editDraft.content && editDraft.content.questions) {
+            editDraft.content.questions.splice(i, 1);
+            if (!editDraft.content.questions.length) editDraft.content.questions.push({ text: "", answer: "" });
+          }
+          renderEditContentFields();
+        }
+      }
+
+      if (e.target.id === "item-edit-add-row") {
+        if (editDraft.type === "flashcards") {
+          editDraft.content.cards.push({ front: "", back: "" });
+        }
+        if (editDraft.type === "practiceTest") {
+          editDraft.content.questions.push({ text: "", answer: "" });
+        }
+        renderEditContentFields();
+      }
+    });
+  }
+
+  if (editForm) {
+    editForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      if (!currentItem || !id) return;
+
+      var updatedItem = clone(currentItem);
+      updatedItem.title = (document.getElementById("item-edit-title").value || "").trim() || "Untitled";
+      updatedItem.description = (document.getElementById("item-edit-description").value || "").trim();
+      updatedItem.subject = (document.getElementById("item-edit-subject").value || "").trim();
+      updatedItem.tags = (document.getElementById("item-edit-tags").value || "")
+        .split(",")
+        .map(function (t) { return t.trim(); })
+        .filter(Boolean);
+
+      if (updatedItem.type === "studyGuide") {
+        var markdown = (document.getElementById("item-edit-markdown").value || "").trim();
+        updatedItem.content = updatedItem.content || {};
+        updatedItem.content.markdown = markdown;
+      } else if (updatedItem.type === "flashcards") {
+        var cards = (editDraft && editDraft.content && editDraft.content.cards) || [];
+        updatedItem.content = {
+          cards: cards.filter(function (c) {
+            return (c.front || "").trim() || (c.back || "").trim();
+          })
+        };
+      } else if (updatedItem.type === "practiceTest") {
+        var questions = (editDraft && editDraft.content && editDraft.content.questions) || [];
+        updatedItem.content = {
+          questions: questions.filter(function (q) {
+            return (q.text || "").trim() || (q.answer || "").trim();
+          })
+        };
+      }
+
+      updatedItem.updatedAt = new Date().toISOString();
+      if (window.KorahDB) window.KorahDB.setStudyItem(id, updatedItem);
+      currentItem = updatedItem;
+      renderItem(currentItem);
+      closeEditModal();
+    });
+  }
+
+  // ── Firestore load ────────────────────────────────────────────────────────
+  function loadAndRender() {
+    if (!id) { renderItem(null); return; }
+    if (duplicate) {
+      window.KorahDB.getStudyItem(id).then(function (original) {
+        if (!original) { renderItem(null); return; }
+        var newId = "study_" + Date.now();
+        var copy = JSON.parse(JSON.stringify(original));
+        copy.id = newId;
+        copy.title = (copy.title || "Untitled") + " (Copy)";
+        copy.createdAt = copy.updatedAt = new Date().toISOString();
+        window.KorahDB.setStudyItem(newId, copy);
+        window.KorahTransitions.replace("item.html?id=" + encodeURIComponent(newId));
+      });
+      return;
+    }
+    window.KorahDB.getStudyItem(id).then(function (item) {
+      currentItem = item;
+      renderItem(currentItem);
+    });
+  }
+  if (window._korahReadyFired) {
+    loadAndRender();
+  } else {
+    window.addEventListener("korahReady", loadAndRender, { once: true });
+  }
+
+})();
+</script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+  import { startAuthGuard } from '../auth-guard.js';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
+    authDomain: "korah-app.firebaseapp.com",
+    projectId: "korah-app",
+    storageBucket: "korah-app.firebasestorage.app",
+    messagingSenderId: "226169460321",
+    appId: "1:226169460321:web:b166fc8260107c55dafc20"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  onAuthStateChanged(auth, (user) => {
+    if (!user) { window.KorahTransitions.go('../landing/index.html'); return; }
+    startAuthGuard(auth, '../landing/index.html');
+  });
+
+  document.getElementById('logout-btn').addEventListener('click', () => {
+    window.confirmLogout(async () => {
+      await signOut(auth);
+      localStorage.removeItem('korah_first_name');
+      window.KorahTransitions.go('../login.html');
+    });
+  });
+</script>
+</body>
+</html>

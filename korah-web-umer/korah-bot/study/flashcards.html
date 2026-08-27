@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en" x-data="{
+  theme: localStorage.getItem('korah_theme') || 'dark',
+  sidebarCollapsed: window.innerWidth <= 768 ? false : localStorage.getItem('korah_sidebar_collapsed') === 'true',
+  mobileOpen: false,
+  getEffectiveTheme() {
+    if (this.theme === 'system') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return this.theme;
+  },
+  toggleSidebar() {
+    if (window.innerWidth <= 768) {
+      this.mobileOpen = !this.mobileOpen;
+      const overlay = document.querySelector('.sidebar-overlay');
+      if (overlay) overlay.classList.toggle('show', this.mobileOpen);
+    } else {
+      if (this.sidebarCollapsed) {
+        const dp = document.getElementById('doc-panel');
+        if (dp?.classList.contains('expanded')) {
+          dp.classList.remove('expanded');
+          dp.classList.add('collapsed');
+          const tab = document.getElementById('doc-panel-tab');
+          if (tab) tab.classList.remove('panel-open');
+        }
+      }
+      this.sidebarCollapsed = !this.sidebarCollapsed;
+      localStorage.setItem('korah_sidebar_collapsed', this.sidebarCollapsed);
+    }
+  }
+}" :data-theme="getEffectiveTheme()" x-cloak>
+<head>
+<link rel="stylesheet" href="../transitions/page-transitions.css"/>
+<script src="../transitions/page-transitions.js"></script>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Korah AI — Create Flashcards</title>
+  <link rel="icon" type="image/png" href="../logo-images/newlogo0.png">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
+  
+  <!-- Scripts -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <script src="../sidebar-loader.js" defer></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Styles -->
+  <link rel="stylesheet" href="../app/korah-chat.css"/>
+  <style>
+    .glass-card { background: rgba(22, 16, 44, 0.82); backdrop-filter: blur(1.125rem); border: 1px solid rgba(167, 139, 250, 0.22); border-radius: 1.5rem; box-shadow: 0 1.5rem 3.375rem rgba(15, 23, 42, 0.24); }
+    .input-field { width: 100%; background: var(--bg2); border: 1px solid var(--bd); border-radius: 0.875rem; color: var(--tx); transition: all 0.2s; }
+    .input-field:focus { border-color: var(--p4); box-shadow: 0 0 0 0.25rem var(--glow); outline: none; }
+    .loading-spinner { border: 0.1875rem solid rgba(139, 92, 246, 0.1); border-top: 0.1875rem solid var(--p4); border-radius: 50%; width: 1.5rem; height: 1.5rem; animation: spin 1s linear infinite; }
+    .create-page-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 1.75rem 1.25rem 2.625rem; }
+    .create-page-shell { max-width: 51.25rem; margin: 0 auto; }
+    .create-panel { padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem; }
+    .create-heading { margin: 0; font-size: 2rem; line-height: 1.1; font-weight: 800; color: var(--tx); }
+    .create-subtext { margin: 0; color: #ddd6fe; font-size: 0.875rem; line-height: 1.6; }
+    .create-method-switch { display: inline-flex; gap: 0.5rem; flex-wrap: wrap; padding: 0.375rem; border-radius: 1rem; background: rgba(255,255,255,0.07); border: 1px solid rgba(167, 139, 250, 0.18); width: fit-content; }
+    .method-pill {
+      border: 1px solid rgba(255,255,255,0.06);
+      background: transparent;
+      color: #e9ddff;
+      border-radius: 0.75rem;
+      padding: 0.625rem 0.875rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5625rem;
+      font-size: 0.8125rem;
+      font-weight: 700;
+      transition: all 0.2s ease;
+    }
+    .method-pill.is-active { background: #7c3aed; color: #fff; border-color: #c4b5fd; box-shadow: 0 0.875rem 1.875rem rgba(124, 58, 237, 0.34); }
+    .create-card { padding: 1.25rem; background: linear-gradient(135deg, rgba(124,58,237,0.14), rgba(56,189,248,0.08)); border: 1px solid rgba(167, 139, 250, 0.16); border-radius: 1.25rem; }
+    .create-card-title { margin: 0 0 0.375rem; font-size: 1rem; font-weight: 800; color: var(--tx); }
+    .create-card-sub { margin: 0 0 1rem; color: #ddd6fe; font-size: 0.8125rem; line-height: 1.55; }
+    .field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.875rem; }
+    .field-block { display: flex; flex-direction: column; gap: 0.5rem; }
+    .field-block.is-full { grid-column: 1 / -1; }
+    .field-label { font-size: 0.75rem; font-weight: 700; color: #e9ddff; }
+    .section-card { padding: 1.25rem; border-radius: 1.25rem; border: 1px solid rgba(167, 139, 250, 0.14); background: rgba(17, 24, 39, 0.5); }
+    .manual-form { background: linear-gradient(135deg, rgba(56,189,248,0.12), rgba(52,211,153,0.08)); border-color: rgba(56, 189, 248, 0.2); }
+    .ai-form { background: rgba(15, 9, 35, 0.92); border-color: rgba(167, 139, 250, 0.24); box-shadow: 0 1.25rem 2.75rem rgba(0,0,0,.28), 0 0 1.875rem rgba(139,92,246,.12); }
+    .section-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
+    .section-title { margin: 0; font-size: 1rem; font-weight: 800; color: var(--tx); }
+    .section-copy { margin: 0.25rem 0 0; color: #ddd6fe; font-size: 0.8125rem; line-height: 1.55; }
+    .card-list { display: grid; gap: 0.875rem; }
+    .card-item {
+      padding: 1.125rem;
+      border-radius: 1.375rem;
+      border: 1px solid var(--bd);
+      background: var(--bg2);
+      display: flex;
+      flex-direction: column;
+      gap: 0.875rem;
+    }
+    .card-head { display: flex; align-items: center; justify-content: space-between; gap: 0.875rem; }
+    .card-eyebrow { font-size: 0.75rem; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: #cbd5e1; }
+    .card-remove { width: 2.25rem; height: 2.25rem; border-radius: 62.4375rem; border: 1px solid rgba(248, 113, 113, 0.4); background: rgba(127, 29, 29, 0.4); color: #fecaca; display: inline-flex; align-items: center; justify-content: center; }
+    .card-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
+    .manual-support { margin-top: 1rem; display: grid; gap: 0.75rem; }
+    .support-title { margin: 0; font-size: 0.875rem; font-weight: 800; color: var(--tx); }
+    .support-copy { margin: 0; font-size: 0.8125rem; color: #cbd5e1; line-height: 1.55; }
+    .upload-zone { border: 0.09375rem dashed rgba(56, 189, 248, 0.4); border-radius: 1.125rem; padding: 1.5rem 1.125rem; background: rgba(15, 23, 42, 0.34); text-align: center; cursor: pointer; transition: all 0.2s ease; }
+    .upload-zone:hover, .upload-zone.drag-active { border-color: #38bdf8; transform: translateY(-1px); box-shadow: 0 0.875rem 1.75rem rgba(56, 189, 248, 0.16); }
+    .upload-files { display: grid; gap: 0.625rem; }
+    .upload-file { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.75rem 0.875rem; border-radius: 0.875rem; border: 1px solid rgba(56, 189, 248, 0.18); background: rgba(15, 23, 42, 0.34); }
+    .upload-file-copy { min-width: 0; display: flex; flex-direction: column; gap: 0.125rem; }
+    .upload-file-name { color: var(--tx); font-size: 0.8125rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .upload-file-meta { color: #cbd5e1; font-size: 0.75rem; }
+    .upload-file-remove { width: 2.125rem; height: 2.125rem; border-radius: 62.4375rem; border: 1px solid rgba(248, 113, 113, 0.34); background: rgba(127, 29, 29, 0.45); color: #fecaca; display: inline-flex; align-items: center; justify-content: center; }
+    .import-source-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.9rem; margin-bottom: 1rem; }
+    .import-source-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(167, 139, 250, 0.18); border-radius: 0.875rem; padding: 1.1rem 1rem; display: flex; flex-direction: column; align-items: center; gap: 0.65rem; text-align: center; color: var(--tx); }
+    .import-source-icon { font-size: 1.85rem; color: #c4b5fd; }
+    .import-source-name { font-size: 0.95rem; font-weight: 700; }
+    .import-source-desc { font-size: 0.75rem; color: #ddd6fe; line-height: 1.4; }
+    .import-input-row { margin-top: 1rem; display: flex; flex-direction: column; gap: 0.4rem; }
+    .import-input-row label { font-size: 0.8rem; font-weight: 600; color: #ddd6fe; }
+    .import-input-row input, .import-input-row textarea { width: 100%; padding: 0.85rem 0.95rem; border-radius: 0.75rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(167, 139, 250, 0.18); color: var(--tx); font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.92rem; }
+    .import-input-row input:focus, .import-input-row textarea:focus { outline: none; border-color: #a78bfa; box-shadow: 0 0 0 0.1875rem rgba(139,92,246,.18); }
+    .ghost-action {
+      min-height: 2.625rem;
+      padding: 0 0.875rem;
+      border-radius: 0.75rem;
+      border: 1px solid rgba(56, 189, 248, 0.28);
+      background: rgba(56, 189, 248, 0.14);
+      color: #e0f2fe;
+      font-size: 0.8125rem;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .create-actions { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; padding-top: 0.5rem; }
+    .create-error { color: #fecaca; font-size: 0.875rem; font-weight: 600; min-height: 1.25rem; }
+    .create-submit {
+      min-width: 15rem;
+      min-height: 3.5rem;
+      padding: 0 1.5rem;
+      border: none;
+      border-radius: 1.125rem;
+      background: #7c3aed;
+      color: #fff;
+      font-size: 0.9375rem;
+      font-weight: 700;
+      box-shadow: 0 1.125rem 2.25rem rgba(99, 102, 241, 0.3);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+    }
+    .create-submit:hover { transform: translateY(-1px); box-shadow: 0 1.25rem 2.5rem rgba(99, 102, 241, 0.34); }
+    .create-submit:disabled { opacity: 0.65; cursor: wait; transform: none; }
+    @media (max-width: 48rem) {
+      .create-page-scroll { padding: 1.125rem 0.875rem 1.75rem; }
+      .create-panel, .create-card, .section-card, .card-item { padding: 1.125rem; }
+      .field-grid, .card-grid { grid-template-columns: 1fr; }
+      .create-actions { align-items: stretch; }
+      .create-submit { width: 100%; }
+    }
+    @media (max-width: 33.75rem) { .import-source-grid { grid-template-columns: 1fr; } }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    /* ── Light mode overrides ── */
+    [data-theme="light"] .glass-card {
+      background: rgba(255, 255, 255, 0.9);
+      border-color: rgba(109, 40, 217, 0.2);
+      box-shadow: 0 1.5rem 3.375rem rgba(109, 40, 217, 0.1);
+    }
+    [data-theme="light"] .create-subtext,
+    [data-theme="light"] .create-card-sub,
+    [data-theme="light"] .section-copy,
+    [data-theme="light"] .support-copy,
+    [data-theme="light"] .import-source-desc,
+    [data-theme="light"] .import-input-row label,
+    [data-theme="light"] .field-label,
+    [data-theme="light"] .card-eyebrow,
+    [data-theme="light"] .upload-file-meta { color: var(--tx2); }
+    [data-theme="light"] .create-method-switch {
+      background: var(--bg2);
+      border-color: rgba(109, 40, 217, 0.22);
+    }
+    [data-theme="light"] .method-pill {
+      color: var(--tx2);
+      border-color: rgba(109, 40, 217, 0.15);
+    }
+    [data-theme="light"] .section-card {
+      background: rgba(243, 239, 255, 0.8);
+      border-color: rgba(109, 40, 217, 0.18);
+    }
+    [data-theme="light"] .ai-form {
+      background: rgba(243, 239, 255, 0.9);
+      border-color: rgba(109, 40, 217, 0.22);
+      box-shadow: 0 1.25rem 2.75rem rgba(109, 40, 217, 0.08), 0 0 1.875rem rgba(109, 40, 217, 0.06);
+    }
+    [data-theme="light"] .upload-zone {
+      background: rgba(243, 239, 255, 0.55);
+      border-color: rgba(109, 40, 217, 0.3);
+    }
+    [data-theme="light"] .upload-zone:hover,
+    [data-theme="light"] .upload-zone.drag-active {
+      border-color: #7c3aed;
+      box-shadow: 0 0.875rem 1.75rem rgba(109, 40, 217, 0.12);
+    }
+    [data-theme="light"] .upload-file {
+      background: rgba(243, 239, 255, 0.8);
+      border-color: rgba(109, 40, 217, 0.2);
+    }
+    [data-theme="light"] .import-source-card {
+      background: rgba(243, 239, 255, 0.75);
+      border-color: rgba(109, 40, 217, 0.2);
+    }
+    [data-theme="light"] .import-source-icon { color: #7c3aed; }
+    [data-theme="light"] .import-input-row input,
+    [data-theme="light"] .import-input-row textarea {
+      background: rgba(255, 255, 255, 0.9);
+      border-color: rgba(109, 40, 217, 0.22);
+    }
+    [data-theme="light"] .ghost-action {
+      background: rgba(109, 40, 217, 0.08);
+      border-color: rgba(109, 40, 217, 0.22);
+      color: var(--tx);
+    }
+    [data-theme="light"] .card-remove {
+      background: rgba(239, 68, 68, 0.1);
+      border-color: rgba(239, 68, 68, 0.3);
+      color: #dc2626;
+    }
+    [data-theme="light"] .upload-file-remove {
+      background: rgba(239, 68, 68, 0.1);
+      border-color: rgba(248, 113, 113, 0.3);
+      color: #dc2626;
+    }
+    [data-theme="light"] .create-error { color: #b91c1c; }
+  </style>
+</head>
+<body class="bg-base tx overflow-hidden h-screen">
+<style>
+  html:not(.korah-page-ready) { background: #06040f !important; }
+  html[data-theme="light"]:not(.korah-page-ready) { background: #d2d2d2 !important; }
+  html:not(.korah-page-ready) body { opacity: 0 !important; }
+</style>
+
+<script>
+  (function() {
+    const t = localStorage.getItem('korah_theme') || 'dark';
+    if (t === 'light' || (t === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  })();
+</script>
+  <canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
+
+  <!-- Sidebar (Same as original but kept for layout consistency) -->
+  <div id="sidebar-root"></div>
+
+<!-- Settings Modal -->
+<div id="settings-modal" class="settings-modal">
+  <div class="settings-modal-content">
+    <div class="settings-header">
+      <h2 class="settings-title">Settings</h2>
+      <button class="settings-close" id="settings-close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="settings-body">
+      <div class="settings-section">
+        <h3 class="settings-section-title">Appearance</h3>
+        <div class="settings-item">
+          <div class="settings-item-label">Theme</div>
+          <div class="settings-item-control">
+            <div class="settings-custom-select" id="settings-theme-custom-select">
+              <div class="settings-select-trigger" id="settings-theme-trigger">
+                <div class="flex items-center gap-2">
+                  <span class="material-icons-round trigger-icon">dark_mode</span>
+                  <span class="trigger-text">Dark Mode</span>
+                </div>
+                <span class="material-icons-round">expand_more</span>
+              </div>
+              <div class="settings-select-menu" id="settings-theme-menu">
+                <div class="settings-select-option" data-value="dark">
+                  <span class="material-icons-round">dark_mode</span>
+                  <span>Dark Mode</span>
+                  <span class="material-icons-round check-icon">check</span>
+                </div>
+                <div class="settings-select-option" data-value="light">
+                  <span class="material-icons-round">light_mode</span>
+                  <span>Light Mode</span>
+                  <span class="material-icons-round check-icon">check</span>
+                </div>
+                <div class="settings-select-option" data-value="system">
+                  <span class="material-icons-round">settings_suggest</span>
+                  <span>System</span>
+                  <span class="material-icons-round check-icon">check</span>
+                </div>
+              </div>
+              <input type="hidden" id="settings-theme-select" value="dark">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3 class="settings-section-title">Profile</h3>
+        <div class="settings-item">
+          <div class="settings-item-label">Display Name</div>
+          <div class="settings-item-control">
+            <input type="text" id="settings-name-input" class="settings-input" placeholder="Your name">
+          </div>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3 class="settings-section-title">Data</h3>
+        <div class="settings-item">
+          <div class="settings-item-label">Clear All Data</div>
+          <div class="settings-item-control">
+            <button id="settings-clear-data" class="settings-btn danger">Clear Data</button>
+          </div>
+        </div>
+      </div>
+      <div class="settings-actions">
+        <button id="settings-save" class="settings-btn primary">Save Settings</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Rename Modal -->
+<div id="rename-modal" class="delete-modal">
+  <div class="delete-modal-content">
+    <div class="delete-modal-icon"><span class="material-icons-round" style="color: #FFA726; font-size: 1.25rem;" aria-label="rename">edit</span></div>
+    <h3 class="delete-modal-title">Rename</h3>
+    <p class="delete-modal-desc" id="rename-modal-desc">Enter a new name</p>
+    <input id="rename-modal-input" type="text" class="create-input" style="width:100%; margin-top:0.25rem;" placeholder="New name…"/>
+    <div class="delete-modal-actions">
+      <button id="rename-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
+      <button id="rename-modal-confirm" class="delete-modal-btn confirm t-btn" style="background:rgba(139,92,246,.12); color:var(--p5); border-color:rgba(139,92,246,.3);">Rename</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div id="delete-modal" class="delete-modal">
+  <div class="delete-modal-content">
+    <div class="delete-modal-icon"><span class="material-icons-round" style="color: var(--red); font-size: 1.25rem;" aria-label="delete">delete</span></div>
+    <h3 class="delete-modal-title">Delete?</h3>
+    <p class="delete-modal-desc">This will permanently delete <span id="delete-modal-name"></span>. This cannot be undone.</p>
+    <div class="delete-modal-actions">
+      <button id="delete-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
+      <button id="delete-modal-confirm" class="delete-modal-btn confirm t-btn">Delete</button>
+    </div>
+  </div>
+</div>
+
+  <main class="main-content flex-1 flex flex-col relative z-10 overflow-hidden">
+    <header class="chat-topbar bg-sf glass-sm t-theme bd flex items-center justify-between px-6 h-16 shrink-0">
+      <div class="flex items-center gap-4">
+        <button id="sidebar-toggle" @click="toggleSidebar()" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
+        <div class="korah-status-dot"></div>
+        <span class="font-semibold tx text-sm">Flashcard Creator</span>
+      </div>
+      <a href="feed.html" class="tx2 hover:tx transition-colors text-sm font-medium">Cancel</a>
+    </header>
+
+    <div class="create-page-scroll">
+      <div class="create-page-shell">
+        <section class="create-panel glass-card">
+          <div>
+            <h1 class="create-heading">Create Flashcards</h1>
+            <p class="create-subtext">Use this form to build a flashcard set yourself or have Korah generate one from a prompt.</p>
+          </div>
+
+          <div class="create-method-switch" role="tablist" aria-label="Flashcard creation method">
+            <button type="button" class="method-pill" data-method="manual"><span class="material-icons-round" style="font-size: 1rem;">edit</span>Manual</button>
+            <button type="button" class="method-pill" data-method="prompt"><span class="material-icons-round" style="font-size: 1rem;">auto_awesome</span>AI Generated</button>
+          </div>
+
+          <section class="create-card">
+            <h2 class="create-card-title">Set details</h2>
+            <p class="create-card-sub">These details will show up with the flashcard set in Study.</p>
+            <div class="field-grid">
+              <label class="field-block">
+                <span class="field-label">Title</span>
+                <input id="flashcards-title" type="text" class="input-field px-4 py-3.5" placeholder="e.g., Cellular Biology 101">
+              </label>
+              <label class="field-block">
+                <span class="field-label">Subject</span>
+                <input id="flashcards-subject" type="text" class="input-field px-4 py-3.5" placeholder="e.g., Biology">
+              </label>
+              <label class="field-block is-full">
+                <span class="field-label">Description</span>
+                <textarea id="flashcards-description" class="input-field px-4 py-3.5 h-24 resize-none" placeholder="What should this set cover?"></textarea>
+              </label>
+              <label class="field-block is-full">
+                <span class="field-label">Tags</span>
+                <input id="flashcards-tags" type="text" class="input-field px-4 py-3.5" placeholder="mitosis, vocab, bio-unit-3">
+              </label>
+            </div>
+          </section>
+
+          <div class="create-card">
+            <p class="create-card-sub" style="margin: 0;">Choose <strong>Manual</strong> if you already know the cards you want. Choose <strong>AI Generated</strong> if you want Korah to draft the set from a topic or prompt.</p>
+          </div>
+
+          <section id="flashcards-manual-section" class="section-card manual-form">
+            <div class="section-head">
+              <div>
+                <h2 class="section-title">Manual cards</h2>
+                <p class="section-copy">Add at least two complete cards. Keep fronts short and backs focused so review stays fast.</p>
+              </div>
+              <button id="add-card-btn" type="button" class="ghost-action"><span class="material-icons-round" style="font-size: 1rem;">add</span>Add Card</button>
+            </div>
+            <div id="card-list" class="card-list"></div>
+            <div class="manual-support">
+              <div>
+                <h3 class="support-title">Optional reference documents</h3>
+                <p class="support-copy">Add notes, a worksheet, or source material to keep beside the set while you build it.</p>
+              </div>
+              <div id="flashcards-upload-zone" class="upload-zone">
+                <input id="flashcards-file-upload" type="file" class="hidden" multiple>
+                <div class="mb-2"><span class="material-icons-round" style="font-size: 1.875rem; color: #38bdf8;">upload_file</span></div>
+                <div class="tx font-semibold">Drop files here or click to add</div>
+                <div class="text-sm" style="color:#cbd5e1;">Optional only. Nothing here is required to save.</div>
+              </div>
+              <div id="flashcards-files-list" class="upload-files"></div>
+            </div>
+          </section>
+
+          <section id="flashcards-prompt-section" class="section-card ai-form hidden">
+            <div class="section-head">
+              <div>
+                <h2 class="section-title">AI setup</h2>
+                <p class="section-copy">Give Korah a clear topic, scope, and study style so the set comes back ready to review.</p>
+              </div>
+            </div>
+            <div class="import-source-grid">
+              <div class="import-source-card">
+                <span class="material-icons-round import-source-icon">topic</span>
+                <div class="import-source-name">Topic and scope</div>
+                <div class="import-source-desc">Name the unit, chapter, or concept range you want covered.</div>
+              </div>
+              <div class="import-source-card">
+                <span class="material-icons-round import-source-icon">style</span>
+                <div class="import-source-name">Card style</div>
+                <div class="import-source-desc">Say whether you want definition cards, question-answer pairs, or concept checks.</div>
+              </div>
+            </div>
+            <div class="import-input-row">
+              <label for="flashcards-prompt">Prompt</label>
+              <textarea id="flashcards-prompt" class="h-48 resize-none" placeholder="Create 18 flashcards on the Krebs cycle focused on major intermediates, enzymes, and outputs. Keep each front concise and each back exam-ready."></textarea>
+            </div>
+          </section>
+
+          <div class="create-actions">
+            <div id="flashcards-error" class="create-error"></div>
+            <button id="flashcards-submit" class="create-submit">
+              <span class="material-icons-round" style="font-size: 1.125rem;">style</span>
+              <span id="flashcards-submit-label">Create Set</span>
+            </button>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+<script type="module" src="js/study-firebase-init.js"></script>
+<script src="../app/timer-manager.js"></script>
+<script src="js/sidebar.js"></script>
+<script src="js/study-api.js"></script>
+<script>
+  (function () {
+    KorahSidebar.initSidebar({ chatBaseUrl: "../chat.html", itemPageUrl: "item.html" });
+
+    var validMethods = ["manual", "prompt"];
+    var urlMethod = new URLSearchParams(window.location.search).get("method");
+    var state = {
+      method: urlMethod === "ai-prompt" ? "prompt" : (validMethods.includes(urlMethod) ? urlMethod : "manual"),
+      manualFiles: [],
+      cards: [],
+      loading: false
+    };
+
+    var methodButtons = Array.from(document.querySelectorAll(".method-pill"));
+    var sections = {
+      manual: document.getElementById("flashcards-manual-section"),
+      prompt: document.getElementById("flashcards-prompt-section")
+    };
+    var titleInput = document.getElementById("flashcards-title");
+    var subjectInput = document.getElementById("flashcards-subject");
+    var descriptionInput = document.getElementById("flashcards-description");
+    var tagsInput = document.getElementById("flashcards-tags");
+    var promptInput = document.getElementById("flashcards-prompt");
+    var uploadZone = document.getElementById("flashcards-upload-zone");
+    var fileInput = document.getElementById("flashcards-file-upload");
+    var filesList = document.getElementById("flashcards-files-list");
+    var cardList = document.getElementById("card-list");
+    var addCardBtn = document.getElementById("add-card-btn");
+    var errorEl = document.getElementById("flashcards-error");
+    var submitBtn = document.getElementById("flashcards-submit");
+    var submitLabel = document.getElementById("flashcards-submit-label");
+
+    function createCard() {
+      return {
+        id: "card_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7),
+        front: "",
+        back: ""
+      };
+    }
+
+    function setMethod(method) {
+      state.method = method;
+      methodButtons.forEach(function (btn) {
+        btn.classList.toggle("is-active", btn.getAttribute("data-method") === method);
+      });
+      Object.keys(sections).forEach(function (key) {
+        sections[key].classList.toggle("hidden", key !== method);
+      });
+      submitLabel.textContent = method === "manual" ? "Create Set" : "Generate Set";
+      errorEl.textContent = "";
+    }
+
+    function setLoading(loading) {
+      state.loading = loading;
+      submitBtn.disabled = loading;
+      submitLabel.textContent = loading ? "Generating..." : (state.method === "manual" ? "Create Set" : "Generate Set");
+      var spinner = submitBtn.querySelector(".loading-spinner");
+      if (loading && !spinner) submitBtn.insertAdjacentHTML("afterbegin", '<span class="loading-spinner"></span>');
+      if (!loading && spinner) spinner.remove();
+    }
+
+    function renderCards() {
+      cardList.innerHTML = "";
+      state.cards.forEach(function (card, index) {
+        var item = document.createElement("div");
+        item.className = "card-item";
+        item.innerHTML = `
+          <div class="card-head">
+            <div class="card-eyebrow">Card ${index + 1}</div>
+            <button type="button" class="card-remove" data-action="remove-card" data-card-id="${card.id}" aria-label="Remove card">
+              <span class="material-icons-round" style="font-size: 1.125rem;">close</span>
+            </button>
+          </div>
+          <div class="card-grid">
+            <textarea class="input-field px-4 py-3.5 h-28 resize-none" data-field="front" data-card-id="${card.id}" placeholder="Front side...">${card.front}</textarea>
+            <textarea class="input-field px-4 py-3.5 h-28 resize-none" data-field="back" data-card-id="${card.id}" placeholder="Back side...">${card.back}</textarea>
+          </div>
+        `;
+        cardList.appendChild(item);
+      });
+    }
+
+    function getManualCards() {
+      return state.cards
+        .filter(function (card) { return card.front.trim() && card.back.trim(); })
+        .map(function (card) {
+          return { front: card.front.trim(), back: card.back.trim() };
+        });
+    }
+
+    function renderFiles() {
+      filesList.innerHTML = "";
+      state.manualFiles.forEach(function (file, index) {
+        var row = document.createElement("div");
+        row.className = "upload-file";
+        row.innerHTML = `
+          <div class="upload-file-copy">
+            <span class="upload-file-name">${file.name}</span>
+            <span class="upload-file-meta">${(file.size / 1024).toFixed(1)} KB</span>
+          </div>
+          <button type="button" class="upload-file-remove" data-file-index="${index}" aria-label="Remove file">
+            <span class="material-icons-round" style="font-size: 1rem;">close</span>
+          </button>
+        `;
+        filesList.appendChild(row);
+      });
+    }
+
+    function addFiles(fileList) {
+      Array.from(fileList).slice(0, Math.max(0, 5 - state.manualFiles.length)).forEach(function (file) {
+        state.manualFiles.push(file);
+      });
+      renderFiles();
+    }
+
+    function validate() {
+      if (!titleInput.value.trim()) return "Title is required.";
+      if (!subjectInput.value.trim()) return "Subject is required.";
+      if (state.method === "manual" && getManualCards().length < 2) return "At least 2 complete cards are required.";
+      if (state.method === "prompt" && !promptInput.value.trim()) return "AI prompt is required.";
+      return "";
+    }
+
+    function saveItem(content) {
+      var id = "study_" + Date.now();
+      var item = {
+        id: id,
+        type: "flashcards",
+        title: titleInput.value.trim(),
+        description: descriptionInput.value.trim(),
+        subject: subjectInput.value.trim(),
+        tags: tagsInput.value.split(",").map(function (tag) { return tag.trim(); }).filter(Boolean),
+        content: content,
+        source: state.method === "manual" ? "manual" : "ai-prompt",
+        createdBy: "cloud",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      if (window.KorahDB) window.KorahDB.setStudyItem(id, item);
+      window.KorahTransitions.go("item.html?id=" + encodeURIComponent(id));
+    }
+
+    methodButtons.forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        setMethod(btn.getAttribute("data-method"));
+      });
+    });
+
+    addCardBtn.addEventListener("click", function () {
+      state.cards.push(createCard());
+      renderCards();
+    });
+
+    cardList.addEventListener("click", function (event) {
+      var removeButton = event.target.closest('[data-action="remove-card"]');
+      if (!removeButton) return;
+      var cardId = removeButton.getAttribute("data-card-id");
+      state.cards = state.cards.filter(function (card) { return card.id !== cardId; });
+      if (!state.cards.length) state.cards.push(createCard());
+      renderCards();
+    });
+
+    cardList.addEventListener("input", function (event) {
+      var field = event.target.getAttribute("data-field");
+      var cardId = event.target.getAttribute("data-card-id");
+      if (!field || !cardId) return;
+      var card = state.cards.find(function (item) { return item.id === cardId; });
+      if (!card) return;
+      card[field] = event.target.value;
+    });
+
+    uploadZone.addEventListener("click", function () { fileInput.click(); });
+    uploadZone.addEventListener("dragover", function (event) {
+      event.preventDefault();
+      uploadZone.classList.add("drag-active");
+    });
+    uploadZone.addEventListener("dragleave", function () {
+      uploadZone.classList.remove("drag-active");
+    });
+    uploadZone.addEventListener("drop", function (event) {
+      event.preventDefault();
+      uploadZone.classList.remove("drag-active");
+      addFiles(event.dataTransfer.files);
+    });
+    fileInput.addEventListener("change", function (event) {
+      addFiles(event.target.files);
+      event.target.value = "";
+    });
+    filesList.addEventListener("click", function (event) {
+      var removeButton = event.target.closest("[data-file-index]");
+      if (!removeButton) return;
+      state.manualFiles.splice(Number(removeButton.getAttribute("data-file-index")), 1);
+      renderFiles();
+    });
+
+    submitBtn.addEventListener("click", async function () {
+      var validationMessage = validate();
+      errorEl.textContent = validationMessage;
+      if (validationMessage) return;
+
+      if (state.method === "manual") {
+        saveItem({
+          cards: getManualCards(),
+          references: state.manualFiles.map(function (file) {
+            return { name: file.name, size: file.size, type: file.type || "" };
+          })
+        });
+        return;
+      }
+
+      setLoading(true);
+      try {
+        var result = await KorahStudyAPI.generateStudyContent({
+          type: "flashcards",
+          prompt: promptInput.value.trim(),
+          title: titleInput.value.trim(),
+          subject: subjectInput.value.trim()
+        });
+
+        if (!result || !result.content || !Array.isArray(result.content.cards) || result.content.cards.length < 2) {
+          throw new Error("Invalid content generated by AI.");
+        }
+
+        saveItem(result.content);
+      } catch (error) {
+        errorEl.textContent = error && error.message ? error.message : "AI generation failed. Please try again.";
+      } finally {
+        setLoading(false);
+      }
+    });
+
+    state.cards.push(createCard(), createCard());
+    renderCards();
+    setMethod(state.method);
+  })();
+</script>
+<script type="module">
+  import { getApps, initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+  import { startAuthGuard } from '../auth-guard.js';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
+    authDomain: "korah-app.firebaseapp.com",
+    projectId: "korah-app",
+    storageBucket: "korah-app.firebasestorage.app",
+    messagingSenderId: "226169460321",
+    appId: "1:226169460321:web:b166fc8260107c55dafc20"
+  };
+
+  const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  onAuthStateChanged(auth, (user) => {
+    if (!user) { window.KorahTransitions.go('../landing/index.html'); return; }
+    startAuthGuard(auth, '../landing/index.html');
+  });
+
+  document.getElementById("logout-btn")?.addEventListener("click", () => {
+    window.confirmLogout(async () => {
+      await signOut(auth);
+      localStorage.removeItem("korah_first_name");
+      window.KorahTransitions.go("../login.html");
+    });
+  });
+</script>
+</body>
+</html>

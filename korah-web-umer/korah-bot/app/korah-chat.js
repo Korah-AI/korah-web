@@ -1,0 +1,2872 @@
+(() => {
+  const MAX_CHARS = 10000;
+  const API_ENDPOINT = "/api/r";
+  const MODEL = "gemini-2.5-flash";
+
+  const input = document.getElementById("chat-input");
+  const sendBtn = document.getElementById("send-btn");
+  const messagesList = document.getElementById("messages-list");
+  const welcomeScreen = document.getElementById("welcome-screen");
+  const typingIndicator = document.getElementById("typing-indicator");
+  const chatBody = document.getElementById("chat-body");
+  const charCount = document.getElementById("char-count");
+  const clearChatBtn = document.getElementById("clear-chat-btn");
+  const newChatBtn = document.getElementById("new-chat-btn");
+  const quickPromptButtons = document.querySelectorAll("#tool-flashcard, #tool-guide");
+  const chatHistoryContainer = document.getElementById("chat-history");
+  const chatTitleEl = document.getElementById("chat-title");
+  const toolsTrigger = document.getElementById("tools-trigger");
+  const toolsMenu = document.getElementById("tools-menu");
+  const modeSelectorBtnMini = document.getElementById("mode-selector-btn-mini");
+  const modeNameMini = document.getElementById("mode-name-mini");
+
+  // Re-attach event listeners for the new structure
+  if (toolsTrigger && toolsMenu) {
+    toolsTrigger.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toolsMenu.classList.toggle("show");
+    });
+    
+    document.addEventListener("click", (e) => {
+      if (!toolsMenu.contains(e.target) && e.target !== toolsTrigger) {
+        toolsMenu.classList.remove("show");
+      }
+    });
+  }
+
+  if (modeSelectorBtnMini) {
+    modeSelectorBtnMini.addEventListener("click", () => {
+      document.getElementById("mode-selector-btn")?.click();
+    });
+  }
+
+  // ═══ In-Memory State ═══
+  // These are kept in sync by Firestore realtime listeners set up in initApp().
+  let sessionsCache   = {}; // { [id]: conversationDoc }
+  let studyItemsCache = {}; // { [id]: studyItemDoc }
+
+  // ═══ Storage Shim ═══
+  // Synchronous reads from in-memory cache; async fire-and-forget writes via KorahDB.
+  // Maintains the same interface as the old localStorage Storage object so
+  // existing call-sites need minimal changes.
+  const Storage = {
+    SESSIONS_KEY: "korah_sessions",
+    CURRENT_SESSION_KEY: "korah_current_session",
+    STUDY_ITEMS_KEY: "korah_study_items",
+    CACHE_SESSIONS_KEY: "korah_sessions_cache",
+    CACHE_STUDY_ITEMS_KEY: "korah_study_items_cache",
+
+    getSessions() { return sessionsCache; },
+
+    getCurrentSessionId() {
+      return localStorage.getItem(this.CURRENT_SESSION_KEY) || null;
+    },
+
+    setCurrentSessionId(id) {
+      localStorage.setItem(this.CURRENT_SESSION_KEY, id);
+    },
+
+    getSession(id) { return sessionsCache[id] || null; },
+
+    saveSession(id, session) {
+      sessionsCache[id] = session;
+      window.KorahDB.setConversation(id, session).catch((e) =>
+        console.error("[Korah] setConversation failed:", e)
+      );
+    },
+
+    deleteSession(id) {
+      delete sessionsCache[id];
+      window.KorahDB.deleteConversation(id).catch((e) =>
+        console.error("[Korah] deleteConversation failed:", e)
+      );
+    },
+
+    createSession(title = "New Chat", mode = "general") {
+      const id = `session_${Date.now()}`;
+      const session = {
+        id,
+        title,
+        mode,
+        messages: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        autoTitleGenerated: false,
+        userRenamed: false,
+      };
+      // Keep in-memory only; persist to storage once the first message is sent
+      // (via saveCurrentSession) so empty sessions don't pollute the sidebar.
+      sessionsCache[id] = session;
+      return id;
+    },
+
+    getStudyItems() { return studyItemsCache; },
+
+    saveStudyItem(id, item) {
+      studyItemsCache[id] = item;
+      return window.KorahDB.setStudyItem(id, item).catch((e) =>
+        console.error("[Korah] setStudyItem failed:", e)
+      );
+    },
+
+    getCachedSessions() {
+      const data = localStorage.getItem(this.CACHE_SESSIONS_KEY);
+      return data ? JSON.parse(data) : {};
+    },
+
+    getCachedStudyItems() {
+      const data = localStorage.getItem(this.CACHE_STUDY_ITEMS_KEY);
+      return data ? JSON.parse(data) : {};
+    },
+  };
+
+  // ═══ Session State (populated asynchronously in initApp) ═══
+  let currentSessionId = null;
+  let currentSession   = null;
+  let history          = [];
+  let isSending        = false;
+  let streamingContentId = null;
+  let lastSaveTime = 0;
+  const SAVE_DEBOUNCE_MS = 500;
+
+  let satSubMode = "math";
+
+  // ═══ Tutoring Mode State ═══
+  const TUTORING_PROMPT = `\n\nTUTORING MODE ACTIVE: You are now in tutoring mode. Instead of giving direct answers:\n- Guide students through questions using Socratic questioning\n- Break concepts into smaller, manageable steps\n- Check understanding before proceeding to the next concept\n- Encourage critical thinking by asking follow-up questions\n- Provide hints and scaffolding rather than complete solutions\n- Celebrate progress and provide positive reinforcement\n- If a student asks for the answer, guide them to discover it themselves`;
+
+  let tutoringMode = localStorage.getItem('korah_tutoring_mode') === 'true';
+
+  // ═══ Pro Tip Toast State ═══
+  const PRO_TIPS = [
+    "In chat, ask Korah to generate flashcards, practice tests, or study guides.",
+    "You can attach documents (PDFs, images, text files) for Korah to analyze and answer questions about.",
+    "Try using Desmos graphs in Math and SAT modes — just ask Korah to graph a function!",
+    "Switch between subject modes (Math, Science, History, etc.) using the mode selector at the top.",
+    "Toggle Tutoring Mode on the welcome screen for guided, Socratic-style learning instead of direct answers.",
+    "Ask Korah to create a practice test on any topic — you can specify the number of questions!",
+    "Your chat history is saved automatically. Switch between chats using the sidebar.",
+    "Drag and drop files directly into the chat to attach them instantly.",
+    "Use the Study Library to access all your generated flashcards, guides, and practice tests.",
+    "Try asking Korah to explain concepts with real-world examples for better understanding.",
+    "Create study items like notecards, study guides, and practice tests to build your personal study library.",
+  ];
+
+  let chatMessageCount = 0;
+  let proTipTimeout = null;
+
+  function showProTip() {
+    const toast = document.getElementById('pro-tip-toast');
+    const textEl = document.getElementById('pro-tip-text');
+    const closeBtn = document.getElementById('pro-tip-close');
+    if (!toast || !textEl) return;
+
+    const tipIndex = Math.floor(Math.random() * PRO_TIPS.length);
+    textEl.textContent = PRO_TIPS[tipIndex];
+
+    if (proTipTimeout) clearTimeout(proTipTimeout);
+
+    toast.classList.add('show');
+
+    proTipTimeout = setTimeout(() => {
+      toast.classList.remove('show');
+    }, 6000);
+  }
+
+  function dismissProTip() {
+    const toast = document.getElementById('pro-tip-toast');
+    if (!toast) return;
+    if (proTipTimeout) clearTimeout(proTipTimeout);
+    toast.classList.remove('show');
+  }
+
+  document.getElementById('pro-tip-close')?.addEventListener('click', dismissProTip);
+
+  // ═══ Welcome Screen Features ═══
+  const GREETING_PHRASES = [
+    "What can I help you study, {name}?",
+    "What's on your mind today, {name}?",
+    "Ready to dive in, {name}?",
+    "Let's crush some studying today, {name}!"
+  ];
+
+  const PLACEHOLDER_PHRASES = [
+    "Ask Korah a study question...",
+    "Explain the quadratic formula step-by-step",
+    "Create a study guide for cellular respiration",
+    "Make flashcards for photosynthesis",
+    "Help me prioritize my study for tomorrow's test",
+    "Give me a 10-question practice test on WWII",
+    "What are the main causes of the French Revolution?",
+    "Analyze the themes in 'The Great Gatsby'",
+    "How does DNA replication work?",
+    "Explain Newton's Third Law with examples"
+  ];
+
+  let placeholderInterval = null;
+  let typingTimer = null;
+
+  function typeWelcomeTitle(text) {
+    const titleEl = document.querySelector(".welcome-title");
+    if (!titleEl) return;
+    
+    titleEl.textContent = "";
+    let i = 0;
+    if (typingTimer) clearInterval(typingTimer);
+    
+    typingTimer = setInterval(() => {
+      if (i < text.length) {
+        titleEl.textContent += text.charAt(i);
+        i++;
+      } else {
+        clearInterval(typingTimer);
+        typingTimer = null;
+      }
+    }, 40);
+  }
+
+  function rotatePlaceholder() {
+    const welcomeInput = document.getElementById("welcome-chat-input");
+    if (!welcomeInput) return;
+
+    let phraseIndex = 0;
+    if (placeholderInterval) clearInterval(placeholderInterval);
+
+    welcomeInput.placeholder = PLACEHOLDER_PHRASES[0];
+
+    placeholderInterval = setInterval(() => {
+      // Only trigger animation if the input is empty AND not focused
+      const isVisible = welcomeInput.value === "" && document.activeElement !== welcomeInput;
+      
+      if (isVisible) {
+        welcomeInput.classList.remove("rolling");
+        void welcomeInput.offsetWidth; // Force reflow
+        welcomeInput.classList.add("rolling");
+      }
+
+      // Change text halfway through the 1.2s roll animation (600ms)
+      setTimeout(() => {
+        phraseIndex = (phraseIndex + 1) % PLACEHOLDER_PHRASES.length;
+        welcomeInput.placeholder = PLACEHOLDER_PHRASES[phraseIndex];
+      }, 600);
+    }, 5000);
+  }
+
+  function initWelcomeFeatures() {
+    const name = localStorage.getItem('korah_first_name') || 'there';
+    const randomGreeting = GREETING_PHRASES[Math.floor(Math.random() * GREETING_PHRASES.length)];
+    const titleText = randomGreeting.replace("{name}", name);
+    
+    typeWelcomeTitle(titleText);
+    rotatePlaceholder();
+  }
+
+  function updateTutoringModeUI() {
+    const toggle = document.getElementById('tutoring-mode-toggle');
+    if (toggle) {
+      toggle.checked = tutoringMode;
+    }
+  }
+
+  document.getElementById('tutoring-mode-toggle')?.addEventListener('change', (e) => {
+    tutoringMode = e.target.checked;
+    localStorage.setItem('korah_tutoring_mode', tutoringMode);
+  });
+
+  updateTutoringModeUI();
+
+  function scrollToBottom() {
+    if (!chatBody) return;
+    chatBody.scrollTop = chatBody.scrollHeight;
+  }
+
+  function scrollToBottomIfNear() {
+    if (!chatBody) return;
+    const isNearBottom = chatBody.scrollHeight - chatBody.scrollTop <= chatBody.clientHeight + 100;
+    if (isNearBottom) {
+      chatBody.scrollTop = chatBody.scrollHeight;
+    }
+  }
+
+  function updateCharCount() {
+    if (!charCount) return;
+    const count = input.value.length;
+    charCount.textContent = `${count} / ${MAX_CHARS}`;
+  }
+
+  function resizeInput() {
+    input.style.height = "auto";
+    input.style.height = `${Math.min(input.scrollHeight, 160)}px`;
+  }
+
+  function setWelcomeVisibility(show) {
+    if (!welcomeScreen) return;
+    
+    // Toggle welcome screen visibility
+    welcomeScreen.classList.toggle("hidden", !show);
+    // Explicit display flex/none for existing flex-layout compatibility
+    welcomeScreen.style.display = show ? "flex" : "none";
+    
+    // Toggle bottom input area - only show if NOT in welcome state
+    const bottomInput = document.querySelector('.chat-input-area');
+    if (bottomInput) {
+      bottomInput.classList.toggle("hidden", show);
+    }
+
+    // If showing welcome, clear and focus welcome input
+    if (show) {
+      const welcomeInput = document.getElementById("welcome-chat-input");
+      if (welcomeInput) {
+        welcomeInput.value = "";
+        welcomeInput.focus();
+      }
+      initWelcomeFeatures();
+    } else {
+      // Clear intervals when welcome screen is hidden
+      if (placeholderInterval) {
+        clearInterval(placeholderInterval);
+        placeholderInterval = null;
+      }
+      if (typingTimer) {
+        clearInterval(typingTimer);
+        typingTimer = null;
+      }
+    }
+  }
+
+  // Setup welcome screen input
+  function setupWelcomeInput() {
+    const welcomeInput = document.getElementById("welcome-chat-input");
+    const welcomeSendBtn = document.getElementById("welcome-send-btn");
+
+    if (welcomeInput) {
+      welcomeInput.addEventListener("input", () => {
+        welcomeInput.style.height = "auto";
+        welcomeInput.style.height = `${welcomeInput.scrollHeight}px`;
+      });
+
+      welcomeInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          const text = welcomeInput.value.trim();
+          if (text) sendMessage(text);
+        }
+      });
+    }
+
+    if (welcomeSendBtn) {
+      welcomeSendBtn.addEventListener("click", () => {
+        const text = welcomeInput.value.trim();
+        if (text) sendMessage(text);
+      });
+    }
+
+  }
+
+  function setTyping(show) {
+    if (!typingIndicator) return;
+    typingIndicator.classList.toggle("hidden", !show);
+  }
+
+  function setSendingState(sending) {
+    isSending = sending;
+    sendBtn.disabled = sending;
+    input.disabled = sending;
+  }
+
+  function normalizeMathDelimiters(markdownText) {
+    if (!markdownText) return markdownText;
+
+    return markdownText
+      .split(/(```[\s\S]*?```)/g)
+      .map(function (segment) {
+        if (segment.startsWith("```")) return segment;
+
+        return segment
+          .replace(/`([^`]+)`/g, function (_, expr) {
+            const trimmed = expr.trim();
+            if (/[_^\\{}]/.test(trimmed)) {
+              return "$" + trimmed + "$";
+            }
+            return "`" + expr + "`";
+          })
+          .replace(/\\\((.*?)\\\)/gs, function (_, expr) {
+            return "$" + expr.trim() + "$";
+          })
+          .replace(/\\[(.*?)]/gs, function (_, expr) {
+            return "$$" + expr.trim() + "$$";
+          })
+          .replace(/([a-zA-Z])_([a-zA-Z0-9]+|\{[^}]+\})/g, "$1_{$2}");
+      })
+      .join("");
+  }
+
+  function renderMarkdownAndMath(targetEl, markdownText) {
+    if (!targetEl) return;
+
+    const normalizedMarkdown = normalizeMathDelimiters(markdownText || "");
+    let html = normalizedMarkdown;
+
+    try {
+      if (window.marked && typeof window.marked.parse === "function") {
+        html = window.marked.parse(normalizedMarkdown);
+      } else {
+        html = normalizedMarkdown
+          .replace(/```([\s\S]*?)```/g, "<pre><code>$1</code></pre>")
+          .replace(/^### (.*)$/gim, "<h3>$1</h3>")
+          .replace(/^## (.*)$/gim, "<h2>$1</h2>")
+          .replace(/^# (.*)$/gim, "<h1>$1</h1>")
+          .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+          .replace(/\*(.*?)\*/g, "<em>$1</em>")
+          .replace(/`([^`]+)`/g, "<code>$1</code>")
+          .replace(/\n/g, "<br/>");
+      }
+    } catch (e) {
+      console.error("Markdown render error:", e);
+      html = normalizedMarkdown.replace(/\n/g, "<br/>");
+    }
+
+    if (window.DOMPurify) {
+      html = DOMPurify.sanitize(html, { USE_PROFILES: { html: true } });
+    }
+    targetEl.innerHTML = html;
+
+    if (window.renderMathInElement && typeof window.renderMathInElement === "function") {
+      try {
+        window.renderMathInElement(targetEl, {
+          delimiters: [
+            { left: "$$", right: "$$", display: true },
+            { left: "$", right: "$", display: false },
+            { left: "\\(", right: "\\)", display: false },
+          ],
+          throwOnError: false,
+        });
+      } catch (e) {
+        console.error("KaTeX render error:", e);
+      }
+    }
+  }
+
+
+
+  function renderDesmosGraphs(container) {
+    const codeBlocks = container.querySelectorAll('pre code.language-desmos, pre code.lang-desmos');
+    for (const block of codeBlocks) {
+      const code = block.textContent.trim();
+      const pre = block.parentElement;
+      try {
+        const data = JSON.parse(code);
+        const wrapper = document.createElement('div');
+        wrapper.className = 'desmos-graph';
+        const graphDiv = document.createElement('div');
+        graphDiv.style.width = '100%';
+        graphDiv.style.height = data.height || '400px';
+        graphDiv.style.borderRadius = '8px';
+        graphDiv.style.overflow = 'hidden';
+        wrapper.appendChild(graphDiv);
+        pre.replaceWith(wrapper);
+        
+        if (window.Desmos) {
+          const calculator = Desmos.GraphingCalculator(graphDiv, {
+            keypad: false,
+            graphpaper: true,
+            autosize: true,
+            expressions: true,
+            settingsMenu: false,
+            zoomButtons: true,
+            border: false,
+            keyboard: false
+          });
+          
+          if (data.expressions && Array.isArray(data.expressions)) {
+            data.expressions.forEach((expr, idx) => {
+              if (expr.type === 'table') {
+                calculator.setExpression({
+                  id: expr.id || 'table_' + idx,
+                  type: 'table',
+                  columns: (expr.columns || []).map(col => ({
+                    latex: col.latex,
+                    values: col.values || [],
+                    color: col.color,
+                    dragMode: col.dragMode
+                  }))
+                });
+              } else {
+                calculator.setExpression({
+                  id: expr.id || 'expr_' + idx,
+                  latex: expr.latex || '',
+                  color: expr.color,
+                  lineStyle: expr.lineStyle || 'SOLID',
+                  pointStyle: expr.pointStyle || 'POINT',
+                  showLabel: expr.showLabel || false,
+                  label: expr.label || ''
+                });
+              }
+            });
+          }
+          
+          if (data.viewState) {
+            calculator.setState(data.viewState);
+          }
+          
+          if (data.zoom) {
+            calculator.setViewport(data.zoom);
+          }
+        }
+      } catch (e) {
+        console.error("Desmos render error:", e);
+        pre.classList.add('desmos-error');
+      }
+    }
+  }
+
+  function renderSpecialContent(container) {
+    renderDesmosGraphs(container);
+  }
+
+  // Action buttons (copy / feedback / regenerate) shown under assistant replies
+  const MSG_ACTION_ICONS = {
+    copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>',
+    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>',
+    up: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>',
+    down: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"></path></svg>',
+    regen: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>',
+  };
+
+  function buildMessageActions(contentEl, row) {
+    const bar = document.createElement("div");
+    bar.className = "msg-actions";
+
+    const mkBtn = (icon, title) => {
+      const b = document.createElement("button");
+      b.className = "msg-action-btn t-btn";
+      b.type = "button";
+      b.title = title;
+      b.setAttribute("aria-label", title);
+      b.innerHTML = MSG_ACTION_ICONS[icon];
+      return b;
+    };
+
+    const copyBtn = mkBtn("copy", "Copy");
+    copyBtn.addEventListener("click", () => {
+      const txt = (contentEl.innerText || "").trim();
+      if (navigator.clipboard) navigator.clipboard.writeText(txt).catch(() => {});
+      copyBtn.classList.add("copied");
+      copyBtn.innerHTML = MSG_ACTION_ICONS.check;
+      setTimeout(() => {
+        copyBtn.classList.remove("copied");
+        copyBtn.innerHTML = MSG_ACTION_ICONS.copy;
+      }, 1400);
+    });
+
+    const upBtn = mkBtn("up", "Good response");
+    const downBtn = mkBtn("down", "Bad response");
+    upBtn.addEventListener("click", () => {
+      upBtn.classList.toggle("active");
+      downBtn.classList.remove("active");
+    });
+    downBtn.addEventListener("click", () => {
+      downBtn.classList.toggle("active");
+      upBtn.classList.remove("active");
+    });
+
+    const regenBtn = mkBtn("regen", "Regenerate");
+    regenBtn.addEventListener("click", () => {
+      let n = row.previousElementSibling;
+      while (n && !(n.classList?.contains("msg-row") && n.classList?.contains("user"))) {
+        n = n.previousElementSibling;
+      }
+      const txt = n ? (n.querySelector(".msg-bubble")?.innerText || "").trim() : "";
+      if (txt && typeof sendMessage === "function") sendMessage(txt);
+    });
+
+    bar.append(copyBtn, upBtn, downBtn, regenBtn);
+    return bar;
+  }
+
+  function buildMessageRow(role, text, isError = false, suggestions = [], contentId = null, studyItem = null, fileAttachments = null) {
+    const row = document.createElement("div");
+    row.className = `msg-row ${role === "user" ? "user" : "assistant"}`;
+
+    const bubble = document.createElement("div");
+    bubble.className = `msg-bubble ${role === "user" ? "user" : "korah"}${isError ? " error" : ""}`;
+
+    // Assistant replies get an inline logo + name header
+    let header = null;
+    if (role === "assistant") {
+      header = document.createElement("div");
+      header.className = "msg-header";
+      header.innerHTML =
+        '<span class="msg-header-avatar"><img src="logo-images/newlogo0.png" alt="Korah" /></span>' +
+        '<span class="msg-header-name">Korah AI</span>';
+    }
+
+    const content = document.createElement("div");
+    if (contentId) content.id = contentId;
+
+    if (role === "assistant" && !isError) {
+      content.className = "assistant-content";
+      renderMarkdownAndMath(content, text || "");
+    } else {
+      content.style.whiteSpace = "pre-wrap";
+      content.textContent = text;
+    }
+
+    if (header) bubble.appendChild(header);
+
+    bubble.appendChild(content);
+
+    // Add study item button if present
+    if (role === "assistant" && studyItem && studyItem.id) {
+      const typeLabels = {
+        flashcards: "Flashcards",
+        studyGuide: "Study Guide",
+        practiceTest: "Practice Test"
+      };
+      const typeLabel = typeLabels[studyItem.type] || "Study Item";
+      const studyPage = studyItem.type === "studyGuide" ? "guide.html" : "item.html";
+      const studyBtn = document.createElement("div");
+      studyBtn.className = "study-gen-success show";
+      studyBtn.innerHTML = `
+        <p>Success! Your ${typeLabel.toLowerCase()} are ready.</p>
+        <a href="../study/${studyPage}?id=${encodeURIComponent(studyItem.id)}" class="study-gen-btn">
+          <span>View ${studyItem.title} ${typeLabel}</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+          </svg>
+        </a>
+      `;
+      bubble.appendChild(studyBtn);
+    }
+
+    // Add AI-generated suggestions for assistant messages
+    if (role === "assistant" && !isError && suggestions.length > 0) {
+      const suggestionsDiv = document.createElement("div");
+      suggestionsDiv.className = "inline-suggestions";
+      
+      suggestions.forEach((suggestion) => {
+        const btn = document.createElement("button");
+        btn.className = "inline-suggestion-btn t-btn";
+        btn.textContent = suggestion;
+        btn.addEventListener("click", () => {
+          sendMessage(suggestion);
+        });
+        suggestionsDiv.appendChild(btn);
+      });
+      
+      bubble.appendChild(suggestionsDiv);
+    }
+
+    // Message action buttons for assistant replies
+    if (role === "assistant" && !isError) {
+      bubble.appendChild(buildMessageActions(content, row));
+    }
+
+    row.appendChild(bubble);
+    return row;
+  }
+
+  function getFollowUpActionsForMode(mode) {
+    const commonActions = [
+      { icon: "style", label: "Generate Flashcards", prompt: "Create flashcards based on what you just explained" },
+      { icon: "quiz", label: "Generate Practice Test", prompt: "Create a practice test based on what you just explained" },
+      { icon: "auto_stories", label: "Generate Study Guide", prompt: "Create a study guide based on what you just explained" },
+    ];
+
+    return commonActions;
+  }
+
+  function appendMessage(role, text, isError = false, suggestions = [], contentId = null, studyItem = null, fileAttachments = null) {
+    const row = buildMessageRow(role, text, isError, suggestions, contentId, studyItem, fileAttachments);
+    messagesList.appendChild(row);
+    scrollToBottomIfNear();
+    setWelcomeVisibility(false);
+    return row;
+  }
+
+  function getStudyItemIconHtml(type) {
+    const icons = {
+      flashcards:   { icon: "style",        color: "ic-flash" },
+      studyGuide:   { icon: "auto_stories", color: "ic-guide" },
+      practiceTest: { icon: "quiz",         color: "ic-quiz" }
+    };
+    const item = icons[type] || { icon: "description", color: "ic-gen" };
+    return `<span class="m-icon ${item.color}">${item.icon}</span>`;
+  }
+  window.getStudyItemIconHtml = getStudyItemIconHtml;
+
+  const selectedStudy = new Set();
+
+  function updateStudySelectBar() {
+    const bar = document.getElementById("study-select-bar");
+    const count = document.getElementById("study-select-count");
+    const deleteBtn = document.getElementById("study-delete-selected");
+    if (!bar) return;
+    if (selectedStudy.size > 0) {
+      bar.classList.add("show");
+      count.textContent = `${selectedStudy.size} selected`;
+      deleteBtn.textContent = `Delete (${selectedStudy.size})`;
+    } else {
+      bar.classList.remove("show");
+    }
+  }
+
+  function clearStudySelection() {
+    selectedStudy.clear();
+    const container = document.getElementById("study-items-history");
+    if (container) container.querySelectorAll(".history-item.selected").forEach(el => el.classList.remove("selected"));
+    updateStudySelectBar();
+  }
+
+  document.getElementById("study-select-all")?.addEventListener("click", () => {
+    const container = document.getElementById("study-items-history");
+    if (!container) return;
+    const items = container.querySelectorAll(".history-item");
+    const allSelected = selectedStudy.size === items.length;
+    clearStudySelection();
+    if (!allSelected) {
+      items.forEach(item => {
+        const id = item.getAttribute("data-study-id");
+        if (id) { selectedStudy.add(id); item.classList.add("selected"); }
+      });
+      updateStudySelectBar();
+    }
+  });
+
+  document.getElementById("study-delete-selected")?.addEventListener("click", () => {
+    if (selectedStudy.size === 0) return;
+    showDeleteModal(
+      `${selectedStudy.size} study item${selectedStudy.size > 1 ? "s" : ""}`,
+      () => {
+        const ids = [...selectedStudy];
+        ids.forEach((id) => delete studyItemsCache[id]);
+        clearStudySelection();
+        renderStudyItemsHistory();
+        window.KorahDB.deleteStudyItems(ids).catch((e) =>
+          console.error("[Korah] bulk deleteStudyItems failed:", e)
+        );
+      }
+    );
+  });
+
+  function renderStudyItemsHistory() {
+    // Wait for data to be loaded from cache/storage first
+    const cachedStudyItems = localStorage.getItem("korah_study_items_cache");
+    if (cachedStudyItems) {
+      try {
+        const parsed = JSON.parse(cachedStudyItems);
+        if (Object.keys(parsed).length > 0) {
+          studyItemsCache = parsed;
+        }
+      } catch (e) {}
+    }
+    
+    const container = document.getElementById("study-items-history");
+    const items = Storage.getStudyItems();
+    const itemIds = Object.keys(items);
+
+    // Update Nav Link text if empty
+    const navLinks = document.querySelectorAll(".sidebar-nav-link");
+    navLinks.forEach(link => {
+      if (link.getAttribute("href").indexOf("feed.html") !== -1) {
+        if (itemIds.length === 0) {
+          link.innerHTML = `<span class="m-icon ic-lit" style="margin-right:0.5rem">library_books</span> Study`;
+          link.classList.add("nav-empty");
+        } else {
+          link.innerHTML = `<span class="m-icon ic-lit" style="margin-right:0.5rem">library_books</span> Study`;
+          link.classList.remove("nav-empty");
+        }
+      }
+    });
+
+    if (!container) return;
+    const emptyEl = document.getElementById("study-items-empty");
+    const list = itemIds
+      .map((id) => ({ id, ...items[id] }))
+      .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
+    container.innerHTML = "";
+    if (list.length === 0) {
+      if (emptyEl) {
+        emptyEl.classList.remove("hidden");
+        container.classList.add("is-empty");
+        container.appendChild(emptyEl);
+      }
+    } else {
+      if (emptyEl) emptyEl.classList.add("hidden");
+      container.classList.remove("is-empty");
+    }
+    list.forEach((item) => {
+      const a = document.createElement("a");
+      const studyPage = item.type === "studyGuide" ? "guide.html" : "item.html";
+      a.href = `../study/${studyPage}?id=${encodeURIComponent(item.id)}`;
+      a.className = "history-item t-btn";
+      a.setAttribute("data-study-id", item.id);
+      a.style.textDecoration = "none";
+      a.style.color = "inherit";
+
+      const checkbox = document.createElement("span");
+      checkbox.className = "item-checkbox";
+
+      const icon = document.createElement("span");
+      icon.className = "history-icon";
+      icon.innerHTML = getStudyItemIconHtml(item.type);
+
+      const text = document.createElement("span");
+      text.className = "history-text";
+      text.textContent = (item.title || "Untitled").slice(0, 28) + ((item.title || "").length > 28 ? "…" : "");
+
+      const actions = document.createElement("div");
+      actions.className = "history-actions";
+      actions.innerHTML = `
+        <button class="history-action-btn rename-study-btn" title="Rename" data-id="${item.id}">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+        </button>
+        <button class="history-action-btn delete-study-btn" title="Delete" data-id="${item.id}">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+          </svg>
+        </button>
+      `;
+
+      a.appendChild(checkbox);
+      a.appendChild(icon);
+      a.appendChild(text);
+      a.appendChild(actions);
+      container.appendChild(a);
+
+      // Checkbox / select click
+      a.addEventListener("click", (e) => {
+        const clickedCheckbox = e.target.closest(".item-checkbox");
+        const clickedAction = e.target.closest(".history-action-btn");
+        if (clickedAction) return;
+
+        if (selectedStudy.size === 0 && !clickedCheckbox) return; // let link navigate normally
+
+        e.preventDefault();
+        if (selectedStudy.has(item.id)) {
+          selectedStudy.delete(item.id);
+          a.classList.remove("selected");
+        } else {
+          selectedStudy.add(item.id);
+          a.classList.add("selected");
+        }
+        updateStudySelectBar();
+      });
+
+      // Rename
+      actions.querySelector(".rename-study-btn").addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const allItems = Storage.getStudyItems();
+        const studyItem = allItems[item.id];
+        if (!studyItem) return;
+        showRenameModal(studyItem.title || "", "Enter a new name for this study item:", (newTitle) => {
+          studyItem.title = newTitle;
+          studyItem.updatedAt = new Date().toISOString();
+          Storage.saveStudyItem(item.id, studyItem);
+          renderStudyItemsHistory();
+        });
+      });
+
+      // Delete
+      actions.querySelector(".delete-study-btn").addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        showDeleteModal(item.title || "this item", () => {
+          delete studyItemsCache[item.id];
+          renderStudyItemsHistory();
+          window.KorahDB.deleteStudyItem(item.id).catch((e) =>
+            console.error("[Korah] deleteStudyItem failed:", e)
+          );
+        });
+      });
+    });
+    const hasItems = Object.keys(items).length > 0;
+    if (emptyEl) {
+      emptyEl.classList.toggle("hidden", hasItems);
+    }
+  }
+
+  function renderFlashcards(content) {
+    // Parse flashcard content and render with flip animation
+    const container = document.createElement("div");
+    container.className = "flashcard-container";
+
+    const cards = content.split(/\n\n+/).filter(card => card.trim());
+    cards.forEach((card, idx) => {
+      const [question, answer] = card.split(/\n/).filter(line => line.trim());
+      if (!question || !answer) return;
+
+      const cardEl = document.createElement("div");
+      cardEl.className = "flashcard";
+      cardEl.innerHTML = `
+        <div class="flashcard-inner">
+          <div class="flashcard-front">
+            <div class="flashcard-label">Question ${idx + 1}</div>
+            <div class="flashcard-text">${question.replace(/^Q:|^\d+\.\s*/, "").trim()}</div>
+          </div>
+          <div class="flashcard-back">
+            <div class="flashcard-label">Answer</div>
+            <div class="flashcard-text">${answer.replace(/^A:/, "").trim()}</div>
+          </div>
+        </div>
+      `;
+
+      cardEl.addEventListener("click", () => {
+        cardEl.classList.toggle("flipped");
+      });
+
+      container.appendChild(cardEl);
+    });
+
+    return container;
+  }
+
+  function renderStudyGuide(content) {
+    // Render study guide with collapsible sections
+    const container = document.createElement("div");
+    container.className = "study-guide";
+
+    const sections = content.split(/\n(?=##|###|\*\*)/g);
+    sections.forEach((section) => {
+      const sectionEl = document.createElement("div");
+      sectionEl.className = "study-guide-section";
+
+      const lines = section.split("\n");
+      const title = lines[0].replace(/^#+\s*|\*\*/g, "").trim();
+      const body = lines.slice(1).join("\n").trim();
+
+      sectionEl.innerHTML = `
+        <div class="study-guide-title">
+          <span>${title}</span>
+          <span class="toggle-icon">▼</span>
+        </div>
+        <div class="study-guide-content">${body}</div>
+      `;
+
+      const titleEl = sectionEl.querySelector(".study-guide-title");
+      const contentEl = sectionEl.querySelector(".study-guide-content");
+      
+      titleEl.addEventListener("click", () => {
+        sectionEl.classList.toggle("collapsed");
+      });
+
+      container.appendChild(sectionEl);
+    });
+
+    return container;
+  }
+
+  function renderPracticeTest(content) {
+    // Render interactive practice test
+    const container = document.createElement("div");
+    container.className = "practice-test";
+
+    const questions = content.split(/\n(?=\d+\.\s)/g).filter(q => q.trim());
+    questions.forEach((question, idx) => {
+      const questionEl = document.createElement("div");
+      questionEl.className = "practice-question";
+
+      questionEl.innerHTML = `
+        <div class="practice-q-number">Question ${idx + 1}</div>
+        <div class="practice-q-text">${question.trim()}</div>
+        <textarea class="practice-answer" placeholder="Type your answer here..."></textarea>
+      `;
+
+      container.appendChild(questionEl);
+    });
+
+    const submitBtn = document.createElement("button");
+    submitBtn.className = "practice-submit-btn t-btn";
+    submitBtn.textContent = "Check Answers";
+    submitBtn.addEventListener("click", () => {
+      alert("Answer checking would be implemented here! For now, scroll down to see the correct answers in the AI response.");
+    });
+    container.appendChild(submitBtn);
+
+    return container;
+  }
+
+  function generateContextualSuggestions(aiResponse) {
+    // Generate 2-3 contextual follow-up questions based on AI response content
+    const suggestions = [];
+    const response = aiResponse.toLowerCase();
+    const mode = currentSession.mode || "general";
+
+    // Mode-specific keyword-based suggestions
+    if (mode === "math") {
+      if (response.includes("quadratic") || response.includes("x²")) {
+        suggestions.push("What is the discriminant?", "How do I complete the square?");
+      } else if (response.includes("derivative") || response.includes("calculus")) {
+        suggestions.push("Show me the chain rule", "What about integration?");
+      } else if (response.includes("equation") || response.includes("solve")) {
+        suggestions.push("Show me another example", "What if the numbers were different?");
+      } else {
+        suggestions.push("Can you show me a practice problem?", "Explain the next step");
+      }
+    } else if (mode === "physics") {
+      if (response.includes("force") || response.includes("newton")) {
+        suggestions.push("What about friction?", "Show me an example calculation");
+      } else if (response.includes("energy") || response.includes("kinetic")) {
+        suggestions.push("What is potential energy?", "How is energy conserved?");
+      } else if (response.includes("motion") || response.includes("velocity")) {
+        suggestions.push("What about acceleration?", "Show me a real-world example");
+      } else {
+        suggestions.push("Can you explain the formula?", "What's a practical application?");
+      }
+    } else if (mode === "chemistry") {
+      if (response.includes("reaction") || response.includes("chemical")) {
+        suggestions.push("What are the products?", "Is this exothermic?");
+      } else if (response.includes("atom") || response.includes("electron")) {
+        suggestions.push("What about ionic bonds?", "Show me the Lewis structure");
+      } else if (response.includes("acid") || response.includes("base")) {
+        suggestions.push("What is pH?", "Show me a neutralization reaction");
+      } else {
+        suggestions.push("Can you show the balanced equation?", "What are similar reactions?");
+      }
+    } else if (mode === "biology") {
+      if (response.includes("cell") || response.includes("mitochondria")) {
+        suggestions.push("What about the nucleus?", "How does cellular respiration work?");
+      } else if (response.includes("dna") || response.includes("gene")) {
+        suggestions.push("What is transcription?", "How does mutation occur?");
+      } else if (response.includes("evolution") || response.includes("natural selection")) {
+        suggestions.push("What is adaptation?", "Can you give an example?");
+      } else {
+        suggestions.push("What's the biological significance?", "Are there related processes?");
+      }
+    } else if (mode === "history") {
+      if (response.includes("war") || response.includes("battle")) {
+        suggestions.push("What caused this conflict?", "What were the consequences?");
+      } else if (response.includes("revolution") || response.includes("independence")) {
+        suggestions.push("Who were the key figures?", "What happened afterwards?");
+      } else if (response.includes("century") || response.includes("era")) {
+        suggestions.push("What else was happening then?", "How did this shape history?");
+      } else {
+        suggestions.push("What's the historical context?", "What were the long-term effects?");
+      }
+    } else if (mode === "literature") {
+      if (response.includes("character") || response.includes("protagonist")) {
+        suggestions.push("What motivates this character?", "How do they develop?");
+      } else if (response.includes("theme") || response.includes("symbol")) {
+        suggestions.push("What other themes appear?", "Can you analyze the imagery?");
+      } else if (response.includes("author") || response.includes("writer")) {
+        suggestions.push("What influenced the author?", "What's their writing style?");
+      } else {
+        suggestions.push("What's the deeper meaning?", "How does this relate to the text?");
+      }
+    }
+
+    // Limit to 2-3 suggestions
+    return suggestions.slice(0, 3);
+  }
+
+
+
+  async function callChatApi(messages, onChunk = null, options = {}) {
+    const { systemPromptOverride } = options || {};
+    const systemPrompt = systemPromptOverride || getSystemPrompt(currentSession.mode || "general");
+    const messagesWithSystem = [
+      { role: "system", content: systemPrompt },
+      ...messages
+    ];
+
+    const bodyObj = {
+      model: MODEL,
+      temperature: 0.7,
+      messages: messagesWithSystem,
+      stream: true
+    };
+
+    const bodyStr = JSON.stringify(bodyObj);
+    if (bodyStr.length > 4.4 * 1024 * 1024) {
+      throw new Error("Payload too large. Please remove some attachments or use smaller images.");
+    }
+
+    const response = await fetch(API_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: bodyStr
+    });
+
+    if (!response.ok) {
+      let errorMessage = `Oops! There was an error. Please try again. ${response.status}`;
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData?.message || errorData?.error || errorMessage;
+      } catch (_error) {}
+      throw new Error(errorMessage);
+    }
+
+    if (!response.body) {
+      throw new Error("No response body received");
+    }
+
+    // Handle streaming response
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let fullReply = "";
+    let buffer = ""; // Buffer for incomplete chunks
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        
+        if (done) {
+          console.log("Stream completed. Total length:", fullReply.length);
+          // Process any remaining data in buffer
+          if (buffer.trim()) {
+            console.warn("Remaining buffer at end:", buffer);
+          }
+          break;
+        }
+
+        // Append to buffer and decode
+        buffer += decoder.decode(value, { stream: true });
+        
+        // Split by newlines but keep the last incomplete line in buffer
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || ""; // Keep incomplete line in buffer
+
+        for (const line of lines) {
+          const trimmedLine = line.trim();
+          if (!trimmedLine) continue;
+          
+          if (trimmedLine.startsWith("data: ")) {
+            const data = trimmedLine.slice(6);
+            if (data === "[DONE]") {
+              console.log("Received [DONE] signal");
+              continue;
+            }
+
+            try {
+              const parsed = JSON.parse(data);
+              const content = parsed?.choices?.[0]?.delta?.content;
+              if (content) {
+                fullReply += content;
+                if (onChunk) onChunk(content, fullReply);
+              }
+              
+              // Check if stream finished
+              const finishReason = parsed?.choices?.[0]?.finish_reason;
+              if (finishReason) {
+                console.log("Stream finish reason:", finishReason);
+              }
+            } catch (parseError) {
+              console.error("Oops, there was an error. Please try again:", parseError, "Data:", data);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Stream reading error:", error);
+      throw error;
+    }
+
+    if (!fullReply) throw new Error("API returned an empty response.");
+    return fullReply;
+  }
+
+  function saveCurrentSession() {
+    currentSession.messages = history;
+    currentSession.updatedAt = new Date().toISOString();
+    Storage.saveSession(currentSessionId, currentSession);
+  }
+
+  function saveCurrentSessionDebounced() {
+    const now = Date.now();
+    if (now - lastSaveTime >= SAVE_DEBOUNCE_MS) {
+      saveCurrentSession();
+      lastSaveTime = now;
+    }
+  }
+
+  function loadSessionMessages() {
+    messagesList.innerHTML = "";
+    if (history.length === 0) {
+      setWelcomeVisibility(true);
+    } else {
+      setWelcomeVisibility(false);
+      history.forEach((msg) => {
+        // Skip system messages for display
+        if (msg.role !== "system") {
+          const msgRow = appendMessage(msg.role, msg.content, false, [], null, msg.studyItem || null, msg.fileAttachments || null);
+          const contentEl = msgRow.querySelector('.assistant-content');
+          if (contentEl) {
+            renderSpecialContent(contentEl);
+          }
+        }
+      });
+    }
+    if (chatTitleEl) chatTitleEl.textContent = currentSession.title;
+    updateModeButtonState();
+  }
+
+  function switchToSession(sessionId) {
+    if (sessionId === currentSessionId) return;
+    
+    const session = Storage.getSession(sessionId);
+    if (!session) return;
+
+    currentSessionId = sessionId;
+    currentSession = session;
+    Storage.setCurrentSessionId(sessionId);
+    
+    history.length = 0;
+    history.push(...currentSession.messages);
+    
+    applyModeTheme(session.mode || "general");
+    loadSessionMessages();
+    renderChatHistory();
+  }
+
+  function deleteSessionById(sessionId) {
+    if (sessionId === currentSessionId) {
+      // If deleting current session, switch to another or create new
+      const sessions = Storage.getSessions();
+      const sessionIds = Object.keys(sessions).filter(id => id !== sessionId);
+      
+      if (sessionIds.length > 0) {
+        switchToSession(sessionIds[0]);
+      } else {
+        const newId = Storage.createSession("New Chat", "general");
+        switchToSession(newId);
+      }
+    }
+    
+    Storage.deleteSession(sessionId);
+    renderChatHistory();
+  }
+
+  function renameSession(sessionId, newTitle) {
+    const session = Storage.getSession(sessionId);
+    if (!session) return;
+    
+    session.title = newTitle;
+    session.userRenamed = true;
+    session.updatedAt = new Date().toISOString();
+    Storage.saveSession(sessionId, session);
+    
+    if (sessionId === currentSessionId) {
+      currentSession.title = newTitle;
+      if (chatTitleEl) chatTitleEl.textContent = newTitle;
+    }
+    renderChatHistory();
+  }
+
+  // Expose for study pages that may load this script
+  window.KorahStorage = Storage;
+  window.getStudyItemIconHtml = getStudyItemIconHtml;
+  window.renderStudyItemsHistory = renderStudyItemsHistory;
+
+  // Expose KorahChat API for sidebar.js integration
+  window.KorahChat = {
+    switchToSession: (id) => {
+      switchToSession(id);
+      if (window.KorahSidebar) {
+        window.KorahSidebar.updateActiveItem(id);
+      }
+    },
+    getCurrentSessionId: () => currentSessionId,
+  };
+
+  function isPlaceholderTitle(title) {
+    if (!title) return true;
+    const trimmed = title.trim();
+    return trimmed === "New Chat" || trimmed === "Photosynthesis Study Guide";
+  }
+
+  async function generateAutoTitleIfNeeded() {
+    try {
+      const session = currentSession;
+      if (!session) return;
+
+      const hasMessages = Array.isArray(history) && history.length > 0;
+      if (!hasMessages) return;
+
+      if (session.autoTitleGenerated || session.userRenamed) return;
+      if (!isPlaceholderTitle(session.title)) return;
+
+      const firstUserMessage = history.find((m) => m.role === "user");
+      const lastAssistantMessage = [...history].reverse().find((m) => m.role === "assistant");
+
+      if (!firstUserMessage) return;
+
+      const parts = [];
+      parts.push("You are an assistant that generates short, clear titles for study chats.");
+      parts.push("Write a 3–6 word title that a student would use to recognize this conversation later.");
+      parts.push("Do not include quotation marks or punctuation at the end. Respond with the title only.");
+      parts.push("");
+      parts.push("First student message:");
+      parts.push(firstUserMessage.content.slice(0, 600));
+
+      if (lastAssistantMessage) {
+        parts.push("");
+        parts.push("Latest AI reply (optional context):");
+        parts.push(lastAssistantMessage.content.slice(0, 600));
+      }
+
+      const promptText = parts.join("\n");
+
+      const titleReply = await callChatApi(
+        [{ role: "user", content: promptText }],
+        null,
+        {
+          systemPromptOverride:
+            "You generate concise, descriptive titles for study conversations in a student homework app.",
+        }
+      );
+
+      if (!titleReply) return;
+
+      let newTitle = titleReply.split("\n")[0].trim();
+      newTitle = newTitle.replace(/^["']+|["']+$/g, "");
+      if (!newTitle) return;
+
+      session.title = newTitle;
+      session.autoTitleGenerated = true;
+      session.updatedAt = new Date().toISOString();
+      Storage.saveSession(currentSessionId, session);
+
+      currentSession = session;
+      if (chatTitleEl) chatTitleEl.textContent = newTitle;
+      renderChatHistory();
+    } catch (error) {
+      console.error("Oops! There was an error. Please try again.:", error);
+    }
+  }
+
+  // ═══ Mode Functions ═══
+  
+  // ═══ Desmos Teaching Block (shared across Math & SAT modes) ═══
+  const DESMOS_TEACHING_BLOCK = `
+DESMOS POWER: You can regression EVERYTHING. Points → equation instantly.
+
+KEY INSIGHT: You only need two points to create a table, then export it as a custom regression to solve for constants in an expression!
+
+SYNTAX (CRITICAL):
+- ~ for regressions (NOT =)
+- Tables: x_1, y_1
+- Linear: y_1 ~ mx_1 + b
+- Quadratic: y_1 ~ ax_1^2 + bx_1 + c
+- Exponential: y_1 ~ a * b^x_1
+
+EXAMPLE: Ask me and I'll show you!
+
+WITHOUT DESMOS (traditional method):
+→ Show concise algebraic approach
+
+DESMOS TRICKS: I'll suggest one relevant trick based on your problem!
+- Verify: Graph your answer + points
+- Graph both sides to find intersections
+- Systems: Graph equations, intersection = solution
+
+TIPS: Tables (+), Regression (click circle), Zoom (wrench)`;
+
+  const MODE_SYSTEM_PROMPTS = {
+    general: `ABOUT KORAH: Created by Oscar Euceda, a high school programmer, Korah is a free academic resource designed to help students and communities receive quality education at the click of a button. Your mission is to make learning accessible, engaging, and effective for everyone.
+
+You are Korah, an all-around AI study companion. Your teaching style:
+- Provide clear, helpful, and concise explanations on any subject
+- Use analogies and examples to simplify complex topics
+- Encourage critical thinking and active learning
+- Adapt your tone to be supportive and encouraging
+- Help with study strategies, time management, and motivation
+
+KaTeX delimiter policy (REQUIRED for all math):
+- Inline math: $...$ (single dollar signs)
+- Display math: $$...$$ (double dollar signs)
+- NEVER use \\(...\\), \\[...\\], or bare math without delimiters`,
+
+    math: `ABOUT KORAH: Created by Oscar Euceda, a high school programmer, Korah is a free academic resource designed to help students and communities receive quality education at the click of a button. Your mission is to make learning accessible, engaging, and effective for everyone.
+
+You are Korah, a math tutor who makes math intuitive and approachable. Your teaching style:
+- Show your work at each step and explain why each step is necessary
+- Encourage true understanding and bear with the student
+- When showing equations, explain each variable and operation clearly
+- Include a Desmos graph for functions when helpful
+- Teach both WITH Desmos AND WITHOUT Desmos approaches — let students choose
+- Suggest one relevant Desmos trick based on the problem if helpful
+
+TEACHING APPROACH: If a problem involves points, data, or finding equations, show both methods briefly:
+1. WITH DESMOS: Quick table + regression
+2. WITHOUT DESMOS: Traditional algebra (concise)
+3. Explain why both work — build intuition
+
+${DESMOS_TEACHING_BLOCK}
+
+KaTeX delimiter policy (REQUIRED for all math):
+- Inline math: $...$ (single dollar signs)
+- Display math: $$...$$ (double dollar signs)
+- NEVER use \\(...\\), \\[...\\], or bare math without delimiters`,
+
+    physics: `ABOUT KORAH: Created by Oscar Euceda, a high school programmer, Korah is a free academic resource designed to help students and communities receive quality education at the click of a button. Your mission is to make learning accessible, engaging, and effective for everyone.
+
+You are Korah, an engaging physics tutor. Your teaching style:
+- Explain concepts through real-world applications and examples
+- Connect abstract theories to tangible phenomena students can observe
+- Show how formulas are derived and what each variable represents
+- Use analogies to make complex ideas accessible
+- Emphasize conceptual understanding before mathematical complexity
+- Help visualize forces, motion, energy, and other physical concepts
+
+KaTeX delimiter policy (REQUIRED for all math):
+- Inline math: $...$ (single dollar signs)
+- Display math: $...$ (double dollar signs)
+- NEVER use \\(...\\), \\[...\\], or bare math without delimiters
+- Consider including a Desmos graph for functions`,
+
+    chemistry: `ABOUT KORAH: Created by Oscar Euceda, a high school programmer, Korah is a free academic resource designed to help students and communities receive quality education at the click of a button. Your mission is to make learning accessible, engaging, and effective for everyone.
+
+You are Korah, an enthusiastic chemistry tutor. Your teaching style:
+- Explain chemical reactions with clear mechanisms and electron movement
+- Help visualize molecular structures and bonding
+- Connect microscopic (atomic) behavior to macroscopic observations
+- Use everyday examples to illustrate chemical principles
+- Emphasize patterns in the periodic table and chemical families
+- Show balanced equations and explain stoichiometry clearly
+
+KaTeX delimiter policy (REQUIRED for all math):
+- Inline math: $...$ (single dollar signs)
+- Display math: $$...$$ (double dollar signs)
+- NEVER use \\(...\\), \\[...\\], or bare math without delimiters`,
+
+    biology: `ABOUT KORAH: Created by Oscar Euceda, a high school programmer, Korah is a free academic resource designed to help students and communities receive quality education at the click of a button. Your mission is to make learning accessible, engaging, and effective for everyone.
+
+You are Korah, a knowledgeable biology tutor. Your teaching style:
+- Explain life processes from molecular to organism level
+- Use clear terminology while defining scientific terms as you go
+- Connect structure to function in biological systems
+- Help students understand relationships between different biological concepts
+- Use diagrams and flow charts mentally when describing processes
+- Emphasize the interconnectedness of living systems
+
+KaTeX delimiter policy (REQUIRED for all math):
+- Inline math: $...$ (single dollar signs)
+- Display math: $$...$$ (double dollar signs)
+- NEVER use \\(...\\), \\[...\\], or bare math without delimiters`,
+
+    sat: `ABOUT KORAH: Created by Oscar Euceda, a high school programmer, Korah is a free academic resource designed to help students and communities receive quality education at the click of a button. Your mission is to make learning accessible, engaging, and effective for everyone.
+
+You are Korah, an expert SAT Math tutor. Your teaching style:
+- Focus on speed, accuracy, and test-taking strategies
+- Teach students to recognize question patterns the SAT repeats
+- Show both algebraic and Desmos calculator approaches
+- Emphasize time-saving shortcuts and elimination techniques
+- Cover all SAT Math topics: Heart of Algebra, Passport to Advanced Math, Problem Solving & Data Analysis, Additional Topics
+
+SAT TEACHING APPROACH: If a problem involves data, show both methods briefly:
+1. WITH DESMOS: Quick table + regression (usually faster)
+2. WITHOUT DESMOS: Traditional algebra if needed
+3. Explain WHY the method works — build SAT intuition
+
+${DESMOS_TEACHING_BLOCK}
+
+SAT-SPECIFIC RULES:
+- SAT trick: 2 points? Table + regression = instant answer!
+- Linear (y=mx+b): slope = rate, intercept = start
+- Quadratic: vertex = max/min
+- Exponential: b>1 growth, b<1 decay
+- R² > 0.9 = great fit, < 0.5 = weak, negative = wrong model
+
+PARAMETER MAP: slope→m, initial→b (linear) or a (exp), growth→b in a*b^x
+
+SAT SPEED SECRETS:
+- Need slope/intercept? Right in the regression parameters!
+- Stuck on data? Try linear first
+- Verify: Graph your answer + points to check
+
+COMMON MISTAKES: ~ (not =) for regressions, x_1/y_1 for tables
+
+KaTeX delimiter policy (REQUIRED for all math):
+- Inline math: $...$ (single dollar signs)
+- Display math: $$...$$ (double dollar signs)
+- NEVER use \\(...\\), \\[...\\], or bare math without delimiters`,
+
+    satEnglish: `ABOUT KORAH: Created by Oscar Euceda, a high school programmer, Korah is a free academic resource designed to help students and communities receive quality education at the click of a button. Your mission is to make learning accessible, engaging, and effective for everyone.
+
+You are Korah, an expert SAT English (Reading & Writing) tutor. Your teaching style:
+- Focus on speed, accuracy, and pattern recognition
+- Teach students to eliminate wrong answers before picking the right one
+- Cover all SAT English domains: Craft & Structure, Information & Ideas, Standard English Conventions, Expression of Ideas
+- Always explain WHY the correct answer is right AND why each wrong answer is wrong
+- Give students a clear strategy they can reuse on similar questions
+
+SAT ENGLISH DOMAINS:
+
+CRAFT & STRUCTURE (words in context, text structure/purpose, cross-text connections):
+- Words in Context: Don't plug in your own word — read the sentence with each answer choice. The right word fits the tone AND meaning.
+- Text Structure/Purpose: Identify what the sentence/paragraph DOES (introduces, contrasts, supports, concludes) — not what it says.
+- Cross-Text Connections: Find the relationship between passages (agree, disagree, elaborate, challenge). Match the answer to that relationship.
+
+INFORMATION & IDEAS (central idea, details, command of evidence, inference):
+- Central Idea: The answer must cover the ENTIRE passage, not just one part. Too narrow = wrong. Too broad = wrong.
+- Command of Evidence: The right answer directly uses data/quotes from the passage. If it introduces outside info, it's wrong.
+- Inference: Only what the passage SUPPORTS. If you have to assume something extra, it's wrong.
+- Look for extreme language (always, never, all, none) — these are usually wrong answers.
+
+STANDARD ENGLISH CONVENTITIONS (grammar, punctuation, sentence structure):
+- Subject-verb agreement: Find the real subject (ignore prepositional phrases between subject and verb).
+- Pronoun agreement: Pronoun must match its antecedent in number and gender.
+- Punctuation: Semicolon = joins two complete sentences. Colon = introduces a list/explanation after a complete sentence. Comma + FANBOYS = joins two complete sentences.
+- Run-on/comma splice: Two complete sentences need a semicolon, period, or comma + conjunction — NOT just a comma.
+- Dangling modifiers: The modifier must be right next to the thing it modifies.
+
+EXPRESSION OF IDEAS (transitions, rhetorical synthesis, boundary markers):
+- Transitions: Read the sentence before AND after the blank. The transition shows the relationship (contrast, cause, example, continuation).
+- "However/nevertheless/nonetheless" = contrast. "Furthermore/moreover/additionally" = same direction. "Therefore/thus/consequently" = cause → effect.
+- Rhetorical Synthesis: The question asks which detail accomplishes a specific goal. Only the answer that directly achieves the stated goal is correct.
+- Boundary markers (sentence boundaries): Know when to use a period vs semicolon vs comma vs no punctuation.
+
+GENERAL SAT ENGLISH STRATEGIES:
+- Process of elimination is your #1 tool. Eliminate 2-3 obviously wrong answers first.
+- Shorter is often better — if two answers mean the same thing, the more concise one is usually correct.
+- The passage is your only source of truth. Never bring in outside knowledge.
+- For "best supports" questions, the right answer must be BOTH true AND directly support the claim.
+- Time management: ~1 min 15 sec per question. If stuck, eliminate and guess — don't linger.
+
+KaTeX delimiter policy (REQUIRED for any math):
+- Inline math: $...$ (single dollar signs)
+- Display math: $$...$$ (double dollar signs)
+- NEVER use \\(...\\), \\[...\\], or bare math without delimiters`,
+
+    science: `ABOUT KORAH: Created by Oscar Euceda, a high school programmer, Korah is a free academic resource designed to help students and communities receive quality education at the click of a button. Your mission is to make learning accessible, engaging, and effective for everyone.
+
+You are Korah, an engaging science tutor covering physics, chemistry, and biology. Your teaching style:
+- Explain concepts through real-world applications and examples
+- Connect abstract theories to tangible phenomena students can observe
+- Show how formulas are derived and what each variable represents
+- Use analogies to make complex ideas accessible
+- Emphasize conceptual understanding before mathematical complexity
+- Help visualize forces, motion, energy, molecular structures, and life processes
+- Connect microscopic (atomic) behavior to macroscopic observations
+- Use clear terminology while defining scientific terms as you go
+
+KaTeX delimiter policy (REQUIRED for all math):
+- Inline math: $...$ (single dollar signs)
+- Display math: $$...$$ (double dollar signs)
+- NEVER use \\(...\\), \\[...\\], or bare math without delimiters
+- Consider including a Desmos graph for functions`,
+
+    history: `ABOUT KORAH: Created by Oscar Euceda, a high school programmer, Korah is a free academic resource designed to help students and communities receive quality education at the click of a button. Your mission is to make learning accessible, engaging, and effective for everyone.
+
+You are Korah, an insightful history tutor. Your teaching style:
+- Provide context and background for historical events
+- Explain cause-and-effect relationships between events
+- Present multiple perspectives when discussing historical topics
+- Connect past events to present-day implications
+- Help students analyze primary sources and evaluate evidence
+- Create timelines and show how events relate chronologically`,
+
+    literature: `ABOUT KORAH: Created by Oscar Euceda, a high school programmer, Korah is a free academic resource designed to help students and communities receive quality education at the click of a button. Your mission is to make learning accessible, engaging, and effective for everyone.
+
+You are Korah, a thoughtful literature tutor. Your teaching style:
+- Guide analysis of themes, symbols, and literary devices
+- Discuss character development and motivations
+- Explore how context (historical, cultural, biographical) influences texts
+- Help identify and interpret figurative language
+- Encourage close reading and textual evidence
+- Make connections between different literary works and ideas`,
+  };
+
+  const FORMAT_INSTRUCTIONS = `
+- KATEX DELIMITER POLICY (REQUIRED):
+  - Inline math: $...$ (single dollar signs)
+  - Display math: $$...$$ (double dollar signs)
+- NEVER use \\(...\\), \\[...\\], [ ... ], or bare math without delimiters
+- Ensure all math delimiters are balanced, and put display math on its own line
+- If you write a formula in text, include the delimiters literally, for example $P_{initial} = P_{final}$, never just (P_{initial} = P_{final})
+
+INTERACTIVE GRAPHS: When showing mathematical functions or graphs, use the Desmos format:
+\`\`\`desmos
+{
+  "expressions": [
+    {"latex": "y=x^2", "color": "#4285F4"},
+    {"latex": "y=sin(x)", "color": "#EA4335"}
+  ],
+  "zoom": {"xmin": -5, "xmax": 5, "ymin": -5, "ymax": 5}
+}
+\`\`\`
+
+DESMOS REGRESSIONS: When a problem provides data (table, coordinates, scatter plot) that can be modeled, include a table + regression expression:
+\`\`\`desmos
+{
+  "expressions": [
+    {
+      "type": "table",
+      "columns": [
+        { "latex": "x_1", "values": ["1","2","3","4","5"] },
+        { "latex": "y_1", "values": ["2.1","4.0","5.9","8.1","10.0"] }
+      ]
+    },
+    { "latex": "y_1 ~ mx_1 + b", "color": "#EA4335" }
+  ],
+  "zoom": {"xmin": 0, "xmax": 6, "ymin": 0, "ymax": 12}
+}
+\`\`\`
+Rules:
+- Column names (x_1, y_1) MUST match the variable names in the regression formula
+- Use ~ (tilde) for regression, NOT = (equals)
+- Linear: y_1 ~ mx_1 + b
+- Quadratic standard: y_1 ~ ax_1^2 + bx_1 + c
+- Quadratic vertex: y_1 ~ a(x_1 - h)^2 + k
+- Exponential: y_1 ~ a * b^x_1
+- Include the table data and regression line in the same desmos block
+- After the block, read the parameter values and map them to what the question asks
+
+CONCISENESS GUIDELINES:
+- Keep explanations focused and avoid unnecessary verbosity
+- Use bullet points and short paragraphs to maintain readability
+- Break complex concepts into smaller, digestible chunks
+- If a concept needs detail, use collapsible sections or separate messages
+- Prioritize clarity over length
+
+Always format your responses using GitHub-flavored Markdown. Use:
+- Markdown headings (##, ###) to structure sections
+- Bulleted and numbered lists for steps and key points
+- \`code\` and fenced code blocks for formulas or code when helpful`;
+
+  function getModeConfig(mode) {
+    const modes = {
+      general:    { name: "General",    icon: "auto_awesome",    colorClass: "ic-gen" },
+      math:       { name: "Math",       icon: "calculate",       colorClass: "ic-math" },
+      sat:        { name: "SAT",        icon: "analytics",       colorClass: "ic-sat-m" },
+      science:    { name: "Science",    icon: "science",         colorClass: "ic-sci" },
+      history:    { name: "History",    icon: "library_books",   colorClass: "ic-hist" },
+      literature: { name: "Literature", icon: "menu_book",       colorClass: "ic-lit" },
+    };
+    const config = modes[mode] || modes.general;
+    if (mode === 'sat' && typeof satSubMode !== 'undefined' && satSubMode === 'english') {
+      return { name: "SAT English", icon: "spellcheck", colorClass: "ic-sat-e" };
+    }
+    return config;
+  }
+
+  function getModeIcon(mode) {
+    const cfg = getModeConfig(mode);
+    return `<span class="m-icon ${cfg.colorClass}">${cfg.icon}</span>`;
+  }
+
+  function getModeDisplayName(mode) {
+    if (mode === "sat") {
+      return satSubMode === "english" ? "SAT English" : "SAT Math";
+    }
+    return getModeConfig(mode).name;
+  }
+
+  function getSystemPrompt(mode) {
+    const effectiveMode = mode === "sat" ? (satSubMode === "english" ? "satEnglish" : "sat") : mode;
+    const base = MODE_SYSTEM_PROMPTS[effectiveMode] || MODE_SYSTEM_PROMPTS.general;
+    const tutoringInstructions = tutoringMode ? TUTORING_PROMPT : '';
+    const concisenessPrompt = `\n\nFOCUS MODE: Keep responses concise and focused. Avoid long, rambling explanations. Use bullet points and short paragraphs to maintain user attention. If a concept requires detailed explanation, break it into digestible chunks rather than a single massive response.`;
+    return `${base}
+${tutoringInstructions}
+${concisenessPrompt}
+
+${FORMAT_INSTRUCTIONS}`.trim();
+  }
+
+
+
+  function applyModeTheme(mode) {
+    const themeVars = {
+      general: { "--p4": "var(--p-gen)", "--p5": "var(--p-gen)", "--ac": "#c084fc", "--glow": "var(--p-gen-glow)" },
+      math: { "--p4": "#3b82f6", "--p5": "#60a5fa", "--ac": "#0ea5e9", "--glow": "rgba(59, 130, 246, 0.35)" },
+      sat: satSubMode === "english"
+        ? { "--p4": "#6366f1", "--p5": "#818cf8", "--ac": "#a78bfa", "--glow": "rgba(99, 102, 241, 0.35)" }
+        : { "--p4": "#f59e0b", "--p5": "#fbbf24", "--ac": "#fb923c", "--glow": "rgba(245, 158, 11, 0.35)" },
+      science: { "--p4": "#8b5cf6", "--p5": "#a78bfa", "--ac": "#c084fc", "--glow": "rgba(139, 92, 246, 0.35)" },
+      history: { "--p4": "#f59e0b", "--p5": "#fbbf24", "--ac": "#fb923c", "--glow": "rgba(245, 158, 11, 0.35)" },
+      literature: { "--p4": "#ec4899", "--p5": "#f472b6", "--ac": "#f9a8d4", "--glow": "rgba(236, 72, 153, 0.35)" },
+    };
+
+    const vars = themeVars[mode] || themeVars.general;
+    const root = document.documentElement;
+    Object.entries(vars).forEach(([key, value]) => {
+      root.style.setProperty(key, value);
+    });
+
+    updateModeUI(mode);
+    renderModePills();
+  }
+
+  function renderModePills() {
+    const container = document.getElementById("mode-pills-container");
+    if (!container) return;
+
+    const satTopics = [
+      { label: "Heart of Algebra", icon: "functions",      colorClass: "ic-math", prompt: "Help me practice Heart of Algebra for the SAT" },
+      { label: "Reading",          icon: "auto_stories",   colorClass: "ic-lit",  prompt: "Help me improve my SAT Reading comprehension" },
+      { label: "Writing & Grammar",icon: "spellcheck",     colorClass: "ic-gen",  prompt: "Help me practice SAT Writing and Language questions" },
+      { label: "Data Analysis",    icon: "bar_chart",      colorClass: "ic-sci",  prompt: "Help me with SAT Data Analysis and statistics" },
+      { label: "Geometry & Trig",  icon: "change_history", colorClass: "ic-hist", prompt: "Help me study Geometry and Trigonometry for the SAT" },
+      { label: "Advanced Math",    icon: "calculate",      colorClass: "ic-math", prompt: "Help me practice Advanced Math for the SAT" },
+    ];
+
+    container.innerHTML = "";
+
+    satTopics.forEach(({ label, icon, colorClass, prompt }) => {
+      const pill = document.createElement("button");
+      pill.className = "mode-pill t-btn";
+      pill.innerHTML = `<span class="m-icon ${colorClass}">${icon}</span><span>${label}</span>`;
+
+      pill.addEventListener("click", () => {
+        const input = document.getElementById("welcome-chat-input");
+        if (input) {
+          input.value = prompt;
+          input.dispatchEvent(new Event("input"));
+          input.focus();
+        }
+      });
+
+      container.appendChild(pill);
+    });
+
+    // Update the large mode text in welcome screen
+    const modeNameLarge = document.getElementById("welcome-mode-name");
+    if (modeNameLarge) {
+      modeNameLarge.textContent = getModeDisplayName(currentSession.mode);
+    }
+  }
+
+  function updateModeUI(mode) {
+    const config = getModeConfig(mode);
+    const displayName = getModeDisplayName(mode);
+    const modeIcon = document.getElementById("mode-icon");
+    const modeName = document.getElementById("mode-name");
+    const modeNameMini = document.getElementById("mode-name-mini");
+    if (modeIcon) modeIcon.innerHTML = getModeIcon(mode);
+    if (modeName) modeName.textContent = displayName;
+    if (modeNameMini) modeNameMini.textContent = displayName + " Mode";
+  }
+
+  function changeMode(newMode) {
+    currentSession.mode = newMode;
+    currentSession.updatedAt = new Date().toISOString();
+    Storage.saveSession(currentSessionId, currentSession);
+    applyModeTheme(newMode);
+    renderChatHistory();
+  }
+
+  function setSATSubMode(subMode) {
+    satSubMode = subMode;
+    if (currentSession) {
+      currentSession.satSubMode = subMode;
+      currentSession.updatedAt = new Date().toISOString();
+      Storage.saveSession(currentSessionId, currentSession);
+    }
+    applyModeTheme("sat");
+    renderChatHistory();
+  }
+
+  function showSATSubModal() {
+    const modal = document.getElementById("sat-sub-modal");
+    if (!modal) return;
+    modal.classList.add("show");
+    const onMath = () => { cleanup(); setSATSubMode("math"); changeMode("sat"); window.KorahTransitions.go('sat/math-chat.html' + (currentSessionId ? '#' + currentSessionId : '')); };
+    const onEnglish = () => { cleanup(); setSATSubMode("english"); changeMode("sat"); };
+    const onOutside = (e) => { if (e.target === modal) cleanup(); };
+    const onEsc = (e) => { if (e.key === "Escape") cleanup(); };
+    function cleanup() {
+      modal.classList.remove("show");
+      document.getElementById("sat-math-btn")?.removeEventListener("click", onMath);
+      document.getElementById("sat-english-btn")?.removeEventListener("click", onEnglish);
+      modal.removeEventListener("click", onOutside);
+      document.removeEventListener("keydown", onEsc);
+    }
+    document.getElementById("sat-math-btn")?.addEventListener("click", onMath);
+    document.getElementById("sat-english-btn")?.addEventListener("click", onEnglish);
+    modal.addEventListener("click", onOutside);
+    document.addEventListener("keydown", onEsc);
+  }
+
+  function updateModeButtonState() {
+    const modeSelectorBtn = document.getElementById("mode-selector-btn");
+    if (!modeSelectorBtn) return;
+    
+    modeSelectorBtn.style.opacity = "1";
+    modeSelectorBtn.style.cursor = "pointer";
+    modeSelectorBtn.title = "Change subject mode";
+  }
+
+  const selectedChats = new Set();
+
+  function updateChatSelectBar() {
+    const bar = document.getElementById("chat-select-bar");
+    const count = document.getElementById("chat-select-count");
+    const deleteBtn = document.getElementById("chat-delete-selected");
+    if (!bar) return;
+    if (selectedChats.size > 0) {
+      bar.classList.add("show");
+      count.textContent = `${selectedChats.size} selected`;
+      deleteBtn.textContent = `Delete (${selectedChats.size})`;
+    } else {
+      bar.classList.remove("show");
+    }
+  }
+
+  function clearChatSelection() {
+    selectedChats.clear();
+    chatHistoryContainer.querySelectorAll(".history-item.selected").forEach(el => el.classList.remove("selected"));
+    updateChatSelectBar();
+  }
+
+  document.getElementById("chat-select-all")?.addEventListener("click", () => {
+    const items = chatHistoryContainer.querySelectorAll(".history-item");
+    const allSelected = selectedChats.size === items.length;
+    clearChatSelection();
+    if (!allSelected) {
+      items.forEach(item => {
+        const id = item.getAttribute("data-session");
+        if (id) { selectedChats.add(id); item.classList.add("selected"); }
+      });
+      updateChatSelectBar();
+    }
+  });
+
+  document.getElementById("chat-delete-selected")?.addEventListener("click", () => {
+    // Source of truth is the DOM, since sidebar.js may own rendering/selection
+    // and korah-chat.js's internal `selectedChats` set can drift out of sync.
+    const ids = [...chatHistoryContainer.querySelectorAll(".history-item.selected")]
+      .map(el => el.getAttribute("data-session"))
+      .filter(Boolean);
+    if (ids.length === 0) return;
+    showDeleteModal(
+      `${ids.length} chat${ids.length > 1 ? "s" : ""}`,
+      () => {
+        ids.forEach(id => deleteSessionById(id));
+        clearChatSelection();
+      }
+    );
+  });
+
+  function renderChatHistory() {
+    if (!chatHistoryContainer) return;
+    
+    const sessions = Storage.getSessions();
+    const sessionIds = Object.keys(sessions)
+      .filter((id) => {
+        const s = sessions[id];
+        // Hide sessions with no messages unless the user explicitly renamed them.
+        return (s.messages && s.messages.length > 0) || s.userRenamed;
+      })
+      .sort((a, b) => {
+        return new Date(sessions[b].updatedAt) - new Date(sessions[a].updatedAt);
+      });
+
+    chatHistoryContainer.innerHTML = "";
+
+    sessionIds.forEach((sessionId) => {
+      const session = sessions[sessionId];
+      const btn = document.createElement("button");
+      btn.className = `history-item t-btn ${sessionId === currentSessionId ? "active" : ""}`;
+      btn.setAttribute("data-session", sessionId);
+      
+      const icon = document.createElement("span");
+      icon.className = "history-icon";
+      icon.innerHTML = getModeIcon(session.mode);
+      
+      const text = document.createElement("span");
+      text.className = "history-text";
+      text.textContent = session.title;
+      
+      const actions = document.createElement("div");
+      actions.className = "history-actions";
+      actions.innerHTML = `
+        <button class="history-action-btn rename-btn" title="Rename" data-id="${sessionId}">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+        </button>
+        <button class="history-action-btn delete-btn" title="Delete" data-id="${sessionId}">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+          </svg>
+        </button>
+      `;
+      
+      const checkbox = document.createElement("span");
+      checkbox.className = "item-checkbox";
+      btn.appendChild(checkbox);
+      btn.appendChild(icon);
+      btn.appendChild(text);
+      btn.appendChild(actions);
+      chatHistoryContainer.appendChild(btn);
+
+      btn.addEventListener("click", (e) => {
+        if (e.target.closest(".history-action-btn")) return;
+        const clickedCheckbox = e.target.closest(".item-checkbox");
+        if (selectedChats.size === 0 && !clickedCheckbox) {
+          switchToSession(sessionId);
+          return;
+        }
+        if (selectedChats.has(sessionId)) {
+          selectedChats.delete(sessionId);
+          btn.classList.remove("selected");
+        } else {
+          selectedChats.add(sessionId);
+          btn.classList.add("selected");
+        }
+        updateChatSelectBar();
+      });
+    });
+
+    // Attach event listeners for rename and delete
+    chatHistoryContainer.querySelectorAll(".rename-btn").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const sessionId = btn.getAttribute("data-id");
+        const session = Storage.getSession(sessionId);
+        if (!session) return;
+        
+        showRenameModal(session.title || "", "Enter a new name for this chat:", (newTitle) => {
+          renameSession(sessionId, newTitle);
+        });
+      });
+    });
+
+    chatHistoryContainer.querySelectorAll(".delete-btn").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const sessionId = btn.getAttribute("data-id");
+        const session = Storage.getSession(sessionId);
+        if (!session) return;
+        
+        showDeleteModal(session.title, () => deleteSessionById(sessionId));
+      });
+    });
+  }
+
+  function clampInt(value, fallback, min, max) {
+    const parsed = parseInt(value, 10);
+    if (Number.isNaN(parsed)) return fallback;
+    return Math.min(max, Math.max(min, parsed));
+  }
+
+  function inferPracticeConfigFromText(text) {
+    const lower = (text || "").toLowerCase();
+    const totalMatch = lower.match(/(\d+)\s*(?:question|questions|q)\b/);
+    const mcqMatch = lower.match(/(\d+)\s*(?:mcq|multiple[-\s]?choice)\b/);
+    const openMatch = lower.match(/(\d+)\s*(?:open[-\s]?ended|short\s*answer|free\s*response)\b/);
+
+    let total = totalMatch ? clampInt(totalMatch[1], 10, 1, 50) : null;
+    let mcq = mcqMatch ? clampInt(mcqMatch[1], 0, 0, 50) : null;
+    let openEnded = openMatch ? clampInt(openMatch[1], 0, 0, 50) : null;
+
+    if (total === null && mcq !== null && openEnded !== null) {
+      total = mcq + openEnded;
+    }
+    if (total === null) total = 10;
+    if (mcq === null && openEnded === null) {
+      mcq = Math.round(total * 0.6);
+      openEnded = total - mcq;
+    } else if (mcq === null) {
+      mcq = total - openEnded;
+    } else if (openEnded === null) {
+      openEnded = total - mcq;
+    }
+
+    mcq = clampInt(mcq, Math.round(total * 0.6), 0, total);
+    openEnded = clampInt(openEnded, total - mcq, 0, total - mcq);
+    if (mcq + openEnded !== total) openEnded = total - mcq;
+
+    return { totalQuestions: total, mcqCount: mcq, openEndedCount: openEnded };
+  }
+
+  async function handleStudyItemGeneration(type, topic, practiceConfig) {
+    const typeLabels = {
+      flashcards: "Flashcards",
+      studyGuide: "Study Guide",
+      practiceTest: "Practice Test"
+    };
+    const typeIcons = {
+      flashcards:   `<span class="m-icon ic-flash">style</span>`,
+      studyGuide:   `<span class="m-icon ic-guide">auto_stories</span>`,
+      practiceTest: `<span class="m-icon ic-quiz">quiz</span>`
+    };
+    const typeLabel = typeLabels[type] || "Study Item";
+    const typeIconHtml = typeIcons[type] || `<span class="m-icon ic-gen">description</span>`;
+
+    // Create message with loading bar
+    const msgId = `study-gen-${Date.now()}`;
+    const row = appendMessage("assistant", "", false, [], msgId);
+    const content = document.getElementById(msgId);
+    if (!content) return;
+
+    content.innerHTML = `
+      <div class="study-gen-bubble">
+        <div class="study-gen-status">
+          <span class="animate-pulse">${typeIconHtml}</span>
+          <span>Generating ${typeLabel}...</span>
+        </div>
+        <div class="study-gen-progress-container">
+          <div class="study-gen-progress-bar loading"></div>
+        </div>
+        <div class="study-gen-success" id="${msgId}-success">
+          <p>Success! Your ${typeLabel.toLowerCase()} are ready.</p>
+          <a href="#" class="study-gen-btn" id="${msgId}-link">
+            <span>View ${typeLabel}</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+    `;
+
+    try {
+      // Use existing context if topic is "this"
+      let prompt = topic;
+      if (topic.toLowerCase() === "this" || topic.toLowerCase() === "the above") {
+        const lastMsgs = history.slice(-5).filter(m => m.role !== "system").map(m => m.content).join("\n\n");
+        prompt = `Based on our conversation:\n\n${lastMsgs}`;
+      }
+
+      // Call the Study API
+      const result = await KorahStudyAPI.generateStudyContent({
+        type: type,
+        prompt: prompt,
+        title: topic === "this" ? currentSession.title : topic,
+        subject: currentSession.mode,
+        testConfig: type === "practiceTest" ? practiceConfig : undefined
+      });
+
+      // Save to localStorage
+      const id = `si_${Date.now()}`;
+      const rawContent = result && result.content ? result.content : {};
+      let normalizedContent = rawContent;
+      if (type === "studyGuide") {
+        const markdown = (rawContent.markdown || "").trim();
+        normalizedContent = { markdown: markdown };
+      }
+      if (type === "practiceTest") {
+        const questions = (rawContent.questions || []).filter((q) => q && (q.text || "").trim()).map((q) => {
+          const isMcq = String(q.type || "").toLowerCase() === "mcq" || (Array.isArray(q.options) && q.options.length > 1);
+          return {
+            type: isMcq ? "mcq" : "openEnded",
+            text: (q.text || "").trim(),
+            options: isMcq ? (q.options || []).map((opt) => String(opt || "").trim()).filter(Boolean).slice(0, 4) : [],
+            answer: (q.answer || "").trim(),
+            explanation: (q.explanation || "").trim()
+          };
+        });
+        normalizedContent = {
+          questions,
+          testConfig: {
+            totalQuestions: questions.length,
+            mcqCount: questions.filter((q) => q.type === "mcq").length,
+            openEndedCount: questions.filter((q) => q.type !== "mcq").length
+          }
+        };
+      }
+
+      const aiGeneratedTitle = rawContent.title;
+      const finalTitle = aiGeneratedTitle || (topic === "this" ? currentSession.title : topic) || "Untitled";
+
+      const newItem = {
+        id: id,
+        type: type,
+        title: finalTitle,
+        description: `Generated from chat on ${new Date().toLocaleDateString()}`,
+        content: normalizedContent,
+        source: "chatbot-request",
+        subject: currentSession.mode,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      await Storage.saveStudyItem(id, newItem);
+      renderStudyItemsHistory();
+
+      // Update UI to success state
+      const progressBar = content.querySelector(".study-gen-progress-bar");
+      const statusText = content.querySelector(".study-gen-status span:last-child");
+      
+      if (statusText) statusText.textContent = `Generated ${typeLabel} on "${finalTitle}"`;
+      if (progressBar) {
+        progressBar.classList.remove("loading");
+        progressBar.style.width = "100%";
+      }
+      
+      setTimeout(() => {
+        const successDiv = document.getElementById(`${msgId}-success`);
+        const link = document.getElementById(`${msgId}-link`);
+        if (successDiv) successDiv.classList.add("show");
+        if (link) {
+          const itemPage = type === "studyGuide" ? "guide.html" : "item.html";
+          link.href = `../study/${itemPage}?id=${encodeURIComponent(id)}`;
+          link.innerHTML = `<span>View ${finalTitle} ${typeLabel}</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+            </svg>`;
+        }
+        
+        // Add to history with study item metadata
+        history.push({ 
+          role: "assistant", 
+          content: `I've generated **${typeLabel}** on "**${finalTitle}**" for you. You can find them in your Study Library.`,
+          studyItem: {
+            id: id,
+            type: type,
+            title: finalTitle
+          }
+        });
+        saveCurrentSession();
+      }, 500);
+
+    } catch (error) {
+      console.error("Study generation failed:", error);
+      content.innerHTML = `<div class="tx-mr">Oops! There was an error. Please try again: ${error.message}</div>`;
+    }
+  }
+
+  function detectStudyRequest(text) {
+    const t = text.toLowerCase();
+    
+    // Types
+    let type = null;
+    if (t.includes("flashcard")) type = "flashcards";
+    else if (t.includes("study guide")) type = "studyGuide";
+    else if (t.includes("practice test") || t.includes("quiz")) type = "practiceTest";
+
+    if (!type) return null;
+
+    // Intents
+    const intents = ["make", "generate", "create", "give me", "build"];
+    const hasIntent = intents.some(i => t.includes(i));
+    
+    if (!hasIntent && !t.includes("flashcard") && !t.includes("study guide") && !t.includes("practice test")) return null;
+
+    // Extract topic
+    let topic = "this";
+    const markers = ["on ", "about ", "for ", "regarding "];
+    for (const marker of markers) {
+      const idx = t.indexOf(marker);
+      if (idx !== -1) {
+        topic = text.slice(idx + marker.length).trim();
+        // Clean up punctuation at end
+        topic = topic.replace(/[?\.!]+$/, "");
+        break;
+      }
+    }
+
+    const practiceConfig = type === "practiceTest" ? inferPracticeConfigFromText(text) : null;
+    return { type, topic, practiceConfig };
+  }
+
+  async function sendMessage(prefillText) {
+    if (isSending) return;
+    const raw = typeof prefillText === "string" ? prefillText : input.value;
+    const text = raw.trim();
+    if (!text && attachedFiles.length === 0) return;
+
+    if (text.length > MAX_CHARS) {
+      appendMessage("assistant", `Please keep messages under ${MAX_CHARS} characters.`, true);
+      return;
+    }
+
+    // Capture and clear attached files before state changes
+    const pendingFiles = [...attachedFiles];
+    clearAttachedFiles();
+
+    // NEW: Detect study item request
+    const studyReq = detectStudyRequest(text);
+
+    appendMessage("user", text, false, [], null, null, pendingFiles.length ? pendingFiles : null);
+    const userContent = buildUserContent(text, pendingFiles);
+    history.push({ role: "user", content: userContent });
+    saveCurrentSession();
+
+    input.value = "";
+    const welcomeInput = document.getElementById("welcome-chat-input");
+    if (welcomeInput) {
+      welcomeInput.value = "";
+      welcomeInput.style.height = "auto";
+    }
+    resizeInput();
+    updateCharCount();
+    setSendingState(true);
+
+    if (studyReq) {
+      await handleStudyItemGeneration(studyReq.type, studyReq.topic, studyReq.practiceConfig);
+      setSendingState(false);
+      updateModeButtonState();
+      return;
+    }
+
+    setTyping(true);
+
+    // Create streaming message container
+    streamingContentId = `streaming-content-${Date.now()}`;
+    const streamingRow = appendMessage("assistant", "", false, [], streamingContentId);
+    const contentElement = document.getElementById(streamingContentId);
+    setTyping(false);
+
+    // Show pulsing "Thinking" indicator while waiting for first content
+    let thinkingIndicator = null;
+    if (contentElement) {
+      thinkingIndicator = document.createElement("div");
+      thinkingIndicator.className = "thinking-indicator";
+      thinkingIndicator.innerHTML = `
+        <div class="thinking-dot"></div>
+        <div class="thinking-dot"></div>
+        <div class="thinking-dot"></div>
+      `;
+      contentElement.appendChild(thinkingIndicator);
+    }
+
+    // Add placeholder to history BEFORE streaming starts (for persistence)
+    history.push({ role: "assistant", content: "" });
+    const historyIndex = history.length - 1;
+    saveCurrentSession();
+
+    const apiMessages = history.slice(0, -1);
+
+    try {
+      let previousLength = 0;
+      let charBuffer = [];
+      let typewriterActive = false;
+
+      let currentTypedText = "";
+      const typeNextChar = () => {
+        if (charBuffer.length === 0) {
+          typewriterActive = false;
+          return;
+        }
+
+        typewriterActive = true;
+        const charsToType = charBuffer.length > 20 ? 2 : 1;
+        for (let i = 0; i < charsToType; i++) {
+          if (charBuffer.length > 0) {
+            currentTypedText += charBuffer.shift();
+          }
+        }
+
+        if (contentElement) {
+          renderMarkdownAndMath(contentElement, currentTypedText);
+        }
+
+        let delay = 5;
+        if (charBuffer.length > 50) delay = 0; 
+        
+        setTimeout(typeNextChar, delay);
+      };
+
+      let reply = "";
+      
+      reply = await callChatApi(apiMessages, (chunk, fullText) => {
+        // Remove thinking indicator when first chunk arrives
+        if (thinkingIndicator && fullText.length > 0) {
+          thinkingIndicator.remove();
+          thinkingIndicator = null;
+        }
+
+        if (contentElement) {
+          const delta = fullText.slice(previousLength);
+          previousLength = fullText.length;
+          
+          charBuffer.push(...delta.split(''));
+          
+          if (!typewriterActive) {
+            typeNextChar();
+          }
+        }
+      });
+      
+      // Stop typewriter and clear buffer immediately
+      charBuffer = [];
+      typewriterActive = false;
+      
+      // Render final content immediately
+      if (contentElement) {
+        contentElement.innerHTML = '';
+        renderMarkdownAndMath(contentElement, reply);
+        renderSpecialContent(contentElement);
+        scrollToBottomIfNear();
+      }
+      
+      // Update the placeholder entry instead of adding a new one
+      history[historyIndex] = { role: "assistant", content: reply };
+      
+      // Generate contextual suggestions and add them to the existing message
+      const contextualSuggestions = generateContextualSuggestions(reply);
+      if (contextualSuggestions.length > 0 && streamingRow) {
+        const bubble = streamingRow.querySelector(".msg-bubble");
+        if (bubble) {
+          const suggestionsDiv = document.createElement("div");
+          suggestionsDiv.className = "inline-suggestions";
+          
+          contextualSuggestions.forEach((suggestion) => {
+            const btn = document.createElement("button");
+            btn.className = "inline-suggestion-btn t-btn";
+            btn.textContent = suggestion;
+            btn.addEventListener("click", () => {
+              sendMessage(suggestion);
+            });
+            suggestionsDiv.appendChild(btn);
+          });
+          
+          bubble.appendChild(suggestionsDiv);
+        }
+      }
+      
+      saveCurrentSession();
+      await generateAutoTitleIfNeeded();
+      updateModeButtonState();
+      
+      chatMessageCount++;
+      if (chatMessageCount % 2 === 1) {
+        setTimeout(() => showProTip(), 1500);
+      }
+    } catch (error) {
+      console.error("Chat request failed:", error);
+
+        // Remove streaming message and show error
+        if (streamingRow) {
+          streamingRow.remove();
+        }
+        
+        appendMessage(
+          "assistant",
+          `I couldn't reach the chat API. ${error.message}`,
+          true
+        );
+    } finally {
+      setSendingState(false);
+      input.focus();
+    }
+  }
+
+  function resetChat() {
+    history.length = 0;
+    messagesList.innerHTML = "";
+    input.value = "";
+    resizeInput();
+    updateCharCount();
+    setWelcomeVisibility(true);
+    setTyping(false);
+    saveCurrentSession();
+  }
+
+  // ── File Attachments ──────────────────────────────────────────────────────
+  let attachedFiles = [];
+  const MAX_FILE_SIZE = 4 * 1024 * 1024;
+  const MAX_IMAGE_DIMENSION = 1024;
+
+  function getFileIcon(type, name) {
+    if (type === 'image') return '🖼️';
+    const ext = (name || '').split('.').pop().toLowerCase();
+    if (ext === 'pdf') return '📕';
+    return '📄';
+  }
+
+  function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / 1048576).toFixed(1) + ' MB';
+  }
+
+  function resizeImage(file) {
+    return new Promise((resolve) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        const { width, height } = img;
+        if (width <= MAX_IMAGE_DIMENSION && height <= MAX_IMAGE_DIMENSION && file.size < 300000) {
+          const reader = new FileReader();
+          reader.onload = () => { URL.revokeObjectURL(url); resolve(reader.result); };
+          reader.readAsDataURL(file);
+          return;
+        }
+        const scale = Math.min(MAX_IMAGE_DIMENSION / width, MAX_IMAGE_DIMENSION / height);
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(width * scale);
+        canvas.height = Math.round(height * scale);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(url);
+        resolve(canvas.toDataURL('image/jpeg', 0.85));
+      };
+      img.src = url;
+    });
+  }
+
+  function processFile(file) {
+    return new Promise(async (resolve) => {
+      const isImage = file.type.startsWith('image/');
+      const isText = file.type === 'text/plain' || ['txt','md','csv'].includes(file.name.split('.').pop().toLowerCase());
+      const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+      if (isPDF && file.size > MAX_FILE_SIZE) {
+        resolve({ file, name: file.name, size: file.size, type: 'error', dataUrl: null, content: null, error: 'File too large (max 4 MB)' });
+        return;
+      }
+      if (isImage) {
+        const dataUrl = await resizeImage(file);
+        resolve({ file, name: file.name, size: file.size, type: 'image', dataUrl, content: null });
+      } else if (isPDF) {
+        const reader = new FileReader();
+        reader.onload = () => resolve({ file, name: file.name, size: file.size, type: 'pdf', dataUrl: reader.result, content: null });
+        reader.readAsDataURL(file);
+      } else if (isText) {
+        const reader = new FileReader();
+        reader.onload = () => resolve({ file, name: file.name, size: file.size, type: 'text', dataUrl: null, content: reader.result });
+        reader.readAsText(file);
+      } else {
+        resolve({ file, name: file.name, size: file.size, type: 'other', dataUrl: null, content: null });
+      }
+    });
+  }
+
+  async function handleNewFiles(fileList) {
+    const MAX_FILES = 5;
+    const remaining = MAX_FILES - attachedFiles.length;
+    const toProcess = Array.from(fileList).slice(0, Math.max(0, remaining));
+    const errors = [];
+    for (const file of toProcess) {
+      const processed = await processFile(file);
+      if (processed.type === 'error') {
+        errors.push(`${processed.name}: ${processed.error}`);
+      } else {
+        attachedFiles.push(processed);
+      }
+    }
+    if (errors.length > 0) alert('Some files were skipped:\n' + errors.join('\n'));
+    renderInputFilesBar();
+    renderWelcomeAttachments();
+  }
+
+  function clearAttachedFiles() {
+    attachedFiles = [];
+    renderInputFilesBar();
+    renderWelcomeAttachments();
+  }
+
+  function makeFileCard(f, onRemove) {
+    const card = document.createElement('div');
+    card.className = 'input-file-card';
+    if (f.type === 'image' && f.dataUrl) {
+      const img = document.createElement('img');
+      img.className = 'input-file-card-thumb';
+      img.src = f.dataUrl;
+      img.alt = f.name;
+      card.appendChild(img);
+    } else {
+      const icon = document.createElement('div');
+      icon.className = 'input-file-card-icon';
+      const ext = (f.name || '').split('.').pop().toUpperCase();
+      icon.innerHTML = `<span style="font-size:1.5rem;line-height:1">${getFileIcon(f.type, f.name)}</span><span class="input-file-card-label">${ext}</span>`;
+      card.appendChild(icon);
+    }
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'input-file-card-remove';
+    removeBtn.title = 'Remove';
+    removeBtn.textContent = '×';
+    removeBtn.addEventListener('click', onRemove);
+    card.appendChild(removeBtn);
+    return card;
+  }
+
+  function renderInputFilesBar() {
+    const bar = document.getElementById('input-files-bar');
+    if (!bar) return;
+    if (attachedFiles.length === 0) { bar.classList.remove('show'); bar.innerHTML = ''; return; }
+    bar.classList.add('show');
+    bar.innerHTML = '';
+    attachedFiles.forEach((f, i) => {
+      bar.appendChild(makeFileCard(f, () => {
+        attachedFiles.splice(i, 1); renderInputFilesBar(); renderWelcomeAttachments();
+      }));
+    });
+  }
+
+  function renderWelcomeAttachments() {
+    const container = document.getElementById('welcome-attachments');
+    if (!container) return;
+    container.innerHTML = '';
+    attachedFiles.forEach((f, i) => {
+      container.appendChild(makeFileCard(f, () => {
+        attachedFiles.splice(i, 1); renderInputFilesBar(); renderWelcomeAttachments();
+      }));
+    });
+  }
+
+  function buildUserContent(text, files) {
+    if (!files || files.length === 0) return text;
+    const textParts = [text];
+    const multimodalParts = [];
+    files.forEach(f => {
+      if (f.type === 'text' && f.content) {
+        textParts.push(`\n\n--- Content of ${f.name} ---\n${f.content}\n--- End of ${f.name} ---`);
+      } else if ((f.type === 'image' || f.type === 'pdf') && f.dataUrl) {
+        multimodalParts.push({ type: 'image_url', image_url: { url: f.dataUrl } });
+      } else {
+        textParts.push(`\n[Attached: ${f.name}]`);
+      }
+    });
+    const fullText = textParts.join('');
+    return multimodalParts.length > 0
+      ? [{ type: 'text', text: fullText }, ...multimodalParts]
+      : fullText;
+  }
+
+  function setupFileAttachment() {
+    const fileInput = document.getElementById('doc-file-input');
+    const attachBtn = document.getElementById('attach-file-btn');
+    const welcomeAttachBtn = document.getElementById('welcome-attach-btn');
+    const dragOverlay = document.getElementById('drag-overlay');
+
+    attachBtn?.addEventListener('click', () => fileInput?.click());
+    welcomeAttachBtn?.addEventListener('click', () => fileInput?.click());
+
+    fileInput?.addEventListener('change', (e) => {
+      if (e.target.files?.length) { handleNewFiles(e.target.files); e.target.value = ''; }
+    });
+
+    document.addEventListener('dragover', (e) => { e.preventDefault(); dragOverlay?.classList.add('active'); }, true);
+    document.addEventListener('dragleave', (e) => { if (e.clientX === 0 && e.clientY === 0) dragOverlay?.classList.remove('active'); }, true);
+    document.addEventListener('drop', (e) => { e.preventDefault(); dragOverlay?.classList.remove('active'); if (e.dataTransfer.files?.length) handleNewFiles(e.dataTransfer.files); }, true);
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+
+  sendBtn.addEventListener("click", () => sendMessage());
+
+  input.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      sendMessage();
+    }
+  });
+
+  input.addEventListener("input", () => {
+    if (input.value.length > MAX_CHARS) {
+      input.value = input.value.slice(0, MAX_CHARS);
+    }
+    resizeInput();
+    updateCharCount();
+  });
+
+  if (toolsTrigger && toolsMenu) {
+    toolsTrigger.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toolsMenu.classList.toggle("show");
+    });
+    document.addEventListener("click", () => {
+      toolsMenu.classList.remove("show");
+    });
+    toolsMenu.addEventListener("click", (e) => e.stopPropagation());
+  }
+
+  quickPromptButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const prompt = btn.getAttribute("data-prompt");
+      if (!prompt) return;
+      if (toolsMenu) toolsMenu.classList.remove("show");
+      input.value = prompt;
+      resizeInput();
+      updateCharCount();
+      input.focus();
+    });
+  });
+
+  // Save session on page unload to preserve any streaming content
+  window.addEventListener("beforeunload", () => {
+    if (isSending && currentSession) {
+      saveCurrentSession();
+    }
+  });
+
+  if (clearChatBtn) clearChatBtn.addEventListener("click", resetChat);
+  if (newChatBtn) {
+    newChatBtn.addEventListener("click", () => {
+      const newId = Storage.createSession("New Chat", currentSession.mode);
+      currentSessionId = newId;
+      currentSession = Storage.getSession(newId);
+      Storage.setCurrentSessionId(newId);
+      history.length = 0;
+      history.push(...currentSession.messages);
+      applyModeTheme(currentSession.mode);
+      loadSessionMessages();
+      renderChatHistory();
+    });
+  }
+
+  // Mode selector functionality
+  const modeSelectorBtn = document.getElementById("mode-selector-btn");
+  const modeDropdown = document.getElementById("mode-dropdown");
+  
+  if (modeSelectorBtn && modeDropdown) {
+    modeSelectorBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      modeDropdown.classList.toggle("show");
+    });
+
+    document.addEventListener("click", () => {
+      modeDropdown.classList.remove("show");
+    });
+
+    modeDropdown.querySelectorAll(".mode-option").forEach((option) => {
+      option.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const redirectUrl = option.getAttribute("data-redirect");
+        if (redirectUrl) {
+          window.KorahTransitions.go(redirectUrl);
+          return;
+        }
+        const mode = option.getAttribute("data-mode");
+        if (mode) {
+          if (mode === "sat") {
+            modeDropdown.classList.remove("show");
+            showSATSubModal();
+          } else {
+            changeMode(mode);
+            modeDropdown.classList.remove("show");
+          }
+        }
+      });
+    });
+  }
+
+  // Delete modal
+  const deleteModal = document.getElementById("delete-modal");
+  const deleteModalName = document.getElementById("delete-modal-name");
+  const deleteModalCancel = document.getElementById("delete-modal-cancel");
+  const deleteModalConfirm = document.getElementById("delete-modal-confirm");
+  let deleteModalCallback = null;
+
+  function showRenameModal(currentName, desc, onConfirm) {
+    const modal = document.getElementById("rename-modal");
+    const input = document.getElementById("rename-modal-input");
+    const descEl = document.getElementById("rename-modal-desc");
+    const confirmBtn = document.getElementById("rename-modal-confirm");
+    const cancelBtn = document.getElementById("rename-modal-cancel");
+    if (!modal) {
+      const n = prompt(desc || "New name:", currentName);
+      if (n && n.trim() && onConfirm) onConfirm(n.trim());
+      return;
+    }
+    input.value = currentName || "";
+    if (descEl) descEl.textContent = desc || "Enter a new name";
+    modal.classList.add("show");
+    setTimeout(() => { input.focus(); input.select(); }, 50);
+    function cleanup() {
+      modal.classList.remove("show");
+      confirmBtn.removeEventListener("click", onYes);
+      cancelBtn.removeEventListener("click", onNo);
+      modal.removeEventListener("click", onOutside);
+      input.removeEventListener("keydown", onEnter);
+    }
+    function onYes() { const v = input.value.trim(); if (v) { cleanup(); if (onConfirm) onConfirm(v); } }
+    function onNo() { cleanup(); }
+    function onOutside(e) { if (e.target === modal) cleanup(); }
+    function onEnter(e) { if (e.key === "Enter") onYes(); if (e.key === "Escape") onNo(); }
+    confirmBtn.addEventListener("click", onYes);
+    cancelBtn.addEventListener("click", onNo);
+    modal.addEventListener("click", onOutside);
+    input.addEventListener("keydown", onEnter);
+  }
+
+  function showDeleteModal(name, onConfirm) {
+    deleteModalName.textContent = name;
+    deleteModalCallback = onConfirm;
+    deleteModal.classList.add("show");
+  }
+
+  function hideDeleteModal() {
+    deleteModal.classList.remove("show");
+    deleteModalCallback = null;
+  }
+
+  deleteModalCancel.addEventListener("click", hideDeleteModal);
+  deleteModalConfirm.addEventListener("click", () => {
+    if (deleteModalCallback) deleteModalCallback();
+    hideDeleteModal();
+  });
+  deleteModal.addEventListener("click", (e) => {
+    if (e.target === deleteModal) hideDeleteModal();
+  });
+
+  // Expose modal functions for sidebar.js
+  window.showDeleteModal = showDeleteModal;
+  window.showRenameModal = showRenameModal;
+
+  // ── Helpers ──────────────────────────────────────────────────────────────
+
+  function stringifyStudyItem(item) {
+    if (!item || !item.content) return "";
+    let text = `STUDY ITEM CONTEXT:\nType: ${item.type}\nTitle: ${item.title || "Untitled"}\nDescription: ${item.description || ""}\n\nCONTENT:\n`;
+    const content = item.content;
+
+    if (item.type === "flashcards" && Array.isArray(content.cards)) {
+      content.cards.forEach((c, i) => {
+        text += `Card ${i + 1}:\nQ: ${c.front}\nA: ${c.back}\n\n`;
+      });
+    } else if (item.type === "studyGuide") {
+      text += content.markdown || "";
+      if (!content.markdown && Array.isArray(content.sections)) {
+        content.sections.forEach((s) => {
+          text += `## ${s.title}\n${s.body}\n\n`;
+        });
+      }
+    } else if (item.type === "practiceTest" && Array.isArray(content.questions)) {
+      content.questions.forEach((q, i) => {
+        text += `Question ${i + 1}: ${q.text}\nAnswer: ${q.answer}\n\n`;
+      });
+    }
+    return text;
+  }
+
+  // ── Cache Sync Functions ────────────────────────────────────────────────────
+  // Compare new data from Firestore with cached data, update cache + re-render only if different
+  function compareAndUpdate(type, newData) {
+    const oldData = type === 'sessions' ? sessionsCache : studyItemsCache;
+    const isDifferent = JSON.stringify(oldData) !== JSON.stringify(newData);
+    
+    if (isDifferent) {
+      if (type === 'sessions') {
+        sessionsCache = newData;
+        localStorage.setItem(Storage.CACHE_SESSIONS_KEY, JSON.stringify(newData));
+        renderChatHistory();
+      } else {
+        studyItemsCache = newData;
+        localStorage.setItem(Storage.CACHE_STUDY_ITEMS_KEY, JSON.stringify(newData));
+        renderStudyItemsHistory();
+      }
+    }
+  }
+
+  // ── App Initialisation ────────────────────────────────────────────────────
+  // Called once window.KorahDB is ready (after Firebase Auth resolves).
+
+  async function initApp() {
+    // 1. Load from cache immediately (synchronous, no await)
+    const cachedSessions = Storage.getCachedSessions();
+    const cachedStudyItems = Storage.getCachedStudyItems();
+    
+    sessionsCache = Object.keys(cachedSessions).length > 0 ? cachedSessions : {};
+    studyItemsCache = Object.keys(cachedStudyItems).length > 0 ? cachedStudyItems : {};
+
+    // 2. Resolve current session
+    currentSessionId = Storage.getCurrentSessionId();
+    currentSession   = currentSessionId ? sessionsCache[currentSessionId] : null;
+
+    if (!currentSession) {
+      currentSessionId = Storage.createSession("New Chat", "general");
+      currentSession   = sessionsCache[currentSessionId];
+      Storage.setCurrentSessionId(currentSessionId);
+    }
+
+    // Restore SAT sub-mode from session (only if this session is SAT mode)
+    if (currentSession.mode === "sat" && currentSession.satSubMode) {
+      satSubMode = currentSession.satSubMode;
+    }
+
+    history.length = 0;
+    history.push(...(currentSession.messages || []));
+
+    // 3. Render UI immediately with cached data
+    applyModeTheme(currentSession.mode || "general");
+    renderChatHistory();
+    renderStudyItemsHistory();
+    loadSessionMessages();
+    resizeInput();
+    updateCharCount();
+    setupWelcomeInput();
+    setupFileAttachment();
+
+    // 4. Deep link: open specific session from hash (e.g. chat.html#session_123)
+    const hash = window.location.hash.slice(1);
+    if (hash && hash.startsWith("session_") && sessionsCache[hash]) {
+      switchToSession(hash);
+    }
+
+    // 5. Study Link: open from ?study=ID
+    const params  = new URLSearchParams(window.location.search);
+    const studyId = params.get("study");
+    const forceNewFlag = localStorage.getItem("korah_new_chat_trigger") === "true";
+
+    if (forceNewFlag) {
+      localStorage.removeItem("korah_new_chat_trigger");
+      const newId = Storage.createSession("New Chat", "general");
+      switchToSession(newId);
+    } else if (studyId) {
+      const item = studyItemsCache[studyId];
+      if (item) {
+        const existingId = Object.keys(sessionsCache).find(
+          (id) => sessionsCache[id].studyId === studyId
+        );
+        if (existingId) {
+          switchToSession(existingId);
+        } else {
+          const title        = (item.title || "Study Item") + " Discussion";
+          const newSessionId = Storage.createSession(title, item.subject || "general");
+          const newSession   = sessionsCache[newSessionId];
+          newSession.studyId = studyId;
+          newSession.messages.push({ role: "system", content: stringifyStudyItem(item) });
+          newSession.messages.push({
+            role: "assistant",
+            content: `I've loaded your **${item.type}** on "**${item.title}**" and have full context of the content. \n\nHow would you like to continue? I can:\n- **Quiz you** on specific sections\n- **Explain complex concepts** in more detail\n- **Summarize key points** for quick review\n- **Add more content** to this topic\n\nWhat's on your mind?`,
+          });
+          Storage.saveSession(newSessionId, newSession);
+          switchToSession(newSessionId);
+        }
+      }
+    }
+
+    // 6. Attach Firestore listeners for background sync (errors won't affect UI)
+    window.KorahDB.onConversationsChange((docsMap) => {
+      compareAndUpdate('sessions', docsMap);
+    });
+
+    window.KorahDB.onStudyItemsChange((docsMap) => {
+      compareAndUpdate('studyItems', docsMap);
+    });
+  }
+
+  // Guard against edge-case where korahReady already fired before this script ran.
+  if (window._korahReadyFired) {
+    initApp();
+  } else {
+    window.addEventListener("korahReady", initApp, { once: true });
+  }
+
+  // ── Constellation field ──
+
+})();
+
+function initConstellationField() {
+  const field = document.getElementById('constellation-field');
+  if (!field) return;
+  const DOT_COUNT = 60;
+  for (let i = 0; i < DOT_COUNT; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'c-dot';
+    const size = 2 + Math.random() * 3;
+    const x = Math.random() * 100;
+    const y = Math.random() * 100;
+    const dur = 8 + Math.random() * 16;
+    const dx1 = (Math.random() - 0.5) * 80;
+    const dy1 = (Math.random() - 0.5) * 80;
+    const dx2 = (Math.random() - 0.5) * 80;
+    const dy2 = (Math.random() - 0.5) * 80;
+    dot.style.cssText = `
+      width:${size}px; height:${size}px;
+      left:${x}vw; top:${y}vh;
+      animation-duration:${dur}s;
+      animation-delay:-${Math.random()*dur}s;
+      --dx1:${dx1}px; --dy1:${dy1}px;
+      --dx2:${dx2}px; --dy2:${dy2}px;
+      opacity:${0.3 + Math.random() * 0.5};
+    `;
+    field.appendChild(dot);
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    initConstellationField();
+  });
+} else {
+  initConstellationField();
+}

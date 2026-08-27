@@ -1,0 +1,1644 @@
+/**
+ * Shared sidebar logic for study pages: Recent Chats + Recent Study Items
+ * Reads from Firestore via window.KorahDB (set up by study-firebase-init.js);
+ * falls back to empty caches if KorahDB is unavailable.
+ */
+
+// ── Action Confirmation Modal Handlers ──
+function injectActionModals() {
+  // Inject Clear Data and Logout modals if they don't exist
+  if (!document.getElementById("clear-data-modal")) {
+    const clearDataHTML = `
+      <div id="clear-data-modal" class="delete-modal">
+        <div class="delete-modal-content">
+          <div class="delete-modal-icon">
+            <span class="material-icons-round" style="font-size: 2.5rem; color: var(--red);">warning</span>
+          </div>
+          <h3 class="delete-modal-title">Clear All Data?</h3>
+          <p class="delete-modal-desc">This will remove all your chats, study items, and settings. Your account will remain, but all your local and cloud progress will be wiped. <strong>This cannot be undone.</strong></p>
+          <div class="delete-modal-actions">
+            <button id="clear-data-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
+            <button id="clear-data-modal-confirm" class="delete-modal-btn confirm t-btn clear-everything-btn">Clear Everything</button>
+          </div>
+        </div>
+      </div>
+      <style>
+        .clear-everything-btn {
+          background: var(--red); 
+          color: #fff; 
+          border-color: var(--red);
+          transition: all 0.2s ease;
+        }
+        .clear-everything-btn:hover {
+          background: #ef4444;
+          filter: brightness(1.1);
+          box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
+        }
+        html[data-theme="light"] .clear-everything-btn:hover {
+          background: #dc2626;
+          box-shadow: 0 0 12px rgba(220, 38, 38, 0.2);
+        }
+      </style>
+    `;
+    document.body.insertAdjacentHTML('beforeend', clearDataHTML);
+  }
+
+  if (!document.getElementById("logout-modal")) {
+    const logoutHTML = `
+      <div id="logout-modal" class="delete-modal">
+        <div class="delete-modal-content">
+          <div class="delete-modal-icon">
+            <span class="material-icons-round" style="font-size: 2.5rem; color: var(--p5);">logout</span>
+          </div>
+          <h3 class="delete-modal-title">Log Out?</h3>
+          <p class="delete-modal-desc">Are you sure you want to log out of your session? You'll need to sign in again to access your chats and study tools.</p>
+          <div class="delete-modal-actions">
+            <button id="logout-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
+            <button id="logout-modal-confirm" class="delete-modal-btn confirm t-btn">Log Out</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', logoutHTML);
+  }
+}
+
+function initActionModals() {
+  injectActionModals();
+
+  const renameModal = document.getElementById("rename-modal");
+  const deleteModal = document.getElementById("delete-modal");
+  const clearDataModal = document.getElementById("clear-data-modal");
+  const logoutModal = document.getElementById("logout-modal");
+
+  // Standardize existing Rename/Delete modal icons to Material Icons
+  if (renameModal) {
+    const icon = renameModal.querySelector('.delete-modal-icon');
+    if (icon) icon.innerHTML = '<span class="material-icons-round" style="font-size: 2.5rem; color: var(--p5);">edit</span>';
+  }
+  if (deleteModal) {
+    const icon = deleteModal.querySelector('.delete-modal-icon');
+    if (icon) icon.innerHTML = '<span class="material-icons-round" style="font-size: 2.5rem; color: var(--red);">delete</span>';
+  }
+
+  const renameInput = document.getElementById("rename-modal-input");
+  const renameDesc = document.getElementById("rename-modal-desc");
+  const renameCancel = document.getElementById("rename-modal-cancel");
+  const renameConfirm = document.getElementById("rename-modal-confirm");
+  const deleteName = document.getElementById("delete-modal-name");
+  const deleteCancel = document.getElementById("delete-modal-cancel");
+  const deleteConfirm = document.getElementById("delete-modal-confirm");
+  
+  const clearDataCancel = document.getElementById("clear-data-modal-cancel");
+  const clearDataConfirm = document.getElementById("clear-data-modal-confirm");
+  const logoutCancel = document.getElementById("logout-modal-cancel");
+  const logoutConfirm = document.getElementById("logout-modal-confirm");
+
+  let renameCallback = null;
+  let deleteCallback = null;
+  let clearDataCallback = null;
+  let logoutCallback = null;
+
+  function showRenameModal(currentName, desc, onConfirm) {
+    if (!renameModal) return;
+    renameInput.value = currentName || "";
+    if (renameDesc) renameDesc.textContent = desc || "Enter a new name";
+    renameCallback = onConfirm;
+    renameModal.classList.add("show");
+    setTimeout(() => { renameInput.focus(); renameInput.select(); }, 50);
+  }
+
+  function showDeleteModal(name, onConfirm) {
+    if (!deleteModal) return;
+    if (deleteName) deleteName.textContent = name || "this item";
+    deleteCallback = onConfirm;
+    deleteModal.classList.add("show");
+  }
+
+  function showClearDataModal(onConfirm) {
+    if (!clearDataModal) return;
+    clearDataCallback = onConfirm;
+    clearDataModal.classList.add("show");
+  }
+
+  function showLogoutModal(onConfirm) {
+    if (!logoutModal) return;
+    logoutCallback = onConfirm;
+    logoutModal.classList.add("show");
+  }
+
+  function hideModals() {
+    [renameModal, deleteModal, clearDataModal, logoutModal].forEach(m => m?.classList.remove("show"));
+    renameCallback = deleteCallback = clearDataCallback = logoutCallback = null;
+  }
+
+  renameCancel?.addEventListener("click", hideModals);
+  renameConfirm?.addEventListener("click", () => {
+    const v = renameInput.value.trim();
+    if (v && renameCallback) renameCallback(v);
+    hideModals();
+  });
+  renameInput?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); renameConfirm?.click(); }
+    if (e.key === "Escape") hideModals();
+  });
+
+  deleteCancel?.addEventListener("click", hideModals);
+  deleteConfirm?.addEventListener("click", () => {
+    if (deleteCallback) deleteCallback();
+    hideModals();
+  });
+
+  clearDataCancel?.addEventListener("click", hideModals);
+  clearDataConfirm?.addEventListener("click", () => {
+    if (clearDataCallback) clearDataCallback();
+    hideModals();
+  });
+
+  logoutCancel?.addEventListener("click", hideModals);
+  logoutConfirm?.addEventListener("click", () => {
+    if (logoutCallback) logoutCallback();
+    hideModals();
+  });
+
+  [renameModal, deleteModal, clearDataModal, logoutModal].forEach(modal => {
+    modal?.addEventListener("click", (e) => {
+      if (e.target === modal) hideModals();
+    });
+  });
+
+  window.showRenameModal = showRenameModal;
+  window.showDeleteModal = showDeleteModal;
+  window.showClearDataModal = showClearDataModal;
+  window.showLogoutModal = showLogoutModal;
+}
+
+// Use custom modals if available, otherwise fallback to browser dialogs
+function showSidebarRenameModal(currentName, desc, onConfirm) {
+  if (window.showRenameModal) {
+    window.showRenameModal(currentName, desc, onConfirm);
+  } else {
+    const n = prompt(desc || "New name:", currentName);
+    if (n && n.trim() && onConfirm) onConfirm(n.trim());
+  }
+}
+
+function showSidebarDeleteModal(name, onConfirm) {
+  if (window.showDeleteModal) {
+    window.showDeleteModal(name, onConfirm);
+  } else {
+    if (confirm(`Delete "${name}"? This cannot be undone.`)) {
+      if (onConfirm) onConfirm();
+    }
+  }
+}
+
+(function () {
+  // ─── In-memory caches (populated by Firestore listeners once korahReady fires) ─
+  let _sessionsCache   = {};
+  let _studyItemsCache = {};
+
+  function getSessions()   { return _sessionsCache; }
+  function getStudyItems() { return _studyItemsCache; }
+
+  const MODE_EMOJI = {
+    general: "✨", math: "🧮", physics: "⚛️",
+    chemistry: "⚗️", biology: "🧬", history: "📜", literature: "📚",
+    "sat-math": "📊", sat: "📝",
+  };
+  function getModeEmoji(mode) { return MODE_EMOJI[mode] || "📚"; }
+
+  const MODE_ICON = {
+    general: "auto_awesome", math: "calculate", physics: "science",
+    chemistry: "science", biology: "science", science: "science", history: "library_books", literature: "menu_book",
+    sat: "analytics", "sat-math": "analytics",
+  };
+  const MODE_ICON_COLOR = {
+    general: "ic-gen", math: "ic-math", physics: "ic-sci",
+    chemistry: "ic-sci", biology: "ic-sci", science: "ic-sci", history: "ic-hist", literature: "ic-lit",
+    sat: "ic-sat-m", "sat-math": "ic-sat-m",
+  };
+  function getModeIconHtml(mode) {
+    const icon = MODE_ICON[mode] || "menu_book";
+    const color = MODE_ICON_COLOR[mode] || "ic-lit";
+    return `<span class="m-icon ${color}">${icon}</span>`;
+  }
+
+  const TYPE_EMOJI = { flashcards: "🃏", studyGuide: "📖", practiceTest: "🎯" };
+  function getTypeEmoji(type) { return TYPE_EMOJI[type] || "📄"; }
+
+  const TYPE_ICON = { flashcards: "style", studyGuide: "auto_stories", practiceTest: "gps_fixed" };
+  const TYPE_ICON_COLOR = { flashcards: "ic-flash", studyGuide: "ic-guide", practiceTest: "ic-quiz" };
+  function getTypeIconHtml(type) {
+    const icon = TYPE_ICON[type] || "description";
+    const color = TYPE_ICON_COLOR[type] || "ic-gen";
+    return `<span class="m-icon ${color}">${icon}</span>`;
+  }
+
+  /**
+   * Standardizes sidebar section labels with material icons
+   */
+  function standardizeSidebarLabels() {
+    const labels = document.querySelectorAll(".sidebar-section-label");
+    labels.forEach(label => {
+      const text = label.textContent.trim();
+      if (text === "Recent Chats" && !label.querySelector(".material-icons-round")) {
+        label.innerHTML = `<span class="material-icons-round" style="font-size: 1.1rem; opacity: 0.7; margin-right: 8px;">chat</span><span>Recent Chats</span>`;
+        label.style.display = "flex";
+        label.style.alignItems = "center";
+      } else if (text === "Recent Study Items" && !label.querySelector(".material-icons-round")) {
+        label.innerHTML = `<span class="material-icons-round" style="font-size: 1.1rem; opacity: 0.7; margin-right: 8px;">school</span><span>Recent Study Items</span>`;
+        label.style.display = "flex";
+        label.style.alignItems = "center";
+      }
+    });
+  }
+
+  // ── Render Chat History ──
+  function _getChatLogoPath() {
+    return '../logo-images/newlogo12.png';
+  }
+
+  function renderChatHistory(container, baseUrl) {
+    if (!container) return;
+    const sessions = getSessions();
+    const ids = Object.keys(sessions).sort(
+      (a, b) => new Date(sessions[b].updatedAt) - new Date(sessions[a].updatedAt)
+    );
+    container.innerHTML = "";
+    if (ids.length === 0) {
+      container.innerHTML = `
+        <div class="chat-history-empty">
+          <img src="${_getChatLogoPath()}" alt="Korah" class="chat-history-empty-logo">
+          <div class="chat-history-empty-title">No recent chats</div>
+          <div class="chat-history-empty-sub">Start a conversation to see it here.</div>
+        </div>
+      `;
+      return;
+    }
+    ids.forEach((id) => {
+      const s = sessions[id];
+      const a = document.createElement("a");
+      a.href = baseUrl + "#" + id;
+      a.className = "history-item t-btn";
+      a.setAttribute("data-session", id);
+      a.setAttribute("title", s.title || "New Chat");
+      a.style.textDecoration = "none";
+      a.style.color = "inherit";
+
+      const checkbox = document.createElement("span");
+      checkbox.className = "item-checkbox";
+
+      const icon = document.createElement("span");
+      icon.className = "history-icon";
+      icon.innerHTML = getModeIconHtml(s.mode);
+
+      const text = document.createElement("span");
+      text.className = "history-text";
+      text.textContent = (s.title || "New Chat").slice(0, 28) + ((s.title || "").length > 28 ? "…" : "");
+
+      const actions = document.createElement("div");
+      actions.className = "history-actions";
+      actions.innerHTML = `
+        <button class="history-action-btn rename-btn" title="Rename" data-id="${id}">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+        </button>
+        <button class="history-action-btn delete-btn" title="Delete" data-id="${id}">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+          </svg>
+        </button>
+      `;
+
+      a.appendChild(checkbox);
+      a.appendChild(icon);
+      a.appendChild(text);
+      a.appendChild(actions);
+      container.appendChild(a);
+
+      actions.querySelector(".rename-btn").addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const all = getSessions();
+        const session = all[id];
+        if (!session) return;
+        showSidebarRenameModal(session.title || "", "Enter a new name for this chat:", (newTitle) => {
+          session.title = newTitle;
+          session.updatedAt = new Date().toISOString();
+          _sessionsCache[id] = session;
+          if (window.KorahDB) window.KorahDB.setConversation(id, session);
+          renderChatHistory(container, baseUrl);
+        });
+      });
+
+      actions.querySelector(".delete-btn").addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        showSidebarDeleteModal(s.title || "this chat", () => {
+          delete _sessionsCache[id];
+          if (window.KorahDB) window.KorahDB.deleteConversation(id);
+          renderChatHistory(container, baseUrl);
+        });
+      });
+    });
+  }
+
+  // ── Render Study Items History ──
+  function renderStudyItemsHistory(container, itemPageUrl) {
+    // Wait for data to be loaded from cache/storage first
+    const cachedStudyItems = localStorage.getItem("korah_study_items_cache");
+    if (cachedStudyItems) {
+      try {
+        const parsed = JSON.parse(cachedStudyItems);
+        if (Object.keys(parsed).length > 0) {
+          _studyItemsCache = parsed;
+        }
+      } catch (e) {}
+    }
+    
+    const items = getStudyItems();
+    const itemIds = Object.keys(items);
+
+    const navLinks = document.querySelectorAll(".sidebar-nav-link");
+    navLinks.forEach(link => {
+      const href = link.getAttribute("href");
+      if (href.includes("sat/")) return; // Skip SAT section links
+      if (href.includes("feed.html")) {
+        link.innerHTML = "<span class='material-icons-round' style='font-size: 1.25rem;'>school</span> <span class='nav-text'>Study</span>";
+      } else if (href.includes("chat.html") && !href.includes("math-chat")) {
+        link.innerHTML = "<span class='material-icons-round' style='font-size: 1.25rem;'>chat</span> <span class='nav-text'>Ask Korah</span>";
+      }
+      // All other links (productivity) remain unchanged
+    });
+
+    if (!container) return;
+    
+    // Standardize empty state UI
+    const emptyEl = document.getElementById("study-items-empty");
+    if (emptyEl) {
+      emptyEl.innerHTML = `
+        <span class="study-items-empty-icon" aria-hidden="true"><span class="m-icon" style="font-size: 2rem; margin-top:2rem;">school</span></span>
+        <div class="study-items-empty-title" style="font-size: 0.85rem; font-weight: 600; color: var(--tx2);">No study items yet</div>
+        <div class="study-items-empty-sub" style="font-size: 0.75rem; color: var(--tx3);">Create one to see it here.</div>
+      `;
+      emptyEl.style.padding = "20px 10px";
+      emptyEl.style.textAlign = "center";
+      emptyEl.style.display = "flex";
+      emptyEl.style.flexDirection = "column";
+      emptyEl.style.alignItems = "center";
+    }
+
+    const list = itemIds
+      .map((id) => ({ id, ...items[id] }))
+      .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
+    container.innerHTML = "";
+    if (list.length === 0) {
+      if (emptyEl) {
+        emptyEl.classList.remove("hidden");
+        container.classList.add("is-empty");
+        container.appendChild(emptyEl);
+      }
+    } else {
+      if (emptyEl) emptyEl.classList.add("hidden");
+      container.classList.remove("is-empty");
+    }
+    list.forEach((item) => {
+      const a = document.createElement("a");
+      const itemDir = (itemPageUrl || "item.html").replace(/[^/]*$/, '');
+      const baseUrl = item.type === "studyGuide" ? (itemDir + "guide.html") : (itemPageUrl || "item.html");
+      a.href = baseUrl + "?id=" + encodeURIComponent(item.id);
+      a.className = "history-item t-btn";
+      a.setAttribute("data-study-id", item.id);
+      a.setAttribute("title", item.title || "Untitled");
+      a.style.textDecoration = "none";
+      a.style.color = "inherit";
+
+      const checkbox = document.createElement("span");
+      checkbox.className = "item-checkbox";
+
+      const icon = document.createElement("span");
+      icon.className = "history-icon";
+      icon.innerHTML = getTypeIconHtml(item.type);
+
+      const text = document.createElement("span");
+      text.className = "history-text";
+      text.textContent = (item.title || "Untitled").slice(0, 28) + ((item.title || "").length > 28 ? "…" : "");
+
+      const actions = document.createElement("div");
+      actions.className = "history-actions";
+      actions.innerHTML = `
+        <button class="history-action-btn rename-study-btn" title="Rename" data-id="${item.id}">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+        </button>
+        <button class="history-action-btn delete-study-btn" title="Delete" data-id="${item.id}">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+          </svg>
+        </button>
+      `;
+
+      a.appendChild(checkbox);
+      a.appendChild(icon);
+      a.appendChild(text);
+      a.appendChild(actions);
+      container.appendChild(a);
+
+      actions.querySelector(".rename-study-btn").addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const all = getStudyItems();
+        const si = all[item.id];
+        if (!si) return;
+        showSidebarRenameModal(si.title || "", "Enter a new name for this study item:", (newTitle) => {
+          si.title = newTitle;
+          si.updatedAt = new Date().toISOString();
+          _studyItemsCache[item.id] = si;
+          if (window.KorahDB) window.KorahDB.setStudyItem(item.id, si);
+          renderStudyItemsHistory(container, itemPageUrl);
+        });
+      });
+
+      actions.querySelector(".delete-study-btn").addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        showSidebarDeleteModal(item.title || "this item", () => {
+          delete _studyItemsCache[item.id];
+          if (window.KorahDB) window.KorahDB.deleteStudyItem(item.id);
+          renderStudyItemsHistory(container, itemPageUrl);
+        });
+      });
+    });
+    if (emptyEl) emptyEl.classList.toggle("hidden", Object.keys(items).length > 0);
+  }
+
+  function initBackground() {
+    const canvas = document.getElementById("bg-canvas");
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    let w, h, stars = [], shootingStars = [], dots = [];
+
+    function resize() {
+      w = canvas.width = window.innerWidth;
+      h = canvas.height = window.innerHeight;
+      initStars();
+      initDots();
+    }
+
+    class Star {
+      constructor() { this.reset(); }
+      reset() {
+        this.x = Math.random() * w;
+        this.y = Math.random() * h;
+        this.size = Math.random() * 1.5;
+        this.opacity = Math.random() * 0.7 + 0.1;
+        this.twinkleSpeed = Math.random() * 0.015 + 0.005;
+        this.twinkleDir = Math.random() > 0.5 ? 1 : -1;
+        const colors = ["#ffffff", "#eef2ff", "#fffdf2"];
+        this.color = colors[Math.floor(Math.random() * colors.length)];
+      }
+      update() {
+        this.opacity += this.twinkleSpeed * this.twinkleDir;
+        if (this.opacity > 0.9 || this.opacity < 0.1) this.twinkleDir *= -1;
+      }
+      draw() {
+        ctx.fillStyle = this.color;
+        ctx.globalAlpha = this.opacity;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        if (this.size > 1.1) {
+          ctx.shadowBlur = 5;
+          ctx.shadowColor = this.color;
+        } else ctx.shadowBlur = 0;
+      }
+    }
+
+    class ShootingStar {
+      constructor() { this.reset(); }
+      reset() {
+        this.x = Math.random() * w;
+        this.y = Math.random() * h * 0.4;
+        this.len = Math.random() * 80 + 40;
+        this.speedX = -(Math.random() * 15 + 10);
+        this.speedY = Math.random() * 10 + 5;
+        this.opacity = 1;
+        this.active = false;
+        this.waitTime = Math.random() * 600 + 300;
+      }
+      update() {
+        if (!this.active) {
+          this.waitTime--;
+          if (this.waitTime <= 0) this.active = true;
+          return;
+        }
+        this.x += this.speedX;
+        this.y += this.speedY;
+        this.opacity -= 0.02;
+        if (this.opacity <= 0 || this.y > h || this.x < 0) this.reset();
+      }
+      draw() {
+        if (!this.active) return;
+        ctx.globalAlpha = this.opacity;
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(this.x, this.y);
+        ctx.lineTo(this.x - this.speedX * 5, this.y - this.speedY * 5);
+        ctx.stroke();
+      }
+    }
+
+    class Dot {
+      constructor() {
+        this.x = Math.random() * w;
+        this.y = Math.random() * h;
+        this.vx = (Math.random() - 0.5) * 0.4;
+        this.vy = (Math.random() - 0.5) * 0.4;
+        this.r = 2 + Math.random() * 2;
+      }
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        if (this.x < 0 || this.x > w) this.vx *= -1;
+        if (this.y < 0 || this.y > h) this.vy *= -1;
+      }
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(139,92,246,0.5)';
+        ctx.fill();
+      }
+    }
+
+    function initStars() {
+      stars = [];
+      const starCount = Math.floor((w * h) / 3000);
+      for (let i = 0; i < starCount; i++) stars.push(new Star());
+    }
+
+    function initDots() {
+      dots = [];
+      const dotCount = Math.floor((w * h) / 15000); // Fewer dots for constellation
+      const count = Math.min(Math.max(dotCount, 40), 100);
+      for (let i = 0; i < count; i++) dots.push(new Dot());
+    }
+
+    shootingStars = [];
+    for (let i = 0; i < 2; i++) shootingStars.push(new ShootingStar());
+
+    function animate() {
+      ctx.clearRect(0, 0, w, h);
+      const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+
+      if (isLight) {
+        ctx.globalAlpha = 1.0;
+        ctx.shadowBlur = 0;
+        for (let i = 0; i < dots.length; i++) {
+          for (let j = i + 1; j < dots.length; j++) {
+            const dx = dots[i].x - dots[j].x;
+            const dy = dots[i].y - dots[j].y;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist < 160) {
+              ctx.beginPath();
+              ctx.moveTo(dots[i].x, dots[i].y);
+              ctx.lineTo(dots[j].x, dots[j].y);
+              ctx.strokeStyle = `rgba(139,92,246,${(1 - dist/160) * 0.3})`;
+              ctx.lineWidth = 1;
+              ctx.stroke();
+            }
+          }
+        }
+        dots.forEach(d => { d.update(); d.draw(); });
+      } else {
+        stars.forEach(s => { s.update(); s.draw(); });
+        shootingStars.forEach(s => { s.update(); s.draw(); });
+      }
+      requestAnimationFrame(animate);
+    }
+
+    window.addEventListener("resize", resize);
+    resize();
+    animate();
+  }
+
+  function updateActiveItem(id) {
+    const container = document.getElementById("chat-history");
+    if (!container) return;
+    container.querySelectorAll(".history-item").forEach(item => {
+      if (item.getAttribute("data-session") === id) item.classList.add("active");
+      else item.classList.remove("active");
+    });
+  }
+
+
+
+  // ── Multi-select Logic ──
+  function initChatMultiSelect(container, baseUrl, onItemClick) {
+    const bar = document.getElementById("chat-select-bar");
+    const countEl = document.getElementById("chat-select-count");
+    const deleteBtn = document.getElementById("chat-delete-selected");
+    const selectAllBtn = document.getElementById("chat-select-all");
+    const deselectAllBtn = document.getElementById("chat-deselect-all");
+    if (!container || !bar) return;
+
+    const selected = new Set();
+    const updateBar = () => {
+      if (selected.size > 0) {
+        bar.classList.add("show");
+        countEl.textContent = `${selected.size} selected`;
+        deleteBtn.textContent = `Delete (${selected.size})`;
+      } else bar.classList.remove("show");
+    };
+
+    container.addEventListener("click", (e) => {
+      const item = e.target.closest(".history-item");
+      if (!item || e.target.closest(".history-action-btn")) return;
+      const id = item.getAttribute("data-session");
+      if (!id) return;
+      const clickedCheckbox = e.target.closest(".item-checkbox");
+      if (selected.size === 0 && !clickedCheckbox) {
+        if (onItemClick) {
+          e.preventDefault();
+          onItemClick(id);
+          updateActiveItem(id);
+        }
+        return;
+      }
+      e.preventDefault();
+      if (selected.has(id)) {
+        selected.delete(id);
+        item.classList.remove("selected");
+      } else {
+        selected.add(id);
+        item.classList.add("selected");
+      }
+      updateBar();
+    });
+
+    selectAllBtn?.addEventListener("click", () => {
+      const items = container.querySelectorAll(".history-item");
+      selected.clear();
+      items.forEach(item => {
+        const id = item.getAttribute("data-session");
+        if (id) { selected.add(id); item.classList.add("selected"); }
+      });
+      updateBar();
+    });
+
+    deselectAllBtn?.addEventListener("click", () => {
+      selected.clear();
+      container.querySelectorAll(".history-item.selected").forEach(el => el.classList.remove("selected"));
+      updateBar();
+    });
+
+    deleteBtn?.addEventListener("click", () => {
+      if (selected.size === 0) return;
+      showSidebarDeleteModal(`${selected.size} chat${selected.size > 1 ? "s" : ""}`, () => {
+        const ids = [...selected];
+        ids.forEach(id => delete _sessionsCache[id]);
+        if (window.KorahDB) window.KorahDB.deleteConversations(ids);
+        selected.clear();
+        container.querySelectorAll(".history-item.selected").forEach(el => el.classList.remove("selected"));
+        updateBar();
+        renderChatHistory(container, baseUrl);
+      });
+    });
+  }
+
+  function initStudyMultiSelect(container, itemPageUrl) {
+    const bar = document.getElementById("study-select-bar");
+    const countEl = document.getElementById("study-select-count");
+    const deleteBtn = document.getElementById("study-delete-selected");
+    const selectAllBtn = document.getElementById("study-select-all");
+    const deselectAllBtn = document.getElementById("study-deselect-all");
+    if (!container || !bar) return;
+
+    const selected = new Set();
+    const updateBar = () => {
+      if (selected.size > 0) {
+        bar.classList.add("show");
+        countEl.textContent = `${selected.size} selected`;
+        deleteBtn.textContent = `Delete (${selected.size})`;
+      } else bar.classList.remove("show");
+    };
+
+    selectAllBtn.addEventListener("click", () => {
+      const items = container.querySelectorAll(".history-item");
+      const all = selected.size === items.length;
+      selected.clear();
+      items.forEach(el => el.classList.remove("selected"));
+      if (!all) {
+        items.forEach(item => {
+          const id = item.getAttribute("data-study-id");
+          if (id) { selected.add(id); item.classList.add("selected"); }
+        });
+      }
+      updateBar();
+    });
+
+    deselectAllBtn.addEventListener("click", () => {
+      selected.clear();
+      container.querySelectorAll(".history-item.selected").forEach(el => el.classList.remove("selected"));
+      updateBar();
+    });
+
+    // Make elements clickable even if not attached yet
+    selectAllBtn.style.pointerEvents = "auto";
+    deselectAllBtn.style.pointerEvents = "auto";
+
+    const attachListeners = () => {
+      container.querySelectorAll(".history-item").forEach(item => {
+        if (item._multiSelectBound) return;
+        item._multiSelectBound = true;
+        item.addEventListener("click", (e) => {
+          if (e.target.closest(".history-action-btn")) return;
+          const id = item.getAttribute("data-study-id");
+          if (!id) return;
+          const clickedCheckbox = e.target.closest(".item-checkbox");
+          if (selected.size === 0 && !clickedCheckbox) return;
+          e.preventDefault();
+          if (selected.has(id)) {
+            selected.delete(id);
+            item.classList.remove("selected");
+          } else {
+            selected.add(id);
+            item.classList.add("selected");
+          }
+          updateBar();
+        });
+      });
+    };
+
+    new MutationObserver(attachListeners).observe(container, { childList: true });
+    attachListeners();
+  }
+
+  // ── Timer Widget ──
+  let _timerWidgetInitialized = false;
+  let _timerUnsubscribe = null;
+  function initTimerWidget() {
+    if (_timerWidgetInitialized) return;
+    _timerWidgetInitialized = true;
+
+    // Wait for KorahTimer to be available
+    const initCheck = setInterval(() => {
+      if (window.KorahTimer) {
+        clearInterval(initCheck);
+        setupTimerWidget();
+      }
+    }, 100);
+  }
+
+  function setupTimerWidget() {
+    const productivityLink = document.querySelector('.productivity-link');
+    if (!productivityLink) return;
+
+    // Create wrapper for productivity link + timer widget
+    const wrapper = document.createElement('div');
+    wrapper.className = 'productivity-wrapper';
+    wrapper.style.position = 'relative';
+
+    // Move the productivity link into wrapper
+    productivityLink.parentNode.insertBefore(wrapper, productivityLink);
+    wrapper.appendChild(productivityLink);
+
+    // Create timer widget container (always visible)
+    const widgetContainer = document.createElement('div');
+    widgetContainer.className = 'timer-widget-container';
+    widgetContainer.id = 'timer-widget-container';
+    wrapper.appendChild(widgetContainer);
+
+    // Listen to timer updates
+    _timerUnsubscribe = window.KorahTimer.addListener((eventType, state) => {
+      updateTimerWidget(state);
+    });
+
+    // Initial render
+    updateTimerWidget(window.KorahTimer.getState());
+  }
+
+
+
+  function updateTimerWidget(state) {
+    const container = document.getElementById('timer-widget-container');
+    if (!container) return;
+
+    // Ensure KorahTimer is available
+    if (!window.KorahTimer) {
+      container.innerHTML = `
+        <div class="timer-widget-error">
+          <span class="timer-widget-error-icon">⏱️</span>
+          <span class="timer-widget-error-text">Timer loading...</span>
+        </div>
+      `;
+      return;
+    }
+
+    // Show celebration when timer just completed
+    if (state.completedAt && (Date.now() - state.completedAt < 30000)) {
+      container.innerHTML = `
+        <div class="timer-celebration">
+          <div class="timer-celebration-icon">🎉</div>
+          <div class="timer-celebration-text">Timer Complete!</div>
+          <button class="timer-celebration-btn" onclick="window.KorahTimer.dismissCompletion()" aria-label="Dismiss timer completion and start new timer">
+            Start New Timer
+          </button>
+        </div>
+      `;
+      return;
+    }
+
+    const remaining = window.KorahTimer.getRemainingSeconds();
+    // const totalSeconds = window.KorahTimer.getState().totalSeconds;
+    const preset = window.KorahTimer.getState().preset;
+    const progress = preset > 0 ? ((preset * 60 - remaining) / (preset * 60)) * 100 : 0;
+    // const remaining = window.KorahTimer.getRemainingSeconds();
+    // const progress = window.KorahTimer.getProgress();
+    const isIdle = !state.isRunning && state.totalSeconds === state.preset * 60;
+    const isPaused = !state.isRunning && state.totalSeconds < state.preset * 60 && state.totalSeconds > 0;
+
+    // Escape HTML to prevent XSS
+    const formatTimeSafe = (seconds) => {
+      const formatted = window.KorahTimer.formatTime(seconds);
+      return formatted.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    };
+
+    if (state.isRunning) {
+      // Timer is running - show countdown with circular progress
+      const circumference = 2 * Math.PI * 45; // radius 45
+      const dashoffset = circumference * (1 - progress / 100);
+      container.innerHTML = `
+        <div class="timer-widget running circular" role="timer" aria-live="polite" aria-label="Timer running, ${formatTimeSafe(remaining)} remaining">
+          <div class="timer-widget-circular-layout">
+            <div class="timer-widget-left">
+              <div class="timer-widget-time-large">${window.KorahTimer.formatTime(remaining)}</div>
+              <div class="timer-widget-controls-circular">
+                <button class="timer-widget-btn" onclick="window.KorahTimer.pause()" title="Pause timer" aria-label="Pause timer">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                </button>
+                <button class="timer-widget-btn" onclick="window.KorahTimer.reset(${state.preset})" title="Reset timer" aria-label="Reset timer">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="timer-widget-right">
+              <svg class="timer-widget-svg" viewBox="0 0 100 100">
+                <circle class="timer-widget-circle-bg" cx="50" cy="50" r="45" />
+                <circle class="timer-widget-circle-progress" cx="50" cy="50" r="45" 
+                  stroke-dasharray="${circumference}" 
+                  stroke-dashoffset="${dashoffset}" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      `;
+    } else if (isPaused) {
+      // Timer is paused - show resume option with circular progress
+      const circumference = 2 * Math.PI * 45; // radius 45
+      const dashoffset = circumference * (1 - progress / 100);
+      container.innerHTML = `
+        <div class="timer-widget paused circular" role="timer" aria-live="polite" aria-label="Timer paused, ${formatTimeSafe(remaining)} remaining">
+          <div class="timer-widget-circular-layout">
+            <div class="timer-widget-left">
+              <div class="timer-widget-time-large">${window.KorahTimer.formatTime(remaining)}</div>
+              <div class="timer-widget-controls-circular">
+                <button class="timer-widget-btn resume" onclick="window.KorahTimer.resume()" title="Resume timer" aria-label="Resume timer">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                </button>
+                <button class="timer-widget-btn" onclick="window.KorahTimer.reset(${state.preset})" title="Reset timer" aria-label="Reset timer">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="timer-widget-right">
+              <svg class="timer-widget-svg" viewBox="0 0 100 100">
+                <circle class="timer-widget-circle-bg" cx="50" cy="50" r="45" />
+                <circle class="timer-widget-circle-progress" cx="50" cy="50" r="45" 
+                  stroke-dasharray="${circumference}" 
+                  stroke-dashoffset="${dashoffset}" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      `;
+    } else {
+      // Timer is idle - collapsed trigger pill
+      const isOpen = container.getAttribute('data-open') === 'true';
+      container.innerHTML = `
+        <div class="timer-widget idle">
+          <button class="timer-idle-trigger" id="timer-idle-trigger">
+            <span style="font-size:13px;">Pomodoro Timer</span>
+            <svg class="timer-idle-chevron" id="timer-idle-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
+          <div class="timer-idle-panel" id="timer-idle-panel">
+            <div class="timer-idle-panel-inner">
+              <div class="timer-preset-grid">
+                <button class="timer-preset-pill" data-mins="5">5 min</button>
+                <button class="timer-preset-pill" data-mins="10">10 min</button>
+                <button class="timer-preset-pill" data-mins="25">25 min</button>
+                <button class="timer-preset-pill" data-mins="custom">Custom</button>
+              </div>
+              <div class="timer-custom-row" id="timer-custom-row" style="display:none;">
+                <input
+                  id="timer-custom-min"
+                  type="text"
+                  inputmode="numeric"
+                  pattern="[0-9]*"
+                  maxlength="3"
+                  placeholder="Minutes"
+                  class="timer-custom-input timer-custom-min-only"
+                />
+              </div>
+              <button class="timer-start-btn" id="timer-start-btn" disabled>▶ Start</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Restore open state after re-render
+      const panel = container.querySelector('#timer-idle-panel');
+      const chevron = container.querySelector('#timer-idle-chevron');
+      if (isOpen) {
+        panel.classList.add('open');
+        chevron.classList.add('open');
+      }
+
+      // Toggle dropdown
+      container.querySelector('#timer-idle-trigger').addEventListener('click', () => {
+        const nowOpen = container.getAttribute('data-open') !== 'true';
+        container.setAttribute('data-open', nowOpen);
+        panel.classList.toggle('open', nowOpen);
+        chevron.classList.toggle('open', nowOpen);
+      });
+
+      const startBtn = container.querySelector('#timer-start-btn');
+      const customRow = container.querySelector('#timer-custom-row');
+      const minInput = container.querySelector('#timer-custom-min');
+      let selectedMins = null;
+
+      const enableStart = () => {
+        startBtn.disabled = false;
+        startBtn.removeAttribute('disabled');
+      };
+
+      // Preset pill selection
+      container.querySelectorAll('.timer-preset-pill').forEach(pill => {
+        pill.addEventListener('click', () => {
+          container.querySelectorAll('.timer-preset-pill').forEach(p => p.classList.remove('active'));
+          pill.classList.add('active');
+          const val = pill.getAttribute('data-mins');
+          if (val === 'custom') {
+            customRow.style.display = 'flex';
+            selectedMins = null;
+            minInput.focus();
+            startBtn.disabled = !(parseInt(minInput.value) > 0);
+          } else {
+            customRow.style.display = 'none';
+            selectedMins = parseFloat(val);
+            enableStart();
+          }
+        });
+      });
+
+      minInput.addEventListener('input', (e) => {
+        e.target.value = e.target.value.replace(/[^0-9]/g, '');
+        if (e.target.value === '0') e.target.value = '';
+        startBtn.disabled = !(parseInt(minInput.value) > 0);
+      });
+
+      minInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') startBtn.click();
+      });
+
+      startBtn.addEventListener('click', () => {
+        const totalMins = selectedMins !== null ? selectedMins : (parseInt(minInput.value) || 0);
+        if (totalMins > 0) window.KorahTimer.start(totalMins);
+      });
+    }
+  }
+
+  // Global function to toggle timer sound
+  window.toggleTimerSound = function() {
+    if (window.KorahTimer) {
+      const currentEnabled = window.KorahTimer.isSoundEnabled();
+      window.KorahTimer.setSoundEnabled(!currentEnabled);
+      // Update the widget to reflect the new state
+      updateTimerWidget(window.KorahTimer.getState());
+    }
+  };
+
+  // ── Theme Logic (Matches More Dropdown) ──
+  function setTheme(theme) {
+    localStorage.setItem('korah_theme', theme);
+    
+    // Calculate effective theme for data-theme attribute
+    let effectiveTheme = theme;
+    if (theme === 'system') {
+      effectiveTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    document.documentElement.setAttribute('data-theme', effectiveTheme);
+    
+    // Update Alpine.js if present
+    const alpineRoot = document.querySelector('[x-data]');
+    if (alpineRoot && alpineRoot.__x) {
+      const alpineData = alpineRoot.__x.$data;
+      if (alpineData && alpineData.theme !== undefined) {
+        alpineData.theme = theme;
+      }
+    } else if (document.documentElement._x_dataStack) {
+      const alpineData = document.documentElement._x_dataStack[0];
+      if (alpineData && alpineData.theme !== undefined) {
+        alpineData.theme = theme;
+      }
+    }
+
+    // Update all theme UI components
+    updateThemeUI(theme);
+  }
+  window.setKorahTheme = setTheme;
+
+  function updateThemeUI(theme) {
+    const currentTheme = theme || localStorage.getItem('korah_theme') || 'dark';
+    
+    // Update checkmarks in "more" dropdown
+    document.querySelectorAll('.more-dropdown-theme-option').forEach(item => {
+      item.classList.toggle('active', item.getAttribute('data-theme') === currentTheme);
+    });
+
+    // Update custom settings dropdown
+    const customSelect = document.getElementById('settings-theme-custom-select');
+    if (customSelect) {
+      const trigger = customSelect.querySelector('.settings-select-trigger');
+      const hiddenInput = document.getElementById('settings-theme-select');
+      if (hiddenInput) hiddenInput.value = currentTheme;
+
+      customSelect.querySelectorAll('.settings-select-option').forEach(opt => {
+        const isSelected = opt.getAttribute('data-value') === currentTheme;
+        opt.classList.toggle('active', isSelected);
+        if (isSelected && trigger) {
+          const icon = opt.querySelector('.material-icons-round:not(.check-icon)').textContent;
+          const text = opt.querySelector('span:not(.material-icons-round)').textContent;
+          const triggerIcon = trigger.querySelector('.trigger-icon');
+          const triggerText = trigger.querySelector('.trigger-text');
+          if (triggerIcon) triggerIcon.textContent = icon;
+          if (triggerText) triggerText.textContent = text;
+        }
+      });
+    }
+  }
+  window.updateKorahThemeUI = updateThemeUI;
+
+  // ── Settings Modal ──
+  function initSettingsModal() {
+    const settingsModal = document.getElementById('settings-modal');
+    const settingsBtn = document.getElementById('settings-btn');
+    const settingsClose = document.getElementById('settings-close');
+    const settingsNameInput = document.getElementById('settings-name-input');
+    const settingsSaveBtn = document.getElementById('settings-save');
+    const settingsClearDataBtn = document.getElementById('settings-clear-data');
+
+    // Custom Theme Dropdown
+    const themeCustomSelect = document.getElementById('settings-theme-custom-select');
+    const themeTrigger = document.getElementById('settings-theme-trigger');
+    const themeMenu = document.getElementById('settings-theme-menu');
+
+    if (!settingsModal || !settingsBtn) return;
+
+    settingsBtn.addEventListener('click', () => {
+      settingsModal.classList.add('show');
+      const savedTheme = localStorage.getItem('korah_theme') || 'dark';
+      const savedName = localStorage.getItem('korah_name') || localStorage.getItem('korah_first_name') || '';
+      if (settingsNameInput) settingsNameInput.value = savedName;
+      
+      // Initialize custom theme UI
+      updateThemeUI(savedTheme);
+    });
+
+    settingsClose?.addEventListener('click', () => {
+      settingsModal.classList.remove('show');
+    });
+
+    settingsModal?.addEventListener('click', (e) => {
+      if (e.target === settingsModal) {
+        settingsModal.classList.remove('show');
+      }
+    });
+
+    // Custom Theme Dropdown Logic
+    if (themeTrigger && themeMenu) {
+      themeTrigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        themeMenu.classList.toggle('show');
+        themeTrigger.classList.toggle('active');
+      });
+
+      themeMenu.querySelectorAll('.settings-select-option').forEach(option => {
+        option.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const theme = option.getAttribute('data-value');
+          setTheme(theme);
+          themeMenu.classList.remove('show');
+          themeTrigger.classList.remove('active');
+        });
+      });
+
+      document.addEventListener('click', () => {
+        themeMenu.classList.remove('show');
+        themeTrigger.classList.remove('active');
+      });
+    }
+
+    settingsSaveBtn?.addEventListener('click', () => {
+      const hiddenThemeInput = document.getElementById('settings-theme-select');
+      const theme = hiddenThemeInput ? hiddenThemeInput.value : (localStorage.getItem('korah_theme') || 'dark');
+      const name = settingsNameInput ? settingsNameInput.value.trim() : '';
+      
+      localStorage.setItem('korah_theme', theme);
+      if (name) {
+        localStorage.setItem('korah_name', name);
+        localStorage.setItem('korah_first_name', name);
+      } else {
+        localStorage.removeItem('korah_name');
+        localStorage.removeItem('korah_first_name');
+      }
+      
+      // Ensure effective theme is applied
+      setTheme(theme);
+      
+      settingsModal.classList.remove('show');
+    });
+
+    settingsClearDataBtn?.addEventListener('click', () => {
+      // Transition from settings modal to clear data confirmation
+      settingsModal.classList.remove('show');
+      
+      window.showClearDataModal(async () => {
+        try {
+          // 1. Clear Firestore data if KorahDB is available
+          if (window.KorahDB && window.KorahDB.clearAllData) {
+            await window.KorahDB.clearAllData();
+          }
+
+          // 2. Clear LocalStorage
+          localStorage.clear();
+
+          // Redirect to index to ensure all in-memory states are reset
+          const resolvedBaseUrl = document.getElementById('new-chat-btn')?.getAttribute('data-base-url') || (window.location.pathname.includes('/study/') || window.location.pathname.includes('/sat/') ? '../index.html' : 'index.html');
+          window.KorahTransitions.go(resolvedBaseUrl);
+
+        } catch (err) {
+          console.error("Clear Data failed:", err);
+          alert('Failed to clear some data. Please try again.');
+        }
+      });
+    });
+  }
+
+  // Helper for HTML files to trigger logout modal
+  window.confirmLogout = function(onConfirm) {
+    if (window.showLogoutModal) {
+      window.showLogoutModal(onConfirm);
+    } else {
+      if (confirm("Are you sure you want to log out?")) onConfirm();
+    }
+  };
+
+  // ── Mood Widget ──
+  const MOOD_LEVELS = [
+    { key: 'red',    label: 'Low Focus',    color: '#ef4444' },
+    { key: 'yellow', label: 'Medium Focus', color: '#eab308' },
+    { key: 'green',  label: 'High Focus',   color: '#22c55e' },
+  ];
+
+  function initMoodWidget() {
+    const container = document.getElementById('sidebar-mood');
+    if (!container || container._moodInit) return;
+    container._moodInit = true;
+
+    const savedMood = localStorage.getItem('korah_mood') || null;
+
+    const dot = container.querySelector('.mood-dot') || container.querySelector(':scope > span');
+    const directSpans = container.querySelectorAll(':scope > span');
+    const labelEl = directSpans[1] || null;
+
+    container.style.cursor = 'pointer';
+    container.setAttribute('role', 'button');
+    container.setAttribute('title', 'Set focus level');
+    container.setAttribute('aria-label', 'Set focus level');
+
+    function applyMood(key) {
+      const m = MOOD_LEVELS.find(x => x.key === key);
+      if (m) {
+        if (dot) { dot.style.background = m.color; dot.style.setProperty('--mood-color', m.color); dot.style.boxShadow = `0 0 6px ${m.color}88`; dot.textContent = ''; }
+        if (labelEl) labelEl.textContent = m.label;
+        container.setAttribute('data-mood', key);
+      } else {
+        if (dot) { dot.style.background = 'var(--border)'; dot.style.setProperty('--mood-color', 'var(--grn)'); dot.style.boxShadow = 'none'; dot.textContent = ''; }
+        if (labelEl) labelEl.textContent = 'Focus Level';
+        container.removeAttribute('data-mood');
+      }
+    }
+
+    applyMood(savedMood);
+
+    const dropdown = document.createElement('div');
+    dropdown.className = 'mood-dropdown';
+    dropdown.innerHTML = MOOD_LEVELS.map(m => `
+      <button type="button" class="mood-option" data-key="${m.key}" style="--mood-color:${m.color}">
+        <span class="mood-option-dot" style="background:${m.color};box-shadow:0 0 5px ${m.color}88"></span>
+        <span>${m.label}</span>
+      </button>
+    `).join('');
+    container.appendChild(dropdown);
+
+    const chevron = document.createElement('span');
+    chevron.className = 'material-icons-round mood-chevron';
+    chevron.textContent = 'expand_more';
+    if (labelEl) labelEl.after(chevron);
+
+    const close = () => {
+      dropdown.classList.remove('mood-dropdown-open');
+      container.classList.remove('is-active');
+    };
+
+    container.addEventListener('click', (e) => {
+      if (e.target.closest('.mood-option')) return;
+      e.stopPropagation();
+      dropdown.classList.toggle('mood-dropdown-open');
+      container.classList.toggle('is-active');
+    });
+
+    dropdown.querySelectorAll('.mood-option').forEach(opt => {
+      opt.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const key = opt.getAttribute('data-key');
+        localStorage.setItem('korah_mood', key);
+        applyMood(key);
+        close();
+        window.dispatchEvent(new CustomEvent('korahMoodChange', { detail: { mood: key } }));
+      });
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!container.contains(e.target)) close();
+    });
+  }
+
+  // Initialize timer widget when sidebar is ready
+  function initSidebar(options) {
+    const { chatHistoryId, studyItemsId, chatBaseUrl, itemPageUrl, onItemClick, activeId } = options || {};
+
+    // 0. Action Modals (Rename, Delete, Clear, Logout)
+    initActionModals();
+    
+    // Standardize sidebar labels (Recent Chats, Recent Study Items)
+    standardizeSidebarLabels();
+
+    const chatEl = document.getElementById(chatHistoryId || "chat-history");
+    const studyEl = document.getElementById(studyItemsId || "study-items-history");
+    const resolvedBaseUrl = chatBaseUrl || "../chat.html";
+    const resolvedItemUrl = itemPageUrl || "item.html";
+
+    const newChatBtn = document.getElementById("new-chat-btn");
+    if (newChatBtn) {
+      newChatBtn.addEventListener("click", () => {
+        const currentPage = window.location.pathname;
+        const isMainChatPage = currentPage.includes("chat.html") || currentPage.endsWith("/");
+        const isSatPage = currentPage.includes("/sat/");
+        
+        // Redirect to main chat if not on main page or on SAT pages
+        if (!isMainChatPage || isSatPage) {
+          localStorage.setItem("korah_new_chat_trigger", "true");
+          window.KorahTransitions.go(resolvedBaseUrl);
+        }
+      });
+    }
+
+    // 1. Immediate UI: Background, Toggle, and State
+    initBackground();
+
+    const sidebar = document.getElementById("sidebar");
+    function isMobile() { return window.innerWidth <= 768; }
+
+    // Check if Alpine is managing the sidebar (via :class binding)
+    const alpineManaged = sidebar?.hasAttribute('x-effect');
+
+    // Create "more" dropdown for collapsed sidebar
+    function createCollapsedMoreDropdown() {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'collapsed-more-wrapper';
+      
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'collapsed-more-btn sat-button sat-button-ghost more-dropdown-trigger';
+      btn.title = 'More';
+      btn.style.cssText = 'height: 2.25rem; width: 2.25rem; padding: 0;';
+      btn.innerHTML = '<span class="material-icons-round" style="font-size: 1.25rem;">more_vert</span>';
+      
+      const dropdown = document.createElement('div');
+      dropdown.className = 'collapsed-more-dropdown more-dropdown-menu';
+      dropdown.innerHTML = `
+        <!-- Main Page -->
+        <ul class="more-dropdown-list more-dropdown-page" data-page="main">
+          <li>
+            <a href="#" class="more-dropdown-item more-dropdown-trigger-item" onclick="switchToThemePage(this.closest('.collapsed-more-dropdown')); return false;">
+              <span class="material-icons-round">palette</span>
+              <span>Theme</span>
+              <span class="material-icons-round more-dropdown-arrow">chevron_right</span>
+
+            </a>
+          </li>
+          <li>
+            <a href="#" class="more-dropdown-item" onclick="document.getElementById('settings-modal')?.classList.add('show'); closeCollapsedMoreDropdown(this.closest('.collapsed-more-wrapper')); return false;">
+              <span class="material-icons-round">settings_suggest</span>
+              <span>Settings</span>
+            </a>
+          </li>
+          <li>
+            <a href="#" class="more-dropdown-item danger" onclick="document.getElementById('logout-btn').click(); return false;">
+              <span class="material-icons-round">logout</span>
+              <span>Logout</span>
+            </a>
+          </li>
+        </ul>
+        <!-- Theme Page -->
+        <ul class="more-dropdown-list more-dropdown-page" data-page="theme" style="display: none;">
+          <li>
+            <a href="#" class="more-dropdown-item more-dropdown-back" onclick="switchToMainPage(this.closest('.collapsed-more-dropdown')); return false;">
+              <span class="material-icons-round">arrow_back</span>
+              <span>Back</span>
+            </a>
+          </li>
+          <li>
+            <a href="#" class="more-dropdown-item more-dropdown-theme-option" data-theme="dark" onclick="setThemeFromDropdown('dark', this.closest('.collapsed-more-dropdown'), this.closest('.collapsed-more-wrapper')); return false;">
+              <span class="material-icons-round">palette</span>
+              <span>Dark Mode</span>
+              <span class="more-dropdown-check material-icons-round" id="checkDark">check</span>
+            </a>
+          </li>
+          <li>
+            <a href="#" class="more-dropdown-item more-dropdown-theme-option" data-theme="light" onclick="setThemeFromDropdown('light', this.closest('.collapsed-more-dropdown'), this.closest('.collapsed-more-wrapper')); return false;">
+              <span class="material-icons-round">light_mode</span>
+              <span>Light Mode</span>
+              <span class="more-dropdown-check material-icons-round" id="checkLight">check</span>
+            </a>
+          </li>
+          <li>
+            <a href="#" class="more-dropdown-item more-dropdown-theme-option" data-theme="system" onclick="setThemeFromDropdown('system', this.closest('.collapsed-more-dropdown'), this.closest('.collapsed-more-wrapper')); return false;">
+              <span class="material-icons-round">settings_suggest</span>
+              <span>System</span>
+              <span class="more-dropdown-check material-icons-round" id="checkSystem">check</span>
+            </a>
+          </li>
+        </ul>
+      `;
+      
+      function switchToThemePage(dd) {
+        dd.querySelector('[data-page="main"]').style.display = 'none';
+        dd.querySelector('[data-page="theme"]').style.display = 'block';
+        dd.classList.add('showing-theme');
+        updateThemeUI();
+      }
+      window.switchToThemePage = switchToThemePage;
+      
+      function switchToMainPage(dd) {
+        dd.querySelector('[data-page="theme"]').style.display = 'none';
+        dd.querySelector('[data-page="main"]').style.display = 'block';
+        dd.classList.remove('showing-theme');
+      }
+      window.switchToMainPage = switchToMainPage;
+      
+      function setThemeFromDropdown(theme, dd, wrapper) {
+        setTheme(theme);
+      }
+      window.setThemeFromDropdown = setThemeFromDropdown;
+      
+      function closeCollapsedMoreDropdown(wrap) {
+        wrap.querySelector('.collapsed-more-dropdown').classList.remove('more-dropdown-open');
+        wrap.querySelector('.collapsed-more-btn').classList.remove('is-active');
+        switchToMainPage(wrap.querySelector('.collapsed-more-dropdown'));
+      }
+      window.closeCollapsedMoreDropdown = closeCollapsedMoreDropdown;
+      
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dropdown.classList.toggle('more-dropdown-open');
+        btn.classList.toggle('is-active');
+        if (dropdown.classList.contains('more-dropdown-open')) {
+          updateThemeUI();
+        }
+      });
+      
+      document.addEventListener('click', (e) => {
+        if (!wrapper.contains(e.target)) {
+          dropdown.classList.remove('more-dropdown-open');
+          btn.classList.remove('is-active');
+          switchToMainPage(dropdown);
+        }
+      });
+      
+      wrapper.appendChild(btn);
+      wrapper.appendChild(dropdown);
+      return wrapper;
+    }
+
+    // Append "more" button to sidebar nav when collapsed
+    function initCollapsedMoreDropdown() {
+      if (sidebar?.classList.contains('collapsed')) {
+        const nav = sidebar.querySelector('.sidebar-nav');
+        if (nav && !sidebar.querySelector('.collapsed-more-wrapper')) {
+          const moreWrapper = createCollapsedMoreDropdown();
+          nav.appendChild(moreWrapper);
+        }
+      }
+    }
+
+    // Remove "more" button when sidebar is expanded
+    function removeCollapsedMoreDropdown() {
+      const existing = sidebar?.querySelector('.collapsed-more-wrapper');
+      if (existing) {
+        existing.remove();
+      }
+    }
+
+    // Close dropdowns when sidebar goes off-screen at breakpoint
+    window.addEventListener('resize', () => {
+      if (window.innerWidth <= 640) {
+        const existing = sidebar?.querySelector('.collapsed-more-wrapper');
+        if (existing) {
+          const dropdown = existing.querySelector('.collapsed-more-dropdown');
+          const btn = existing.querySelector('.collapsed-more-btn');
+          if (dropdown) dropdown.classList.remove('more-dropdown-open');
+          if (btn) btn.classList.remove('is-active');
+        }
+      }
+    });
+
+    // Use MutationObserver to reliably detect sidebar collapse/expand
+    // Eliminates race condition between Alpine class application and JS checks
+    function observeSidebarCollapse() {
+      if (!sidebar) return;
+
+      function handleCollapseChange(isCollapsed) {
+        if (isCollapsed) {
+          const nav = sidebar.querySelector('.sidebar-nav');
+          if (nav && !sidebar.querySelector('.collapsed-more-wrapper')) {
+            nav.appendChild(createCollapsedMoreDropdown());
+          }
+        } else {
+          removeCollapsedMoreDropdown();
+        }
+      }
+
+      // Initial check
+      handleCollapseChange(sidebar.classList.contains('collapsed'));
+
+      // Watch for class attribute changes
+      const observer = new MutationObserver((mutations) => {
+        for (const m of mutations) {
+          if (m.attributeName === 'class') {
+            handleCollapseChange(sidebar.classList.contains('collapsed'));
+            break;
+          }
+        }
+      });
+      observer.observe(sidebar, { attributes: true, attributeFilter: ['class'] });
+    }
+
+    if (alpineManaged) {
+      observeSidebarCollapse();
+    } else {
+      // Vanilla fallback for pages not yet migrated to Alpine sidebar
+      function updateSidebarState(collapsed) {
+        if (collapsed) sidebar?.classList.add("collapsed");
+        else sidebar?.classList.remove("collapsed");
+        localStorage.setItem("korah_sidebar_collapsed", collapsed);
+        if (collapsed) setTimeout(initCollapsedMoreDropdown, 100);
+        else removeCollapsedMoreDropdown();
+      }
+
+      const isCollapsed = localStorage.getItem("korah_sidebar_collapsed") === "true";
+      if (sidebar && !isMobile()) updateSidebarState(isCollapsed);
+      initCollapsedMoreDropdown();
+
+      function collapseDocPanelIfNeeded() {
+        const docPanel = document.getElementById('doc-panel');
+        if (docPanel && docPanel.classList.contains('expanded')) {
+          docPanel.classList.remove('expanded');
+          docPanel.classList.add('collapsed');
+          const tab = document.getElementById('doc-panel-tab');
+          if (tab) tab.classList.remove('panel-open');
+        }
+      }
+
+      const toggle = document.getElementById("sidebar-toggle");
+      let overlay = document.querySelector(".sidebar-overlay");
+      if (!overlay) {
+        overlay = document.createElement("div");
+        overlay.className = "sidebar-overlay";
+        document.body.appendChild(overlay);
+      }
+
+      if (toggle && sidebar) {
+        toggle.addEventListener("click", () => {
+          if (isMobile()) {
+            sidebar.classList.toggle("mobile-open");
+            overlay.classList.toggle("show");
+          } else {
+            const willExpand = sidebar.classList.contains("collapsed");
+            if (willExpand) collapseDocPanelIfNeeded();
+            updateSidebarState(!sidebar.classList.contains("collapsed"));
+          }
+        });
+      }
+
+      overlay.addEventListener("click", () => {
+        sidebar?.classList.remove("mobile-open");
+        overlay.classList.remove("show");
+      });
+
+      window.addEventListener("resize", () => {
+        if (!isMobile()) {
+          sidebar?.classList.remove("mobile-open");
+          overlay.classList.remove("show");
+        }
+      });
+    }
+
+    // 2. Data Logic: Sync with Firestore/Cache
+    function startWithDB() {
+      const cachedSessions = localStorage.getItem("korah_sessions_cache");
+      const cachedStudyItems = localStorage.getItem("korah_study_items_cache");
+      
+      if (cachedSessions) {
+        try {
+          const parsed = JSON.parse(cachedSessions);
+          if (Object.keys(parsed).length > 0) {
+            _sessionsCache = parsed;
+            renderChatHistory(chatEl, resolvedBaseUrl);
+            if (activeId) updateActiveItem(activeId);
+          }
+        } catch (e) {}
+      }
+      if (cachedStudyItems) {
+        try {
+          const parsed = JSON.parse(cachedStudyItems);
+          if (Object.keys(parsed).length > 0) {
+            _studyItemsCache = parsed;
+            renderStudyItemsHistory(studyEl, resolvedItemUrl);
+          }
+        } catch (e) {}
+      }
+
+      if (window.KorahDB) {
+        window.KorahDB.onConversationsChange((snapshot) => {
+          _sessionsCache = snapshot;
+          localStorage.setItem("korah_sessions_cache", JSON.stringify(snapshot));
+          renderChatHistory(chatEl, resolvedBaseUrl);
+          if (activeId) updateActiveItem(activeId);
+        });
+        window.KorahDB.onStudyItemsChange((snapshot) => {
+          _studyItemsCache = snapshot;
+          localStorage.setItem("korah_study_items_cache", JSON.stringify(snapshot));
+          renderStudyItemsHistory(studyEl, resolvedItemUrl);
+        });
+      } else {
+        renderChatHistory(chatEl, resolvedBaseUrl);
+        renderStudyItemsHistory(studyEl, resolvedItemUrl);
+        if (activeId) updateActiveItem(activeId);
+      }
+      initChatMultiSelect(chatEl, resolvedBaseUrl, onItemClick);
+      initStudyMultiSelect(studyEl, resolvedItemUrl);
+      
+      // Initialize timer widget
+      initTimerWidget();
+
+      // Initialize settings modal
+      initSettingsModal();
+
+
+      // Initialize mood widget
+      initMoodWidget();
+    }
+
+    if (window._korahReadyFired) startWithDB();
+    else window.addEventListener("korahReady", startWithDB, { once: true });
+  }
+
+  window.KorahSidebar = {
+    getSessions, getStudyItems, getTypeEmoji, getModeIconHtml, getTypeIconHtml,
+    renderChatHistory, renderStudyItemsHistory, updateActiveItem, initSidebar,
+    initTimerWidget, updateTimerWidget,
+    onCollapseChange: null,
+  };
+})();

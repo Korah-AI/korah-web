@@ -1,0 +1,1916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link rel="stylesheet" href="transitions/page-transitions.css"/>
+<script src="transitions/page-transitions.js"></script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Korah A.I — Login</title>
+<link rel="icon" type="image/png" href="logo-images/newlogo0.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- 🪨 FOUC PREVENTION & BASE VARS -->
+<style>
+  [x-cloak] { display: none !important; }
+  
+  html:not(.korah-page-ready) { background: #06040f !important; }
+  html[data-theme="light"]:not(.korah-page-ready) { background: #fff !important; }
+  html:not(.korah-page-ready) body { opacity: 0 !important; }
+
+  :root {
+    --bg: #0a0520;
+    --bd: rgba(139, 92, 246, 0.25);
+    --bd-focus: rgba(139, 92, 246, 0.55);
+    --tx: #f0eaff;
+    --tx2: #a89dc0;
+    --tx3: #6b5f88;
+    --p4: #8b5cf6;
+    --p5: #a78bfa;
+    --glow: rgba(139, 92, 246, 0.4);
+    --cb: rgba(139, 92, 246, 0.08);
+    --cu: rgba(91, 33, 182, 0.28);
+    --grad: linear-gradient(160deg, #372080 0%, #2d1a6e 40%, #23165c 100%);
+  }
+
+  /* ── LIGHT MODE VARIABLES ───────────────────────────────────────
+     Entire page is light in light mode — panels get light bg,
+     text gets proper dark colors.
+  ────────────────────────────────────────────────────────────── */
+  [data-theme="light"] {
+    --bg: #faf8ff;
+    --bd: rgba(139, 92, 246, 0.30);
+    --bd-focus: rgba(109, 40, 217, 0.60);
+    --tx: #1a0a3c;
+    --tx2: #5a4a7a;
+    --tx3: #9080aa;
+    --p4: #8b5cf6;
+    --p5: #a78bfa;
+    --glow: rgba(139, 92, 246, 0.35);
+    --cb: rgba(255, 255, 255, 0.92);
+    --cu: rgba(91, 33, 182, 0.32);
+    --grad: linear-gradient(160deg, #f5f0ff 0%, #ede6fa 40%, #e4daf4 100%);
+  }
+
+  /* ── LIGHT MODE ELEMENT RULES ────────────────────────────────── */
+  [data-theme="light"] .login-title { color: var(--tx); }
+  [data-theme="light"] .kl-auth-panel { background: #eee9f6; }
+  [data-theme="light"] .kl-hero-panel { background: #eee9f6; }
+  [data-theme="light"] .kl-hero-inner {
+    background: #f5f1fc;
+    border-color: rgba(139, 92, 246, 0.20);
+    box-shadow: 0 0 1.875rem rgba(139,92,246,0.06), inset 0 0 2.5rem rgba(139,92,246,0.02);
+  }
+  [data-theme="light"] .login-card::before {
+    background: radial-gradient(ellipse at center, rgba(255,255,255,0.40) 0%, rgba(255,255,255,0.20) 100%);
+    backdrop-filter: blur(1.25rem);
+    -webkit-backdrop-filter: blur(1.25rem);
+  }
+  [data-theme="light"] .form-input { background: rgba(0,0,0,0.03); }
+  [data-theme="light"] .form-input:focus { background: rgba(139,92,246,0.06); box-shadow: 0 0 0.75rem rgba(139,92,246,0.08); }
+  [data-theme="light"] .tabs { background: rgba(0,0,0,0.02); }
+  [data-theme="light"] .tab:not(.active):hover { color: var(--tx); background: rgba(0,0,0,0.03); }
+  [data-theme="light"] .btn-google { color: var(--tx); background: rgba(0,0,0,0.03); border-color: var(--bd); }
+  [data-theme="light"] .btn-google:hover:not(:disabled) { background: rgba(0,0,0,0.05); border-color: var(--bd-focus); }
+  [data-theme="light"] #constellationCanvas { display: block; }
+  [data-theme="light"] #staticStarField,
+  [data-theme="light"] #shootingStarCanvas,
+  [data-theme="light"] .kl-bh-stage {
+    display: none;
+  }
+
+  [data-theme="dark"] .kl-hero-title { color: #fff; }
+  [data-theme="dark"] .login-card,
+  [data-theme="dark"] .login-card:has(.form-input:focus) {
+    box-shadow: 0 1.5625rem 3.125rem -0.75rem rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.03);
+  }
+
+  /* ── Electric border (vanilla port of @BalintFerenczy / React Bits) ── */
+  [data-theme="dark"] .login-card { overflow: visible; }
+  .electric-border-canvas {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 4;
+    display: none;
+  }
+  [data-theme="dark"] .electric-border-canvas { display: block; }
+  .electric-border-glow {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 0;
+    display: none;
+  }
+  [data-theme="dark"] .electric-border-glow { display: block; }
+  .electric-border-glow > div {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+  }
+  .electric-border-glow .eb-soft  { border: 0.125rem solid rgba(168,85,247,0.6); filter: blur(1px); }
+  .electric-border-glow .eb-hard  { border: 0.125rem solid #a855f7; filter: blur(0.25rem); }
+  .electric-border-glow .eb-halo  {
+    inset: -5%;
+    z-index: -1;
+    opacity: 0.3;
+    filter: blur(2rem);
+    background: linear-gradient(-30deg, #a855f7, transparent, #a855f7);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .electric-border-canvas { display: none !important; }
+  }
+
+  /* 🪨 THEME TOGGLE (debug) */
+  .theme-toggle-btn {
+    position: absolute; top: 1rem; right: 1rem; z-index: 20;
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(139,92,246,0.3);
+    border-radius: 0.5rem; padding: 0.4rem 0.6rem; cursor: pointer;
+    font-size: 1.1rem; line-height: 1; transition: background 0.2s;
+  }
+  .theme-toggle-btn:hover { background: rgba(255,255,255,0.15); }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* 🪨 SCROLLBAR & PAGE FLOW */
+  html { overflow-x: hidden; overflow-y: auto !important; }
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  background: var(--bg);
+    color: var(--tx);
+    min-height: 100vh;
+    overflow-x: hidden;
+    overflow-y: auto !important;
+  }
+
+  /* Firefox scrollbar — same purple theme */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #8b5cf6 rgba(10, 5, 32, 0.5);
+  }
+
+  ::-webkit-scrollbar { width: 0.5rem; }
+  ::-webkit-scrollbar-track { background: rgba(10, 5, 32, 0.5); }
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(to bottom, var(--p4), #5b21b6);
+    border-radius: 0.25rem;
+  }
+
+  /* 🪨 LAYOUT SHELL (Unified Purple Background) */
+  .kl-shell {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    min-height: 100vh;
+    position: relative;
+    background: var(--grad);
+    overflow-x: hidden;
+  }
+
+  /* 🪨 DIVIDER LINE BETWEEN PANELS */
+  .kl-shell::after {
+    content: '';
+    position: absolute;
+    top: 10%;
+    bottom: 10%;
+    left: 46%;
+    width: 1px;
+    background: linear-gradient(transparent, rgba(139,92,246,0.1), transparent);
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .kl-auth-panel {
+    flex: 0 0 46%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    position: relative;
+    z-index: 1;
+    background: #0b071c;
+  }
+
+  .kl-auth-panel::before {
+    content: '';
+    position: absolute;
+    width: 31.25rem;
+    height: 31.25rem;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle, rgba(139,92,246,0.07) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  .kl-hero-panel {
+    flex: 0 0 54%;
+    padding: 2.5rem;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0a071b;
+  }
+
+  /* 🪨 SPACE WINDOW (Isolated Starfield Stage) */
+  .kl-hero-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  background: #000;
+    border-radius: 2rem;
+    border: 1px solid rgba(139, 92, 246, 0.15);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 3.125rem rgba(0,0,0,0.8), inset 0 0 5rem rgba(0,0,0,0.6);
+    transition: background 0.5s ease, border-color 0.4s ease;
+  }
+
+  /* 🪨 INTERNAL CANVASES */
+  #staticStarField, #shootingStarCanvas, #constellationCanvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+  #staticStarField { z-index: 0; }
+  #shootingStarCanvas { z-index: 3; }
+  
+  #constellationCanvas {
+    pointer-events: auto;
+    z-index: 1;
+    display: none;
+  }
+
+  /* 🪨 BLACK HOLE STAGE */
+  .kl-bh-stage {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+  }
+
+  .kl-bh-wrap {
+    position: relative;
+    width: clamp(20rem, 40vw, 30rem);
+    height: clamp(20rem, 40vw, 30rem);
+    transform: rotate(-12deg);
+  }
+
+  .kl-bh-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    mix-blend-mode: screen;
+  }
+  .kl-bh-canvas-b { opacity: 0; }
+
+  /* 🪨 TITLES & BREATHING ANIMATION */
+  .kl-hero-title {
+    position: absolute;
+    top: 4.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    font-size: clamp(0.8rem, 1.8vw, 1.4rem);
+    font-weight: 900;
+    letter-spacing: 0.25em;
+    text-indent: 0.25em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--p4);
+    animation: kl-breath 4s ease-in-out infinite;
+  }
+
+  @keyframes kl-breath {
+    0%, 100% { text-shadow: 0 0 0.625rem rgba(139, 92, 246, 0.3); opacity: 0.8; }
+    50% { text-shadow: 0 0 1.5625rem rgba(139, 92, 246, 0.6); opacity: 1; }
+  }
+
+  .login-title {
+    font-size: 2.25rem;
+    font-weight: 900;
+    text-align: center;
+    margin-bottom: 0;
+    letter-spacing: -0.02em;
+    color: #fff;
+  }
+
+  .login-subtitle {
+    color: var(--tx2);
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.5;
+    text-align: center;
+    opacity: 0.7;
+    margin-top: 0.5rem;
+  }
+
+  /* 🪨 LOGIN CARD (Stars Behind) */
+  .login-card {
+    background: transparent;
+    border: 1px solid var(--bd);
+    border-radius: 1.5rem;
+    padding: 2rem;
+    width: 100%;
+    max-width: 27rem;
+    box-shadow: 0 1.5625rem 3.125rem -0.75rem rgba(0,0,0,0.5), 0 0 1.25rem var(--glow), inset 0 0 0 1px rgba(255,255,255,0.03);
+    position: relative;
+    z-index: 2;
+    overflow: hidden;
+    transition: box-shadow 0.3s ease;
+    animation: cardIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .login-card:has(.form-input:focus) {
+    box-shadow: 0 1.875rem 3.75rem -0.75rem rgba(0,0,0,0.65);
+  }
+
+  @keyframes cardBorder {
+    0%, 100% { border-color: var(--bd); }
+    50% { border-color: rgba(139,92,246,0.35); }
+  }
+
+  .login-card:not(:has(.form-input:focus)) {
+    animation: cardIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) both,
+               cardBorder 4s ease-in-out infinite 0.6s;
+  }
+
+  .login-star-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    border-radius: inherit;
+    pointer-events: none;
+  }
+
+  .login-card-inner {
+    position: relative;
+    z-index: 2;
+  }
+
+  .login-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+    background: radial-gradient(ellipse at center, rgba(40,22,80,0.35) 0%, rgba(20,10,45,0.55) 100%);
+    backdrop-filter: blur(0.5rem);
+    -webkit-backdrop-filter: blur(0.5rem);
+    pointer-events: none;
+  }
+
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(1.5rem) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  /* 🪨 FORMS & TABS */
+  .tabs {
+    display: flex;
+    background: rgba(255,255,255,0.03);
+    padding: 0.25rem;
+    border-radius: 0.75rem;
+    margin-bottom: 0.75rem;
+    border: 1px solid var(--bd);
+  }
+  .tab {
+    flex: 1;
+    padding: 0.6rem;
+    border-radius: 0.6rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    background: transparent;
+    color: var(--tx2);
+    border: none;
+    transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .tab.active {
+    background: var(--cu);
+    color: #fff;
+    box-shadow: inset 0 0 0 1px rgba(139,92,246,0.4), 0 0.25rem 0.75rem rgba(139,92,246,0.15);
+  }
+  .tab:not(.active):hover { color: #fff; background: rgba(255,255,255,0.06); }
+  .tab:active { transform: scale(0.97); }
+
+  .form-group { margin-bottom: 0.75rem; }
+  .form-label {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: var(--tx3);
+    margin-bottom: 0.4rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .form-input {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    border-radius: 0.7rem;
+    border: 1px solid var(--bd);
+    background: rgba(255,255,255,0.04);
+    color: var(--tx);
+    font-size: 0.9rem;
+    font-family: inherit;
+    transition: background 0.2s, box-shadow 0.2s;
+  }
+  .form-input::placeholder { color: var(--tx3); transition: opacity 0.2s; }
+  .form-input:focus {
+    outline: none;
+    border-color: var(--bd-focus);
+    background: rgba(139,92,246,0.08);
+    box-shadow: 0 0 0.9375rem rgba(139,92,246,0.15);
+  }
+  .form-input:focus::placeholder { opacity: 0.3; }
+  .input-error {
+    display: block;
+    font-size: 0.75rem;
+    color: rgba(200, 60, 85, 0.8);
+    margin-top: 0.2rem;
+    padding: 0.1rem 0.4rem;
+    background: rgba(200, 60, 85, 0.03);
+    border-radius: 0.2rem;
+    border-left: 0.09375rem solid rgba(200, 60, 85, 0.15);
+  }
+  .input-invalid { border-color: rgba(200, 60, 85, 0.8) !important; }
+  .input-invalid:focus { border-color: rgba(200, 60, 85, 0.8) !important; box-shadow: 0 0 0.9375rem rgba(200,60,85,0.15) !important; }
+  /* 🪨 TAB CROSSFADE */
+  .form-container { position: relative; }
+
+  .form-fade-enter {
+    animation: formIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  .form-fade-leave {
+    animation: formOut 0.25s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    position: absolute;
+    top: 0; left: 0; right: 0;
+  }
+  @keyframes formIn { from { opacity: 0; transform: translateY(0.625rem); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes formOut { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-0.625rem); } }
+
+  .btn {
+    width: 100%;
+    padding: 0.8rem;
+    border-radius: 0.7rem;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+    transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), filter 0.2s, box-shadow 0.2s;
+  }
+  .btn-primary { background: linear-gradient(135deg, #5b21b6, var(--p4)); color: white; }
+  .btn-primary:hover:not(:disabled) { filter: brightness(1.1); transform: translateY(-1px); box-shadow: 0 0.5rem 1.25rem rgba(91,33,182,0.4); }
+  .btn-primary:active:not(:disabled) { transform: translateY(0); filter: brightness(0.98); }
+
+  .btn-google {
+    background: rgba(255,255,255,0.05); color: #fff; border: 1px solid var(--bd);
+    display: flex; align-items: center; justify-content: center; gap: 0.6rem;
+  }
+  .btn-google:hover:not(:disabled) { border-color: var(--bd-focus); background: rgba(255,255,255,0.08); transform: translateY(-1px); }
+  .btn-google:active { transform: scale(0.97); }
+
+  .btn:disabled { cursor: not-allowed; pointer-events: none; }
+  .btn-primary:disabled { filter: none; transform: none; box-shadow: none; }
+  .btn-google:disabled { transform: none; border-color: var(--bd); }
+
+  .divider {
+    display: flex; align-items: center; gap: 1rem;
+    margin: 1rem 0; color: var(--tx3); font-size: 0.7rem; font-weight: 700;
+    opacity: 0.8; text-transform: uppercase;
+  }
+  .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--bd); }
+
+  /* 🪨 CENTERED CARD MODE (blackhole disabled, stars fill background) */
+  .kl-shell { justify-content: center; }
+  .kl-shell::after { display: none; }
+  .kl-hero-panel {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    flex: none;
+    padding: 0;
+    z-index: 0;
+    background: transparent;
+  }
+  .kl-hero-inner {
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+  }
+  .kl-auth-panel {
+    flex: 1 1 100%;
+    background: transparent;
+    z-index: 1;
+  }
+  .kl-auth-panel::before { display: none; }
+
+  /* 🪨 TITLE LOGO ROW */
+  .login-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+  }
+  .login-title-logo {
+    width: clamp(2rem, 4vw, 2.75rem);
+    height: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 0.125rem 0.5rem rgba(139,92,246,0.35));
+  }
+  .login-title-logo-l { transform: rotate(-14deg); }
+  .login-title-logo-r { transform: rotate(14deg); }
+
+  /* 🪨 RESPONSIVE BREAKPOINTS */
+  @media (max-width: 64rem) {
+    .kl-auth-panel { flex: 0 0 50%; }
+    .kl-hero-panel { flex: 0 0 50%; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .kl-hero-title, .login-card:not(:has(.form-input:focus)) { animation: none !important; }
+    .login-card::before { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+  }
+  @media (max-width: 24rem) { .name-fields-row { flex-direction: column; } }
+  @media (max-width: 48rem) {
+    .tab { padding: 0.75rem; }
+    .kl-shell { flex-direction: column; min-height: 100vh; background: var(--grad); }
+    .kl-shell::after { display: none; }
+    .kl-auth-panel {
+      width: 100%;
+      padding: 1.5rem;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .login-card {
+      max-width: 92%;
+      margin: 0 auto;
+      padding: 2rem 1.25rem;
+      border-radius: 1.5rem;
+      min-height: auto;
+      border: 1px solid var(--bd);
+      display: block;
+      background: transparent;
+    }
+    [data-theme="dark"] .login-card::before {
+      background: radial-gradient(ellipse at center, rgba(40,22,80,0.18) 0%, rgba(20,10,45,0.28) 100%);
+      backdrop-filter: blur(0.25rem);
+      -webkit-backdrop-filter: blur(0.25rem);
+    }
+    .login-title {
+      font-size: 2.25rem;
+      color: #fff;
+    }
+    [data-theme="light"] .login-title { color: var(--tx); }
+    .login-title-logo { width: 3.5rem; }
+  }
+
+  @media (max-height: 42.5rem) {
+    .kl-auth-panel  { align-items: flex-start; }
+    .login-card     { padding: 1.5rem; min-height: auto; }
+    .form-group     { margin-bottom: 0.75rem; }
+    .divider        { margin: 1rem 0; }
+  }
+
+  .password-toggle {
+    position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%);
+    background: none; border: none; cursor: pointer;
+    opacity: 0.4; padding: 0.25rem; line-height: 0;
+    transition: opacity 0.2s; z-index: 3;
+  }
+  .password-toggle:hover { opacity: 0.8; }
+
+  .spinner {
+    width: 1rem; height: 1rem; border: 0.125rem solid rgba(255,255,255,0.3);
+    border-top-color: white; border-radius: 50%;
+    animation: spin 0.7s linear infinite; display: inline-block;
+    margin-right: 0.5rem; vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+
+<script>
+  (function() {
+    const t = localStorage.getItem('korah_theme') || 'dark';
+    const isL = t === 'light' || (t === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches);
+    document.documentElement.setAttribute('data-theme', isL ? 'light' : 'dark');
+  })();
+</script>
+</head>
+<body>
+
+<div class="kl-shell">
+  <!-- 🪨 AUTH PANEL -->
+  <div class="kl-auth-panel">
+    <div class="login-card" x-data="loginApp" x-cloak>
+      <canvas id="loginStarField" class="login-star-canvas"></canvas>
+      <canvas id="electricBorderCanvas" class="electric-border-canvas" aria-hidden="true"></canvas>
+      <div class="electric-border-glow" aria-hidden="true">
+        <div class="eb-soft"></div>
+        <div class="eb-hard"></div>
+        <div class="eb-halo"></div>
+      </div>
+      <div class="login-card-inner">
+        <div class="text-center mb-4">
+          <div class="login-title-row">
+            <img src="logo-images/newlogo3.png" alt="" class="login-title-logo login-title-logo-l"/>
+            <h1 class="login-title">Korah A.I</h1>
+            <img src="logo-images/newlogo5.png" alt="" class="login-title-logo login-title-logo-r"/>
+          </div>
+          <p class="login-subtitle" x-text="tab === 'login' ? 'Sign in to continue your journey' : 'Create your Korah account'"></p>
+        </div>
+
+        <div class="tabs">
+          <button class="tab" :class="{ active: tab === 'login' }" @click="switchTab('login')">Sign In</button>
+          <button class="tab" :class="{ active: tab === 'register' }" @click="switchTab('register')">Create Account</button>
+        </div>
+
+        <div class="form-container" x-ref="formContainer">
+          <form x-show="tab === 'login'" novalidate @submit.prevent="handleLogin"
+            x-transition:enter="form-fade-enter"
+            x-transition:leave="form-fade-leave">
+            <div class="form-group">
+              <label class="form-label">Email</label>
+              <input type="email" class="form-input" :class="{ 'input-invalid': fieldErr.email || showAllErrors }" @input="clearError()" x-model="loginEmail" placeholder="you@example.com" required>
+              <div style="min-height: 1.125rem;"><span class="input-error" x-show="fieldErr.email" x-text="fieldErr.email"></span></div>
+            </div>
+            <div class="form-group" style="position: relative;">
+              <label class="form-label">Password</label>
+              <div style="position: relative;">
+                <input :type="showLoginPassword ? 'text' : 'password'" class="form-input" :class="{ 'input-invalid': fieldErr.password || showAllErrors }" @input="clearError()" x-model="loginPassword" placeholder="Your password" required>
+                <button type="button" class="password-toggle" @click="showLoginPassword = !showLoginPassword" tabindex="-1">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path x-show="!showLoginPassword" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle x-show="!showLoginPassword" cx="12" cy="12" r="3"/>
+                    <path x-show="showLoginPassword" d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                    <line x-show="showLoginPassword" x1="1" y1="1" x2="23" y2="23"/>
+                  </svg>
+                </button>
+              </div>
+              <div style="min-height: 1.125rem;"><span class="input-error" x-show="fieldErr.password" x-text="fieldErr.password"></span></div>
+              <div style="min-height: 1.125rem; text-align: center;"><span class="input-error" x-show="fieldErr.general" x-text="fieldErr.general"></span></div>
+            </div>
+            <button type="submit" class="btn btn-primary" :disabled="loadingPrimary">
+              <span x-show="loadingPrimary" class="spinner"></span>
+              <span x-text="loadingPrimary ? 'Signing in...' : 'Sign In'"></span>
+            </button>
+          </form>
+
+          <form x-show="tab === 'register'" novalidate @submit.prevent="handleRegister"
+            x-transition:enter="form-fade-enter"
+            x-transition:leave="form-fade-leave">
+              <div class="flex gap-3 mb-3 name-fields-row">
+              <div class="flex-1">
+                <label class="form-label">First Name</label>
+                <input type="text" class="form-input" :class="{ 'input-invalid': fieldErr.first || showAllErrors }" @input="clearError()" x-model="regFirst" placeholder="John" required>
+                <div style="min-height: 1.125rem;"><span class="input-error" x-show="fieldErr.first" x-text="fieldErr.first"></span></div>
+              </div>
+              <div class="flex-1">
+                <label class="form-label">Last Name</label>
+                <input type="text" class="form-input" :class="{ 'input-invalid': fieldErr.last || showAllErrors }" @input="clearError()" x-model="regLast" placeholder="Doe" required>
+                <div style="min-height: 1.125rem;"><span class="input-error" x-show="fieldErr.last" x-text="fieldErr.last"></span></div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email</label>
+              <input type="email" class="form-input" :class="{ 'input-invalid': fieldErr.regEmail || showAllErrors }" @input="clearError()" x-model="regEmail" placeholder="you@example.com" required>
+              <div style="min-height: 1.125rem;"><span class="input-error" x-show="fieldErr.regEmail" x-text="fieldErr.regEmail"></span></div>
+            </div>
+            <div class="form-group" style="position: relative;">
+              <label class="form-label">Password</label>
+              <div style="position: relative;">
+                <input :type="showRegPassword ? 'text' : 'password'" class="form-input" :class="{ 'input-invalid': fieldErr.regPassword || showAllErrors }" @input="clearError()" x-model="regPassword" placeholder="6+ characters" required minlength="6">
+                <button type="button" class="password-toggle" @click="showRegPassword = !showRegPassword" tabindex="-1">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path x-show="!showRegPassword" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle x-show="!showRegPassword" cx="12" cy="12" r="3"/>
+                    <path x-show="showRegPassword" d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                    <line x-show="showRegPassword" x1="1" y1="1" x2="23" y2="23"/>
+                  </svg>
+                </button>
+              </div>
+              <div style="min-height: 1.125rem;"><span class="input-error" x-show="fieldErr.regPassword" x-text="fieldErr.regPassword"></span></div>
+              <div style="min-height: 1.125rem; text-align: center;"><span class="input-error" x-show="fieldErr.general" x-text="fieldErr.general"></span></div>
+            </div>
+            <button type="submit" class="btn btn-primary" :disabled="loadingPrimary">
+              <span x-show="loadingPrimary" class="spinner"></span>
+              <span x-text="loadingPrimary ? 'Creating...' : 'Create Account'"></span>
+            </button>
+          </form>
+        </div>
+
+        <div class="divider">or</div>
+
+        <button class="btn btn-google" @click="handleGoogle" :disabled="loadingGoogle">
+          <span x-show="loadingGoogle" class="spinner"></span>
+          <svg x-show="!loadingGoogle" width="18" height="18" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+          </svg>
+          <span x-text="loadingGoogle ? (tab === 'login' ? 'Signing in...' : 'Creating account...') : 'Continue with Google'"></span>
+        </button>
+        <div style="min-height: 1.125rem; text-align: center;"><span class="input-error" x-show="fieldErr.google" x-text="fieldErr.google"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🪨 HERO PANEL -->
+  <div class="kl-hero-panel" aria-hidden="true">
+    <div class="kl-hero-inner">
+      <!-- <div class="kl-hero-title">KORAH A.I</div> -->
+      <!-- <button id="themeToggle" class="theme-toggle-btn" title="Toggle theme">🌙</button> -->
+      
+      <!-- dark mode: isolated star field + shooting stars -->
+      <canvas id="staticStarField"></canvas>
+      <canvas id="shootingStarCanvas"></canvas>
+
+      <!-- light mode: constellation canvas -->
+      <canvas id="constellationCanvas"></canvas>
+
+      <!--
+      <div class="kl-bh-stage">
+        <div class="kl-bh-wrap">
+          <img class="kl-bh-canvas" src="assests/gargantua-transparent.gif" alt=""/>
+          <img class="kl-bh-canvas kl-bh-canvas-b" src="assests/gargantua-transparent.gif" alt=""/>
+        </div>
+      </div>
+      -->
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  /* 🪨 FIREBASE & AUTH */
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+  import {
+    getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword,
+    signInWithPopup, GoogleAuthProvider, onAuthStateChanged
+  } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
+    authDomain: "korah-app.firebaseapp.com",
+    projectId: "korah-app",
+    storageBucket: "korah-app.firebasestorage.app",
+    messagingSenderId: "226169460321",
+    appId: "1:226169460321:web:b166fc8260107c55dafc20"
+  };
+
+  const app   = initializeApp(firebaseConfig);
+  const auth  = getAuth(app);
+  const gProv = new GoogleAuthProvider();
+
+  onAuthStateChanged(auth, u => { if (u) window.KorahTransitions.go('index.html'); });
+
+  /* 🪨 DYNAMIC SIZING & HIGH-DPI RENDERING */
+  const bhWrap    = document.querySelector('.kl-bh-wrap');
+  const heroInner = document.querySelector('.kl-hero-inner');
+
+  function setupCanvas(canvas) {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+    return { w: rect.width, h: rect.height };
+  }
+
+  function getBhCenter() {
+    if (!bhWrap || !heroInner) return { x: 0, y: 0 };
+    const ir = heroInner.getBoundingClientRect();
+    const wr = bhWrap.getBoundingClientRect();
+    return { 
+      x: (wr.left - ir.left) + wr.width / 2, 
+      y: (wr.top - ir.top) + wr.height / 2 
+    };
+  }
+
+  function getBhSize() { return bhWrap ? bhWrap.offsetWidth / 2 : 100; }
+
+  /* 🪨 GIF CROSSFADE */
+  function initGargantua() {
+    const imgA = document.querySelector('.kl-bh-canvas');
+    const imgB = document.querySelector('.kl-bh-canvas-b');
+    if (!imgA || !imgB) return;
+    const src = 'assests/gargantua-transparent.gif';
+    let ready = 0;
+    const onLoad = () => {
+      ready++;
+      if (ready < 2) return;
+      let toggle = false, last = performance.now();
+      const crossFade = t => {
+        if (document.hidden) { requestAnimationFrame(crossFade); return; }
+        if (t - last >= 105) {
+          toggle = !toggle; last = t;
+          imgA.style.opacity = toggle ? '0' : '1';
+          imgB.style.opacity = toggle ? '1' : '0';
+        }
+        requestAnimationFrame(crossFade);
+      };
+      requestAnimationFrame(crossFade);
+    };
+    imgA.onload = onLoad; imgB.onload = onLoad;
+    imgA.src = src; setTimeout(() => imgB.src = src, 105);
+  }
+  initGargantua();
+
+  /* 🪨 STATIC STARS (LOCALIZED & SHARP) */
+  function renderStaticStarfield() {
+    const sCanvas = document.getElementById('staticStarField');
+    if (!sCanvas) return;
+    const sctx = sCanvas.getContext('2d');
+    let stars = [], S_W, S_H;
+
+    // Deterministic Seeded RNG (Mulberry32)
+    function seededRng(a) {
+      return function() {
+        var t = a += 0x6D2B79F5;
+        t = Math.imul(t ^ t >>> 15, t | 1);
+        t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+      }
+    }
+
+    function resize() {
+      const sz = setupCanvas(sCanvas);
+      S_W = sz.w; S_H = sz.h;
+      stars = [];
+      const rng = seededRng(42); // Constant seed for static universe
+      const count = Math.floor((S_W * S_H) / 2500);
+      const bh = getBhCenter(), exR = getBhSize() * 0.9;
+      for (let i = 0; i < count * 2 && stars.length < count; i++) {
+        const x = rng() * S_W, y = rng() * S_H;
+        if (Math.sqrt((x-bh.x)**2 + (y-bh.y)**2) < exR) continue;
+        stars.push({ x, y, r: rng()*1.5+0.5, spd: 1+rng()*2, ph: rng()*Math.PI*2, noise: (rng()-0.5)*2 });
+      }
+    }
+
+    function draw(t) {
+      requestAnimationFrame(draw);
+      if (document.hidden) return;
+      if (document.documentElement.getAttribute('data-theme') === 'dark') {
+        // D: Purple space sky (full canvas)
+        const skyGrad = sctx.createLinearGradient(0, 0, 0, S_H);
+        skyGrad.addColorStop(0, '#060310');
+        skyGrad.addColorStop(0.35, '#04020b');
+        skyGrad.addColorStop(0.7, '#030209');
+        skyGrad.addColorStop(1, '#020106');
+        sctx.fillStyle = skyGrad;
+        sctx.fillRect(0, 0, S_W, S_H);
+
+        // A: Milky Way band
+        const mwY = S_H * 0.38;
+        const mwGrad = sctx.createRadialGradient(S_W * 0.5, mwY, 0, S_W * 0.5, mwY, S_W * 0.6);
+        mwGrad.addColorStop(0, 'rgba(139, 92, 246, 0.005)');
+        mwGrad.addColorStop(0.4, 'rgba(91, 33, 182, 0.002)');
+        mwGrad.addColorStop(0.7, 'rgba(139, 92, 246, 0.0008)');
+        mwGrad.addColorStop(1, 'transparent');
+        sctx.fillStyle = mwGrad;
+        sctx.fillRect(0, 0, S_W, S_H);
+
+        const bh = getBhCenter(), bhR = getBhSize(), lensR = bhR * 2.2;
+
+        // Draw Stars
+        stars.forEach(s => {
+          const dx = s.x - bh.x, dy = s.y - bh.y, dist = Math.sqrt(dx*dx + dy*dy);
+          let dX = s.x, dY = s.y;
+          if (dist < lensR) {
+            const defl = 12000 / (dist * dist + 100);
+            dX -= (dx / dist) * Math.min(defl, dist * 0.95);
+            dY -= (dy / dist) * Math.min(defl, dist * 0.95);
+          }
+          const a = 0.25 + 0.75 * (0.5 + 0.5 * Math.sin(t/1000 * s.spd + s.ph));
+          sctx.beginPath(); sctx.arc(dX + s.noise, dY + s.noise, s.r, 0, Math.PI*2);
+          sctx.fillStyle = `rgba(255,255,255,${a})`; sctx.fill();
+        });
+      } else {
+        sctx.clearRect(0,0,S_W,S_H);
+      }
+    }
+    window.addEventListener('resize', resize); resize(); requestAnimationFrame(draw);
+  }
+  renderStaticStarfield();
+
+  /* 🪨 SHOOTING STARS — gravity, slingshot, spaghettification */
+  const cCanvas = document.getElementById('shootingStarCanvas');
+  if (cCanvas) {
+    const ctx = cCanvas.getContext('2d');
+    let activeStar = null, spawnTimer = null, C_W, C_H;
+
+    function resize() {
+      const sz = setupCanvas(cCanvas);
+      C_W = sz.w; C_H = sz.h;
+    }
+
+    function schedule(d) { if (spawnTimer) clearTimeout(spawnTimer); spawnTimer = setTimeout(spawn, d); }
+
+    function spawn() {
+      if (activeStar || document.hidden) return;
+      // Theme guard: no shooting stars in light mode
+      if (document.documentElement.getAttribute('data-theme') === 'light') { return; }
+      const bh = getBhCenter(), bhR = getBhSize(), maxD = Math.max(C_W, C_H);
+      const ang = Math.random() * Math.PI * 2, r = maxD * 0.7; 
+      const x = bh.x + Math.cos(ang)*r, y = bh.y + Math.sin(ang)*r;
+      const toC = Math.atan2(bh.y-y, bh.x-x);
+
+      // ── random layers: 60% safe, 25% slingshot, 15% capture ──
+      const roll = Math.random();
+      const layer = roll < 0.6 ? 0 : roll < 0.85 ? 1 : 2;
+      let targetOff;
+      if (layer === 0) targetOff = bhR * 1.60; // Safe
+      else if (layer === 1) targetOff = bhR * 1.785; // Slingshot
+      else targetOff = bhR * 0.5; // Capture
+      
+      
+      const offAng = Math.asin(Math.min(0.9, targetOff / r)) * (Math.random() > 0.5 ? 1 : -1);
+      // boosted speed (8.5 to 16.0) for cinematic velocity
+      const spd = 8.5 + Math.random() * 7.5;
+      activeStar = {
+        x, y, vx: Math.cos(toC + offAng) * spd, vy: Math.sin(toC + offAng) * spd,
+        base: 0.8 + Math.random() * 1.4, trail: [], captured: false, orbitalDist: 0, orbitalAng: 0,
+        frames: 0, baseAngVel: 0, currentAngVel: 0, captureLerp: 0, initialDist: 0,
+        capturedAngle: 0, smearing: false, smearFrames: 0, tier: layer
+      };
+    }
+
+    function draw() {
+      requestAnimationFrame(draw);
+      if (document.documentElement.getAttribute('data-theme') === 'light') return;
+      ctx.clearRect(0, 0, C_W, C_H);
+      // exR = 0.9 matches the "empty space" visual boundary
+      const bh = getBhCenter(), bhR = getBhSize(), exR = bhR * 0.9, s = activeStar;
+
+      if (s) {
+        let dx = bh.x - s.x, dy = bh.y - s.y, dist = Math.sqrt(dx*dx + dy*dy);
+        // SPATIAL TRIGGER: only tier 2 (capture) can enter spaghetti orbit
+        if (!s.captured && s.tier === 2 && dist < exR) {
+          s.captured = true; s.initialDist = dist; s.orbitalDist = dist;
+          s.orbitalAng = Math.atan2(s.y - bh.y, s.x - bh.x); 
+          const approachSpeed = Math.sqrt(s.vx*s.vx + s.vy*s.vy);
+          s.baseAngVel = approachSpeed / dist; s.currentAngVel = s.baseAngVel;
+          s.captureLerp = 0; s.capturedAngle = 0; s.smearing = false; s.smearFrames = 0;
+        }
+        if (s.captured && !s.smearing) {
+          const accelFactor = Math.min(5.0, Math.pow(s.initialDist / s.orbitalDist, 2.0));
+          s.currentAngVel = s.baseAngVel * accelFactor;
+          const oldAng = s.orbitalAng; s.orbitalAng -= s.currentAngVel; s.orbitalDist *= 0.9989; 
+          let aDiff = oldAng - s.orbitalAng;
+          while (aDiff < 0) aDiff += Math.PI * 2;
+          while (aDiff > Math.PI * 2) aDiff -= Math.PI * 2;
+          s.capturedAngle += aDiff;
+          s.captureLerp = Math.min(1, s.captureLerp + 0.011); 
+          const lerpFactor = 1 - Math.pow(1 - s.captureLerp, 3);
+          const theta = s.orbitalAng, cosT = Math.cos(theta), sinT = Math.sin(theta);
+          // ── spaghettification spiral ──
+          const R = s.orbitalDist;
+          const baseLy = sinT * R * 0.11; 
+          let ly = baseLy;
+          if (sinT < 0) {
+            // hump power 2.0 for smooth natural rise
+            const hump = Math.pow(1 - cosT * cosT, 2.0); 
+            ly -= (hump * 0.35 * R); 
+          }
+          const lx = cosT * R, tilt = -12 * Math.PI / 180;
+          const targetX = bh.x + (lx * Math.cos(tilt) - ly * Math.sin(tilt)), targetY = bh.y + (lx * Math.sin(tilt) + ly * Math.cos(tilt));
+          const ballisticX = s.x + (s.vx * (1 - lerpFactor)), ballisticY = s.y + (s.vy * (1 - lerpFactor));
+          s.x = ballisticX * (1 - lerpFactor) + targetX * lerpFactor; s.y = ballisticY * (1 - lerpFactor) + targetY * lerpFactor;
+          const distRatio = Math.max(0, (bhR * 0.45 - s.orbitalDist) / (bhR * 0.15)), pSurge = Math.pow(distRatio, 2) * 1.2;
+          if (pSurge > 0.1) { s.x += (Math.random() - 0.5) * pSurge * 5.0; s.y += (Math.random() - 0.5) * pSurge * 5.0; }
+        } else if (!s.captured) {
+          // TIER PHYSICS: tier 1 gets deeper pull (1.85), tier 0 gets visible shift (0.4)
+          const gPower = s.tier === 1 ? 1.85 : 0.4;
+          const vAcc   = s.tier === 1 ? 1.003 : 1.002;
+          const gStr = (gPower * (bhR * bhR)) / (dist * dist + 100); 
+          s.vx += (dx / dist) * gStr; s.vy += (dy / dist) * gStr;
+          s.vx *= vAcc; s.vy *= vAcc; // kinetic acceleration
+          s.x += s.vx; s.y += s.vy;
+          // Exclusion zone: slingshot arcs around BH
+          if (s.tier === 1) {
+            const nx = bh.x - s.x, ny = bh.y - s.y, nd = Math.sqrt(nx*nx + ny*ny);
+            if (nd < bhR * 1.15) {
+              const d = (bhR * 1.15 - nd) / (bhR * 1.15);
+              const push = d * d * 0.15;
+              s.x -= (nx / nd) * push * (bhR * 1.15);
+              s.y -= (ny / nd) * push * (bhR * 1.15);
+              const dot = (s.vx * nx + s.vy * ny) / nd;
+              s.vx -= (nx / nd) * dot * d * 0.4;
+              s.vy -= (ny / nd) * dot * d * 0.4;
+            }
+          }
+        }
+        s.trail.push({ x: s.x, y: s.y }); if (s.trail.length > 50) s.trail.shift();
+        const thinningFactor = s.captured ? Math.pow(s.orbitalDist / s.initialDist, 3.0) : 1;
+        let op = 1.0;
+        // Smear fadeout: all layers
+        if (s.smearing) { s.smearFrames++; op = Math.max(0, 1 - Math.pow(s.smearFrames / 30, 1.5)); }
+        ctx.globalAlpha = op;
+        const distRatio = Math.max(0, (bhR * 0.45 - s.orbitalDist) / (bhR * 0.15)), plasmaSurge = s.captured ? Math.pow(distRatio, 2) * 1.2 : 0; 
+        if (op > 0.01 && thinningFactor > 0.005) {
+          if (s.trail.length > 2) {
+            for (let i = 1; i < s.trail.length; i++) {
+              const frac = i / s.trail.length; ctx.beginPath(); ctx.moveTo(s.trail[i-1].x, s.trail[i-1].y); ctx.lineTo(s.trail[i].x, s.trail[i].y);
+              ctx.strokeStyle = `rgba(255,255,255,${(frac * 0.8) + (plasmaSurge * 0.4)})`; ctx.lineWidth = s.base * (0.3 + 0.7 * frac) * thinningFactor; ctx.stroke();
+            }
+          }
+          const flareRad = ((s.base * 4) * thinningFactor) + (plasmaSurge * 12 * thinningFactor);
+          const grad = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, flareRad);
+          grad.addColorStop(0, `rgba(255,255,255,1)`); grad.addColorStop(0.4, `rgba(255,255,255,${0.4 + (plasmaSurge * 0.5)})`); grad.addColorStop(1, 'rgba(255,255,255,0)');
+          ctx.beginPath(); ctx.arc(s.x, s.y, flareRad, 0, Math.PI * 2); ctx.fillStyle = grad; ctx.fill();
+          ctx.beginPath(); ctx.arc(s.x, s.y, (s.base * 0.8) * thinningFactor, 0, Math.PI * 2); ctx.fillStyle = '#fff'; ctx.fill();
+        }
+        s.frames++;
+        // criteria: captured ends, OR way too far, OR timed out, OR exited hero area
+        const criteriaMet = s.captured && (thinningFactor < 0.04 || (s.orbitalDist < bhR * 0.38 && s.capturedAngle > Math.PI * 2.2));
+        const wayOff = dist > Math.max(C_W, C_H) * 2.5;
+        const exited = s.x < -500 || s.x > C_W + 500 || s.y < -500 || s.y > C_H + 500;
+
+        if (!s.smearing && (criteriaMet || wayOff || exited || s.frames > 1500)) { 
+          s.smearing = true; s.smearFrames = 0; 
+        }
+        if (s.smearing && s.smearFrames >= 30) { 
+          activeStar = null; 
+          schedule(2000);
+        }
+      }
+    }
+    window.addEventListener('resize', resize); resize(); schedule(2000); requestAnimationFrame(draw);
+    // Theme guard: stop shooting stars in light mode
+    new MutationObserver(() => {
+      if (document.documentElement.getAttribute('data-theme') === 'light') {
+        if (spawnTimer) { clearTimeout(spawnTimer); spawnTimer = null; }
+        activeStar = null;
+      }
+    }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+    // Tab visibility: resume shooting stars when user returns
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden && document.documentElement.getAttribute('data-theme') === 'dark') {
+        if (!activeStar) {
+          if (spawnTimer) clearTimeout(spawnTimer);
+          schedule(500);
+        }
+      }
+    });
+  }
+
+  /* 🪨 LOGIN CARD STARFIELD
+     Dark mode: white twinkling stars (matches hero starfield glimmer)
+     Light mode: purple constellation roaming dots with proximity lines
+  */
+  function renderLoginStarfield() {
+    const canvas = document.getElementById('loginStarField');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let dots = [], w, h;
+
+    function isLight() {
+      return document.documentElement.getAttribute('data-theme') === 'light';
+    }
+
+    function makeDot() {
+      return {
+        x: Math.random() * w, y: Math.random() * h,
+        r: 0.3 + Math.random() * 1.2,
+        spd: 1 + Math.random() * 2,
+        ph: Math.random() * Math.PI * 2,
+        noise: (Math.random() - 0.5) * 2,
+        vx: 0, vy: 0, alpha: 0.5, twPh: 0, twSp: 0,
+      };
+    }
+
+    function resize() {
+      const sz = setupCanvas(canvas);
+      w = sz.w; h = sz.h;
+      const count = Math.floor((w * h) / 2500);
+      dots = [];
+      for (let i = 0; i < count; i++) dots.push(makeDot());
+      if (isLight()) {
+        dots.forEach(d => {
+          d.vx = (Math.random() - 0.5) * 0.3;
+          d.vy = (Math.random() - 0.5) * 0.3;
+          d.r = 1.5 + Math.random() * 1.5;
+          d.alpha = 0.3 + Math.random() * 0.4;
+          d.twPh = Math.random() * Math.PI * 2;
+          d.twSp = 0.008 + Math.random() * 0.012;
+        });
+      }
+    }
+
+    function animate(t) {
+      requestAnimationFrame(animate);
+      if (document.hidden) return;
+      ctx.clearRect(0, 0, w, h);
+      const light = isLight();
+
+      if (light) {
+        /* ── light mode: constellation roam ── */
+        dots.forEach(d => {
+          d.x += d.vx; d.y += d.vy;
+          if (d.x < 0 || d.x > w) { d.vx *= -1; d.x = Math.max(0, Math.min(w, d.x)); }
+          if (d.y < 0 || d.y > h) { d.vy *= -1; d.y = Math.max(0, Math.min(h, d.y)); }
+          d.twPh += d.twSp;
+        });
+
+        const PROX = 130;
+        for (let i = 0; i < dots.length; i++) {
+          for (let j = i + 1; j < dots.length; j++) {
+            const dx = dots[i].x - dots[j].x;
+            const dy = dots[i].y - dots[j].y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < PROX) {
+              ctx.beginPath();
+              ctx.moveTo(dots[i].x, dots[i].y);
+              ctx.lineTo(dots[j].x, dots[j].y);
+              ctx.strokeStyle = `rgba(139,92,246,${(1 - dist / PROX) * 0.2})`;
+              ctx.lineWidth = 1;
+              ctx.stroke();
+            }
+          }
+        }
+
+        dots.forEach(d => {
+          const tw = 0.12 * Math.sin(d.twPh);
+          ctx.beginPath();
+          ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(139,92,246,${Math.min(0.85, d.alpha + tw)})`;
+          ctx.fill();
+        });
+      } else {
+        /* ── dark mode: white twinkling stars (matches hero starfield) ── */
+        dots.forEach(d => {
+          const a = 0.25 + 0.75 * (0.5 + 0.5 * Math.sin(t / 1000 * d.spd + d.ph));
+          ctx.beginPath();
+          ctx.arc(d.x + d.noise, d.y + d.noise, d.r, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(255,255,255,${a})`;
+          ctx.fill();
+        });
+      }
+    }
+
+    window.addEventListener('resize', resize);
+    resize();
+    animate();
+  }
+
+  document.addEventListener('alpine:init', () => setTimeout(renderLoginStarfield, 50));
+
+  /* ════════════════════════════════════════════════════════════════
+     ⚡ ELECTRIC BORDER — vanilla port of @BalintFerenczy / React Bits
+     https://codepen.io/BalintFerenczy/pen/KwdoyEN
+  ════════════════════════════════════════════════════════════════ */
+  function initElectricBorder() {
+    const canvas = document.getElementById('electricBorderCanvas');
+    const container = document.querySelector('.login-card');
+    if (!canvas || !container) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const color = '#a855f7';
+    const speed = 1;
+    const chaos = 0.12;
+    const borderRadius = 24;
+
+    const octaves = 10;
+    const lacunarity = 1.6;
+    const gain = 0.7;
+    const amplitude = chaos;
+    const frequency = 10;
+    const baseFlatness = 0;
+    const displacement = 60;
+    const borderOffset = 60;
+
+    let timeAcc = 0;
+    let lastFrame = 0;
+    let raf = 0;
+    let lastDpr = Math.min(window.devicePixelRatio || 1, 2);
+    let width = 0, height = 0;
+
+    function rnd(x) { return (Math.sin(x * 12.9898) * 43758.5453) % 1; }
+    function noise2D(x, y) {
+      const i = Math.floor(x), j = Math.floor(y);
+      const fx = x - i, fy = y - j;
+      const a = rnd(i + j * 57);
+      const b = rnd(i + 1 + j * 57);
+      const c = rnd(i + (j + 1) * 57);
+      const d = rnd(i + 1 + (j + 1) * 57);
+      const ux = fx * fx * (3 - 2 * fx);
+      const uy = fy * fy * (3 - 2 * fy);
+      return a * (1 - ux) * (1 - uy) + b * ux * (1 - uy) + c * (1 - ux) * uy + d * ux * uy;
+    }
+    function octavedNoise(x, time, seed) {
+      let y = 0, amp = amplitude, freq = frequency;
+      for (let i = 0; i < octaves; i++) {
+        let oa = amp;
+        if (i === 0) oa *= baseFlatness;
+        y += oa * noise2D(freq * x + seed * 100, time * freq * 0.3);
+        freq *= lacunarity;
+        amp *= gain;
+      }
+      return y;
+    }
+    function getCornerPoint(cx, cy, r, startAngle, arcLen, p) {
+      const a = startAngle + p * arcLen;
+      return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
+    }
+    function getRoundedRectPoint(t, left, top, w, h, r) {
+      const sw = w - 2 * r, sh = h - 2 * r;
+      const arc = (Math.PI * r) / 2;
+      const total = 2 * sw + 2 * sh + 4 * arc;
+      const dist = t * total;
+      let acc = 0;
+      if (dist <= acc + sw) { const p = (dist - acc) / sw; return { x: left + r + p * sw, y: top }; }
+      acc += sw;
+      if (dist <= acc + arc) { const p = (dist - acc) / arc; return getCornerPoint(left + w - r, top + r, r, -Math.PI / 2, Math.PI / 2, p); }
+      acc += arc;
+      if (dist <= acc + sh) { const p = (dist - acc) / sh; return { x: left + w, y: top + r + p * sh }; }
+      acc += sh;
+      if (dist <= acc + arc) { const p = (dist - acc) / arc; return getCornerPoint(left + w - r, top + h - r, r, 0, Math.PI / 2, p); }
+      acc += arc;
+      if (dist <= acc + sw) { const p = (dist - acc) / sw; return { x: left + w - r - p * sw, y: top + h }; }
+      acc += sw;
+      if (dist <= acc + arc) { const p = (dist - acc) / arc; return getCornerPoint(left + r, top + h - r, r, Math.PI / 2, Math.PI / 2, p); }
+      acc += arc;
+      if (dist <= acc + sh) { const p = (dist - acc) / sh; return { x: left, y: top + h - r - p * sh }; }
+      acc += sh;
+      const p = (dist - acc) / arc;
+      return getCornerPoint(left + r, top + r, r, Math.PI, Math.PI / 2, p);
+    }
+
+    function updateSize() {
+      const rect = container.getBoundingClientRect();
+      width = rect.width + borderOffset * 2;
+      height = rect.height + borderOffset * 2;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      canvas.style.width = width + 'px';
+      canvas.style.height = height + 'px';
+      lastDpr = dpr;
+    }
+
+    function draw(now) {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      if (dpr !== lastDpr) updateSize();
+
+      const dt = lastFrame ? (now - lastFrame) / 1000 : 0;
+      timeAcc += dt * speed;
+      lastFrame = now;
+
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.scale(dpr, dpr);
+
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      const left = borderOffset, top = borderOffset;
+      const bw = width - 2 * borderOffset;
+      const bh = height - 2 * borderOffset;
+      const maxR = Math.min(bw, bh) / 2;
+      const r = Math.min(borderRadius, maxR);
+      const perimeter = 2 * (bw + bh) + 2 * Math.PI * r;
+      const samples = Math.max(64, Math.floor(perimeter / 2));
+
+      ctx.beginPath();
+      for (let i = 0; i <= samples; i++) {
+        const p = i / samples;
+        const pt = getRoundedRectPoint(p, left, top, bw, bh, r);
+        const nx = octavedNoise(p * 8, timeAcc, 0);
+        const ny = octavedNoise(p * 8, timeAcc, 1);
+        const x = pt.x + nx * displacement;
+        const y = pt.y + ny * displacement;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.stroke();
+
+      raf = requestAnimationFrame(draw);
+    }
+
+    const ro = new ResizeObserver(updateSize);
+    ro.observe(container);
+    updateSize();
+    raf = requestAnimationFrame(draw);
+  }
+
+  document.addEventListener('alpine:init', () => setTimeout(initElectricBorder, 60));
+
+  /* ════════════════════════════════════════════════════════════════
+     🌟 CONSTELLATION SYSTEM — light mode hero canvas
+     Phase flow: idle → roaming → gathering → forming → glowing → dispersing → roaming
+  ════════════════════════════════════════════════════════════════ */
+  function initConstellationSystem() {
+    const canvas = document.getElementById('constellationCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    const isLight  = () => document.documentElement.getAttribute('data-theme') === 'light';
+    const REDUCED  = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    let W = 0, H = 0, running = false;
+    let dots = [];
+    let mouse = { x: -9999, y: -9999 };
+
+    let phase  = 'idle';
+    let phaseT = 0;
+
+    let sessionN  = 0;
+    let zodiacQ   = makeZodiacQueue();
+    let zodiacPtr = 0;
+    let currentC  = null;
+
+    let chosenDots   = [];
+    let lineProgress = [];
+    let lineStartTs  = [];
+    let labelAlpha   = 0;
+    let ambientAlpha = 0;
+    let cx = 0, cy = 0;
+    let formDone = false;
+
+    const CONSTS = [
+      { name: 'korah', label: "Hi, I'm Korah",
+        stars: [
+          { x:  0,     y: -0.82 },
+          { x: -0.48,  y: -0.52 },
+          { x:  0.48,  y: -0.52 },
+          { x: -0.68,  y: -0.12 },
+          { x:  0.68,  y: -0.12 },
+          { x: -0.26,  y: -0.35 },
+          { x:  0.26,  y: -0.35 },
+          { x:  0,     y: -0.02 },
+          { x: -0.16,  y:  0.14 },
+          { x:  0.16,  y:  0.14 },
+          { x: -0.52,  y:  0.40 },
+          { x:  0.52,  y:  0.40 },
+          { x: -0.20,  y:  0.76 },
+          { x:  0.20,  y:  0.76 },
+        ],
+        lines: [[0,1],[0,2],[1,3],[2,4],[1,5],[2,6],[5,6],[5,7],[6,7],[8,9],[3,10],[4,11],[10,12],[11,13],[12,13]],
+        eyeStars: [5, 6]
+      },
+      { name: 'aries', label: 'Aries',
+        stars: [{ x: -0.65, y: 0.12 }, { x: -0.18, y: 0.02 }, { x: 0.08, y: -0.06 }, { x: 0.55, y: 0.18 }],
+        lines: [[0,1],[1,2],[2,3]], eyeStars: []
+      },
+      { name: 'taurus', label: 'Taurus',
+        stars: [{ x: 0.12, y: 0.18 }, { x: -0.08, y: -0.05 }, { x: 0.35, y: -0.28 }, { x: -0.32, y: -0.22 }, { x: 0.50, y: 0.08 }, { x: -0.60, y: -0.60 }],
+        lines: [[0,1],[1,2],[1,3],[0,4],[1,5]], eyeStars: []
+      },
+      { name: 'gemini', label: 'Gemini',
+        stars: [{ x: -0.30, y: -0.72 }, { x: 0.30, y: -0.78 }, { x: -0.34, y: -0.38 }, { x: 0.33, y: -0.42 }, { x: -0.38, y: 0.08 }, { x: 0.36, y: 0.04 }, { x: -0.40, y: 0.55 }, { x: 0.38, y: 0.52 }],
+        lines: [[0,2],[1,3],[2,4],[3,5],[4,6],[5,7],[4,5]], eyeStars: []
+      },
+      { name: 'cancer', label: 'Cancer',
+        stars: [{ x: 0, y: -0.55 }, { x: -0.42, y: -0.05 }, { x: 0.42, y: 0.00 }, { x: -0.26, y: 0.52 }, { x: 0.26, y: 0.52 }],
+        lines: [[0,1],[0,2],[1,3],[2,4]], eyeStars: []
+      },
+      { name: 'leo', label: 'Leo',
+        stars: [{ x: -0.12, y: -0.65 }, { x: -0.38, y: -0.32 }, { x: -0.58, y: 0.02 }, { x: -0.42, y: 0.32 }, { x: -0.06, y: 0.48 }, { x: 0.62, y: 0.32 }, { x: 0.12, y: -0.02 }],
+        lines: [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,0]], eyeStars: []
+      },
+      { name: 'virgo', label: 'Virgo',
+        stars: [{ x: 0, y: -0.72 }, { x: -0.28, y: -0.22 }, { x: 0.28, y: -0.18 }, { x: -0.62, y: 0.22 }, { x: 0.58, y: 0.18 }, { x: -0.02, y: 0.42 }, { x: -0.38, y: 0.78 }],
+        lines: [[0,1],[0,2],[1,3],[2,4],[1,5],[5,6]], eyeStars: []
+      },
+      { name: 'libra', label: 'Libra',
+        stars: [{ x: 0, y: -0.58 }, { x: -0.52, y: -0.08 }, { x: 0.52, y: -0.02 }, { x: -0.28, y: 0.38 }, { x: 0.28, y: 0.42 }],
+        lines: [[0,1],[0,2],[1,3],[2,4],[3,4],[1,2]], eyeStars: []
+      },
+      { name: 'scorpius', label: 'Scorpius',
+        stars: [{ x: -0.12, y: -0.76 }, { x: -0.28, y: -0.52 }, { x: -0.32, y: -0.26 }, { x: -0.22, y: 0.02 }, { x: 0.02, y: 0.24 }, { x: 0.22, y: 0.44 }, { x: 0.42, y: 0.56 }, { x: 0.58, y: 0.36 }, { x: 0.68, y: 0.12 }],
+        lines: [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8]], eyeStars: []
+      },
+      { name: 'sagittarius', label: 'Sagittarius',
+        stars: [{ x: -0.58, y: 0.22 }, { x: -0.32, y: -0.08 }, { x: -0.08, y: 0.12 }, { x: 0.22, y: 0.36 }, { x: 0.52, y: 0.26 }, { x: 0.58, y: -0.04 }, { x: 0.12, y: -0.28 }, { x: -0.18, y: -0.55 }],
+        lines: [[0,1],[1,7],[7,6],[6,5],[5,4],[4,3],[3,2],[2,0],[2,6],[1,2]], eyeStars: []
+      },
+      { name: 'capricorn', label: 'Capricorn',
+        stars: [{ x: -0.65, y: -0.42 }, { x: -0.18, y: -0.52 }, { x: 0.42, y: -0.30 }, { x: 0.68, y: 0.10 }, { x: 0.32, y: 0.55 }, { x: -0.32, y: 0.55 }, { x: -0.62, y: 0.12 }],
+        lines: [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,0]], eyeStars: []
+      },
+      { name: 'aquarius', label: 'Aquarius',
+        stars: [{ x: -0.10, y: -0.68 }, { x: -0.38, y: -0.30 }, { x: 0.32, y: -0.26 }, { x: -0.52, y: 0.08 }, { x: 0.12, y: 0.04 }, { x: 0.52, y: 0.08 }, { x: -0.32, y: 0.50 }, { x: 0.02, y: 0.56 }, { x: 0.32, y: 0.50 }],
+        lines: [[0,1],[0,2],[1,3],[2,5],[1,4],[4,2],[3,6],[6,7],[7,8],[8,5]], eyeStars: []
+      },
+      { name: 'pisces', label: 'Pisces',
+        stars: [{ x: -0.62, y: -0.52 }, { x: -0.58, y: -0.18 }, { x: -0.72, y: 0.12 }, { x: -0.52, y: 0.30 }, { x: -0.20, y: 0.14 }, { x: 0.22, y: 0.10 }, { x: 0.52, y: -0.10 }, { x: 0.68, y: -0.42 }, { x: 0.78, y: -0.10 }, { x: 0.62, y: 0.22 }],
+        lines: [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,9],[9,6]], eyeStars: []
+      }
+    ];
+
+    function makeZodiacQueue() {
+      const a = [1,2,3,4,5,6,7,8,9,10,11,12];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function nextConst() {
+      if (sessionN === 0) { sessionN++; return CONSTS[0]; }
+      const idx = zodiacQ[zodiacPtr++];
+      if (zodiacPtr >= 12) { zodiacQ = makeZodiacQueue(); zodiacPtr = 0; }
+      sessionN++;
+      return CONSTS[idx];
+    }
+
+    function makeDot() {
+      return {
+        x: Math.random() * W, y: Math.random() * H,
+        vx: (Math.random() - 0.5) * 0.4, vy: (Math.random() - 0.5) * 0.4,
+        r: 2 + Math.random() * 2, base: 0.35 + Math.random() * 0.22,
+        twPh: Math.random() * Math.PI * 2, twSp: 0.008 + Math.random() * 0.013,
+        mag: 1.0 + Math.random() * 0.3,
+        isC: false, ci: -1, tx: 0, ty: 0, svx: 0, svy: 0,
+        stMs: 0, glow: 0, bOff: Math.random() * Math.PI * 2, cg: 0,
+        scMs: 0, scattered: false, stX: 0, stY: 0
+      };
+    }
+
+    function buildDots() {
+      const ref = 600 * 500;
+      const N = Math.max(30, Math.min(55, Math.round(55 * Math.sqrt((W * H) / ref))));
+      dots = Array.from({ length: N }, makeDot);
+    }
+
+    function resize() {
+      const hero = document.querySelector('.kl-hero-inner');
+      if (!hero) return;
+      const r = hero.getBoundingClientRect();
+      W = canvas.width = r.width;
+      H = canvas.height = r.height;
+      if (phase === 'idle' || phase === 'roaming') buildDots();
+    }
+
+    function startGather() {
+      currentC = nextConst();
+      const N = currentC.stars.length;
+      chosenDots = dots.slice().sort(() => Math.random() - 0.5).slice(0, N);
+      cx = W / 2 + (Math.random() - 0.5) * 50;
+      cy = H * 0.44 + (Math.random() - 0.5) * 40;
+      const scale = Math.min(W, H) * 0.34;
+      chosenDots.forEach((d, i) => {
+        d.isC = true; d.ci = i;
+        d.tx = cx + currentC.stars[i].x * scale;
+        d.ty = cy + currentC.stars[i].y * scale;
+        d.svx = 0; d.svy = 0;
+        d.stMs = Math.random() * 200;
+        d.glow = 0;
+        d.mag = currentC.eyeStars.includes(i) ? 1.6 : 1.0 + Math.random() * 0.4;
+      });
+      lineProgress = currentC.lines.map(() => 0);
+      lineStartTs = [];
+      labelAlpha = 0;
+      ambientAlpha = 0;
+      formDone = false;
+      phase = 'gathering';
+      phaseT = Date.now();
+    }
+
+    function startForm() {
+      const now = Date.now();
+      const order = currentC.lines.map((_, i) => i).sort(() => Math.random() - 0.5);
+      lineStartTs = new Array(currentC.lines.length).fill(0);
+      order.forEach((li, pos) => {
+        lineStartTs[li] = now + pos * (138 + Math.random() * 42);
+      });
+      phase = 'forming';
+      phaseT = now;
+    }
+
+    function startDispersal() {
+      const sorted = chosenDots.slice().sort((a, b) => a.mag - b.mag);
+      sorted.forEach((d, i) => {
+        d.scMs = i * 115 + Math.random() * 38;
+        if (i === sorted.length - 1) d.scMs = sorted.length * 115 + 160;
+        d.scattered = false;
+        d.stX = Math.random() * W;
+        d.stY = Math.random() * H;
+      });
+      phase = 'dispersing';
+      phaseT = Date.now();
+    }
+
+    function bowLine(x1, y1, x2, y2, prog, alpha) {
+      const ex = x1 + (x2 - x1) * prog;
+      const ey = y1 + (y2 - y1) * prog;
+      const len = Math.hypot(x2 - x1, y2 - y1) || 1;
+      const px = -(y2 - y1) / len;
+      const py = (x2 - x1) / len;
+      const bow = 3.5 * Math.sin(prog * Math.PI);
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.quadraticCurveTo(
+        (x1 + ex) / 2 + px * bow, (y1 + ey) / 2 + py * bow, ex, ey
+      );
+      ctx.strokeStyle = `rgba(139,92,246,${alpha})`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    function drawStaticKorah() {
+      const k = CONSTS[0];
+      const scale = Math.min(W, H) * 0.32;
+      const px = W / 2, py = H * 0.44;
+      const pos = k.stars.map(s => ({ x: px + s.x * scale, y: py + s.y * scale }));
+      ctx.clearRect(0, 0, W, H);
+      k.lines.forEach(([a, b]) => {
+        ctx.beginPath();
+        ctx.moveTo(pos[a].x, pos[a].y);
+        ctx.lineTo(pos[b].x, pos[b].y);
+        ctx.strokeStyle = 'rgba(139,92,246,0.45)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      });
+      pos.forEach((p, i) => {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, k.eyeStars.includes(i) ? 3.2 : 2.2, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(139,92,246,0.7)';
+        ctx.fill();
+      });
+    }
+
+    function draw() {
+      if (!running) return;
+      requestAnimationFrame(draw);
+      if (!isLight()) return;
+      if (REDUCED) {
+        ctx.clearRect(0, 0, W, H);
+        drawStaticKorah();
+        return;
+      }
+      ctx.clearRect(0, 0, W, H);
+      const now = Date.now();
+      const dt = now - phaseT;
+      const active = phase === 'gathering' || phase === 'forming' || phase === 'glowing';
+      const constSet = new Set(chosenDots);
+
+      if (phase === 'gathering') {
+        const close = chosenDots.every(d => Math.hypot(d.tx - d.x, d.ty - d.y) < 8);
+        if (close || dt > 3000) startForm();
+      }
+      if (phase === 'forming' && !formDone && lineProgress.every(p => p >= 1)) {
+        formDone = true;
+        setTimeout(() => { if (phase === 'forming') { phase = 'glowing'; phaseT = Date.now(); } }, 200);
+      }
+      if (phase === 'glowing' && dt > 1500) startDispersal();
+      if (phase === 'dispersing' && dt > 2200) {
+        chosenDots.forEach(d => {
+          d.isC = false; d.ci = -1; d.glow = 0;
+          d.mag = 1.0 + Math.random() * 0.3;
+          d.svx = 0; d.svy = 0;
+          const len = Math.hypot(d.stX - d.x, d.stY - d.y) || 1;
+          d.vx = ((d.stX - d.x) / len) * (0.3 + Math.random() * 0.15);
+          d.vy = ((d.stY - d.y) / len) * (0.3 + Math.random() * 0.15);
+        });
+        chosenDots = [];
+        labelAlpha = 0; ambientAlpha = 0;
+        phase = 'roaming'; phaseT = now;
+      }
+      if (phase === 'roaming' && dt > 7000) startGather();
+
+      dots.forEach(d => {
+        if (d.isC) {
+          if (phase === 'gathering' && now - phaseT > d.stMs) {
+            const dx = d.tx - d.x, dy = d.ty - d.y;
+            d.svx += dx * 0.018; d.svy += dy * 0.018;
+            d.svx *= 0.88; d.svy *= 0.88;
+            d.x += d.svx; d.y += d.svy;
+            d.glow = Math.min(0.55, d.glow + 0.003);
+          }
+          if (phase === 'forming') {
+            d.x += (Math.random() - 0.5) * 0.22;
+            d.y += (Math.random() - 0.5) * 0.22;
+            d.glow = Math.min(0.85, d.glow + 0.007);
+          }
+          if (phase === 'glowing') {
+            d.x += (Math.random() - 0.5) * 0.18;
+            d.y += (Math.random() - 0.5) * 0.18;
+            d.glow = 0.85 + Math.sin(now * 0.002 + d.bOff) * 0.07;
+          }
+          if (phase === 'dispersing') {
+            d.glow = Math.max(0, d.glow - 0.02);
+            if (!d.scattered && now - phaseT > d.scMs + 600) {
+              d.scattered = true;
+              d.isC = false; d.ci = -1;
+              const len = Math.hypot(d.stX - d.x, d.stY - d.y) || 1;
+              d.vx = ((d.stX - d.x) / len) * (0.35 + Math.random() * 0.18);
+              d.vy = ((d.stY - d.y) / len) * (0.35 + Math.random() * 0.18);
+            }
+            if (d.scattered) {
+              d.x += d.vx; d.y += d.vy;
+              if (d.x < 0 || d.x > W) { d.vx *= -1; d.x = Math.max(0, Math.min(W, d.x)); }
+              if (d.y < 0 || d.y > H) { d.vy *= -1; d.y = Math.max(0, Math.min(H, d.y)); }
+            }
+          }
+        } else {
+          d.x += d.vx; d.y += d.vy;
+          if (d.x < 0 || d.x > W) { d.vx *= -1; d.x = Math.max(0, Math.min(W, d.x)); }
+          if (d.y < 0 || d.y > H) { d.vy *= -1; d.y = Math.max(0, Math.min(H, d.y)); }
+          if (active) {
+            chosenDots.forEach(cs => {
+              const dx = d.x - cs.x, dy = d.y - cs.y;
+              const d2 = dx * dx + dy * dy;
+              if (d2 < 6400 && d2 > 0) {
+                const dist = Math.sqrt(d2);
+                const f = ((80 - dist) / 80) * 0.35;
+                d.vx += (dx / dist) * f;
+                d.vy += (dy / dist) * f;
+              }
+            });
+            const spd = Math.hypot(d.vx, d.vy);
+            if (spd > 0.75) { d.vx = (d.vx / spd) * 0.75; d.vy = (d.vy / spd) * 0.75; }
+          }
+        }
+        const md = Math.hypot(d.x - mouse.x, d.y - mouse.y);
+        d.cg = md < 60
+          ? Math.min(1, d.cg + 0.08)
+          : Math.max(0, d.cg - 0.06);
+        d.twPh += d.twSp;
+      });
+
+      const PROX = 155;
+      for (let i = 0; i < dots.length; i++) {
+        for (let j = i + 1; j < dots.length; j++) {
+          if (active && (constSet.has(dots[i]) || constSet.has(dots[j]))) continue;
+          const dx = dots[i].x - dots[j].x;
+          const dy = dots[i].y - dots[j].y;
+          const d = Math.sqrt(dx * dx + dy * dy);
+          if (d < PROX) {
+            ctx.beginPath();
+            ctx.moveTo(dots[i].x, dots[i].y);
+            ctx.lineTo(dots[j].x, dots[j].y);
+            ctx.strokeStyle = `rgba(139,92,246,${(1 - d / PROX) * 0.3})`;
+            ctx.lineWidth = 1;
+            ctx.stroke();
+          }
+        }
+      }
+
+      if ((phase === 'forming' || phase === 'glowing') && currentC) {
+        const LINE_DUR = 580;
+        currentC.lines.forEach(([a, b], li) => {
+          const st = lineStartTs[li];
+          if (!st || now < st) return;
+          const prog = Math.min(1, (now - st) / LINE_DUR);
+          lineProgress[li] = prog;
+          const dA = chosenDots[a], dB = chosenDots[b];
+          if (!dA || !dB) return;
+          const alpha = phase === 'glowing'
+            ? 0.5 + Math.sin(now * 0.0014 + li * 0.6) * 0.12
+            : 0.5;
+          bowLine(dA.x, dA.y, dB.x, dB.y, prog, alpha);
+        });
+      }
+
+      if (phase === 'dispersing' && currentC) {
+        const lfa = Math.max(0, 1 - dt / 380) * 0.5;
+        if (lfa > 0) {
+          currentC.lines.forEach(([a, b]) => {
+            const dA = chosenDots[a], dB = chosenDots[b];
+            if (!dA || !dB) return;
+            bowLine(dA.x, dA.y, dB.x, dB.y, 1, lfa);
+          });
+        }
+      }
+
+      const ambTarget = phase === 'glowing' ? 0.055
+        : (phase === 'dispersing' && dt < 500) ? 0.055 * Math.max(0, 1 - dt / 500) : 0;
+      ambientAlpha += (ambTarget - ambientAlpha) * 0.04;
+      if (ambientAlpha > 0.004) {
+        const r = Math.min(W, H) * 0.44;
+        const gr = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+        gr.addColorStop(0, `rgba(139,92,246,${ambientAlpha})`);
+        gr.addColorStop(1, 'rgba(139,92,246,0)');
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fillStyle = gr;
+        ctx.fill();
+      }
+
+      ctx.shadowBlur = 0;
+      dots.forEach(d => {
+        const gl = d.glow || 0;
+        const cg = d.cg || 0;
+        const tw = 0.1 * Math.sin(d.twPh);
+        const r = d.r * d.mag * (1 + gl * 0.22 + cg * 0.18);
+        const a = Math.min(0.95, d.base + tw + gl * 0.42 + cg * 0.22);
+        if (gl > 0.25 || cg > 0.15) {
+          ctx.shadowBlur = (gl + cg * 0.5) * 12;
+          ctx.shadowColor = `rgba(167,139,250,${(gl + cg * 0.4) * 0.65})`;
+        }
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(139,92,246,${a})`;
+        ctx.fill();
+        if (gl > 0.25 || cg > 0.15) ctx.shadowBlur = 0;
+      });
+      ctx.shadowBlur = 0;
+
+      const showLabel = phase === 'glowing' && dt > 800;
+      const dispFade = phase === 'dispersing' ? Math.max(0, 1 - dt / 300) : 1;
+      labelAlpha += ((showLabel ? 1 : 0) * dispFade - labelAlpha) * 0.05;
+      if (labelAlpha > 0.01 && currentC) {
+        ctx.save();
+        ctx.globalAlpha = labelAlpha;
+        ctx.font = '500 0.6875rem Plus Jakarta Sans';
+        ctx.fillStyle = 'rgba(109,40,217,0.8)';
+        ctx.textAlign = 'center';
+        ctx.fillText(currentC.label, cx, cy + Math.min(W, H) * 0.38);
+        ctx.restore();
+      }
+    }
+
+    canvas.addEventListener('mousemove', e => {
+      const r = canvas.getBoundingClientRect();
+      mouse.x = e.clientX - r.left;
+      mouse.y = e.clientY - r.top;
+    });
+    canvas.addEventListener('mouseleave', () => { mouse.x = -9999; mouse.y = -9999; });
+    window.addEventListener('resize', resize);
+
+    function start() {
+      if (!isLight()) return;
+      resize();
+      if (REDUCED) {
+        if (!running) { running = true; requestAnimationFrame(draw); }
+        return;
+      }
+      buildDots();
+      phase = 'idle';
+      phaseT = Date.now();
+      const initDelay = 3000 + Math.random() * 2000;
+      setTimeout(() => {
+        if (!isLight()) return;
+        phase = 'roaming';
+        phaseT = Date.now();
+        setTimeout(() => { if (isLight()) startGather(); }, 500);
+      }, initDelay);
+      if (!running) { running = true; requestAnimationFrame(draw); }
+    }
+
+    new MutationObserver(() => {
+      if (isLight() && !running) { start(); }
+      if (!isLight()) { phase = 'idle'; chosenDots = []; formDone = false; running = false; }
+    }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+    start();
+  }
+  initConstellationSystem();
+
+  /* 🪨 THEME TOGGLE (debug) */
+  {
+    const btn = document.getElementById('themeToggle');
+    if (btn) {
+      function syncBtn() {
+        btn.textContent = document.documentElement.getAttribute('data-theme') === 'light' ? '☀️' : '🌙';
+      }
+      syncBtn();
+      btn.addEventListener('click', () => {
+        const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', next);
+        localStorage.setItem('korah_theme', next);
+        syncBtn();
+      });
+    }
+  }
+
+  /* 🪨 ALPINE APP */
+  document.addEventListener('alpine:init', () => {
+    Alpine.data('loginApp', () => ({
+      tab: 'login', fieldErr: {}, showAllErrors: false, loadingPrimary: false, loadingGoogle: false,
+      loginEmail: '', loginPassword: '', showLoginPassword: false, showRegPassword: false,
+      regFirst: '', regLast: '', regEmail: '', regPassword: '',
+      clearError() { 
+        this.fieldErr = {}; 
+        this.showAllErrors = false; 
+      },
+      switchTab(t) { this.tab = t; this.clearError(); },
+      async handleLogin() {
+        this.fieldErr = {};
+        this.loadingPrimary = true;
+        const eEmpty = !this.loginEmail.trim();
+        const pEmpty = !this.loginPassword.trim();
+        if (eEmpty && pEmpty) {
+          this.showAllErrors = true;
+          this.fieldErr.general = "Please fill in all fields.";
+          this.loadingPrimary = false; return;
+        }
+        if (eEmpty) this.fieldErr.email = "Email is required.";
+        if (!eEmpty && !this.loginEmail.includes('@')) this.fieldErr.email = "Enter a valid email.";
+        if (pEmpty) this.fieldErr.password = "Password is required.";
+        if (this.fieldErr.email || this.fieldErr.password) { this.loadingPrimary = false; return; }
+        try {
+          await signInWithEmailAndPassword(auth, this.loginEmail, this.loginPassword);
+        }
+        catch (err) {
+          this.loadingPrimary = false;
+          const code = err.code;
+          if (code === 'auth/invalid-email') { this.fieldErr.email = "Invalid email."; return; }
+          if (code === 'auth/user-not-found') { this.fieldErr.email = "Email not found."; return; }
+          if (code === 'auth/user-disabled') { this.fieldErr.email = "Account disabled."; return; }
+          if (code === 'auth/wrong-password') { this.fieldErr.password = "Invalid password."; return; }
+          this.fieldErr.email = "Invalid email or password."; this.fieldErr.password = "Invalid email or password.";
+        }
+        this.loadingPrimary = false;
+      },
+      async handleRegister() {
+        this.fieldErr = {};
+        this.loadingPrimary = true;
+        const fEmpty = !this.regFirst.trim();
+        const lEmpty = !this.regLast.trim();
+        const eEmpty = !this.regEmail.trim();
+        const pEmpty = !this.regPassword.trim();
+        if (fEmpty && lEmpty && eEmpty && pEmpty) {
+          this.showAllErrors = true;
+          this.fieldErr.general = "Please fill in all fields.";
+          this.loadingPrimary = false; return;
+        }
+        if (fEmpty) this.fieldErr.first = "First name is required.";
+        if (lEmpty) this.fieldErr.last = "Last name is required.";
+        if (eEmpty) this.fieldErr.regEmail = "Email is required.";
+        if (!eEmpty && !this.regEmail.includes('@')) this.fieldErr.regEmail = "Enter a valid email.";
+        if (pEmpty) this.fieldErr.regPassword = "Password is required.";
+        if (!pEmpty && this.regPassword.length < 6) this.fieldErr.regPassword = "Password must be 6+ characters.";
+        if (this.fieldErr.first || this.fieldErr.last || this.fieldErr.regEmail || this.fieldErr.regPassword) { this.loadingPrimary = false; return; }
+        try {
+          await createUserWithEmailAndPassword(auth, this.regEmail, this.regPassword);
+          localStorage.setItem('korah_first_name', this.regFirst);
+        } catch (err) {
+          this.loadingPrimary = false;
+          const code = err.code;
+          if (code === 'auth/email-already-in-use') { this.fieldErr.regEmail = "Email already in use."; return; }
+          if (code === 'auth/invalid-email') { this.fieldErr.regEmail = "Invalid email."; return; }
+          if (code === 'auth/weak-password') { this.fieldErr.regPassword = "Password too weak."; return; }
+          this.fieldErr.regEmail = "Registration failed.";
+          return;
+        }
+        this.loadingPrimary = false;
+      },
+      async handleGoogle() {
+        this.loadingPrimary = true; this.loadingGoogle = true;
+        this.fieldErr = {};
+        let popupRef = null;
+        const origOpen = window.open;
+        window.open = (url, name, features) => {
+          popupRef = origOpen.call(window, url, name, features);
+          window.open = origOpen;
+          return popupRef;
+        };
+        try {
+          await Promise.race([
+            signInWithPopup(auth, gProv),
+            new Promise((_, reject) => {
+              const timer = setInterval(() => {
+                if (popupRef && popupRef.closed) {
+                  clearInterval(timer);
+                  reject(new Error('popup-closed'));
+                }
+              }, 100);
+            })
+          ]);
+        } catch (e) {
+          this.loadingPrimary = false; this.loadingGoogle = false;
+          if (e.message !== 'popup-closed') {
+            const msg = this.tab === 'login' ? "Failed Login: Try again in a few seconds." : "Failed Registration: Try again in a few seconds.";
+            this.fieldErr.google = msg;
+          }
+          return;
+        }
+        this.loadingPrimary = false; this.loadingGoogle = false;
+      }
+    }));
+  });
+
+  document.documentElement.classList.add('korah-page-ready');
+</script>
+
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</body>
+</html>

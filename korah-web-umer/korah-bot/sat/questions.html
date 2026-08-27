@@ -1,0 +1,1662 @@
+<!DOCTYPE html>
+<html lang="en" x-data="{
+  theme: localStorage.getItem('korah_theme') || 'dark',
+  sidebarCollapsed: window.innerWidth <= 768 ? false : localStorage.getItem('korah_sidebar_collapsed') === 'true',
+  mobileOpen: false,
+  getEffectiveTheme() {
+    if (this.theme === 'system') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return this.theme;
+  },
+  toggleSidebar() {
+    if (window.innerWidth <= 768) {
+      this.mobileOpen = !this.mobileOpen;
+      const overlay = document.querySelector('.sidebar-overlay');
+      if (overlay) overlay.classList.toggle('show', this.mobileOpen);
+    } else {
+      if (this.sidebarCollapsed) {
+        const dp = document.getElementById('doc-panel');
+        if (dp?.classList.contains('expanded')) {
+          dp.classList.remove('expanded');
+          dp.classList.add('collapsed');
+          const tab = document.getElementById('doc-panel-tab');
+          if (tab) tab.classList.remove('panel-open');
+        }
+      }
+      this.sidebarCollapsed = !this.sidebarCollapsed;
+      localStorage.setItem('korah_sidebar_collapsed', this.sidebarCollapsed);
+    }
+  }
+}" :data-theme="getEffectiveTheme()" x-cloak><head>
+<link rel="stylesheet" href="../transitions/page-transitions.css"/>
+<script src="../transitions/page-transitions.js"></script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Korah AI — SAT Practice Player</title>
+<link rel="icon" type="image/png" href="../logo-images/newlogo0.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="../app/korah-chat.css"/>
+<link rel="stylesheet" href="./sat.css"/>
+<link rel="stylesheet" href="./sat-player-theme.css"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css"/>
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Round"/>
+
+<style>
+  /* Dark mode - white text outside question container (questions.html only) */
+html[data-theme="dark"] {
+    --bg: #06040f;
+    --sf: rgba(18, 12, 40, 0.7);
+    --sf2: rgba(30, 18, 60, 0.6);
+    --bd: rgba(139, 92, 246, 0.2);
+    --tx: #ffffff;
+    --tx2: #ffffff;
+    --tx3: #a89dc0;
+    --p4: #8b5cf6;
+    --p5: #a78bfa;
+    --glow: rgba(139, 92, 246, 0.15);
+}
+
+/* Dark mode: override tx-p5/tx-p4 utility classes to show white instead of purple */
+html[data-theme="dark"] .tx-p5 { color: #ffffff !important; }
+html[data-theme="dark"] .tx-p4 { color: rgba(255, 255, 255, 0.85) !important; }
+
+/* Light mode - black text outside question container (questions.html only) */
+html[data-theme="light"] {
+    --bg: #faf8ff;
+    --sf: rgba(255, 255, 255, 0.85);
+    --sf2: rgba(243, 239, 255, 0.9);
+    --bd: rgba(109, 40, 217, 0.18);
+    --tx: #000000;
+    --tx2: #000000;
+    --tx3: #9080aa;
+    --p4: #8b5cf6;
+    --p5: #7c3aed;
+    --glow: rgba(109, 40, 217, 0.15);
+}
+
+</style>
+</head>
+
+<body class="bg-base tx sat-shell">
+<style>
+  html:not(.korah-page-ready) { background: #06040f !important; }
+  html[data-theme="light"]:not(.korah-page-ready) { background: #d2d2d2 !important; }
+  html:not(.korah-page-ready) body { opacity: 0 !important; }
+</style>
+
+<script>
+  (function() {
+    const t = localStorage.getItem('korah_theme') || 'dark';
+    if (t === 'light' || (t === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  })();
+</script>
+
+<script>
+  (function() {
+    var theme = localStorage.getItem('korah_theme') || 'dark';
+    if (theme === 'system') {
+      theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    document.documentElement.setAttribute('data-theme', theme);
+  })();
+</script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+  import { setupKorahDB } from "../app/data/firestore-store.js";
+  import { initSatAnalytics } from "./js/sat-analytics.js";
+  import { startAuthGuard } from '../auth-guard.js';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
+    authDomain: "korah-app.firebaseapp.com",
+    projectId: "korah-app",
+    storageBucket: "korah-app.firebasestorage.app",
+    messagingSenderId: "226169460321",
+    appId: "1:226169460321:web:b166fc8260107c55dafc20"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      window.KorahTransitions.go('../landing/index.html');
+      return;
+    }
+    // Set up Firestore and expose window.KorahDB before notifying the app.
+    await setupKorahDB(app, user.uid);
+    await initSatAnalytics(app, user.uid);
+    const detail = { uid: user.uid };
+    // Cache so korah-chat.js can pick it up even in edge-case timing.
+    window._korahReadyFired = detail;
+    window.dispatchEvent(new CustomEvent('korahReady', { detail }));
+    startAuthGuard(auth, '../landing/index.html');
+  });
+
+  const _logoutBtn = document.getElementById('logout-btn');
+  if (_logoutBtn) {
+    _logoutBtn.addEventListener('click', async () => {
+      await signOut(auth);
+      localStorage.removeItem('korah_first_name');
+      window.KorahTransitions.go('../login.html');
+    });
+  }
+</script>
+
+<canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
+
+
+<!-- ═══ NAVIGATION BAR ═══ -->
+<header class="sat-player-topbar t-theme bd">
+  <div class="sat-topbar-left">
+    <a href="./index.html" class="sat-button sat-button-ghost" style="height: 2.25rem; font-size: 0.85rem; gap: 0.375rem;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+      <span>Back to Bank</span>
+    </a>
+  </div>
+
+  <!-- Centered Navbar Stopwatch -->
+  <div class="sat-topbar-center">
+    <div id="stopwatchContainer" style="display: flex; align-items: center; gap: 1rem; background: var(--sf2); padding: 0.25rem 1rem; border-radius: 0.5rem; border: 0.0625rem solid var(--bd);">
+      <div id="stopwatchDisplay" style="display: flex; align-items: center; gap: 0.5rem;">
+        <div id="playerTimer" class="sat-timer-display" style="font-size: 1.1rem; width: 3.5rem; text-align: center;">00:00</div>
+        <svg id="clockIcon" class="is-hidden" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color: var(--p5);">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+      </div>
+      <div class="sat-stopwatch-controls" style="border-left: 0.0625rem solid var(--bd); padding-left: 0.5rem; margin-top: 0;">
+        <button id="pauseStopwatchBtn" class="sat-stopwatch-btn" title="Pause/Resume" style="background: transparent; border: none; padding: 0.25rem;">
+          <svg id="pauseIcon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+          <svg id="playIcon" class="is-hidden" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        </button>
+        <button id="hideStopwatchBtn" class="sat-stopwatch-btn" style="background: transparent; border: none; padding: 0.25rem; font-size: 0.6rem;">Hide</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sat-topbar-right">
+    <button id="referenceBtn" class="sat-button sat-button-ghost nav-icon-item nav-labeled-btn" title="Reference">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+      </svg>
+      <span class="nav-btn-label">Reference</span>
+    </button>
+    <button id="toggleCalcBtn" class="sat-button sat-button-ghost nav-icon-item nav-labeled-btn" title="Calculator">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="16" y2="18"/>
+      </svg>
+      <span class="nav-btn-label">Calculator</span>
+    </button>
+    <button id="markReviewBtn" class="sat-button sat-button-ghost nav-icon-item nav-labeled-btn" title="Save question">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>
+      </svg>
+      <span class="nav-btn-label">Save</span>
+    </button>
+    <button id="showExplanationBtn" class="sat-button sat-button-ghost nav-icon-item nav-labeled-btn" title="Explanation">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/>
+      </svg>
+      <span class="nav-btn-label">Explain</span>
+    </button>
+    <button id="moreMenuBtn" class="sat-button sat-button-ghost more-dropdown-trigger nav-labeled-btn" title="More">
+      <span class="material-icons-round" style="font-size: 1.25rem;">more_vert</span>
+      <span class="nav-btn-label">More</span>
+    </button>
+    
+<!-- More Dropdown Menu -->
+  <div id="moreDropdown" class="more-dropdown-menu">
+    <!-- Main page -->
+    <div class="more-dropdown-page" data-page="main" id="moreDropdownMain">
+      <ul class="more-dropdown-list">
+        <li class="more-dropdown-collapsed-item more-dropdown-math-item">
+          <a href="#" class="more-dropdown-item" onclick="document.getElementById('referenceBtn').click(); closeMoreDropdown(); return false;">
+            <span class="material-icons-round">description</span>
+            <span>Reference</span>
+          </a>
+        </li>
+        <li class="more-dropdown-collapsed-item more-dropdown-math-item">
+          <a href="#" class="more-dropdown-item" onclick="document.getElementById('toggleCalcBtn').click(); closeMoreDropdown(); return false;">
+            <span class="material-icons-round">calculate</span>
+            <span>Calculator</span>
+          </a>
+        </li>
+        <li class="more-dropdown-collapsed-item">
+          <a href="#" class="more-dropdown-item" onclick="document.getElementById('markReviewBtn').click(); closeMoreDropdown(); return false;">
+            <span class="material-icons-round">bookmark</span>
+            <span>Save Question</span>
+          </a>
+        </li>
+        <li class="more-dropdown-collapsed-item">
+          <a href="#" class="more-dropdown-item" onclick="document.getElementById('showExplanationBtn').click(); closeMoreDropdown(); return false;">
+            <span class="material-icons-round">lightbulb</span>
+            <span>Explanation</span>
+          </a>
+        </li>
+        <!-- Theme option — always visible in dropdown -->
+        <li>
+          <a href="#" class="more-dropdown-item" id="themeDropdownTrigger" onclick="openThemeSubpanel(); return false;">
+            <span class="material-icons-round">palette</span>
+            <span>Theme</span>
+            <span class="more-dropdown-arrow material-icons-round" style="margin-left:auto; font-size:1rem;">chevron_right</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Theme sub-panel -->
+    <div class="more-dropdown-page more-dropdown-theme-panel" data-page="theme" id="moreDropdownTheme" style="display:none;">
+      <ul class="more-dropdown-list">
+        <li>
+          <a href="#" class="more-dropdown-item" onclick="closeThemeSubpanel(); return false;">
+            <span class="material-icons-round" style="font-size:1rem;">arrow_back</span>
+            <span>Back</span>
+          </a>
+        </li>
+        <li>
+          <a href="#" class="more-dropdown-item more-dropdown-theme-option" id="themeOptDark" onclick="setDropdownTheme('dark'); return false;">
+            <span class="material-icons-round">dark_mode</span>
+            <span>Dark</span>
+            <span class="more-dropdown-check material-icons-round" id="checkDark">check</span>
+          </a>
+        </li>
+        <li>
+          <a href="#" class="more-dropdown-item more-dropdown-theme-option" id="themeOptLight" onclick="setDropdownTheme('light'); return false;">
+            <span class="material-icons-round">light_mode</span>
+            <span>Light</span>
+            <span class="more-dropdown-check material-icons-round" id="checkLight">check</span>
+          </a>
+        </li>
+        <li>
+          <a href="#" class="more-dropdown-item more-dropdown-theme-option" id="themeOptSystem" onclick="setDropdownTheme('system'); return false;">
+            <span class="material-icons-round">settings_suggest</span>
+            <span>System</span>
+            <span class="more-dropdown-check material-icons-round" id="checkSystem">check</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>  </div>
+</header>
+
+<!-- ═══ MAIN CONTENT ═══ -->
+<div id="main-area-wrapper" class="main-area-wrapper" style="margin-left: 0; width: 100%;">
+
+  <!-- NEW: flat split wrapper, mirrors .sat-math-split -->
+  <div class="sat-player-split" id="playerSplit">
+
+    <!-- Panel A: Desmos (hidden by default) -->
+    <div class="sat-player-graph-panel" id="desmosWrapper" style="display:none;">
+      <div id="desmosContainer" style="width:100%; height:100%;"></div>
+    </div>
+
+    <!-- Resize handle (hidden by default) -->
+    <div class="sat-player-resize-handle" id="resize-handle"></div>
+
+    <!-- Panel B: SAT question content (always visible) -->
+    <div class="sat-player-content-panel" id="contentWrapper">
+      <div class="sat-player-scroll" id="playerScroll">
+
+        <!-- question panel card -->
+        <section class="sat-question-panel" id="satQuestionPanel">
+          <div class="sat-question-head" style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+            <span id="questionNumber" class="sat-question-number"></span>
+            <button id="inlineReviewBtn" class="sat-inline-review-btn" type="button" title="Mark for review">
+              <svg id="inlineReviewIcon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>
+              </svg>
+              <span>Mark for Review</span>
+            </button>
+            <span id="questionDomain" class="sat-domain-label"></span>
+            <span id="sessionFilterChips" class="sat-filter-chip-row" aria-label="Active filters" style="display:inline-flex; gap:0.375rem;"></span>
+            <h2 id="questionStemTitle" class="sat-question-title is-hidden" style="margin:0; width:100%; font-size:1rem;"></h2>
+          </div>
+          <article class="sat-passage-card">
+            <p id="questionParagraph" class="sat-passage-text"></p>
+            <p id="questionStem" class="sat-question-stem"></p>
+          </article>
+          <div id="answerChoices" class="sat-answer-list"></div>
+          <section id="feedbackPanel" class="sat-feedback-panel is-hidden"></section>
+        </section>
+
+
+
+      </div>
+    </div>
+
+  </div>
+  <!-- END sat-player-split -->
+
+</div>
+
+<!-- ═══ MOVABLE REFERENCE PANEL ═══ -->
+<div id="referencePanel" class="reference-panel is-hidden" style="top: 7.5rem; left: 7.5rem;">
+  <div class="reference-drag-handle">
+    <div style="display: flex; align-items: center; gap: 0.5rem;">
+      <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;">Reference Sheet</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 0.25rem;">
+      <button id="referenceCollapseBtn" class="reference-collapse-btn" onclick="toggleReferenceCollapse()" aria-label="Collapse reference sheet">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </button>
+      <button class="reference-close-btn" onclick="document.getElementById('referencePanel').classList.add('is-hidden'); document.getElementById('referenceBtn').classList.remove('is-active');">&times;</button>
+    </div>
+  </div>
+  <div id="referenceContent" class="reference-content">
+    <img src="../assests/sat math reference.png" alt="SAT Reference Sheet" />
+  </div>
+</div>
+
+<!-- ═══ FOOTER ═══ -->
+<footer class="sat-player-footer">
+  <div class="sat-footer-group">
+    <!-- Question Counter -->
+    <button
+      id="playerCounter"
+      class="q-nav-trigger"
+      aria-controls="qNavPanel"
+      aria-expanded="false"
+      aria-haspopup="dialog"
+      type="button"
+    >
+      <svg
+        id="qNavChevron"
+        class="q-nav-chevron"
+        width="14" height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.5"
+        aria-hidden="true"
+      >
+        <polyline points="18 15 12 9 6 15"/>
+      </svg>
+      <span id="qNavCounterText">Question — of —</span>
+    </button>
+    <!-- Standardized Info Button -->
+    <button id="sessionInfoBtn" class="sat-button sat-button-ghost" title="Session Info" style="height: 2.25rem; width: 2.25rem; padding: 0;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+      </svg>
+    </button>
+    
+    <button id="checkAnswerBtn" class="sat-button sat-button-primary" type="button">Check Answer</button>
+    <button id="prevQuestionBtn" class="sat-button sat-button-ghost" type="button">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right: 0.375rem;">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+      Previous
+    </button>
+    <button id="nextQuestionBtn" class="sat-button sat-button-ghost" type="button">
+      Next
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-left: 0.375rem;">
+        <polyline points="9 18 15 12 9 6"/>
+      </svg>
+    </button>
+    <button id="askKorahBtn" class="ask-korah-trigger" type="button" title="Ask Korah about this question">
+      <img src="../logo-images/newlogo10.png" alt="" width="28" height="28" style="margin-right: 0.5rem; object-fit: contain;"/>
+      Ask Korah
+    </button>
+  </div>
+</footer>
+
+<!-- ═══ ASK KORAH SIDEBAR (push layout, solid) ═══ -->
+<aside id="askKorahPanel" class="ask-korah-panel" aria-hidden="true" aria-label="Ask Korah">
+  <!-- Top bar: close on the right -->
+  <div class="ask-korah-topbar">
+    <span></span>
+    <button id="askKorahCloseBtn" class="ask-korah-close" aria-label="Close" type="button">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Tabs: Ask Korah | Explanation -->
+  <div class="ask-korah-tabs" role="tablist">
+    <button class="ask-korah-tab active" role="tab" data-tab="chat" id="askKorahTabChat" type="button">
+      <img src="../logo-images/newlogo10.png" alt="" width="18" height="18" style="object-fit:contain;"/>
+      <span>Ask Korah</span>
+    </button>
+    <button class="ask-korah-tab" role="tab" data-tab="explanation" id="askKorahTabExplain" type="button">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+      </svg>
+      <span>Explanation</span>
+    </button>
+  </div>
+
+  <!-- Sub-row: chat history / new -->
+  <div class="ask-korah-subrow">
+    <button class="ask-korah-subbtn" type="button" data-action="history">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="15" y2="18"/></svg>
+      <span>Chat History</span>
+    </button>
+    <button class="ask-korah-subbtn" type="button" data-action="new">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <span>New</span>
+    </button>
+  </div>
+
+  <!-- Body: welcome / messages -->
+  <div class="ask-korah-body" id="askKorahBody">
+    <!-- Welcome (visible until first message) -->
+    <div id="askKorahWelcome" class="ask-korah-welcome">
+      <img src="../logo-images/newlogo10.png" alt="" class="ask-korah-welcome-logo"/>
+      <h3 class="ask-korah-welcome-title">How can I help?</h3>
+      <p class="ask-korah-welcome-sub">Ask Korah any question!</p>
+      <div class="ask-korah-suggestions">
+        <button class="ask-korah-suggestion" data-prompt="Explain this step by step" type="button">Explain this step by step</button>
+        <button class="ask-korah-suggestion" data-prompt="What's the best strategy for this?" type="button">What's the best strategy for this?</button>
+        <!-- Math-only nudge: shown when current question is Math. Click stashes the problem
+             in sessionStorage so math-chat can seed its first message with full context. -->
+        <button id="askKorahMathHint" type="button" class="ask-korah-suggestion ask-korah-suggestion-math is-hidden">
+          <span class="material-icons-round" style="font-size:0.95rem; vertical-align:middle;">functions</span>
+          Open Desmos visualizer in Math Chat
+        </button>
+      </div>
+    </div>
+
+    <div id="askKorahMessages" class="ask-korah-messages"></div>
+    <div id="askKorahLoading" class="ask-korah-loading is-hidden">Thinking…</div>
+  </div>
+
+  <!-- Footer input -->
+  <div class="ask-korah-footer">
+    <!-- TODO(ai-pipeline): wire textarea to streaming chat once template is replaced. -->
+    <textarea id="askKorahInput" class="ask-korah-input" rows="2" placeholder="Ask a question..."></textarea>
+    <button id="askKorahSendBtn" class="ask-korah-send" type="button" aria-label="Send">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+      </svg>
+    </button>
+  </div>
+  <p class="ask-korah-disclaimer">Korah can make mistakes. Check important details.</p>
+</aside>
+
+<style>
+  :root { --ask-korah-w: 26.25rem; }
+
+  /* Solid accent — teal, distinct from the page's purple palette */
+  .ask-korah-trigger {
+    display: inline-flex; align-items: center; justify-content: center;
+    height: 2.875rem; padding: 0 1rem; border-radius: 0.875rem;
+    background: #0d9488; color: #ffffff; border: 0.0625rem solid #0d9488;
+    font: inherit; font-weight: 700; cursor: pointer;
+    transition: transform .2s cubic-bezier(.23,1,.32,1), background .2s ease, border-color .2s ease;
+  }
+  .ask-korah-trigger:hover {
+    background: #0f766e; border-color: #0f766e; transform: translateY(-0.125rem);
+  }
+
+  .ask-korah-panel {
+    position: fixed; top: 0; right: 0; height: 100vh;
+    width: var(--ask-korah-w);
+    background: var(--bg); /* solid, opaque */
+    border-left: 1px solid var(--bd);
+    color: var(--tx); z-index: 1100;
+    transform: translateX(100%); transition: transform .25s ease;
+    display: flex; flex-direction: column;
+    box-shadow: -0.5rem 0 2rem rgba(0,0,0,0.18);
+  }
+  html[data-theme="light"] .ask-korah-panel { background: #ffffff; }
+  .ask-korah-panel.open { transform: translateX(0); }
+
+  /* Push the rest of the page left when panel is open — smoothly */
+  .sat-player-topbar,
+  .sat-player-footer { transition: right .25s ease; }
+  #main-area-wrapper { transition: width .25s ease; }
+  body.ask-korah-open .sat-player-topbar,
+  body.ask-korah-open .sat-player-footer { right: var(--ask-korah-w); }
+  body.ask-korah-open #main-area-wrapper { width: calc(100% - var(--ask-korah-w)) !important; }
+
+  .ask-korah-topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.625rem 0.875rem; min-height: 2.75rem;
+  }
+  .ask-korah-close {
+    background: transparent; border: none; color: var(--tx2);
+    cursor: pointer; padding: 0.25rem; border-radius: 0.375rem;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .ask-korah-close:hover { background: var(--sf2); color: var(--tx); }
+
+  .ask-korah-tabs {
+    display: flex; gap: 1.5rem; padding: 0 1.25rem;
+    border-bottom: 1px solid var(--bd);
+  }
+  .ask-korah-tab {
+    background: transparent; border: none; color: var(--tx3);
+    padding: 0.5rem 0; display: inline-flex; align-items: center; gap: 0.5rem;
+    font-size: 0.9rem; font-weight: 600; cursor: pointer;
+    border-bottom: 0.125rem solid transparent; margin-bottom: -1px;
+  }
+  .ask-korah-tab.active { color: var(--tx); border-bottom-color: var(--tx); }
+
+  .ask-korah-subrow {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0.625rem 1.25rem; border-bottom: 1px solid var(--bd);
+  }
+  .ask-korah-subbtn {
+    background: transparent; border: none; color: var(--tx3); cursor: pointer;
+    display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.8rem;
+    padding: 0.25rem 0.375rem; border-radius: 0.375rem;
+  }
+  .ask-korah-subbtn:hover { color: var(--tx); background: var(--sf2); }
+
+  .ask-korah-body {
+    flex: 1; overflow-y: auto; padding: 1rem 1.25rem;
+    display: flex; flex-direction: column;
+  }
+
+  .ask-korah-welcome {
+    display: flex; flex-direction: column; align-items: center;
+    text-align: center; padding: 2rem 0.5rem 1rem; gap: 0.5rem; margin: auto 0;
+  }
+  .ask-korah-welcome-logo {
+    width: 5.5rem; height: 5.5rem; object-fit: contain;
+    filter: drop-shadow(0 0.5rem 1.5rem rgba(139,92,246,.35));
+  }
+  .ask-korah-welcome-title { font-size: 1.25rem; font-weight: 800; margin: 0.5rem 0 0; color: var(--tx); }
+  .ask-korah-welcome-sub { font-size: 0.9rem; color: var(--tx3); margin: 0 0 1rem; }
+  .ask-korah-suggestions { display: flex; flex-direction: column; gap: 0.5rem; width: 100%; align-items: center; }
+  .ask-korah-suggestion {
+    background: transparent; color: var(--p5);
+    border: 1px solid var(--p5); border-radius: 62.4375rem;
+    padding: 0.4rem 0.95rem; font-size: 0.825rem; font-weight: 600;
+    cursor: pointer; text-decoration: none; display: inline-block;
+    transition: background .15s ease;
+  }
+  .ask-korah-suggestion:hover { background: rgba(139,92,246,0.1); }
+
+  .ask-korah-messages { display: flex; flex-direction: column; gap: 0.75rem; }
+  .ask-korah-msg { padding: 0.625rem 0.75rem; border-radius: 0.5rem; font-size: 0.9rem; line-height: 1.5; }
+  .ask-korah-msg.user { background: rgba(139,92,246,0.12); align-self: flex-end; max-width: 85%; }
+  .ask-korah-msg.korah { background: var(--sf2); border: 1px solid var(--bd); }
+  .ask-korah-msg.korah .cached-badge {
+    display: inline-block; font-size: 0.65rem; text-transform: uppercase;
+    letter-spacing: 0.05em; color: var(--p5); margin-bottom: 0.25rem;
+  }
+  .ask-korah-loading { font-size: 0.85rem; color: var(--tx3); font-style: italic; padding: 0.5rem 0; }
+
+  .ask-korah-footer {
+    margin: 0 1.25rem; padding: 0.5rem 0.625rem;
+    background: var(--sf2); border: 1px solid var(--bd); border-radius: 0.875rem;
+    display: flex; align-items: flex-end; gap: 0.5rem;
+  }
+  .ask-korah-input {
+    flex: 1; resize: none; background: transparent; border: none; outline: none;
+    color: var(--tx); font-family: inherit; font-size: 0.9rem; padding: 0.375rem;
+  }
+  .ask-korah-send {
+    background: var(--tx); color: var(--bg); border: none; border-radius: 62.4375rem;
+    width: 2rem; height: 2rem; display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer;
+  }
+  .ask-korah-disclaimer {
+    text-align: center; font-size: 0.7rem; color: var(--tx3);
+    padding: 0.5rem 1rem 0.75rem; margin: 0;
+  }
+
+  @media (max-width: 48rem) {
+    :root { --ask-korah-w: 100vw; }
+    body.ask-korah-open .sat-player-topbar,
+    body.ask-korah-open .sat-player-footer,
+    body.ask-korah-open #main-area-wrapper { display: none; }
+  }
+</style>
+
+<style>
+  /* Explanation pane (steps) */
+  .ask-korah-explanation {
+    display: flex; flex-direction: column; gap: 0.75rem;
+  }
+  .ask-korah-explanation .explain-answer {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    align-self: flex-start;
+    padding: 0.375rem 0.75rem; border-radius: 62.4375rem;
+    background: rgba(13, 148, 136, 0.12); color: #0d9488;
+    border: 1px solid rgba(13, 148, 136, 0.35);
+    font-size: 0.8rem; font-weight: 700;
+  }
+  .ask-korah-explanation .explain-cached {
+    font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--tx3); align-self: flex-start;
+  }
+  .ask-korah-explanation .explain-step {
+    background: var(--sf2); border: 1px solid var(--bd);
+    border-radius: 0.625rem; padding: 0.75rem 0.875rem;
+    display: flex; flex-direction: column; gap: 0.375rem;
+  }
+  .ask-korah-explanation .explain-step-head {
+    display: flex; align-items: center; gap: 0.5rem;
+    font-size: 0.8rem; font-weight: 700; color: var(--p5);
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .ask-korah-explanation .explain-step-num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 1.375rem; height: 1.375rem; border-radius: 62.4375rem;
+    background: var(--p5); color: #fff; font-size: 0.75rem; font-weight: 800;
+  }
+  .ask-korah-explanation .explain-step-body {
+    font-size: 0.875rem; line-height: 1.55; color: var(--tx);
+  }
+  .ask-korah-explanation .explain-step-body p { margin: 0.25rem 0; }
+  .ask-korah-explanation .explain-step-body .katex { font-size: 1em; }
+  .ask-korah-msg.korah .ask-korah-md p { margin: 0.25rem 0; }
+  .ask-korah-msg.korah .ask-korah-md { font-size: 0.9rem; line-height: 1.55; }
+
+  /* Explanation source toggle (Korah ↔ CollegeBoard) */
+  .explain-source-toggle {
+    display: inline-flex; align-self: flex-start;
+    background: var(--sf2); border: 1px solid var(--bd);
+    border-radius: 62.4375rem; padding: 0.1875rem; gap: 0.125rem;
+  }
+  .explain-source-toggle button {
+    background: transparent; border: none; cursor: pointer;
+    padding: 0.3125rem 0.75rem; border-radius: 62.4375rem;
+    font-size: 0.75rem; font-weight: 700; color: var(--tx3);
+    transition: background .15s ease, color .15s ease;
+  }
+  .explain-source-toggle button.active {
+    background: var(--p5); color: #fff;
+  }
+  .explain-source-toggle button:not(.active):hover { color: var(--tx); }
+
+  .explain-cb-body {
+    background: var(--sf2); border: 1px solid var(--bd);
+    border-radius: 0.625rem; padding: 0.875rem 1rem;
+    font-size: 0.9rem; line-height: 1.6; color: var(--tx);
+  }
+  .explain-cb-body p { margin: 0.35rem 0; }
+  .explain-cb-empty {
+    font-size: 0.85rem; color: var(--tx3); font-style: italic;
+    padding: 0.75rem 0;
+  }
+</style>
+
+<script>
+/* ─────────────────────────────────────────────────────────────
+   Ask Korah — per-question explanation w/ Firestore cache,
+   plus conversational chat. Tabs: Ask Korah ↔ Explanation.
+   Uses the same /api/r + gemini-2.5-flash pipeline as
+   the SAT Math chat (see korah-bot/sat/math-chat.js).
+   ───────────────────────────────────────────────────────────── */
+(function() {
+  const API_ENDPOINT = "/api/r";
+  const MODEL        = "gemini-2.5-flash";
+
+  const panel    = document.getElementById('askKorahPanel');
+  const openBtn  = document.getElementById('askKorahBtn');
+  const closeBtn = document.getElementById('askKorahCloseBtn');
+  const msgsEl   = document.getElementById('askKorahMessages');
+  const loadEl   = document.getElementById('askKorahLoading');
+  const mathHint = document.getElementById('askKorahMathHint');
+  const sendBtn  = document.getElementById('askKorahSendBtn');
+  const inputEl  = document.getElementById('askKorahInput');
+  const welcome  = document.getElementById('askKorahWelcome');
+  const bodyEl   = document.getElementById('askKorahBody');
+  const tabChat  = document.getElementById('askKorahTabChat');
+  const tabExpl  = document.getElementById('askKorahTabExplain');
+  const footer   = document.querySelector('.ask-korah-footer');
+  const disclaim = document.querySelector('.ask-korah-disclaimer');
+  const suggestionBtns = document.querySelectorAll('.ask-korah-suggestion:not(.ask-korah-suggestion-math)');
+  const newChatBtn  = document.querySelector('.ask-korah-subbtn[data-action="new"]');
+  const historyBtn  = document.querySelector('.ask-korah-subbtn[data-action="history"]');
+
+  if (!panel || !openBtn) return;
+
+  // ─── Question context ──────────────────────────────────────────────────
+  function readCurrentQuestion() {
+    // Prefer the real College Board id exposed by sat-player.js. Fall back to
+    // DOM scraping when the player hasn't initialised yet.
+    const current = window.KorahSATPlayer?.getCurrentQuestion?.() || null;
+    const domNum     = document.getElementById('questionNumber')?.textContent?.trim() || '';
+    const domain     = current?.domain || document.getElementById('questionDomain')?.textContent?.trim() || '';
+    const passage    = document.getElementById('questionParagraph')?.textContent?.trim() || '';
+    const stem       = current?.stem || document.getElementById('questionStem')?.textContent?.trim() || '';
+    const options    = current?.options || [];
+    const correct    = current?.correctAnswer || '';
+    const cbExplain  = current?.explanation || '';
+    const type       = current?.type || 'mc';
+    const calcBtn    = document.getElementById('toggleCalcBtn');
+    const isMath     = !!calcBtn && !calcBtn.disabled && !calcBtn.classList.contains('is-hidden');
+    const id         = current?.detailKey || current?.id || (domNum ? `q:${domNum}:${cheapHash(stem)}` : `stem:${cheapHash(stem)}`);
+    // Inline figures (geometry diagrams, charts) live as SVG inside the passage/choices.
+    // Serialize them so the model sees the actual figure, not just the surrounding text.
+    const svgs = collectQuestionSvgs();
+    return { id, number: domNum, domain, passage, stem, options, correct, cbExplain, type, isMath, svgs };
+  }
+
+  function collectQuestionSvgs() {
+    const nodes = document.querySelectorAll('.sat-passage-card svg, #answerChoices svg');
+    const out = [];
+    nodes.forEach(svg => {
+      // Skip tiny decorative icons; only forward figure-sized SVGs.
+      if (svg.clientWidth < 40 && svg.clientHeight < 40) return;
+      try {
+        const clone = svg.cloneNode(true);
+        if (!clone.getAttribute('xmlns')) clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        out.push(new XMLSerializer().serializeToString(clone));
+      } catch (_) { /* ignore */ }
+    });
+    return out;
+  }
+
+  function cheapHash(s) {
+    let h = 0; for (let i = 0; i < (s || '').length; i++) { h = ((h << 5) - h + s.charCodeAt(i)) | 0; }
+    return Math.abs(h).toString(36);
+  }
+
+  function buildQuestionContextBlock(q) {
+    const lines = [];
+    lines.push(`Section: SAT ${q.isMath ? 'Math' : 'Reading & Writing'}`);
+    if (q.domain)   lines.push(`Domain: ${q.domain}`);
+    if (q.passage)  lines.push(`Passage:\n${q.passage}`);
+    lines.push(`Question:\n${q.stem}`);
+    if (q.options?.length) {
+      lines.push('Choices:');
+      q.options.forEach(o => lines.push(`  ${o.key}) ${(o.text || '').trim()}`));
+    }
+    if (q.correct) lines.push(`Correct answer: ${q.correct}`);
+    if (q.svgs?.length) {
+      lines.push(`Figures (${q.svgs.length} inline SVG${q.svgs.length > 1 ? 's' : ''}; coordinates and labels are accurate, parse them as the actual diagram):`);
+      q.svgs.forEach((svg, i) => lines.push(`--- figure ${i + 1} ---\n${svg}`));
+    }
+    return lines.join('\n');
+  }
+
+  // ─── Streaming API call (matches math-chat.js callAPI) ─────────────────
+  async function callAPI(userContent, onChunk, { systemPrompt, temperature = 0.2, messages: extraHistory = [] } = {}) {
+    const messages = [
+      { role: 'system', content: systemPrompt },
+      ...extraHistory,
+      { role: 'user', content: userContent }
+    ];
+    const res = await fetch(API_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Korah-Phase': 'sat-ask-korah' },
+      body: JSON.stringify({ model: MODEL, temperature, messages, stream: true })
+    });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    if (!res.body) throw new Error('No response body');
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let full = '', buf = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const lines = buf.split('\n');
+      buf = lines.pop() || '';
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith('data: ')) continue;
+        const data = trimmed.slice(6);
+        if (data === '[DONE]') continue;
+        try {
+          const parsed = JSON.parse(data);
+          const delta = parsed?.choices?.[0]?.delta?.content;
+          if (delta) {
+            full += delta;
+            onChunk?.(delta, full);
+          }
+        } catch (_) { /* ignore parse errors on partial chunks */ }
+      }
+    }
+    if (!full) throw new Error('Empty response from model');
+    return full;
+  }
+
+  // ─── Markdown + KaTeX rendering (lifted from math-chat.js) ─────────────
+  function normalizeMathDelimiters(text) {
+    if (!text) return text;
+    return text
+      .split(/(```[\s\S]*?```)/g)
+      .map(seg => {
+        if (seg.startsWith('```')) return seg;
+        return seg
+          .replace(/`([^`]+)`/g, (_, expr) => {
+            const t = expr.trim();
+            return /[_^\\{}]/.test(t) ? '$' + t + '$' : '`' + expr + '`';
+          })
+          .replace(/\\\((.*?)\\\)/gs, (_, e) => '$' + e.trim() + '$')
+          .replace(/\\\[(.*?)\\\]/gs, (_, e) => '$$' + e.trim() + '$$')
+          .replace(/([a-zA-Z])_([a-zA-Z0-9]+|\{[^}]+\})/g, '$1_{$2}');
+      })
+      .join('');
+  }
+
+  function renderMarkdownAndMath(container, text) {
+    if (!container || !text) return;
+    const md = normalizeMathDelimiters(text);
+    let html;
+    try {
+      html = window.marked?.parse ? window.marked.parse(md) : md.replace(/\n/g, '<br/>');
+    } catch (_) { html = md.replace(/\n/g, '<br/>'); }
+    if (window.DOMPurify) html = DOMPurify.sanitize(html, { USE_PROFILES: { html: true } });
+    container.innerHTML = html;
+    if (typeof renderMathInElement === 'function') {
+      renderMathInElement(container, {
+        delimiters: [
+          { left: '$$', right: '$$', display: true },
+          { left: '$',  right: '$',  display: false },
+          { left: '\\(', right: '\\)', display: false }
+        ],
+        throwOnError: false
+      });
+    }
+  }
+
+  // ─── Chat persistence (localStorage per question) ─────────────────────
+  const CHAT_LS_KEY = (id) => `korahSatChat_${id}`;
+  const MAX_STORED_SESSIONS = 8;
+
+  function saveCurrentChat() {
+    if (!chatHistory.length || !currentQ?.id) return;
+    try {
+      const existing = JSON.parse(localStorage.getItem(CHAT_LS_KEY(currentQ.id)) || '[]');
+      existing.unshift({ ts: Date.now(), messages: JSON.parse(JSON.stringify(chatHistory)) });
+      localStorage.setItem(CHAT_LS_KEY(currentQ.id), JSON.stringify(existing.slice(0, MAX_STORED_SESSIONS)));
+    } catch(_) {}
+  }
+
+  function loadStoredSessions(qid) {
+    try { return JSON.parse(localStorage.getItem(CHAT_LS_KEY(qid)) || '[]'); } catch(_) { return []; }
+  }
+
+  // ─── Panel state ───────────────────────────────────────────────────────
+  let currentQ = null;
+  let activeTab = 'chat';            // 'chat' | 'explanation'
+  let explainSource = 'korah';       // 'korah' | 'cb'
+  let chatHistory = [];              // [{ role, content }]
+  let explanationLoaded = false;     // current question's Korah explanation already rendered?
+  let explanationLoading = false;
+  let lastQuestionId = null;
+  let cachedKorahExplanation = null;
+  let showingHistory = false;
+
+  function openPanel() {
+    currentQ = readCurrentQuestion();
+    if (currentQ.id !== lastQuestionId) {
+      if (chatHistory.length) saveCurrentChat();
+      chatHistory = [];
+      explanationLoaded = false;
+      cachedKorahExplanation = null;
+      msgsEl.innerHTML = '';
+      lastQuestionId = currentQ.id;
+      showingHistory = false;
+    }
+    mathHint.classList.toggle('is-hidden', !currentQ.isMath);
+    panel.classList.add('open');
+    panel.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('ask-korah-open');
+    showTab(activeTab);
+  }
+
+  function closePanel() {
+    if (chatHistory.length) saveCurrentChat();
+    panel.classList.remove('open');
+    panel.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('ask-korah-open');
+    showingHistory = false;
+  }
+
+  openBtn.addEventListener('click', openPanel);
+  closeBtn.addEventListener('click', closePanel);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePanel(); });
+
+  // ─── Math hand-off → math-chat.html ────────────────────────────────────
+  // Stash the full question context so math-chat can seed its first model
+  // call with the actual problem (stem, choices, correct answer, SVG figures).
+  mathHint.addEventListener('click', () => {
+    if (!currentQ) currentQ = readCurrentQuestion();
+    try {
+      sessionStorage.setItem('korahSatHandoff', JSON.stringify({
+        from: 'sat-questions',
+        questionId: currentQ.id,
+        domain: currentQ.domain,
+        stem: currentQ.stem,
+        passage: currentQ.passage,
+        options: currentQ.options,
+        correct: currentQ.correct,
+        svgs: currentQ.svgs,
+        contextBlock: buildQuestionContextBlock(currentQ),
+        createdAt: Date.now()
+      }));
+    } catch (e) { console.warn('[AskKorah] handoff stash failed', e); }
+    window.location.href = './math-chat.html#handoff';
+  });
+
+  // ─── Tabs ──────────────────────────────────────────────────────────────
+  function showTab(tab) {
+    activeTab = tab;
+    tabChat.classList.toggle('active', tab === 'chat');
+    tabExpl.classList.toggle('active', tab === 'explanation');
+    const isChat = tab === 'chat';
+    // Chat input/disclaimer only make sense in chat mode.
+    footer.style.display    = isChat ? 'flex' : 'none';
+    disclaim.style.display  = isChat ? 'block' : 'none';
+    if (isChat) {
+      msgsEl.innerHTML = '';
+      welcome.classList.toggle('is-hidden', chatHistory.length > 0);
+      // Re-render any prior chat messages.
+      chatHistory.forEach(m => appendChatMessage(m.role, m.content, /*persist*/ false));
+    } else {
+      welcome.classList.add('is-hidden');
+      renderExplanation();
+    }
+  }
+
+  tabChat.addEventListener('click', () => showTab('chat'));
+  tabExpl.addEventListener('click', () => showTab('explanation'));
+
+  // ─── New / History buttons ────────────────────────────────────────────
+  if (newChatBtn) {
+    newChatBtn.addEventListener('click', () => {
+      if (activeTab !== 'chat') showTab('chat');
+      if (chatHistory.length) saveCurrentChat();
+      chatHistory = [];
+      msgsEl.innerHTML = '';
+      showingHistory = false;
+      welcome.classList.remove('is-hidden');
+      footer.style.display = 'flex';
+      disclaim.style.display = 'block';
+    });
+  }
+
+  if (historyBtn) {
+    historyBtn.addEventListener('click', () => {
+      if (activeTab !== 'chat') showTab('chat');
+      showingHistory = !showingHistory;
+      if (showingHistory) renderHistoryPanel();
+      else {
+        msgsEl.innerHTML = '';
+        welcome.classList.toggle('is-hidden', chatHistory.length > 0);
+        chatHistory.forEach(m => appendChatMessage(m.role, m.content, false));
+      }
+    });
+  }
+
+  function renderHistoryPanel() {
+    msgsEl.innerHTML = '';
+    welcome.classList.add('is-hidden');
+    footer.style.display = 'none';
+    disclaim.style.display = 'none';
+
+    const sessions = loadStoredSessions(currentQ?.id);
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;flex-direction:column;gap:0.5rem;';
+
+    const heading = document.createElement('div');
+    heading.style.cssText = 'font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--tx3);padding:0.25rem 0;';
+    heading.textContent = sessions.length ? `Saved conversations (${sessions.length})` : 'No saved conversations yet';
+    wrap.appendChild(heading);
+
+    sessions.forEach((session, idx) => {
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.style.cssText = 'background:var(--sf2);border:1px solid var(--bd);border-radius:0.5rem;padding:0.625rem 0.75rem;text-align:left;cursor:pointer;color:var(--tx);font-size:0.85rem;';
+      const preview = session.messages.find(m => m.role === 'user')?.content || '';
+      const date = new Date(session.ts).toLocaleString([], { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+      item.innerHTML = `<div style="font-weight:600;color:var(--tx3);font-size:0.72rem;">${escapeHtml(date)}</div><div style="margin-top:0.25rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(preview.slice(0, 90))}</div>`;
+      item.addEventListener('click', () => {
+        chatHistory = session.messages.slice();
+        showingHistory = false;
+        footer.style.display = 'flex';
+        disclaim.style.display = 'block';
+        msgsEl.innerHTML = '';
+        welcome.classList.add('is-hidden');
+        chatHistory.forEach(m => appendChatMessage(m.role, m.content, false));
+      });
+      wrap.appendChild(item);
+    });
+
+    msgsEl.appendChild(wrap);
+  }
+
+  // ─── Chat tab ──────────────────────────────────────────────────────────
+  suggestionBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      inputEl.value = btn.dataset.prompt || btn.textContent.trim();
+      sendFollowUp();
+    });
+  });
+
+  sendBtn.addEventListener('click', sendFollowUp);
+  inputEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendFollowUp(); }
+  });
+
+  function appendChatMessage(role, content, persist = true) {
+    const el = document.createElement('div');
+    el.className = 'ask-korah-msg ' + (role === 'user' ? 'user' : 'korah');
+    if (role === 'user') {
+      el.textContent = content;
+    } else {
+      const md = document.createElement('div');
+      md.className = 'ask-korah-md';
+      renderMarkdownAndMath(md, content);
+      el.appendChild(md);
+    }
+    msgsEl.appendChild(el);
+    msgsEl.scrollTop = msgsEl.scrollHeight;
+    if (persist) chatHistory.push({ role, content });
+    return el;
+  }
+
+  function buildChatSystemPrompt(q) {
+    return `You are Korah, an SAT tutor. The student is working on a specific SAT question and wants help. Be concise, encouraging, and use clear step-by-step reasoning. Use Markdown for structure and KaTeX (\$inline\$ or \$\$display\$\$) for any math. Never reveal the correct answer letter unless the student explicitly asks for it — instead, guide them.
+
+=== CURRENT QUESTION ===
+${buildQuestionContextBlock(q)}`;
+  }
+
+  async function sendFollowUp() {
+    const text = inputEl.value.trim();
+    if (!text) return;
+    inputEl.value = '';
+    welcome.classList.add('is-hidden');
+    appendChatMessage('user', text);
+
+    // Streaming assistant message.
+    const assistantEl = document.createElement('div');
+    assistantEl.className = 'ask-korah-msg korah';
+    const md = document.createElement('div');
+    md.className = 'ask-korah-md';
+    md.textContent = '…';
+    assistantEl.appendChild(md);
+    msgsEl.appendChild(assistantEl);
+    msgsEl.scrollTop = msgsEl.scrollHeight;
+
+    loadEl.classList.remove('is-hidden');
+    try {
+      const history = chatHistory
+        .filter(m => m.role === 'user' || m.role === 'assistant')
+        .slice(0, -1) // exclude the just-pushed user msg (callAPI re-adds it)
+        .map(m => ({ role: m.role, content: m.content }));
+      const reply = await callAPI(text, (_d, full) => {
+        renderMarkdownAndMath(md, full);
+        msgsEl.scrollTop = msgsEl.scrollHeight;
+      }, {
+        systemPrompt: buildChatSystemPrompt(currentQ),
+        temperature: 0.3,
+        messages: history,
+      });
+      renderMarkdownAndMath(md, reply);
+      chatHistory.push({ role: 'assistant', content: reply });
+    } catch (err) {
+      console.error('[AskKorah chat]', err);
+      md.textContent = 'Sorry — something went wrong. Please try again.';
+    } finally {
+      loadEl.classList.add('is-hidden');
+    }
+  }
+
+  // ─── Explanation tab (step-by-step, Firestore-cached) ──────────────────
+  function buildExplanationSystemPrompt() {
+    return `You are Korah, an SAT tutor generating a step-by-step worked explanation for a single SAT question.
+
+OUTPUT FORMAT — output ONLY a raw JSON object, no code fences, no commentary:
+
+{
+  "answer": "A|B|C|D or numeric string",
+  "summary": "one-sentence takeaway",
+  "steps": [
+    { "title": "Step 1 — short label", "body": "markdown + KaTeX explanation of this step" },
+    { "title": "Step 2 — short label", "body": "..." }
+  ]
+}
+
+RULES:
+- 3 to 6 steps. Each step body is concise (1–4 sentences). Use KaTeX (\$inline\$ or \$\$display\$\$) for every variable, coefficient, and equation.
+- The first step restates the problem in your own words. The final step states the answer clearly.
+- Use Markdown (\\*\\*bold\\*\\*, \\*italic\\*, lists) inside step bodies if helpful.
+- Do NOT wrap the JSON in code fences. Do NOT add prose before or after the JSON.
+- If the question is ambiguous or the correct answer is not provided, still produce your best step-by-step solution.`;
+  }
+
+  function parseExplanationJSON(raw) {
+    if (!raw) return null;
+    // Strip code fences, then find the first { that looks like the root object.
+    let s = raw.trim()
+      .replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+
+    const brace = s.indexOf('{');
+    if (brace === -1) return null;
+    s = s.substring(brace);
+
+    // Fast path — valid JSON as-is.
+    try { return JSON.parse(s); } catch (_) {}
+
+    // Repair: LaTeX backslashes inside JSON strings must be double-escaped.
+    // e.g. \frac → \\frac. We only touch backslashes not already doubled.
+    const repaired = s.replace(/"((?:[^"\\]|\\[\s\S])*?)"/g, (_, inner) => {
+      // Re-escape single backslashes that aren't already escape sequences.
+      const fixed = inner.replace(/\\(?!["\\/bfnrtu])/g, '\\\\');
+      return `"${fixed}"`;
+    });
+    try { const r = JSON.parse(repaired); if (r?.steps) return r; } catch (_) {}
+
+    // Balanced-brace fallback — extract just the outermost object.
+    let depth = 0, end = -1, inStr = false, esc = false;
+    for (let i = 0; i < s.length; i++) {
+      const ch = s[i];
+      if (esc) { esc = false; continue; }
+      if (ch === '\\') { esc = true; continue; }
+      if (ch === '"') { inStr = !inStr; continue; }
+      if (inStr) continue;
+      if (ch === '{') depth++;
+      else if (ch === '}') { depth--; if (depth === 0) { end = i; break; } }
+    }
+    if (end !== -1) {
+      const chunk = s.substring(0, end + 1);
+      try { return JSON.parse(chunk); } catch (_) {}
+      // One more attempt with the same LaTeX repair on the chunk.
+      try {
+        const fixed = chunk.replace(/"((?:[^"\\]|\\[\s\S])*?)"/g, (_, inner) => {
+          return `"${inner.replace(/\\(?!["\\/bfnrtu])/g, '\\\\')}"`;
+        });
+        return JSON.parse(fixed);
+      } catch (_) {}
+    }
+    return null;
+  }
+
+  function renderExplanationFrame() {
+    msgsEl.innerHTML = '';
+    const root = document.createElement('div');
+    root.className = 'ask-korah-explanation';
+
+    // Sub-toggle: Korah ↔ CollegeBoard
+    const toggle = document.createElement('div');
+    toggle.className = 'explain-source-toggle';
+    const korahBtn = document.createElement('button');
+    korahBtn.type = 'button';
+    korahBtn.textContent = 'Korah Explanation';
+    korahBtn.className = explainSource === 'korah' ? 'active' : '';
+    const cbBtn = document.createElement('button');
+    cbBtn.type = 'button';
+    cbBtn.textContent = 'CollegeBoard Explanation';
+    cbBtn.className = explainSource === 'cb' ? 'active' : '';
+    toggle.appendChild(korahBtn);
+    toggle.appendChild(cbBtn);
+    root.appendChild(toggle);
+
+    const body = document.createElement('div');
+    body.className = 'explain-body';
+    body.style.display = 'flex';
+    body.style.flexDirection = 'column';
+    body.style.gap = '0.75rem';
+    root.appendChild(body);
+
+    msgsEl.appendChild(root);
+
+    korahBtn.addEventListener('click', () => {
+      if (explainSource === 'korah') return;
+      explainSource = 'korah';
+      renderExplanation();
+    });
+    cbBtn.addEventListener('click', () => {
+      if (explainSource === 'cb') return;
+      explainSource = 'cb';
+      renderExplanation();
+    });
+
+    return body;
+  }
+
+  async function renderExplanation() {
+    if (explanationLoading) return;
+    const body = renderExplanationFrame();
+
+    if (explainSource === 'cb') {
+      renderCBExplanation(body);
+      return;
+    }
+    await renderKorahExplanation(body);
+  }
+
+  function renderCBExplanation(body) {
+    const text = (currentQ.cbExplain || '').trim();
+    if (!text) {
+      const empty = document.createElement('div');
+      empty.className = 'explain-cb-empty';
+      empty.textContent = 'CollegeBoard did not provide an explanation for this question.';
+      body.appendChild(empty);
+      return;
+    }
+    if (currentQ.correct) {
+      const a = document.createElement('div');
+      a.className = 'explain-answer';
+      a.innerHTML = `<span class="material-icons-round" style="font-size:1rem;">check_circle</span> Answer: ${escapeHtml(String(currentQ.correct))}`;
+      body.appendChild(a);
+    }
+    const card = document.createElement('div');
+    card.className = 'explain-cb-body';
+    renderHtmlAndMath(card, text);
+    body.appendChild(card);
+  }
+
+  // Renders content that may be HTML (from the CB question bank) rather than markdown.
+  // DOMPurify-sanitizes, sets innerHTML, then runs KaTeX auto-render.
+  function renderHtmlAndMath(container, text) {
+    if (!container || !text) return;
+    // If the text doesn't look like HTML, fall through to the markdown path.
+    const looksLikeHtml = /<[a-zA-Z][\s\S]*?>/.test(text);
+    if (!looksLikeHtml) {
+      renderMarkdownAndMath(container, text);
+      return;
+    }
+    const sanitized = window.DOMPurify
+      ? DOMPurify.sanitize(text, { USE_PROFILES: { html: true } })
+      : text;
+    container.innerHTML = sanitized;
+    if (typeof renderMathInElement === 'function') {
+      renderMathInElement(container, {
+        delimiters: [
+          { left: '$$', right: '$$', display: true },
+          { left: '$',  right: '$',  display: false },
+          { left: '\\(', right: '\\)', display: false },
+          { left: '\\[', right: '\\]', display: true }
+        ],
+        throwOnError: false
+      });
+    }
+  }
+
+  async function renderKorahExplanation(body) {
+    // 1. In-memory hit.
+    if (cachedKorahExplanation?.steps?.length) {
+      drawExplanation(body, cachedKorahExplanation, /*fromCache*/ true);
+      explanationLoaded = true;
+      return;
+    }
+
+    // 2. Try Firestore cache.
+    let cached = null;
+    try {
+      cached = await window.KorahDB?.getSatExplanation?.(currentQ.id);
+    } catch (e) { console.warn('[AskKorah] cache read failed', e); }
+
+    if (cached?.steps?.length) {
+      cachedKorahExplanation = cached;
+      drawExplanation(body, cached, /*fromCache*/ true);
+      explanationLoaded = true;
+      return;
+    }
+
+    // 3. Generate.
+    explanationLoading = true;
+    const loadingEl = document.createElement('div');
+    loadingEl.className = 'ask-korah-loading';
+    loadingEl.textContent = 'Generating step-by-step explanation…';
+    body.appendChild(loadingEl);
+
+    try {
+      const userContent = `Generate the step-by-step explanation for this SAT question.\n\n${buildQuestionContextBlock(currentQ)}`;
+      const raw = await callAPI(userContent, null, {
+        systemPrompt: buildExplanationSystemPrompt(),
+        temperature: 0.2,
+      });
+      let parsed = parseExplanationJSON(raw);
+      // Fallback: if JSON parsing failed but we have some raw text, wrap it in a
+      // single step so the user still gets a useful response.
+      if (!parsed || !Array.isArray(parsed.steps) || parsed.steps.length === 0) {
+        const trimmed = (raw || '').trim();
+        if (trimmed.length > 20) {
+          parsed = { answer: currentQ.correct || '', steps: [{ title: 'Explanation', body: trimmed }] };
+          console.warn('[AskKorah] JSON parse failed; showing raw response as fallback step');
+        } else {
+          throw new Error('Model returned no parseable steps');
+        }
+      }
+      body.innerHTML = '';
+      drawExplanation(body, parsed, /*fromCache*/ false);
+      explanationLoaded = true;
+      cachedKorahExplanation = parsed;
+      // Persist to Firestore so future opens are instant.
+      try {
+        await window.KorahDB?.setSatExplanation?.(currentQ.id, {
+          answer:  parsed.answer || currentQ.correct || '',
+          summary: parsed.summary || '',
+          steps:   parsed.steps,
+          model:   MODEL,
+          questionStem: currentQ.stem.slice(0, 500),
+        });
+      } catch (e) { console.warn('[AskKorah] cache write failed', e); }
+    } catch (err) {
+      console.error('[AskKorah explanation]', err);
+      body.innerHTML = '';
+      const errEl = document.createElement('div');
+      errEl.className = 'ask-korah-msg korah';
+      errEl.textContent = 'Sorry — could not load an explanation right now.';
+      body.appendChild(errEl);
+    } finally {
+      explanationLoading = false;
+    }
+  }
+
+  function drawExplanation(root, data, fromCache) {
+    if (data.answer) {
+      const a = document.createElement('div');
+      a.className = 'explain-answer';
+      a.innerHTML = `<span class="material-icons-round" style="font-size:1rem;">check_circle</span> Answer: ${escapeHtml(String(data.answer))}`;
+      root.appendChild(a);
+    }
+    if (data.summary) {
+      const s = document.createElement('div');
+      s.className = 'ask-korah-md';
+      renderMarkdownAndMath(s, data.summary);
+      root.appendChild(s);
+    }
+    data.steps.forEach((step, idx) => {
+      const card = document.createElement('div');
+      card.className = 'explain-step';
+      const head = document.createElement('div');
+      head.className = 'explain-step-head';
+      head.innerHTML = `<span class="explain-step-num">${idx + 1}</span><span>${escapeHtml(step.title || `Step ${idx + 1}`)}</span>`;
+      const body = document.createElement('div');
+      body.className = 'explain-step-body';
+      renderMarkdownAndMath(body, step.body || '');
+      card.appendChild(head);
+      card.appendChild(body);
+      root.appendChild(card);
+    });
+    if (fromCache) {
+      const tag = document.createElement('div');
+      tag.className = 'explain-cached';
+      tag.textContent = 'cached';
+      root.appendChild(tag);
+    }
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+})();
+</script>
+
+<!-- ═══ SESSION INFO MODAL (Settings-style) ═══ -->
+<div id="sessionInfoModal" class="settings-modal" style="display: none; opacity: 1; pointer-events: auto;">
+  <div class="settings-modal-content" style="max-width: 28rem;">
+    <div class="settings-header">
+      <h2 class="settings-title">Practice Details</h2>
+      <button class="settings-close" onclick="document.getElementById('sessionInfoModal').style.display='none'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    
+    <div class="settings-body">
+      <div class="settings-section">
+        <h3 class="settings-section-title">Session Configuration</h3>
+        <div class="settings-item">
+          <div class="settings-item-label">Target Section</div>
+          <div id="modalSection" class="settings-item-control font-bold tx-p5">—</div>
+        </div>
+        <div class="settings-item">
+          <div class="settings-item-label">Assessment</div>
+          <div id="modalAssessment" class="settings-item-control font-bold tx-p5">SAT</div>
+        </div>
+        <div class="settings-item">
+          <div class="settings-item-label">Difficulty</div>
+          <div id="modalDifficulty" class="settings-item-control font-bold tx-p5">Any</div>
+        </div>
+        <div class="settings-item" style="flex-direction: column; align-items: flex-start; gap: 0.5rem;">
+          <div class="settings-item-label">Active Domains</div>
+          <div id="modalDomains" style="display: flex; flex-wrap: wrap; gap: 0.5rem; width: 100%;">
+            <!-- Domain tags injected here -->
+          </div>
+        </div>
+        <div class="settings-item" style="margin-top: 0.5rem; opacity: 0.85;">
+          <div class="settings-item-label">Question Source</div>
+          <div class="settings-item-control" style="font-size: 0.8rem;">Official College Board Question Bank</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Rename Modal -->
+<div id="rename-modal" class="delete-modal">
+  <div class="delete-modal-content">
+    <div class="delete-modal-icon"><span class="material-icons-round" style="color: #FFA726; font-size: 1.25rem;" aria-label="rename">edit</span></div>
+    <h3 class="delete-modal-title">Rename</h3>
+    <p class="delete-modal-desc" id="rename-modal-desc">Enter a new name</p>
+    <input id="rename-modal-input" type="text" class="create-input" style="width:100%; margin-top:0.25rem;" placeholder="New name…"/>
+    <div class="delete-modal-actions">
+      <button id="rename-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
+      <button id="rename-modal-confirm" class="delete-modal-btn confirm t-btn" style="background:rgba(139,92,246,.12); color:var(--p5); border-color:rgba(139,92,246,.3);">Rename</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div id="delete-modal" class="delete-modal">
+  <div class="delete-modal-content">
+    <div class="delete-modal-icon"><span class="material-icons-round" style="color: var(--red); font-size: 1.25rem;" aria-label="delete">delete</span></div>
+    <h3 class="delete-modal-title">Delete?</h3>
+    <p class="delete-modal-desc">This will permanently delete <span id="delete-modal-name"></span>. This cannot be undone.</p>
+    <div class="delete-modal-actions">
+      <button id="delete-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
+      <button id="delete-modal-confirm" class="delete-modal-btn confirm t-btn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ QUESTION NAVIGATOR PANEL ═══ -->
+<div
+  id="qNavPanel"
+  class="q-nav-panel"
+  role="dialog"
+  aria-label="Question navigator"
+  aria-modal="true"
+  aria-hidden="true"
+>
+  <div class="q-nav-inner">
+
+    <!-- Summary stats strip -->
+    <div class="q-nav-stats" id="qNavStats" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- Question grid -->
+    <div>
+      <div class="q-nav-section-label" aria-hidden="true">all questions</div>
+      <div
+        class="q-nav-grid"
+        id="qNavGrid"
+        role="list"
+        aria-label="Question list"
+      ></div>
+    </div>
+
+  </div>
+</div>
+<!-- END QUESTION NAVIGATOR PANEL -->
+
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+<script src="https://www.desmos.com/api/v1.12/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
+<script src="../app/timer-manager.js"></script>
+<script src="../study/js/sidebar.js"></script>
+<script src="../study/js/study-api.js"></script>
+<script src="./js/sat-shared.js"></script>
+<script src="./js/sat-player.js"></script>
+
+<script>
+  window.addEventListener('korahReady', () => {
+    if (window.KorahSidebar) {
+      window.KorahSidebar.initSidebar({
+        chatBaseUrl: "../chat.html",
+        itemPageUrl: "../study/item.html",
+        onItemClick: (id) => {
+          if (window.KorahChat && typeof window.KorahChat.switchToSession === 'function') {
+            window.KorahChat.switchToSession(id);
+          }
+        }
+      });
+    }
+  }, { once: true });
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Dynamically track footer height so content panel never overlaps
+  const footer = document.querySelector('.sat-player-footer');
+  if (footer) {
+    const updateFooterHeight = () => {
+      document.documentElement.style.setProperty('--player-footer-h', footer.offsetHeight + 'px');
+    };
+    updateFooterHeight();
+    new ResizeObserver(updateFooterHeight).observe(footer);
+  }
+
+  // Initialize dropdown visibility
+  if (typeof updateDropdownForSection === 'function') {
+    updateDropdownForSection();
+  }
+
+  // Also update on window resize
+  window.addEventListener('resize', function() {
+    if (typeof updateDropdownForSection === 'function') {
+      updateDropdownForSection();
+    }
+  });
+  
+  var moreBtn = document.getElementById('moreMenuBtn');
+  var moreDropdown = document.getElementById('moreDropdown');
+  
+  if (moreBtn && moreDropdown) {
+    moreBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      moreDropdown.classList.toggle('more-dropdown-open');
+    });
+    
+    document.addEventListener('click', function(e) {
+      if (!moreBtn.contains(e.target) && !moreDropdown.contains(e.target)) {
+        closeMoreDropdown();
+      }
+    });
+    
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closeMoreDropdown();
+      }
+    });
+  }
+});
+
+function closeMoreDropdown() {
+  var moreDropdown = document.getElementById('moreDropdown');
+  if (moreDropdown) {
+    moreDropdown.classList.remove('more-dropdown-open');
+  }
+  // Always reset to main page when dropdown closes
+  closeThemeSubpanel();
+}
+
+function openThemeSubpanel() {
+  var main  = document.getElementById('moreDropdownMain');
+  var theme = document.getElementById('moreDropdownTheme');
+  if (main)  main.style.display  = 'none';
+  if (theme) theme.style.display = 'block';
+  syncThemeChecks();
+}
+
+function closeThemeSubpanel() {
+  var main  = document.getElementById('moreDropdownMain');
+  var theme = document.getElementById('moreDropdownTheme');
+  if (main)  main.style.display  = 'block';
+  if (theme) theme.style.display = 'none';
+}
+
+function syncThemeChecks() {
+  var current = localStorage.getItem('korah_theme') || 'dark';
+  ['dark', 'light', 'system'].forEach(function(t) {
+    var el = document.getElementById('check' + t.charAt(0).toUpperCase() + t.slice(1));
+    if (el) el.style.opacity = (current === t) ? '1' : '0';
+  });
+}
+
+function setDropdownTheme(theme) {
+  localStorage.setItem('korah_theme', theme);
+  // Apply theme to the html element (questions.html uses data-theme directly, not Alpine)
+  var effective = theme;
+  if (theme === 'system') {
+    effective = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  document.documentElement.setAttribute('data-theme', effective);
+  syncThemeChecks();
+  // Don't close the dropdown — let the user see the checkmark update
+}
+
+function updateDropdownForSection() {
+  // Check screen width - only show collapsed items on mobile
+  var isMobile = window.innerWidth <= 768;
+  
+  // Check if we're in Math section by checking if calculator button exists and is visible
+  var toggleCalcBtn = document.getElementById('toggleCalcBtn');
+  var referenceBtn = document.getElementById('referenceBtn');
+  
+  var isMathSection = false;
+  
+  // If calculator button is visible and not disabled, we're in Math section
+  if (toggleCalcBtn && !toggleCalcBtn.classList.contains('is-hidden') && !toggleCalcBtn.disabled) {
+    isMathSection = true;
+  }
+  
+  // Show/hide collapsed items based on screen width
+  var collapsedItems = document.querySelectorAll('.more-dropdown-collapsed-item');
+  collapsedItems.forEach(function(item) {
+    if (isMobile) {
+      item.style.display = 'block';
+    } else {
+      item.style.display = 'none';
+    }
+  });
+  
+  // Show/hide Math-specific items based on both screen width AND section type
+  var mathItems = document.querySelectorAll('.more-dropdown-math-item');
+  mathItems.forEach(function(item) {
+    if (isMobile && isMathSection) {
+      item.style.display = 'block';
+    } else {
+      item.style.display = 'none';
+    }
+  });
+  
+  // Update separator visibility
+  var visibleMathItems = document.querySelectorAll('.more-dropdown-math-item:not([style*="display: none"])');
+  var separators = document.querySelectorAll('.more-dropdown-math-separator, .more-dropdown-separator');
+  separators.forEach(function(sep) {
+    if (isMobile && visibleMathItems.length > 0) {
+      sep.style.display = 'block';
+    } else {
+      sep.style.display = 'none';
+    }
+  });
+}
+
+</script>
+
+</body>
+</html>

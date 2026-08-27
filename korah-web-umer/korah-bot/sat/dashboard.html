@@ -1,0 +1,1925 @@
+<!DOCTYPE html>
+<html lang="en" x-data="{
+  theme: localStorage.getItem('korah_theme') || 'dark',
+  sidebarCollapsed: window.innerWidth <= 768 ? false : localStorage.getItem('korah_sidebar_collapsed') === 'true',
+  mobileOpen: false,
+  getEffectiveTheme() {
+    if (this.theme === 'system') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return this.theme;
+  },
+  toggleSidebar() {
+    if (window.innerWidth <= 768) {
+      this.mobileOpen = !this.mobileOpen;
+      const overlay = document.querySelector('.sidebar-overlay');
+      if (overlay) overlay.classList.toggle('show', this.mobileOpen);
+    } else {
+      this.sidebarCollapsed = !this.sidebarCollapsed;
+      localStorage.setItem('korah_sidebar_collapsed', this.sidebarCollapsed);
+    }
+  }
+}" :data-theme="getEffectiveTheme()" x-cloak>
+<head>
+<link rel="stylesheet" href="../transitions/page-transitions.css"/>
+<script src="../transitions/page-transitions.js"></script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Korah AI — SAT Dashboard</title>
+<script>document.documentElement.setAttribute('data-theme', localStorage.getItem('korah_theme') || 'dark');</script>
+<link rel="icon" type="image/png" href="../logo-images/newlogo0.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script src="../sidebar-loader.js" defer></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+<script src="../study/js/sidebar.js"></script>
+<link rel="stylesheet" href="../app/korah-chat.css"/>
+<link rel="stylesheet" href="./sat.css"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css"/>
+<style>
+  .home-scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; position: relative; z-index: 1; }
+  .home-page { padding: 1.75rem 2.25rem 3.75rem; max-width: 77.5rem; margin: 0 auto; }
+
+  .home-topbar {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.875rem 1.75rem;
+    border-bottom: 1px solid var(--bd, rgba(139,92,246,.18));
+    background: var(--sf); backdrop-filter: blur(0.875rem); -webkit-backdrop-filter: blur(0.875rem);
+  }
+  .home-search {
+    flex: 1; max-width: 26.25rem; margin-left: auto;
+    display: flex; align-items: center; gap: 0.625rem;
+    background: var(--bg, rgba(255,255,255,.04));
+    border: 1px solid rgba(139,92,246,.22);
+    border-radius: 62.4375rem; padding: 0.625rem 1rem;
+    color: var(--tx2);
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .home-search:focus-within { border-color: rgba(167,139,250,.55); box-shadow: 0 0 0 0.25rem rgba(167,139,250,.12); }
+  .home-search input {
+    background: transparent; border: none; outline: none;
+    color: var(--tx); font-size: 0.8125rem; width: 100%; font-family: inherit;
+  }
+  .home-search input::placeholder { color: var(--tx2); }
+
+  .home-pill {
+    display: inline-flex; align-items: center; gap: 0.375rem;
+    background: var(--bg, rgba(255,255,255,.04));
+    border: 1px solid rgba(139,92,246,.22);
+    border-radius: 62.4375rem; padding: 0.5rem 0.875rem;
+    font-size: 0.8125rem; font-weight: 700; color: var(--tx);
+    font-variant-numeric: tabular-nums;
+    transition: all .2s;
+  }
+  .home-pill .pill-icon { font-size: 0.9375rem; line-height: 1; }
+  .home-pill.streak { background: rgba(251,146,60,.1); border-color: rgba(251,146,60,.3); color: #fb923c; }
+  .home-pill.streak .pill-icon { filter: drop-shadow(0 0 0.375rem rgba(251,146,60,.6)); }
+  .home-pill.gems { background: rgba(56,189,248,.1); border-color: rgba(56,189,248,.3); color: #38bdf8; }
+  .home-pill.gems   .pill-icon { filter: drop-shadow(0 0 0.375rem rgba(56,189,248,.6)); }
+
+  .home-hero {
+    display: grid; grid-template-columns: 1fr minmax(17.5rem, 22.5rem); gap: 1.5rem;
+    align-items: start; margin-bottom: 1.375rem;
+  }
+  @media (max-width: 55rem) { .home-hero { grid-template-columns: 1fr; } }
+
+  .greeting-title {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-size: clamp(1.75rem, 3.6vw, 2.75rem); font-weight: 800; letter-spacing: -0.02em;
+    color: var(--tx); line-height: 1.05; margin: 0;
+  }
+  .greeting-title .name { color: var(--tx2); font-weight: 700; }
+  .greeting-sub { color: var(--tx2); font-size: 0.9375rem; margin: 0.625rem 0 1.375rem; }
+
+  .cta-primary {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    background: linear-gradient(135deg, #38bdf8, #22d3ee);
+    color: #fff; font-weight: 700; font-size: 0.875rem;
+    padding: 0.75rem 1.375rem; border-radius: 62.4375rem; border: none;
+    cursor: pointer; text-decoration: none;
+    box-shadow: 0 0.375rem 1.375rem rgba(56,189,248,.32);
+    transition: transform .15s, box-shadow .2s;
+  }
+  .cta-primary:hover { transform: translateY(-1px); box-shadow: 0 0.625rem 1.75rem rgba(56,189,248,.4); }
+  .cta-ghost {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    background: var(--bg, rgba(255,255,255,.04));
+    border: 1px solid rgba(139,92,246,.28);
+    color: var(--tx); font-weight: 700; font-size: 0.875rem;
+    padding: 0.75rem 1.25rem; border-radius: 62.4375rem;
+    cursor: pointer; text-decoration: none;
+    margin-left: 0.625rem;
+    transition: border-color .2s;
+  }
+  .cta-ghost:hover { border-color: rgba(167,139,250,.6); }
+
+  .countdown-card {
+    background: linear-gradient(135deg, rgba(139,92,246,0.1), rgba(139,92,246,0.03));
+    border: 1px solid rgba(139,92,246,.32);
+    border-radius: 1.125rem; padding: 1.375rem 1.5rem;
+    backdrop-filter: blur(0.875rem); -webkit-backdrop-filter: blur(0.875rem);
+  }
+  .countdown-card .label { font-size: 0.8125rem; color: var(--tx2); margin-bottom: 0.875rem; }
+  .countdown-grid { display: flex; gap: 0.625rem; align-items: baseline; justify-content: flex-start; }
+  .countdown-num { font-size: 1.75rem; font-weight: 800; color: var(--tx); line-height: 1; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+  .countdown-unit { font-size: 0.6875rem; color: var(--tx2); margin-left: 0.125rem; font-weight: 600; }
+  .countdown-date { margin-top: 1rem; color: var(--tx2); font-size: 0.875rem; }
+
+  .score-banner {
+    display: flex; align-items: center; gap: 0.875rem; flex-wrap: wrap;
+    background: var(--sf);
+    border: 1px solid rgba(56,189,248,.32);
+    border-radius: 1rem; padding: 0.875rem 1.125rem;
+    margin-bottom: 2.25rem;
+    backdrop-filter: blur(1rem); -webkit-backdrop-filter: blur(1rem);
+  }
+  .score-banner .banner-icon {
+    width: 2.25rem; height: 2.25rem; flex-shrink: 0;
+    border-radius: 0.625rem;
+    background: linear-gradient(135deg, rgba(56,189,248,.18), rgba(34,211,238,.12));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.125rem;
+  }
+  .score-banner .banner-text { flex: 1; min-width: 15rem; font-size: 0.875rem; color: var(--tx); }
+  .score-banner .banner-text strong { font-weight: 700; }
+  .banner-cta {
+    background: rgba(56,189,248,.16);
+    color: #38bdf8; font-weight: 700; font-size: 0.8125rem;
+    padding: 0.625rem 1.125rem; border-radius: 62.4375rem; border: none;
+    cursor: pointer; text-decoration: none;
+    transition: background .2s;
+  }
+  .banner-cta:hover { background: rgba(56,189,248,.28); }
+
+  .home-section-head {
+    display: flex; align-items: center; gap: 0.5rem;
+    font-size: 0.875rem; font-weight: 700; color: var(--tx);
+    margin: 0 0 0.875rem;
+  }
+  .home-section-head .material-icons-round { font-size: 1.125rem; color: var(--tx2); }
+  .home-section-head .head-cta {
+    margin-left: auto; font-size: 0.75rem; font-weight: 700;
+    color: var(--tx2); text-decoration: none;
+    padding: 0.375rem 0.75rem; border-radius: 62.4375rem;
+    border: 1px solid rgba(139,92,246,.22);
+  }
+  .home-section-head .head-cta:hover { color: var(--tx); border-color: rgba(167,139,250,.5); }
+
+  .stats-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;
+    margin-bottom: 2.5rem;
+  }
+  @media (max-width: 61.25rem) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 32.5rem) { .stats-grid { grid-template-columns: 1fr; } }
+
+  .stat-card {
+    position: relative; overflow: hidden;
+    background: var(--sf);
+    border: 1px solid rgba(139,92,246,.22);
+    border-radius: 1rem; padding: 1.125rem 1.25rem;
+    min-height: 7.375rem;
+    backdrop-filter: blur(1rem); -webkit-backdrop-filter: blur(1rem);
+    transition: all .2s;
+  }
+  .stat-card:nth-child(1) { background: linear-gradient(135deg, rgba(56,189,248,.14), rgba(56,189,248,.04)); border-color: rgba(56,189,248,.3); }
+  .stat-card:nth-child(2) { background: linear-gradient(135deg, rgba(16,185,129,.14), rgba(16,185,129,.04)); border-color: rgba(16,185,129,.3); }
+  .stat-card:nth-child(3) { background: linear-gradient(135deg, rgba(167,139,250,.14), rgba(167,139,250,.04)); border-color: rgba(167,139,250,.3); }
+  .stat-card:nth-child(4) { background: linear-gradient(135deg, rgba(251,146,60,.14), rgba(251,146,60,.04)); border-color: rgba(251,146,60,.3); }
+
+  .stat-card:hover { border-color: rgba(167,139,250,.45); box-shadow: 0 0.375rem 1.375rem rgba(139,92,246,.12); transform: translateY(-0.125rem); }
+  .stat-card .stat-label { font-size: 0.8125rem; color: var(--tx2); font-weight: 600; }
+  .stat-card .stat-value { font-size: 2.25rem; font-weight: 800; color: var(--tx); margin-top: 0.375rem; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .stat-card .stat-sub { font-size: 0.75rem; color: var(--tx2); margin-top: 0.25rem; }
+  .stat-card .stat-watermark {
+    position: absolute; right: 0.75rem; bottom: 0.5rem;
+    color: rgba(139,92,246,.18); font-size: 3.75rem;
+  }
+
+  /* Score Progress (Current → Goal) */
+  .score-progress-grid {
+    display: grid; grid-template-columns: 2fr 1fr; gap: 1.25rem;
+    align-items: stretch; margin-bottom: 2.5rem;
+  }
+  @media (max-width: 55rem) { .score-progress-grid { grid-template-columns: 1fr; } }
+
+  .progress-card {
+    background: var(--sf);
+    border: 1px solid rgba(167,139,250,.22);
+    border-radius: 1rem; padding: 1.5rem 1.625rem;
+    display: flex; flex-direction: column; gap: 1.125rem;
+    backdrop-filter: blur(1rem); -webkit-backdrop-filter: blur(1rem);
+  }
+  .progress-card-main {
+    display: flex; align-items: center; gap: 1.125rem;
+  }
+  .progress-circle {
+    width: 4.75rem; height: 4.75rem; flex-shrink: 0;
+    border-radius: 0.875rem;
+    /* background: linear-gradient(135deg, rgba(167,139,250,.12), rgba(139,92,246,.06));
+    border: 1px solid rgba(167,139,250,.3); */
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; transition: all .3s;
+  }
+  .progress-circle img { width: 2.5rem; height: 2.5rem; object-fit: contain; }
+  .progress-circle.reached {
+    background: linear-gradient(135deg, rgba(34,197,94,.18), rgba(16,185,129,.1));
+    border-color: rgba(34,197,94,.4);
+  }
+  .progress-text-block { flex: 1; min-width: 0; }
+  .progress-pct {
+    font-size: 1.75rem; font-weight: 800; letter-spacing: -0.02em;
+    color: var(--tx); font-variant-numeric: tabular-nums; line-height: 1;
+  }
+  .progress-label {
+    font-size: 1.25rem; font-weight: 700; color: var(--tx2); margin-top: 0.375rem;
+    font-variant-numeric: tabular-nums; letter-spacing: -0.01em;
+  }
+  .score-bar { height: 1.25rem; background: rgba(139,92,246,.12); border-radius: 0.625rem;
+    overflow: hidden; position: relative; }
+  .score-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #7c3aed, #a78bfa, #c084fc);
+    box-shadow: 0 0 0.75rem rgba(139,92,246,.5);
+    transition: width .5s ease; border-radius: 0.625rem;
+    position: relative; overflow: hidden;
+  }
+  .score-bar-fill::after {
+    content: '';
+    position: absolute; top: 0; left: -60%; width: 50%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent);
+    animation: bar-shimmer 1.8s ease-in-out infinite;
+    border-radius: 0.625rem;
+  }
+  @keyframes bar-shimmer {
+    0%   { left: -60%; }
+    100% { left: 110%; }
+  }
+
+  .section-stack { display: flex; flex-direction: column; gap: 0.875rem; }
+  .section-card {
+    background: var(--sf); border: 1px solid rgba(139,92,246,.22);
+    border-radius: 1rem; padding: 1rem 1.125rem;
+    display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+    backdrop-filter: blur(1rem); -webkit-backdrop-filter: blur(1rem);
+    transition: all .2s;
+  }
+  .section-card:hover { transform: translateY(-0.125rem); }
+  .section-card.reading { background: linear-gradient(135deg, rgba(56,189,248,.14), rgba(56,189,248,.04)); border-color: rgba(56,189,248,.3); }
+  .section-card.math    { background: linear-gradient(135deg, rgba(16,185,129,.14), rgba(16,185,129,.04)); border-color: rgba(16,185,129,.3); }
+  .section-card .sec-label { font-size: 0.75rem; font-weight: 700; color: var(--tx2); text-transform: uppercase; letter-spacing: 0.0625rem; }
+  .section-card .sec-value { font-size: 1.5rem; font-weight: 800; color: var(--tx); margin-top: 0.125rem; font-variant-numeric: tabular-nums; }
+  .section-card .sec-sub   { font-size: 0.6875rem; color: var(--tx2); margin-top: 0.125rem; }
+  .section-card .sec-btn {
+    font-size: 0.6875rem; font-weight: 700; padding: 0.375rem 0.75rem;
+    border-radius: 62.4375rem; text-decoration: none;
+    background: rgba(139,92,246,.16); color: #c4b5fd;
+    border: 1px solid rgba(167,139,250,.35);
+  }
+  .section-card .sec-btn:hover { background: rgba(167,139,250,.28); }
+
+  /* Suggestions / focus list */
+  .focus-grid {
+    display: grid; grid-template-columns: 2fr 1fr; gap: 1.25rem;
+    margin-bottom: 2.5rem; align-items: start;
+  }
+  @media (max-width: 55rem) { .focus-grid { grid-template-columns: 1fr !important; } }
+
+  .panel-card {
+    background: linear-gradient(135deg, rgba(255,255,255,0.02), rgba(255,255,255,0.005));
+    border: 1px solid rgba(139,92,246,.22);
+    border-radius: 1.125rem; padding: 1.25rem 1.375rem;
+    backdrop-filter: blur(1rem); -webkit-backdrop-filter: blur(1rem);
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .panel-card:hover { border-color: rgba(167,139,250,.4); box-shadow: 0 0.25rem 1.25rem rgba(139,92,246,0.08); }
+  /* Colored focus-grid panels */
+  .suggestions-panel {
+    background: linear-gradient(135deg, rgba(56,189,248,.08), rgba(34,211,238,.04)) !important;
+    border-color: rgba(56,189,248,.25) !important;
+  }
+  .domain-panel {
+    background: linear-gradient(135deg, rgba(16,185,129,.08), rgba(52,212,153,.04)) !important;
+    border-color: rgba(16,185,129,.25) !important;
+  }
+  .reading-skills-panel {
+    background: linear-gradient(135deg, rgba(59,130,246,.08), rgba(96,165,250,.04)) !important;
+    border-color: rgba(59,130,246,.25) !important;
+  }
+  .math-skills-panel {
+    background: linear-gradient(135deg, rgba(34,197,94,.08), rgba(74,222,128,.04)) !important;
+    border-color: rgba(34,197,94,.25) !important;
+  }
+  .panel-card h3 {
+    font-size: 0.6875rem; font-weight: 800; text-transform: uppercase;
+    letter-spacing: 0.1rem; margin: 0 0 0.875rem;
+    background: linear-gradient(90deg, #c4b5fd, #e879f9);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  [data-theme="light"] .panel-card h3 {
+    background: linear-gradient(90deg, #7c3aed, #a21caf);
+    -webkit-background-clip: text; background-clip: text;
+  }
+
+  .skill-row {
+    display: flex; align-items: center; gap: 0.625rem; padding: 0.75rem 0;
+    border-bottom: 1px solid rgba(139,92,246,.1);
+    transition: all .2s;
+    border-radius: 0.5rem;
+  }
+  .skill-row:hover { background: rgba(139,92,246,0.04); padding-left: 0.5rem; padding-right: 0.5rem; }
+  .skill-row:last-child { border-bottom: none; }
+  .skill-row .rank {
+    width: 1.5rem; height: 1.5rem; border-radius: 50%;
+    background: linear-gradient(135deg, rgba(167,139,250,.22), rgba(232,121,249,.12));
+    color: #c4b5fd; font-size: 0.6875rem; font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .skill-meta { flex: 1; min-width: 0; }
+  .skill-name { font-size: 0.8125rem; font-weight: 600; color: var(--tx);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .skill-sub { font-size: 0.6875rem; color: var(--tx2); margin-top: 0.125rem; }
+  .skill-acc { font-size: 0.75rem; font-weight: 700; color: var(--tx2);
+    font-variant-numeric: tabular-nums; }
+  .practice-btn {
+    display: inline-flex; align-items: center; gap: 0.3125rem;
+    font-size: 0.6875rem; font-weight: 700; padding: 0.3125rem 0.6875rem;
+    border-radius: 1.25rem;
+    background: linear-gradient(135deg, rgba(124,58,237,.2), rgba(167,139,250,.12));
+    color: #c4b5fd; border: 1px solid rgba(167,139,250,.4);
+    text-decoration: none; cursor: pointer; letter-spacing: .0.1875rem;
+    transition: all .2s;
+  }
+  .practice-btn:hover {
+    background: linear-gradient(135deg, rgba(124,58,237,.35), rgba(167,139,250,.22));
+    border-color: rgba(196,181,253,.65);
+    color: #ddd6fe;
+  }
+
+  .domain-bar-row { margin-bottom: 0.875rem; }
+  .domain-bar-row:last-child { margin-bottom: 0; }
+  .domain-bar-label { display: flex; justify-content: space-between;
+    font-size: 0.75rem; font-weight: 600; color: var(--tx2); margin-bottom: 0.375rem; }
+  .domain-bar { height: 0.375rem; background: rgba(139,92,246,.12); border-radius: 0.375rem; overflow: hidden; }
+  .domain-bar-fill { height: 100%;
+    background: linear-gradient(90deg, #7c3aed, #a78bfa, #c084fc);
+    box-shadow: 0 0 0.5rem rgba(139,92,246,.3);
+    transition: width .4s ease; }
+
+  .empty-hint { color: var(--tx2); font-size: 0.8125rem; text-align: center; padding: 1.5rem 0; }
+
+  /* Activity rings row */
+  .activity-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;
+    margin-bottom: 2.5rem;
+  }
+  @media (max-width: 45rem) { .activity-grid { grid-template-columns: 1fr; } }
+
+  .activity-card {
+    background: linear-gradient(135deg, rgba(255,255,255,0.02), rgba(255,255,255,0.005));
+    border: 1px solid rgba(139,92,246,.22);
+    border-radius: 1rem; padding: 1.125rem 1.25rem;
+    display: flex; align-items: center; gap: 1rem;
+    backdrop-filter: blur(1rem); -webkit-backdrop-filter: blur(1rem);
+    transition: all .2s;
+  }
+  .activity-card:hover { transform: translateY(-0.125rem); border-color: rgba(167,139,250,.4); }
+  .activity-ring {
+    width: 4.5rem; height: 4.5rem; flex-shrink: 0;
+    border-radius: 50%;
+    background:
+      conic-gradient(#a78bfa var(--p, 0%), rgba(139,92,246,.12) 0);
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+  .activity-ring::after {
+    content: ''; position: absolute; inset: 0.375rem; border-radius: 50%;
+    background: var(--sf);
+  }
+  .activity-ring .ring-val {
+    position: relative; z-index: 1;
+    font-size: 1rem; font-weight: 800; color: var(--tx);
+    font-variant-numeric: tabular-nums;
+  }
+  .activity-meta .a-label { font-size: 0.75rem; font-weight: 600; color: var(--tx2); }
+  .activity-meta .a-value { font-size: 1.375rem; font-weight: 800; color: var(--tx); margin-top: 0.125rem; font-variant-numeric: tabular-nums; }
+  .activity-meta .a-sub   { font-size: 0.6875rem; color: var(--tx2); margin-top: 0.125rem; }
+
+  .recent-list .recent-row {
+    display: flex; align-items: center; gap: 0.625rem;
+    padding: 0.625rem 0; border-bottom: 1px solid rgba(139,92,246,.1);
+    transition: all .2s;
+    border-radius: 0.5rem;
+  }
+  .recent-list .recent-row:hover { background: rgba(139,92,246,0.04); padding-left: 0.5rem; padding-right: 0.5rem; }
+  .recent-list .recent-row:last-child { border-bottom: none; }
+  .recent-icon { font-size: 1rem; flex-shrink: 0; }
+
+  /* Colored containers for activity sections */
+  .saved-panel {
+    background: linear-gradient(135deg, rgba(167,139,250,.08), rgba(232,121,249,.04)) !important;
+    border-color: rgba(167,139,250,.25) !important;
+  }
+  .recent-panel {
+    background: linear-gradient(135deg, rgba(251,146,60,.08), rgba(249,115,22,.04)) !important;
+    border-color: rgba(251,146,60,.25) !important;
+  }
+
+  /* ── Spotlight glow + cursor tilt (see ui-components/SPOTLIGHT-TILT-CARDS.md) ── */
+  .countdown-card, .stat-card, .section-card, .progress-card, .panel-card { position: relative; }
+  .countdown-card::before, .stat-card::before, .section-card::before,
+  .progress-card::before, .panel-card::before {
+    content: ""; position: absolute; inset: 0;
+    border-radius: inherit;      /* rounds the glow without clipping child shadows */
+    pointer-events: none; z-index: 0;
+    opacity: var(--spotlight-opacity, 0);
+    transition: opacity .5s ease-in-out;
+    background: radial-gradient(
+      circle at var(--spotlight-x, 50%) var(--spotlight-y, 50%),
+      var(--spotlight-color, rgba(139, 92, 246, .3)), transparent 80%);
+  }
+  /* Glow inherits each card's own accent color */
+  .countdown-card { --spotlight-color: rgba(139, 92, 246, .32); }
+  .progress-card  { --spotlight-color: rgba(167, 139, 250, .32); }
+  .section-card         { --spotlight-color: rgba(139, 92, 246, .3); }
+  .section-card.reading { --spotlight-color: rgba(56, 189, 248, .32); }
+  .section-card.math    { --spotlight-color: rgba(16, 185, 129, .32); }
+  .panel-card           { --spotlight-color: rgba(139, 92, 246, .28); }
+  .suggestions-panel    { --spotlight-color: rgba(56, 189, 248, .3); }
+  .domain-panel         { --spotlight-color: rgba(16, 185, 129, .3); }
+  .reading-skills-panel { --spotlight-color: rgba(59, 130, 246, .3); }
+  .math-skills-panel    { --spotlight-color: rgba(34, 197, 94, .3); }
+  .saved-panel          { --spotlight-color: rgba(167, 139, 250, .3); }
+  .recent-panel         { --spotlight-color: rgba(251, 146, 60, .3); }
+  .stat-card:nth-child(1) { --spotlight-color: rgba(56, 189, 248, .32); }
+  .stat-card:nth-child(2) { --spotlight-color: rgba(16, 185, 129, .32); }
+  .stat-card:nth-child(3) { --spotlight-color: rgba(167, 139, 250, .32); }
+  .stat-card:nth-child(4) { --spotlight-color: rgba(251, 146, 60, .32); }
+  /* Tilt is set instantly per frame from JS (no transform transition) so it tracks
+     the cursor 1:1 — a transition here makes it chase/lag behind fast movement.
+     JS eases only the reset-to-flat. will-change keeps the card composited/smooth. */
+  .countdown-card, .stat-card, .section-card, .progress-card { will-change: transform; }
+
+  /* ── Progress Report (mirrors the mobile Analytics tab) ── */
+  .range-chips { margin-left: auto; display: inline-flex; gap: 0.375rem; }
+  .range-chips button {
+    font-size: 0.75rem; font-weight: 700; color: var(--tx2); font-family: inherit;
+    background: var(--bg, rgba(255,255,255,.04));
+    border: 1px solid rgba(139,92,246,.22); border-radius: 62.4375rem;
+    padding: 0.375rem 0.75rem; cursor: pointer; transition: all .2s;
+  }
+  .range-chips button:hover { border-color: rgba(167,139,250,.5); color: var(--tx); }
+  .range-chips button.active { background: rgba(139,92,246,.16); color: #c4b5fd; border-color: rgba(167,139,250,.45); }
+
+  .report-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 2.5rem; align-items: stretch; }
+  @media (max-width: 55rem) { .report-grid { grid-template-columns: 1fr; } }
+  .report-span2 { grid-column: 1 / -1; }
+  .report-hint { font-size: 0.6875rem; color: var(--tx2); margin-top: 0.75rem; }
+
+  .trend-panel    { --spotlight-color: rgba(56,189,248,.3);
+    background: linear-gradient(135deg, rgba(56,189,248,.06), rgba(34,211,238,.02)) !important;
+    border-color: rgba(56,189,248,.22) !important; }
+  .pace-panel     { --spotlight-color: rgba(34,197,94,.3);
+    background: linear-gradient(135deg, rgba(34,197,94,.08), rgba(74,222,128,.03)) !important;
+    border-color: rgba(34,197,94,.25) !important; }
+  .momentum-panel { --spotlight-color: rgba(45,212,191,.3);
+    background: linear-gradient(135deg, rgba(45,212,191,.08), rgba(94,234,212,.03)) !important;
+    border-color: rgba(45,212,191,.25) !important; }
+  .time-panel     { --spotlight-color: rgba(251,146,60,.3);
+    background: linear-gradient(135deg, rgba(251,146,60,.08), rgba(249,115,22,.03)) !important;
+    border-color: rgba(251,146,60,.25) !important; }
+  .pacing-panel   { --spotlight-color: rgba(99,102,241,.3);
+    background: linear-gradient(135deg, rgba(99,102,241,.08), rgba(129,140,248,.03)) !important;
+    border-color: rgba(99,102,241,.25) !important; }
+  .neglected-panel{ --spotlight-color: rgba(139,92,246,.3); }
+  .retry-panel    { --spotlight-color: rgba(232,121,249,.3);
+    background: linear-gradient(135deg, rgba(232,121,249,.08), rgba(240,171,252,.03)) !important;
+    border-color: rgba(232,121,249,.25) !important; }
+  .heatmap-panel  { --spotlight-color: rgba(34,197,94,.3); }
+
+  .trend-legend { display: flex; gap: 0.625rem; margin-bottom: 0.875rem; }
+  .trend-chip {
+    display: inline-flex; align-items: center; gap: 0.375rem;
+    font-size: 0.75rem; font-weight: 700; padding: 0.375rem 0.75rem; border-radius: 62.4375rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .trend-chip.good { background: rgba(34,197,94,.1); color: #22c55e; border: 1px solid rgba(34,197,94,.3); }
+  .trend-chip.bad  { background: rgba(239,68,68,.1); color: #ef4444; border: 1px solid rgba(239,68,68,.3); }
+
+  .trend-chart { display: flex; align-items: flex-end; gap: 0.25rem; height: 10rem; }
+  .trend-col { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: flex-end; height: 100%; }
+  .trend-seg { width: 100%; border-radius: 0.125rem; margin-top: 1px; min-height: 0.125rem; }
+  .trend-axis { display: flex; justify-content: space-between; font-size: 0.625rem; color: var(--tx2); margin-top: 0.5rem; font-variant-numeric: tabular-nums; }
+
+  .mini-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.625rem; }
+  .mini-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+  .mini-stat {
+    border-radius: 0.75rem; padding: 0.75rem 0.875rem;
+    background: rgba(255,255,255,.03); border: 1px solid rgba(139,92,246,.16);
+  }
+  .mini-stat.hl { background: rgba(45,212,191,.1); border-color: rgba(45,212,191,.3); }
+  .mini-stat .m-label { font-size: 0.6875rem; font-weight: 700; color: var(--tx2); text-transform: uppercase; letter-spacing: .0.4375rem; }
+  .mini-stat .m-value { font-size: 1.375rem; font-weight: 800; color: var(--tx); margin-top: 0.25rem; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+  .mini-stat .m-sub { font-size: 0.6875rem; color: var(--tx2); margin-top: 0.125rem; }
+  .pace-target { font-size: 0.9375rem; font-weight: 800; color: #22c55e; margin-top: 0.875rem; }
+  .delta-row { display: flex; gap: 0.875rem; margin-top: 0.75rem; flex-wrap: wrap; }
+  .delta-chip { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.75rem; font-weight: 600; }
+  .delta-chip .material-icons-round { font-size: 0.875rem; }
+  .delta-chip.up { color: #22c55e; } .delta-chip.down { color: #ef4444; } .delta-chip.flat { color: var(--tx2); }
+
+  .donut-wrap { display: flex; align-items: center; gap: 1.125rem; }
+  .report-donut {
+    width: 7.375rem; height: 7.375rem; flex-shrink: 0; border-radius: 50%;
+    background: rgba(139,92,246,.12); position: relative;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .report-donut::after { content: ''; position: absolute; inset: 0.9375rem; border-radius: 50%; background: var(--sf); }
+  .donut-center { position: relative; z-index: 1; text-align: center; }
+  .donut-center .d-value { font-size: 1rem; font-weight: 800; color: var(--tx); font-variant-numeric: tabular-nums; }
+  .donut-center .d-label { font-size: 0.625rem; color: var(--tx2); }
+  .donut-legend { flex: 1; display: flex; flex-direction: column; gap: 0.5rem; }
+  .donut-legend .l-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; color: var(--tx2); }
+  .donut-legend .l-dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; flex-shrink: 0; }
+  .donut-legend .l-val { margin-left: auto; font-weight: 700; color: var(--tx); font-variant-numeric: tabular-nums; }
+
+  .difficulty-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1.125rem; }
+  .difficulty-cols .d-col-head { font-size: 0.6875rem; font-weight: 800; text-transform: uppercase; letter-spacing: .0.5rem; margin-bottom: 0.625rem; }
+  .difficulty-cols .d-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; color: var(--tx2); padding: 0.375rem 0; }
+  .difficulty-cols .d-row .material-icons-round { font-size: 0.9375rem; }
+  .difficulty-cols .d-row .d-val { margin-left: auto; font-weight: 700; color: var(--tx); font-variant-numeric: tabular-nums; }
+
+  .quad-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+  .quad-tile { border-radius: 0.75rem; padding: 0.75rem 0.875rem; border: 1px solid; }
+  .quad-tile .q-label { display: flex; align-items: center; gap: 0.3125rem; font-size: 0.6875rem; font-weight: 700; }
+  .quad-tile .q-label .material-icons-round { font-size: 0.875rem; }
+  .quad-tile .q-value { font-size: 1.25rem; font-weight: 800; color: var(--tx); margin-top: 0.25rem; font-variant-numeric: tabular-nums; }
+  .quad-tile .q-sub { font-size: 0.625rem; color: var(--tx2); margin-top: 0.125rem; }
+
+  .heat-grid { display: flex; gap: 0.25rem; }
+  .heat-week { flex: 1; display: flex; flex-direction: column; gap: 0.25rem; }
+  .heat-cell { width: 100%; aspect-ratio: 1; border-radius: 0.1875rem; background: rgba(139,92,246,.1); }
+  .heat-scale { display: flex; align-items: center; gap: 0.3125rem; justify-content: flex-end; margin-top: 0.625rem; font-size: 0.625rem; color: var(--tx2); }
+  .heat-scale .heat-cell { width: 0.625rem; flex: none; }
+</style>
+</head>
+
+<body>
+<style>
+  html:not(.korah-page-ready) { background: #06040f !important; }
+  html[data-theme="light"]:not(.korah-page-ready) { background: #d2d2d2 !important; }
+  html:not(.korah-page-ready) body { opacity: 0 !important; }
+</style>
+
+<script>
+  (function() {
+    const t = localStorage.getItem('korah_theme') || 'dark';
+    if (t === 'light' || (t === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  })();
+</script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+  import { setupKorahDB } from "../app/data/firestore-store.js";
+  import { initSatAnalytics } from "./js/sat-analytics.js";
+  import { startAuthGuard } from '../auth-guard.js';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
+    authDomain: "korah-app.firebaseapp.com",
+    projectId: "korah-app",
+    storageBucket: "korah-app.firebasestorage.app",
+    messagingSenderId: "226169460321",
+    appId: "1:226169460321:web:b166fc8260107c55dafc20"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      window.KorahTransitions.go('../landing/index.html');
+      return;
+    }
+    await setupKorahDB(app, user.uid);
+    await initSatAnalytics(app, user.uid);
+    const detail = { uid: user.uid };
+    window._korahReadyFired = detail;
+    window.dispatchEvent(new CustomEvent('korahReady', { detail }));
+
+    const firstName = (localStorage.getItem('korah_first_name') || user.displayName || user.email?.split('@')[0] || 'there').toLowerCase();
+    const nameEl = document.getElementById('greeting-name');
+    if (nameEl) nameEl.textContent = firstName;
+
+    if (typeof window.renderSatDashboard === 'function') {
+      window.renderSatDashboard();
+    }
+    startAuthGuard(auth, '../landing/index.html');
+  });
+
+  document.getElementById('logout-btn').addEventListener('click', () => {
+    window.confirmLogout(async () => {
+      await signOut(auth);
+      localStorage.removeItem('korah_first_name');
+      window.KorahTransitions.go('../login.html');
+    });
+  });
+</script>
+
+<canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
+<div id="sidebar-root"></div>
+
+<!-- Settings Modal -->
+<div id="settings-modal" class="settings-modal">
+  <div class="settings-modal-content">
+    <div class="settings-header">
+      <h2 class="settings-title">Settings</h2>
+      <button class="settings-close" id="settings-close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="settings-body">
+      <div class="settings-section">
+        <h3 class="settings-section-title">Appearance</h3>
+        <div class="settings-item">
+          <div class="settings-item-label">Theme</div>
+          <div class="settings-item-control">
+            <div class="settings-custom-select" id="settings-theme-custom-select">
+              <div class="settings-select-trigger" id="settings-theme-trigger">
+                <div class="flex items-center gap-2">
+                  <span class="material-icons-round trigger-icon">dark_mode</span>
+                  <span class="trigger-text">Dark Mode</span>
+                </div>
+                <span class="material-icons-round">expand_more</span>
+              </div>
+              <div class="settings-select-menu" id="settings-theme-menu">
+                <div class="settings-select-option" data-value="dark">
+                  <span class="material-icons-round">dark_mode</span>
+                  <span>Dark Mode</span>
+                  <span class="material-icons-round check-icon">check</span>
+                </div>
+                <div class="settings-select-option" data-value="light">
+                  <span class="material-icons-round">light_mode</span>
+                  <span>Light Mode</span>
+                  <span class="material-icons-round check-icon">check</span>
+                </div>
+                <div class="settings-select-option" data-value="system">
+                  <span class="material-icons-round">settings_suggest</span>
+                  <span>System</span>
+                  <span class="material-icons-round check-icon">check</span>
+                </div>
+              </div>
+              <input type="hidden" id="settings-theme-select" value="dark">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3 class="settings-section-title">Profile</h3>
+        <div class="settings-item">
+          <div class="settings-item-label">Display Name</div>
+          <div class="settings-item-control">
+            <input type="text" id="settings-name-input" class="settings-input" placeholder="Your name">
+          </div>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3 class="settings-section-title">Data</h3>
+        <div class="settings-item">
+          <div class="settings-item-label">Clear All Data</div>
+          <div class="settings-item-control">
+            <button id="settings-clear-data" class="settings-btn danger">Clear Data</button>
+          </div>
+        </div>
+      </div>
+      <div class="settings-actions">
+        <button id="settings-save" class="settings-btn primary">Save Settings</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MAIN AREA ═══ -->
+<div id="main-area-wrapper" class="main-area-wrapper">
+<main id="main-content" class="main-content">
+
+  <!-- Top bar -->
+  <header class="chat-topbar bg-sf glass-sm t-theme bd" style="opacity: 0.95;">
+    <button id="sidebar-toggle" @click="toggleSidebar()" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+    <div class="chat-title-area">
+      <div class="korah-status-dot"></div>
+      <span class="font-semibold tx text-sm">SAT Dashboard</span>
+    </div>
+  </header>
+
+  <div class="home-scroll">
+  <div class="home-page">
+
+    <!-- Hero -->
+    <section class="home-hero">
+      <div>
+        <h1 class="greeting-title">Your SAT progress, <span class="name" id="greeting-name">friend</span></h1>
+        <p class="greeting-sub">Track your strengths, target your weaknesses, and stay on pace for your goal.</p>
+        <a href="./index.html" class="cta-primary">Practice Questions</a>
+        <button id="editGoalBtn" type="button" class="cta-ghost">Edit Goal</button>
+      </div>
+
+      <div class="countdown-card">
+        <div class="label">Time left to SAT exam</div>
+        <div class="countdown-grid">
+          <div><span class="countdown-num" id="cd-days">—</span><span class="countdown-unit">days</span></div>
+          <div><span class="countdown-num" id="cd-hours">—</span><span class="countdown-unit">hrs</span></div>
+          <div><span class="countdown-num" id="cd-mins">—</span><span class="countdown-unit">min</span></div>
+          <div><span class="countdown-num" id="cd-secs">—</span><span class="countdown-unit">sec</span></div>
+        </div>
+        <div class="countdown-date" id="cd-date">Set an exam date</div>
+      </div>
+    </section>
+
+    <!-- Focus banner -->
+    <div class="score-banner">
+      <div class="banner-icon"><img src="../logo-images/newlogo2.png" alt="Focus" style="width: 100%; height: 100%; object-fit: contain;"/></div>
+      <div class="banner-text" id="focusBannerText">
+        <strong>Your next focus area:</strong> <span id="focusBannerSkill">Loading suggestions…</span>
+      </div>
+      <a href="#" id="focusBannerLink" class="banner-cta">Start practice</a>
+    </div>
+
+    <!-- Score Progress -->
+    <h2 class="home-section-head">
+      <span class="material-icons-round">trending_up</span> Score Progress
+    </h2>
+    <section class="score-progress-grid">
+      <div class="progress-card">
+        <div class="progress-card-main">
+          <div class="progress-circle" id="progressCircle">
+            <img src="../logo-images/newlogo3.png" alt="Korah" style = "height: 5rem; width: 5rem;"/>
+          </div>
+          <div class="progress-text-block">
+            <div class="progress-pct" id="progressPct">—</div>
+            <div class="progress-label" id="scoreSub"></div>
+          </div>
+        </div>
+        <!-- Reading & Writing bar -->
+        <div>
+          <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:0.375rem;">
+            <span style="font-size:0.6875rem; font-weight:700; color:rgba(56,189,248,.9); text-transform:uppercase; letter-spacing:.0.5rem;">Reading &amp; Writing</span>
+            <span style="font-size:0.75rem; font-weight:700; color:var(--tx); font-variant-numeric:tabular-nums;" id="dash-english-label">— / —</span>
+          </div>
+          <div class="score-bar">
+            <div class="score-bar-fill" id="dash-english-bar" style="width:0%; background:linear-gradient(90deg,#0ea5e9,#38bdf8,#7dd3fc); box-shadow:0 0 0.75rem rgba(56,189,248,.5);"></div>
+          </div>
+        </div>
+        <!-- Math bar -->
+        <div>
+          <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:0.375rem;">
+            <span style="font-size:0.6875rem; font-weight:700; color:rgba(16,185,129,.9); text-transform:uppercase; letter-spacing:.0.5rem;">Math</span>
+            <span style="font-size:0.75rem; font-weight:700; color:var(--tx); font-variant-numeric:tabular-nums;" id="dash-math-label">— / —</span>
+          </div>
+          <div class="score-bar">
+            <div class="score-bar-fill" id="dash-math-bar" style="width:0%; background:linear-gradient(90deg,#10b981,#34d399,#6ee7b7); box-shadow:0 0 0.75rem rgba(16,185,129,.5);"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-stack">
+        <div class="section-card reading">
+          <div>
+            <div class="sec-label">Reading & Writing</div>
+            <div class="sec-value" id="readingScore">—</div>
+            <div class="sec-sub" id="readingSub">Not yet practiced</div>
+          </div>
+          <a id="readingPracticeBtn" href="./questions.html?sections=english" class="sec-btn">Practice</a>
+        </div>
+        <div class="section-card math">
+          <div>
+            <div class="sec-label">Math</div>
+            <div class="sec-value" id="mathScore">—</div>
+            <div class="sec-sub" id="mathSub">Not yet practiced</div>
+          </div>
+          <a id="mathPracticeBtn" href="./questions.html?sections=math" class="sec-btn">Practice</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- My SAT Stats -->
+    <h2 class="home-section-head">
+      <span class="material-icons-round">insert_chart_outlined</span> My SAT Stats
+    </h2>
+    <section class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Questions Answered</div>
+        <div class="stat-value" id="stat-answered">0</div>
+        <div class="stat-sub" id="stat-answered-sub">Start practicing</div>
+        <span class="stat-watermark material-icons-round">check_circle</span>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Overall Accuracy</div>
+        <div class="stat-value" id="stat-accuracy">—</div>
+        <div class="stat-sub" id="stat-accuracy-sub">No data yet</div>
+        <span class="stat-watermark material-icons-round">bar_chart</span>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total XP</div>
+        <div class="stat-value" id="stat-xp">0</div>
+        <div class="stat-sub" id="stat-xp-sub">Level 0</div>
+        <span class="stat-watermark material-icons-round">bolt</span>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Practice Time</div>
+        <div class="stat-value" id="stat-time">0<span style="font-size:1.125rem; color:var(--tx2); margin-left:0.25rem;">min</span></div>
+        <div class="stat-sub" id="stat-time-sub">All-time</div>
+        <span class="stat-watermark material-icons-round">timer</span>
+      </div>
+    </section>
+
+    <!-- Progress Report (mirrors the mobile Analytics tab) -->
+    <h2 class="home-section-head">
+      <span class="material-icons-round">query_stats</span> Progress Report
+      <span class="range-chips" id="reportRangeChips">
+        <button type="button" data-days="7">7 days</button>
+        <button type="button" data-days="30">30 days</button>
+        <button type="button" data-days="" class="active">All time</button>
+      </span>
+    </h2>
+    <section class="report-grid" id="reportGrid">
+      <div class="panel-card trend-panel report-span2">
+        <h3>Activity Trend</h3>
+        <div class="trend-legend" id="trendLegend"></div>
+        <div class="trend-chart" id="trendChart"><div class="empty-hint" style="width:100%;">No attempts in this range yet.</div></div>
+        <div class="trend-axis" id="trendAxis"></div>
+        <div class="report-hint">Each bar is one week. Darker segments are harder questions. Wrong stacks under correct.</div>
+      </div>
+
+      <div class="panel-card pace-panel">
+        <h3>Goal Pace</h3>
+        <div id="paceBody"><div class="empty-hint">Set your scores to see your pace.</div></div>
+      </div>
+
+      <div class="panel-card momentum-panel">
+        <h3>Momentum</h3>
+        <div id="momentumBody"></div>
+        <div class="report-hint">Trailing 7 days vs the 7 before.</div>
+      </div>
+
+      <div class="panel-card time-panel">
+        <h3>Study Time by Section</h3>
+        <div class="donut-wrap">
+          <div class="report-donut" id="sectionDonut"><div class="donut-center" id="sectionDonutCenter"></div></div>
+          <div class="donut-legend" id="sectionDonutLegend"></div>
+        </div>
+        <div class="report-hint">Question-facing time only.</div>
+      </div>
+
+      <div class="panel-card time-panel">
+        <h3>Study Time by Activity</h3>
+        <div class="donut-wrap">
+          <div class="report-donut" id="activityDonut"><div class="donut-center" id="activityDonutCenter"></div></div>
+          <div class="donut-legend" id="activityDonutLegend"></div>
+        </div>
+        <div class="report-hint">Questions vs Practice Rush.</div>
+      </div>
+
+      <div class="panel-card time-panel">
+        <h3>Time per Difficulty</h3>
+        <div class="difficulty-cols" id="difficultyTimes"></div>
+        <div class="report-hint">Average time per question.</div>
+      </div>
+
+      <div class="panel-card pacing-panel">
+        <h3>Pacing</h3>
+        <div class="quad-grid" id="quadGrid"></div>
+        <div class="report-hint" id="pacingHeadline"></div>
+      </div>
+
+      <div class="panel-card neglected-panel">
+        <h3>Going Stale</h3>
+        <div id="neglectedList"><div class="empty-hint">Nothing is going stale. Nice.</div></div>
+      </div>
+
+      <div class="panel-card retry-panel">
+        <h3>First Try vs Retry</h3>
+        <div id="retryBody"><div class="empty-hint">Retry missed questions to see if reviews stick.</div></div>
+      </div>
+
+      <div class="panel-card heatmap-panel report-span2">
+        <h3>Consistency</h3>
+        <div class="heat-grid" id="heatGrid"></div>
+        <div class="heat-scale" id="heatScale"></div>
+        <div class="report-hint">Last 12 weeks of practice. One column per week.</div>
+      </div>
+    </section>
+
+    <!-- What to study next + Domain breakdown -->
+    <h2 class="home-section-head">
+      <span class="material-icons-round">flag</span> Study These Next
+      <a href="./index.html" class="head-cta">Open Question Bank</a>
+    </h2>
+    <section class="focus-grid">
+      <div class="panel-card suggestions-panel">
+        <h3>Top Suggestions</h3>
+        <div id="suggestionList">
+          <div class="empty-hint">Loading suggestions…</div>
+        </div>
+      </div>
+
+      <div class="panel-card domain-panel">
+        <h3>Accuracy by Domain</h3>
+        <div id="domainList">
+          <div class="empty-hint">No data yet.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Skills insights split -->
+    <h2 class="home-section-head">
+      <span class="material-icons-round">psychology</span> Skill Insights
+    </h2>
+    <section class="focus-grid" style="grid-template-columns: 1fr 1fr;">
+      <div class="panel-card reading-skills-panel">
+        <h3>Reading & Writing</h3>
+        <div id="readingSkillsList">
+          <div class="empty-hint">Start practicing to get suggestions.</div>
+        </div>
+      </div>
+      <div class="panel-card math-skills-panel">
+        <h3>Math</h3>
+        <div id="mathSkillsList">
+          <div class="empty-hint">Start practicing to get suggestions.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Saved Questions -->
+    <h2 class="home-section-head">
+      <span class="material-icons-round">bookmark</span> Saved Questions
+      <span id="savedCountBadge" style="display:none; margin-left:0.25rem; font-size:0.75rem; font-weight:700; background:rgba(139,92,246,.14); color:var(--p5); padding:0.125rem 0.5rem; border-radius:62.4375rem; border:1px solid rgba(139,92,246,.25);"></span>
+      <a id="practiceAllSavedLink" href="#" class="head-cta" style="display:none;">Practice All Saved</a>
+    </h2>
+    <section style="margin-bottom: 2.5rem;">
+      <div class="panel-card saved-panel">
+        <div id="savedList" class="recent-list">
+          <div class="empty-hint">Save questions during practice to review them here.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Recent activity -->
+    <h2 class="home-section-head">
+      <span class="material-icons-round">history</span> Recent Activity
+    </h2>
+    <section style="margin-bottom: 2.5rem;">
+      <div class="panel-card recent-panel">
+        <div id="recentList" class="recent-list">
+          <div class="empty-hint">No attempts logged yet.</div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+  </div>
+</main>
+</div>
+
+<!-- Edit Goal Modal -->
+<div id="sat-onboarding-modal" class="goal-modal">
+  <div class="delete-modal-content" style="max-width: 30rem;">
+    <div class="delete-modal-icon"><span class="material-icons-round" style="color: #EF5350; font-size: 1.25rem;" aria-label="target">gps_fixed</span></div>
+    <h3 class="delete-modal-title">Update your SAT goals</h3>
+    <p class="delete-modal-desc">Set current and goal scores per section.</p>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-top:0.75rem; text-align:left;">
+      <label style="display:flex; flex-direction:column; gap:0.375rem; font-size:0.75rem; font-weight:700; color:rgba(56,189,248,.9); text-transform:uppercase; letter-spacing:.0.4375rem;">
+        R&amp;W — Current
+        <input id="sat-ob-english-cur" type="number" min="200" max="800" step="10" class="create-input" style="width:100%;"/>
+      </label>
+      <label style="display:flex; flex-direction:column; gap:0.375rem; font-size:0.75rem; font-weight:700; color:rgba(56,189,248,.9); text-transform:uppercase; letter-spacing:.0.4375rem;">
+        R&amp;W — Goal
+        <input id="sat-ob-english-goal" type="number" min="200" max="800" step="10" class="create-input" style="width:100%;"/>
+      </label>
+      <label style="display:flex; flex-direction:column; gap:0.375rem; font-size:0.75rem; font-weight:700; color:rgba(16,185,129,.9); text-transform:uppercase; letter-spacing:.0.4375rem;">
+        Math — Current
+        <input id="sat-ob-math-cur" type="number" min="200" max="800" step="10" class="create-input" style="width:100%;"/>
+      </label>
+      <label style="display:flex; flex-direction:column; gap:0.375rem; font-size:0.75rem; font-weight:700; color:rgba(16,185,129,.9); text-transform:uppercase; letter-spacing:.0.4375rem;">
+        Math — Goal
+        <input id="sat-ob-math-goal" type="number" min="200" max="800" step="10" class="create-input" style="width:100%;"/>
+      </label>
+    </div>
+    <div class="delete-modal-actions">
+      <button id="sat-onboarding-skip" class="delete-modal-btn cancel t-btn">Cancel</button>
+      <button id="sat-onboarding-save" class="delete-modal-btn confirm t-btn">Save</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="../app/timer-manager.js"></script>
+<script src="../study/js/sidebar.js"></script>
+<script src="../study/js/study-api.js"></script>
+<script src="../app/korah-chat.js"></script>
+
+<script>
+  window.addEventListener('korahReady', () => {
+    if (window.KorahSidebar) {
+      window.KorahSidebar.initSidebar({
+        chatBaseUrl: "../chat.html",
+        itemPageUrl: "../study/item.html",
+        onItemClick: (id) => {
+          if (window.KorahChat && typeof window.KorahChat.switchToSession === 'function') {
+            window.KorahChat.switchToSession(id);
+          }
+        }
+      });
+    }
+  }, { once: true });
+
+  // Rotating SAT exam countdown
+  (function () {
+    const SAT_DATES = [
+      new Date('2026-06-06T08:00:00'),
+      new Date('2026-08-22T08:00:00'),
+      new Date('2026-09-12T08:00:00'),
+      new Date('2026-10-03T08:00:00'),
+      new Date('2026-11-07T08:00:00'),
+      new Date('2026-12-05T08:00:00'),
+      new Date('2027-03-06T08:00:00'),
+      new Date('2027-05-01T08:00:00'),
+      new Date('2027-06-05T08:00:00'),
+    ];
+
+    const daysEl = document.getElementById('cd-days');
+    const hrsEl = document.getElementById('cd-hours');
+    const minsEl = document.getElementById('cd-mins');
+    const secsEl = document.getElementById('cd-secs');
+    const dateEl = document.getElementById('cd-date');
+
+    function getNextDate() {
+      const now = new Date();
+      for (const date of SAT_DATES) {
+        if (date.getTime() > now.getTime()) {
+          return date;
+        }
+      }
+      return null;
+    }
+
+    function tick() {
+      const target = getNextDate();
+      if (!target) {
+        if (dateEl) dateEl.textContent = 'No upcoming dates';
+        if (daysEl) daysEl.textContent = '—';
+        if (hrsEl) hrsEl.textContent = '—';
+        if (minsEl) minsEl.textContent = '—';
+        return;
+      }
+
+      const now = new Date();
+      let diff = target.getTime() - now.getTime();
+      if (diff < 0) diff = 0;
+
+      const day = Math.floor(diff / 86400000);
+      const hr = Math.floor((diff % 86400000) / 3600000);
+      const mn = Math.floor((diff % 3600000) / 60000);
+      const sec = Math.floor((diff % 60000) / 1000);
+
+      if (daysEl) daysEl.textContent = day;
+      if (hrsEl) hrsEl.textContent = hr;
+      if (minsEl) minsEl.textContent = mn;
+      if (secsEl) secsEl.textContent = sec;
+      if (dateEl) dateEl.textContent = target.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+    }
+
+    tick();
+    setInterval(tick, 1000);
+    // The Progress Report's goal-pace card falls back to the next official
+    // SAT date when the profile has no test date saved.
+    window.KorahNextSatDate = getNextDate;
+  })();
+
+  // Streak / gems hydration from localStorage (same as home)
+  (function () {
+    const pairs = [
+      ['streak-count', 'korah_streak', 0],
+      ['gems-count', 'korah_gems', 50],
+    ];
+    pairs.forEach(([id, key, fallback]) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const v = localStorage.getItem(key);
+      el.textContent = (v !== null && v !== '') ? v : fallback;
+    });
+  })();
+</script>
+
+<script src="./js/sat-shared.js"></script>
+<script>
+  const DIFFICULTY_LABEL = { E: "Easy", M: "Medium", H: "Hard" };
+  const SECTION_LABEL = { english: "Reading & Writing", math: "Math" };
+
+  function pct(x) { return Math.round(x * 100); }
+
+  function escHtml(str) {
+    if (str == null) return "";
+    return String(str)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+
+  function safeQuestionId(id) {
+    return /^[\w-]{1,64}$/.test(id) ? id : "";
+  }
+
+  function findSectionForDomain(domainName) {
+    const cat = window.KorahSAT?.OPENSAT_CATALOG;
+    if (!cat) return null;
+    for (const s of cat.sections) {
+      if (s.domains.some((d) => d.key === domainName)) return s.key;
+    }
+    return null;
+  }
+
+  function practiceHrefForSkill(skillCd, domain, missedIds = []) {
+    const section = findSectionForDomain(domain);
+    const params = new URLSearchParams();
+
+    // If we have missed IDs, we want to practice those specifically.
+    // In this early version, we'll just pass them all if they match the domain/skill.
+    // But since we don't have metadata for all missed IDs easily available here 
+    // (without fetching details for all), we'll rely on the player's filtering or 
+    // just pass the specific IDs if we can identify them.
+    
+    // For now, let's just use the domain/skill filters and the player will load questions.
+    // IF we want "ONLY missed", we need to pass the IDs.
+    
+    if (missedIds.length > 0) {
+      params.set("questionIds", missedIds.join(","));
+    } else {
+      if (section) params.set("sections", section);
+      if (domain) params.set("domains", domain);
+      if (skillCd) params.set("skills", skillCd);
+      params.set("limit", "10");
+    }
+    return `./questions.html?${params.toString()}`;
+  }
+
+  async function renderSatDashboard() {
+    const a = window.KorahSATAnalytics;
+    if (!a) return;
+
+    const [profile, totals, suggestions, domains, recent, allMissedIds, bookmarks, missedBySection, allAttempts] = await Promise.all([
+      a.getProfile(),
+      a.getTotals(),
+      a.suggestSkills(6),
+      a.getDomainBreakdown(),
+      a.getRecentAttempts(8),
+      a.getMissedQuestionIds(100),
+      a.getBookmarks(),
+      a.getMissedBySection(50),
+      a.getAllAttempts(),
+    ]);
+
+    // Helper to filter missed IDs by domain/skill (requires metadata which we have in 'recent' or would need to fetch)
+    // For this early version, we'll just provide a "Review All Missed" button 
+    // and make the individual skill buttons focus on those skills normally, 
+    // OR we can try to filter 'recent' for missed ones.
+    const missedAttempts = recent.filter(r => !r.correct);
+
+    // Score Progress
+    const subEl    = document.getElementById("scoreSub");
+    const pctEl    = document.getElementById("progressPct");
+    const circleEl = document.getElementById("progressCircle");
+    const enCur    = profile?.englishScore ?? null;
+    const enGoal   = profile?.englishGoal  ?? null;
+    const maCur    = profile?.mathScore    ?? null;
+    const maGoal   = profile?.mathGoal     ?? null;
+    const cur      = profile?.currentScore ?? null;
+    const goal     = profile?.goalScore    ?? null;
+
+    const enBarEl   = document.getElementById("dash-english-bar");
+    const enLabelEl = document.getElementById("dash-english-label");
+    if (enCur && enGoal) {
+      enBarEl.style.width   = `${Math.round(Math.max(0, Math.min(1, (enCur - 200) / (enGoal - 200))) * 100)}%`;
+      enLabelEl.textContent = `${enCur} / ${enGoal}`;
+    } else { enLabelEl.textContent = enGoal ? `— / ${enGoal}` : "— / —"; }
+
+    const maBarEl   = document.getElementById("dash-math-bar");
+    const maLabelEl = document.getElementById("dash-math-label");
+    if (maCur && maGoal) {
+      maBarEl.style.width   = `${Math.round(Math.max(0, Math.min(1, (maCur - 200) / (maGoal - 200))) * 100)}%`;
+      maLabelEl.textContent = `${maCur} / ${maGoal}`;
+    } else { maLabelEl.textContent = maGoal ? `— / ${maGoal}` : "— / —"; }
+
+    const totalRemaining = ((enGoal ?? 0) - (enCur ?? 0)) + ((maGoal ?? 0) - (maCur ?? 0));
+    if (enGoal && maGoal && cur && goal) {
+      const reached = totalRemaining <= 0;
+      if (reached) circleEl.classList.add("reached");
+      pctEl.textContent = reached ? "Goals Reached!" : `${totalRemaining} Points To Go!`;
+      subEl.textContent = `${cur} → ${goal}`;
+    } else if (goal) {
+      pctEl.textContent = "Goal Set!";
+      subEl.textContent = `— → ${goal}`;
+    } else {
+      pctEl.textContent = "No Goal Yet";
+      subEl.textContent = "";
+    }
+
+    // Totals → My SAT Stats
+    const answered = totals?.answered || 0;
+    const correct = totals?.correct || 0;
+    const acc = answered > 0 ? correct / answered : 0;
+    const totalXP = totals?.totalXP || 0;
+    const level = Math.floor(totalXP / 1000);
+    const practiceSec = totals?.practiceTime || 0;
+    const practiceMin = Math.floor(practiceSec / 60);
+    console.log("[SAT dashboard] totals.practiceTime =", practiceSec, "seconds");
+
+    document.getElementById("stat-answered").textContent = answered;
+    const answeredSub = document.getElementById("stat-answered-sub");
+    const missedCount = totals?.incorrect || 0;
+    
+    if (answered > 0) {
+      answeredSub.textContent = `${correct} correct · ${missedCount} missed`;
+      if (missedCount > 0 && allMissedIds.length > 0) {
+        // Add a review button if not already present
+        let reviewLink = document.getElementById("stat-review-link");
+        if (!reviewLink) {
+          reviewLink = document.createElement("a");
+          reviewLink.id = "stat-review-link";
+          reviewLink.className = "practice-btn";
+          reviewLink.style.marginTop = "0.5rem";
+          reviewLink.style.display = "inline-flex";
+          answeredSub.parentNode.appendChild(reviewLink);
+        }
+        const params = new URLSearchParams();
+        params.set("questionIds", allMissedIds.slice(0, 20).join(","));
+        reviewLink.href = `./questions.html?${params.toString()}`;
+        reviewLink.textContent = `Review ${allMissedIds.length} Errors`;
+      }
+    } else {
+      answeredSub.textContent = "Start practicing";
+    }
+
+
+    document.getElementById("stat-accuracy").textContent = answered > 0 ? `${pct(acc)}%` : "—";
+    document.getElementById("stat-accuracy-sub").textContent = answered > 0
+      ? `Across ${answered} question${answered === 1 ? "" : "s"}`
+      : "No data yet";
+
+    document.getElementById("stat-xp").textContent = totalXP.toLocaleString();
+    document.getElementById("stat-xp-sub").textContent = `Level ${level}`;
+
+    if (practiceSec > 0 && practiceSec < 60) {
+      document.getElementById("stat-time").innerHTML = `${practiceSec}<span style="font-size:1.125rem; color:var(--tx2); margin-left:0.25rem;">sec</span>`;
+    } else {
+      document.getElementById("stat-time").innerHTML = `${practiceMin}<span style="font-size:1.125rem; color:var(--tx2); margin-left:0.25rem;">min</span>`;
+    }
+    document.getElementById("stat-time-sub").textContent = "All-time";
+
+    // Section breakdown
+    const readingDomains = domains.filter(d => d.section === "english");
+    const mathDomains = domains.filter(d => d.section === "math");
+
+    const totalAttemptsSum = (arr) => arr.reduce((s, d) => s + d.attempts, 0);
+    const weightedAcc = (arr) => {
+      const t = totalAttemptsSum(arr);
+      if (!t) return 0;
+      return arr.reduce((s, d) => s + d.accuracy * d.attempts, 0) / t;
+    };
+
+    const rAttempts = totalAttemptsSum(readingDomains);
+    const mAttempts = totalAttemptsSum(mathDomains);
+    const rAcc = weightedAcc(readingDomains);
+    const mAcc = weightedAcc(mathDomains);
+
+    document.getElementById("readingScore").textContent = rAttempts > 0 ? `${pct(rAcc)}%` : "—";
+    document.getElementById("readingSub").textContent = rAttempts > 0
+      ? `${rAttempts} question${rAttempts === 1 ? "" : "s"}`
+      : "Not yet practiced";
+    document.getElementById("mathScore").textContent = mAttempts > 0 ? `${pct(mAcc)}%` : "—";
+    document.getElementById("mathSub").textContent = mAttempts > 0
+      ? `${mAttempts} question${mAttempts === 1 ? "" : "s"}`
+      : "Not yet practiced";
+
+    // Section card practice buttons — link to missed questions if any, else full section
+    const readingBtn = document.getElementById("readingPracticeBtn");
+    const mathBtn    = document.getElementById("mathPracticeBtn");
+    const enMissed = missedBySection?.english || [];
+    const maMissed = missedBySection?.math    || [];
+    if (enMissed.length > 0) {
+      readingBtn.href = `./questions.html?questionIds=${enMissed.map(encodeURIComponent).join(",")}`;
+      readingBtn.textContent = `Review ${enMissed.length} Missed`;
+    } else {
+      readingBtn.href = "./questions.html?sections=english";
+      readingBtn.textContent = "Practice";
+    }
+    if (maMissed.length > 0) {
+      mathBtn.href = `./questions.html?questionIds=${maMissed.map(encodeURIComponent).join(",")}`;
+      mathBtn.textContent = `Review ${maMissed.length} Missed`;
+    } else {
+      mathBtn.href = "./questions.html?sections=math";
+      mathBtn.textContent = "Practice";
+    }
+
+    // Focus banner — top suggestion
+    const top = suggestions[0];
+    const bannerSkill = document.getElementById("focusBannerSkill");
+    const bannerLink = document.getElementById("focusBannerLink");
+    if (top) {
+      const accBit = top.attempts > 0 ? `${pct(top.accuracy)}% accuracy over ${top.attempts} attempt${top.attempts === 1 ? "" : "s"}` : "not yet practiced";
+      bannerSkill.innerHTML = "";
+      const _bsStrong = document.createElement("strong");
+      _bsStrong.textContent = top.skillName;
+      const _bsSpan = document.createElement("span");
+      _bsSpan.style.color = "var(--tx2)";
+      _bsSpan.textContent = `— ${top.domain} · ${accBit}`;
+      bannerSkill.appendChild(_bsStrong);
+      bannerSkill.append(" ");
+      bannerSkill.appendChild(_bsSpan);
+      
+      // If there are missed IDs for this specific skill, use them
+      const skillMissed = missedAttempts.filter(m => m.skillCd === top.skillCd).map(m => m.questionId);
+      bannerLink.href = practiceHrefForSkill(top.skillCd, top.domain, skillMissed);
+      bannerLink.textContent = skillMissed.length > 0 ? "Review Mistakes" : "Start practice";
+    } else {
+      bannerSkill.textContent = "Practice a few questions and we'll pinpoint where to focus.";
+      bannerLink.href = "./index.html";
+      bannerLink.textContent = "Open question bank";
+    }
+
+    // Suggestions list (with rank)
+    const renderRanked = (skills) => skills.map((s, i) => {
+      const accStr = s.attempts > 0 ? `${pct(s.accuracy)}% · ${s.attempts} attempt${s.attempts === 1 ? "" : "s"}` : "Not yet practiced";
+      const skillMissed = missedAttempts.filter(m => m.skillCd === s.skillCd).map(m => m.questionId);
+      return `
+        <div class="skill-row">
+          <span class="rank">${i + 1}</span>
+          <div class="skill-meta">
+            <div class="skill-name">${escHtml(s.skillName)}</div>
+            <div class="skill-sub">${escHtml(s.domain)} · ${escHtml(SECTION_LABEL[s.section] || s.section)}</div>
+          </div>
+          <div class="skill-acc">${accStr}</div>
+          <a class="practice-btn" href="${practiceHrefForSkill(s.skillCd, s.domain, skillMissed)}">
+            ${skillMissed.length > 0 ? "Review" : "Practice"}
+          </a>
+        </div>`;
+    }).join("");
+
+    const suggEl = document.getElementById("suggestionList");
+    suggEl.innerHTML = suggestions.length
+      ? renderRanked(suggestions)
+      : `<div class="empty-hint">Start practicing to get suggestions.</div>`;
+
+    // Skills insights split
+    const renderList = (skills) => {
+      if (!skills.length) return `<div class="empty-hint">No data yet.</div>`;
+      return skills.map((s) => {
+        const accStr = s.attempts > 0 ? `${pct(s.accuracy)}% · ${s.attempts} attempts` : "Not yet practiced";
+        const skillMissed = missedAttempts.filter(m => m.skillCd === s.skillCd).map(m => m.questionId);
+        return `
+          <div class="skill-row">
+            <div class="skill-meta">
+              <div class="skill-name">${escHtml(s.skillName)}</div>
+              <div class="skill-sub">${escHtml(s.domain)}</div>
+            </div>
+            <div class="skill-acc">${accStr}</div>
+            <a class="practice-btn" href="${practiceHrefForSkill(s.skillCd, s.domain, skillMissed)}">
+              ${skillMissed.length > 0 ? "Review" : "Practice"}
+            </a>
+          </div>`;
+      }).join("");
+    };
+
+
+    document.getElementById("readingSkillsList").innerHTML = renderList(
+      suggestions.filter(s => s.section === 'english').slice(0, 3)
+    );
+    document.getElementById("mathSkillsList").innerHTML = renderList(
+      suggestions.filter(s => s.section === 'math').slice(0, 3)
+    );
+
+    // Domain breakdown
+    const domEl = document.getElementById("domainList");
+    if (!domains.length) {
+      domEl.innerHTML = `<div class="empty-hint">No data yet.</div>`;
+    } else {
+      const sorted = [...domains].sort((x, y) => y.attempts - x.attempts);
+      domEl.innerHTML = sorted.map((d) => `
+        <div class="domain-bar-row">
+          <div class="domain-bar-label">
+            <span>${escHtml(d.domain)}</span>
+            <span>${pct(d.accuracy)}% · ${d.attempts}</span>
+          </div>
+          <div class="domain-bar"><div class="domain-bar-fill" style="width: ${pct(d.accuracy)}%;"></div></div>
+        </div>
+      `).join("");
+    }
+
+    // Saved Questions
+    const savedEl = document.getElementById("savedList");
+    const savedBadge = document.getElementById("savedCountBadge");
+    const practiceAllLink = document.getElementById("practiceAllSavedLink");
+    const sortedBookmarks = [...bookmarks].sort((a, b) => (b.ts || "").localeCompare(a.ts || ""));
+    if (!sortedBookmarks.length) {
+      savedEl.innerHTML = `<div class="empty-hint">Save questions during practice to review them here.</div>`;
+      if (savedBadge) savedBadge.style.display = "none";
+      if (practiceAllLink) practiceAllLink.style.display = "none";
+    } else {
+      if (savedBadge) { savedBadge.textContent = sortedBookmarks.length; savedBadge.style.display = ""; }
+      if (practiceAllLink) {
+        const allIds = sortedBookmarks.map(b => safeQuestionId(b.questionId)).filter(Boolean).slice(0, 50);
+        practiceAllLink.href = `./questions.html?questionIds=${allIds.map(encodeURIComponent).join(",")}`;
+        practiceAllLink.style.display = "";
+      }
+      savedEl.innerHTML = sortedBookmarks.slice(0, 10).map((b) => {
+        const when = new Date(b.ts);
+        const timeStr = when.toLocaleString(undefined, { month: "short", day: "numeric" });
+        const sectionLabel = SECTION_LABEL[b.section] || b.section || "—";
+        return `
+          <div class="recent-row">
+            <div class="recent-icon"><span class="material-icons-round" style="color: var(--p5); font-size: 1rem;" aria-label="bookmark">bookmark</span></div>
+            <div class="skill-meta">
+              <div class="skill-name">${escHtml(b.domain) || "—"}</div>
+              <div class="skill-sub">${escHtml(sectionLabel)} · Saved ${escHtml(timeStr)}</div>
+            </div>
+            <a class="practice-btn" href="./questions.html?questionIds=${encodeURIComponent(safeQuestionId(b.questionId))}">Practice</a>
+          </div>`;
+      }).join("");
+    }
+
+    // Recent
+    const recEl = document.getElementById("recentList");
+    if (!recent.length) {
+      recEl.innerHTML = `<div class="empty-hint">No attempts logged yet.</div>`;
+    } else {
+      recEl.innerHTML = recent.map((r) => {
+        const when = new Date(r.ts);
+        const timeStr = when.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+        const icon = r.correct ? '<span class="material-icons-round" style="color: var(--grn); font-size: 1rem;" aria-label="correct">check_circle</span>' : '<span class="material-icons-round" style="color: var(--red); font-size: 1rem;" aria-label="incorrect">cancel</span>';
+        return `
+          <div class="recent-row">
+            <div class="recent-icon">${icon}</div>
+            <div class="skill-meta">
+              <div class="skill-name">${escHtml(r.domain) || "—"}</div>
+              <div class="skill-sub">${escHtml(DIFFICULTY_LABEL[r.difficulty] || r.difficulty)} · ${escHtml(timeStr)}</div>
+            </div>
+            <div class="skill-acc" style="color: ${r.correct ? "#22c55e" : "#ef4444"};">${r.correct ? "+" : ""}${r.xp} XP</div>
+          </div>`;
+      }).join("");
+    }
+
+    // Progress Report (parsed once; range chips re-render from this cache)
+    REPORT.profile = profile;
+    REPORT.attempts = allAttempts
+      .map((r) => ({ ...r, _d: new Date(r.ts) }))
+      .filter((r) => !isNaN(r._d.getTime()));
+    renderSatReport();
+  }
+  window.renderSatDashboard = renderSatDashboard;
+
+  // ── Progress Report (mirrors the mobile Analytics tab) ──
+  // One cache of the full attempt log; every panel below derives from it in
+  // memory, so the range chips re-render instantly with no refetch.
+  const REPORT = { attempts: [], profile: null, days: null };
+
+  function reportFiltered() {
+    if (!REPORT.days) return REPORT.attempts;
+    const cutoff = Date.now() - REPORT.days * 86400000;
+    return REPORT.attempts.filter((r) => r._d.getTime() >= cutoff);
+  }
+
+  function fmtDur(sec) {
+    if (sec < 60) return `${sec}s`;
+    const m = Math.floor(sec / 60);
+    if (m < 60) return `${m}m`;
+    return `${Math.floor(m / 60)}h ${m % 60}m`;
+  }
+  function fmtShortDur(sec) {
+    if (sec < 60) return `${sec}s`;
+    return `${Math.floor(sec / 60)}m ${String(sec % 60).padStart(2, "0")}s`;
+  }
+  function catalogSkills() {
+    const cat = window.KorahSAT?.OPENSAT_CATALOG;
+    if (!cat) return [];
+    const out = [];
+    for (const s of cat.sections)
+      for (const d of s.domains)
+        for (const sk of d.skills)
+          out.push({ skillCd: sk.code, skillName: sk.key, domain: d.key, section: s.key });
+    return out;
+  }
+
+  function renderSatReport() {
+    const grid = document.getElementById("reportGrid");
+    const head = grid?.previousElementSibling;
+    if (!grid) return;
+    const hasData = REPORT.attempts.length > 0;
+    grid.style.display = hasData ? "" : "none";
+    if (head) head.style.display = hasData ? "" : "none";
+    if (!hasData) return;
+
+    const filtered = reportFiltered();
+    const timeOf = (r) => Math.max(0, Number(r.timeSpent) || 0);
+    const diffOf = (r) => (["E", "M", "H"].includes(r.difficulty) ? r.difficulty : "E");
+
+    // ── Activity trend ──
+    const correctCount = filtered.filter((r) => r.correct).length;
+    const wrongCount = filtered.length - correctCount;
+    document.getElementById("trendLegend").innerHTML = `
+      <span class="trend-chip good"><span class="material-icons-round" style="font-size:0.875rem;">check_circle</span>${correctCount} Correct</span>
+      <span class="trend-chip bad"><span class="material-icons-round" style="font-size:0.875rem;">cancel</span>${wrongCount} Wrong</span>`;
+
+    const weekKey = (d) => { const w = new Date(d); w.setHours(0, 0, 0, 0); w.setDate(w.getDate() - w.getDay()); return w.getTime(); };
+    const weekMap = new Map();
+    for (const r of filtered) {
+      const k = weekKey(r._d);
+      const b = weekMap.get(k) || { correct: { E: 0, M: 0, H: 0 }, wrong: { E: 0, M: 0, H: 0 } };
+      (r.correct ? b.correct : b.wrong)[diffOf(r)]++;
+      weekMap.set(k, b);
+    }
+    const chartEl = document.getElementById("trendChart");
+    const axisEl = document.getElementById("trendAxis");
+    const weekKeys = [...weekMap.keys()].sort((a, b) => a - b);
+    if (!weekKeys.length) {
+      chartEl.innerHTML = `<div class="empty-hint" style="width:100%;">No attempts in this range yet.</div>`;
+      axisEl.innerHTML = "";
+    } else {
+      const buckets = [];
+      const cursor = new Date(weekKeys[0]);
+      while (cursor.getTime() <= weekKeys[weekKeys.length - 1]) {
+        buckets.push({ t: cursor.getTime(), b: weekMap.get(cursor.getTime()) || null });
+        cursor.setDate(cursor.getDate() + 7);
+      }
+      const totalOf = (b) => b ? ["E", "M", "H"].reduce((s, d) => s + b.correct[d] + b.wrong[d], 0) : 0;
+      const maxTotal = Math.max(1, ...buckets.map((x) => totalOf(x.b)));
+      // Stack (bottom → top): wrong H/M/E, then correct H/M/E — DOM renders
+      // top-first, so emit in reverse. Harder = darker.
+      const SEGS = [
+        ["correct", "E", "rgba(34,197,94,.45)"], ["correct", "M", "rgba(34,197,94,.72)"], ["correct", "H", "rgba(34,197,94,1)"],
+        ["wrong", "E", "rgba(239,68,68,.45)"], ["wrong", "M", "rgba(239,68,68,.72)"], ["wrong", "H", "rgba(239,68,68,1)"],
+      ];
+      chartEl.innerHTML = buckets.map(({ b }) => {
+        const segs = SEGS.map(([kind, d, color]) => {
+          const n = b ? b[kind][d] : 0;
+          if (!n) return "";
+          return `<div class="trend-seg" style="height:${(n / maxTotal * 100).toFixed(1)}%; background:${color};"></div>`;
+        }).join("");
+        return `<div class="trend-col">${segs}</div>`;
+      }).join("");
+      const fmtWeek = (t) => new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+      axisEl.innerHTML = `<span>${fmtWeek(buckets[0].t)}</span><span>${fmtWeek(buckets[buckets.length - 1].t)}</span>`;
+    }
+
+    // ── Goal pace ──
+    const p = REPORT.profile;
+    const paceEl = document.getElementById("paceBody");
+    const gap = (p?.currentScore != null && p?.goalScore != null) ? Math.max(0, p.goalScore - p.currentScore) : null;
+    if (gap == null) {
+      paceEl.innerHTML = `<div class="empty-hint">Set your current and goal scores (Edit Goal above) and this card starts pacing you to test day.</div>`;
+    } else {
+      let daysLeft = null;
+      if (p?.testDate) {
+        const td = new Date(p.testDate);
+        if (!isNaN(td)) daysLeft = Math.max(0, Math.ceil((td.getTime() - Date.now()) / 86400000));
+      }
+      if (daysLeft == null && typeof window.KorahNextSatDate === "function") {
+        const nd = window.KorahNextSatDate();
+        if (nd) daysLeft = Math.max(0, Math.ceil((nd.getTime() - Date.now()) / 86400000));
+      }
+      const recent14 = REPORT.attempts.filter((r) => r._d.getTime() >= Date.now() - 14 * 86400000).length;
+      const pace = (recent14 / 14).toFixed(1);
+      let cells = `
+        <div class="mini-stat"><div class="m-label">Points to go</div><div class="m-value">${gap <= 0 ? "Done" : gap}</div></div>`;
+      if (daysLeft != null) cells += `
+        <div class="mini-stat"><div class="m-label">Days left</div><div class="m-value">${daysLeft}</div></div>`;
+      cells += `
+        <div class="mini-stat"><div class="m-label">Q/day, last 14</div><div class="m-value">${pace}</div></div>`;
+      let target = "";
+      if (gap > 0) {
+        const raw = gap / Math.max(1, daysLeft ?? 60) * 1.5;
+        const suggested = Math.ceil(Math.min(60, Math.max(8, raw)) / 5) * 5;
+        target = `<div class="pace-target">Aim for ~${suggested} questions a day</div>
+          <div class="report-hint">A rough pace from your score gap and calendar, not a promise. Consistency beats volume.</div>`;
+      } else {
+        target = `<div class="pace-target">Goal reached! Keep your edge sharp.</div>`;
+      }
+      paceEl.innerHTML = `<div class="mini-grid three">${cells}</div>${target}`;
+    }
+
+    // ── Momentum (always trailing windows, independent of range) ──
+    const now = Date.now();
+    const thisWeek = REPORT.attempts.filter((r) => r._d.getTime() >= now - 7 * 86400000);
+    const lastWeek = REPORT.attempts.filter((r) => r._d.getTime() >= now - 14 * 86400000 && r._d.getTime() < now - 7 * 86400000);
+    const accOf = (list) => list.length ? list.filter((r) => r.correct).length / list.length : null;
+    const accThis = accOf(thisWeek), accLast = accOf(lastWeek);
+    const volDelta = thisWeek.length - lastWeek.length;
+    const accStr = (v) => v == null ? "No attempts" : `${pct(v)}% accuracy`;
+    let deltas = `<span class="delta-chip ${volDelta > 0 ? "up" : volDelta < 0 ? "down" : "flat"}">
+      <span class="material-icons-round">${volDelta > 0 ? "trending_up" : volDelta < 0 ? "trending_down" : "trending_flat"}</span>
+      ${volDelta === 0 ? "Same volume" : `${Math.abs(volDelta)} ${volDelta > 0 ? "more" : "fewer"} questions`}</span>`;
+    if (accThis != null && accLast != null) {
+      const pts = Math.round((accThis - accLast) * 100);
+      deltas += `<span class="delta-chip ${pts > 0 ? "up" : pts < 0 ? "down" : "flat"}">
+        <span class="material-icons-round">${pts > 0 ? "trending_up" : pts < 0 ? "trending_down" : "trending_flat"}</span>
+        ${pts === 0 ? "Accuracy flat" : `Accuracy ${pts > 0 ? "up" : "down"} ${Math.abs(pts)}%`}</span>`;
+    }
+    document.getElementById("momentumBody").innerHTML = `
+      <div class="mini-grid">
+        <div class="mini-stat hl"><div class="m-label">This week</div><div class="m-value">${thisWeek.length}</div><div class="m-sub">${accStr(accThis)}</div></div>
+        <div class="mini-stat"><div class="m-label">Last week</div><div class="m-value">${lastWeek.length}</div><div class="m-sub">${accStr(accLast)}</div></div>
+      </div>
+      <div class="delta-row">${deltas}</div>`;
+
+    // ── Study time donuts ──
+    const donut = (donutId, centerId, legendId, slices, centerLabel) => {
+      const total = slices.reduce((s, x) => s + x.v, 0);
+      const donutEl = document.getElementById(donutId);
+      if (total > 0) {
+        let acc = 0;
+        const stops = slices.filter((x) => x.v > 0).map((x) => {
+          const from = acc / total * 100; acc += x.v;
+          return `${x.color} ${from.toFixed(2)}% ${(acc / total * 100).toFixed(2)}%`;
+        });
+        donutEl.style.background = `conic-gradient(${stops.join(", ")})`;
+      } else {
+        donutEl.style.background = "rgba(139,92,246,.12)";
+      }
+      document.getElementById(centerId).innerHTML =
+        `<div class="d-value">${fmtDur(total)}</div><div class="d-label">${centerLabel}</div>`;
+      document.getElementById(legendId).innerHTML = slices.map((x) => `
+        <div class="l-row"><span class="l-dot" style="background:${x.color};"></span>${escHtml(x.label)}<span class="l-val">${fmtDur(x.v)}</span></div>`).join("");
+    };
+    const secSum = (pred) => filtered.filter(pred).reduce((s, r) => s + timeOf(r), 0);
+    donut("sectionDonut", "sectionDonutCenter", "sectionDonutLegend", [
+      { label: "English", v: secSum((r) => r.section === "english"), color: "#38bdf8" },
+      { label: "Math", v: secSum((r) => r.section === "math"), color: "#10b981" },
+    ], "question time");
+    donut("activityDonut", "activityDonutCenter", "activityDonutLegend", [
+      { label: "Questions", v: secSum((r) => r.mode !== "rush"), color: "#fb923c" },
+      { label: "Rush", v: secSum((r) => r.mode === "rush"), color: "#e879f9" },
+    ], "total");
+
+    // ── Time per difficulty ──
+    const DIFF_META = { E: ["eco", "#22c55e", "Easy"], M: ["local_fire_department", "#f59e0b", "Medium"], H: ["bolt", "#ef4444", "Hard"] };
+    const diffCol = (label, color, section) => {
+      const rows = ["E", "M", "H"].map((d) => {
+        const subset = filtered.filter((r) => r.section === section && diffOf(r) === d && timeOf(r) > 0);
+        const avg = subset.length ? Math.round(subset.reduce((s, r) => s + timeOf(r), 0) / subset.length) : 0;
+        const [icon, c, name] = DIFF_META[d];
+        return `<div class="d-row"><span class="material-icons-round" style="color:${c};">${icon}</span>${name}
+          <span class="d-val">${subset.length ? fmtShortDur(avg) : "—"}</span></div>`;
+      }).join("");
+      return `<div><div class="d-col-head" style="color:${color};">${label}</div>${rows}</div>`;
+    };
+    document.getElementById("difficultyTimes").innerHTML =
+      diffCol("Reading & Writing", "rgba(56,189,248,.9)", "english") + diffCol("Math", "rgba(16,185,129,.9)", "math");
+
+    // ── Pacing quadrant (fast/slow vs your own median per difficulty) ──
+    const timed = filtered.filter((r) => timeOf(r) > 0);
+    const quadEl = document.getElementById("quadGrid");
+    const headlineEl = document.getElementById("pacingHeadline");
+    if (timed.length < 4) {
+      quadEl.innerHTML = "";
+      headlineEl.textContent = "Answer a few timed questions to see your pacing.";
+    } else {
+      const medians = {};
+      for (const d of ["E", "M", "H"]) {
+        const times = timed.filter((r) => diffOf(r) === d).map(timeOf).sort((a, b) => a - b);
+        if (times.length) medians[d] = times[Math.floor(times.length / 2)];
+      }
+      const q = { fastRight: 0, fastWrong: 0, slowRight: 0, slowWrong: 0 };
+      for (const r of timed) {
+        const median = medians[diffOf(r)];
+        if (median == null) continue;
+        const fast = timeOf(r) < median;
+        if (fast && r.correct) q.fastRight++;
+        else if (fast && !r.correct) q.fastWrong++;
+        else if (!fast && r.correct) q.slowRight++;
+        else q.slowWrong++;
+      }
+      const total = q.fastRight + q.fastWrong + q.slowRight + q.slowWrong;
+      const tile = (label, icon, n, rgb) => `
+        <div class="quad-tile" style="background:rgba(${rgb},.1); border-color:rgba(${rgb},.3);">
+          <div class="q-label" style="color:rgb(${rgb});"><span class="material-icons-round">${icon}</span>${label}</div>
+          <div class="q-value">${total ? Math.round(n / total * 100) : 0}%</div>
+          <div class="q-sub">${n} question${n === 1 ? "" : "s"}</div>
+        </div>`;
+      quadEl.innerHTML =
+        tile("Quick + right", "bolt", q.fastRight, "34,197,94") +
+        tile("Quick + wrong", "error_outline", q.fastWrong, "239,68,68") +
+        tile("Slow + right", "schedule", q.slowRight, "45,212,191") +
+        tile("Slow + wrong", "hourglass_bottom", q.slowWrong, "245,158,11");
+      const problems = [[q.fastWrong, "You miss most when you answer fast. Slow down and re-read."],
+                        [q.slowWrong, "Long, wrong answers are your biggest leak. Flag and move on."],
+                        [q.slowRight, "Accuracy is there. Now work on speed."]];
+      problems.sort((a, b) => b[0] - a[0]);
+      headlineEl.textContent = (total && problems[0][0] / total >= 0.25) ? problems[0][1] : "Balanced pacing. Keep it up.";
+    }
+
+    // ── Going stale ──
+    const lastSeen = new Map();
+    for (const r of REPORT.attempts) {   // newest first, so first write wins
+      if (r.skillCd && !lastSeen.has(r.skillCd)) lastSeen.set(r.skillCd, r._d.getTime());
+    }
+    const stale = [], untouched = [];
+    for (const sk of catalogSkills()) {
+      const seen = lastSeen.get(sk.skillCd);
+      if (seen != null) {
+        const days = Math.floor((now - seen) / 86400000);
+        if (days >= 10) stale.push({ ...sk, days });
+      } else {
+        untouched.push({ ...sk, days: null });
+      }
+    }
+    stale.sort((a, b) => b.days - a.days);
+    const neglected = stale.concat(untouched).slice(0, 3);
+    document.getElementById("neglectedList").innerHTML = neglected.length ? neglected.map((sk) => `
+      <div class="skill-row">
+        <div class="recent-icon"><span class="material-icons-round" style="color:#a78bfa; font-size:1rem;">bedtime</span></div>
+        <div class="skill-meta">
+          <div class="skill-name">${escHtml(sk.skillName)}</div>
+          <div class="skill-sub">${escHtml(sk.domain)} · ${sk.days != null ? `${sk.days} days ago` : "never attempted"}</div>
+        </div>
+        <a class="practice-btn" href="${practiceHrefForSkill(sk.skillCd, sk.domain)}">Practice</a>
+      </div>`).join("") : `<div class="empty-hint">Nothing is going stale. Nice.</div>`;
+
+    // ── First try vs retry ──
+    let firstA = 0, firstC = 0, retryA = 0, retryC = 0;
+    const seenQ = new Set();
+    for (let i = filtered.length - 1; i >= 0; i--) {   // oldest first
+      const r = filtered[i];
+      const id = r.questionId || "";
+      if (!id) continue;
+      if (!seenQ.has(id)) { seenQ.add(id); firstA++; if (r.correct) firstC++; }
+      else { retryA++; if (r.correct) retryC++; }
+    }
+    const retryEl = document.getElementById("retryBody");
+    if (retryA > 0 && firstA > 0) {
+      const f = firstC / firstA, rt = retryC / retryA;
+      retryEl.innerHTML = `
+        <div class="mini-grid">
+          <div class="mini-stat"><div class="m-label">First try</div><div class="m-value">${pct(f)}%</div><div class="m-sub">${firstA} question${firstA === 1 ? "" : "s"}</div></div>
+          <div class="mini-stat"><div class="m-label">Retries</div><div class="m-value">${pct(rt)}%</div><div class="m-sub">${retryA} attempt${retryA === 1 ? "" : "s"}</div></div>
+        </div>
+        <div class="report-hint">${rt >= f
+          ? "Retries beat first tries. Reviews are sticking, so keep redoing misses."
+          : "Retries score below first tries. Read the explanation before re-attempting."}</div>`;
+    } else {
+      retryEl.innerHTML = `<div class="empty-hint">Retry missed questions to see if reviews stick.</div>`;
+    }
+
+    // ── Consistency heatmap (last 12 weeks, all attempts) ──
+    const perDay = new Map();
+    for (const r of REPORT.attempts) {
+      const d = new Date(r._d); d.setHours(0, 0, 0, 0);
+      perDay.set(d.getTime(), (perDay.get(d.getTime()) || 0) + 1);
+    }
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const thisWeekStart = new Date(today); thisWeekStart.setDate(thisWeekStart.getDate() - thisWeekStart.getDay());
+    const maxHeat = Math.max(1, ...perDay.values());
+    let heatHtml = "";
+    for (let w = -11; w <= 0; w++) {
+      const ws = new Date(thisWeekStart); ws.setDate(ws.getDate() + w * 7);
+      let cells = "";
+      for (let d = 0; d < 7; d++) {
+        const day = new Date(ws); day.setDate(day.getDate() + d);
+        if (day.getTime() > today.getTime()) { cells += `<div class="heat-cell" style="background:transparent;"></div>`; continue; }
+        const n = perDay.get(day.getTime()) || 0;
+        const bg = n ? `rgba(34,197,94,${(0.25 + (n / maxHeat) * 0.75).toFixed(2)})` : "";
+        cells += `<div class="heat-cell"${bg ? ` style="background:${bg};"` : ""} title="${day.toLocaleDateString()} · ${n} question${n === 1 ? "" : "s"}"></div>`;
+      }
+      heatHtml += `<div class="heat-week">${cells}</div>`;
+    }
+    document.getElementById("heatGrid").innerHTML = heatHtml;
+    document.getElementById("heatScale").innerHTML = `Less
+      <div class="heat-cell"></div>
+      <div class="heat-cell" style="background:rgba(34,197,94,.4);"></div>
+      <div class="heat-cell" style="background:rgba(34,197,94,.7);"></div>
+      <div class="heat-cell" style="background:rgba(34,197,94,1);"></div> More`;
+  }
+
+  // Range chips
+  document.getElementById("reportRangeChips")?.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-days]");
+    if (!btn) return;
+    document.querySelectorAll("#reportRangeChips button").forEach((b) => b.classList.toggle("active", b === btn));
+    REPORT.days = btn.dataset.days ? Number(btn.dataset.days) : null;
+    renderSatReport();
+  });
+
+  (function () {
+    const modal       = document.getElementById("sat-onboarding-modal");
+    const enCurIn     = document.getElementById("sat-ob-english-cur");
+    const enGoalIn    = document.getElementById("sat-ob-english-goal");
+    const maCurIn     = document.getElementById("sat-ob-math-cur");
+    const maGoalIn    = document.getElementById("sat-ob-math-goal");
+    document.getElementById("editGoalBtn").addEventListener("click", async () => {
+      const p = await window.KorahSATAnalytics?.getProfile();
+      enCurIn.value  = p?.englishScore ?? "";
+      enGoalIn.value = p?.englishGoal  ?? "";
+      maCurIn.value  = p?.mathScore    ?? "";
+      maGoalIn.value = p?.mathGoal     ?? "";
+      modal.classList.add("show");
+    });
+    document.getElementById("sat-onboarding-skip").addEventListener("click", () => modal.classList.remove("show"));
+    document.getElementById("sat-onboarding-save").addEventListener("click", async () => {
+      const englishScore = enCurIn.value  ? Number(enCurIn.value)  : null;
+      const englishGoal  = enGoalIn.value ? Number(enGoalIn.value) : null;
+      const mathScore    = maCurIn.value  ? Number(maCurIn.value)  : null;
+      const mathGoal     = maGoalIn.value ? Number(maGoalIn.value) : null;
+      if (!englishGoal && !mathGoal) { enGoalIn.focus(); return; }
+      await window.KorahSATAnalytics?.saveProfile({ englishScore, englishGoal, mathScore, mathGoal });
+      modal.classList.remove("show");
+      renderSatDashboard();
+    });
+  })();
+</script>
+
+<!-- Rename Modal -->
+<div id="rename-modal" class="delete-modal">
+  <div class="delete-modal-content">
+    <div class="delete-modal-icon"><span class="material-icons-round" style="color: #FFA726; font-size: 1.25rem;" aria-label="rename">edit</span></div>
+    <h3 class="delete-modal-title">Rename</h3>
+    <p class="delete-modal-desc" id="rename-modal-desc">Enter a new name</p>
+    <input id="rename-modal-input" type="text" class="create-input" style="width:100%; margin-top:0.25rem;" placeholder="New name&hellip;"/>
+    <div class="delete-modal-actions">
+      <button id="rename-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
+      <button id="rename-modal-confirm" class="delete-modal-btn confirm t-btn" style="background:rgba(139,92,246,.12); color:var(--p5); border-color:rgba(139,92,246,.3);">Rename</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div id="delete-modal" class="delete-modal">
+  <div class="delete-modal-content">
+    <div class="delete-modal-icon"><span class="material-icons-round" style="color: var(--red); font-size: 1.25rem;" aria-label="delete">delete</span></div>
+    <h3 class="delete-modal-title">Delete?</h3>
+    <p class="delete-modal-desc">This will permanently delete <span id="delete-modal-name"></span>. This cannot be undone.</p>
+    <div class="delete-modal-actions">
+      <button id="delete-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
+      <button id="delete-modal-confirm" class="delete-modal-btn confirm t-btn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Spotlight glow + cursor tilt (see ui-components/SPOTLIGHT-TILT-CARDS.md).
+     One delegated handler drives the glow (CSS vars on the ::before) and the tilt.
+     Tilt is limited to the compact cards; large content panels get glow only. -->
+<script>
+  (function () {
+    var SPOTLIGHT_SELECTOR = ".countdown-card, .stat-card, .section-card, .progress-card, .panel-card";
+    var TILT_SELECTOR = ".countdown-card, .stat-card, .section-card, .progress-card";
+    var MAX_TILT = 10; // degrees
+
+    document.addEventListener("pointermove", function (e) {
+      var card = e.target.closest && e.target.closest(SPOTLIGHT_SELECTOR);
+      if (!card) return;
+      var rect = card.getBoundingClientRect();
+      var relX = e.clientX - rect.left;
+      var relY = e.clientY - rect.top;
+
+      card.style.setProperty("--spotlight-x", relX + "px");
+      card.style.setProperty("--spotlight-y", relY + "px");
+      card.style.setProperty("--spotlight-opacity", "0.6");
+
+      if (card.matches(TILT_SELECTOR)) {
+        // The wide progress-card tilts less than the smaller stat/section cards.
+        var maxTilt = card.classList.contains("progress-card") ? 4 : MAX_TILT;
+        var rotY = ((relX / rect.width) - 0.5) * 2 * maxTilt;
+        var rotX = (0.5 - (relY / rect.height)) * 2 * maxTilt;
+        // transform 0s => the tilt snaps to the cursor each frame (no chase/lag).
+        card.style.setProperty("transition", "transform 0s, border-color .2s, box-shadow .2s", "important");
+        card.style.setProperty("transform",
+          "perspective(37.5rem) rotateX(" + rotX.toFixed(2) + "deg) rotateY(" +
+          rotY.toFixed(2) + "deg) scale(1.02)", "important");
+      }
+    }, { passive: true });
+
+    document.addEventListener("pointerout", function (e) {
+      var card = e.target.closest && e.target.closest(SPOTLIGHT_SELECTOR);
+      if (!card) return;
+      if (e.relatedTarget && card.contains(e.relatedTarget)) return;
+      card.style.setProperty("--spotlight-opacity", "0");
+      if (card.matches(TILT_SELECTOR)) {
+        // Ease only the return to flat.
+        card.style.setProperty("transition", "transform .3s cubic-bezier(0.22, 1, 0.36, 1), border-color .2s, box-shadow .2s", "important");
+        card.style.removeProperty("transform");
+      }
+    }, { passive: true });
+  })();
+</script>
+</body>
+</html>

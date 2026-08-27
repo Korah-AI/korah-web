@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en" x-data="{
+  theme: localStorage.getItem('korah_theme') || 'dark',
+  sidebarCollapsed: window.innerWidth <= 768 ? false : localStorage.getItem('korah_sidebar_collapsed') === 'true',
+  mobileOpen: false,
+  getEffectiveTheme() {
+    if (this.theme === 'system') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return this.theme;
+  },
+  toggleSidebar() {
+    if (window.innerWidth <= 768) {
+      this.mobileOpen = !this.mobileOpen;
+      const overlay = document.querySelector('.sidebar-overlay');
+      if (overlay) overlay.classList.toggle('show', this.mobileOpen);
+    } else {
+      if (this.sidebarCollapsed) {
+        const dp = document.getElementById('doc-panel');
+        if (dp?.classList.contains('expanded')) {
+          dp.classList.remove('expanded');
+          dp.classList.add('collapsed');
+          const tab = document.getElementById('doc-panel-tab');
+          if (tab) tab.classList.remove('panel-open');
+        }
+      }
+      this.sidebarCollapsed = !this.sidebarCollapsed;
+      localStorage.setItem('korah_sidebar_collapsed', this.sidebarCollapsed);
+    }
+  }
+}" :data-theme="getEffectiveTheme()" x-cloak>
+<head>
+<link rel="stylesheet" href="../transitions/page-transitions.css"/>
+<script src="../transitions/page-transitions.js"></script>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Korah AI — Create Practice Test</title>
+  <link rel="icon" type="image/png" href="../logo-images/newlogo0.png">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
+  
+  <!-- Scripts -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <script src="../sidebar-loader.js" defer></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Styles -->
+  <link rel="stylesheet" href="../app/korah-chat.css"/>
+  <style>
+    .glass-card { background: var(--sf); backdrop-filter: blur(1rem); border: 1px solid var(--bd); border-radius: 1.5rem; box-shadow: 0 1.125rem 2.25rem rgba(15, 23, 42, 0.14); }
+    .input-field { width: 100%; background: var(--bg2); border: 1px solid var(--bd); border-radius: 0.875rem; color: var(--tx); transition: all 0.2s; }
+    .input-field:focus { border-color: var(--p4); box-shadow: 0 0 0 0.25rem var(--glow); outline: none; }
+    .loading-spinner { border: 0.1875rem solid rgba(139, 92, 246, 0.1); border-top: 0.1875rem solid var(--p4); border-radius: 50%; width: 1.5rem; height: 1.5rem; animation: spin 1s linear infinite; }
+    .create-page-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 1.75rem 1.25rem 2.625rem; }
+    .create-page-shell { max-width: 51.25rem; margin: 0 auto; }
+    .create-panel { padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem; }
+    .create-heading { margin: 0; font-size: 2rem; line-height: 1.1; font-weight: 800; color: var(--tx); }
+    .create-subtext { margin: 0; color: var(--tx2); font-size: 0.875rem; line-height: 1.6; }
+    .create-method-switch { display: inline-flex; gap: 0.5rem; flex-wrap: wrap; padding: 0.375rem; border-radius: 1rem; background: var(--bg2); border: 1px solid var(--bd); width: fit-content; }
+    .method-pill {
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--tx2);
+      border-radius: 0.75rem;
+      padding: 0.625rem 0.875rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5625rem;
+      font-size: 0.8125rem;
+      font-weight: 700;
+      transition: all 0.2s ease;
+    }
+    .method-pill.is-active { background: var(--sf); color: var(--tx); border-color: var(--bd); box-shadow: 0 0.5rem 1.5rem rgba(0,0,0,.18); }
+    .create-card { padding: 1.25rem; background: var(--sf); border: 1px solid var(--bd); border-radius: 1.25rem; }
+    .create-card-title { margin: 0 0 0.375rem; font-size: 1rem; font-weight: 800; color: var(--tx); }
+    .create-card-sub { margin: 0 0 1rem; color: var(--tx2); font-size: 0.8125rem; line-height: 1.55; }
+    .field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.875rem; }
+    .field-block { display: flex; flex-direction: column; gap: 0.5rem; }
+    .field-block.is-full { grid-column: 1 / -1; }
+    .field-label { font-size: 0.75rem; font-weight: 700; color: var(--tx2); }
+    .section-card { padding: 1.25rem; border-radius: 1.25rem; border: 1px solid var(--bd); background: var(--sf); }
+    .section-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
+    .section-title { margin: 0; font-size: 1rem; font-weight: 800; color: var(--tx); }
+    .section-copy { margin: 0.25rem 0 0; color: var(--tx2); font-size: 0.8125rem; line-height: 1.55; }
+    .config-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.75rem; }
+    .config-tile { padding: 1rem; border-radius: 1.125rem; border: 1px solid var(--bd); background: var(--bg2); display: flex; flex-direction: column; gap: 0.375rem; }
+    .config-tile .field-label { font-size: 0.625rem; }
+    .config-tile input { font-size: 1.625rem; font-weight: 800; text-align: center; padding: 0; border: none; background: transparent; color: var(--tx); }
+    .config-tile input:focus { outline: none; box-shadow: none; }
+    .question-list { display: grid; gap: 0.875rem; }
+    .question-card { padding: 1.125rem; border-radius: 1.375rem; border: 1px solid var(--bd); background: var(--bg2); display: flex; flex-direction: column; gap: 0.875rem; }
+    .question-head { display: flex; align-items: center; justify-content: space-between; gap: 0.875rem; flex-wrap: wrap; }
+    .question-eyebrow { font-size: 0.75rem; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: #fca5a5; }
+    .question-controls { display: flex; align-items: center; gap: 0.625rem; }
+    .question-type { min-width: 10rem; }
+    .question-remove { width: 2.25rem; height: 2.25rem; border-radius: 62.4375rem; border: 1px solid rgba(239, 68, 68, 0.28); background: rgba(239, 68, 68, 0.1); color: #fca5a5; display: inline-flex; align-items: center; justify-content: center; }
+    .option-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.625rem; }
+    .option-row { display: flex; align-items: center; gap: 0.625rem; padding: 0.75rem 0.875rem; border-radius: 1rem; border: 1px solid var(--bd2); background: var(--bg3); }
+    .option-row input[type="text"] { flex: 1; border: none; background: transparent; color: var(--tx); }
+    .option-row input[type="text"]:focus { outline: none; }
+    .ghost-action {
+      min-height: 2.75rem;
+      padding: 0 1rem;
+      border-radius: 0.875rem;
+      border: 1px solid var(--bd);
+      background: var(--bg2);
+      color: var(--tx);
+      font-size: 0.8125rem;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .create-actions { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; padding-top: 0.5rem; }
+    .create-error { color: #fca5a5; font-size: 0.875rem; font-weight: 600; min-height: 1.25rem; }
+    .create-submit {
+      min-width: 15rem;
+      min-height: 3.5rem;
+      padding: 0 1.5rem;
+      border: none;
+      border-radius: 1.125rem;
+      background: var(--tx);
+      color: #fff;
+      font-size: 0.9375rem;
+      font-weight: 700;
+      box-shadow: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+    }
+    .create-submit:hover { transform: translateY(-1px); }
+    .create-submit:disabled { opacity: 0.65; cursor: wait; transform: none; }
+    @media (max-width: 48rem) {
+      .create-page-scroll { padding: 1.125rem 0.875rem 1.75rem; }
+      .create-panel, .create-card, .section-card, .question-card { padding: 1.125rem; }
+      .field-grid, .config-grid, .option-grid { grid-template-columns: 1fr; }
+      .create-actions { align-items: stretch; }
+      .create-submit { width: 100%; }
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    /* ── Light mode overrides ── */
+    [data-theme="light"] .question-eyebrow { color: #b91c1c; }
+    [data-theme="light"] .question-remove {
+      background: rgba(239, 68, 68, 0.1);
+      border-color: rgba(239, 68, 68, 0.3);
+      color: #dc2626;
+    }
+    [data-theme="light"] .create-error { color: #b91c1c; }
+  </style>
+</head>
+<body class="bg-base tx overflow-hidden h-screen">
+<style>
+  html:not(.korah-page-ready) { background: #06040f !important; }
+  html[data-theme="light"]:not(.korah-page-ready) { background: #d2d2d2 !important; }
+  html:not(.korah-page-ready) body { opacity: 0 !important; }
+</style>
+
+<script>
+  (function() {
+    const t = localStorage.getItem('korah_theme') || 'dark';
+    if (t === 'light' || (t === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  })();
+</script>
+<canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
+<div id="sidebar-root"></div>
+
+<!-- Settings Modal -->
+<div id="settings-modal" class="settings-modal">
+  <div class="settings-modal-content">
+    <div class="settings-header">
+      <h2 class="settings-title">Settings</h2>
+      <button class="settings-close" id="settings-close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="settings-body">
+      <div class="settings-section">
+        <h3 class="settings-section-title">Appearance</h3>
+        <div class="settings-item">
+          <div class="settings-item-label">Theme</div>
+          <div class="settings-item-control">
+            <div class="settings-custom-select" id="settings-theme-custom-select">
+              <div class="settings-select-trigger" id="settings-theme-trigger">
+                <div class="flex items-center gap-2">
+                  <span class="material-icons-round trigger-icon">dark_mode</span>
+                  <span class="trigger-text">Dark Mode</span>
+                </div>
+                <span class="material-icons-round">expand_more</span>
+              </div>
+              <div class="settings-select-menu" id="settings-theme-menu">
+                <div class="settings-select-option" data-value="dark">
+                  <span class="material-icons-round">dark_mode</span>
+                  <span>Dark Mode</span>
+                  <span class="material-icons-round check-icon">check</span>
+                </div>
+                <div class="settings-select-option" data-value="light">
+                  <span class="material-icons-round">light_mode</span>
+                  <span>Light Mode</span>
+                  <span class="material-icons-round check-icon">check</span>
+                </div>
+                <div class="settings-select-option" data-value="system">
+                  <span class="material-icons-round">settings_suggest</span>
+                  <span>System</span>
+                  <span class="material-icons-round check-icon">check</span>
+                </div>
+              </div>
+              <input type="hidden" id="settings-theme-select" value="dark">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3 class="settings-section-title">Profile</h3>
+        <div class="settings-item">
+          <div class="settings-item-label">Display Name</div>
+          <div class="settings-item-control">
+            <input type="text" id="settings-name-input" class="settings-input" placeholder="Your name">
+          </div>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3 class="settings-section-title">Data</h3>
+        <div class="settings-item">
+          <div class="settings-item-label">Clear All Data</div>
+          <div class="settings-item-control">
+            <button id="settings-clear-data" class="settings-btn danger">Clear Data</button>
+          </div>
+        </div>
+      </div>
+      <div class="settings-actions">
+        <button id="settings-save" class="settings-btn primary">Save Settings</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Rename Modal -->
+<div id="rename-modal" class="delete-modal">
+  <div class="delete-modal-content">
+    <div class="delete-modal-icon"><span class="material-icons-round" style="color: #FFA726; font-size: 1.25rem;" aria-label="rename">edit</span></div>
+    <h3 class="delete-modal-title">Rename</h3>
+    <p class="delete-modal-desc" id="rename-modal-desc">Enter a new name</p>
+    <input id="rename-modal-input" type="text" class="create-input" style="width:100%; margin-top:0.25rem;" placeholder="New name…"/>
+    <div class="delete-modal-actions">
+      <button id="rename-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
+      <button id="rename-modal-confirm" class="delete-modal-btn confirm t-btn" style="background:rgba(139,92,246,.12); color:var(--p5); border-color:rgba(139,92,246,.3);">Rename</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div id="delete-modal" class="delete-modal">
+  <div class="delete-modal-content">
+    <div class="delete-modal-icon"><span class="material-icons-round" style="color: var(--red); font-size: 1.25rem;" aria-label="delete">delete</span></div>
+    <h3 class="delete-modal-title">Delete?</h3>
+    <p class="delete-modal-desc">This will permanently delete <span id="delete-modal-name"></span>. This cannot be undone.</p>
+    <div class="delete-modal-actions">
+      <button id="delete-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
+      <button id="delete-modal-confirm" class="delete-modal-btn confirm t-btn">Delete</button>
+    </div>
+  </div>
+</div>
+
+  <main class="main-content flex-1 flex flex-col relative z-10 overflow-hidden">
+    <header class="chat-topbar bg-sf glass-sm t-theme bd flex items-center justify-between px-6 h-16 shrink-0">
+      <div class="flex items-center gap-4">
+        <button id="sidebar-toggle" @click="toggleSidebar()" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
+        <div class="korah-status-dot"></div>
+        <span class="font-semibold tx text-sm">Practice Test Creator</span>
+      </div>
+      <a href="feed.html" class="tx2 hover:tx transition-colors text-sm font-medium">Cancel</a>
+    </header>
+
+    <div class="create-page-scroll">
+      <div class="create-page-shell">
+        <section class="create-panel glass-card">
+          <div>
+            <h1 class="create-heading">Create Practice Test</h1>
+            <p class="create-subtext">Use this form to build a practice test yourself or have Korah generate one from a prompt.</p>
+          </div>
+
+          <div class="create-method-switch" role="tablist" aria-label="Test creation method">
+            <button type="button" class="method-pill" data-method="manual"><span class="material-icons-round" style="font-size: 1rem;">edit</span>Manual</button>
+            <button type="button" class="method-pill" data-method="prompt"><span class="material-icons-round" style="font-size: 1rem;">auto_awesome</span>AI Generated</button>
+          </div>
+
+          <section class="create-card">
+            <h2 class="create-card-title">Test details</h2>
+            <p class="create-card-sub">These details will show up with the test in Study.</p>
+            <div class="field-grid">
+              <label class="field-block">
+                <span class="field-label">Title</span>
+                <input id="test-title" type="text" class="input-field px-4 py-3.5" placeholder="e.g., Organic Chemistry Unit Test">
+              </label>
+              <label class="field-block">
+                <span class="field-label">Subject</span>
+                <input id="test-subject" type="text" class="input-field px-4 py-3.5" placeholder="e.g., Chemistry">
+              </label>
+              <label class="field-block is-full">
+                <span class="field-label">Description</span>
+                <textarea id="test-description" class="input-field px-4 py-3.5 h-24 resize-none" placeholder="What should this test cover?"></textarea>
+              </label>
+              <label class="field-block is-full">
+                <span class="field-label">Tags</span>
+                <input id="test-tags" type="text" class="input-field px-4 py-3.5" placeholder="stoichiometry, kinetics, unit-4">
+              </label>
+            </div>
+          </section>
+
+          <div class="create-card">
+            <p class="create-card-sub" style="margin: 0;">Choose <strong>Manual</strong> if you want to write each question yourself. Choose <strong>AI Generated</strong> if you want Korah to draft the test from a topic or prompt.</p>
+          </div>
+
+          <section id="test-manual-section" class="section-card">
+            <div class="section-head">
+              <div>
+                <h2 class="section-title">Manual questions</h2>
+                <p class="section-copy">Build the test one question at a time. Multiple choice questions support four options and an explanation.</p>
+              </div>
+              <button id="add-question-btn" type="button" class="ghost-action"><span class="material-icons-round" style="font-size: 1rem;">add</span>Add Question</button>
+            </div>
+            <div id="question-list" class="question-list"></div>
+          </section>
+
+          <section id="test-prompt-section" class="section-card hidden">
+            <div class="section-head">
+              <div>
+                <h2 class="section-title">Prompt</h2>
+                <p class="section-copy">Tell Korah what the test should cover and what kind of questions you want.</p>
+              </div>
+            </div>
+            <div class="config-grid" style="margin-bottom: 1rem;">
+              <label class="config-tile">
+                <span class="field-label">Total</span>
+                <input id="test-total" type="number" min="1" max="50" value="10">
+              </label>
+              <label class="config-tile">
+                <span class="field-label">MCQ</span>
+                <input id="test-mcq" type="number" min="0" max="50" value="6">
+              </label>
+              <label class="config-tile">
+                <span class="field-label">Open</span>
+                <input id="test-open" type="number" min="0" max="50" value="4" readonly>
+              </label>
+            </div>
+            <textarea id="test-prompt" class="input-field px-5 py-4 h-48 resize-none" placeholder="Create a challenging practice test on stoichiometry and gas laws for a high school chemistry class. Use realistic distractors and concise answer explanations."></textarea>
+          </section>
+
+          <div class="create-actions">
+            <div id="test-error" class="create-error"></div>
+            <button id="test-submit" class="create-submit">
+              <span class="material-icons-round" style="font-size: 1.125rem;">fact_check</span>
+              <span id="test-submit-label">Create Test</span>
+            </button>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+<script type="module" src="js/study-firebase-init.js"></script>
+<script src="../app/timer-manager.js"></script>
+<script src="js/sidebar.js"></script>
+<script src="js/study-api.js"></script>
+<script>
+  (function () {
+    KorahSidebar.initSidebar({ chatBaseUrl: "../chat.html", itemPageUrl: "item.html" });
+
+    var validMethods = ["manual", "prompt"];
+    var urlMethod = new URLSearchParams(window.location.search).get("method");
+    var state = {
+      method: urlMethod === "ai-prompt" ? "prompt" : (validMethods.includes(urlMethod) ? urlMethod : "manual"),
+      questions: [],
+      loading: false
+    };
+
+    var methodButtons = Array.from(document.querySelectorAll(".method-pill"));
+    var sections = {
+      manual: document.getElementById("test-manual-section"),
+      prompt: document.getElementById("test-prompt-section")
+    };
+    var titleInput = document.getElementById("test-title");
+    var subjectInput = document.getElementById("test-subject");
+    var descriptionInput = document.getElementById("test-description");
+    var tagsInput = document.getElementById("test-tags");
+    var promptInput = document.getElementById("test-prompt");
+    var totalInput = document.getElementById("test-total");
+    var mcqInput = document.getElementById("test-mcq");
+    var openInput = document.getElementById("test-open");
+    var questionList = document.getElementById("question-list");
+    var addQuestionBtn = document.getElementById("add-question-btn");
+    var errorEl = document.getElementById("test-error");
+    var submitBtn = document.getElementById("test-submit");
+    var submitLabel = document.getElementById("test-submit-label");
+
+    function createQuestion() {
+      return {
+        id: "q_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7),
+        type: "mcq",
+        text: "",
+        options: ["", "", "", ""],
+        answer: "",
+        explanation: ""
+      };
+    }
+
+    function syncCounts() {
+      var total = Math.max(1, Math.min(50, Number(totalInput.value) || 10));
+      var mcq = Math.max(0, Math.min(total, Number(mcqInput.value) || 0));
+      totalInput.value = total;
+      mcqInput.value = mcq;
+      openInput.value = total - mcq;
+    }
+
+    function getConfig() {
+      syncCounts();
+      return {
+        totalQuestions: Number(totalInput.value),
+        mcqCount: Number(mcqInput.value),
+        openEndedCount: Number(openInput.value)
+      };
+    }
+
+    function setMethod(method) {
+      state.method = method;
+      methodButtons.forEach(function (btn) {
+        btn.classList.toggle("is-active", btn.getAttribute("data-method") === method);
+      });
+      Object.keys(sections).forEach(function (key) {
+        sections[key].classList.toggle("hidden", key !== method);
+      });
+      submitLabel.textContent = method === "manual" ? "Create Test" : "Generate Test";
+      errorEl.textContent = "";
+    }
+
+    function setLoading(loading) {
+      state.loading = loading;
+      submitBtn.disabled = loading;
+      submitLabel.textContent = loading ? "Generating..." : (state.method === "manual" ? "Create Test" : "Generate Test");
+      var spinner = submitBtn.querySelector(".loading-spinner");
+      if (loading && !spinner) submitBtn.insertAdjacentHTML("afterbegin", '<span class="loading-spinner"></span>');
+      if (!loading && spinner) spinner.remove();
+    }
+
+    function renderQuestions() {
+      questionList.innerHTML = "";
+      state.questions.forEach(function (question, index) {
+        var card = document.createElement("div");
+        card.className = "question-card";
+        var optionsHtml = question.type === "mcq"
+          ? '<div class="option-grid">' + question.options.map(function (option, optionIndex) {
+              var checked = question.answer === option && option.trim() !== "" ? "checked" : "";
+              return `
+                <label class="option-row">
+                  <input type="radio" name="answer-${question.id}" data-question-id="${question.id}" data-option-index="${optionIndex}" ${checked}>
+                  <input type="text" data-field="option" data-question-id="${question.id}" data-option-index="${optionIndex}" value="${option.replace(/"/g, "&quot;")}" placeholder="Option ${String.fromCharCode(65 + optionIndex)}">
+                </label>
+              `;
+            }).join("") + "</div>"
+          : '<textarea class="input-field px-4 py-3.5 h-28 resize-none" data-field="answer" data-question-id="' + question.id + '" placeholder="Enter the correct answer or key points...">' + question.answer + "</textarea>";
+
+        card.innerHTML = `
+          <div class="question-head">
+            <div class="question-eyebrow">Question ${index + 1}</div>
+            <div class="question-controls">
+              <select class="input-field px-3 py-2.5 question-type" data-field="type" data-question-id="${question.id}">
+                <option value="mcq" ${question.type === "mcq" ? "selected" : ""}>Multiple Choice</option>
+                <option value="openEnded" ${question.type === "openEnded" ? "selected" : ""}>Open Ended</option>
+              </select>
+              <button type="button" class="question-remove" data-action="remove-question" data-question-id="${question.id}" aria-label="Remove question">
+                <span class="material-icons-round" style="font-size: 1.125rem;">close</span>
+              </button>
+            </div>
+          </div>
+          <textarea class="input-field px-4 py-3.5 h-24 resize-none" data-field="text" data-question-id="${question.id}" placeholder="Enter the question text...">${question.text}</textarea>
+          ${optionsHtml}
+          <textarea class="input-field px-4 py-3.5 h-24 resize-none" data-field="explanation" data-question-id="${question.id}" placeholder="Optional explanation or rationale...">${question.explanation}</textarea>
+        `;
+        questionList.appendChild(card);
+      });
+    }
+
+    function getManualQuestions() {
+      return state.questions
+        .filter(function (question) { return question.text.trim(); })
+        .map(function (question) {
+          return {
+            type: question.type,
+            text: question.text.trim(),
+            options: question.type === "mcq" ? question.options.map(function (option) { return option.trim(); }).filter(Boolean).slice(0, 4) : [],
+            answer: question.answer.trim(),
+            explanation: question.explanation.trim()
+          };
+        });
+    }
+
+    function validate() {
+      if (!titleInput.value.trim()) return "Title is required.";
+      if (!subjectInput.value.trim()) return "Subject is required.";
+
+      if (state.method === "manual") {
+        var manualQuestions = getManualQuestions();
+        if (!manualQuestions.length) return "Add at least one question.";
+        for (var i = 0; i < manualQuestions.length; i += 1) {
+          var question = manualQuestions[i];
+          if (question.type === "mcq" && question.options.length < 2) return "Each multiple choice question needs at least two options.";
+          if (!question.answer) return "Each question needs an answer.";
+        }
+      }
+
+      if (state.method === "prompt" && !promptInput.value.trim()) return "AI prompt is required.";
+      syncCounts();
+      return "";
+    }
+
+    async function saveItem(content) {
+      var id = "study_" + Date.now();
+      var item = {
+        id: id,
+        type: "practiceTest",
+        title: titleInput.value.trim(),
+        description: descriptionInput.value.trim(),
+        subject: subjectInput.value.trim(),
+        tags: tagsInput.value.split(",").map(function (tag) { return tag.trim(); }).filter(Boolean),
+        content: content,
+        source: state.method === "manual" ? "manual" : "ai-prompt",
+        createdBy: "cloud",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      if (window.KorahDB) await window.KorahDB.setStudyItem(id, item);
+      window.KorahTransitions.go("test.html?id=" + encodeURIComponent(id));
+    }
+
+    methodButtons.forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        setMethod(btn.getAttribute("data-method"));
+      });
+    });
+
+    totalInput.addEventListener("input", syncCounts);
+    mcqInput.addEventListener("input", syncCounts);
+
+    addQuestionBtn.addEventListener("click", function () {
+      state.questions.push(createQuestion());
+      renderQuestions();
+    });
+
+    questionList.addEventListener("click", function (event) {
+      var removeButton = event.target.closest('[data-action="remove-question"]');
+      if (!removeButton) return;
+      var questionId = removeButton.getAttribute("data-question-id");
+      state.questions = state.questions.filter(function (question) { return question.id !== questionId; });
+      if (!state.questions.length) state.questions.push(createQuestion());
+      renderQuestions();
+    });
+
+    questionList.addEventListener("change", function (event) {
+      var field = event.target.getAttribute("data-field");
+      var questionId = event.target.getAttribute("data-question-id");
+      if (!questionId) return;
+      var question = state.questions.find(function (item) { return item.id === questionId; });
+      if (!question) return;
+
+      if (field === "type") {
+        question.type = event.target.value;
+        question.answer = "";
+        question.options = ["", "", "", ""];
+        renderQuestions();
+        return;
+      }
+
+      if (event.target.type === "radio") {
+        var optionIndex = Number(event.target.getAttribute("data-option-index"));
+        question.answer = question.options[optionIndex] || "";
+      }
+    });
+
+    questionList.addEventListener("input", function (event) {
+      var field = event.target.getAttribute("data-field");
+      var questionId = event.target.getAttribute("data-question-id");
+      if (!questionId || !field) return;
+      var question = state.questions.find(function (item) { return item.id === questionId; });
+      if (!question) return;
+
+      if (field === "text" || field === "answer" || field === "explanation") {
+        question[field] = event.target.value;
+      }
+
+      if (field === "option") {
+        var optionIndex = Number(event.target.getAttribute("data-option-index"));
+        var oldValue = question.options[optionIndex];
+        question.options[optionIndex] = event.target.value;
+        if (question.answer === oldValue) question.answer = event.target.value;
+      }
+    });
+
+    submitBtn.addEventListener("click", async function () {
+      var validationMessage = validate();
+      errorEl.textContent = validationMessage;
+      if (validationMessage) return;
+
+      if (state.method === "manual") {
+        var manualQuestions = getManualQuestions();
+        saveItem({
+          questions: manualQuestions,
+          testConfig: {
+            totalQuestions: manualQuestions.length,
+            mcqCount: manualQuestions.filter(function (question) { return question.type === "mcq"; }).length,
+            openEndedCount: manualQuestions.filter(function (question) { return question.type !== "mcq"; }).length
+          }
+        });
+        return;
+      }
+
+      setLoading(true);
+      try {
+        var result = await KorahStudyAPI.generateStudyContent({
+          type: "practiceTest",
+          prompt: promptInput.value.trim(),
+          title: titleInput.value.trim(),
+          subject: subjectInput.value.trim(),
+          testConfig: getConfig()
+        });
+
+        if (!result || !result.content || !Array.isArray(result.content.questions) || !result.content.questions.length) {
+          throw new Error("Invalid content generated by AI.");
+        }
+
+        saveItem(result.content);
+      } catch (error) {
+        errorEl.textContent = error && error.message ? error.message : "AI generation failed. Please try again.";
+      } finally {
+        setLoading(false);
+      }
+    });
+
+    state.questions.push(createQuestion());
+    syncCounts();
+    renderQuestions();
+    setMethod(state.method);
+  })();
+</script>
+<script type="module">
+  import { getApps, initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+  import { startAuthGuard } from '../auth-guard.js';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
+    authDomain: "korah-app.firebaseapp.com",
+    projectId: "korah-app",
+    storageBucket: "korah-app.firebasestorage.app",
+    messagingSenderId: "226169460321",
+    appId: "1:226169460321:web:b166fc8260107c55dafc20"
+  };
+
+  const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  onAuthStateChanged(auth, (user) => {
+    if (!user) { window.KorahTransitions.go('../landing/index.html'); return; }
+    startAuthGuard(auth, '../landing/index.html');
+  });
+
+  document.getElementById("logout-btn")?.addEventListener("click", () => {
+    window.confirmLogout(async () => {
+      await signOut(auth);
+      localStorage.removeItem("korah_first_name");
+      window.KorahTransitions.go("../login.html");
+    });
+  });
+</script>
+</body>
+</html>

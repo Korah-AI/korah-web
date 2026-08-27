@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en" x-data="{
+  theme: localStorage.getItem('korah_theme') || 'dark',
+  sidebarCollapsed: window.innerWidth <= 768 ? false : localStorage.getItem('korah_sidebar_collapsed') === 'true',
+  mobileOpen: false,
+  getEffectiveTheme() {
+    if (this.theme === 'system') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return this.theme;
+  },
+  toggleSidebar() {
+    if (window.innerWidth <= 768) {
+      this.mobileOpen = !this.mobileOpen;
+      const overlay = document.querySelector('.sidebar-overlay');
+      if (overlay) overlay.classList.toggle('show', this.mobileOpen);
+    } else {
+      this.sidebarCollapsed = !this.sidebarCollapsed;
+      localStorage.setItem('korah_sidebar_collapsed', this.sidebarCollapsed);
+    }
+  }
+}" :data-theme="getEffectiveTheme()" x-cloak>
+<head>
+  <link rel="stylesheet" href="../transitions/page-transitions.css"/>
+  <script src="../transitions/page-transitions.js"></script>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Korah AI — SAT Study Plan</title>
+  <link rel="icon" type="image/png" href="../logo-images/newlogo0.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <script src="../sidebar-loader.js" defer></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../app/korah-chat.css"/>
+  <link rel="stylesheet" href="./sat.css"/>
+</head>
+
+<body>
+<script>
+  (function() {
+    const t = localStorage.getItem('korah_theme') || 'dark';
+    if (t === 'light' || (t === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  })();
+</script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+  import { setupKorahDB } from "../app/data/firestore-store.js";
+  import { initStudyPlan } from "./js/study-plan.js";
+  import { startAuthGuard } from '../auth-guard.js';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
+    authDomain: "korah-app.firebaseapp.com",
+    projectId: "korah-app",
+    storageBucket: "korah-app.firebasestorage.app",
+    messagingSenderId: "226169460321",
+    appId: "1:226169460321:web:b166fc8260107c55dafc20"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) { window.KorahTransitions.go('../landing/index.html'); return; }
+    await setupKorahDB(app, user.uid);
+    await initStudyPlan(app, user.uid);
+    const detail = { uid: user.uid };
+    window._korahReadyFired = detail;
+    window.dispatchEvent(new CustomEvent('korahReady', { detail }));
+    startAuthGuard(auth, '../landing/index.html');
+  });
+
+  document.getElementById('logout-btn').addEventListener('click', () => {
+    window.confirmLogout(async () => {
+      await signOut(auth);
+      localStorage.removeItem('korah_first_name');
+      window.KorahTransitions.go('../login.html');
+    });
+  });
+</script>
+
+<canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
+<div id="sidebar-root"></div>
+
+<!-- ═══ MAIN AREA WRAPPER ═══ -->
+<div id="main-area-wrapper" class="main-area-wrapper">
+<main id="main-content" class="main-content">
+
+  <header class="chat-topbar bg-sf glass-sm t-theme bd" style="opacity: 0.95;">
+    <button id="sidebar-toggle" @click="toggleSidebar()" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+    <div class="chat-title-area">
+      <div class="korah-status-dot"></div>
+      <span class="font-semibold tx text-sm">Study Plan</span>
+    </div>
+  </header>
+
+  <div class="sat-page" style="padding: 1.5rem; max-width: 72rem; margin: 0 auto; overflow-y: auto; flex: 1; min-height: 0;">
+
+    <!-- STATE: LOADING -->
+    <template x-if="$store.studyPlan.planState === 'loading'">
+      <div class="panel-card" style="text-align:center; padding:4rem;">
+        <div class="sat-spinner" style="width:2.5rem;height:2.5rem;margin:0 auto 1rem;border:3px solid var(--bd);border-top-color:var(--p4);border-radius:50%;animation:spin 1s linear infinite;"></div>
+        <p class="tx2">Loading your study plan…</p>
+        <template x-if="$store.studyPlan.initError">
+          <p class="tx3" style="margin-top:1rem;color:#ef4444;">Error: {{ $store.studyPlan.initError }}</p>
+          <button class="sat-button sat-button-secondary" style="margin-top:1rem;" @click="location.reload()">Retry</button>
+        </template>
+        <template x-if="!$store.studyPlan.initError && $store.studyPlan.initStages.length > 0">
+          <p class="tx3" style="margin-top:1rem;color:var(--p5);">
+            Initializing: {{ $store.studyPlan.initStages.join(', ') }}
+          </p>
+        </template>
+      </div>
+    </template>
+
+    <!-- STATE: EMPTY (WIZARD) -->
+    <template x-if="$store.studyPlan.planState === 'empty'">
+      <div x-data="wizard()" class="wizard-container" style="max-width:64rem;width:100%;margin:0 auto;display:flex;flex-direction:column;gap:2rem;padding:0 1rem;">
+        <!-- Progress header - SEPARATE CARD -->
+        <div class="panel-card" style="padding:2rem 2.25rem;border-radius:1.5rem;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1.25rem;">
+            <div style="display:flex;align-items:center;gap:1rem;">
+              <div style="width:3rem;height:3rem;border-radius:0.875rem;background:linear-gradient(135deg,#7c3aed,#a78bfa);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <span class="material-icons-round" style="font-size:1.5rem;color:#fff;">auto_awesome</span>
+              </div>
+              <div>
+                <div style="font-size:0.75rem;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:var(--p5);">Step</div>
+                <div style="font-size:1.25rem;font-weight:800;color:var(--tx);">Step <span x-text="step"></span> of 4</div>
+              </div>
+            </div>
+            <div style="font-size:1rem;font-weight:800;color:var(--p5);background:rgba(124,58,237,0.15);padding:0.5rem 1rem;border-radius:999px;" x-text="progressPercentage + '%'"></div>
+          </div>
+          <div style="height:0.625rem;background:var(--sf2);border-radius:999px;overflow:hidden;">
+            <div style="height:100%;background:linear-gradient(90deg,#7c3aed,#a78bfa,#c084fc);border-radius:999px;transition:width .35s ease;" :style="`width: ${progressPercentage}%`"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:1.5rem;gap:0.75rem;">
+            <template x-for="i in 4" :key="i">
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:0.75rem;min-width:0;">
+                <div class="wizard-step-circle" :class="step >= i ? 'active' : ''" x-text="i"></div>
+                <span style="font-size:0.8125rem;font-weight:700;white-space:nowrap;text-align:center;line-height:1.2;" :style="step >= i ? 'color: var(--tx);' : 'color: var(--tx3);'" x-text="i===1 ? 'Start' : i===2 ? 'Level' : i===3 ? 'Test Date' : 'Schedule'"></span>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <!-- Step 1: Start Point - SEPARATE CARD -->
+        <template x-if="step === 1">
+          <div class="panel-card" style="padding:2.25rem;border-radius:1.5rem;display:flex;flex-direction:column;align-items:center;" x-transition>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;width:100%;">
+              <h3 style="font-size:1.625rem;font-weight:800;color:var(--tx);margin:0 0 0.5rem;">Where are you starting from?</h3>
+              <p class="tx2" style="font-size:1.0625rem;margin:0 auto 0;line-height:1.5;max-width:36rem;">Choose the option that best describes your current preparation level.</p>
+            </div>
+            <div class="radio-group" style="text-align:left;width:100%;margin-top:1.75rem;">
+              <label class="radio-card" @click="intake.startPoint='real_sat'" style="padding:1.75rem;border-radius:1rem;cursor:pointer;">
+                <input type="radio" name="startPoint" value="real_sat" x-model="intake.startPoint" class="hidden"/>
+                <div class="radio-card-content" style="gap:1.125rem;">
+                  <span class="material-icons-round" style="font-size:2rem;color:var(--p5);">assignment_turned_in</span>
+                  <div style="display:flex;flex-direction:column;gap:0.375rem;flex:1;">
+                    <strong class="tx" style="font-size:1.125rem;">Took the real SAT</strong>
+                    <span class="tx2" style="font-size:0.9375rem;">You have an official score report</span>
+                  </div>
+                </div>
+                <span class="radio-check" :class="{ active: intake.startPoint==='real_sat' }"></span>
+              </label>
+              <label class="radio-card" @click="intake.startPoint='practice_test'" style="padding:1.75rem;border-radius:1rem;cursor:pointer;">
+                <input type="radio" name="startPoint" value="practice_test" x-model="intake.startPoint" class="hidden"/>
+                <div class="radio-card-content" style="gap:1.125rem;">
+                  <span class="material-icons-round" style="font-size:2rem;color:var(--p5);">assignment</span>
+                  <div style="display:flex;flex-direction:column;gap:0.375rem;flex:1;">
+                    <strong class="tx" style="font-size:1.125rem;">Took a practice test</strong>
+                    <span class="tx2" style="font-size:0.9375rem;">Bluebook, Khan Academy, or other full practice test</span>
+                  </div>
+                </div>
+                <span class="radio-check" :class="{ active: intake.startPoint==='practice_test' }"></span>
+              </label>
+              <label class="radio-card" @click="intake.startPoint='none'" style="padding:1.75rem;border-radius:1rem;cursor:pointer;">
+                <input type="radio" name="startPoint" value="none" x-model="intake.startPoint" class="hidden"/>
+                <div class="radio-card-content" style="gap:1.125rem;">
+                  <span class="material-icons-round" style="font-size:2rem;color:var(--p5);">help_outline</span>
+                  <div style="display:flex;flex-direction:column;gap:0.375rem;flex:1;">
+                    <strong class="tx" style="font-size:1.125rem;">Haven't tested yet</strong>
+                    <span class="tx2" style="font-size:0.9375rem;">Rate your confidence on each SAT domain instead</span>
+                  </div>
+                </div>
+                <span class="radio-check" :class="{ active: intake.startPoint==='none' }"></span>
+              </label>
+            </div>
+          </div>
+        </template>
+
+        <!-- Step 2: Level -->
+        <template x-if="step === 2">
+          <div style="display:flex;flex-direction:column;gap:1.5rem;">
+            <!-- If tested: image upload -->
+            <template x-if="intake.startPoint !== 'none'">
+              <div class="panel-card" style="padding:2rem;border-radius:1.5rem;" x-transition>
+                <h3 style="font-size:1.5rem;font-weight:800;color:var(--tx);margin:0 0 0.5rem;">Upload your score report</h3>
+                <p class="tx2" style="font-size:1rem;margin-bottom:1.5rem;line-height:1.5;">We will read your Math and Reading and Writing scores automatically. Upload a screenshot of your official score report.</p>
+                <div class="drop-zone" @click="$refs.fileInput.click()" @dragover.prevent @drop.prevent="handleDrop" :class="{ 'has-file': scoreImage }" style="min-height:16rem;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;">
+                  <div x-show="!scoreImage" style="display:flex;flex-direction:column;align-items:center;gap:1rem;">
+                    <div style="width:4.5rem;height:4.5rem;border-radius:1.125rem;background:rgba(124,58,237,0.12);display:flex;align-items:center;justify-content:center;">
+                      <span class="material-icons-round" style="font-size:2.25rem;color:var(--p5);">cloud_upload</span>
+                    </div>
+                    <p class="tx" style="font-size:1.125rem;font-weight:700;margin:0;">Click or drag a screenshot here</p>
+                    <p class="tx3" style="font-size:0.875rem;margin:0;">PNG, JPG, or WebP · Max 4.5 MB</p>
+                  </div>
+                  <div x-show="scoreImage" style="width:100%;text-align:center;">
+                    <img :src="scoreImage" alt="Score report preview" style="max-width:100%;max-height:24rem;border-radius:1rem;border:1px solid var(--bd);object-fit:contain;margin:0 auto;display:block;"/>
+                    <p class="tx2" style="margin-top:1.125rem;font-weight:600;font-size:0.9375rem;">Uploaded — ready to extract</p>
+                  </div>
+                  <input type="file" x-ref="fileInput" accept="image/*" class="hidden" @change="handleFileSelect"/>
+                </div>
+                <div x-show="extracting" style="margin-top:1.5rem;text-align:center;padding:1.5rem;background:var(--sf2);border-radius:1rem;border:1px solid var(--bd);">
+                  <div style="width:2.5rem;height:2.5rem;margin:0 auto 1rem;border:3px solid var(--bd);border-top-color:var(--p4);border-radius:50%;animation:spin 1s linear infinite;"></div>
+                  <p class="tx" style="font-weight:700;font-size:1rem;">Reading scores from image…</p>
+                </div>
+                <div x-show="extractedScores" style="margin-top:1.5rem;padding:1.5rem;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.25);border-radius:1rem;">
+                  <p style="margin:0;color:#22c55e;font-weight:800;font-size:1rem;"><span class="material-icons-round" style="font-size:1.25rem;vertical-align:middle;margin-right:0.5rem;">check_circle</span>Scores extracted</p>
+                  <div style="display:flex;gap:1.25rem;margin-top:1rem;flex-wrap:wrap;">
+                    <div style="flex:1;min-width:10rem;padding:1.125rem;background:var(--sf);border-radius:0.875rem;border:1px solid var(--bd);text-align:center;">
+                      <div style="font-size:0.8125rem;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:0.05em;">Math</div>
+                      <div style="font-size:1.75rem;font-weight:800;color:var(--p5);margin-top:0.25rem;" x-text="extractedScores?.mathScore ?? '—'"></div>
+                    </div>
+                    <div style="flex:1;min-width:10rem;padding:1.125rem;background:var(--sf);border-radius:0.875rem;border:1px solid var(--bd);text-align:center;">
+                      <div style="font-size:0.8125rem;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:0.05em;">Reading and Writing</div>
+                      <div style="font-size:1.75rem;font-weight:800;color:var(--p5);margin-top:0.25rem;" x-text="extractedScores?.rwScore ?? '—'"></div>
+                    </div>
+                  </div>
+                  <button class="sat-button sat-button-secondary" style="margin-top:1.25rem;width:100%;height:3rem;font-size:1rem;" @click="scoreImage=null;extractedScores=null;">Upload different image</button>
+                </div>
+              </div>
+            </template>
+
+            <!-- If not tested: confidence ratings -->
+            <template x-if="intake.startPoint === 'none'">
+              <div class="panel-card" style="padding:2rem;border-radius:1.5rem;" x-transition>
+                <h3 style="font-size:1.5rem;font-weight:800;color:var(--tx);margin:0 0 0.5rem;">Rate your confidence</h3>
+                <p class="tx2" style="font-size:1rem;margin-bottom:1.5rem;line-height:1.5;">1 = Need lots of work, 2 = Okay, 3 = Strong. Be honest so the plan can target your weak spots.</p>
+                <div style="display:grid;gap:1.25rem;">
+                  <div style="padding:1.25rem;background:var(--sf2);border-radius:1rem;border:1px solid var(--bd);">
+                    <div style="font-size:0.8125rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--p5);margin-bottom:1rem;">Math domains</div>
+                    <div style="display:grid;gap:1rem;">
+                      <template x-for="d in mathDomains" :key="d.key">
+                        <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.625rem 0;border-bottom:1px solid var(--bd);">
+                          <span class="tx" style="font-size:1rem;font-weight:600;flex:1;min-width:0;" x-text="d.label"></span>
+                          <div style="display:flex;gap:0.625rem;flex-shrink:0;">
+                            <template x-for="v in [1,2,3]" :key="v">
+                              <button type="button" class="rating-btn" style="width:3rem;height:3rem;font-size:1.125rem;" :class="{ active: intake.confidenceRatings[d.key]===v }" @click="intake.confidenceRatings[d.key]=v" x-text="v"></button>
+                            </template>
+                          </div>
+                        </div>
+                      </template>
+                    </div>
+                  </div>
+                  <div style="padding:1.25rem;background:var(--sf2);border-radius:1rem;border:1px solid var(--bd);">
+                    <div style="font-size:0.8125rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#38bdf8;margin-bottom:1rem;">Reading and Writing domains</div>
+                    <div style="display:grid;gap:1rem;">
+                      <template x-for="d in rwDomains" :key="d.key">
+                        <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.625rem 0;border-bottom:1px solid var(--bd);">
+                          <span class="tx" style="font-size:1rem;font-weight:600;flex:1;min-width:0;" x-text="d.label"></span>
+                          <div style="display:flex;gap:0.625rem;flex-shrink:0;">
+                            <template x-for="v in [1,2,3]" :key="v">
+                              <button type="button" class="rating-btn" style="width:3rem;height:3rem;font-size:1.125rem;" :class="{ active: intake.confidenceRatings[d.key]===v }" @click="intake.confidenceRatings[d.key]=v" x-text="v"></button>
+                            </template>
+                          </div>
+                        </div>
+                      </template>
+                    </div>
+                  </div>
+                </div>
+                <div style="margin-top:1.75rem;">
+                  <label class="tx" style="display:block;font-size:1rem;font-weight:700;margin-bottom:0.75rem;">What do you want from this plan? <span style="font-weight:400;color:var(--tx3);font-size:0.9375rem;">(optional)</span></label>
+                  <textarea x-model="intake.freeTextGoals" rows="4" style="width:100%;min-height:7rem;padding:1rem 1.125rem;border-radius:0.875rem;border:1px solid var(--bd);background:var(--sf2);color:var(--tx);font-family:inherit;font-size:1rem;resize:vertical;line-height:1.5;" placeholder="e.g. Focus on algebra word problems, improve reading speed, practice full tests under timed conditions…"></textarea>
+                </div>
+              </div>
+            </template>
+          </div>
+        </template>
+
+        <!-- Step 3: Test Date -->
+        <template x-if="step === 3">
+          <div class="panel-card" style="padding:2rem;border-radius:1.5rem;" x-transition>
+            <h3 style="font-size:1.5rem;font-weight:800;color:var(--tx);margin:0 0 0.5rem;">When is your test?</h3>
+            <p class="tx2" style="font-size:1rem;margin-bottom:1.5rem;line-height:1.5;">Pick your official test date. We will build your plan up to that day.</p>
+            <div style="margin-bottom:1.75rem;">
+              <label style="display:block;font-size:0.875rem;font-weight:700;color:var(--tx2);margin-bottom:0.625rem;">Test date</label>
+              <input type="date" x-model="intake.testDate" style="width:100%;height:3.5rem;padding:0 1.125rem;border-radius:0.875rem;border:1px solid var(--bd);background:var(--sf2);color:var(--tx);font-size:1.0625rem;" :min="todayISO"/>
+            </div>
+            <div style="height:1px;background:var(--bd);margin:1.5rem 0;"></div>
+            <p style="font-size:0.875rem;font-weight:700;color:var(--tx2);margin-bottom:1rem;">Or pick an official SAT date</p>
+            <div style="display:flex;flex-wrap:wrap;gap:0.75rem;">
+              <template x-for="d in officialDates" :key="d">
+                <button type="button" style="padding:0.75rem 1.25rem;border-radius:999px;font-size:0.9375rem;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap;" :style="intake.testDate===d ? 'background: var(--p4); color: #fff; border: 1px solid var(--p4); box-shadow: 0 2px 12px rgba(124,58,237,0.3);' : 'background: var(--sf2); color: var(--tx); border: 1px solid var(--bd);'" @click="intake.testDate=d" x-text="formatDate(d)"></button>
+              </template>
+            </div>
+          </div>
+        </template>
+
+        <!-- Step 4: Schedule -->
+        <template x-if="step === 4">
+          <div class="panel-card" style="padding:2rem;border-radius:1.5rem;" x-transition>
+            <h3 style="font-size:1.5rem;font-weight:800;color:var(--tx);margin:0 0 0.5rem;">When can you study?</h3>
+            <p class="tx2" style="font-size:1rem;margin-bottom:1.5rem;line-height:1.5;">Choose the days that work for you and how many hours you can study each week.</p>
+            <div style="margin-bottom:1.75rem;">
+              <label style="display:block;font-size:0.875rem;font-weight:700;color:var(--tx2);margin-bottom:0.875rem;">Pick weekdays <span style="font-weight:400;color:var(--tx3);">(at least 2)</span></label>
+              <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
+                <template x-for="d in weekdays" :key="d.key">
+                  <button type="button" class="weekday-btn" style="min-width:4rem;padding:1rem 0.75rem;font-size:0.9375rem;font-weight:700;" :class="{ active: intake.studyDays.includes(d.key) }" @click="toggleDay(d.key)" x-text="d.label"></button>
+                </template>
+              </div>
+            </div>
+            <div>
+              <label style="display:block;font-size:0.875rem;font-weight:700;color:var(--tx2);margin-bottom:0.625rem;">Hours per week</label>
+              <div style="display:flex;align-items:center;gap:1.125rem;">
+                <input type="number" x-model.number="intake.hoursPerWeek" min="2" max="30" step="1" style="width:8rem;height:3.5rem;padding:0 1rem;border-radius:0.875rem;border:1px solid var(--bd);background:var(--sf2);color:var(--tx);font-size:1.25rem;font-weight:700;text-align:center;"/>
+                <span class="tx2" style="font-size:0.9375rem;">hours per week</span>
+              </div>
+              <p class="tx3" style="font-size:0.8125rem;margin-top:0.625rem;line-height:1.4;">We will spread this evenly across your chosen days. Sessions are 30 to 90 minutes each.</p>
+            </div>
+          </div>
+        </template>
+
+        <!-- Navigation - Bottom Bar -->
+        <div class="panel-card" style="padding:1.25rem 1.75rem;border-radius:1.25rem;display:flex;justify-content:flex-end;align-items:center;gap:1rem;position:sticky;bottom:1rem;z-index:10;box-shadow:0 8px 32px rgba(0,0,0,0.35);">
+          <button class="sat-button sat-button-secondary" style="min-width:7rem;height:3.25rem;font-size:1rem;font-weight:700;" @click="prevStep()" x-show="step>1" x-transition>Back</button>
+          <span class="tx3" style="font-size:0.875rem;margin-right:auto;" x-show="step<4 && !canProceed()">Complete this step to continue</span>
+          <button class="sat-button sat-button-primary" style="min-width:8rem;height:3.25rem;font-size:1rem;font-weight:700;display:inline-flex;align-items:center;gap:0.5rem;" @click="nextStep()" x-show="step<4" :disabled="!canProceed()" :style="!canProceed() ? 'opacity:0.5;cursor:not-allowed;' : ''">Next <span class="material-icons-round" style="font-size:1.25rem;">arrow_forward</span></button>
+          <button class="sat-button sat-button-primary" style="min-width:10rem;height:3.25rem;font-size:1rem;font-weight:700;" @click="submitWizard()" x-show="step===4" :disabled="!canProceed() || generating" :style="(!canProceed() || generating) ? 'opacity:0.5;cursor:not-allowed;' : ''">
+            <span x-show="!generating">Create My Plan</span>
+            <span x-show="generating" style="display:flex;align-items:center;gap:0.625rem;"><span style="width:1.125rem;height:1.125rem;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;"></span>Generating…</span>
+          </button>
+        </div>
+      </div>
+    </template>
+
+    <!-- STATE: HAS PLAN (CALENDAR) -->
+    <template x-if="$store.studyPlan.planState === 'hasPlan'">
+      <div x-data="calendarView($store.studyPlan.planData)">
+        <!-- Header -->
+        <div class="study-plan-header glass" style="margin: 0 0 1.5rem; padding: 1rem 1.25rem; border-radius: 1.25rem; backdrop-filter: blur(1rem); -webkit-backdrop-filter: blur(1rem); border: 1px solid var(--bd2);">
+          <div class="flex items-center gap-2">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tx2">
+              <polygon points="12 2 15 8 22 8 22 15 15 22 12 22 9 15 2 15 2 8 12 2"/>
+            </svg>
+            <div>
+              <div class="text-xs uppercase tracking-wider tx3" style="color: var(--p4);">Your Study Plan</div>
+              <p class="text-sm tx2" style="margin: 0.25rem 0 0;">Plan active · <span x-text="planData.hoursPerWeek"></span> hrs/week · <span x-text="planData.studyDays.join(', ')"></span></p>
+            </div>
+          </div>
+          <button class="sat-button sat-button-ghost tx-xs" style="margin-left: auto; padding: 0.5rem 0.75rem; font-size: 0.6875rem;" @click="viewMode = viewMode === 'week' ? 'month' : 'week'">
+            <span class="material-icons-round" style="font-size: 1rem;" x-text="viewMode==='week' ? 'date_range' : 'view_week'"></span>
+            <span x-text="viewMode==='week' ? 'Week' : 'Month'"></span>
+          </button>
+        </div>
+
+        <!-- Feedback banner -->
+        <div class="panel-card glass" style="margin-bottom:1.5rem;padding:1rem;border-radius:1rem;backdrop-filter:blur(1rem);-webkit-backdrop-filter:blur(1rem);border:1px solid var(--bd2);background:rgba(56,189,248,0.08);border-color:rgba(56,189,248,0.25);">
+          <div style="display:flex;gap:0.75rem;align-items:flex-start;">
+            <span class="material-icons-round" style="font-size:1.5rem;color:#38bdf8;margin-top:0.125rem;">lightbulb</span>
+            <div class="tx" style="line-height:1.6;" x-html="$store.studyPlan.planData.feedback"></div>
+          </div>
+        </div>
+
+        <!-- Weekly view -->
+        <template x-if="viewMode === 'week'">
+          <template x-for="week in weeks" :key="week.weekStart">
+            <div class="panel-card" style="margin-bottom:1rem;">
+              <h4 class="tx" style="margin:0 0 1rem;font-size:1rem;color:var(--p5);" x-text="week.label"></h4>
+              <template x-for="session in week.sessions" :key="session.id">
+                <div class="session-row glass" style="display:flex;align-items:center;gap:1rem;padding:0.75rem 1rem;border-radius:1rem;background:var(--sf);border:1px solid var(--bd2);margin-bottom:0.5rem;backdrop-filter:blur(1rem);-webkit-backdrop-filter:blur(1rem);transition:all .2s;" :class="{ 'completed': session.completed }">
+                  <input type="checkbox" @change="toggleSession(session.id, $event.target.checked)" :checked="session.completed" style="width:1.25rem;height:1.25rem;accent-color:var(--p4);flex-shrink:0;"/>
+                  <div style="flex:1;min-width:0;">
+                    <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
+                      <strong class="tx" x-text="session.domain"></strong>
+                      <span class="tx2" style="font-size:0.75rem;background:var(--bd);padding:0.125rem 0.5rem;border-radius:62.4375rem;" x-text="session.section.toUpperCase()"></span>
+                      <span class="tx2" style="font-size:0.75rem;" x-text="session.taskType.replace('_',' ')"></span>
+                    </div>
+                    <div class="tx2" style="font-size:0.8125rem;margin-top:0.25rem;display:flex;gap:1rem;flex-wrap:wrap;">
+                      <span x-text="formatTime(session.startTime) + ' · ' + session.durationMinutes + ' min'"></span>
+                      <span x-text="session.date"></span>
+                    </div>
+                  </div>
+                  <template x-if="session.completed">
+                    <span class="material-icons-round" style="color:#22c55e;font-size:1.5rem;opacity:0.8;">check_circle</span>
+                  </template>
+                </div>
+              </template>
+            </div>
+          </template>
+        </template>
+
+        <!-- Monthly view -->
+        <template x-if="viewMode === 'month'">
+          <template x-for="month in months" :key="month.key">
+            <div class="panel-card glass" style="margin-bottom:1rem;padding:1rem;border-radius:1rem;backdrop-filter:blur(1rem);-webkit-backdrop-filter:blur(1rem);border:1px solid var(--bd2);">
+              <h4 class="tx" style="margin:0 0 1rem;font-size:1rem;color:var(--p5);" x-text="month.label"></h4>
+              <div class="month-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:0.375rem;">
+                <template x-for="d in ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']" :key="d">
+                  <div class="month-dow" style="text-align:center;font-size:0.6875rem;font-weight:700;color:var(--tx3);padding:0.375rem 0.25rem;border-radius:0.5rem 0.5rem 0 0;text-transform:uppercase;background:var(--sf2);border:1px solid var(--bd2);border-bottom: none;" x-text="d"></div>
+                </template>
+                <template x-for="day in month.days" :key="day.date">
+                  <div class="month-day" :class="{ 'other-month': day.otherMonth, 'has-sessions': day.sessions.length>0 }" style="min-height:4.5rem;padding:0.375rem 0.25rem;border-radius:0 0 0.5rem 0.5rem;background:var(--sf);border:1px solid var(--bd2);border-top: none;display:flex;flex-direction:column;gap:0.15rem;transition:all .2s;position:relative;">
+                    <span class="tx" style="font-weight:600;text-align:right;padding-right:0.25rem;font-size:0.8125rem;" x-text="day.date.getDate()"></span>
+                    <template x-for="s in day.sessions" :key="s.id">
+                      <div class="month-session" @click="toggleSession(s.id, !s.completed)" :class="{ completed: s.completed }" style="font-size:0.625rem;padding:0.1rem 0.25rem;border-radius:0.2rem;background:var(--p4);color:#fff;cursor:pointer;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;box-shadow:0 0.125rem 0.25rem rgba(139,92,246,0.2);" x-text="s.domain"></div>
+                    </template>
+                    <template x-if="!day.sessions">
+                      <span class="text-xs tx3 text-center opacity-60" style="flex:1;">—</span>
+                    </template>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </template>
+        </template>
+      </div>
+    </template>
+
+  </div>
+</main>
+</div>
+
+<!-- Alpine components -->
+<script>
+  // Wizard component
+  function wizard() {
+    return {
+      step: 1,
+      get progressPercentage() { return Math.round((this.step / 4) * 100); },
+      intake: {
+        startPoint: "none",
+        mathScore: null,
+        rwScore: null,
+        confidenceRatings: {},
+        freeTextGoals: "",
+        testDate: "",
+        studyDays: [],
+        hoursPerWeek: 6
+      },
+      scoreImage: null,
+      extractedScores: null,
+      extracting: false,
+      generating: false,
+      
+      mathDomains: [
+        { key: "heartOfAlgebra", label: "Heart of Algebra" },
+        { key: "problemSolvingData", label: "Problem Solving & Data Analysis" },
+        { key: "passportAdvancedMath", label: "Passport to Advanced Math" },
+        { key: "additionalTopicsMath", label: "Additional Topics in Math" }
+      ],
+      rwDomains: [
+        { key: "informationIdeas", label: "Information & Ideas" },
+        { key: "craftStructure", label: "Craft & Structure" },
+        { key: "expressionIdeas", label: "Expression of Ideas" },
+        { key: "standardEnglish", label: "Standard English Conventions" }
+      ],
+      weekdays: [
+        { key: "mon", label: "Mon" }, { key: "tue", label: "Tue" }, { key: "wed", label: "Wed" },
+        { key: "thu", label: "Thu" }, { key: "fri", label: "Fri" }, { key: "sat", label: "Sat" }, { key: "sun", label: "Sun" }
+      ],
+      officialDates: [
+        "2025-08-23", "2025-09-13", "2025-10-04", "2025-11-08", "2025-12-06",
+        "2026-03-14", "2026-05-02", "2026-06-06"
+      ],
+      get todayISO() { return new Date().toISOString().split('T')[0]; },
+
+      canProceed() {
+        if (this.step === 1) return !!this.intake.startPoint;
+        if (this.step === 2) {
+          if (this.intake.startPoint !== 'none') return !!this.extractedScores?.mathScore && !!this.extractedScores?.rwScore;
+          return Object.values(this.intake.confidenceRatings).every(v => v >= 1 && v <= 3);
+        }
+        if (this.step === 3) return !!this.intake.testDate && new Date(this.intake.testDate) > new Date();
+        if (this.step === 4) return this.intake.studyDays.length >= 2 && this.intake.hoursPerWeek >= 2;
+        return false;
+      },
+      nextStep() { if (this.canProceed()) this.step++; },
+      prevStep() { if (this.step > 1) this.step--; },
+      toggleDay(key) {
+        const i = this.intake.studyDays.indexOf(key);
+        if (i >= 0) this.intake.studyDays.splice(i, 1);
+        else this.intake.studyDays.push(key);
+      },
+      formatDate(iso) { return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); },
+      handleFileSelect(e) { this.processFile(e.target.files[0]); },
+      handleDrop(e) { this.processFile(e.dataTransfer.files[0]); },
+      async processFile(file) {
+        if (!file || !file.type.startsWith('image/')) return;
+        this.scoreImage = await window.KorahStudyPlan?.downscaleImage(file);
+        await this.extractScores();
+      },
+      async extractScores() {
+        if (!this.scoreImage) return;
+        this.extracting = true;
+        try {
+          this.extractedScores = await window.KorahStudyPlan?.extractScoresFromImage(this.scoreImage);
+          if (this.extractedScores?.mathScore != null) this.intake.mathScore = this.extractedScores.mathScore;
+          if (this.extractedScores?.rwScore != null) this.intake.rwScore = this.extractedScores.rwScore;
+        } catch (e) { console.error(e); alert("Failed to read scores. Try a clearer image."); }
+        finally { this.extracting = false; }
+      },
+      async submitWizard() {
+        if (!this.canProceed()) return;
+        this.generating = true;
+        try {
+          const payload = { ...this.intake };
+          if (payload.startPoint !== 'none') {
+            payload.confidenceRatings = {};
+            payload.freeTextGoals = "";
+          } else {
+            payload.mathScore = null;
+            payload.rwScore = null;
+          }
+          await window.KorahStudyPlan?.createPlan(payload);
+        } catch (e) { console.error(e); alert("Failed to create plan. Try again."); }
+        finally { this.generating = false; }
+      }
+    };
+  }
+
+  // Calendar view component
+  function calendarView(plan) {
+    const today = new Date();
+    const testDate = new Date(plan.testDate);
+
+    return {
+      planData: plan,
+      viewMode: 'week',
+      get weeks() {
+        const out = [];
+        const start = new Date(today);
+        start.setDate(start.getDate() - start.getDay() + 1); // Monday
+        for (let w = 0; w < 10; w++) {
+          const weekStart = new Date(start);
+          const weekSessions = plan.sessions.filter(s => {
+            const d = new Date(s.date);
+            return d >= weekStart && d < new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+          }).sort((a,b) => new Date(a.date) - new Date(b.date));
+          if (weekSessions.length > 0) {
+            out.push({
+              weekStart,
+              label: `Week of ${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
+              sessions: weekSessions
+            });
+          }
+          start.setDate(start.getDate() + 7);
+        }
+        return out;
+      },
+      get months() {
+        const out = [];
+        const start = new Date(today.getFullYear(), today.getMonth(), 1);
+        const end = new Date(testDate.getFullYear(), testDate.getMonth() + 1, 0);
+        let cur = new Date(start);
+        while (cur <= end) {
+          const monthStart = new Date(cur);
+          const monthEnd = new Date(cur.getFullYear(), cur.getMonth() + 1, 0);
+          const days = [];
+          let d = new Date(monthStart);
+          d.setDate(d.getDate() - d.getDay() + 1); // Monday
+          for (let i = 0; i < 42; i++) {
+            const sessions = plan.sessions.filter(s => s.date === d.toISOString().split('T')[0]);
+            days.push({
+              date: new Date(d),
+              otherMonth: d.getMonth() !== cur.getMonth(),
+              sessions
+            });
+            d.setDate(d.getDate() + 1);
+          }
+          out.push({
+            key: cur.toISOString(),
+            label: cur.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+            days
+          });
+          cur.setMonth(cur.getMonth() + 1);
+        }
+        return out;
+      },
+      formatTime(t) { return t; },
+      async toggleSession(id, completed) {
+        await window.KorahStudyPlan?.updateSession(id, { completed });
+      },
+      confirmReset() {
+        if (confirm("Delete your study plan and start over?")) {
+          window.KorahStudyPlan?.deletePlan();
+        }
+      }
+    };
+  }
+</script>
+
+<style>
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes riseIn { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+
+  .panel-card {
+    background: linear-gradient(135deg, rgba(255,255,255,0.02), rgba(255,255,255,0.005));
+    border: 1px solid rgba(139,92,246,.22);
+    border-radius: 1.125rem; padding: 1.25rem 1.375rem;
+    backdrop-filter: blur(1rem); -webkit-backdrop-filter: blur(1rem);
+    transition: border-color .2s, box-shadow .2s;
+    animation: riseIn 0.55s cubic-bezier(.22,1,.36,1) both;
+  }
+  .panel-card:hover { border-color: rgba(167,139,250,.4); box-shadow: 0 0.25rem 1.25rem rgba(139,92,246,0.08); }
+  [data-theme="light"] .panel-card {
+    background: linear-gradient(135deg, rgba(255,255,255,0.85), rgba(255,255,255,0.6));
+    box-shadow: 0 0.125rem 0.5rem rgba(0,0,0,0.06);
+  }
+  .panel-card:nth-child(2) { animation-delay: 0.08s; }
+  .panel-card:nth-child(3) { animation-delay: 0.16s; }
+  .panel-card:nth-child(4) { animation-delay: 0.24s; }
+
+  .radio-group { display:flex !important; flex-direction:row !important; gap:1.25rem !important; align-items:stretch !important; flex-wrap:nowrap !important; }
+  .radio-group .radio-card { flex:1 1 0 !important; min-width:0 !important; }
+  @media (max-width: 640px) { .radio-group { flex-direction:column !important; } }
+  .radio-card { display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:0.875rem;padding:1.75rem 1.25rem;border-radius:1.125rem;border:2px solid var(--bd);background:var(--sf);cursor:pointer;transition:all .2s; min-height:11rem; }
+  .radio-card:hover { border-color:var(--p4); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(124,58,237,0.15); }
+  .radio-card-content { display:flex;flex-direction:column;align-items:center;gap:0.5rem;flex:1;justify-content:center; }
+  .radio-check { width:1.35rem;height:1.35rem;border-radius:50%;border:2px solid var(--bd);display:flex;align-items:center;justify-content:center;transition:all .2s; flex-shrink:0; }
+  .radio-check.active { border-color:var(--p4);background:var(--p4); }
+  .radio-check.active::after { content:'';width:0.6rem;height:0.6rem;border-radius:50%;background:#fff; }
+
+  .drop-zone { border:2px dashed var(--bd);border-radius:1rem;padding:2.5rem;text-align:center;cursor:pointer;transition:all .2s; }
+  .drop-zone:hover { border-color:var(--p4);background:rgba(139,92,246,0.05); }
+  .drop-zone.has-file { border-style:solid;border-color:var(--p4); }
+
+  .rating-row { display:flex;align-items:center;justify-content:space-between;gap:1.25rem; padding:0.875rem 0; border-bottom:1px solid var(--bd); }
+  .rating-row:last-child { border-bottom:none; }
+  .rating-btn { width:3rem;height:3rem;border-radius:0.75rem;border:2px solid var(--bd);background:var(--sf);color:var(--tx);font-weight:700;font-size:1.125rem;cursor:pointer;transition:all .15s; flex-shrink:0; }
+  .rating-btn:hover { border-color:var(--p4); transform: scale(1.05); }
+  .rating-btn.active { background:var(--p4);border-color:var(--p4);color:#fff; box-shadow: 0 4px 12px rgba(124,58,237,0.3); }
+
+  .weekday-btn { min-width:4rem;padding:0.875rem 1rem;border-radius:0.75rem;border:2px solid var(--bd);background:var(--sf);color:var(--tx);font-weight:700;font-size:0.9375rem;cursor:pointer;transition:all .15s; }
+  .weekday-btn:hover { border-color:var(--p4); }
+  .weekday-btn.active { background:var(--p4);border-color:var(--p4);color:#fff; }
+
+  /* Step circles - perfect circles, not rectangles */
+  .wizard-step-circle { width:2.5rem !important; height:2.5rem !important; min-width:2.5rem !important; min-height:2.5rem !important; border-radius:9999px !important; display:flex !important; align-items:center !important; justify-content:center !important; font-weight:800 !important; font-size:1rem !important; line-height:1 !important; padding:0 !important; flex-shrink:0 !important; aspect-ratio: 1 / 1 !important; }
+  .wizard-step-circle.active { background: var(--p4) !important; color:#fff !important; border: 2px solid var(--p4) !important; box-shadow: 0 0 14px rgba(124,58,237,0.4) !important; }
+  .wizard-step-circle:not(.active) { background: var(--sf2) !important; color: var(--tx3) !important; border: 2px solid var(--bd) !important; }
+
+  .session-row { padding:1.15rem; border-radius:1rem; }
+  .session-row.completed { opacity:0.6;background:rgba(34,197,94,0.08);border-color:rgba(34,197,94,0.3); }
+  .month-day { min-height:6.5rem;padding:0.5rem;border-radius:0.75rem;transition:all .2s; }
+  .month-day.other-month { opacity:0.3; }
+  .month-day.has-sessions { border-color:var(--p4); }
+  .month-session { font-size:0.75rem;padding:0.3rem 0.5rem;border-radius:0.5rem;transition:all .2s; box-shadow:0 0.125rem 0.25rem rgba(139,92,246,0.15); }
+  .month-session.completed { background:#22c55e;text-decoration:line-through; }
+  .sat-spinner { width:1.15rem;height:1.15rem;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite; }
+</style>
+
+<script>
+  (function() {
+    const t = localStorage.getItem('korah_theme') || 'dark';
+    if (t === 'light' || (t === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  })();
+</script>
+
+<script>
+  // Global state for plan using Alpine store (properly reactive)
+  document.addEventListener('alpine:init', () => {
+    Alpine.store('studyPlan', {
+      planState: 'loading',
+      planData: null,
+      initError: null,
+      initStages: [],
+      
+      setState(state, data) {
+        this.planState = state;
+        this.planData = data;
+        this.initError = null;
+        console.log('[Alpine Store] State changed:', state);
+      },
+      
+      setError(error) {
+        this.planState = 'empty';
+        this.initError = error;
+        console.error('[Alpine Store] Error:', error);
+      },
+      
+      addStage(name) {
+        this.initStages.push(name);
+        console.log('[Alpine Store] Stage:', name);
+      }
+    });
+  });
+
+  // Backward compatibility - expose for non-Alpine code
+  let planState = 'loading';
+  let planData = null;
+  let initError = null;
+  const initStages = [];
+
+  const stage = (name) => {
+    initStages.push(name);
+    console.log('[StudyPlan Init]', name);
+    if (initStages.length >= 3) {
+      window._initStages = initStages;
+    }
+  };
+
+  window.planState = planState;
+  window.planData = planData;
+  window.initError = initError;
+
+  // ===== Listen for study plan ready event =====
+  window.addEventListener('korahStudyPlanReady', () => {
+    console.log('[StudyPlan] korahStudyPlanReady event fired');
+    if (!window.KorahStudyPlan) {
+      console.error('[StudyPlan] KorahStudyPlan not found');
+      initError = 'Study plan module not found';
+      Alpine.store('studyPlan').setError(initError);
+      return;
+    }
+
+    const unsub = window.KorahStudyPlan.listen(({ state, data }) => {
+      console.log('[StudyPlan] listener callback:', state);
+      Alpine.store('studyPlan').setState(state, data);
+      
+      // Keep global vars in sync for backward compat
+      planState = state;
+      planData = data;
+      initError = null;
+      window.planState = planState;
+      window.planData = planData;
+      window.initError = initError;
+      document.dispatchEvent(new CustomEvent('planStateChange', { detail: { state, data } }));
+    });
+    window._studyPlanUnsub = unsub;
+
+    // Fallback if listener doesn't fire within 10 seconds
+    setTimeout(() => {
+      if (Alpine.store('studyPlan').planState === 'loading') {
+        const err = 'Timeout: Firestore listener not responding';
+        console.error('[StudyPlan] timeout error:', err);
+        Alpine.store('studyPlan').setError(err);
+        unsub?.();
+      }
+    }, 10000);
+  });
+
+  // ===== FORCED TIMEOUT: If still loading after 25 seconds, force empty state =====
+  setTimeout(() => {
+    if (Alpine.store('studyPlan').planState === 'loading') {
+      console.error('[StudyPlan] FORCED TIMEOUT after 25s - showing wizard');
+      const err = 'Initialization timeout - showing setup wizard';
+      Alpine.store('studyPlan').setError(err);
+    }
+  }, 25000);
+</script>
+</body>
+</html>

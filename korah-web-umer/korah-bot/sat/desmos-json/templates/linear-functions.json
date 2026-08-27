@@ -1,0 +1,61 @@
+{
+  "version": 11,
+  "randomSeed": "{{RANDOM_32_CHAR_HEX_STRING}}",
+  "expressions": {
+    "list": [
+      {
+        "type": "text",
+        "id": "problem_statement",
+        "text": "{{RESTATE_THE_FULL_PROBLEM_INCLUDING_THE_TABLE_VALUES_AND_THE_QUESTION_BEING_ASKED}}"
+      },
+      {
+        "type": "text",
+        "id": "algebraic_reasoning",
+        "text": "{{FULL_STEP_BY_STEP_ALGEBRA_TO_SOLVE_BY_HAND_eg_USE_SLOPE_FORMULA_TO_FIND_m_THEN_USE_A_POINT_TO_FIND_b_THEN_SUBSTITUTE_THE_TARGET_X_VALUE_TO_FIND_THE_UNKNOWN}}"
+      },
+      {
+        "type": "text",
+        "id": "desmos_strategy",
+        "text": "{{EXPLAIN_THAT_A_TABLE_OF_THE_TWO_GIVEN_POINTS_WILL_BE_CREATED_THEN_A_LINEAR_REGRESSION_WILL_FIT_THE_BEST_LINE_AND_INTERSECTION_WITH_x_eq_TARGET_VALUE_GIVES_THE_ANSWER}}"
+      },
+      {
+        "id": "data_table",
+        "type": "table",
+        "columns": [
+          {
+            "latex": "x_{2}",
+            "values": ["{{X_VALUE_1_FROM_TABLE_AS_NUMERIC_STRING}}", "{{X_VALUE_2_FROM_TABLE_AS_NUMERIC_STRING}}"],
+            "hidden": true,
+            "color": "#000000"
+          },
+          {
+            "latex": "y_{2}",
+            "values": ["{{Y_VALUE_1_FROM_TABLE_AS_NUMERIC_STRING}}", "{{Y_VALUE_2_FROM_TABLE_AS_NUMERIC_STRING}}"],
+            "color": "#c74440"
+          }
+        ],
+        "regression": {
+          "type": "linear",
+          "columnIds": { "x": "{{X_COLUMN_ID_MATCHING_ABOVE}}", "y": "{{Y_COLUMN_ID_MATCHING_ABOVE}}" },
+          "id": "linreg",
+          "color": "#388c46",
+          "lineStyle": "SOLID",
+          "hidden": false,
+          "isLogMode": false,
+          "residualVariable": "e_{2}"
+        }
+      },
+      {
+        "type": "expression",
+        "id": "target_x_line",
+        "color": "#6042a6",
+        "latex": "{{LATEX_FOR_TARGET_X_VALUE_AS_A_VERTICAL_LINE_eg_x_eq_frac_3_8}}"
+      },
+      {
+        "type": "text",
+        "id": "conclusion",
+        "text": "{{STATE_THE_FINAL_ANSWER_AND_NOTE_THAT_IT_IS_THE_Y_VALUE_AT_THE_INTERSECTION_OF_THE_REGRESSION_LINE_AND_THE_VERTICAL_LINE}}"
+      }
+    ]
+  }
+}

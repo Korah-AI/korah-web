@@ -1,0 +1,2296 @@
+<!DOCTYPE html>
+<html lang="en" x-data="{
+  theme: localStorage.getItem('korah_theme') || 'dark',
+  sidebarCollapsed: window.innerWidth <= 768 ? false : localStorage.getItem('korah_sidebar_collapsed') === 'true',
+  mobileOpen: false,
+  getEffectiveTheme() {
+    if (this.theme === 'system') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return this.theme;
+  },
+  toggleSidebar() {
+    if (window.innerWidth <= 768) {
+      this.mobileOpen = !this.mobileOpen;
+      const overlay = document.querySelector('.sidebar-overlay');
+      if (overlay) overlay.classList.toggle('show', this.mobileOpen);
+    } else {
+      if (this.sidebarCollapsed) {
+        const dp = document.getElementById('doc-panel');
+        if (dp?.classList.contains('expanded')) {
+          dp.classList.remove('expanded');
+          dp.classList.add('collapsed');
+          const tab = document.getElementById('doc-panel-tab');
+          if (tab) tab.classList.remove('panel-open');
+        }
+      }
+      this.sidebarCollapsed = !this.sidebarCollapsed;
+      localStorage.setItem('korah_sidebar_collapsed', this.sidebarCollapsed);
+    }
+  }
+}" :data-theme="getEffectiveTheme()" x-cloak>  <head>
+<link rel="stylesheet" href="../transitions/page-transitions.css"/>
+<script src="../transitions/page-transitions.js"></script>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Korah AI — Study Feed</title>
+  <link rel="icon" type="image/png" href="../logo-images/newlogo0.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <script src="../sidebar-loader.js" defer></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../app/korah-chat.css"/>
+  <style>
+    .study-modern .chat-topbar,
+    .study-modern .study-feed-toolbar,
+    .study-modern .feed-card,
+    .study-modern .feed-empty {
+      border-radius: 1.125rem;
+    }
+    .study-modern .study-feed-body {
+      padding: 1.875rem 1.625rem 2.25rem;
+      gap: 1.125rem;
+    }
+    .study-modern .feed-hero {
+      padding: 1.25rem 1.5rem;
+      border: 1px solid var(--bd);
+      margin-bottom: 0.5rem;
+    }
+    .study-modern .feed-hero-title {
+      font-size: 1.8125rem;
+      line-height: 1.2;
+      font-weight: 700;
+      margin-bottom: 0.375rem;
+    }
+    .study-modern .feed-hero-sub {
+      font-size: 0.9375rem;
+      line-height: 1.6;
+      color: var(--tx2);
+    }
+    .study-modern .study-feed-toolbar {
+      padding: 1.125rem;
+      border: 1px solid var(--bd);
+      background: var(--bg2);
+      gap: 0.75rem;
+    }
+    .study-modern .feed-search,
+    .study-modern .feed-filter-select {
+      min-height: 3rem;
+      border-radius: 0.75rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      padding: 0 2.75rem 0 1rem;
+      border: 1px solid var(--bd2);
+      background-color: var(--sf2);
+      color: var(--tx);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      transition: all .25s cubic-bezier(.23, 1, .32, 1);
+      appearance: none;
+      -webkit-appearance: none;
+      cursor: pointer;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238b5cf6' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 1rem center;
+      box-shadow: 0 0.125rem 0.5rem rgba(0,0,0,.1);
+    }
+    [data-theme="light"] .study-modern .feed-filter-select {
+      background-color: var(--cb);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%237c3aed' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      box-shadow: 0 0.125rem 0.5rem rgba(109,40,217,.1);
+    }
+    .study-modern .feed-search:hover,
+    .study-modern .feed-filter-select:hover {
+      border-color: rgba(139,92,246,.4);
+      background-color: var(--cb);
+      transform: translateY(-1px);
+      box-shadow: 0 0.25rem 0.75rem rgba(0,0,0,.15), 0 0 0.75rem rgba(139,92,246,.15);
+    }
+    .study-modern .feed-search:focus,
+    .study-modern .feed-filter-select:focus {
+      outline: none;
+      border-color: var(--p4);
+      background-color: var(--cb);
+      box-shadow: 0 0.25rem 1rem rgba(0,0,0,.2), 0 0 1.25rem rgba(139,92,246,.2);
+      transform: translateY(-1px);
+    }
+    .study-modern .feed-filter-select option {
+      background: var(--bg3);
+      color: var(--tx);
+      padding: 0.5rem;
+    }
+    [data-theme="light"] .study-modern .feed-filter-select option {
+      background: var(--cb);
+      color: var(--tx);
+    }
+    .study-modern .feed-search {
+      background-image: none;
+      padding-right: 1rem;
+    }
+    .study-modern .feed-search::placeholder {
+      color: var(--tx3);
+      transition: color .2s;
+    }
+    .study-modern .feed-search:focus::placeholder {
+      color: var(--tx2);
+    }
+    @keyframes selectPulse {
+      0% { box-shadow: 0 0.25rem 1rem rgba(0,0,0,.2), 0 0 1.25rem rgba(139,92,246,.2); }
+      50% { box-shadow: 0 0.25rem 1.25rem rgba(0,0,0,.25), 0 0 1.5625rem rgba(139,92,246,.25); }
+      100% { box-shadow: 0 0.25rem 1rem rgba(0,0,0,.2), 0 0 1.25rem rgba(139,92,246,.2); }
+    }
+    .study-modern .feed-filter-select:focus {
+      animation: selectPulse .8s ease-in-out;
+    }
+    .study-modern .feed-cards {
+      grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+      gap: 1rem;
+    }
+    .study-modern .feed-card {
+      min-height: 15.375rem;
+      padding: 1.375rem;
+      border: 1px solid var(--bd);
+      background: linear-gradient(180deg, rgba(255,255,255,.08) 0%, rgba(255,255,255,.04) 100%);
+    }
+    [data-theme="light"] .study-modern .feed-card {
+      background: linear-gradient(180deg, rgba(100,60,180,.08) 0%, rgba(100,60,180,.04) 100%);
+      border-color: rgba(109,40,217,.2);
+    }
+    .study-modern .feed-card-title { font-size: 1.375rem; line-height: 1.25; }
+    .study-modern .feed-card-desc { font-size: 0.875rem; }
+    .study-modern .feed-card-meta { font-size: 0.8125rem; }
+    .feed-card-source {
+      font-size: 0.6875rem;
+      font-weight: 600;
+      color: var(--tx2);
+      background: var(--sf2);
+      padding: 0.1875rem 0.5rem;
+      border-radius: 0.375rem;
+      border: 1px solid var(--bd);
+    }
+    .study-modern .feed-card.is-clickable {
+      cursor: pointer;
+      transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease, background .2s ease;
+      position: relative;
+    }
+    .study-modern .feed-card.is-clickable:hover,
+    .study-modern .feed-card.is-clickable:focus-visible {
+      transform: translateY(-0.1875rem);
+      border-color: var(--p4);
+      box-shadow: 0 1.125rem 1.875rem rgba(0, 0, 0, 0.18);
+      background: linear-gradient(180deg, rgba(255,255,255,.08) 0%, rgba(255,255,255,.03) 100%);
+      outline: none;
+    }
+    .study-modern .feed-card-open-hint {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--p5);
+      margin-top: auto;
+      padding-top: 0.625rem;
+      opacity: .78;
+      transition: opacity .2s ease, transform .2s ease;
+    }
+    .study-modern .feed-card.is-clickable:hover .feed-card-open-hint,
+    .study-modern .feed-card.is-clickable:focus-visible .feed-card-open-hint {
+      opacity: 1;
+      transform: translateX(0.125rem);
+    }
+    .study-modern .feed-card-btn {
+      min-height: 2.625rem;
+      padding: 0 0.875rem;
+      border-radius: 0.75rem;
+      font-size: 0.875rem;
+      font-weight: 700;
+    }
+    .feed-card-rename-btn,
+    .feed-card-delete-btn {
+      width: 1.625rem;
+      height: 1.625rem;
+      border-radius: 0.375rem;
+      border: 1px solid rgba(139,92,246,.3);
+      background: rgba(139,92,246,.12);
+      color: var(--tx2);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all .2s;
+    }
+    .feed-card-rename-btn:hover {
+      background: rgba(139,92,246,.25);
+      color: var(--p5);
+      border-color: rgba(139,92,246,.5);
+    }
+    .feed-card-delete-btn {
+      border-color: rgba(239,68,68,.3);
+      background: rgba(239,68,68,.08);
+      color: #f87171;
+    }
+    .feed-card-delete-btn:hover {
+      background: rgba(239,68,68,.2);
+      color: #f87171;
+      border-color: rgba(239,68,68,.5);
+    }
+    .study-modern .feed-empty {
+      border: 1px solid var(--bd);
+      padding: 2.625rem 1.5rem;
+      background: var(--bg2);
+    }
+    @media (max-width: 48rem) {
+      .study-modern .study-feed-body { padding: 1.25rem 0.875rem 1.5rem; }
+      .study-modern .feed-hero { padding: 1.125rem; }
+      .study-modern .feed-hero-title { font-size: 1.5rem; }
+      .study-modern .study-feed-toolbar { padding: 0.75rem; gap: 0.625rem; }
+      .study-modern .feed-search,
+      .study-modern .feed-filter-select {
+        min-height: 2.75rem;
+        font-size: 0.8125rem;
+        border-radius: 0.625rem;
+        padding: 0 2.25rem 0 0.875rem;
+        background-position: right 0.75rem center;
+      }
+      .study-modern .feed-cards { grid-template-columns: 1fr; }
+    }
+
+    /* --- CREATE DROPDOWN --- */
+    .create-study-dropdown {
+      position: fixed;
+      min-width: 15rem;
+      background: var(--sf);
+      border-radius: 0.75rem;
+      box-shadow: 0 0.75rem 2rem rgba(0,0,0,0.35), 0 0.125rem 0.25rem rgba(0,0,0,0.15);
+      backdrop-filter: blur(1rem);
+      -webkit-backdrop-filter: blur(1rem);
+      padding: 0;
+      z-index: 9999;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-0.5rem) scale(0.96);
+      transform-origin: top right;
+      transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
+    }
+    .create-study-dropdown.open {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0) scale(1);
+    }
+    [data-theme="light"] .create-study-dropdown {
+      background: rgba(255,255,255,0.95);
+      box-shadow: 0 0.75rem 2rem rgba(109,40,217,0.15), 0 0.125rem 0.25rem rgba(109,40,217,0.08);
+    }
+    .create-dropdown-list {
+      list-style: none;
+      margin: 0;
+      padding: 0.375rem 0;
+    }
+    .create-dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      width: 100%;
+      padding: 0.625rem 1rem;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      text-align: left;
+      color: var(--tx);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.15s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .create-dropdown-item::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; right: 0; bottom: 0;
+      background: rgba(139,92,246,0.08);
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+    .create-dropdown-item:hover::before { opacity: 1; }
+    [data-theme="light"] .create-dropdown-item::before { background: rgba(109,40,217,0.07); }
+    .create-dropdown-emoji { font-size: 1.25rem; flex-shrink: 0; position: relative; z-index: 1; }
+    .dropdown-item-text { position: relative; z-index: 1; }
+    .dropdown-item-name { display: block; font-size: 0.875rem; font-weight: 600; color: var(--tx); }
+    .dropdown-item-desc { display: block; font-size: 0.75rem; color: var(--tx2); margin-top: 1px; line-height: 1.4; opacity: 0.8; }
+
+    /* --- CREATION MODAL --- */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(0.5rem);
+      display: none; align-items: center; justify-content: center;
+      z-index: 2000;
+      padding: 1.25rem;
+    }
+    .modal-overlay.active { display: flex; animation: modalFadeIn 0.3s ease-out; }
+    [data-theme="light"] .modal-overlay {
+      background: rgba(109,40,217,0.2);
+      backdrop-filter: blur(0.75rem);
+    }
+    .creation-modal {
+      background: rgba(15, 9, 35, 0.85);
+      border: 1px solid var(--bd);
+      border-radius: 1.5rem;
+      width: 95vw;
+      max-width: 43.75rem;
+      display: none;
+      flex-direction: column;
+      box-shadow: 0 1.5625rem 3.75rem rgba(0,0,0,.5), 0 0 2.5rem rgba(139,92,246,.15);
+      overflow: hidden;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 2001;
+    }
+    .creation-modal.active { display: flex; animation: modalSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+    [data-theme="light"] .creation-modal { background: rgba(250, 248, 255, 0.95); }
+    @keyframes modalFadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes modalSlideUp { from { opacity: 0; transform: translate(-50%, -42%); } to { opacity: 1; transform: translate(-50%, -50%); } }
+    .modal-header {
+      padding: 1.25rem 3.5rem;
+      border-bottom: 1px solid var(--bd2);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .modal-title { font-size: 1.125rem; font-weight: 700; margin: 0; color: var(--tx); }
+    .modal-close {
+      position: absolute; right: 1.25rem; top: 50%; transform: translateY(-50%);
+      width: 2.25rem; height: 2.25rem; border-radius: 0.625rem;
+      border: 1px solid var(--bd); background: var(--sf2); color: var(--tx2);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: all .2s;
+    }
+    .modal-close:hover { background: var(--cu); border-color: var(--p4); color: var(--p4); }
+    .modal-body { padding: 1.75rem; overflow-y: auto; flex: 1; }
+    .method-grid {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;
+    }
+    @media (max-width: 37.5rem) { .method-grid { grid-template-columns: 1fr; } }
+    .method-card {
+      background: var(--sf2); border: 0.125rem solid var(--bd2); border-radius: 1rem;
+      padding: 1.75rem 1.25rem; display: flex; flex-direction: column;
+      align-items: center; gap: 1rem; cursor: pointer;
+      transition: all 0.22s cubic-bezier(0.4,0,0.2,1); text-align: center;
+      min-height: 11rem; justify-content: center; font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .method-card[data-method="manual"] {
+      border-color: rgba(99,102,241,0.3); background: rgba(99,102,241,0.08);
+    }
+    .method-card[data-method="manual"]:hover {
+      border-color: rgba(99,102,241,0.6); background: rgba(99,102,241,0.15);
+      transform: translateY(-0.25rem); box-shadow: 0 0.75rem 1.75rem rgba(99,102,241,0.15);
+    }
+    .method-card[data-method="ai-prompt"] {
+      border-color: rgba(139,92,246,0.3); background: rgba(139,92,246,0.08);
+    }
+    .method-card[data-method="ai-prompt"]:hover {
+      border-color: rgba(139,92,246,0.6); background: rgba(139,92,246,0.15);
+      transform: translateY(-0.25rem); box-shadow: 0 0.75rem 1.75rem rgba(139,92,246,0.15);
+    }
+    [data-theme="light"] .method-card { background: rgba(255,255,255,0.7); border-color: rgba(109,40,217,.15); }
+    [data-theme="light"] .method-card[data-method="manual"] { border-color: rgba(99,102,241,0.4); background: rgba(99,102,241,0.12); }
+    [data-theme="light"] .method-card[data-method="ai-prompt"] { border-color: rgba(139,92,246,0.4); background: rgba(139,92,246,0.12); }
+    [data-theme="light"] .method-card:hover { background: rgba(255,255,255,0.95); border-color: rgba(109,40,217,.4); }
+    .method-icon { font-size: 2.25rem; }
+    .method-name { font-size: 1rem; font-weight: 700; display: block; color: var(--tx); }
+    .method-desc { font-size: 0.8125rem; color: var(--tx2); line-height: 1.5; margin-top: 0.25rem; }
+
+    /* --- EMPTY STATE HERO (rotating image carousel) --- */
+    .feed-empty-hero {
+      position: relative;
+      width: 100%;
+      min-height: 40rem;
+      border-radius: 1.25rem;
+      border: 1px solid var(--bd);
+      background: var(--bg2);
+      overflow: hidden;
+      padding: 5rem 1.25rem 2.75rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+    @media (min-width: 40rem) {
+      .feed-empty-hero { min-height: 47.5rem; padding: 6.25rem 1.5rem 3.25rem; }
+    }
+    .feed-empty-hero .empty-bg-glow {
+      position: absolute;
+      width: 18rem; height: 18rem;
+      border-radius: 624.938rem;
+      filter: blur(4.375rem);
+      pointer-events: none;
+      animation: emptyPulse 4s ease-in-out infinite;
+    }
+    .feed-empty-hero .empty-bg-glow.tr { top: -5rem; right: -5rem; background: radial-gradient(circle, rgba(139,92,246,.22), transparent 70%); }
+    .feed-empty-hero .empty-bg-glow.bl { bottom: -5rem; left: -5rem; background: radial-gradient(circle, rgba(139,92,246,.16), transparent 70%); animation-delay: 1.5s; }
+    @keyframes emptyPulse { 0%,100% { opacity: .7; } 50% { opacity: 1; } }
+
+    .empty-carousel {
+      position: relative;
+      width: 100%;
+      max-width: 40rem;
+      height: 13rem;
+      margin-top: -2.5rem;
+      margin-bottom: 2rem;
+      perspective: 62.5rem;
+    }
+    @media (min-width: 40rem) {
+      .empty-carousel { margin-bottom: 2.75rem; }
+    }
+    .empty-carousel-inner {
+      position: absolute; inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .empty-card {
+      position: absolute;
+      width: 5rem;
+      height: 6.5rem;
+      border-radius: 0.75rem;
+      overflow: hidden;
+      box-shadow: 0 0.75rem 1.75rem rgba(0,0,0,.3), 0 0 1.125rem rgba(139,92,246,.12);
+      transition: transform .3s ease, box-shadow .3s ease;
+      transform-style: preserve-3d;
+      border: 1px solid rgba(255,255,255,.08);
+    }
+    [data-theme="light"] .empty-card {
+      border-color: rgba(109, 40, 217, 0.18);
+      box-shadow: 0 0.75rem 1.75rem rgba(109, 40, 217, 0.12), 0 0 1.125rem rgba(109, 40, 217, 0.06);
+    }
+    [data-theme="light"] .empty-card:hover {
+      box-shadow: 0 1.5rem 3.25rem rgba(109, 40, 217, 0.2), 0 0 2rem rgba(109, 40, 217, 0.15);
+    }
+    @media (min-width: 40rem) {
+      .empty-card { width: 6.5rem; height: 8.25rem; }
+      .empty-carousel { height: 16rem; }
+    }
+    .empty-card img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform .5s ease;
+    }
+    .empty-card > div { font-size: 1.75rem !important; }
+    @media (min-width: 40rem) { .empty-card > div { font-size: 2.25rem !important; } }
+    .empty-card::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,.18) 0%, transparent 50%);
+      opacity: 0;
+      transition: opacity .3s;
+      pointer-events: none;
+    }
+    .empty-card:hover { transform: scale(1.08) translateZ(1.25rem) !important; box-shadow: 0 1.5rem 3.25rem rgba(0,0,0,.5), 0 0 2rem rgba(139,92,246,.3); }
+    .empty-card:hover::after { opacity: 1; }
+    .empty-card:hover img { transform: scale(1.1); }
+
+    .feed-empty-hero .empty-title-new {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: clamp(1.4rem, 2.6vw, 1.85rem);
+      font-weight: 700;
+      color: var(--tx);
+      margin: 0 0 0.4rem;
+      line-height: 1.15;
+      max-width: 36rem;
+    }
+    .feed-empty-hero .empty-sub-new {
+      font-size: clamp(0.825rem, 1.2vw, 0.95rem);
+      color: var(--tx2);
+      max-width: 32rem;
+      line-height: 1.5;
+      margin: 0 0 1rem;
+    }
+    .empty-cta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      justify-content: center;
+      margin-bottom: 1.25rem;
+    }
+    .empty-cta-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.7rem 1.4rem;
+      border-radius: 624.938rem;
+      background: var(--sf2);
+      border: 1px solid var(--bd);
+      color: var(--tx);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 0.875rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all .25s ease;
+    }
+    .empty-cta-secondary:hover {
+      transform: translateY(-0.125rem);
+      border-color: var(--p4);
+      background: var(--cu);
+      box-shadow: 0 0.5rem 1.25rem rgba(139,92,246,.18);
+    }
+    .empty-features {
+      width: 100%;
+      max-width: 48rem;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.65rem;
+    }
+    @media (max-width: 40rem) { .empty-features { grid-template-columns: 1fr; gap: 0.5rem; } }
+    .empty-feature {
+      padding: 0.75rem 0.85rem;
+      border-radius: 0.75rem;
+      background: rgba(255,255,255,.03);
+      border: 1px solid var(--bd);
+      transition: all .3s ease;
+      text-align: center;
+    }
+    [data-theme="light"] .empty-feature { background: rgba(109,40,217,.04); border-color: rgba(109,40,217,.15); }
+    .empty-feature:hover {
+      border-color: var(--p4);
+      transform: translateY(-0.125rem);
+      box-shadow: 0 0.5rem 1.125rem rgba(0,0,0,.12);
+    }
+    .empty-feature h4 {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--tx);
+      margin: 0 0 0.2rem;
+      transition: color .2s;
+    }
+    .empty-feature:hover h4 { color: var(--p5); }
+    .empty-feature p {
+      font-size: 0.72rem;
+      color: var(--tx2);
+      margin: 0;
+      line-height: 1.4;
+    }
+
+    /* --- IMPORT MODAL (files / drive) --- */
+    .import-modal {
+      background: rgba(15, 9, 35, 0.92);
+      border: 1px solid var(--bd);
+      border-radius: 1.5rem;
+      width: 95vw;
+      max-width: 38.75rem;
+      max-height: 90vh;
+      max-height: 90dvh;
+      display: none;
+      flex-direction: column;
+      position: relative;
+      box-shadow: 0 1.5625rem 3.75rem rgba(0,0,0,.5), 0 0 2.5rem rgba(139,92,246,.15);
+      overflow: hidden;
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 2001;
+    }
+    .import-modal.active { display: flex; animation: modalSlideUp .4s cubic-bezier(0.16, 1, 0.3, 1); }
+    [data-theme="light"] .import-modal { background: rgba(250, 248, 255, 0.97); }
+    .import-modal .modal-header { flex-shrink: 0; }
+    .import-modal .modal-body {
+      overflow-y: auto;
+      flex: 1 1 auto;
+      min-height: 0;
+      -webkit-overflow-scrolling: touch;
+    }
+    .import-modal .modal-body::-webkit-scrollbar { width: 0.5rem; }
+    .import-modal .modal-body::-webkit-scrollbar-thumb {
+      background: rgba(139,92,246,.3);
+      border-radius: 0.25rem;
+    }
+    .import-modal .modal-body::-webkit-scrollbar-thumb:hover { background: rgba(139,92,246,.5); }
+    .import-source-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.9rem;
+    }
+    @media (max-width: 33.75rem) { .import-source-grid { grid-template-columns: 1fr; } }
+    .import-source-card {
+      background: var(--sf2);
+      border: 1px solid var(--bd2);
+      border-radius: 0.875rem;
+      padding: 1.25rem 1rem;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 0.65rem;
+      cursor: pointer; text-align: center;
+      transition: all .22s cubic-bezier(0.4,0,0.2,1);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      color: var(--tx);
+    }
+    .import-source-card:hover {
+      border-color: var(--p4);
+      background: var(--cu);
+      transform: translateY(-0.1875rem);
+      box-shadow: 0 0.625rem 1.5rem rgba(0,0,0,.18), 0 0 0.875rem rgba(139,92,246,.15);
+    }
+    .import-source-card.coming-soon {
+      position: relative;
+      pointer-events: none;
+    }
+    .import-source-card.coming-soon .import-source-icon,
+    .import-source-card.coming-soon .import-source-name,
+    .import-source-card.coming-soon .import-source-desc {
+      opacity: 0.5;
+    }
+    .import-source-card.coming-soon .import-source-name,
+    .import-source-card.coming-soon .import-source-desc {
+      text-decoration: line-through;
+    }
+    .import-source-card.coming-soon::after {
+      content: "Coming Soon";
+      position: absolute;
+      bottom: 0.5rem;
+      right: 0.6rem;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: white;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .import-source-icon { font-size: 1.85rem; }
+    .import-source-name { font-size: 0.95rem; font-weight: 700; }
+    .import-source-desc { font-size: 0.75rem; color: var(--tx2); line-height: 1.4; }
+    .import-input-row { margin-top: 1rem; display: flex; flex-direction: column; gap: 0.4rem; }
+    .import-input-row label { font-size: 0.8rem; font-weight: 600; color: var(--tx2); }
+    .import-input-row input, .import-input-row textarea, .import-input-row select {
+      width: 100%;
+      padding: 0.7rem 0.9rem;
+      border-radius: 0.625rem;
+      background: var(--sf2);
+      border: 1px solid var(--bd2);
+      color: var(--tx);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 0.875rem;
+    }
+    .import-input-row input:focus, .import-input-row textarea:focus, .import-input-row select:focus {
+      outline: none; border-color: var(--p4);
+      box-shadow: 0 0 0 0.1875rem rgba(139,92,246,.18);
+    }
+    .import-submit-row { display: flex; justify-content: flex-end; margin-top: 1.25rem; }
+
+    .import-input-row { position: relative; }
+    .import-target-type-trigger {
+      width: 100%;
+      padding: 0.7rem 0.9rem;
+      border-radius: 0.625rem;
+      background: var(--sf2);
+      border: 1px solid var(--bd2);
+      color: var(--tx);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      transition: all 0.2s ease;
+    }
+    .import-target-type-trigger:hover,
+    .import-target-type-trigger.open {
+      border-color: var(--p4);
+      box-shadow: 0 0 0 0.1875rem rgba(139,92,246,.18);
+    }
+    .import-target-type-trigger-inner {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .import-target-type-trigger-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--p5);
+    }
+    .import-target-type-trigger svg:last-child {
+      color: var(--p5);
+      transition: transform 0.2s ease;
+    }
+    .import-target-type-trigger.open svg:last-child { transform: rotate(180deg); }
+    #import-target-type-dropdown {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 100%;
+      margin-top: 0.4rem;
+      min-width: 0;
+    }
+
+    /* Import Error States */
+    .import-input-row.error input,
+    .import-input-row.error textarea {
+      border-color: #ef4444;
+      background: rgba(239,68,68,0.06);
+    }
+    .import-input-row.error input:focus,
+    .import-input-row.error textarea:focus {
+      border-color: #ef4444;
+      box-shadow: 0 0 0 0.1875rem rgba(239,68,68,0.18);
+    }
+    .import-input-row .field-error {
+      display: none;
+      color: #ef4444;
+      font-size: 0.72rem;
+      font-weight: 500;
+      margin-top: 0.25rem;
+    }
+    .import-input-row.error .field-error {
+      display: block;
+    }
+    #import-form-error {
+      display: none;
+      padding: 0.75rem 0.9rem;
+      background: rgba(239,68,68,0.1);
+      border: 1px solid #ef4444;
+      border-radius: 0.5rem;
+      color: #ef4444;
+      font-size: 0.8rem;
+      font-weight: 500;
+      margin-bottom: 1rem;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    #import-form-error.show {
+      display: flex;
+    }
+
+    /* Import Chips */
+    .import-contents-summary {
+      padding: 0.75rem 0;
+      margin-bottom: 1.25rem;
+    }
+    .import-contents-summary-header {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--tx2);
+      margin-bottom: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03125rem;
+    }
+    .import-chips-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .import-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: var(--sf3);
+      border: 1px solid var(--bd2);
+      border-radius: 1.25rem;
+      padding: 0.4rem 0.7rem;
+      font-size: 0.75rem;
+      color: var(--tx);
+      max-width: 100%;
+      word-break: break-word;
+    }
+    .import-chip-icon {
+      font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+    .import-chip-label {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .import-chip-remove {
+      cursor: pointer;
+      opacity: 0.6;
+      transition: opacity 0.15s ease;
+      flex-shrink: 0;
+      margin-left: 0.2rem;
+    }
+    .import-chip-remove:hover {
+      opacity: 1;
+    }
+
+    /* Source Input Panels */
+    .import-source-panel {
+      display: none;
+      margin-top: 1rem;
+      padding: 1rem;
+      background: var(--sf2);
+      border: 1px solid var(--bd2);
+      border-radius: 0.625rem;
+    }
+    .import-source-panel.active {
+      display: block;
+    }
+    .import-url-input-group {
+      display: flex;
+      gap: 0.6rem;
+      margin-bottom: 0.6rem;
+    }
+    .import-url-input-group input {
+      flex: 1;
+      padding: 0.6rem 0.8rem;
+      border-radius: 0.5rem;
+      border: 1px solid var(--bd2);
+      background: var(--sf);
+      color: var(--tx);
+      font-size: 0.85rem;
+    }
+    .import-url-input-group input:focus {
+      outline: none;
+      border-color: var(--p4);
+      box-shadow: 0 0 0 0.125rem rgba(139,92,246,0.18);
+    }
+    .import-url-input-group button {
+      padding: 0.6rem 1rem;
+      background: var(--p5);
+      color: white;
+      border: none;
+      border-radius: 0.5rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s ease;
+      white-space: nowrap;
+    }
+    .import-url-input-group button:hover {
+      background: var(--p4);
+    }
+    .import-text-panel textarea {
+      width: 100%;
+      min-height: 5rem;
+      padding: 0.7rem 0.9rem;
+      border-radius: 0.5rem;
+      border: 1px solid var(--bd2);
+      background: var(--sf);
+      color: var(--tx);
+      font-size: 0.85rem;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      resize: vertical;
+    }
+    .import-text-panel textarea:focus {
+      outline: none;
+      border-color: var(--p4);
+      box-shadow: 0 0 0 0.125rem rgba(139,92,246,0.18);
+    }
+    .import-drive-panel button {
+      width: 100%;
+      padding: 0.8rem 1rem;
+      background: linear-gradient(135deg, #4285F4 0%, #34A853 100%);
+      color: white;
+      border: none;
+      border-radius: 0.5rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s ease;
+    }
+    .import-drive-panel button:hover {
+      transform: translateY(-0.125rem);
+    }
+    .import-drive-status {
+      margin-top: 0.6rem;
+      padding: 0.6rem;
+      background: rgba(52, 168, 83, 0.1);
+      border-radius: 0.375rem;
+      font-size: 0.75rem;
+      color: #34A853;
+      display: none;
+    }
+    .import-drive-status.active {
+      display: block;
+    }
+  </style>
+</head>
+<body class="bg-base tx study-modern">
+<style>
+  html:not(.korah-page-ready) { background: #06040f !important; }
+  html[data-theme="light"]:not(.korah-page-ready) { background: #d2d2d2 !important; }
+  html:not(.korah-page-ready) body { opacity: 0 !important; }
+</style>
+
+<script>
+  (function() {
+    const t = localStorage.getItem('korah_theme') || 'dark';
+    if (t === 'light' || (t === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  })();
+</script>
+
+<canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
+<div id="sidebar-root"></div>
+
+
+<main id="main-content" class="main-content">
+  <header class="chat-topbar bg-sf glass-sm t-theme bd" style="opacity: 0.95;">
+    <button id="sidebar-toggle" @click="toggleSidebar()" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+    <div class="chat-title-area">
+      <div class="korah-status-dot"></div>
+      <span class="font-semibold tx text-sm">Study Feed</span>
+    </div>
+    <div class="topbar-actions">
+      <button id="create-study-btn" onclick="toggleCreateDropdown(this)" class="new-chat-btn text-white text-xs font-bold px-4 py-2 rounded-full border-none cursor-pointer shadow-glow t-btn inline-flex items-center gap-2" style = "background-color: rgb(18, 192, 192);">
+        + Create Study Item
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" id="create-study-chevron" style="transition:transform .2s"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="study-feed-body">
+    <section class="feed-hero bg-sf glass-sm t-theme">
+      <h1 class="feed-hero-title tx">Your Study Library</h1>
+      <p class="feed-hero-sub">Search, filter, and jump into your materials quickly. Everything is optimized for fast review sessions.</p>
+    </section>
+
+    <div class="study-feed-toolbar">
+      <input type="search" id="feed-search" class="feed-search tx bg-sf2 bd" placeholder="Search by title or description…" />
+      <div class="feed-filters">
+        <select id="filter-type" class="feed-filter-select tx bg-sf2 bd">
+          <option value="">All types</option>
+          <option value="flashcards"><span class="material-icons-round" style="color: #78909C; font-size: 1rem;" aria-label="cards">style</span> Flashcards</option>
+          <option value="studyGuide"><span class="material-icons-round" style="color: #5C6BC0; font-size: 1rem;" aria-label="book">auto_stories</span> Study Guide</option>
+          <option value="practiceTest"><span class="material-icons-round" style="color: #EF5350; font-size: 1rem;" aria-label="target">gps_fixed</span> Practice Test</option>
+        </select>
+        <select id="filter-source" class="feed-filter-select tx bg-sf2 bd">
+          <option value="">All sources</option>
+          <option value="manual">Manual</option>
+          <option value="ai-prompt">AI from prompt</option>
+          <option value="ai-doc">AI from docs</option>
+          <option value="chatbot-request">From Chatbot</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="feed-cards" class="feed-cards">
+      <!-- Cards rendered by JS -->
+    </div>
+    
+    <div id="feed-empty" class="feed-empty-hero hidden">
+      <div class="empty-bg-glow tr"></div>
+      <div class="empty-bg-glow bl"></div>
+
+      <div class="empty-carousel" id="empty-carousel">
+        <div class="empty-carousel-inner" id="empty-carousel-inner">
+          <!-- Rotating placeholder cards injected by JS -->
+        </div>
+      </div>
+
+      <h2 class="empty-title-new" style = "margin-top: 0.9375rem;">Turn anything into a study set</h2>
+      <p class="empty-sub-new">Upload files, pull from Google Drive, paste notes, or describe a topic. Korah builds flashcards, study guides, and practice tests for you in seconds!</p>
+
+      <div class="empty-cta-row">
+        <div style="position:relative;display:inline-block;">
+          <button id="empty-create-btn" onclick="toggleEmptyCreateDropdown()" class="new-chat-btn grad-bg text-white text-sm font-bold px-6 py-3 rounded-full border-none cursor-pointer shadow-glow t-btn inline-flex items-center gap-2" style="background-color: rgb(18, 192, 192);">
+            + Create Study Item
+          </button>
+          <div id="empty-create-dropdown" class="create-study-dropdown" style="position:absolute;top:calc(100% + 0.375rem);left:50%;transform:translateX(-50%);right:auto;">
+            <ul class="create-dropdown-list">
+              <li>
+                <button class="create-dropdown-item empty-dropdown-item" data-type="flashcards">
+                  <span class="create-dropdown-emoji"><span class="material-icons-round" style="color: #78909C; font-size: 1.25rem;">style</span></span>
+                  <span class="dropdown-item-text">
+                    <span class="dropdown-item-name">Flashcard Set</span>
+                    <span class="dropdown-item-desc">Front/back cards with rich text and math</span>
+                  </span>
+                </button>
+              </li>
+              <li>
+                <button class="create-dropdown-item empty-dropdown-item" data-type="studyGuide">
+                  <span class="create-dropdown-emoji"><span class="material-icons-round" style="color: #5C6BC0; font-size: 1.25rem;">auto_stories</span></span>
+                  <span class="dropdown-item-text">
+                    <span class="dropdown-item-name">Study Guide</span>
+                    <span class="dropdown-item-desc">Structured outline with sections and summaries</span>
+                  </span>
+                </button>
+              </li>
+              <li>
+                <button class="create-dropdown-item empty-dropdown-item" data-type="practiceTest">
+                  <span class="create-dropdown-emoji"><span class="material-icons-round" style="color: #EF5350; font-size: 1.25rem;">gps_fixed</span></span>
+                  <span class="dropdown-item-text">
+                    <span class="dropdown-item-name">Practice Test</span>
+                    <span class="dropdown-item-desc">Questions with answer keys and rationales</span>
+                  </span>
+                </button>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <button id="open-import-modal-btn" class="empty-cta-secondary t-btn">
+          <span class="material-icons-round" style="font-size: 1.1rem;">cloud_upload</span>
+          Upload Files or Drive
+        </button>
+      </div>
+
+      <div class="empty-features">
+        <div class="empty-feature">
+          <h4>Realistic Results</h4>
+          <p>AI-crafted materials that look hand-made by a tutor.</p>
+        </div>
+        <div class="empty-feature">
+          <h4>Fast Generation</h4>
+          <p>Turn ideas, notes, or PDFs into study sets in seconds.</p>
+        </div>
+        <div class="empty-feature">
+          <h4>Diverse Sources</h4>
+          <p>Files, Google Drive, prompts — bring it all together.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Create Study Dropdown (fixed, shared by all trigger buttons) -->
+<div id="create-study-dropdown" class="create-study-dropdown">
+  <ul class="create-dropdown-list">
+    <li>
+      <button class="create-dropdown-item" data-type="flashcards">
+        <span class="create-dropdown-emoji">
+          <span class="material-icons-round" style="color: #78909C; font-size: 1.25rem;" aria-label="flashcards">style</span>
+        </span>
+        <span class="dropdown-item-text">
+          <span class="dropdown-item-name">Flashcard Set</span>
+          <span class="dropdown-item-desc">Front/back cards with rich text and math</span>
+        </span>
+      </button>
+    </li>
+    <li>
+      <button class="create-dropdown-item" data-type="studyGuide">
+        <span class="create-dropdown-emoji">
+          <span class="material-icons-round" style="color: #5C6BC0; font-size: 1.25rem;" aria-label="study guide">auto_stories</span>
+        </span>
+        <span class="dropdown-item-text">
+          <span class="dropdown-item-name">Study Guide</span>
+          <span class="dropdown-item-desc">Structured outline with sections and summaries</span>
+        </span>
+      </button>
+    </li>
+    <li>
+      <button class="create-dropdown-item" data-type="practiceTest">
+        <span class="create-dropdown-emoji">
+          <span class="material-icons-round" style="color: #EF5350; font-size: 1.25rem;" aria-label="practice test">gps_fixed</span>
+        </span>
+        <span class="dropdown-item-text">
+          <span class="dropdown-item-name">Practice Test</span>
+          <span class="dropdown-item-desc">Questions with answer keys and rationales</span>
+        </span>
+      </button>
+    </li>
+  </ul>
+</div>
+
+<!-- Creation Modal -->
+<div id="modal-backdrop" class="modal-overlay"></div>
+<div id="creation-modal" class="creation-modal">
+  <div class="modal-header">
+    <h2 class="modal-title" id="creation-modal-title">Create Study Item</h2>
+    <button class="modal-close material-icons-round" id="creation-modal-close" style="font-size:1.125rem;" aria-label="close">close</button>
+  </div>
+  <div class="modal-body">
+    <p style="text-align:center; font-size:0.8125rem; color:var(--tx2); margin-bottom:1.25rem; font-weight:600;">How do you want to create it?</p>
+    <div class="method-grid">
+      <button type="button" class="method-card t-btn" data-method="manual">
+        <div class="method-icon">
+          <span class="material-icons-round" style="color: var(--tx); font-size: 2.25rem;" aria-label="manual">edit</span>
+        </div>
+        <div>
+          <span class="method-name">Manual</span>
+          <span class="method-desc">Type or paste your content directly into the editor</span>
+        </div>
+      </button>
+      <button type="button" class="method-card t-btn" data-method="ai-prompt">
+        <div class="method-icon">
+          <span class="material-icons-round" style="color: var(--tx); font-size: 2.25rem;" aria-label="AI prompt">chat</span>
+        </div>
+        <div>
+          <span class="method-name">AI from Prompt</span>
+          <span class="method-desc">Describe what you need and let Korah generate the rest</span>
+        </div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Import (Files / Drive) Modal -->
+<div id="import-modal-backdrop" class="modal-overlay"></div>
+<div id="import-modal" class="import-modal">
+  <div class="modal-header">
+    <h2 class="modal-title">Import Study Material</h2>
+    <button class="modal-close material-icons-round" id="import-modal-close" style="font-size:1.125rem;" aria-label="close">close</button>
+  </div>
+  <div class="modal-body">
+    <div class="import-source-grid">
+      <button type="button" class="import-source-card t-btn" data-import-source="files">
+        <span class="import-source-icon">
+          <span class="material-icons-round" style="color: var(--tx); font-size: 1.75rem;" aria-label="upload files">cloud_upload</span>
+        </span>
+        <span class="import-source-name">Upload Files</span>
+        <span class="import-source-desc">PDFs, slides, notes, or images from your device</span>
+      </button>
+      <button type="button" class="import-source-card coming-soon t-btn" data-import-source="drive">
+        <span class="import-source-icon">
+          <img src="../logo-images/googledrive.png" alt="Link" style="width:1.75rem;height:1.75rem;object-fit:contain;display:block;" />
+        </span>
+        <span class="import-source-name">Google Drive</span>
+        <span class="import-source-desc">Pick a doc, slide deck, or folder from Drive</span>
+      </button>
+      <button type="button" class="import-source-card t-btn" data-import-source="link">
+        <span class="import-source-icon">
+          <img src="../logo-images/youtube.png" alt="Link" style="width:1.75rem;height:1.75rem;object-fit:contain;display:block;" />
+        </span>
+        <span class="import-source-name">Paste a Link</span>
+        <span class="import-source-desc">YouTube videos, articles, or shared documents</span>
+      </button>
+      <button type="button" class="import-source-card t-btn" data-import-source="text">
+        <span class="import-source-icon">
+          <span class="material-icons-round" style="color: var(--tx); font-size: 1.75rem;" aria-label="paste text">description</span>
+        </span>
+        <span class="import-source-name">Paste Text</span>
+        <span class="import-source-desc">Drop in raw notes or copy from your textbook</span>
+      </button>
+    </div>
+
+    <!-- Content Summary Chips -->
+    <div id="import-contents-summary" class="import-contents-summary" style="display: none;">
+      <div class="import-contents-summary-header">What Korah will receive:</div>
+      <div id="import-chips-container" class="import-chips-container"></div>
+    </div>
+
+    <form id="import-form" onsubmit="return false;">
+      <input type="file" id="import-file-input" multiple hidden />
+
+      <!-- Link Input Panel -->
+      <div id="import-link-panel" class="import-source-panel">
+        <div class="import-url-input-group">
+          <input type="url" id="import-url-input" placeholder="https://youtube.com/watch?v=... or any web link" />
+          <button type="button" id="import-url-add-btn">Add URL</button>
+        </div>
+        <div id="import-url-error" style="color: #ef4444; font-size: 0.75rem; display: none;"></div>
+      </div>
+
+      <!-- Text Paste Panel -->
+      <div id="import-text-panel" class="import-source-panel import-text-panel">
+        <div class="import-url-input-group">
+          <textarea id="import-text-input" placeholder="Paste your raw notes, text content, or copied material here…" style="resize: vertical; min-height: 6.25rem;"></textarea>
+          <button type="button" id="import-text-add-btn">Add Document</button>
+        </div>
+        <div id="import-text-error" style="color: #ef4444; font-size: 0.75rem; display: none;"></div>
+      </div>
+
+
+      <div id="import-title-row" class="import-input-row">
+        <label for="import-title">Title</label>
+        <input id="import-title" type="text" placeholder="e.g. Biology Chapter 4 — Cell Division" />
+        <span class="field-error"></span>
+      </div>
+
+      <div class="import-input-row">
+        <label for="import-target-type-trigger">Generate as</label>
+        <button type="button" id="import-target-type-trigger" class="import-target-type-trigger">
+          <span class="import-target-type-trigger-inner">
+            <span class="import-target-type-trigger-icon" id="import-target-type-icon">
+              <span class="material-icons-round" style="color: var(--tx2); font-size: 1.125rem;" aria-label="flashcards">style</span>
+            </span>
+            <span id="import-target-type-label">Flashcards</span>
+          </span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <input type="hidden" id="import-target-type" value="flashcards"/>
+        <div id="import-target-type-dropdown" class="create-study-dropdown" style="position:absolute;">
+          <ul class="create-dropdown-list">
+            <li>
+              <button type="button" class="create-dropdown-item" data-target-type="flashcards">
+                <span class="create-dropdown-emoji">
+                  <span class="material-icons-round" style="color: #78909C; font-size: 1.25rem;" aria-label="flashcards">style</span>
+                </span>
+                <span class="dropdown-item-text">
+                  <span class="dropdown-item-name">Flashcards</span>
+                  <span class="dropdown-item-desc">Front/back cards with rich text and math</span>
+                </span>
+              </button>
+            </li>
+            <li>
+              <button type="button" class="create-dropdown-item" data-target-type="studyGuide">
+                <span class="create-dropdown-emoji">
+                  <span class="material-icons-round" style="color: #5C6BC0; font-size: 1.25rem;" aria-label="study guide">auto_stories</span>
+                </span>
+                <span class="dropdown-item-text">
+                  <span class="dropdown-item-name">Study Guide</span>
+                  <span class="dropdown-item-desc">Structured outline with sections and summaries</span>
+                </span>
+              </button>
+            </li>
+            <li>
+              <button type="button" class="create-dropdown-item" data-target-type="practiceTest">
+                <span class="create-dropdown-emoji">
+                  <span class="material-icons-round" style="color: #EF5350; font-size: 1.25rem;" aria-label="practice test">gps_fixed</span>
+                </span>
+                <span class="dropdown-item-text">
+                  <span class="dropdown-item-name">Practice Test</span>
+                  <span class="dropdown-item-desc">Questions with answer keys and rationales</span>
+                </span>
+              </button>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div id="import-instructions-row" class="import-input-row">
+        <label for="import-instructions">Instructions for Korah</label>
+        <textarea id="import-instructions" rows="3" placeholder="Focus on definitions and key formulas…"></textarea>
+        <span class="field-error"></span>
+      </div>
+
+      <div id="import-form-error"></div>
+
+      <div class="import-submit-row">
+        <button type="submit" id="import-submit" class="new-chat-btn grad-bg text-white text-sm font-bold px-6 py-3 rounded-full border-none cursor-pointer shadow-glow t-btn">
+          Generate Study Set
+        </button>
+      </div>
+    </form>
+
+    <!-- Drag & Drop Overlay -->
+    <div id="drag-overlay" class="drag-overlay">
+      <div class="drag-overlay-inner">
+        <span class="drag-overlay-icon"><span class="material-icons-round" style="color: var(--tx3); font-size: 3rem;" aria-label="document">article</span></span>
+        <span class="drag-overlay-text">Drop files here</span>
+        <span class="drag-overlay-hint">Images, PDFs, text files</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div id="settings-modal" class="settings-modal">
+  <div class="settings-modal-content">
+    <div class="settings-header">
+      <h2 class="settings-title">Settings</h2>
+      <button class="settings-close" id="settings-close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="settings-body">
+      <div class="settings-section">
+        <h3 class="settings-section-title">Appearance</h3>
+        <div class="settings-item">
+          <div class="settings-item-label">Theme</div>
+          <div class="settings-item-control">
+            <div class="settings-custom-select" id="settings-theme-custom-select">
+              <div class="settings-select-trigger" id="settings-theme-trigger">
+                <div class="flex items-center gap-2">
+                  <span class="material-icons-round trigger-icon">dark_mode</span>
+                  <span class="trigger-text">Dark Mode</span>
+                </div>
+                <span class="material-icons-round">expand_more</span>
+              </div>
+              <div class="settings-select-menu" id="settings-theme-menu">
+                <div class="settings-select-option" data-value="dark">
+                  <span class="material-icons-round">dark_mode</span>
+                  <span>Dark Mode</span>
+                  <span class="material-icons-round check-icon">check</span>
+                </div>
+                <div class="settings-select-option" data-value="light">
+                  <span class="material-icons-round">light_mode</span>
+                  <span>Light Mode</span>
+                  <span class="material-icons-round check-icon">check</span>
+                </div>
+                <div class="settings-select-option" data-value="system">
+                  <span class="material-icons-round">settings_suggest</span>
+                  <span>System</span>
+                  <span class="material-icons-round check-icon">check</span>
+                </div>
+              </div>
+              <input type="hidden" id="settings-theme-select" value="dark">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3 class="settings-section-title">Profile</h3>
+        <div class="settings-item">
+          <div class="settings-item-label">Display Name</div>
+          <div class="settings-item-control">
+            <input type="text" id="settings-name-input" class="settings-input" placeholder="Your name">
+          </div>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3 class="settings-section-title">Data</h3>
+        <div class="settings-item">
+          <div class="settings-item-label">Clear All Data</div>
+          <div class="settings-item-control">
+            <button id="settings-clear-data" class="settings-btn danger">Clear Data</button>
+          </div>
+        </div>
+      </div>
+      <div class="settings-actions">
+        <button id="settings-save" class="settings-btn primary">Save Settings</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Rename Modal -->
+<div id="rename-modal" class="delete-modal">
+  <div class="delete-modal-content">
+    <div class="delete-modal-icon"><span class="material-icons-round" style="color: #FFA726; font-size: 1.25rem;" aria-label="rename">edit</span></div>
+    <h3 class="delete-modal-title">Rename</h3>
+    <p class="delete-modal-desc" id="rename-modal-desc">Enter a new name</p>
+    <input id="rename-modal-input" type="text" class="create-input" style="width:100%; margin-top:0.25rem;" placeholder="New name…"/>
+    <div class="delete-modal-actions">
+      <button id="rename-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
+      <button id="rename-modal-confirm" class="delete-modal-btn confirm t-btn" style="background:rgba(139,92,246,.12); color:var(--p5); border-color:rgba(139,92,246,.3);">Rename</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div id="delete-modal" class="delete-modal">
+  <div class="delete-modal-content">
+    <div class="delete-modal-icon"><span class="material-icons-round" style="color: var(--red); font-size: 1.25rem;" aria-label="delete">delete</span></div>
+    <h3 class="delete-modal-title">Delete?</h3>
+    <p class="delete-modal-desc">This will permanently delete "<span id="delete-modal-name"></span>". This cannot be undone.</p>
+    <div class="delete-modal-actions">
+      <button id="delete-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
+      <button id="delete-modal-confirm" class="delete-modal-btn confirm t-btn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="js/study-firebase-init.js"></script>
+<script src="../app/timer-manager.js"></script>
+<script src="js/sidebar.js"></script>
+<script src="js/study-api.js"></script>
+<script>
+(function () {
+  // ─── Feed-local in-memory cache, populated by Firestore listener ─────────────
+  let _feedStudyItems = {};
+
+  // Initialize sidebar
+  window.addEventListener('korahReady', () => {
+    if (window.KorahSidebar) {
+        window.KorahSidebar.initSidebar({ chatBaseUrl: "../chat.html", itemPageUrl: "item.html" });
+    }
+}, { once: true });
+
+  const TYPE_LABELS = { flashcards: "Flashcards", studyGuide: "Study Guide", practiceTest: "Practice Test" };
+  const SOURCE_LABELS = { manual: "Manual", "ai-prompt": "AI from prompt", "ai-doc": "AI from Docs", "chatbot-request": "From Chatbot" };
+
+  function getItemUrl(item) {
+    if (item.type === "studyGuide") return "guide.html?id=" + encodeURIComponent(item.id);
+    if (item.type === "practiceTest") return "test.html?id=" + encodeURIComponent(item.id);
+    return "item.html?id=" + encodeURIComponent(item.id);
+  }
+
+  function renderCards() {
+    const items = _feedStudyItems;
+    const list = Object.keys(items).map(function (id) { return { id: id, ...items[id] }; });
+    const typeFilter = document.getElementById("filter-type").value;
+    const sourceFilter = document.getElementById("filter-source").value;
+    const search = (document.getElementById("feed-search").value || "").toLowerCase().trim();
+
+    let filtered = list;
+    if (typeFilter) filtered = filtered.filter(function (i) { return i.type === typeFilter; });
+    if (sourceFilter) filtered = filtered.filter(function (i) { return (i.source || "manual") === sourceFilter; });
+    if (search) {
+      filtered = filtered.filter(function (i) {
+        return ((i.title || "") + " " + (i.description || "")).toLowerCase().indexOf(search) >= 0;
+      });
+    }
+    filtered.sort(function (a, b) {
+      return new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0);
+    });
+
+    const container = document.getElementById("feed-cards");
+    const emptyEl = document.getElementById("feed-empty");
+    container.innerHTML = "";
+    if (filtered.length === 0) {
+      emptyEl.classList.remove("hidden");
+      return;
+    }
+    emptyEl.classList.add("hidden");
+    filtered.forEach(function (item) {
+      const card = document.createElement("div");
+      card.className = "feed-card bg-card bd t-theme is-clickable";
+      card.setAttribute("role", "link");
+      card.setAttribute("tabindex", "0");
+      card.setAttribute("aria-label", "Open " + (item.title || "study item"));
+      const updated = item.updatedAt || item.createdAt;
+      const dateStr = updated ? new Date(updated).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "";
+      const source = item.source || "manual";
+      const label = TYPE_LABELS[item.type] || item.type;
+
+      card.innerHTML =
+        '<div class="feed-card-header">' +
+          '<span class="feed-card-type">' + KorahSidebar.getTypeIconHtml(item.type) + ' ' + label + '</span>' +
+          '<div style="display:flex; align-items:center; gap:0.375rem;">' +
+            '<span class="feed-card-source">' + (SOURCE_LABELS[source] || source) + '</span>' +
+            '<button class="feed-card-rename-btn" title="Rename">' +
+              '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>' +
+            '</button>' +
+            '<button class="feed-card-delete-btn" title="Delete">' +
+              '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>' +
+            '</button>' +
+          '</div>' +
+        '</div>' +
+        '<h3 class="feed-card-title">' + (item.title || "Untitled") + '</h3>' +
+        (item.description ? '<p class="feed-card-desc tx2">' + (item.description.length > 110 ? item.description.slice(0, 110) + "..." : item.description) + '</p>' : '<p class="feed-card-desc tx3">No description provided.</p>') +
+        '<div class="feed-card-meta tx3 mb-4">Modified ' + dateStr + '</div>' +
+        '<div class="feed-card-open-hint">Click anywhere to open →</div>';
+
+      card.querySelector(".feed-card-rename-btn").addEventListener("click", function (e) {
+        e.stopPropagation();
+        if (window.showRenameModal) {
+          window.showRenameModal(item.title || "", "Enter a new name for this item:", function(newName) {
+            item.title = newName.trim();
+            item.updatedAt = new Date().toISOString();
+            _feedStudyItems[item.id] = item;
+            if (window.KorahDB) window.KorahDB.setStudyItem(item.id, item);
+            renderCards();
+          });
+        }
+      });
+
+      card.querySelector(".feed-card-delete-btn").addEventListener("click", function (e) {
+        e.stopPropagation();
+        if (window.showDeleteModal) {
+          window.showDeleteModal(item.title || "this item", function() {
+            delete _feedStudyItems[item.id];
+            if (window.KorahDB) window.KorahDB.deleteStudyItem(item.id);
+            renderCards();
+          });
+        }
+      });
+
+      card.addEventListener("click", function () {
+        window.KorahTransitions.go(getItemUrl(item));
+      });
+      card.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          window.KorahTransitions.go(getItemUrl(item));
+        }
+      });
+
+      container.appendChild(card);
+    });
+  }
+
+  document.getElementById("feed-search").addEventListener("input", renderCards);
+  document.getElementById("filter-type").addEventListener("change", renderCards);
+  document.getElementById("filter-source").addEventListener("change", renderCards);
+
+  // Defer initial render until Firestore data is loaded.
+  function onReady() {
+    if (window.KorahDB) {
+      window.KorahDB.onStudyItemsChange(function (snapshot) {
+        _feedStudyItems = snapshot;
+        renderCards();
+      });
+    } else {
+      renderCards(); // fallback (empty)
+    }
+  }
+  if (window._korahReadyFired) {
+    onReady();
+  } else {
+    window.addEventListener("korahReady", onReady, { once: true });
+  }
+
+  // feed-delete-modal removed - using browser confirm() dialog instead
+
+})();
+</script>
+
+<script>
+window._selectedType = null;
+
+(function () {
+  var _activeTrigger = null;
+  var TYPE_LABELS = { flashcards: "Flashcard Set", studyGuide: "Study Guide", practiceTest: "Practice Test" };
+
+  var dropdown = document.getElementById("create-study-dropdown");
+  var chevron = document.getElementById("create-study-chevron");
+  var backdrop = document.getElementById("modal-backdrop");
+  var modal = document.getElementById("creation-modal");
+  var modalTitle = document.getElementById("creation-modal-title");
+  var modalClose = document.getElementById("creation-modal-close");
+
+  function positionDropdown(trigger) {
+    var rect = trigger.getBoundingClientRect();
+    dropdown.style.top = (rect.bottom + 6) + "px";
+    var right = window.innerWidth - rect.right;
+    dropdown.style.right = right + "px";
+    dropdown.style.left = "auto";
+  }
+
+  window.toggleCreateDropdown = function (trigger) {
+    if (dropdown.classList.contains("open") && _activeTrigger === trigger) {
+      closeDropdown();
+      return;
+    }
+    _activeTrigger = trigger;
+    positionDropdown(trigger);
+    dropdown.classList.add("open");
+    if (trigger === document.getElementById("create-study-btn")) {
+      chevron.style.transform = "rotate(180deg)";
+    }
+  };
+
+  function closeDropdown() {
+    dropdown.classList.remove("open");
+    chevron.style.transform = "";
+    _activeTrigger = null;
+  }
+
+  document.addEventListener("click", function (e) {
+    if (!dropdown.contains(e.target) && e.target !== _activeTrigger && !_activeTrigger?.contains(e.target)) {
+      closeDropdown();
+    }
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") closeDropdown();
+  });
+  dropdown.querySelectorAll(".create-dropdown-item").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      closeDropdown();
+      var type = btn.getAttribute("data-type");
+      window._selectedType = type;
+      if (modalTitle) modalTitle.textContent = "Create " + (TYPE_LABELS[type] || type);
+      if (backdrop) backdrop.classList.add("active");
+      if (modal) modal.classList.add("active");
+    });
+  });
+
+  document.querySelectorAll(".method-card[data-method]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var method = btn.getAttribute("data-method");
+      var pageMap = { flashcards: "flashcards.html", studyGuide: "guide-create.html", practiceTest: "test-create.html" };
+      if (window._selectedType && pageMap[window._selectedType]) {
+        window.KorahTransitions.go(pageMap[window._selectedType] + "?method=" + encodeURIComponent(method));
+      }
+    });
+  });
+
+  if (modalClose) modalClose.addEventListener("click", function () {
+    backdrop.classList.remove("active");
+    modal.classList.remove("active");
+  });
+  if (backdrop) backdrop.addEventListener("click", function () {
+    backdrop.classList.remove("active");
+    modal.classList.remove("active");
+  });
+})();
+</script>
+
+<script>
+(function () {
+  var emptyDropdown = document.getElementById("empty-create-dropdown");
+  if (!emptyDropdown) return;
+
+  var TYPE_LABELS = { flashcards: "Flashcard Set", studyGuide: "Study Guide", practiceTest: "Practice Test" };
+  var backdrop = document.getElementById("modal-backdrop");
+  var modal = document.getElementById("creation-modal");
+  var modalTitle = document.getElementById("creation-modal-title");
+  var modalClose = document.getElementById("creation-modal-close");
+
+  window.toggleEmptyCreateDropdown = function () {
+    emptyDropdown.classList.toggle("open");
+  };
+
+  document.addEventListener("click", function (e) {
+    var btn = document.getElementById("empty-create-btn");
+    if (!emptyDropdown.contains(e.target) && e.target !== btn && !btn?.contains(e.target)) {
+      emptyDropdown.classList.remove("open");
+    }
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") emptyDropdown.classList.remove("open");
+  });
+
+  emptyDropdown.querySelectorAll(".empty-dropdown-item").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      emptyDropdown.classList.remove("open");
+      window._selectedType = btn.getAttribute("data-type");
+      if (modalTitle) modalTitle.textContent = "Create " + (TYPE_LABELS[window._selectedType] || window._selectedType);
+      if (backdrop) backdrop.classList.add("active");
+      if (modal) modal.classList.add("active");
+    });
+  });
+})();
+</script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+  import { startAuthGuard } from '../auth-guard.js';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
+    authDomain: "korah-app.firebaseapp.com",
+    projectId: "korah-app",
+    storageBucket: "korah-app.firebasestorage.app",
+    messagingSenderId: "226169460321",
+    appId: "1:226169460321:web:b166fc8260107c55dafc20"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  onAuthStateChanged(auth, (user) => {
+    if (!user) { window.KorahTransitions.go('../landing/index.html'); return; }
+    startAuthGuard(auth, '../landing/index.html');
+  });
+
+  // ─── Empty state rotating carousel ───────────────────────────────────────
+  (function () {
+    const inner = document.getElementById("empty-carousel-inner");
+    if (!inner) return;
+
+    const placeholders = [
+      { emoji: '<span class="material-icons-round" style="color: #78909C; font-size: 2.75rem;" aria-label="book">book</span>', bg: "linear-gradient(135deg,#7c3aed,#3b82f6)", rotation: -15 },
+      { emoji: '<span class="material-icons-round" style="color: #26A69A; font-size: 2.75rem;" aria-label="science">science</span>', bg: "linear-gradient(135deg,#ec4899,#8b5cf6)", rotation: -8 },
+      { emoji: '<span class="material-icons-round" style="color: #78909C; font-size: 2.75rem;" aria-label="ruler">straighten</span>', bg: "linear-gradient(135deg,#06b6d4,#3b82f6)", rotation: 5 },
+      { emoji: '<span class="material-icons-round" style="color: #AB47BC; font-size: 2.75rem;" aria-label="brain">psychology</span>', bg: "linear-gradient(135deg,#f59e0b,#ef4444)", rotation: 12 },
+      { emoji: '<span class="material-icons-round" style="color: #78909C; font-size: 2.75rem;" aria-label="scroll">article</span>', bg: "linear-gradient(135deg,#10b981,#06b6d4)", rotation: -12 },
+      { emoji: '<span class="material-icons-round" style="color: #EC407A; font-size: 2.75rem;" aria-label="palette">palette</span>', bg: "linear-gradient(135deg,#8b5cf6,#ec4899)", rotation: 8 },
+      { emoji: '<span class="material-icons-round" style="color: #26A69A; font-size: 2.75rem;" aria-label="microscope">biotech</span>', bg: "linear-gradient(135deg,#3b82f6,#10b981)", rotation: -6 },
+      { emoji: '<span class="material-icons-round" style="color: #78909C; font-size: 2.75rem;" aria-label="world map">map</span>', bg: "linear-gradient(135deg,#f97316,#ec4899)", rotation: 10 }
+    ];
+
+    const cards = placeholders.map((p, i) => {
+      const card = document.createElement("div");
+      card.className = "empty-card";
+      card.dataset.rotation = p.rotation;
+      card.style.background = p.bg;
+      card.innerHTML =
+        '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;">' +
+        p.emoji + '</div>';
+      inner.appendChild(card);
+      return card;
+    });
+
+    let angles = placeholders.map((_, i) => i * (360 / placeholders.length));
+    let mouseX = 0.5, mouseY = 0.5;
+
+    const carousel = document.getElementById("empty-carousel");
+    carousel.addEventListener("mousemove", function (e) {
+      const rect = carousel.getBoundingClientRect();
+      mouseX = (e.clientX - rect.left) / rect.width;
+      mouseY = (e.clientY - rect.top) / rect.height;
+    });
+    carousel.addEventListener("mouseleave", function () {
+      mouseX = 0.5; mouseY = 0.5;
+    });
+
+    function isCompactCard() { return window.innerWidth < 640; }
+
+    function tick() {
+      const radius = isCompactCard() ? 75 : 105;
+      const pX = (mouseX - 0.5) * 20;
+      const pY = (mouseY - 0.5) * 20;
+      angles = angles.map(a => (a + 0.5) % 360);
+      cards.forEach((card, i) => {
+        const rad = angles[i] * Math.PI / 180;
+        const x = Math.cos(rad) * radius;
+        const y = Math.sin(rad) * radius;
+        const rot = card.dataset.rotation || 0;
+        card.style.transform =
+          'translate(' + x + 'px, ' + y + 'px) ' +
+          'rotateX(' + pY + 'deg) rotateY(' + pX + 'deg) rotateZ(' + rot + 'deg)';
+      });
+    }
+    setInterval(tick, 50);
+    tick();
+  })();
+
+  // ─── Import (Files / Drive) modal ────────────────────────────────────────
+  (function () {
+    const openBtn = document.getElementById("open-import-modal-btn");
+    const backdrop = document.getElementById("import-modal-backdrop");
+    const modal = document.getElementById("import-modal");
+    const closeBtn = document.getElementById("import-modal-close");
+    const fileInput = document.getElementById("import-file-input");
+    const submitBtn = document.getElementById("import-submit");
+    const titleInput = document.getElementById("import-title");
+    const instructionsInput = document.getElementById("import-instructions");
+    const form = document.getElementById("import-form");
+    const formError = document.getElementById("import-form-error");
+    const summarySection = document.getElementById("import-contents-summary");
+    const chipsContainer = document.getElementById("import-chips-container");
+
+    if (!openBtn || !modal) return;
+
+    // State for all import sources
+    let addedUrls = [];
+    let pastedTexts = [];
+    let driveFiles = [];
+
+    function open() { backdrop.classList.add("active"); modal.classList.add("active"); }
+    function close() { backdrop.classList.remove("active"); modal.classList.remove("active"); }
+
+    openBtn.addEventListener("click", open);
+    closeBtn.addEventListener("click", close);
+    backdrop.addEventListener("click", close);
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && modal.classList.contains("active")) close();
+    });
+
+    // ─── Source Card Wiring ──────────────────────────────────────────────────
+    document.querySelectorAll(".import-source-card[data-import-source]").forEach(function (btn) {
+      btn.addEventListener("click", function (e) {
+        e.preventDefault();
+        const src = btn.getAttribute("data-import-source");
+
+        // Hide all panels first
+        document.querySelectorAll(".import-source-panel").forEach(p => p.classList.remove("active"));
+
+        // Highlight the selected card
+        document.querySelectorAll(".import-source-card").forEach(c => c.style.borderColor = "");
+        btn.style.borderColor = "var(--p4)";
+
+        // Show relevant panel and trigger action
+        if (src === "files") {
+          fileInput.click();
+        } else if (src === "link") {
+          document.getElementById("import-link-panel").classList.add("active");
+        } else if (src === "text") {
+          document.getElementById("import-text-panel").classList.add("active");
+          document.getElementById("import-text-input").focus();
+        } else if (src === "drive") {
+          // Directly initiate Google Drive picker
+          const apiKey = window.GOOGLE_PICKER_API_KEY;
+          const clientId = window.GOOGLE_OAUTH_CLIENT_ID;
+          if (!apiKey || !clientId) {
+            alert("Google Drive integration not configured");
+            return;
+          }
+          loadGoogleApis(apiKey, clientId);
+        }
+      });
+    });
+
+    // File input change handler - render chips
+    fileInput.addEventListener("change", function () {
+      renderImportChips();
+    });
+
+    // ─── URL Input Handler ───────────────────────────────────────────────────
+    const urlInput = document.getElementById("import-url-input");
+    const urlAddBtn = document.getElementById("import-url-add-btn");
+    const urlError = document.getElementById("import-url-error");
+
+    urlAddBtn.addEventListener("click", function (e) {
+      e.preventDefault();
+      const url = urlInput.value.trim();
+      if (!url) return;
+
+      try {
+        new URL(url);
+        addedUrls.push({ url: url, label: getLinkLabel(url) });
+        urlInput.value = "";
+        urlError.style.display = "none";
+        renderImportChips();
+      } catch {
+        urlError.textContent = "Invalid URL format";
+        urlError.style.display = "block";
+      }
+    });
+
+    urlInput.addEventListener("keypress", function (e) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        urlAddBtn.click();
+      }
+    });
+
+    function getLinkLabel(url) {
+      if (/youtube\.com|youtu\.be/.test(url)) {
+        const videoId = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s?]+)/);
+        return videoId ? "YouTube: " + videoId[1].slice(0, 6) + "…" : "YouTube link";
+      }
+      try {
+        const u = new URL(url);
+        return u.hostname.replace("www.", "").slice(0, 20);
+      } catch {
+        return url.slice(0, 30) + "…";
+      }
+    }
+
+    // ─── Text Paste Handler ──────────────────────────────────────────────────
+    const textInput = document.getElementById("import-text-input");
+    const textAddBtn = document.getElementById("import-text-add-btn");
+    const textError = document.getElementById("import-text-error");
+
+    textAddBtn.addEventListener("click", function (e) {
+      e.preventDefault();
+      const text = textInput.value.trim();
+      if (!text) {
+        textError.textContent = "Please paste some text first";
+        textError.style.display = "block";
+        return;
+      }
+      pastedTexts.push({ text: text, label: "Text: " + text.slice(0, 30) + (text.length > 30 ? "…" : "") });
+      textInput.value = "";
+      textError.style.display = "none";
+      renderImportChips();
+      textInput.focus();
+    });
+
+    textInput.addEventListener("keypress", function (e) {
+      if (e.key === "Enter" && e.ctrlKey) {
+        e.preventDefault();
+        textAddBtn.click();
+      }
+    });
+
+    // ─── Google Drive OAuth Picker ────────────────────────────────────────
+    let driveScriptsLoaded = false;
+
+    function loadGoogleApis(apiKey, clientId) {
+      if (driveScriptsLoaded) {
+        initGoogleDrivePicker(apiKey, clientId);
+        return;
+      }
+
+      // Load Google Identity Services first
+      const script1 = document.createElement("script");
+      script1.src = "https://accounts.google.com/gsi/client";
+      script1.onload = function () {
+        console.log("[Drive] GSI client loaded");
+        // Then load Google API client
+        const script2 = document.createElement("script");
+        script2.src = "https://apis.google.com/js/api.js";
+        script2.onload = function () {
+          console.log("[Drive] Google API loaded");
+          // Check that google object exists
+          if (!window.google) {
+            console.error("[Drive] Google object not available");
+            alert("Failed to load Google APIs");
+            return;
+          }
+          // Load picker library
+          if (window.gapi && window.gapi.load) {
+            window.gapi.load('picker', {
+              callback: function () {
+                console.log("[Drive] Picker library loaded");
+                driveScriptsLoaded = true;
+                initGoogleDrivePicker(apiKey, clientId);
+              }
+            });
+          } else {
+            console.error("[Drive] gapi not available");
+            alert("Failed to load Google Picker");
+          }
+        };
+        script2.onerror = function () {
+          console.error("[Drive] Failed to load Google API");
+          alert("Failed to load Google Drive API");
+        };
+        document.head.appendChild(script2);
+      };
+      script1.onerror = function () {
+        console.error("[Drive] Failed to load GSI client");
+        alert("Failed to load Google authentication");
+      };
+      document.head.appendChild(script1);
+    }
+
+    function initGoogleDrivePicker(apiKey, clientId) {
+      if (!window.google || !window.google.accounts) {
+        console.error("[Drive] google.accounts not ready");
+        alert("Google authentication not ready");
+        return;
+      }
+      if (!window.google.picker) {
+        console.error("[Drive] google.picker not ready");
+        alert("Google Picker not ready");
+        return;
+      }
+
+      const tokenClient = window.google.accounts.oauth2.initTokenClient({
+        client_id: clientId,
+        scope: 'https://www.googleapis.com/auth/drive.readonly',
+        callback: (response) => {
+          console.log("[Drive] OAuth callback", response.access_token ? "token received" : "no token");
+          if (response.access_token) {
+            const picker = new window.google.picker.PickerBuilder()
+              .enableFeature(window.google.picker.Feature.SUPPORT_DRIVES)
+              .setOAuthToken(response.access_token)
+              .addView(window.google.picker.ViewId.DOCS)
+              .addView(window.google.picker.ViewId.PDFS)
+              .setCallback((data) => {
+                console.log("[Drive] Picker callback", data);
+                if (data[window.google.picker.Response.ACTION] === window.google.picker.Action.PICKED) {
+                  const doc = data[window.google.picker.Response.DOCUMENTS][0];
+                  downloadDriveFile(doc, response.access_token);
+                }
+              })
+              .build();
+            picker.setVisible(true);
+          } else {
+            console.error("[Drive] No access token in response");
+            alert("Failed to authenticate with Google");
+          }
+        }
+      });
+
+      console.log("[Drive] Requesting access token...");
+      tokenClient.requestAccessToken();
+    }
+
+    function downloadDriveFile(doc, accessToken) {
+      const fileId = doc.id;
+      const fileName = doc.name;
+      const mimeType = doc.mimeType || "";
+
+      console.log("[Drive] Downloading:", fileName, mimeType);
+
+      let exportUrl;
+      if (mimeType.includes("google-apps.document")) {
+        exportUrl = `https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=text/plain&access_token=${accessToken}`;
+      } else if (mimeType.includes("google-apps.presentation")) {
+        exportUrl = `https://www.googleapis.com/drive/v3/files/${fileId}/export?mimeType=text/plain&access_token=${accessToken}`;
+      } else {
+        exportUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&access_token=${accessToken}`;
+      }
+
+      fetch(exportUrl)
+        .then(r => {
+          if (!r.ok) throw new Error("HTTP " + r.status);
+          return r.blob();
+        })
+        .then(blob => {
+          const file = new File([blob], fileName, { type: mimeType || "application/octet-stream" });
+          const dt = new DataTransfer();
+          Array.from(fileInput.files || []).forEach(f => dt.items.add(f));
+          dt.items.add(file);
+          fileInput.files = dt.files;
+
+          console.log("[Drive] File added:", fileName);
+          renderImportChips();
+        })
+        .catch(err => {
+          console.error("[Drive] Download failed:", err);
+          alert("Failed to download file: " + err.message);
+        });
+    }
+
+    // ─── Chips Rendering ────────────────────────────────────────────────────
+    function renderImportChips() {
+      chipsContainer.innerHTML = "";
+      let hasContent = false;
+
+      // File chips
+      Array.from(fileInput.files || []).forEach((file, idx) => {
+        hasContent = true;
+        const chip = document.createElement("div");
+        chip.className = "import-chip";
+        chip.innerHTML = `
+          <span class="import-chip-icon"><span class="material-icons-round" style="color: var(--tx2); font-size: 1.25rem;" aria-label="file">article</span></span>
+          <span class="import-chip-label" title="${file.name}">${file.name}</span>
+          <span class="import-chip-remove material-icons-round" onclick="event.stopPropagation();" style="font-size:1rem; color:var(--tx);" aria-label="close">close</span>
+          `;
+          chip.querySelector(".import-chip-remove").addEventListener("click", function () {
+          const dt = new DataTransfer();
+          Array.from(fileInput.files).forEach((f, i) => { if (i !== idx) dt.items.add(f); });
+          fileInput.files = dt.files;
+          renderImportChips();
+          });
+          chipsContainer.appendChild(chip);
+          });
+
+          // URL chips
+          addedUrls.forEach((item, idx) => {
+          hasContent = true;
+          const chip = document.createElement("div");
+          chip.className = "import-chip";
+          chip.innerHTML = `
+          <span class="import-chip-icon"><span class="material-icons-round" style="color: var(--p4); font-size: 1.25rem;" aria-label="link">link</span></span>
+          <span class="import-chip-label" title="${item.url}">${item.label}</span>
+          <span class="import-chip-remove material-icons-round" onclick="event.stopPropagation();" style="font-size:1rem; color:var(--tx);" aria-label="close">close</span>
+          `;
+          chip.querySelector(".import-chip-remove").addEventListener("click", function () {
+          addedUrls.splice(idx, 1);
+          renderImportChips();
+          });
+          chipsContainer.appendChild(chip);
+          });
+
+          // Pasted text chips
+          pastedTexts.forEach((item, idx) => {
+          hasContent = true;
+          const chip = document.createElement("div");
+          chip.className = "import-chip";
+          chip.innerHTML = `
+          <span class="import-chip-icon"><span class="material-icons-round" style="color: var(--p4); font-size: 1.25rem;" aria-label="memo">description</span></span>
+          <span class="import-chip-label" title="${item.text}">${item.label}</span>
+          <span class="import-chip-remove material-icons-round" onclick="event.stopPropagation();" style="font-size:1rem; color:var(--tx);" aria-label="close">close</span>
+          `;
+          chip.querySelector(".import-chip-remove").addEventListener("click", function () {
+          pastedTexts.splice(idx, 1);
+          renderImportChips();
+          });
+          chipsContainer.appendChild(chip);
+          });
+      // Show/hide summary
+      if (hasContent) {
+        summarySection.style.display = "block";
+      } else {
+        summarySection.style.display = "none";
+      }
+    }
+
+    // ─── Validation and Error Handling ───────────────────────────────────────
+    function clearImportErrors() {
+      document.querySelectorAll(".import-input-row.error").forEach(el => el.classList.remove("error"));
+      document.querySelectorAll(".import-input-row .field-error").forEach(el => el.textContent = "");
+      formError.classList.remove("show");
+      formError.textContent = "";
+    }
+
+    function setFieldError(fieldId, message) {
+      const row = document.getElementById(fieldId);
+      if (row) {
+        row.classList.add("error");
+        const errorSpan = row.querySelector(".field-error");
+        if (errorSpan) errorSpan.textContent = message;
+      }
+    }
+
+    function showFormError(message) {
+      formError.classList.add("show");
+      formError.innerHTML = `<span style="flex-grow: 1;">${message}</span>`;
+    }
+
+    function validateImportForm() {
+      clearImportErrors();
+      let valid = true;
+
+      const title = titleInput.value.trim();
+      const instructions = instructionsInput.value.trim();
+      const hasSources = fileInput.files.length > 0 || addedUrls.length > 0 || pastedTexts.length > 0;
+
+      if (!title) {
+        setFieldError("import-title-row", "Title is required");
+        valid = false;
+      }
+      if (!instructions) {
+        setFieldError("import-instructions-row", "Instructions are required");
+        valid = false;
+      }
+      if (!hasSources) {
+        showFormError("Add at least one source — upload a file, paste a link, or paste text.");
+        valid = false;
+      }
+
+      return valid;
+    }
+
+    // Real-time error clearing
+    titleInput.addEventListener("input", function () {
+      if (titleInput.parentElement.classList.contains("error")) {
+        titleInput.parentElement.classList.remove("error");
+      }
+    });
+    instructionsInput.addEventListener("input", function () {
+      if (instructionsInput.parentElement.classList.contains("error")) {
+        instructionsInput.parentElement.classList.remove("error");
+      }
+    });
+
+    // ─── AI generate study set from import form ──────────────────────────────
+    async function generateFromImport() {
+      if (!window.KorahStudyAPI || !window.KorahDB) {
+        showFormError("Korah isn't ready yet — please wait a moment and try again.");
+        formError.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        return;
+      }
+
+      if (!validateImportForm()) {
+        return;
+      }
+
+      const title = titleInput.value.trim();
+      const type = document.getElementById("import-target-type").value;
+      const instructions = instructionsInput.value.trim();
+      const files = Array.from(fileInput.files || []);
+      const urls = addedUrls.map(u => u.url);
+      const texts = pastedTexts.map(t => t.text);
+
+      const originalLabel = submitBtn.innerHTML;
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = "Generating…";
+
+      try {
+        const result = await window.KorahStudyAPI.generateStudyContent({
+          type: type,
+          prompt: instructions,
+          title: title,
+          subject: "general",
+          files: files,
+          urls: urls,
+          pastedTexts: texts
+        });
+        if (!result || !result.content) throw new Error("No content returned.");
+
+        const id = "si_" + Date.now();
+        const descParts = [];
+        if (files.length) descParts.push(files.length + " file(s)");
+        if (urls.length) descParts.push(urls.length + " URL(s)");
+        if (pastedTexts.length) descParts.push(pastedTexts.length + " text document(s)");
+        const description = "Generated from " + descParts.join(", ") + " on " + new Date().toLocaleDateString();
+
+        const newItem = {
+          id: id,
+          type: type,
+          title: title,
+          description: description,
+          content: result.content,
+          source: "ai-doc",
+          subject: "general",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        await window.KorahDB.setStudyItem(id, newItem);
+
+        const itemPage = type === "studyGuide" ? "guide.html" : (type === "practiceTest" ? "test.html" : "item.html");
+        window.KorahTransitions.go(itemPage + "?id=" + encodeURIComponent(id));
+      } catch (error) {
+        console.error("[import] generation failed:", error);
+        const msg = error && error.message ? error.message : "Something went wrong.";
+        showFormError("Korah couldn't generate your study set. " + msg + " Please try again.");
+        formError.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalLabel;
+      }
+    }
+
+    submitBtn.addEventListener("click", generateFromImport);
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      generateFromImport();
+    });
+
+    // ─── Generate-as custom dropdown ─────────────────────────────────────────
+    (function () {
+      const trigger = document.getElementById("import-target-type-trigger");
+      const dropdown = document.getElementById("import-target-type-dropdown");
+      const hidden = document.getElementById("import-target-type");
+      const label = document.getElementById("import-target-type-label");
+      const iconWrap = document.getElementById("import-target-type-icon");
+      if (!trigger || !dropdown) return;
+
+      function close() {
+        dropdown.classList.remove("open");
+        trigger.classList.remove("open");
+      }
+      function open() {
+        dropdown.classList.add("open");
+        trigger.classList.add("open");
+      }
+      trigger.addEventListener("click", function (e) {
+        e.stopPropagation();
+        if (dropdown.classList.contains("open")) close(); else open();
+      });
+      document.addEventListener("click", function (e) {
+        if (!dropdown.contains(e.target) && e.target !== trigger && !trigger.contains(e.target)) close();
+      });
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") close();
+      });
+      dropdown.querySelectorAll(".create-dropdown-item").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          const value = btn.getAttribute("data-target-type");
+          hidden.value = value;
+          const name = btn.querySelector(".dropdown-item-name");
+          const iconSvg = btn.querySelector(".create-dropdown-emoji .material-icons-round");
+          if (label && name) label.textContent = name.textContent;
+          if (iconWrap && iconSvg) iconWrap.innerHTML = iconSvg.outerHTML;
+          close();
+        });
+      });
+    })();
+  })();
+
+  // ── Drag & Drop Overlay (Import Modal) ──
+  (function() {
+    const dragOverlay = document.getElementById('drag-overlay');
+    const importModal = document.getElementById('import-modal');
+    const fileInput = document.getElementById('import-file-input');
+    const importModalElement = document.getElementById('import-modal');
+    const importBackdrop = document.getElementById('import-modal-backdrop');
+
+    if (!dragOverlay || !importModal) return;
+
+    importModal.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dragOverlay.classList.add('active');
+    });
+
+    importModal.addEventListener('dragleave', (e) => {
+      if (!importModal.contains(e.relatedTarget)) {
+        dragOverlay.classList.remove('active');
+      }
+    });
+
+    importModal.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dragOverlay.classList.remove('active');
+      if (e.dataTransfer.files?.length) {
+        try {
+          const dt = new DataTransfer();
+          Array.from(e.dataTransfer.files).forEach(f => dt.items.add(f));
+          fileInput.files = dt.files;
+          // Trigger chips update
+          fileInput.dispatchEvent(new Event('change'));
+        } catch (_) {}
+      }
+    });
+
+    dragOverlay.addEventListener('dragleave', () => {
+      dragOverlay.classList.remove('active');
+    });
+
+    dragOverlay.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dragOverlay.classList.remove('active');
+      if (e.dataTransfer.files?.length) {
+        try {
+          const dt = new DataTransfer();
+          Array.from(e.dataTransfer.files).forEach(f => dt.items.add(f));
+          fileInput.files = dt.files;
+          // Trigger chips update
+          fileInput.dispatchEvent(new Event('change'));
+        } catch (_) {}
+      }
+    });
+  })();
+
+  document.getElementById('logout-btn').addEventListener('click', () => {
+    window.confirmLogout(async () => {
+      await signOut(auth);
+      localStorage.removeItem('korah_first_name');
+      window.KorahTransitions.go('../login.html');
+    });
+  });
+
+  // Google Drive Picker Credentials
+  window.GOOGLE_PICKER_API_KEY = "AIzaSyBAxNUwKHJU1I3aUPcaqqhfrJ9gL75Ot1w";
+  window.GOOGLE_OAUTH_CLIENT_ID = "890009032759-o95f1jm2fo2rhol8v96egvjstj0ir538.apps.googleusercontent.com";
+</script>
+</body>
+</html>

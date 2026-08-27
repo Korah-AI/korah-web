@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en" x-data="{
+  theme: localStorage.getItem('korah_theme') || 'dark',
+  sidebarCollapsed: window.innerWidth <= 768 ? false : localStorage.getItem('korah_sidebar_collapsed') === 'true',
+  mobileOpen: false,
+  getEffectiveTheme() {
+    if (this.theme === 'system') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return this.theme;
+  },
+  toggleSidebar() {
+    if (window.innerWidth <= 768) {
+      this.mobileOpen = !this.mobileOpen;
+      const overlay = document.querySelector('.sidebar-overlay');
+      if (overlay) overlay.classList.toggle('show', this.mobileOpen);
+    } else {
+      this.sidebarCollapsed = !this.sidebarCollapsed;
+      localStorage.setItem('korah_sidebar_collapsed', this.sidebarCollapsed);
+    }
+  }
+}" :data-theme="getEffectiveTheme()" x-cloak>
+<head>
+<link rel="stylesheet" href="../transitions/page-transitions.css"/>
+<script src="../transitions/page-transitions.js"></script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Korah AI — Practice Rush</title>
+<link rel="icon" type="image/png" href="../logo-images/newlogo0.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script src="../sidebar-loader.js" defer></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="../study/js/sidebar.js"></script>
+<link rel="stylesheet" href="../app/korah-chat.css"/>
+<link rel="stylesheet" href="./sat.css"/>
+<link rel="stylesheet" href="./sat-rush.css"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css"/>
+</head>
+
+<body>
+<style>
+  html:not(.korah-page-ready) { background: #06040f !important; }
+  html[data-theme="light"]:not(.korah-page-ready) { background: #d2d2d2 !important; }
+  html:not(.korah-page-ready) body { opacity: 0 !important; }
+</style>
+
+<script>
+  (function() {
+    const t = localStorage.getItem('korah_theme') || 'dark';
+    if (t === 'light' || (t === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  })();
+</script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+  import { setupKorahDB } from "../app/data/firestore-store.js";
+  import { initSatAnalytics } from "./js/sat-analytics.js";
+  import { startAuthGuard } from '../auth-guard.js';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
+    authDomain: "korah-app.firebaseapp.com",
+    projectId: "korah-app",
+    storageBucket: "korah-app.firebasestorage.app",
+    messagingSenderId: "226169460321",
+    appId: "1:226169460321:web:b166fc8260107c55dafc20"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      window.KorahTransitions.go('../landing/index.html');
+      return;
+    }
+    await setupKorahDB(app, user.uid);
+    await initSatAnalytics(app, user.uid);
+    const detail = { uid: user.uid };
+    window._korahReadyFired = detail;
+    window.dispatchEvent(new CustomEvent('korahReady', { detail }));
+    startAuthGuard(auth, '../landing/index.html');
+  });
+
+  document.getElementById('logout-btn')?.addEventListener('click', () => {
+    window.confirmLogout(async () => {
+      await signOut(auth);
+      localStorage.removeItem('korah_first_name');
+      window.KorahTransitions.go('../login.html');
+    });
+  });
+</script>
+
+<canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
+<div id="sidebar-root"></div>
+
+<!-- ═══ MAIN AREA WRAPPER ═══ -->
+<div id="main-area-wrapper" class="main-area-wrapper">
+<main id="main-content" class="main-content">
+
+  <!-- Top bar -->
+  <header class="chat-topbar bg-sf glass-sm t-theme bd" style="opacity: 0.95;">
+    <button id="sidebar-toggle" @click="toggleSidebar()" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+    <div class="chat-title-area">
+      <div class="korah-status-dot"></div>
+      <span class="font-semibold tx text-sm" id="chat-title">Practice Rush</span>
+    </div>
+  </header>
+
+  <div class="rush-page">
+    <div class="rush-shell">
+
+      <!-- ══════════ VIEW: ONBOARDING ══════════ -->
+      <section id="rushOnboarding" class="rush-view is-active">
+        <div class="rush-hero">
+          <h1>Practice Rush</h1>
+          <p>Endless practice with real College Board questions. Pick your focus and get into a flow.</p>
+        </div>
+
+        <!-- Step indicator -->
+        <div class="rush-steps-indicator" id="rushStepDots">
+          <span class="rush-step-dot is-active"></span>
+          <span class="rush-step-dot"></span>
+          <span class="rush-step-dot"></span>
+        </div>
+
+        <!-- Step 1: subject -->
+        <div id="rushStep1" class="rush-step">
+          <h2 class="rush-step-title">Choose a subject</h2>
+          <div class="rush-card-grid cols-2 rush-stagger" id="rushSubjectGrid"></div>
+          <div class="rush-btn-row">
+            <button id="rushSubjectNext" class="rush-btn" disabled>Continue</button>
+          </div>
+        </div>
+
+        <!-- Step 2: domains & skills -->
+        <div id="rushStep2" class="rush-step" hidden>
+          <h2 class="rush-step-title">Choose domains &amp; skills</h2>
+          <div class="rush-select-actions">
+            <button id="rushSelectAll" class="rush-mini-btn is-primary" type="button">Select all skills</button>
+            <button id="rushClearAll" class="rush-mini-btn" type="button">Clear all</button>
+          </div>
+          <div class="rush-domains rush-stagger" id="rushDomainGrid"></div>
+          <div id="rushDomainHint" class="rush-hint" hidden>Select at least one skill to continue.</div>
+          <div class="rush-btn-row">
+            <button id="rushDomainNext" class="rush-btn" disabled>Continue</button>
+            <button id="rushDomainBack" class="rush-btn is-ghost" type="button">Back</button>
+          </div>
+        </div>
+
+        <!-- Step 3: difficulty & options -->
+        <div id="rushStep3" class="rush-step" hidden>
+          <h2 class="rush-step-title">Choose difficulty</h2>
+          <div class="rush-diffs rush-stagger" id="rushDiffGrid"></div>
+
+          <div class="rush-toggle-row">
+            <div class="rush-toggle-text">
+              <strong>Randomize questions</strong>
+              <span>Shuffle the order instead of sequential</span>
+            </div>
+            <label class="rush-switch">
+              <input type="checkbox" id="rushRandomize" checked>
+              <span class="rush-switch-track"></span><span class="rush-switch-thumb"></span>
+            </label>
+          </div>
+
+          <div id="rushDiffHint" class="rush-hint" hidden>Select at least one difficulty to start.</div>
+
+          <div class="rush-btn-row">
+            <button id="rushStart" class="rush-btn is-green" disabled>Start Practice</button>
+            <button id="rushDiffBack" class="rush-btn is-ghost" type="button">Back</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════ VIEW: PLAYER ══════════ -->
+      <section id="rushPlayer" class="rush-view">
+        <div class="rush-player-top">
+          <button id="rushExitBtn" class="rush-close-btn" title="Exit practice" aria-label="Exit practice">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+          <button id="rushCalcBtn" class="rush-calc-btn" title="Calculator" aria-label="Toggle calculator" style="display:none;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="16" y2="18"/>
+            </svg>
+          </button>
+          <div class="rush-progress"><div class="rush-progress-fill" id="rushProgressFill"></div></div>
+          <span class="rush-streak" id="rushStreakPill" title="Current streak"><span class="material-icons-round" style="font-size:1.1rem;">local_fire_department</span><span id="rushStreakNum">0</span></span>
+          <span class="rush-timer-pill"><span class="material-icons-round" style="font-size:1rem;">schedule</span><span id="rushTimer">0:00</span></span>
+        </div>
+
+        <div id="rushDesmosPanel" class="rush-desmos-panel" style="display:none;">
+          <div id="rushDesmosContainer" style="width:100%;height:100%;"></div>
+        </div>
+
+        <div id="rushLoading" class="rush-loading"><div class="rush-spinner"></div><p>Loading questions…</p></div>
+        <div id="rushErrorBox" class="rush-error" hidden></div>
+
+        <div id="rushQuestionArea" hidden>
+          <div class="rush-qcard">
+            <div class="rush-qmeta" id="rushQMeta"></div>
+            <div class="rush-paragraph is-hidden" id="rushParagraph"></div>
+            <div class="rush-stem" id="rushStem"></div>
+            <div class="rush-choices" id="rushChoices"></div>
+            <div class="rush-explanation is-hidden" id="rushExplanation"></div>
+          </div>
+          <div class="rush-player-actions">
+            <button id="rushCheckBtn" class="rush-btn" disabled>Check</button>
+          </div>
+          <div class="rush-btn-row" style="margin-top:0.75rem;">
+            <button id="rushFinishBtn" class="rush-btn is-ghost" type="button" style="font-size:0.9rem;padding:0.6rem;">Finish &amp; see results</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════ VIEW: CELEBRATION ══════════ -->
+      <section id="rushCelebration" class="rush-view">
+        <div class="rush-celebrate">
+          <span class="rush-trophy material-icons-round rush-icon-tint-amber">emoji_events</span>
+          <h1>Session complete!</h1>
+          <p class="rush-sub" id="rushCelebrateSub">Great work — here's how you did.</p>
+          <div class="rush-stat-grid" id="rushStatGrid"></div>
+          <div class="rush-domain-breakdown" id="rushBreakdown"></div>
+          <div class="rush-btn-row">
+            <button id="rushAgainBtn" class="rush-btn is-green" type="button">Practice again</button>
+            <button id="rushToBankBtn" class="rush-btn is-ghost" type="button">Back to Question Bank</button>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</main>
+</div><!-- end .main-area-wrapper -->
+
+<!-- Success / feedback overlay -->
+<div id="rushOverlay" class="rush-overlay">
+  <div class="rush-overlay-card is-success" id="rushOverlayCard">
+    <span class="rush-overlay-emoji material-icons-round rush-icon-tint-green" id="rushOverlayEmoji">celebration</span>
+    <h2 class="rush-overlay-title is-success" id="rushOverlayTitle">Nicely done!</h2>
+    <button id="rushOverlayContinue" class="rush-btn is-green">Continue</button>
+  </div>
+</div>
+
+<!-- Exit confirmation -->
+<div id="rushExitModal" class="rush-modal">
+  <div class="rush-modal-card">
+    <h3>Exit practice?</h3>
+    <p>Your streak will reset. Your answered questions are already saved to your stats.</p>
+    <div class="rush-modal-actions">
+      <button id="rushExitStay" class="rush-btn is-ghost" type="button">Stay</button>
+      <button id="rushExitConfirm" class="rush-btn is-danger" type="button">Exit</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.desmos.com/api/v1.12/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
+<script src="../app/timer-manager.js"></script>
+<script src="../study/js/sidebar.js"></script>
+<script src="../study/js/study-api.js"></script>
+<script src="../app/korah-chat.js"></script>
+
+<script>
+  window.addEventListener('korahReady', () => {
+    if (window.KorahSidebar) {
+      window.KorahSidebar.initSidebar({
+        chatBaseUrl: "../chat.html",
+        itemPageUrl: "../study/item.html",
+        onItemClick: (id) => {
+          if (window.KorahChat && typeof window.KorahChat.switchToSession === 'function') {
+            window.KorahChat.switchToSession(id);
+          }
+        }
+      });
+    }
+  }, { once: true });
+</script>
+
+<script src="./js/sat-shared.js"></script>
+<script src="./js/sat-rush.js"></script>
+
+<!-- Spotlight glow (vanilla port of ui-components/spotlight-card) + cursor tilt.
+     Cards are re-rendered via innerHTML, so we delegate on the document and
+     drive the glow through CSS vars consumed by the ::before overlay, and the
+     tilt through an inline transform. -->
+<script>
+  (function () {
+    var SPOTLIGHT_SELECTOR = ".rush-card, .rush-domain, .rush-diff, .rush-qcard, .rush-stat";
+    var TILT_SELECTOR = ".rush-card, .rush-domain, .rush-diff";
+    var MAX_TILT = 7; // degrees
+
+    document.addEventListener("pointermove", function (e) {
+      var card = e.target.closest && e.target.closest(SPOTLIGHT_SELECTOR);
+      if (!card) return;
+      var rect = card.getBoundingClientRect();
+      var relX = e.clientX - rect.left;
+      var relY = e.clientY - rect.top;
+
+      // Spotlight follows the cursor.
+      card.style.setProperty("--spotlight-x", relX + "px");
+      card.style.setProperty("--spotlight-y", relY + "px");
+      card.style.setProperty("--spotlight-opacity", "0.6");
+
+      // Tilt the picker cards toward the cursor. Uses !important because the
+      // cards' .rush-stagger entrance animation (fill-mode: forwards) keeps
+      // applying `transform: none`, which outranks a plain inline transform.
+      if (card.matches(TILT_SELECTOR)) {
+        var rotY = ((relX / rect.width) - 0.5) * 2 * MAX_TILT;
+        var rotX = (0.5 - (relY / rect.height)) * 2 * MAX_TILT;
+        card.style.setProperty("transform",
+          "perspective(43.75rem) rotateX(" + rotX.toFixed(2) + "deg) rotateY(" +
+          rotY.toFixed(2) + "deg) scale(1.02)", "important");
+      }
+    }, { passive: true });
+
+    document.addEventListener("pointerout", function (e) {
+      var card = e.target.closest && e.target.closest(SPOTLIGHT_SELECTOR);
+      if (!card) return;
+      // Only reset when the pointer actually leaves the card (not a child).
+      if (e.relatedTarget && card.contains(e.relatedTarget)) return;
+      card.style.setProperty("--spotlight-opacity", "0");
+      card.style.removeProperty("transform"); // fall back to CSS; eases flat
+    }, { passive: true });
+  })();
+</script>
+
+</body>
+</html>

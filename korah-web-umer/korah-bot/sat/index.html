@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en" x-data="{
+  theme: localStorage.getItem('korah_theme') || 'dark',
+  sidebarCollapsed: window.innerWidth <= 768 ? false : localStorage.getItem('korah_sidebar_collapsed') === 'true',
+  mobileOpen: false,
+  getEffectiveTheme() {
+    if (this.theme === 'system') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return this.theme;
+  },
+  toggleSidebar() {
+    if (window.innerWidth <= 768) {
+      this.mobileOpen = !this.mobileOpen;
+      const overlay = document.querySelector('.sidebar-overlay');
+      if (overlay) overlay.classList.toggle('show', this.mobileOpen);
+    } else {
+      this.sidebarCollapsed = !this.sidebarCollapsed;
+      localStorage.setItem('korah_sidebar_collapsed', this.sidebarCollapsed);
+    }
+  }
+}" :data-theme="getEffectiveTheme()" x-cloak>
+<head>
+<link rel="stylesheet" href="../transitions/page-transitions.css"/>
+<script src="../transitions/page-transitions.js"></script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Korah AI — SAT Question Bank</title>
+<link rel="icon" type="image/png" href="../logo-images/newlogo0.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script src="../sidebar-loader.js" defer></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="../study/js/sidebar.js"></script>
+<link rel="stylesheet" href="../app/korah-chat.css"/>
+<link rel="stylesheet" href="./sat.css"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css"/>
+</head>
+
+<body>
+<style>
+  html:not(.korah-page-ready) { background: #06040f !important; }
+  html[data-theme="light"]:not(.korah-page-ready) { background: #d2d2d2 !important; }
+  html:not(.korah-page-ready) body { opacity: 0 !important; }
+</style>
+
+<script>
+  (function() {
+    const t = localStorage.getItem('korah_theme') || 'dark';
+    if (t === 'light' || (t === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  })();
+</script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+  import { setupKorahDB } from "../app/data/firestore-store.js";
+  import { initSatAnalytics } from "./js/sat-analytics.js";
+  import { startAuthGuard } from '../auth-guard.js';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
+    authDomain: "korah-app.firebaseapp.com",
+    projectId: "korah-app",
+    storageBucket: "korah-app.firebasestorage.app",
+    messagingSenderId: "226169460321",
+    appId: "1:226169460321:web:b166fc8260107c55dafc20"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      window.KorahTransitions.go('../landing/index.html');
+      return;
+    }
+    // Set up Firestore and expose window.KorahDB before notifying the app.
+    await setupKorahDB(app, user.uid);
+    const analytics = await initSatAnalytics(app, user.uid);
+    const detail = { uid: user.uid };
+    // Cache so korah-chat.js can pick it up even in edge-case timing.
+    window._korahReadyFired = detail;
+    window.dispatchEvent(new CustomEvent('korahReady', { detail }));
+
+    // Onboarding: prompt for current + goal SAT scores on first SAT visit.
+    try {
+      const existing = await analytics.getProfile();
+      if (!existing) {
+        window.KorahSATOnboarding?.show();
+      }
+    } catch (e) {
+      console.warn("[SAT] onboarding check failed", e);
+    }
+    startAuthGuard(auth, '../landing/index.html');
+  });
+
+  document.getElementById('logout-btn').addEventListener('click', () => {
+    window.confirmLogout(async () => {
+      await signOut(auth);
+      localStorage.removeItem('korah_first_name');
+      window.KorahTransitions.go('../login.html');
+    });
+  });
+</script>
+
+<canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
+<div id="sidebar-root"></div>
+
+<!-- Hidden file input for document attachment -->
+<input type="file" id="doc-file-input" class="hidden" multiple accept=".pdf,.txt,.png,.jpg,.jpeg,.gif,.webp,.md"/>
+
+<!-- ═══ MAIN AREA WRAPPER ═══ -->
+<div id="main-area-wrapper" class="main-area-wrapper">
+
+<!-- ═══ MAIN CHAT AREA ═══ -->
+<main id="main-content" class="main-content">
+
+  <!-- Top bar -->
+  <header class="chat-topbar bg-sf glass-sm t-theme bd" style="opacity: 0.95;">
+    <button id="sidebar-toggle" @click="toggleSidebar()" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+
+
+    <div class="chat-title-area">
+      <div class="korah-status-dot"></div>
+      <span class="font-semibold tx text-sm" id="chat-title">SAT Question Bank</span>
+    </div>
+
+    
+  </header>
+
+  <!-- SAT Content -->
+  <div class="sat-page sat-bank-page" style="padding: 1.25rem;">
+    <section class="sat-bank-shell">
+      <section class="sat-bank-header">
+        <div class="sat-bank-header-text">
+          <div class="sat-eyebrow-row">
+            <img src="../logo-images/newlogo12.png" class="sat-eyebrow-logo" alt="Korah logo"/>
+            <p class="sat-eyebrow">Korah SAT Prep</p>
+          </div>
+          <h1 class="sat-bank-title">Question Bank</h1>
+          <p class="sat-bank-desc">
+            Pick a section and domain, choose how many questions you want, and start cooking up. <br>
+            We get all of our questions fresh from <strong> College Board</strong>, so you get the real SAT experience.
+          </p>
+        </div>
+        <img src="../logo-images/newlogo3.png" class="sat-bank-header-deco" alt=""/>
+      </section>
+        
+
+      <section class="sat-bank-controls">
+        <div class="sat-session-bar">
+          <div class="sat-limit-dd" id="limitDropdown">
+            <button id="limitToggle" class="sat-filters-toggle t-btn" type="button" aria-expanded="false" aria-label="Set question limit">
+              <svg class="sat-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+              <span id="limitToggleLabel">Question Limit</span>
+              <svg class="sat-ico sat-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div id="limitMenu" class="sat-limit-menu">
+              <div class="sat-filter-note">Number of questions</div>
+              <input id="limitInput" type="text" class="sat-limit-input" placeholder="e.g. 20 (blank = no limit)" />
+            </div>
+          </div>
+          <button id="filtersToggle" class="sat-filters-toggle t-btn" type="button" aria-expanded="false" aria-controls="filterRow" aria-label="Toggle filters">
+            <svg class="sat-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+            <span>Filters</span>
+            <span id="filtersBadge" class="sat-filters-badge" hidden>0</span>
+            <svg class="sat-ico sat-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+        </div>
+        <!-- Filter buttons are rendered by sat-bank.js from the FILTERS config -->
+        <div class="sat-filter-row" id="filterRow" hidden></div>
+      </section>
+
+      <section class="sat-bank-layout">
+        <div class="sat-section-column" id="sectionColumns"></div>
+      </section>
+    </section>
+  </div>
+
+</main>
+
+
+
+</div><!-- end .main-area-wrapper -->
+
+<!-- Bottom selection pill — appears when the user selects topics -->
+<div id="selectionPill" class="sat-selection-pill" hidden>
+  <span class="sat-pill-count" id="pillCountLabel">0 topics selected</span>
+  <button id="pillRandomize" class="sat-pill-btn sat-pill-randomize t-btn" type="button" aria-pressed="false">
+    <svg class="sat-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+    <span>Randomize</span>
+  </button>
+  <button id="pillStart" class="sat-pill-btn sat-pill-start t-btn" type="button">
+    <span>Start</span>
+    <svg class="sat-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+  </button>
+</div>
+
+<!-- Settings Modal -->
+<div id="settings-modal" class="settings-modal">
+  <div class="settings-modal-content">
+    <div class="settings-header">
+      <h2 class="settings-title">Settings</h2>
+      <button class="settings-close" id="settings-close">&times;</button>
+    </div>
+    
+    <div class="settings-body">
+      <!-- Theme Settings -->
+      <div class="settings-section">
+        <h3 class="settings-section-title">Appearance</h3>
+        <div class="settings-item">
+          <div class="settings-item-label">Theme</div>
+          <div class="settings-item-control">
+            <div class="settings-custom-select" id="settings-theme-custom-select">
+              <div class="settings-select-trigger" id="settings-theme-trigger">
+                <div class="flex items-center gap-2">
+                  <span class="material-icons-round trigger-icon">dark_mode</span>
+                  <span class="trigger-text">Dark Mode</span>
+                </div>
+                <span class="material-icons-round">expand_more</span>
+              </div>
+              <div class="settings-select-menu" id="settings-theme-menu">
+                <div class="settings-select-option" data-value="dark">
+                  <span class="material-icons-round">dark_mode</span>
+                  <span>Dark Mode</span>
+                  <span class="material-icons-round check-icon">check</span>
+                </div>
+                <div class="settings-select-option" data-value="light">
+                  <span class="material-icons-round">light_mode</span>
+                  <span>Light Mode</span>
+                  <span class="material-icons-round check-icon">check</span>
+                </div>
+                <div class="settings-select-option" data-value="system">
+                  <span class="material-icons-round">settings_suggest</span>
+                  <span>System</span>
+                  <span class="material-icons-round check-icon">check</span>
+                </div>
+              </div>
+              <input type="hidden" id="settings-theme-select" value="dark">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Profile Settings -->
+      <div class="settings-section">
+        <h3 class="settings-section-title">Profile</h3>
+        <div class="settings-item">
+          <div class="settings-item-label">Display Name</div>
+          <div class="settings-item-control">
+            <input type="text" id="settings-name-input" class="settings-input" placeholder="Your name">
+          </div>
+        </div>
+      </div>
+
+      <!-- Data Settings -->
+      <div class="settings-section">
+        <h3 class="settings-section-title">Data</h3>
+        <div class="settings-item">
+          <div class="settings-item-label">Clear All Data</div>
+          <div class="settings-item-control">
+            <button id="settings-clear-data" class="settings-btn danger">Clear Data</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="settings-actions">
+        <button id="settings-save" class="settings-btn primary">Save Settings</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SAT Onboarding Modal -->
+<div id="sat-onboarding-modal" class="goal-modal">
+  <div class="delete-modal-content" style="max-width: 27.5rem;">
+    <div class="delete-modal-icon"><span class="material-icons-round" style="color: #EF5350; font-size: 1.25rem;" aria-label="target">gps_fixed</span></div>
+    <h3 class="delete-modal-title">Set your SAT goal</h3>
+    <p class="delete-modal-desc">Tell us where you're starting and where you'd like to be. We'll use this to suggest what to study next.</p>
+    <div style="display:flex; flex-direction:column; gap:0.875rem; margin-top:0.5rem; text-align:left;">
+      <label style="display:flex; flex-direction:column; gap:0.375rem; font-size:0.8125rem; font-weight:600; color:var(--tx2);">
+        Current SAT score <span style="font-weight:400; color:var(--tx3); font-size:0.75rem;">(leave blank if you haven't taken one)</span>
+        <input id="sat-onboarding-current" type="number" min="400" max="1600" step="10" placeholder="e.g. 1200" class="create-input" style="width:100%;"/>
+      </label>
+      <label style="display:flex; flex-direction:column; gap:0.375rem; font-size:0.8125rem; font-weight:600; color:var(--tx2);">
+        Goal SAT score
+        <input id="sat-onboarding-goal" type="number" min="400" max="1600" step="10" placeholder="e.g. 1500" class="create-input" style="width:100%;"/>
+      </label>
+    </div>
+    <div class="delete-modal-actions">
+      <button id="sat-onboarding-skip" class="delete-modal-btn cancel t-btn">Skip</button>
+      <button id="sat-onboarding-save" class="delete-modal-btn confirm t-btn">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const modal = document.getElementById('sat-onboarding-modal');
+    const currentInput = document.getElementById('sat-onboarding-current');
+    const goalInput = document.getElementById('sat-onboarding-goal');
+    const saveBtn = document.getElementById('sat-onboarding-save');
+    const skipBtn = document.getElementById('sat-onboarding-skip');
+
+    function show() { modal.classList.add('show'); }
+    function hide() { modal.classList.remove('show'); }
+
+    saveBtn.addEventListener('click', async () => {
+      const cur = currentInput.value ? Number(currentInput.value) : null;
+      const goal = goalInput.value ? Number(goalInput.value) : null;
+      if (!goal) {
+        goalInput.focus();
+        return;
+      }
+      try {
+        await window.KorahSATAnalytics?.saveProfile({ currentScore: cur, goalScore: goal });
+      } catch (e) { console.warn('[SAT] saveProfile failed', e); }
+      hide();
+    });
+    skipBtn.addEventListener('click', hide);
+
+    window.KorahSATOnboarding = { show, hide };
+  })();
+</script>
+
+<!-- Rename Modal -->
+<div id="rename-modal" class="delete-modal">
+  <div class="delete-modal-content">
+    <div class="delete-modal-icon"><span class="material-icons-round" style="color: #FFA726; font-size: 1.25rem;" aria-label="rename">edit</span></div>
+    <h3 class="delete-modal-title">Rename</h3>
+    <p class="delete-modal-desc" id="rename-modal-desc">Enter a new name</p>
+    <input id="rename-modal-input" type="text" class="create-input" style="width:100%; margin-top:0.25rem;" placeholder="New name…"/>
+    <div class="delete-modal-actions">
+      <button id="rename-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
+      <button id="rename-modal-confirm" class="delete-modal-btn confirm t-btn" style="background:rgba(139,92,246,.12); color:var(--p5); border-color:rgba(139,92,246,.3);">Rename</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div id="delete-modal" class="delete-modal">
+  <div class="delete-modal-content">
+    <div class="delete-modal-icon"><span class="material-icons-round" style="color: var(--red); font-size: 1.25rem;" aria-label="delete">delete</span></div>
+    <h3 class="delete-modal-title">Delete?</h3>
+    <p class="delete-modal-desc">This will permanently delete <span id="delete-modal-name"></span>. This cannot be undone.</p>
+    <div class="delete-modal-actions">
+      <button id="delete-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
+      <button id="delete-modal-confirm" class="delete-modal-btn confirm t-btn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.desmos.com/api/v1.12/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
+<script src="../app/timer-manager.js"></script>
+<script src="../study/js/sidebar.js"></script>
+<script src="../study/js/study-api.js"></script>
+<script src="../app/korah-chat.js"></script>
+
+<script>
+  // Initialize sidebar with chat-specific callbacks
+  window.addEventListener('korahReady', () => {
+    if (window.KorahSidebar) {
+      window.KorahSidebar.initSidebar({
+        chatBaseUrl: "../chat.html",
+        itemPageUrl: "../study/item.html",
+        onItemClick: (id) => {
+          if (window.KorahChat && typeof window.KorahChat.switchToSession === 'function') {
+            window.KorahChat.switchToSession(id);
+          }
+        }
+      });
+    }
+  }, { once: true });
+</script>
+
+<script src="./js/sat-shared.js"></script>
+<script src="./js/sat-bank.js"></script>
+
+</body>
+</html>

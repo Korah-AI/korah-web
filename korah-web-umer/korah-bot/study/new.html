@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="en" x-data="{
+  theme: localStorage.getItem('korah_theme') || 'dark',
+  sidebarCollapsed: window.innerWidth <= 768 ? false : localStorage.getItem('korah_sidebar_collapsed') === 'true',
+  mobileOpen: false,
+  getEffectiveTheme() {
+    if (this.theme === 'system') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return this.theme;
+  },
+  toggleSidebar() {
+    if (window.innerWidth <= 768) {
+      this.mobileOpen = !this.mobileOpen;
+      const overlay = document.querySelector('.sidebar-overlay');
+      if (overlay) overlay.classList.toggle('show', this.mobileOpen);
+    } else {
+      if (this.sidebarCollapsed) {
+        const dp = document.getElementById('doc-panel');
+        if (dp?.classList.contains('expanded')) {
+          dp.classList.remove('expanded');
+          dp.classList.add('collapsed');
+          const tab = document.getElementById('doc-panel-tab');
+          if (tab) tab.classList.remove('panel-open');
+        }
+      }
+      this.sidebarCollapsed = !this.sidebarCollapsed;
+      localStorage.setItem('korah_sidebar_collapsed', this.sidebarCollapsed);
+    }
+  }
+}" :data-theme="getEffectiveTheme()" x-cloak>
+<head>
+<link rel="stylesheet" href="../transitions/page-transitions.css"/>
+<script src="../transitions/page-transitions.js"></script>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Korah AI — Create Study Item</title>
+  <link rel="icon" type="image/png" href="../logo-images/newlogo0.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <script src="../sidebar-loader.js" defer></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../app/korah-chat.css"/>
+  <style>
+    .study-modern .chat-topbar,
+    .study-modern .create-hero,
+    .study-modern .create-steps,
+    .study-modern .create-step-panel {
+      border-radius: 1.125rem;
+    }
+    .main-content {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .study-modern .create-flow-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      max-width: none;
+      width: 100%;
+      padding: 3.75rem 1.25rem;
+      overflow-y: auto;
+    }
+    .study-modern .create-type-grid {
+      gap: 1.25rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(17.5rem, 1fr));
+      justify-content: center;
+      flex: 1;
+      align-content: center;
+    }
+    .study-modern .create-type-card {
+      padding: 2.5rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 1rem;
+      z-index: 0;
+      background: var(--bg2);
+      border: 0.0625rem solid var(--bd);
+      border-radius: 1.5rem;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .study-modern .create-type-card:hover { 
+      transform: translateY(-0.5rem); 
+      border-color: var(--p5);
+      background: var(--bg3);
+      box-shadow: 0 1.25rem 2.5rem rgba(0,0,0,0.3);
+    }
+    .study-modern .create-type-emoji { font-size: 3rem; margin-bottom: 0.25rem; display: block; filter: drop-shadow(0 0.5rem 0.75rem rgba(0,0,0,0.15)); }
+    .study-modern .create-type-name { font-size: 1.25rem; font-weight: 800; display: block; z-index: 0; color: var(--tx1);}
+    .study-modern .create-type-desc { font-size: 0.875rem; color: var(--tx2); line-height: 1.5; max-width: 15rem; opacity: 0.8; }
+    .study-modern .create-method-btn {
+      min-height: 6.875rem;
+      border-radius: 1rem;
+      padding: 1.5rem;
+    }
+    .study-modern .create-label { font-size: 0.875rem; font-weight: 700; margin-bottom: 0.4375rem; }
+    .study-modern .create-input {
+      min-height: 3.125rem;
+      font-size: 0.9375rem;
+      padding: 0.75rem 0.875rem;
+      border-radius: 0.75rem;
+      margin-bottom: 0.875rem;
+    }
+    .study-modern .create-textarea { min-height: 6rem; }
+    .study-modern #create-ai-prompt { min-height: 10rem; min-width: 48.125rem;}
+    .study-modern .create-form-actions { margin-top: 0.625rem; gap: 0.75rem; justify-content: center; }
+    .study-modern .feed-card-btn,
+    .study-modern .new-chat-btn {
+      min-height: 3.375rem;
+      border-radius: 0.875rem;
+      font-size: 1rem;
+      font-weight: 700;
+      padding: 0 2rem;
+    }
+    .study-modern .sidebar,
+    .study-modern .main-content,
+    .study-modern .chat-topbar,
+    .study-modern .create-flow-body,
+    .study-modern .create-type-card,
+    .study-modern .create-method-btn,
+    .study-modern .create-input,
+    .study-modern .create-form-actions,
+    .study-modern .feed-card-btn,
+    .study-modern .new-chat-btn {
+      position: relative;
+      z-index: 0;
+    }
+    @media (max-width: 48rem) {
+      .study-modern .create-flow-body { padding: 1.5rem 1rem; }
+      .study-modern .create-type-card { padding: 3rem 1.5rem; }
+      .study-modern .create-type-emoji { font-size: 3.5rem; }
+      .study-modern .create-type-name { font-size: 1.375rem; }
+    }
+
+    /* --- REFINED MODAL SYSTEM --- */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(0.5rem);
+      display: none; align-items: center; justify-content: center;
+      z-index: 2000;
+      padding: 1.25rem;
+    }
+    .modal-overlay.active { display: flex; animation: modalFadeIn 0.3s ease-out; }
+    [data-theme="light"] .modal-overlay {
+      background: rgba(109,40,217,0.2);
+      backdrop-filter: blur(0.75rem);
+    }
+    
+    .creation-modal {
+      background: rgba(15, 9, 35, 0.7);
+      border: 0.0625rem solid var(--bd);
+      border-radius: 1.5rem;
+      width: 95vw;
+      max-width: 68.75rem;
+      height: 85vh;
+      display: none;
+      flex-direction: column;
+      box-shadow: 0 1.5625rem 3.75rem rgba(0,0,0,.5), 0 0 2.5rem rgba(139,92,246,.15);
+      overflow: hidden;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 2001;
+    }
+    .creation-modal.active { display: flex; animation: modalSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+    [data-theme="light"] .creation-modal {
+      background: rgba(250, 248, 255, 0.7);
+    }
+    
+    @keyframes modalFadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes modalSlideUp { from { opacity: 0; transform: translate(-50%, -42%); } to { opacity: 1; transform: translate(-50%, -50%); } }
+
+    .modal-header {
+      padding: 1.25rem 3.75rem;
+      border-bottom: 0.0625rem solid var(--bd2);
+      display: flex; align-items: center; justify-content: center;
+      background: transparent;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .modal-title { font-size: 1.25rem; font-weight: 700; margin: 0; color: var(--tx); }
+    .modal-close {
+      position: absolute;
+      right: 1.25rem;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 2.25rem;
+      height: 2.25rem;
+      border-radius: 0.625rem;
+      border: 0.0625rem solid var(--bd);
+      background: var(--sf2);
+      color: var(--tx2);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all .2s;
+    }
+    .modal-close:hover {
+      background: var(--cu);
+      border-color: var(--p4);
+      color: var(--p4);
+    }
+    .modal-close svg { width: 1.125rem; height: 1.125rem; }
+    
+    .modal-body {
+      padding: 2rem;
+      overflow-y: auto;
+      flex: 1;
+      background: transparent;
+      display: flex;
+      flex-direction: column;
+    }
+    .modal-footer {
+      padding: 1.5rem;
+      display: flex; align-items: center; justify-content: flex-end;
+      gap: 1rem;
+      background: transparent;
+      flex-shrink: 0;
+    }
+    .modal-footer .t-btn {
+      min-height: 3rem;
+      padding: 0 1.75rem;
+      font-size: 0.9375rem;
+      border-radius: 0.75rem;
+      font-weight: 600;
+    }
+
+    /* --- ENHANCED METHOD CARDS --- */
+    .method-grid { 
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.25rem;
+      width: 100%;
+      margin: auto 0;
+      flex-shrink: 0;
+    }
+    .method-card {
+      background: var(--sf2);
+      border: 0.09375rem solid var(--bd2);
+      border-radius: 1.25rem;
+      padding: 2.5rem 1.75rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.25rem;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      text-align: center;
+      min-height: 20rem;
+      justify-content: center;
+    }
+    .method-card:hover {
+      border-color: var(--p4);
+      background: var(--cu);
+      transform: translateY(-0.375rem);
+      box-shadow: 0 1rem 2.5rem rgba(0,0,0,.25), 0 0 1.25rem rgba(139,92,246,.15);
+    }
+    .method-card:active {
+      transform: translateY(-0.125rem);
+    }
+    [data-theme="light"] .method-card {
+      background: rgba(255,255,255,0.7);
+      border-color: rgba(109,40,217,.15);
+    }
+    [data-theme="light"] .method-card:hover {
+      background: rgba(255,255,255,0.95);
+      border-color: rgba(109,40,217,.4);
+      box-shadow: 0 1rem 2.5rem rgba(109,40,217,.15), 0 0 1.25rem rgba(109,40,217,.1);
+    }
+    .modal-step-title {
+      font-size: 1.125rem;
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+      text-align: center;
+      color: var(--tx);
+    }
+    .method-icon { 
+      font-size: 3rem; 
+      flex-shrink: 0; 
+      background: var(--sf2); 
+      width: 5.5rem; 
+      height: 5.5rem; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      border-radius: 1.25rem; 
+      border: 0.0625rem solid var(--bd2);
+      margin-bottom: 0.5rem;
+    }
+    [data-theme="light"] .method-icon {
+      background: rgba(255,255,255,0.9);
+    }
+    .method-info { flex: 0 0 auto; }
+    .method-name { font-size: 1.25rem; font-weight: 700; display: block; margin-bottom: 0.625rem; color: var(--tx); }
+    .method-desc { font-size: 0.9375rem; color: var(--tx2); line-height: 1.6; }
+
+    /* --- MODERN UPLOAD ZONE --- */
+    .upload-zone {
+      border: 0.125rem dashed var(--bd);
+      border-radius: 1.75rem;
+      padding: 5rem 2.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: var(--bg2);
+      margin: auto 0;
+    }
+    .upload-zone:hover, .upload-zone.drag-active { border-color: var(--p5); background: var(--bg3); transform: scale(1.01); }
+    .upload-icon { font-size: 4.5rem; margin-bottom: 1.5rem; display: block; filter: grayscale(0.5); transition: filter .2s; }
+    .upload-zone:hover .upload-icon, .upload-zone.drag-active .upload-icon { filter: grayscale(0); }
+    .upload-text { font-size: 1.375rem; font-weight: 700; color: var(--tx1); margin-bottom: 0.75rem; }
+    .upload-hint { font-size: 0.9375rem; color: var(--tx2); }
+
+    /* --- UPLOADED FILE ITEMS --- */
+    .doc-upload-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.625rem 0.875rem;
+      background: var(--bg2);
+      border: 0.0625rem solid var(--bd);
+      border-radius: 0.875rem;
+      transition: border-color .2s;
+    }
+    .doc-upload-item:hover { border-color: var(--p5); }
+    .doc-thumb {
+      width: 3.25rem;
+      height: 3.25rem;
+      border-radius: 0.625rem;
+      background: var(--bg1);
+      border: 0.0625rem solid var(--bd2);
+      overflow: hidden;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .doc-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .doc-thumb-icon {
+      font-size: 1.375rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.125rem;
+    }
+    .doc-thumb-ext {
+      font-size: 0.5rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.03125rem;
+      color: var(--tx3);
+    }
+    .doc-file-info { flex: 1; overflow: hidden; }
+    .doc-file-name {
+      display: block;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--tx);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .doc-file-size {
+      display: block;
+      font-size: 0.625rem;
+      color: var(--tx3);
+      margin-top: 0.125rem;
+    }
+    .doc-file-remove {
+      width: 1.75rem;
+      height: 1.75rem;
+      border-radius: 0.5rem;
+      border: 0.0625rem solid rgba(239,68,68,.2);
+      background: rgba(239,68,68,.05);
+      color: var(--tx3);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all .2s;
+    }
+    .doc-file-remove:hover { background: rgba(239,68,68,.15); color: #f87171; border-color: rgba(239,68,68,.4); }
+
+    .modal-step { display: none; }
+    .modal-step.active { display: flex; flex-direction: column; flex: 1; animation: stepFadeIn 0.3s ease-out; }
+    @keyframes stepFadeIn { from { opacity: 0; transform: translateY(0.625rem); } to { opacity: 1; transform: translateY(0); } }
+
+    /* --- ENHANCED FORM UI --- */
+    .study-modern .create-form {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      max-width: 62.5rem;
+      margin: 0 auto;
+      width: 100%;
+      padding: 0.5rem 0 2rem;
+    }
+    .study-modern .create-form .form-field {
+      display: flex;
+      flex-direction: column;
+    }
+    .study-modern .create-form .form-full-width { grid-column: 1 / -1; }
+    
+    .study-modern .create-form .create-label { 
+      font-size: 0.875rem; 
+      font-weight: 700; 
+      margin-bottom: 0.5rem; 
+      display: block;
+      color: var(--tx1);
+      letter-spacing: 0.01em;
+      opacity: 0.9;
+    }
+    .study-modern .create-form .create-input {
+      width: 100%;
+      min-height: 3.25rem;
+      font-size: 1rem;
+      padding: 0.75rem 1.125rem;
+      border-radius: 0.875rem;
+      background: var(--bg2);
+      border: 0.125rem solid var(--bd);
+      color: var(--tx1);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      margin-bottom: 0; 
+      box-shadow: inset 0 0.125rem 0.25rem rgba(0,0,0,0.05);
+    }
+    .study-modern .create-form .create-input:focus {
+      border-color: var(--p5);
+      background: var(--bg1);
+      outline: none;
+      box-shadow: 0 0 0 0.3125rem rgba(139, 92, 246, 0.15), inset 0 0.125rem 0.25rem rgba(0,0,0,0.02);
+      transform: translateY(-0.0625rem);
+    }
+    .study-modern .create-form .create-textarea { 
+      min-height: 6.25rem; 
+      resize: vertical;
+      line-height: 1.5;
+    }
+    .study-modern .create-form #create-ai-prompt { min-height: 8.75rem; }
+    .study-modern .create-form #create-manual-content { min-height: 15.625rem; }
+    
+    /* --- VALIDATION STYLES --- */
+    .form-field.error .create-input,
+    .form-field.error .create-textarea {
+      border-color: #ef4444 !important;
+      background: rgba(239, 68, 68, 0.05);
+    }
+    .form-field.error .create-input:focus,
+    .form-field.error .create-textarea:focus {
+      box-shadow: 0 0 0 0.3125rem rgba(239, 68, 68, 0.15), inset 0 0.125rem 0.25rem rgba(0,0,0,0.02);
+    }
+    .form-field .field-error {
+      display: none;
+      color: #ef4444;
+      font-size: 0.75rem;
+      font-weight: 500;
+      margin-top: 0.25rem;
+      align-items: center;
+      gap: 0.25rem;
+    }
+    .form-field.error .field-error {
+      display: flex;
+    }
+    .upload-zone.error {
+      border-color: #ef4444 !important;
+      background: rgba(239, 68, 68, 0.05);
+    }
+    .upload-error {
+      display: none;
+      color: #ef4444;
+      font-size: 0.75rem;
+      font-weight: 500;
+      margin-top: 0.5rem;
+      text-align: center;
+    }
+    .upload-zone.error + .upload-error,
+    .upload-error.show {
+      display: block;
+    }
+
+    .study-modern .create-form .config-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      background: var(--bg2);
+      padding: 1.5rem;
+      border-radius: 1.25rem;
+      border: 0.125rem solid var(--bd);
+      margin-top: 0.5rem;
+    }
+    
+    @media (max-width: 64rem) {
+      .study-modern .create-form { gap: 1.25rem; }
+      .study-modern .create-form .create-input { min-height: 4rem; font-size: 1.0625rem; padding: 1rem 1.25rem; }
+    }
+    /* Spotlight effect for type cards */
+    .create-type-card.spotlight-effect {
+      position: relative;
+      overflow: hidden;
+      --mouse-x: 50%;
+      --mouse-y: 50%;
+      --spotlight-color: rgba(255, 255, 255, 0.05);
+    }
+    .create-type-card.spotlight-effect::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(circle at var(--mouse-x) var(--mouse-y), var(--spotlight-color), transparent 80%);
+      opacity: 0;
+      transition: opacity 0.5s ease;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .create-type-card.spotlight-effect:hover::before,
+    .create-type-card.spotlight-effect:focus-within::before {
+      opacity: 0.6;
+    }
+    /* Ensure button content is above pseudo-element */
+    .create-type-card.spotlight-effect > * {
+      position: relative;
+      z-index: 1;
+    }
+
+  </style>
+</head>
+<body class="bg-base tx">
+<style>
+  html:not(.korah-page-ready) { background: #06040f !important; }
+  html[data-theme="light"]:not(.korah-page-ready) { background: #d2d2d2 !important; }
+  html:not(.korah-page-ready) body { opacity: 0 !important; }
+</style>
+
+<script>
+  (function() {
+    const t = localStorage.getItem('korah_theme') || 'dark';
+    if (t === 'light' || (t === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  })();
+</script>
+
+<canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
+<div id="sidebar-root"></div>
+
+
+<main id="main-content" class="main-content">
+  <header class="chat-topbar bg-sf glass-sm t-theme bd">
+    <button id="sidebar-toggle" @click="toggleSidebar()" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+    <div class="chat-title-area">
+      <div class="korah-status-dot"></div>
+      <span class="font-semibold tx text-sm">Create Study Item</span>
+    </div>
+  </header>
+
+  <div class="create-flow-body">
+    <div class="w-full max-w-7xl mx-auto">
+      <div class="bg-sf glass-sm t-theme border border-[var(--bd)] rounded-[2rem] p-8 md:p-12 flex flex-col items-center shadow-2xl">
+        <header class="text-center mb-8 md:mb-12">
+          <h1 class="text-3xl md:text-5xl font-black mb-3 tracking-tight" style="color: var(--p5);">Create Study Item</h1>
+          <p class="text-base md:text-lg tx2 max-w-xl mx-auto opacity-70 leading-relaxed font-medium">Select a study mode below to generate personalized materials with Korah AI.</p>
+        </header>
+
+        <div class="create-type-grid w-full max-w-5xl">
+          <button type="button" class="create-type-card t-btn" data-type="flashcards">
+            <span class="create-type-emoji"><span class="material-icons-round" style="font-size: 3rem; color: #78909C;" aria-label="Flashcard Set">style</span></span>
+            <span class="create-type-name">Flashcard Set</span>
+            <span class="create-type-desc tx2">Front/back cards with rich text and math</span>
+          </button>
+          <button type="button" class="create-type-card t-btn" data-type="studyGuide">
+            <span class="create-type-emoji"><span class="material-icons-round" style="font-size: 3rem; color: #5C6BC0;" aria-label="Study Guide">auto_stories</span></span>
+            <span class="create-type-name">Study Guide</span>
+            <span class="create-type-desc tx2">Structured outline with sections and summaries</span>
+          </button>
+          <button type="button" class="create-type-card t-btn" data-type="practiceTest">
+            <span class="create-type-emoji"><span class="material-icons-round" style="font-size: 3rem; color: #EF5350;" aria-label="Practice Test">gps_fixed</span></span>
+            <span class="create-type-name">Practice Test</span>
+            <span class="create-type-desc tx2">Questions with answer keys and rationales</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Creation Modal (Method selection & Details) -->
+<div id="modal-backdrop" class="modal-overlay"></div>
+<div id="creation-modal" class="creation-modal">
+  <div class="modal-header">
+    <h2 class="modal-title" id="creation-modal-title">Create Study Item</h2>
+    <button class="modal-close" id="creation-modal-close">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  
+  <div class="modal-body">
+    <!-- Modal Step 1: Choose method -->
+    <div id="modal-step-1" class="modal-step active">
+      <h3 class="modal-step-title">How do you want to create it?</h3>
+      <div class="method-grid">
+        <button type="button" class="method-card t-btn" data-method="manual">
+          <div class="method-icon"><span class="material-icons-round" style="color: var(--gold); font-size: 1.25rem;" aria-label="pencil">edit</span></div>
+          <div class="method-info">
+            <span class="method-name">Manual</span>
+            <span class="method-desc tx2">Type or paste your content directly into the editor</span>
+          </div>
+        </button>
+        <button type="button" class="method-card t-btn" data-method="ai-prompt">
+          <div class="method-icon"><span class="material-icons-round" style="color: var(--p4); font-size: 1.25rem;" aria-label="chat">chat</span></div>
+          <div class="method-info">
+            <span class="method-name">AI from Prompt</span>
+            <span class="method-desc tx2">Describe what you need and let Korah generate the rest</span>
+          </div>
+        </button>
+        <button type="button" class="method-card t-btn" data-method="ai-doc">
+          <div class="method-icon"><span class="material-icons-round" style="color: var(--tx2); font-size: 1.25rem;" aria-label="document">article</span></div>
+          <div class="method-info">
+            <span class="method-name">AI from Documents</span>
+            <span class="method-desc tx2">Upload PDFs or notes to generate focused materials</span>
+          </div>
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Rename Modal -->
+<div id="rename-modal" class="delete-modal">
+  <div class="delete-modal-content">
+    <div class="delete-modal-icon"><span class="m-icon ic-gen">edit</span></div>
+    <h3 class="delete-modal-title">Rename</h3>
+    <p class="delete-modal-desc" id="rename-modal-desc">Enter a new name</p>
+    <input id="rename-modal-input" type="text" class="create-input" style="width:100%; margin-top:0.25rem;" placeholder="New name…"/>
+    <div class="delete-modal-actions">
+      <button id="rename-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
+      <button id="rename-modal-confirm" class="delete-modal-btn confirm t-btn" style="background:rgba(139,92,246,.12); color:var(--p5); border-color:rgba(139,92,246,.3);">Rename</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div id="delete-modal" class="delete-modal">
+  <div class="delete-modal-content">
+    <div class="delete-modal-icon"><span class="material-icons-round" style="color: var(--red); font-size: 1.25rem;" aria-label="delete">delete</span></div>
+    <h3 class="delete-modal-title">Delete?</h3>
+    <p class="delete-modal-desc">This will permanently delete "<span id="delete-modal-name"></span>". This cannot be undone.</p>
+    <div class="delete-modal-actions">
+      <button id="delete-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
+      <button id="delete-modal-confirm" class="delete-modal-btn confirm t-btn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div id="settings-modal" class="settings-modal">
+  <div class="settings-modal-content">
+    <div class="settings-header">
+      <h2 class="settings-title">Settings</h2>
+      <button class="settings-close" id="settings-close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="settings-body">
+      <div class="settings-section">
+        <h3 class="settings-section-title">Appearance</h3>
+        <div class="settings-item">
+          <div class="settings-item-label">Theme</div>
+          <div class="settings-item-control">
+            <div class="settings-custom-select" id="settings-theme-custom-select">
+              <div class="settings-select-trigger" id="settings-theme-trigger">
+                <div class="flex items-center gap-2">
+                  <span class="material-icons-round trigger-icon">dark_mode</span>
+                  <span class="trigger-text">Dark Mode</span>
+                </div>
+                <span class="material-icons-round">expand_more</span>
+              </div>
+              <div class="settings-select-menu" id="settings-theme-menu">
+                <div class="settings-select-option" data-value="dark">
+                  <span class="material-icons-round">dark_mode</span>
+                  <span>Dark Mode</span>
+                  <span class="material-icons-round check-icon">check</span>
+                </div>
+                <div class="settings-select-option" data-value="light">
+                  <span class="material-icons-round">light_mode</span>
+                  <span>Light Mode</span>
+                  <span class="material-icons-round check-icon">check</span>
+                </div>
+                <div class="settings-select-option" data-value="system">
+                  <span class="material-icons-round">settings_suggest</span>
+                  <span>System</span>
+                  <span class="material-icons-round check-icon">check</span>
+                </div>
+              </div>
+              <input type="hidden" id="settings-theme-select" value="dark">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3 class="settings-section-title">Profile</h3>
+        <div class="settings-item">
+          <div class="settings-item-label">Display Name</div>
+          <div class="settings-item-control">
+            <input type="text" id="settings-name-input" class="settings-input" placeholder="Your name">
+          </div>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3 class="settings-section-title">Data</h3>
+        <div class="settings-item">
+          <div class="settings-item-label">Clear All Data</div>
+          <div class="settings-item-control">
+            <button id="settings-clear-data" class="settings-btn danger">Clear Data</button>
+          </div>
+        </div>
+      </div>
+      <div class="settings-actions">
+        <button id="settings-save" class="settings-btn primary">Save Settings</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="js/study-firebase-init.js"></script>
+<script src="../app/timer-manager.js"></script>
+<script src="js/sidebar.js"></script>
+<script src="js/study-api.js"></script>
+<script>
+(function () {
+  KorahSidebar.initSidebar({ chatBaseUrl: "../chat.html", itemPageUrl: "item.html" });
+
+  var state = { step: 1, type: null, method: "manual", uploadedFiles: [] };
+
+  const creationModal = document.getElementById("creation-modal");
+  const creationModalTitle = document.getElementById("creation-modal-title");
+  const creationModalClose = document.getElementById("creation-modal-close");
+  const backdrop = document.getElementById("modal-backdrop");
+  const documentInput = document.getElementById("document-input");
+  const dropZone = document.getElementById("document-drop-zone");
+  const filesList = document.getElementById("uploaded-files-list");
+
+  // Simplified showModalStep since we only have step 1 now
+  function showModalStep(n) {
+    state.modalStep = n;
+    const step1 = document.getElementById("modal-step-1");
+    if (step1) step1.classList.toggle("active", n === 1);
+  }
+
+  function openCreationModal(type) {
+    state.type = type;
+    var labels = { flashcards: "Flashcard Set", studyGuide: "Study Guide", practiceTest: "Practice Test" };
+    if (creationModalTitle) creationModalTitle.textContent = "Create " + labels[type];
+    showModalStep(1);
+    if (backdrop) backdrop.classList.add("active");
+    if (creationModal) creationModal.classList.add("active");
+  }
+  window.openCreationModal = openCreationModal;
+
+  document.querySelectorAll(".create-type-card").forEach(function (card) {
+    card.addEventListener("click", function () {
+      openCreationModal(card.getAttribute("data-type"));
+    });
+  });
+
+  function closeCreationModal() {
+    if (backdrop) backdrop.classList.remove("active");
+    if (creationModal) creationModal.classList.remove("active");
+    clearValidationErrors();
+  }
+
+  function reopenCreationModal() {
+    if (backdrop) backdrop.classList.add("active");
+    if (creationModal) creationModal.classList.add("active");
+  }
+
+  // Redirect to dedicated creation pages instead of showing step 2
+  document.querySelectorAll(".method-card").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      const method = btn.getAttribute("data-method");
+      const pageMap = {
+        flashcards: 'flashcards.html',
+        studyGuide: 'guide-create.html', 
+        practiceTest: 'test-create.html'
+      };
+      window.KorahTransitions.go(`${pageMap[state.type]}?method=${method}`);
+    });
+  });
+
+  if (creationModalClose) creationModalClose.addEventListener("click", closeCreationModal);
+  if (backdrop) backdrop.addEventListener("click", () => {
+    closeCreationModal();
+  });
+
+  // Back button removed - no longer needed since we redirect to dedicated pages
+
+  // --- FILE UPLOAD LOGIC ---
+  if (dropZone) {
+    dropZone.addEventListener("click", () => documentInput.click());
+    dropZone.addEventListener("dragover", (e) => { e.preventDefault(); dropZone.classList.add("drag-active"); });
+    dropZone.addEventListener("dragleave", () => { dropZone.classList.remove("drag-active"); });
+    dropZone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropZone.classList.remove("drag-active");
+      handleFiles(e.dataTransfer.files);
+    });
+  }
+
+  if (documentInput) {
+    documentInput.addEventListener("change", (e) => handleFiles(e.target.files));
+  }
+
+  function handleFiles(files) {
+    Array.from(files).forEach(file => {
+      if (state.uploadedFiles.length >= 5) return;
+      state.uploadedFiles.push(file);
+    });
+    // Clear document upload error if files are added
+    if (state.uploadedFiles.length > 0) {
+      document.getElementById('document-drop-zone').classList.remove('error');
+      document.getElementById('upload-error').classList.remove('show');
+    }
+    renderFiles();
+  }
+
+  function renderFiles() {
+    if (!filesList) return;
+    filesList.innerHTML = "";
+    state.uploadedFiles.forEach((file, idx) => {
+      const item = document.createElement("div");
+      item.className = "doc-upload-item";
+
+      const isImage = file.type.startsWith("image/");
+      const ext = file.name.split(".").pop().toUpperCase();
+      const icon = file.type === "application/pdf" ? '<span class="material-icons-round" style="color: var(--tx2); font-size: 1.375rem;" aria-label="book">book</span>'
+        : (file.type === "text/plain" || ["TXT","MD","CSV"].includes(ext)) ? '<span class="material-icons-round" style="color: var(--tx2); font-size: 1.375rem;" aria-label="document">article</span>' : '<span class="material-icons-round" style="color: var(--tx2); font-size: 1.375rem;" aria-label="attachment">attach_file</span>';
+
+      const thumbHtml = isImage
+        ? `<div class="doc-thumb"><img class="doc-preview-img" src="" alt="${file.name}"/></div>`
+        : `<div class="doc-thumb"><div class="doc-thumb-icon">${icon}<span class="doc-thumb-ext">${ext}</span></div></div>`;
+
+      item.innerHTML = `
+        ${thumbHtml}
+        <div class="doc-file-info">
+          <span class="doc-file-name" title="${file.name}">${file.name}</span>
+          <span class="doc-file-size">${(file.size / 1024).toFixed(1)} KB</span>
+        </div>
+        <button class="doc-file-remove" title="Remove">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      `;
+
+      if (isImage) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = item.querySelector(".doc-preview-img");
+          if (img) img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+
+      item.querySelector(".doc-file-remove").onclick = (e) => {
+        e.stopPropagation();
+        state.uploadedFiles.splice(idx, 1);
+        renderFiles();
+      };
+      filesList.appendChild(item);
+    });
+  }
+
+  ["practice-total-questions", "practice-mcq-count", "practice-open-count"].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener("input", function () {
+      getPracticeConfig();
+    });
+  });
+
+  function normalizeStudyContent(type, content) {
+    if (type === "flashcards") {
+      var cards = ((content && content.cards) || []).filter(function (c) {
+        return c && (c.front || "").trim() && (c.back || "").trim();
+      }).map(function (c) {
+        return { front: (c.front || "").trim(), back: (c.back || "").trim() };
+      });
+      if (cards.length < 2) return { ok: false, message: "Flashcards require at least 2 cards with front and back text." };
+      return { ok: true, content: { cards: cards } };
+    }
+    if (type === "studyGuide") {
+      var markdown = ((content && content.markdown) || "").trim();
+      if (!markdown && content && content.sections && content.sections.length) {
+        markdown = content.sections.map(function (s) {
+          return "## " + (s.title || "Section") + "\n\n" + (s.body || "");
+        }).join("\n\n").trim();
+      }
+      if (!markdown) return { ok: false, message: "Study guides must include some guide text." };
+      var finalTitle = (content && content.title) || "Study Guide";
+      return { ok: true, content: { title: finalTitle, markdown: markdown } };
+    }
+    if (type === "practiceTest") {
+      var questions = ((content && content.questions) || []).filter(function (q) {
+        return q && (q.text || "").trim();
+      }).map(function (q) {
+        var normalizedType = String((q.type || q.questionType || "")).toLowerCase();
+        var isMcq = normalizedType === "mcq" || normalizedType === "multiple_choice" || (Array.isArray(q.options) && q.options.length > 1);
+        return {
+          type: isMcq ? "mcq" : "openEnded",
+          text: (q.text || "").trim(),
+          options: isMcq ? (q.options || []).map(function (opt) { return String(opt || "").trim(); }).filter(Boolean).slice(0, 4) : [],
+          answer: (q.answer || "").trim(),
+          explanation: (q.explanation || "").trim()
+        };
+      });
+      if (!questions.length) return { ok: false, message: "Practice tests need at least 1 question with text." };
+      return {
+        ok: true,
+        content: {
+          questions: questions,
+          testConfig: {
+            totalQuestions: questions.length,
+            mcqCount: questions.filter(function (q) { return q.type === "mcq"; }).length,
+            openEndedCount: questions.filter(function (q) { return q.type !== "mcq"; }).length
+          }
+        }
+      };
+    }
+    return { ok: false, message: "Invalid item type." };
+  }
+
+  function parseManualContent(type) {
+    var raw = (document.getElementById("create-manual-content").value || "").trim();
+    if (type === "flashcards") {
+      var cards = raw.split("\n").map(function (line) { return line.trim(); }).filter(Boolean).map(function (line) {
+        var parts = line.split("::");
+        return { front: (parts[0] || "").trim(), back: (parts.slice(1).join("::") || "").trim() };
+      });
+      return normalizeStudyContent(type, { cards: cards });
+    }
+    if (type === "studyGuide") {
+      return normalizeStudyContent(type, { markdown: raw });
+    }
+    if (type === "practiceTest") {
+      var questions = raw.split("\n").map(function (line) { return line.trim(); }).filter(Boolean).map(function (line) {
+        var parts = line.split("::");
+        return { type: "openEnded", text: (parts[0] || "").trim(), answer: (parts.slice(1).join("::") || "").trim(), options: [] };
+      });
+      return normalizeStudyContent(type, { questions: questions });
+    }
+    return { ok: false, message: "Invalid item type." };
+  }
+
+  // updateManualContentUI removed - no longer needed since we redirect to dedicated pages
+
+  async function saveItem(content) {
+    var title = document.getElementById("create-title").value.trim() || "Untitled";
+    var description = document.getElementById("create-description").value.trim();
+    var subject = document.getElementById("create-subject").value.trim();
+    var tags = (document.getElementById("create-tags").value || "").split(",").map(function (t) { return t.trim(); }).filter(Boolean);
+    var id = "study_" + Date.now();
+    var item = {
+      id: id,
+      type: state.type,
+      title: title,
+      description: description,
+      subject: subject,
+      tags: tags,
+      content: content || (state.type === "flashcards" ? { cards: [] } : state.type === "studyGuide" ? { markdown: "" } : { questions: [] }),
+      source: state.method,
+      createdBy: "cloud",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    if (window.KorahDB) await window.KorahDB.setStudyItem(id, item);
+    var redirectPage = state.type === "studyGuide" ? "guide.html" : state.type === "practiceTest" ? "test.html" : "item.html";
+    window.KorahTransitions.go(redirectPage + "?id=" + encodeURIComponent(id));
+  }
+
+  // --- VALIDATION FUNCTIONS ---
+  function clearValidationErrors() {
+    document.querySelectorAll('.form-field.error').forEach(function(el) {
+      el.classList.remove('error');
+    });
+    document.querySelectorAll('.upload-zone.error').forEach(function(el) {
+      el.classList.remove('error');
+    });
+    document.getElementById('upload-error').classList.remove('show');
+    var errEl = document.getElementById("create-save-error");
+    errEl.classList.add("hidden");
+    errEl.textContent = "";
+  }
+
+  function setFieldError(fieldId) {
+    var field = document.getElementById(fieldId);
+    if (field) {
+      field.classList.add('error');
+    }
+  }
+
+  function validateForm() {
+    clearValidationErrors();
+    var isValid = true;
+
+    // Validate Title
+    var title = document.getElementById("create-title").value.trim();
+    if (!title) {
+      setFieldError('create-title-field');
+      isValid = false;
+    }
+
+    // Validate Subject
+    var subject = document.getElementById("create-subject").value.trim();
+    if (!subject) {
+      setFieldError('create-subject-field');
+      isValid = false;
+    }
+
+    // Method-specific validation
+    if (state.method === "ai-prompt") {
+      var prompt = document.getElementById("create-ai-prompt").value.trim();
+      if (!prompt) {
+        setFieldError('create-ai-prompt-wrap');
+        isValid = false;
+      }
+    }
+
+    if (state.method === "manual") {
+      var content = document.getElementById("create-manual-content").value.trim();
+      if (!content) {
+        setFieldError('create-manual-content-wrap');
+        isValid = false;
+      }
+    }
+
+    if (state.method === "ai-doc") {
+      if (state.uploadedFiles.length === 0) {
+        document.getElementById('document-drop-zone').classList.add('error');
+        document.getElementById('upload-error').classList.add('show');
+        isValid = false;
+      }
+    }
+
+    if (!isValid) {
+      var errEl = document.getElementById("create-save-error");
+      errEl.textContent = "Please fill in all required fields";
+      errEl.classList.remove("hidden");
+    }
+
+    return isValid;
+  }
+
+  // Add real-time validation on input
+  ['create-title', 'create-subject', 'create-ai-prompt', 'create-manual-content'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('input', function() {
+        var field = el.closest('.form-field');
+        if (field && field.classList.contains('error') && el.value.trim()) {
+          field.classList.remove('error');
+        }
+      });
+    }
+  });
+
+  document.getElementById("create-save").addEventListener("click", function () {
+    var btn = document.getElementById("create-save");
+    var errEl = document.getElementById("create-save-error");
+    var overlay = document.getElementById("loading-overlay");
+    var loadingText = document.getElementById("loading-text");
+    
+    errEl.classList.add("hidden");
+    errEl.textContent = "";
+
+    // Validate form before proceeding
+    if (!validateForm()) {
+      return;
+    }
+
+    var isAi = state.method === "ai-prompt" || state.method === "ai-doc";
+    if (!isAi) {
+      var manualValidation = parseManualContent(state.type);
+      if (!manualValidation.ok) {
+        errEl.textContent = manualValidation.message;
+        errEl.classList.remove("hidden");
+        return;
+      }
+      saveItem(manualValidation.content);
+      return;
+    }
+
+    var title = document.getElementById("create-title").value.trim() || "Untitled";
+    var subject = document.getElementById("create-subject").value.trim();
+    var prompt = (document.getElementById("create-ai-prompt") && document.getElementById("create-ai-prompt").value) || title;
+
+    btn.disabled = true;
+    closeCreationModal();
+    overlay.classList.remove("hidden");
+    if (loadingText) loadingText.textContent = "Korah is Generating...";
+
+    KorahStudyAPI.generateStudyContent({
+      type: state.type,
+      prompt: prompt,
+      title: title,
+      subject: subject,
+      files: state.uploadedFiles,
+      testConfig: state.type === "practiceTest" ? getPracticeConfig() : undefined
+    }).then(function (result) {
+      var validated = normalizeStudyContent(state.type, result && result.content);
+      if (!validated.ok) {
+        btn.disabled = false;
+        overlay.classList.add("hidden");
+        reopenCreationModal();
+        errEl.textContent = validated.message;
+        errEl.classList.remove("hidden");
+        return;
+      }
+      saveItem(validated.content);
+    }).catch(function (err) {
+      btn.disabled = false;
+      overlay.classList.add("hidden");
+      reopenCreationModal();
+      errEl.textContent = "AI generation failed: " + (err && err.message ? err.message : "please try again");
+      errEl.classList.remove("hidden");
+    });
+  });
+
+  // Handle URL params
+  var typeParam = new URLSearchParams(window.location.search).get("type");
+  if (typeParam && ["flashcards", "studyGuide", "practiceTest"].indexOf(typeParam) >= 0) {
+    openCreationModal(typeParam);
+  }
+})();
+</script>
+
+<script type="module">
+  import { getApps, initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+  import { startAuthGuard } from '../auth-guard.js';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
+    authDomain: "korah-app.firebaseapp.com",
+    projectId: "korah-app",
+    storageBucket: "korah-app.firebasestorage.app",
+    messagingSenderId: "226169460321",
+    appId: "1:226169460321:web:b166fc8260107c55dafc20"
+  };
+
+  const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  onAuthStateChanged(auth, (user) => {
+    if (!user) { window.KorahTransitions.go('../landing/index.html'); return; }
+    startAuthGuard(auth, '../landing/index.html');
+  });
+
+  document.getElementById('logout-btn').addEventListener('click', () => {
+    window.confirmLogout(async () => {
+      await signOut(auth);
+      localStorage.removeItem('korah_first_name');
+      window.KorahTransitions.go('../login.html');
+    });
+  });
+</script>
+</body>
+</html>
