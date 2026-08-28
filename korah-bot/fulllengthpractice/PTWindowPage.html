@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Korah AI — Full-Length Practice Test</title>
+<link rel="icon" type="image/png" href="../logo-images/newlogo0.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+  :root{
+    --bg:#06040f; --panel:#120c28; --panel2:#1a1140; --bd:#2a2150;
+    --tx:#ffffff; --tx2:#b6a8d9; --primary:#8b5cf6; --primary2:#a78bfa;
+    --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444; --glow:rgba(139,92,246,.15);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:"Plus Jakarta Sans",system-ui,sans-serif;
+    background:var(--bg); color:var(--tx); overflow:hidden;
+  }
+  .is-hidden{display:none !important}
+
+  /* ── Top bar ─────────────────────────────── */
+  .topbar{
+    position:fixed; top:0; left:0; right:0; height:60px; z-index:50;
+    display:flex; align-items:center; gap:14px; padding:0 18px;
+    background:var(--panel); border-bottom:1px solid var(--bd);
+  }
+  .module-ind{
+    display:flex; align-items:center; gap:10px; font-weight:600;
+  }
+  .module-badge{
+    padding:5px 12px; border-radius:999px; font-size:.8rem;
+    background:var(--glow); border:1px solid var(--bd); color:var(--primary2);
+  }
+  .module-badge strong{color:var(--tx)}
+  .timer{
+    margin-left:auto; font-variant-numeric:tabular-nums; font-weight:700;
+    font-size:1.15rem; letter-spacing:.5px; color:var(--primary2);
+  }
+  .timer.is-warn{color:var(--warn); animation:pulse 1s infinite}
+  @keyframes pulse{50%{opacity:.55}}
+
+  .dropdown{position:relative}
+  .menu-btn{
+    background:var(--panel2); color:var(--tx); border:1px solid var(--bd);
+    padding:8px 14px; border-radius:10px; cursor:pointer; font-weight:600;
+  }
+  .menu-btn:hover{border-color:var(--primary)}
+  .menu{
+    position:absolute; right:0; top:46px; min-width:240px;
+    background:var(--panel2); border:1px solid var(--bd); border-radius:12px;
+    padding:6px; display:none; box-shadow:0 10px 30px rgba(0,0,0,.4);
+  }
+  .menu.open{display:block}
+  .menu button{
+    display:block; width:100%; text-align:left; padding:11px 12px;
+    background:none; border:none; color:var(--tx); cursor:pointer;
+    border-radius:8px; font-size:.92rem; font-weight:500;
+  }
+  .menu button:hover{background:var(--primary); color:#fff}
+
+  /* ── Bottom bar ──────────────────────────── */
+  .bottombar{
+    position:fixed; bottom:0; left:0; right:0; height:52px; z-index:50;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 18px; background:var(--panel); border-top:1px solid var(--bd);
+  }
+  .name-display{font-weight:600; color:var(--tx2)}
+  .qmenu-btn{
+    background:var(--panel2); color:var(--tx); border:1px solid var(--bd);
+    padding:8px 16px; border-radius:10px; cursor:pointer; font-weight:600;
+  }
+  .qmenu-btn:hover{border-color:var(--primary)}
+
+  /* ── Question area ───────────────────────── */
+  .stage{
+    position:fixed; top:60px; bottom:52px; left:0; right:0; overflow-y:auto;
+    padding:34px clamp(20px,6vw,72px);
+  }
+  .screen{max-width:900px; margin:0 auto; animation:fade .25s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1}}
+
+  .q-card{
+    background:var(--panel); border:1px solid var(--bd); border-radius:16px;
+    padding:26px 30px; margin-bottom:16px;
+  }
+  .q-top{display:flex; align-items:center; gap:10px; margin-bottom:14px}
+  .q-num{font-weight:800; color:var(--primary2)}
+  .domain-chip{
+    font-size:.72rem; padding:3px 9px; border-radius:999px;
+    background:var(--glow); border:1px solid var(--bd); color:var(--tx2);
+  }
+  .passage{color:var(--tx); line-height:1.65; margin-bottom:16px; white-space:pre-wrap}
+  .stem{font-weight:600; line-height:1.6; margin-bottom:18px}
+  .figure{
+    margin:0 auto 20px; max-width:560px; text-align:center;
+    border:1px solid var(--bd); border-radius:12px; background:#fff; padding:12px;
+  }
+  .figure img{max-width:100%; height:auto}
+
+  .options{display:grid; gap:10px}
+  .option{
+    display:flex; align-items:flex-start; gap:12px; cursor:pointer;
+    border:1px solid var(--bd); border-radius:12px; padding:13px 15px;
+    background:var(--panel2); transition:.12s;
+  }
+  .option:hover{border-color:var(--primary)}
+  .option .opt-key{
+    width:26px; height:26px; flex:0 0 26px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    border:1px solid var(--bd); font-weight:700; font-size:.85rem; color:var(--tx2);
+  }
+  .option.is-selected{border-color:var(--primary); background:rgba(139,92,246,.15)}
+  .option.is-selected .opt-key{background:var(--primary); color:#fff; border-color:var(--primary)}
+
+  /* SPR input */
+  .spr-wrap{margin-top:6px}
+  .spr-input{
+    width:100%; max-width:340px; padding:14px 16px; font-size:1rem;
+    background:var(--panel2); color:var(--tx); border:1px solid var(--bd);
+    border-radius:12px; outline:none;
+  }
+  .spr-input:focus{border-color:var(--primary)}
+  .spr-input.is-correct{border-color:var(--ok)}
+  .spr-input.is-incorrect{border-color:var(--bad)}
+
+  /* Nav between questions */
+  .qnav{display:flex; justify-content:space-between; gap:12px; margin-top:8px}
+  .btn{
+    padding:11px 20px; border-radius:10px; border:none; cursor:pointer;
+    font-weight:700; font-size:.92rem; color:var(--tx); background:var(--panel2);
+    border:1px solid var(--bd);
+  }
+  .btn:disabled{opacity:.4; cursor:not-allowed}
+  .btn-primary{background:var(--primary); border-color:var(--primary); color:#fff}
+  .btn-primary:hover{background:var(--primary2)}
+  .btn-ghost{background:none}
+  .btn-review.is-active{background:var(--warn); border-color:var(--warn); color:#1a1206}
+
+  /* ── Question menu popup ─────────────────── */
+  .overlay{position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:90; display:none}
+  .overlay.open{display:block}
+  .popup{
+    position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+    width:min(560px,92vw); max-height:82vh; overflow-y:auto; z-index:95;
+    background:var(--panel2); border:1px solid var(--bd); border-radius:16px;
+    padding:22px; display:none;
+  }
+  .popup.open{display:block}
+  .popup-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px}
+  .popup-title{font-weight:800; font-size:1.05rem}
+  .x-btn{background:none; border:none; color:var(--tx2); font-size:1.4rem; cursor:pointer}
+  .q-counts{display:flex; gap:14px; margin:10px 0 14px; font-size:.86rem}
+  .q-counts span b{display:block; font-size:1.05rem}
+  .qc-answered b{color:var(--ok)} .qc-unanswered b{color:var(--tx2)} .qc-review b{color:var(--warn)}
+  .q-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(44px,1fr)); gap:8px}
+  .q-dot{
+    height:44px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+    background:var(--panel); border:1px solid var(--bd); cursor:pointer; font-weight:700; color:var(--tx2);
+    position:relative;
+  }
+  .q-dot.is-answered{background:rgba(34,197,94,.26); border-color:var(--ok); color:#6ee7a8}
+  .q-dot.is-review{border-color:var(--warn)}
+  .q-dot.is-review::after{
+    content:""; position:absolute; top:0; right:0; width:0; height:0;
+    border-style:solid; border-width:0 20px 20px 0;
+    border-color:transparent var(--warn) transparent transparent;
+    border-radius:0 8px 0 0; pointer-events:none;
+  }
+  .q-dot.is-current{outline:2px solid var(--primary)}
+  .review-open{margin-top:16px; width:100%}
+  .review-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(44px,1fr)); gap:8px; margin:4px 0 16px}
+
+  /* ── Review / Results / screens ──────────── */
+  .center-screen{max-width:760px; margin:0 auto; text-align:center; padding-top:8vh}
+  .big-title{font-size:clamp(1.6rem,4vw,2.4rem); font-weight:800; margin-bottom:12px}
+  .sub{color:var(--tx2); line-height:1.6; margin-bottom:28px}
+  .score-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px; margin:22px 0}
+  .score-card{background:var(--panel); border:1px solid var(--bd); border-radius:14px; padding:20px}
+  .score-card .v{font-size:1.9rem; font-weight:800; color:var(--primary2)}
+  .score-card .l{color:var(--tx2); font-size:.85rem; margin-top:4px}
+
+  /* reference sheet */
+  .ref-sheet h3{margin-bottom:10px}
+  .ref-formula{font-size:1.05rem; line-height:1.9}
+</style>
+</head>
+<body>
+
+  <!-- ══════════ TOP BAR ══════════ -->
+  <header class="topbar">
+    <div class="module-ind">
+      <span class="module-badge" id="moduleIndicator">—</span>
+    </div>
+    <div class="timer" id="timer">00:00</div>
+
+    <div class="dropdown" id="topDropdown">
+      <button class="menu-btn" id="menuBtn" type="button">Menu ▾</button>
+      <div class="menu" id="menuItems">
+        <button type="button" data-action="reference">Reference Sheet</button>
+        <button type="button" data-action="accessibility">Accessibility</button>
+        <button type="button" data-action="exit">Exit Test</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ══════════ STAGE (all screens) ══════════ -->
+  <main class="stage">
+
+    <!-- Intro / start -->
+    <section class="screen" id="screen-start">
+      <div class="center-screen">
+        <div class="big-title">Full-Length SAT Practice Test</div>
+        <p class="sub">Reading &amp; Writing (2 modules) → 10-minute break → Math (2 modules).<br/>
+          You will not be able to return to a completed module. Your progress is saved automatically.</p>
+        <div style="margin-bottom:18px">
+          <input class="spr-input" id="nameInput" placeholder="Enter your full name" style="max-width:340px"/>
+        </div>
+        <button class="btn btn-primary" id="startBtn" type="button" style="min-width:200px">Begin Test</button>
+      </div>
+    </section>
+
+    <!-- Break screen -->
+    <section class="screen is-hidden" id="screen-break">
+      <div class="center-screen">
+        <div class="big-title">Take a 10-Minute Break</div>
+        <p class="sub">You have finished the Reading &amp; Writing section. Stand up, stretch, and clear your head.<br/>
+          The Math section will <strong>not</strong> start until you click the button below.</p>
+        <div class="timer" id="breakTimer" style="font-size:2rem; margin-bottom:22px">10:00</div>
+        <button class="btn btn-primary" id="resumeBtn" type="button" style="min-width:220px">Resume Testing Now</button>
+      </div>
+    </section>
+
+    <!-- Module question view -->
+    <section class="screen is-hidden" id="screen-module">
+      <div id="qCard"></div>
+      <div class="qnav">
+        <button class="btn" id="prevQBtn" type="button">← Previous</button>
+        <div style="display:flex; gap:10px">
+          <button class="btn btn-ghost btn-review" id="reviewToggleBtn" type="button">Mark for Review</button>
+          <button class="btn btn-primary" id="nextQBtn" type="button">Next →</button>
+        </div>
+      </div>
+      <div style="text-align:center; margin-top:16px">
+        <button class="btn btn-primary" id="finishModuleBtn" type="button">Finish Module &amp; Continue</button>
+      </div>
+    </section>
+
+    <!-- Review page -->
+    <section class="screen is-hidden" id="screen-review">
+      <div class="q-card">
+        <div class="q-top"><span class="q-num" style="font-size:1.2rem">Review — <span id="reviewTitle">Module</span></span></div>
+        <div id="reviewList"></div>
+        <div style="display:flex; gap:12px; margin-top:16px">
+          <button class="btn" id="reviewBackBtn" type="button">← Back</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Results -->
+    <section class="screen is-hidden" id="screen-results">
+      <div class="center-screen">
+        <div class="big-title">Test Complete!</div>
+        <p class="sub" id="resultsStudent"></p>
+        <div class="score-grid">
+          <div class="score-card"><div class="v" id="resTotal">—</div><div class="l">Total Score</div></div>
+          <div class="score-card"><div class="v" id="resEnglish">—</div><div class="l">Reading &amp; Writing</div></div>
+          <div class="score-card"><div class="v" id="resMath">—</div><div class="l">Math</div></div>
+        </div>
+        <div class="sub" id="resSummary" style="font-size:.95rem"></div>
+        <button class="btn btn-primary" id="resultsReviewBtn" type="button">Review Answers</button>
+        <button class="btn" id="resultsExitBtn" type="button" style="margin-left:10px">Exit</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- ══════════ BOTTOM BAR ══════════ -->
+  <footer class="bottombar">
+    <div class="name-display" id="nameDisplay">—</div>
+    <button class="qmenu-btn" id="qMenuBtn" type="button">Questions Answered</button>
+  </footer>
+
+  <!-- Question menu popup -->
+  <div class="overlay" id="qMenuOverlay"></div>
+  <div class="popup" id="qMenuPopup">
+    <div class="popup-head">
+      <span class="popup-title">Questions</span>
+      <button class="x-btn" id="qMenuClose" type="button">×</button>
+    </div>
+    <div class="q-counts">
+      <span class="qc-answered"><b id="cAnswered">0</b>Answered</span>
+      <span class="qc-unanswered"><b id="cUnanswered">0</b>Not Answered</span>
+      <span class="qc-review"><b id="cReview">0</b>Marked for Review</span>
+    </div>
+    <div class="q-grid" id="qGrid"></div>
+    <button class="btn review-open" id="qMenuReviewBtn" type="button">Review Page</button>
+  </div>
+
+  <!-- Reference sheet modal -->
+  <div class="overlay" id="refOverlay"></div>
+  <div class="popup ref-sheet" id="refPopup">
+    <div class="popup-head">
+      <span class="popup-title">Reference Sheet (Math)</span>
+      <button class="x-btn" id="refClose" type="button">×</button>
+    </div>
+    <div class="ref-formula">
+      <div style="column-count:2; column-gap:36px">
+        <p>A = πr²</p><p>C = 2πr</p><p>A = lw</p><p>A = ½bh</p><p>c² = a² + b²</p>
+        <p>A = πr²</p><p>V = lwh</p><p>V = πr²h</p><p>V = ⅓πr³</p><p>V = ½πr²h</p><p>V = ⅓lwh</p>
+      </div>
+      <p style="margin-top:16px; font-size:.85rem; color:var(--tx2)">Special Right Triangles: 30°–60°–90° · 45°–45°–90°</p>
+      <p style="margin-top:8px; font-size:.85rem; color:var(--tx2)">Sum of angles of a triangle is 180°. A circle has 360° of arc (2π radians).</p>
+    </div>
+  </div>
+
+  <!-- Accessibility modal -->
+  <div class="overlay" id="accOverlay"></div>
+  <div class="popup" id="accPopup">
+    <div class="popup-head">
+      <span class="popup-title">Accessibility</span>
+      <button class="x-btn" id="accClose" type="button">×</button>
+    </div>
+    <p style="color:var(--tx2); margin:10px 0">Text size</p>
+    <div style="display:flex; gap:10px">
+      <button class="btn" id="fontSmall" type="button">A−</button>
+      <button class="btn" id="fontReset" type="button">A</button>
+      <button class="btn" id="fontLarge" type="button">A+</button>
+    </div>
+    <p style="color:var(--tx2); margin:18px 0 10px">Contrast</p>
+    <div style="display:flex; gap:10px">
+      <button class="btn" id="contrastToggle" type="button">High Contrast</button>
+    </div>
+  </div>
+
+  <!-- Confirm dialog (replaces native confirm) -->
+  <div class="overlay" id="confirmOverlay"></div>
+  <div class="popup" id="confirmModal" role="dialog" aria-modal="true">
+    <div class="popup-head">
+      <span class="popup-title" id="confirmTitle">Are you sure?</span>
+      <button class="x-btn" id="confirmClose" type="button" aria-label="Close">×</button>
+    </div>
+    <p id="confirmMsg" style="color:var(--tx2); line-height:1.6; margin:6px 0 20px"></p>
+    <div style="display:flex; gap:10px; justify-content:flex-end">
+      <button class="btn" id="confirmCancelBtn" type="button">Cancel</button>
+      <button class="btn btn-primary" id="confirmOkBtn" type="button">Confirm</button>
+    </div>
+  </div>
+
+  <!-- Alert dialog (replaces native alert) -->
+  <div class="overlay" id="alertOverlay"></div>
+  <div class="popup" id="alertModal" role="dialog" aria-modal="true">
+    <div class="popup-head">
+      <span class="popup-title" id="alertTitle">Notice</span>
+      <button class="x-btn" id="alertClose" type="button" aria-label="Close">×</button>
+    </div>
+    <p id="alertMsg" style="color:var(--tx2); line-height:1.6; margin:6px 0 20px"></p>
+    <div style="display:flex; justify-content:flex-end">
+      <button class="btn btn-primary" id="alertOkBtn" type="button">OK</button>
+    </div>
+  </div>
+
+  <script type="module" src="./PTWindowScript.js"></script>
+</body>
+</html>

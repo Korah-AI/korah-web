@@ -17,7 +17,7 @@
 #### Top Bar features and visuals
 - Include a module indicator (whether you are taking the reading and writing section or the math section, and indicating whether or not you are in module 1 or module 2)
 
-- Include a timer on the top of the page that resets depending on the module of the exam (Reading and Writing will have two 32 minute modules, Math will have two 35 minute modules.)
+- Include a timer on the top of the page that resets depending on the module of the exam (Reading and Writing will have two 39 minute modules, Math will have two 43 minute modules.)
 - The top bar should include a dropdown menu that includes a reference sheet (simply a png or svg) as well as accessibility options, the option to exit the test entirely (in which case the timer would be frozen at whatever state it is in and saved with the rest of the user’s data and the progress of the test would be saved), and an option to create an unscheduled break (the timer will not stop if the break is not meant to happen, more on this later)
 #### Bottom Bar features and visuals
 - The bottom bar will feature your full name on one side and a menu for viewing questions answered.
@@ -36,7 +36,7 @@
   - Remember, there should be review pages at the end of every section of the test to check your progress within each module individually.
   - After starting a practice test, there should be a widget in the dashboard that allows them to continue from where they left off (again progress should be saved either through localstorage or firestore depending on the most efficient application) 
   - After finishing a practice test, there should be a widget that displays their most recent performance.
-  - 
+  
 # Final Check
 #### You will know you are done when a student can successfully enter a practice test, see every GUI element previously mentioned (Review Page, Question progress popup, Reference Sheet, etc.), Move on to the next module and NOT be allowed to travel backwards. While also having a 10 minute break period in-between RW and Math sections of the practice exam.
 #### Make sure at the very end you display and save a breakdown of what the student's total score was, (featuring scaled score per section) aswell as their score per subject area.

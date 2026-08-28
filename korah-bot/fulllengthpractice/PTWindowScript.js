@@ -1,0 +1,660 @@
+// ─────────────────────────────────────────────────────────────
+// Korah Full-Length Practice Test — Player logic
+// One-way state machine: RW M1 → RW M2 → break → Math M1 → Math M2 → results.
+// LocalStorage for in-progress state; Firestore (KorahSATAnalytics) for final results.
+// ─────────────────────────────────────────────────────────────
+
+// ---- Firebase bootstrap (mirrors the sat pages) ----
+let K = null; // window.KorahSATAnalytics (set after auth)
+{
+  const firebaseConfig = {
+    apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
+    authDomain: "korah-app.firebaseapp.com",
+    projectId: "korah-app",
+    storageBucket: "korah-app.firebasestorage.app",
+    messagingSenderId: "226169460321",
+    appId: "1:226169460321:web:b166fc8260107c55dafc20",
+  };
+  import("https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js").then(async ({ initializeApp }) => {
+    const { getAuth, onAuthStateChanged } = await import("https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js");
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) return; // play locally; Firestore save skipped
+      try {
+        const { initSatAnalytics } = await import("../sat/js/sat-analytics.js");
+        K = await initSatAnalytics(app, user.uid);
+      } catch (e) { console.warn("[PT] analytics init failed", e); }
+    });
+  }).catch((e) => console.warn("[PT] firebase load failed", e));
+}
+
+const LS_KEY = "korahPTState";
+const RESULT_KEY = "korahLastPTResult";
+const testSlug = `test-${new URLSearchParams(location.search).get("test") || "4"}`;
+const DATA_URL = `../docs/practice-tests/${testSlug}/${testSlug}.json`;
+
+const MODULES = [
+  { key: "rwModule1", section: "english", label: "Reading & Writing", module: "Module 1", minutes: 39 },
+  { key: "rwModule2", section: "english", label: "Reading & Writing", module: "Module 2", minutes: 39 },
+  { key: "mathModule1", section: "math", label: "Math", module: "Module 1", minutes: 43 },
+  { key: "mathModule2", section: "math", label: "Math", module: "Module 2", minutes: 43 },
+];
+
+let test = null;         // parsed test-4.json
+let state = null;        // runtime session state
+let qIdx = 0;            // question index within current module
+let timerHandle = null;  // module countdown
+let moduleDeadline = 0;  // epoch ms
+let breakHandle = null;
+
+const $ = (id) => document.getElementById(id);
+const shown = (id, on) => { const el = $(id); if (el) el.classList.toggle("is-hidden", !on); };
+const esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+// ── UI dialogs (replace native confirm/alert) ─────────────
+let _fork = null; // the not-yet-invoked action when a confirm is pending
+function openModal(overlayId, modalId) {
+  $(overlayId).classList.add("open");
+  $(modalId).classList.add("open");
+}
+function closeModal(overlayId, modalId) {
+  $(overlayId).classList.remove("open");
+  $(modalId).classList.remove("open");
+}
+function uiAlert(title, message) {
+  $("#alertTitle").textContent = title || "Notice";
+  $("#alertMsg").textContent = message || "";
+  openModal("alertOverlay", "alertModal");
+}
+function uiConfirm({ title, message, confirmLabel, onConfirm, onCancel }) {
+  $("#confirmTitle").textContent = title || "Are you sure?";
+  $("#confirmMsg").textContent = message || "";
+  $("#confirmOkBtn").textContent = confirmLabel || "Confirm";
+  openModal("confirmOverlay", "confirmModal");
+  $("confirmOkBtn").onclick = () => { closeModal("confirmOverlay", "confirmModal"); if (onConfirm) onConfirm(); };
+  $("confirmCancelBtn").onclick = () => { closeModal("confirmOverlay", "confirmModal"); if (onCancel) onCancel(); };
+  $("confirmClose").onclick = () => { closeModal("confirmOverlay", "confirmModal"); if (onCancel) onCancel(); };
+  $("confirmOverlay").onclick = () => { closeModal("confirmOverlay", "confirmModal"); if (onCancel) onCancel(); };
+}
+
+// Bind the always-present alert modal dismiss buttons once (it can open before wireUI runs).
+document.addEventListener("DOMContentLoaded", () => {
+  const closeAlert = () => closeModal("alertOverlay", "alertModal");
+  $("alertOkBtn")?.addEventListener("click", closeAlert);
+  $("alertClose")?.addEventListener("click", closeAlert);
+  $("alertOverlay")?.addEventListener("click", closeAlert);
+});
+
+function persist() { try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (e) {} }
+function loadPersisted() { try { return JSON.parse(localStorage.getItem(LS_KEY)); } catch (e) { return null; } }
+
+init();
+
+async function init() {
+  try {
+    const res = await fetch(DATA_URL);
+    test = await res.json();
+  } catch (e) {
+    uiAlert("Couldn't load the test", "Could not load the practice test. Please refresh and try again.");
+    return;
+  }
+
+  // Resume an in-progress session if present.
+  const saved = loadPersisted();
+  const inProgress = saved && saved.step && saved.step !== "start"
+    && saved.currentMod !== undefined && saved.currentMod <= MODULES.length
+    && (saved.name || saved.currentMod > 0
+      || (saved.answers && Object.keys(saved.answers).length > 0));
+  if (inProgress) {
+    state = saved;
+    onResume();
+  } else {
+    // No usable in-progress session (missing, stale "start", or completed):
+    // clear any leftover so it can never be mistaken for real progress, and
+    // don't persist a bare "start" state — progress only counts once a test begins.
+    try { localStorage.removeItem(LS_KEY); } catch (e) {}
+    freshState(); // step: "start"
+  }
+  wireUI();
+}
+
+function freshState() {
+  state = {
+    step: "start",   // start | module | break | review | results
+    name: "",
+    currentMod: 0,   // index into MODULES
+    qIdx: 0,         // last-viewed question index within the current module
+    finished: [],    // module indexes completed (one-way)
+    answers: {},     // `${modKey}:${n}` -> selected (mcq letter) or text (spr)
+    reviewed: {},    // `${modKey}:${n}` -> true
+    moduleStartedAt: {},
+    moduleRemaining: {},  // seconds left when last paused/left
+    breakRemaining: 600,  // 10 min break
+    finishedAt: null,
+  };
+}
+
+function setStep(s) { state.step = s; persist(); }
+
+// ── Screen router ────────────────────────────────
+function showScreen(which) {
+  ["start", "break", "module", "review", "results"].forEach((id) => shown("screen-" + id, id === which));
+  updateTopBar();
+  updateBottomBar();
+  const inQuestion = which === "module";
+  // hide reference/accessibility/break during non-question screens gracefully
+  if (!inQuestion) { closeMenus(); }
+}
+
+function updateTopBar() {
+  const m = MODULES[state.currentMod];
+  let label = "—";
+  if (state.step === "module") label = `${m.label} · ${m.module}`;
+  else if (state.step === "break") label = "Break";
+  else if (state.step === "results") label = "Complete";
+  $("moduleIndicator").innerHTML = `<strong>${label}</strong>`;
+}
+
+function updateBottomBar() {
+  $("nameDisplay").textContent = state.name || "Student";
+}
+
+// ── Timer ────────────────────────────────────────
+function fmt(s) {
+  s = Math.max(0, Math.ceil(s));
+  const m = Math.floor(s / 60), sec = s % 60;
+  return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
+}
+
+function startModuleTimer() {
+  stopTimer();
+  const m = MODULES[state.currentMod];
+  const remaining = (state.moduleRemaining[state.currentMod] != null)
+    ? state.moduleRemaining[state.currentMod]
+    : m.minutes * 60;
+  state.moduleRemaining[state.currentMod] = remaining;
+  moduleDeadline = Date.now() + remaining * 1000;
+  $("timer").classList.remove("is-warn");
+  timerHandle = setInterval(tick, 250);
+  tick();
+}
+
+function tick() {
+  const left = Math.max(0, (moduleDeadline - Date.now()) / 1000);
+  state.moduleRemaining[state.currentMod] = left;
+  $("timer").textContent = fmt(left);
+  $("timer").classList.toggle("is-warn", left <= 60);
+  if (left <= 0) { stopTimer(); finishModule(true); }
+  persist();
+}
+
+function stopTimer() {
+  if (timerHandle) { clearInterval(timerHandle); timerHandle = null; }
+}
+
+function pauseModule() {
+  if (timerHandle) {
+    state.moduleRemaining[state.currentMod] = Math.max(0, (moduleDeadline - Date.now()) / 1000);
+    stopTimer();
+    persist();
+  }
+}
+
+// ── UI wiring ────────────────────────────────────
+function wireUI() {
+  $("startBtn").addEventListener("click", () => {
+    const name = ($("nameInput").value || "").trim();
+    if (!name) { $("nameInput").focus(); return; }
+    state.name = name;
+    $("nameDisplay").textContent = name;
+    persist();
+    beginModule();
+  });
+
+  $("prevQBtn").addEventListener("click", () => { if (qIdx > 0) { qIdx--; state.qIdx = qIdx; persist(); renderQuestion(); } });
+  $("nextQBtn").addEventListener("click", () => {
+    const qs = currentQuestions();
+    if (qIdx < qs.length - 1) { qIdx++; state.qIdx = qIdx; persist(); renderQuestion(); }
+  });
+  $("finishModuleBtn").addEventListener("click", () => finishModule(false));
+
+  $("reviewToggleBtn").addEventListener("click", () => {
+    const key = qKey();
+    state.reviewed[key] = !state.reviewed[key];
+    persist();
+    renderQuestion();
+  });
+
+  $("resumeBtn").addEventListener("click", () => stopBreak());
+
+  // Top menu
+  $("menuBtn").addEventListener("click", () => $("menuItems").classList.toggle("open"));
+  document.querySelectorAll("#menuItems button").forEach((b) => {
+    b.addEventListener("click", () => {
+      $("menuItems").classList.remove("open");
+      const act = b.dataset.action;
+      if (act === "reference") openRef();
+      else if (act === "accessibility") openAcc();
+      else if (act === "exit") exitTest();
+    });
+  });
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest("#topDropdown")) $("menuItems").classList.remove("open");
+  });
+
+  // Question menu popup
+  $("qMenuBtn").addEventListener("click", openQMenu);
+  $("qMenuClose").addEventListener("click", closeQMenu);
+  $("qMenuOverlay").addEventListener("click", closeQMenu);
+  $("qMenuReviewBtn").addEventListener("click", () => { closeQMenu(); openReview(); });
+  $("reviewBackBtn").addEventListener("click", () => {
+    if (state.step === "review") { setStep("module"); showScreen("module"); startModuleTimer(); renderQuestion(); }
+  });
+
+  // Results
+  $("resultsReviewBtn").addEventListener("click", () => openReview());
+  $("resultsExitBtn").addEventListener("click", () => {
+    resetAll(); shown("screen-results", false); setStep("start"); showScreen("start");
+  });
+
+  // Reference / accessibility
+  $("refClose").addEventListener("click", closeRef);
+  $("refOverlay").addEventListener("click", closeRef);
+  $("accClose").addEventListener("click", closeAcc);
+  $("accOverlay").addEventListener("click", closeAcc);
+  $("fontSmall").addEventListener("click", () => document.body.style.fontSize = "14px");
+  $("fontReset").addEventListener("click", () => document.body.style.fontSize = "16px");
+  $("fontLarge").addEventListener("click", () => document.body.style.fontSize = "19px");
+  $("contrastToggle").addEventListener("click", () => {
+    const hl = document.documentElement.style.filter === "invert(1)";
+    document.documentElement.style.filter = hl ? "" : "invert(1)";
+  });
+}
+
+// ── Resume ───────────────────────────────────────
+function onResume() {
+  if (state.step === "break") { showScreen("break"); startBreak(); }
+  else if (state.step === "results") { renderResults(); showScreen("results"); }
+  else if (state.step === "review") showScreen("review");
+  else beginModule(true);
+}
+
+// ── Module flow ──────────────────────────────────
+function beginModule(resuming) {
+  if (state.currentMod >= MODULES.length) { finishTest(); return; }
+  setStep("module");
+  if (!resuming) {
+    state.moduleRemaining[state.currentMod] = null; // fresh timer
+    state.qIdx = 0;
+  }
+  qIdx = state.qIdx || 0;
+  if (qIdx >= (test[MODULES[state.currentMod].key] || []).length) qIdx = 0;
+  showScreen("module");
+  $("finishModuleBtn").style.display = "none";
+  startModuleTimer();
+  renderQuestion();
+}
+
+function finishModule(auto) {
+  // Unanswered questions are simply omitted — they award no points. Always
+  // let the player continue to the next module without being blocked.
+  doFinishModule();
+}
+
+function doFinishModule() {
+  stopTimer();
+  delete state.moduleRemaining[state.currentMod]; // reset for next time
+  state.finished.push(state.currentMod);
+  if (state.currentMod === 1) {
+    // After RW M1 & M2 → break
+    setStep("break");
+    showScreen("break");
+    startBreak();
+    return;
+  }
+  advanceModule();
+}
+
+function advanceModule() {
+  state.currentMod++;
+  state.moduleRemaining[state.currentMod] = null;
+  if (state.currentMod >= MODULES.length) { finishTest(); return; }
+  beginModule();
+}
+
+function currentQuestions() { return test[MODULES[state.currentMod].key] || []; }
+function qKey(q) {
+  const n = q && q.n ? q.n : currentQuestions()[qIdx].n;
+  return `${MODULES[state.currentMod].key}:${n}`;
+}
+
+// ── Break ────────────────────────────────────────
+function startBreak() {
+  stopTimer();
+  let left = state.breakRemaining != null ? state.breakRemaining : 600;
+  state.breakRemaining = left;
+  const end = Date.now() + left * 1000;
+  const draw = () => {
+    left = Math.max(0, (end - Date.now()) / 1000);
+    state.breakRemaining = left;
+    $("breakTimer").textContent = fmt(left);
+    persist();
+    // Informational only — never auto-start the next subject. The student must
+    // click "Resume Testing Now" (spec requirement).
+  };
+  draw();
+  breakHandle = setInterval(draw, 250);
+}
+function stopBreak() {
+  if (breakHandle) { clearInterval(breakHandle); breakHandle = null; }
+  state.breakRemaining = null;
+  $("breakTimer").textContent = "10:00";
+  advanceModule();
+}
+
+// ── Question rendering ───────────────────────────
+function renderQuestion() {
+  if (!currentQuestions().length) return;
+  const q = currentQuestions()[qIdx];
+  const m = MODULES[state.currentMod];
+  const key = `${m.key}:${q.n}`;
+  const selected = state.answers[key];
+  const reviewed = !!state.reviewed[key];
+  const isSpr = q.type === "spr";
+
+  const total = currentQuestions().length;
+  $("qCard").innerHTML = `
+    <div class="q-card">
+      <div class="q-top">
+        <span class="q-num">Question ${q.n} / ${total}</span>
+        ${q.domain ? `<span class="domain-chip">${esc(q.domain)}</span>` : ""}
+      </div>
+      ${q.passage ? `<div class="passage">${esc(q.passage)}</div>` : ""}
+      ${q.figure ? `<div class="figure"><img src="../docs/practice-tests/test-4/figures/${encodeURIComponent(q.figure)}" alt="figure for question ${q.n}"/></div>` : ""}
+      <div class="stem">${esc(q.stem)}</div>
+      ${isSpr ? renderSpr(selected, key) : renderMcq(selected, key, q)}
+    </div>
+  `;
+  $("reviewToggleBtn").classList.toggle("is-active", reviewed);
+  $("reviewToggleBtn").textContent = reviewed ? "Reviewed ✓" : "Mark for Review";
+  $("prevQBtn").disabled = qIdx === 0;
+  const isLast = qIdx === total - 1;
+  $("nextQBtn").disabled = false;
+  // Hide "Next" on the last question — "Finish Module & Continue" replaces it.
+  $("nextQBtn").style.display = isLast ? "none" : "";
+  $("finishModuleBtn").style.display = isLast ? "inline-block" : "none";
+
+  if (isSpr) {
+    const inp = $("qSprInput");
+    if (inp) {
+      inp.addEventListener("input", () => {
+        state.answers[key] = inp.value;
+        persist();
+      });
+    }
+  }
+  updateQMenuCounts();
+}
+
+function renderMcq(selected, key, q) {
+  return `<div class="options">
+    ${(q.options || []).map((opt, i) => {
+      const letter = String.fromCharCode(65 + i); // A, B, C, D
+      const text = opt.replace(/^[A-D]\)\s*/, ""); // strip leading letter if present
+      const sel = selected === letter;
+      return `<div class="option${sel ? " is-selected" : ""}" data-letter="${letter}" role="button" tabindex="0">
+        <span class="opt-key">${letter}</span><span>${esc(text)}</span>
+      </div>`;
+    }).join("")}
+  </div>`;
+}
+
+function renderSpr(selected, key) {
+  return `<div class="spr-wrap">
+    <label style="color:var(--tx2); font-size:.85rem; display:block; margin-bottom:8px">Enter your answer</label>
+    <input class="spr-input" id="qSprInput" type="text" placeholder="Type a number or expression"
+      autocomplete="off" spellcheck="false" value="${esc(selected || "")}"/>
+  </div>`;
+}
+
+// delegate clicks on dynamically-rendered options
+document.addEventListener("click", (e) => {
+  const opt = e.target.closest(".option");
+  if (!opt || state.step !== "module") return;
+  const key = qKey();
+  state.answers[key] = opt.dataset.letter;
+  persist();
+  renderQuestion();
+});
+
+// ── Question menu ────────────────────────────────
+function openQMenu() {
+  renderQGrid();
+  updateQMenuCounts();
+  $("qMenuPopup").classList.add("open");
+  $("qMenuOverlay").classList.add("open");
+}
+function closeQMenu() {
+  $("qMenuPopup").classList.remove("open");
+  $("qMenuOverlay").classList.remove("open");
+}
+function qStatus(q) {
+  const key = `${MODULES[state.currentMod].key}:${q.n}`;
+  let cls = "";
+  if (state.answers[key] != null && state.answers[key] !== "") cls += " is-answered";
+  if (state.reviewed[key]) cls += " is-review";
+  if (q.n === currentQuestions()[qIdx].n) cls += " is-current";
+  return cls;
+}
+function renderQGrid() {
+  const qs = currentQuestions();
+  $("qGrid").innerHTML = qs.map((q) =>
+    `<div class="q-dot${qStatus(q)}" data-n="${q.n}" title="Question ${q.n}">${q.n}</div>`
+  ).join("");
+  document.querySelectorAll("#qGrid .q-dot").forEach((d) => {
+    d.addEventListener("click", () => {
+      qIdx = currentQuestions().findIndex((q) => q.n === Number(d.dataset.n));
+      closeQMenu();
+      renderQuestion();
+    });
+  });
+}
+function updateQMenuCounts() {
+  const qs = currentQuestions();
+  let answered = 0, review = 0;
+  qs.forEach((q) => {
+    const key = `${MODULES[state.currentMod].key}:${q.n}`;
+    if (state.answers[key] != null) answered++;
+    if (state.reviewed[key]) review++;
+  });
+  $("cAnswered").textContent = answered;
+  $("cUnanswered").textContent = qs.length - answered;
+  $("cReview").textContent = review;
+}
+
+// ── Review page ──────────────────────────────────
+function openReview() {
+  const m = MODULES[state.currentMod];
+  const qs = currentQuestions();
+  $("reviewTitle").textContent = `${m.label} · ${m.module} · Review`;
+  // Compact clickable grid: one square per question. Filled = answered,
+  // corner ribbon = marked for review. No answers or feedback shown here.
+  let answered = 0, reviewed = 0;
+  const grid = qs.map((q) => {
+    const key = `${m.key}:${q.n}`;
+    if (state.answers[key] != null && state.answers[key] !== "") answered++;
+    if (state.reviewed[key]) reviewed++;
+    return `<div class="q-dot${qStatus(q)}" data-n="${q.n}" title="Question ${q.n}">${q.n}</div>`;
+  }).join("");
+  $("reviewList").innerHTML =
+    `<div style="display:flex; gap:16px; font-size:.82rem; color:var(--tx2); margin-bottom:12px; flex-wrap:wrap">` +
+      `<span>${answered}/${qs.length} answered</span>` +
+      `<span>${reviewed} marked for review</span>` +
+    `</div>` +
+    `<div class="review-grid">${grid}</div>`;
+  document.querySelectorAll("#reviewList .q-dot").forEach((d) => {
+    d.addEventListener("click", () => {
+      qIdx = qs.findIndex((q) => q.n === Number(d.dataset.n));
+      if (qIdx < 0) qIdx = 0;
+      state.qIdx = qIdx;
+      persist();
+      setStep("module");
+      showScreen("module");
+      startModuleTimer();
+      renderQuestion();
+    });
+  });
+  // Keep the module timer running while on the review page (matches the real
+  // test — the clock keeps counting down as you review).
+  const prevStep = state.step;
+  state.step = "review";
+  persist();
+  $("reviewBackBtn").onclick = () => {
+    setStep(prevStep === "results" ? "results" : "module");
+    if (prevStep === "results") { renderResults(); showScreen("results"); }
+    else { showScreen("module"); startModuleTimer(); renderQuestion(); }
+  };
+  showScreen("review");
+}
+
+// ── Results & scoring ────────────────────────────
+function isCorrect(q, sel) {
+  if (sel == null) return false;
+  if (q.type === "spr") return normalizeSpr(sel) === normalizeSpr(q.correct);
+  return sel === q.correct;
+}
+function normalizeSpr(v) {
+  if (v == null) return null;
+  const s = String(v).trim().toLowerCase();
+  if (s === "") return null;
+  const num = parseFloat(s);
+  return isNaN(num) ? s.replace(/\s+/g, "") : String(Number(num.toPrecision(6)));
+}
+
+function finishTest() {
+  stopTimer();
+  setStep("results");
+  renderResults();
+  showScreen("results");
+}
+
+function renderResults() {
+  // raw scores
+  let rwCorrect = 0, rwTotal = 0, mthCorrect = 0, mthTotal = 0;
+  ["rwModule1", "rwModule2"].forEach((mk) => {
+    (test[mk] || []).forEach((q) => {
+      rwTotal++;
+      if (isCorrect(q, state.answers[`${mk}:${q.n}`])) rwCorrect++;
+    });
+  });
+  ["mathModule1", "mathModule2"].forEach((mk) => {
+    (test[mk] || []).forEach((q) => {
+      mthTotal++;
+      if (isCorrect(q, state.answers[`${mk}:${q.n}`])) mthCorrect++;
+    });
+  });
+
+  const rows = test.meta.conversionTable;
+  // R&W raw -> row.rw range; Math raw -> row.math range
+  const rwRow = rows[String(rwCorrect)] || { rw: [400, 400] };
+  const mthRow = (rows[String(mthCorrect)] && rows[String(mthCorrect)].math)
+    ? rows[String(mthCorrect)].math : [400, 400];
+  const midpoint = (a) => a ? Math.round((a[0] + a[1]) / 2) : 400;
+
+  const rwScale = midpoint(rwRow.rw);
+  const mthScale = midpoint(mthRow);
+  const total = rwScale + mthScale;
+
+  $("resTotal").textContent = total;
+  $("resEnglish").textContent = rwScale;
+  $("resMath").textContent = mthScale;
+  $("resultsStudent").textContent = `Great work, ${state.name || "student"}!`;
+  $("resSummary").innerHTML =
+    `Reading &amp; Writing: ${rwCorrect}/${rwTotal} · Math: ${mthCorrect}/${mthTotal}<br/>` +
+    `R&amp;W scaled 200–800: ${rwRow.rw[0]}–${rwRow.rw[1]} · Math scaled: ${mthRow[0]}–${mthRow[1]}`;
+  state.finishedAt = Date.now();
+  state.final = { total, rwScale, mthScale, rwCorrect, rwTotal, mthCorrect, mthTotal };
+  persist();
+
+  // Persist the most recent result so the home dashboard can surface it.
+  try {
+    localStorage.setItem(RESULT_KEY, JSON.stringify({
+      total, rwScale, mthScale, rwCorrect, rwTotal, mthCorrect, mthTotal,
+      finishedAt: state.finishedAt,
+      name: state.name || "Student",
+    }));
+  } catch (e) { console.warn("[PT] last-result persist failed", e); }
+
+  // Save to Firestore if available
+  saveResultsFirestore(rwScale, mthScale, rwCorrect, mthCorrect);
+}
+
+async function saveResultsFirestore(rwScale, mthScale, rwCorrect, mthCorrect) {
+  if (!K) return;
+  try {
+    await K.saveProfile({ mathScore: mthScale, englishScore: rwScale, currentScore: rwScale + mthScale });
+    // log each attempt
+    const DIFF = "M";
+    for (const [mk, q] of allQuestionsWithModule()) {
+      const sel = state.answers[`${mk}:${q.n}`];
+      await K.recordAttempt({
+        questionId: `pt4-${mk}-${q.n}`,
+        type: q.type || "mcq",
+        skillCd: q.skill || q.domain || "_unknown",
+        domain: q.domain || "",
+        section: q.section || "math",
+        difficulty: DIFF,
+        assessment: "SAT",
+        correct: isCorrect(q, sel),
+        timeSpent: 0,
+        mode: "fullpractice",
+      });
+    }
+    console.log("[PT] results saved to Firestore");
+  } catch (e) { console.warn("[PT] Firestore save failed", e); }
+}
+function allQuestionsWithModule() {
+  const out = [];
+  MODULES.forEach((m) => (test[m.key] || []).forEach((q) => out.push([m.key, q])));
+  return out;
+}
+
+// ── Exit ─────────────────────────────────────────
+function exitTest() {
+  uiConfirm({
+    title: "Exit the test?",
+    message: "Your progress will be saved so you can pick up where you left off.",
+    confirmLabel: "Exit Test",
+    onConfirm: () => {
+      stopTimer();
+      persist();
+      closeMenus();
+      // Exit the full-length test viewer: strip the mode=full (and test) params
+      // from the TOP-level window so it returns to the question bank
+      // (questions.html). The full-test view is embedded via an iframe, so the
+      // top window must be navigated — a relative change would only redirect
+      // the iframe itself. We build an absolute URL from the top window's own
+      // location to avoid any relative-path resolution across the iframe.
+      const target = (window.self !== window.top) ? window.top : window;
+      const url = new URL(target.location.href);
+      url.searchParams.delete("mode");
+      url.searchParams.delete("test");
+      target.location.href = url.toString();
+    },
+  });
+}
+function resetAll() {
+  try { localStorage.removeItem(LS_KEY); } catch (e) {}
+  freshState();
+}
+function closeMenus() {
+  $("menuItems")?.classList.remove("open");
+  closeQMenu(); closeRef(); closeAcc();
+}
+function openRef() { if (state.step !== "module") return; $("refPopup").classList.add("open"); $("refOverlay").classList.add("open"); }
+function closeRef() { $("refPopup").classList.remove("open"); $("refOverlay").classList.remove("open"); }
+function openAcc() { $("accPopup").classList.add("open"); $("accOverlay").classList.add("open"); }
+function closeAcc() { $("accPopup").classList.remove("open"); $("accOverlay").classList.remove("open"); }
+
+window.addEventListener("beforeunload", () => { pauseModule(); persist(); });
