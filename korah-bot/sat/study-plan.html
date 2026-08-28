@@ -68,7 +68,9 @@
   const auth = getAuth(app);
 
   onAuthStateChanged(auth, async (user) => {
-    if (!user) { window.KorahTransitions.go('../landing/index.html'); return; }
+    // Signed-out users are not redirected for now, so the page stays reachable
+    // on Live Server where sign-in is unavailable.
+    if (!user) { console.warn('[StudyPlan] no signed-in user'); return; }
     await setupKorahDB(app, user.uid);
     await initStudyPlan(app, user.uid);
     const detail = { uid: user.uid };
