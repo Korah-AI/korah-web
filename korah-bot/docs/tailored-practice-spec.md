@@ -130,36 +130,34 @@ The page will contain:
 1. A short introduction explaining that the recommendations come from the
    student's Korah SAT activity.
 2. A summary such as "Based on 48 answered questions across 9 skills."
-3. A ranked list of practice-priority cards.
-4. A plain-language explanation on every card.
+3. A compact ranked list of practice priorities.
+4. A short explanation on every priority row.
 5. A difficulty preview for the generated set.
 6. A summary of which skills and how many questions will be included.
-7. A primary **Build my practice set** button.
+7. A primary **Start tailored practice** button.
 8. A link back to the Question Bank for students who want manual control.
 
-### Priority card content
+### Priority row content
 
-Each ranked card will show:
+Each ranked row will show:
 
-- Rank and practice order, such as **Practice first** or **Practice next**.
+- Numeric rank and practice order.
 - Skill name and domain.
 - Section, either Math or Reading and Writing.
 - Attempts and correct answers.
 - Accuracy percentage.
 - Missed-question count.
-- Evidence label based on attempt count.
-- Planned difficulty mix.
+- Planned question count and target difficulty.
 - A sentence explaining the recommendation.
 
 Example explanation:
 
-> You missed 6 of 9 Linear Functions questions. That is a 33% accuracy rate
-> with enough attempts for Korah to treat it as a real pattern, so this is your
-> first practice priority.
+> You missed 6 of 9 Linear Functions questions, so this is the first skill to
+> practice.
 
-The numeric priority score can be available in a details tooltip, but the main
-interface should emphasize the evidence and recommended order. A score without
-an explanation would make the feature feel like a black box.
+The numeric priority score and confidence level remain internal implementation
+details. The student-facing interface shows the recommended order and a direct
+explanation without exposing evidence labels or confidence terminology.
 
 ---
 
@@ -167,10 +165,10 @@ an explanation would make the feature feel like a black box.
 
 ### Design direction
 
-Tailored Practice should look like part of Korah's SAT dashboard, not a separate
+Tailored Practice should look like part of Korah's SAT tools, not a separate
 template copied from another product. It will reuse the current app shell,
-sidebar, typography, surface tokens, purple accent, compact stat cards, rounded
-panels, light and dark themes, and visible focus styles.
+sidebar, typography, surface tokens, purple accent, light and dark themes, and
+visible focus styles.
 
 The SAT dashboard is the main visual reference because this feature presents
 performance evidence. Practice Rush is a secondary reference for the main
@@ -190,9 +188,9 @@ Board's My Practice score cards, and College Board's Tailored Practice builder.
 
 | Reference | What to reuse | What not to copy |
 |-----------|---------------|------------------|
-| Korah home dashboard | Star background, persistent sidebar, compact statistic cards, colored borders, large friendly heading, and readable number hierarchy | The full number of dashboard panels, because Tailored Practice needs one focused decision |
-| Korah Question Bank | Wide Korah SAT Prep hero, mascot illustration, two-column SAT content layout, purple surfaces, and clear topic hierarchy | The full manual filter table, because the algorithm should make the first recommendation |
-| Korah Practice Rush setup | Centered explanation, simple cards, full-width blue primary action, and clear Back action | The step-by-step wizard, because Tailored Practice already has the student's selections |
+| Korah home dashboard | Star background, persistent sidebar, typography, and readable number hierarchy | The metric-card grid and large collection of dashboard panels |
+| Korah Question Bank | Two-column SAT content layout, mascot illustration, purple surfaces, and clear topic hierarchy | The oversized hero and full manual filter table |
+| Korah Practice Rush setup | Full-width blue primary action and clear secondary action | The step-by-step wizard and repeated rounded selection cards |
 | Korah Practice Rush player | Existing player scale, difficulty chips, progress treatment, and focused question area | Any new question-playing UI, because Tailored Practice hands off to `questions.html` |
 | College Board score cards | A clear Tailored Practice entry point beside the performance evidence that produced it | Tying Korah's recommendation to one practice test, because Korah uses all stored activity |
 | College Board Tailored Practice | Clear explanation of what data produced the set, visible question total, section and domain breakdown, performance bars, selection control, and one Start Practice action | White visual styling, dense instructions, 80-question default, and domain-only personalization |
@@ -203,18 +201,15 @@ The page should feel like Korah interpreted the student's data, not like Korah
 embedded a College Board page.
 
 - Keep Korah's dark star background and shared sidebar.
-- Start with a Question Bank-style hero panel labeled **Korah SAT Prep**.
-- Place a Korah mascot on the right side of the desktop hero and reduce or hide
-  it on narrow mobile screens.
-- Use copy such as **Based on 48 Korah SAT questions** so the evidence source is
-  as clear as College Board's test-specific entry point.
-- Use three compact dashboard-style summary cards under the hero.
-- Use dark purple priority cards with restrained section or status accents.
-- Use an explicit accuracy bar plus text, inspired by College Board's scannable
-  performance bars. The number and explanation remain visible so color is not
-  the only signal.
-- Use the same blue primary-action treatment as Practice Rush for
-  **Build my practice set**.
+- Use a standard page header with a short description instead of a hero panel.
+- Keep a small Korah mascot on desktop and hide it on narrow mobile screens.
+- Use one compact source line, such as **20 questions across 4 priorities, based
+  on 48 SAT answers**.
+- Present priorities as rows inside one bordered list instead of separate
+  floating cards.
+- Use solid surfaces, subtle borders, restrained corner radii, and no decorative
+  gradients, glass effects, glows, or hover movement.
+- Use a solid blue primary action labeled **Start tailored practice**.
 - Keep manual control available through the set summary and a link to Question
   Bank, but do not make the student rebuild the recommendation manually.
 - Avoid adding charts that do not help the student decide what to practice.
@@ -223,39 +218,29 @@ embedded a College Board page.
 
 ```text
 +--------------------+---------------------------------------------------------+
-| Korah sidebar      | +-----------------------------------------------------+ |
-|                    | | KORAH SAT PREP                         [Korah mascot] | |
-| Question Bank      | | Tailored Practice                                   | |
-| Desmos Chat        | | Your next best practice, based on your Korah work.  | |
-| Practice Rush      | +-----------------------------------------------------+ |
-| Tailored Practice  |                                                         |
-| Dashboard          | +-------------+ +-------------+ +--------------------+ |
-|                    | | 48 answered | | 9 skills    | | 4 priorities       | |
-|                    | | data used   | | practiced   | | ready to practice  | |
-|                    | +-------------+ +-------------+ +--------------------+ |
-|                    |                                                         |
-|                    | Practice priorities                   Your practice set |
-|                    | +----------------------------------+  +----------------+ |
-|                    | | 1  PRACTICE FIRST              |  | 20 questions   | |
-|                    | | Linear Functions               |  |                | |
-|                    | | Algebra  |  Math                |  | Linear Func. 5 | |
-|                    | | 3 correct / 9 attempted  33%   |  | Boundaries   5 | |
-|                    | | [======----------------]       |  | Inferences   5 | |
-|                    | | Solid evidence                 |  | Systems      5 | |
-|                    | | You missed 6 of 9 questions... |  |                | |
-|                    | | Planned: 3 Easy, 2 Medium      |  |                | |
-|                    | +----------------------------------+  | Easy       6   | |
-|                    |                                      | Medium    10   | |
-|                    | +----------------------------------+  | Hard       4   | |
-|                    | | 2  PRACTICE NEXT               |  |                | |
-|                    | | Boundaries                     |  | [Build my      | |
-|                    | | ...                            |  |  practice set] | |
-|                    | +----------------------------------+  |                | |
-|                    |                                      | Adjust manually | |
-|                    | +----------------------------------+  +----------------+ |
-|                    | | 3  THIRD PRIORITY              |                     |
-|                    | | ...                            |                     |
-|                    | +----------------------------------+                     |
+| Korah sidebar      | Tailored Practice                     [small mascot]    |
+|                    | Practice the SAT skills that need attention first.     |
+| Question Bank      | ------------------------------------------------------ |
+| Desmos Chat        | 20 questions across 4 priorities, based on 48 answers. |
+| Practice Rush      |                                                         |
+| Tailored Practice  | Practice priorities                   Practice set      |
+| Dashboard          | +----------------------------------+  +----------------+ |
+|                    | | 1  Linear Functions             |  | 20 questions   | |
+|                    | | Algebra | Math                  |  |                | |
+|                    | | 33% accuracy | 3 of 9 correct   |  | Linear Func. 5 | |
+|                    | | You missed 6 of 9 questions... |  | Boundaries   5 | |
+|                    | +----------------------------------+  | Inferences   5 | |
+|                    | | 2  Boundaries                   |  | Systems      5 | |
+|                    | | 43% accuracy | 3 of 7 correct   |  |                | |
+|                    | | You missed 4 of 7 questions... |  | Easy 6         | |
+|                    | +----------------------------------+  | Medium 10      | |
+|                    | | 3  Inferences                   |  | Hard 4         | |
+|                    | | ...                            |  |                | |
+|                    | +----------------------------------+  | [Start tailored| |
+|                    | | 4  Systems                      |  |  practice]     | |
+|                    | | ...                            |  |                | |
+|                    | +----------------------------------+  | Choose manually| |
+|                    |                                      +----------------+ |
 +--------------------+---------------------------------------------------------+
 ```
 
@@ -263,14 +248,11 @@ Desktop behavior:
 
 - Keep the ranked list as the main content because the explanation is the most
   important part of the feature.
-- Use the existing Question Bank hero proportions and Korah mascot treatment so
-  the route is immediately recognizable as an SAT feature.
+- Use a standard header and small mascot so the priorities begin near the top.
 - Keep the set summary visible beside the list on wide screens.
-- Use a maximum of three summary statistics so the page does not become another
-  full analytics dashboard.
-- Use an ordered list for the priority cards.
+- Use one ordered list surface with separated rows instead of a stack of cards.
 - Keep the main action inside the set summary instead of repeating it on every
-  skill card.
+  skill row.
 
 ### Mobile wireframe
 
@@ -278,43 +260,32 @@ Desktop behavior:
 +--------------------------------+
 | < Back       Tailored Practice |
 +--------------------------------+
-| KORAH SAT PREP                 |
 | Tailored Practice              |
-| Your next best practice        |
-| Based on 48 answered questions |
-|                                |
-| [48 answered] [9 skills]       |
+| Practice skills needing        |
+| attention first.               |
+| Based on 48 SAT answers.       |
 |                                |
 | Practice priorities            |
 | +----------------------------+ |
-| | 1  PRACTICE FIRST          | |
-| | Linear Functions           | |
-| | Algebra  |  Math           | |
-| |                            | |
-| | 3 correct / 9 attempted    | |
-| | 33% accuracy               | |
-| | [======----------------]   | |
-| | [Solid evidence]           | |
-| |                            | |
-| | You missed 6 of 9. This is | |
-| | your first priority.       | |
-| |                            | |
-| | 3 Easy  |  2 Medium        | |
+| | 1  Linear Functions       5| |
+| |    Algebra | Math          | |
+| |    33% | 3 of 9 correct    | |
+| |    You missed 6 of 9...    | |
+| |----------------------------| |
+| | 2  Boundaries             5| |
+| |    43% | 3 of 7 correct    | |
+| |----------------------------| |
+| | 3  Inferences             5| |
+| |----------------------------| |
+| | 4  Systems                5| |
 | +----------------------------+ |
-|                                |
-| +----------------------------+ |
-| | 2  PRACTICE NEXT           | |
-| | Boundaries                 | |
-| | ...                        | |
-| +----------------------------+ |
-|                                |
 | Your set                      |
 | +----------------------------+ |
 | | 20 questions               | |
 | | 4 skills                   | |
 | | 6 Easy, 10 Medium, 4 Hard  | |
 | |                            | |
-| | [Build my practice set]    | |
+| | [Start tailored practice]  | |
 | +----------------------------+ |
 +--------------------------------+
 ```
@@ -322,10 +293,9 @@ Desktop behavior:
 Mobile behavior:
 
 - Collapse the desktop sidebar using Korah's existing responsive navigation.
-- Simplify the hero and remove the large mascot if it would push the priorities
-  below the first screen.
-- Stack summary statistics, priorities, and set details in reading order.
-- Keep card explanations readable instead of hiding them behind hover states.
+- Hide the mascot when it would push priorities below the first screen.
+- Stack priorities and set details in reading order.
+- Keep row explanations readable instead of hiding them behind hover states.
 - Make the main button full width with at least the existing Korah minimum
   touch-target size.
 - Do not use a wide table for skill statistics.
@@ -335,9 +305,9 @@ Mobile behavior:
 The first product-design pass must include static versions of:
 
 1. Normal ranked results.
-2. Loading skeletons with the same final card height.
+2. Loading skeletons with the same final row height.
 3. No SAT history.
-4. Limited evidence with only one or two attempts.
+4. Limited history with only one or two attempts.
 5. One rankable skill and a ten-question set.
 6. Question API error with retry.
 7. A set with fewer than 20 available questions.
@@ -447,16 +417,13 @@ the student's first priority. Three misses out of three can outrank a moderate
 weakness because the pattern is severe, but the score still reflects that the
 sample is small.
 
-### Evidence labels
+### Confidence visibility
 
-| Attempts | Label |
-|----------|-------|
-| 1 to 2 | Limited evidence |
-| 3 to 5 | Developing evidence |
-| 6 to 9 | Solid evidence |
-| 10 or more | Strong evidence |
-
-These labels describe confidence in the ranking, not the student's ability.
+Attempt count and the numeric confidence factor remain available to the ranking
+logic and diagnostics. The page must not translate them into student-facing
+labels such as **Developing evidence**, **Solid evidence**, or **Strong
+evidence**. Students only need the resulting priority order and the activity
+numbers they already understand.
 
 ### Skills selected for a set
 
@@ -488,10 +455,12 @@ Difficulty is selected separately for each chosen skill from its
 2. Starting at Easy, choose the lowest level where accuracy is below 70%.
 3. If Easy is at least 70% but Medium is below 70%, target Medium.
 4. If Easy and Medium are at least 70% but Hard is below 70%, target Hard.
-5. If no difficulty has three attempts, use overall skill accuracy:
+5. If Hard is weak but Medium has fewer than three attempts, target Medium
+   first. Korah should not jump over an unproven foundation level.
+6. If no difficulty has three attempts, use overall skill accuracy:
    - Below 50% targets Easy.
    - 50% or higher targets Medium.
-6. If every attempted difficulty is at least 70%, target the next harder level
+7. If every attempted difficulty is at least 70%, target the next harder level
    when one exists. This keeps the practice useful without immediately jumping
    from weak fundamentals to mostly Hard questions.
 
@@ -558,10 +527,11 @@ sat/tailored.html
 
 ### Candidate loading
 
-For each selected skill, the page will request question stubs from `/api/sat/q`
-using that skill, its section, its domain, and the required difficulty levels.
-It will not request full question details. The existing player will continue to
-hydrate details through `/api/sat/qi`.
+The page will make one combined request to `/api/sat/q` using the selected
+skills, sections, domains, and all required difficulty levels. One request is
+more efficient than making a separate request per skill and still returns the
+metadata needed to balance the exact set. The existing player remains
+responsible for the final question experience.
 
 The client will:
 
@@ -628,7 +598,7 @@ accepted as the alternative to the normal `player` mode.
 ### Ready
 
 - Show ranked priorities and the planned set.
-- Explain the data used and the minimum three-attempt rule.
+- Show the total SAT answers used without exposing confidence labels.
 - Enable the build button.
 
 ### No history
@@ -645,8 +615,8 @@ If the student has no attempted skills:
 
 If all skills have only one or two attempts:
 
-- Show the observed skills under **Still learning about you**.
-- Do not call them weaknesses.
+- Show a simple **Still learning about you** state.
+- Do not expose per-skill confidence or call the skills weaknesses.
 - Provide the same Question Bank and Practice Rush actions.
 
 If exactly one skill is rankable, allow a smaller ten-question set and state
@@ -702,7 +672,7 @@ Implementation will begin only after this specification is approved.
 
 1. Review the desktop and mobile wireframes in this specification.
 2. Build a static Tailored Practice page with believable fixture data.
-3. Add static loading, no-history, limited-evidence, and error states.
+3. Add static loading, no-history, limited-history, and error states.
 4. Check the design at desktop and mobile widths.
 5. Compare it with the SAT dashboard, Question Bank, and Practice Rush.
 6. Get feedback on the product design before connecting Firestore or the API.
@@ -721,7 +691,7 @@ No question generation will be added until this phase is verified.
 
 1. Add the minimum-attempt grouping.
 2. Add the smoothed priority formula.
-3. Add stable sorting and evidence labels.
+3. Add stable sorting while keeping confidence labels internal.
 4. Display the ordered recommendations and explanations.
 5. Verify the formula with fixed sample records.
 
@@ -805,7 +775,7 @@ already has:
 | Read `satSkills` once | The collection already contains the required aggregates, so attempt history does not need to be recomputed |
 | Read only 50 recent attempts | This is enough to avoid immediate repeats without loading the full attempt log |
 | Rank in the browser | A user's skill list is small, so a new recommendation API would add latency and maintenance without useful scale benefits |
-| Make at most four candidate requests | Only selected skills need question candidates, and all required difficulties for one skill can share one request |
+| Make one combined candidate request | Selected skills, sections, domains, and difficulties can share one request, then be balanced locally |
 | Fetch question stubs only | Full stems, options, and explanations remain the existing player's responsibility |
 | Pass exact IDs to `questions.html` | This guarantees the planned skill balance without creating another player |
 | Reuse `recordAttempt()` | One existing analytics path prevents duplicate writes and inconsistent statistics |
