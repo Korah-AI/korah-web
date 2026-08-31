@@ -1692,6 +1692,17 @@ function updateDropdownForSection() {
     frame.src = src;
     host.appendChild(frame);
     host.style.display = 'block';
+
+    // The full-length test player (in the iframe) asks us to close it. We
+    // navigate OURSELVES back to the Question Bank — a same-origin iframe
+    // cannot reliably write window.top.location (blocked under file:// /
+    // strict-origin serving), but the parent always owns its own navigation.
+    window.addEventListener('message', function (ev) {
+      if (ev.data && ev.data.type === 'korah-pt-exit') {
+        console.log('[fulltest] exit requested — returning to Question Bank');
+        document.location.href = './index.html';
+      }
+    });
   })();
 </script>
 

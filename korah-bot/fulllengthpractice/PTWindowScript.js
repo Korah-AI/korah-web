@@ -4,7 +4,24 @@
 // LocalStorage for in-progress state; Firestore (KorahSATAnalytics) for final results.
 // ─────────────────────────────────────────────────────────────
 
-// ---- Firebase bootstrap (mirrors the sat pages) ----
+const LS_KEY = "korahPTState";
+const RESULT_KEY = "korahLastPTResult";
+const testSlug = `test-${new URLSearchParams(location.search).get("test") || "4"}`;
+const DATA_URL = `../docs/practice-tests/${testSlug}/${testSlug}.json`;
+
+// Inferred display name — resolved from account data (same heuristic the rest of
+// the app uses) and used to personalize the confirmation screen.
+function resolveDisplayName(user) {
+  const first =
+    localStorage.getItem("korah_first_name") ||
+    localStorage.getItem("korah_name") ||
+    (user && (user.displayName || user.email?.split("@")[0])) ||
+    "";
+  return String(first).trim();
+}
+let currentUserName = resolveDisplayName(null);
+
+// ── Firebase bootstrap (mirrors the sat pages) ----
 let K = null; // window.KorahSATAnalytics (set after auth)
 {
   const firebaseConfig = {
@@ -25,14 +42,17 @@ let K = null; // window.KorahSATAnalytics (set after auth)
         const { initSatAnalytics } = await import("../sat/js/sat-analytics.js");
         K = await initSatAnalytics(app, user.uid);
       } catch (e) { console.warn("[PT] analytics init failed", e); }
+      // Resolve the user's first name for the confirmation screen.
+      const firstName = resolveDisplayName(user);
+      if (firstName) {
+        currentUserName = firstName;
+        if (state) { state.name = firstName; updateBottomBar(); }
+      }
+      renderConfirmScreen();
+      console.log("[PT] auth ready; name =", JSON.stringify(firstName));
     });
   }).catch((e) => console.warn("[PT] firebase load failed", e));
 }
-
-const LS_KEY = "korahPTState";
-const RESULT_KEY = "korahLastPTResult";
-const testSlug = `test-${new URLSearchParams(location.search).get("test") || "4"}`;
-const DATA_URL = `../docs/practice-tests/${testSlug}/${testSlug}.json`;
 
 const MODULES = [
   { key: "rwModule1", section: "english", label: "Reading & Writing", module: "Module 1", minutes: 39 },
@@ -92,13 +112,20 @@ function loadPersisted() { try { return JSON.parse(localStorage.getItem(LS_KEY))
 init();
 
 async function init() {
+  let loadOk = true;
   try {
     const res = await fetch(DATA_URL);
+    if (!res.ok) throw new Error("HTTP " + res.status);
     test = await res.json();
   } catch (e) {
-    uiAlert("Couldn't load the test", "Could not load the practice test. Please refresh and try again.");
-    return;
+    console.warn("[PT] test load failed; UI stays usable", e);
+    loadOk = false;
   }
+
+  // Wire the UI regardless of whether the test data loaded, so the page is
+  // never left with dead buttons (e.g. fetch blocked under file:// / CORS).
+  wireUI();
+  renderConfirmScreen();
 
   // Resume an in-progress session if present.
   const saved = loadPersisted();
@@ -116,7 +143,9 @@ async function init() {
     try { localStorage.removeItem(LS_KEY); } catch (e) {}
     freshState(); // step: "start"
   }
-  wireUI();
+  if (!loadOk) {
+    uiAlert("Couldn't load the test", "Could not load the practice test data. If you're opening this file directly (file://), please serve it over http:// — the browser blocks local data fetches.");
+  }
 }
 
 function freshState() {
@@ -158,6 +187,30 @@ function updateTopBar() {
 
 function updateBottomBar() {
   $("nameDisplay").textContent = state.name || "Student";
+}
+
+// ── Confirmation screen ────────────────────────────
+// Fills the test-format summary (organization, per-module timing/question
+// counts, pacing) and personalizes the greeting with the inferred name.
+function renderConfirmScreen() {
+  const rwMods = MODULES.filter((m) => m.section === "english");
+  const mathMods = MODULES.filter((m) => m.section === "math");
+  const count = (mods) => mods.reduce((sum, m) => sum + ((test?.[m.key] || []).length || 0), 0);
+  const minutes = (mods) => mods.reduce((sum, m) => sum + m.minutes, 0);
+
+  const rwQ = count(rwMods), mathQ = count(mathMods);
+  const rwMin = minutes(rwMods), mathMin = minutes(mathMods);
+  const totalQ = rwQ + mathQ;
+
+  const rwEl = $("confirmRWInfo");
+  if (rwEl) rwEl.textContent = `${rwMods.length} modules \u00b7 ${rwQ} questions \u00b7 ${rwMin} min`;
+  const mathEl = $("confirmMathInfo");
+  if (mathEl) mathEl.textContent = `${mathMods.length} modules \u00b7 ${mathQ} questions \u00b7 ${mathMin} min`;
+  const paceEl = $("confirmPacing");
+  if (paceEl && totalQ) paceEl.textContent = `\u2248 ${Math.round((rwMin + mathMin + 10) * 60 / totalQ)} seconds per question`;
+
+  const nameEl = $("confirmName");
+  if (nameEl) nameEl.textContent = currentUserName || "there";
 }
 
 // ── Timer ────────────────────────────────────────
@@ -204,10 +257,9 @@ function pauseModule() {
 // ── UI wiring ────────────────────────────────────
 function wireUI() {
   $("startBtn").addEventListener("click", () => {
-    const name = ($("nameInput").value || "").trim();
-    if (!name) { $("nameInput").focus(); return; }
-    state.name = name;
-    $("nameDisplay").textContent = name;
+    // Name is inferred from the account; no manual entry needed.
+    state.name = currentUserName || "Student";
+    $("nameDisplay").textContent = state.name;
     persist();
     beginModule();
   });
@@ -372,7 +424,7 @@ function renderQuestion() {
       </div>
       ${q.passage ? `<div class="passage">${esc(q.passage)}</div>` : ""}
       ${q.figure ? `<div class="figure"><img src="../docs/practice-tests/test-4/figures/${encodeURIComponent(q.figure)}" alt="figure for question ${q.n}"/></div>` : ""}
-      <div class="stem">${esc(q.stem)}</div>
+      ${renderStem(q)}
       ${isSpr ? renderSpr(selected, key) : renderMcq(selected, key, q)}
     </div>
   `;
@@ -395,6 +447,13 @@ function renderQuestion() {
     }
   }
   updateQMenuCounts();
+}
+
+function renderStem(q) {
+  if (q.stemImg) {
+    return `<div class="stem stem-img-only"><img src="../docs/practice-tests/test-4/question-imgs/${encodeURIComponent(q.stemImg)}" alt="question ${q.n} stem"/></div>`;
+  }
+  return `<div class="stem">${esc(q.stem)}</div>`;
 }
 
 function renderMcq(selected, key, q) {
@@ -630,17 +689,25 @@ function exitTest() {
       stopTimer();
       persist();
       closeMenus();
-      // Exit the full-length test viewer: strip the mode=full (and test) params
-      // from the TOP-level window so it returns to the question bank
-      // (questions.html). The full-test view is embedded via an iframe, so the
-      // top window must be navigated — a relative change would only redirect
-      // the iframe itself. We build an absolute URL from the top window's own
-      // location to avoid any relative-path resolution across the iframe.
-      const target = (window.self !== window.top) ? window.top : window;
-      const url = new URL(target.location.href);
-      url.searchParams.delete("mode");
-      url.searchParams.delete("test");
-      target.location.href = url.toString();
+      // The full-test view lives in an iframe on questions.html. Ask the parent
+      // to navigate itself back to the Question Bank (sat/index.html). We post a
+      // message first (works even across origins / file://), then, after a short
+      // delay, fall back to a direct same-origin top-navigation write so exit
+      // works even if the parent's message listener never fires.
+      if (window.self !== window.top) {
+        const parent = window.parent;
+        parent.postMessage({ type: "korah-pt-exit" }, "*");
+        setTimeout(() => {
+          try {
+            const base = parent.location.pathname.replace(/\/[^/]*$/, "");
+            parent.location.href = base + "/index.html";
+          } catch (e) { /* cross-origin write blocked; message path is the fallback */ }
+        }, 250);
+      } else {
+        // Fallback if the player is ever opened as the top document.
+        const base = window.location.pathname.replace(/\/[^/]*$/, "");
+        window.location.href = base + "/index.html";
+      }
     },
   });
 }
