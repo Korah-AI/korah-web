@@ -183,6 +183,8 @@ function updateTopBar() {
   else if (state.step === "break") label = "Break";
   else if (state.step === "results") label = "Complete";
   $("moduleIndicator").innerHTML = `<strong>${label}</strong>`;
+  const calcBtn = $("calcBtn");
+  if (calcBtn) calcBtn.style.display = (state.step === "module" && m && m.section === "math") ? "" : "none";
 }
 
 function updateBottomBar() {
@@ -315,6 +317,14 @@ function wireUI() {
   $("refOverlay").addEventListener("click", closeRef);
   $("accClose").addEventListener("click", closeAcc);
   $("accOverlay").addEventListener("click", closeAcc);
+  // Calculator (Desmos)
+  $("calcBtn").addEventListener("click", openCalc);
+  $("calcClose").addEventListener("click", closeCalc);
+  $("calcOverlay").addEventListener("click", closeCalc);
+  makeDraggable($("refPopup"));
+  makeDraggable($("calcPopup"));
+  makeResizable($("refPopup"));
+  makeResizable($("calcPopup"), () => { if (calcInstance) calcInstance.resize(); });
   $("fontSmall").addEventListener("click", () => document.body.style.fontSize = "14px");
   $("fontReset").addEventListener("click", () => document.body.style.fontSize = "16px");
   $("fontLarge").addEventListener("click", () => document.body.style.fontSize = "19px");
@@ -800,11 +810,97 @@ function resetAll() {
 }
 function closeMenus() {
   $("menuItems")?.classList.remove("open");
-  closeQMenu(); closeRef(); closeAcc();
+  closeQMenu(); closeRef(); closeAcc(); closeCalc();
 }
 function openRef() { if (state.step !== "module") return; $("refPopup").classList.add("open"); $("refOverlay").classList.add("open"); }
 function closeRef() { $("refPopup").classList.remove("open"); $("refOverlay").classList.remove("open"); }
 function openAcc() { $("accPopup").classList.add("open"); $("accOverlay").classList.add("open"); }
 function closeAcc() { $("accPopup").classList.remove("open"); $("accOverlay").classList.remove("open"); }
+
+// ── Calculator (Desmos) ─────────────────────────────
+// The built-in graphing calculator is only offered during Math modules
+// (the button is hidden elsewhere via updateTopBar). The API is lazy-loaded
+// from the Desmos CDN on first open so non-math modules never fetch it.
+let calcReady = false;
+let calcInstance = null;
+function openCalc() {
+  if (state.step !== "module") return;
+  $("calcPopup").classList.add("open");
+  $("calcOverlay").classList.add("open");
+  if (calcReady) return;
+  const s = document.createElement("script");
+  s.src = "https://www.desmos.com/api/v1.12/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6";
+  s.onload = () => {
+    calcReady = true;
+    calcInstance = Desmos.Calculator($("calcEl"), { expressions: true, lockViewport: false });
+  };
+  document.head.appendChild(s);
+}
+function closeCalc() { $("calcPopup").classList.remove("open"); $("calcOverlay").classList.remove("open"); }
+
+// ── Draggable popups ─────────────────────────────────
+// Lets the reference sheet / calculator popups be repositioned by dragging
+// their header, so they don't cover the question. The first drag converts the
+// centered transform into explicit left/top (clamped to the viewport).
+function makeDraggable(popup) {
+  const head = popup.querySelector(".drag-head");
+  if (!head) return;
+  let dragging = false, ox = 0, oy = 0, startX = 0, startY = 0;
+  head.addEventListener("mousedown", (e) => {
+    if (e.target.closest(".x-btn")) return;
+    dragging = true;
+    const r = popup.getBoundingClientRect();
+    popup.style.transform = "none";
+    popup.style.left = r.left + "px";
+    popup.style.top = r.top + "px";
+    ox = r.left - e.clientX;
+    oy = r.top - e.clientY;
+    startX = e.clientX; startY = e.clientY;
+  });
+  document.addEventListener("mousemove", (e) => {
+    if (!dragging) return;
+    const pad = 8, vw = window.innerWidth, vh = window.innerHeight;
+    const w = popup.offsetWidth, h = popup.offsetHeight;
+    let l = e.clientX + ox, t = e.clientY + oy;
+    l = Math.min(Math.max(l, pad), vw - w - pad);
+    t = Math.min(Math.max(t, pad), vh - h - pad);
+    popup.style.left = l + "px";
+    popup.style.top = t + "px";
+  });
+  document.addEventListener("mouseup", () => { dragging = false; });
+}
+
+// ── Resizable popups ─────────────────────────────────
+// Adds a bottom-right handle so the tool windows can be resized. On resize it
+// anchors the top-left and grows/shrinks to the bottom-right, clamped to the
+// viewport. `onResize` (e.g. calling Desmos's Calc.resize()) fires on release.
+function makeResizable(popup, onResize) {
+  const handle = document.createElement("div");
+  handle.className = "resize-handle";
+  handle.title = "Resize";
+  popup.appendChild(handle);
+  let resizing = false, sx = 0, sy = 0, sw = 0, sh = 0;
+  const minW = 300, minH = 220, pad = 8;
+  handle.addEventListener("mousedown", (e) => {
+    e.preventDefault(); e.stopPropagation();
+    resizing = true; sx = e.clientX; sy = e.clientY;
+    sw = popup.offsetWidth; sh = popup.offsetHeight;
+    const r = popup.getBoundingClientRect();
+    popup.style.transform = "none";
+    popup.style.left = r.left + "px";
+    popup.style.top = r.top + "px";
+    handle.setPointerCapture?.(e.pointerId);
+  });
+  document.addEventListener("mousemove", (e) => {
+    if (!resizing) return;
+    const w = Math.min(Math.max(sw + (e.clientX - sx), minW), window.innerWidth - 2 * pad);
+    const h = Math.min(Math.max(sh + (e.clientY - sy), minH), window.innerHeight - 2 * pad);
+    popup.style.width = w + "px";
+    popup.style.height = h + "px";
+  });
+  document.addEventListener("mouseup", () => {
+    if (resizing) { resizing = false; onResize && onResize(); }
+  });
+}
 
 window.addEventListener("beforeunload", () => { pauseModule(); persist(); });
