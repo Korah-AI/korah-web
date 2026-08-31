@@ -147,14 +147,14 @@ Radio group with three options:
 - Shows extracted scores with "Retake" option
 
 **If not tested (none):**
-- 8 domain sliders (1–3) for Math + Reading & Writing domains
+- 8 domain sliders (1–3) for Math + Reading & Writing domains (all 8 required before Next is enabled)
 - Free-text textarea for goals
 
 **Math Domains:**
-1. Heart of Algebra
-2. Problem Solving & Data Analysis
-3. Passport to Advanced Math
-4. Additional Topics in Math
+1. Algebra
+2. Problem-Solving and Data Analysis
+3. Advanced Math
+4. Geometry and Trigonometry
 
 **Reading & Writing Domains:**
 1. Information & Ideas
@@ -162,22 +162,36 @@ Radio group with three options:
 3. Expression of Ideas
 4. Standard English Conventions
 
+> **Note:** The Reading & Writing Domains title uses purple (`var(--p5)`) instead of blue (`#38bdf8`).
+
 #### Step 3: Test Date
-- `<input type="date">` with `min=today`
-- Shortcut buttons for official SAT dates (2025–2026):
-  - 2025-08-23, 2025-09-13, 2025-10-04, 2025-11-08, 2025-12-06
-  - 2026-03-14, 2026-05-02, 2026-06-06
+- Three `<select>` dropdowns (Month / Day / Year) — classes `.sat-date-select` — styled as dark pill buttons (`border-radius:999px`) with purple highlight on `option:checked`
+- State: `dateMonth`, `dateDay`, `dateYear` — method `selectOfficialDate(d)` auto-fills all three selects when a shortcut is clicked
+- Shortcut buttons (class `.sat-date-btn`) for official College Board SAT dates (2026–2027):
+  - 2026-09-12, 2026-10-03, 2026-11-07, 2026-12-05
+  - 2027-03-06, 2027-05-01, 2027-06-05
+- Shortcut buttons have hover glow (`box-shadow` purple) and persistent `.selected` glow
+- No spinner arrows on number inputs (CSS rule `input[type="number"]::-webkit-inner-spin-button`)
 
 #### Step 4: Schedule
 - Weekday checkboxes (Mon–Sun, min 2 selected)
-- Hours per week number input (2–30)
+- Hours per week text input (`type="text" inputmode="numeric" maxlength="2"`) clamped to 2–30
+- "Create My Plan" button is placed **inside** Step 4's card content (not in the bottom nav bar)
+- "Next" button is hidden on Step 4 via `.wizard-hide` CSS class (`display:none !important`)
 
 ### Calendar View (After Wizard)
-- **Toggle**: Weekly list (default) ↔ Monthly grid
+- **Toggle**: Weekly list (default) ↔ Monthly grid — button in top-right header area
 - **Weekly**: Sessions grouped by week, checkbox per session
 - **Monthly**: 7-column grid, sessions as colored chips
 - **Realtime**: Updates via `onSnapshot` when phone writes
 - **Feedback banner**: Shows AI-generated plan feedback
+
+### Additional Styling
+| Element | Class / Notes |
+|---------|---------------|
+| `.sat-date-select` | Dark pill button select, `border-radius:999px`, purple highlight |
+| `.sat-date-btn` | Date shortcut pill button, hover glow, `.selected` persistent glow |
+| `.wizard-hide` | `display:none !important` — hides elements (used for Next button on Step 4) |
 
 ### Styling (Reuse Existing)
 | Element | Class / Variable |
@@ -257,8 +271,9 @@ HARD RULES (follow exactly):
 1. **Create `korah-bot/sat/js/study-plan.js`** — data module with listener + AI helpers
 2. **Create `korah-bot/sat/study-plan.html`** — wizard UI + calendar UI
 3. **Update `korah-bot/sidebar.html`** — add navigation link
-4. **Test locally** — verify wizard flow, AI calls, calendar rendering, realtime sync
-5. **Cross-platform test** — create plan on web, open iOS app, verify sessions appear and checkboxes sync
+4. **UI refinements** — moved "Create My Plan" into Step 4 card, hidden Next on Step 4, replaced date `<input>` with three `<select>` dropdowns, updated math domain labels, centered upload icon, limited hours/week to 2 digits, hidden number spinners
+5. **Test locally** — verify wizard flow (AI calls require Vercel deployment), calendar rendering, realtime sync
+6. **Cross-platform test** — create plan on web, open iOS app, verify sessions appear and checkboxes sync
 
 ---
 
@@ -326,8 +341,9 @@ fetch("/api/r", {
 | Wizard Step 1 → 2 → 3 → 4 | Smooth progression, validation at each step |
 | Image upload + score extraction | AI returns valid JSON, scores populate |
 | Confidence ratings (1–3) | All 8 domains required before proceed |
-| Test date picker + shortcuts | Shortcuts fill date input |
-| Schedule: min 2 weekdays, hours ≥ 2 | Validation prevents submit |
+| Test date picker + shortcuts | Three selects (Month/Day/Year) fill via shortcut buttons |
+| Schedule: min 2 weekdays, hours 2–30 | Validation prevents submit |
+| Hours/week input | Limited to 2 digits, spinner arrows hidden |
 | Plan generation | AI returns valid JSON with 10 weeks of sessions |
 | Calendar weekly view | Sessions grouped by week, checkboxes work |
 | Calendar monthly view | Grid renders, chips clickable |

@@ -27,6 +27,7 @@ korah-bot/
 │   ├── index.html             # SAT Question Bank
 │   ├── dashboard.html         # SAT Dashboard (analytics)
 │   ├── math-chat.html         # Desmos Math Chat
+│   ├── study-plan.html        # SAT Study Planner wizard + calendar
 │   ├── rush.html              # Practice Rush (timed drills)
 │   ├── questions.html         # Question player
 │   ├── sat.css                # SAT-specific styles
@@ -38,7 +39,8 @@ korah-bot/
 │   │   ├── sat-bank.js        # Question bank UI
 │   │   ├── sat-player.js      # Question player logic
 │   │   ├── sat-rush.js        # Rush mode logic
-│   │   └── sat-analytics.js   # Dashboard analytics (Firestore)
+│   │   ├── sat-analytics.js   # Dashboard analytics (Firestore)
+│   │   └── study-plan.js      # Study planner data module (Firestore CRUD, AI calls)
 │   └── desmos-json/           # Desmos templates
 ├── study/
 │   ├── new.html               # Create study items (flashcards, guides, tests)
@@ -410,16 +412,16 @@ Edit `sidebar.html`:
 - Serves `korah-bot/` at root
 - API routes in `korah-bot/api/` (not shown in file tree but exist)
 
-### 10.2 API Routes (Inferred)
-| Route | Purpose |
-|-------|---------|
-| `/api/r` | AI chat proxy (Gemini) |
-| `/api/generate-study-item` | Study content generation |
-| `/api/proxy.js` | Generic proxy |
-| `/api/rate-limit.js` | Rate limiting middleware |
-| `/api/feedback.js` | User feedback |
-| `/api/speak.js` | TTS |
-| `/api/transcribe.js` | STT |
+### 10.2 API Routes (All Vercel Serverless Functions)
+| Route | File | Purpose |
+|-------|------|---------|
+| `POST /api/r` | `api/r.js` | AI chat proxy (OpenAI-format → Gemini, supports images + streaming) |
+| `POST /api/generate-study-item` | `api/generate-study-item.js` | Study content generation (flashcards, guides, tests) |
+| `GET /api/sat/q` | `api/sat/q.js` | SAT question bank list (filtered by section/domain/difficulty) |
+| `GET /api/sat/qi` | `api/sat/qi.js` | Single question detail (on-demand) |
+| `GET /api/sat/s` | `api/sat/s.js` | SAT question bank stats (counts by domain/difficulty) |
+| Shared: `api/_lib/rate-limit.js` | — | In-memory sliding-window rate limiter |
+| Shared: `api/_lib/collegeboard.js` | — | College Board question bank client + cache |
 
 ---
 
@@ -437,17 +439,23 @@ Edit `sidebar.html`:
 
 ## 12. Study Planner Integration Points
 
-The new Study Planner (`study-plan.js` + `study-plan.html`) follows all conventions:
+The Study Planner (`sat/js/study-plan.js` + `sat/study-plan.html`) follows all conventions:
 
 | Aspect | Implementation |
 |--------|----------------|
 | Auth | Same module script pattern as `dashboard.html` |
 | Firestore | `users/{uid}/studyPlans/main` (single doc) |
 | Realtime | `onSnapshot` listener → three states |
-| AI | Two `/api/r` calls (score extraction + plan generation) |
+| AI | Two `/api/r` calls (score extraction + plan generation) — requires Vercel deployment + `GEMINI_API_KEY` |
 | Styling | Reuses `sat.css` / `korah.css` variables and patterns |
 | Navigation | Added to `sidebar.html` under SAT Practice |
 | Data types | ISO strings, UUIDs, flat sessions array, exact weekday keys |
+| Date input | Three `<select>` dropdowns (Month/Day/Year), class `.sat-date-select` |
+| Date shortcuts | Official College Board 2026–2027 dates, class `.sat-date-btn` |
+| Math domains | Algebra, Problem-Solving and Data Analysis, Advanced Math, Geometry and Trigonometry |
+| Step 2 validation | All 8 domain ratings required before Next |
+| Step 4 button | "Create My Plan" inside card; "Next" hidden via `.wizard-hide` |
+| Hours/week | `type="text" inputmode="numeric" maxlength="2"`, clamped 2–30, no spinners |
 
 ---
 
@@ -462,6 +470,7 @@ The new Study Planner (`study-plan.js` + `study-plan.html`) follows all conventi
 | Question Player | `sat/questions.html`, `sat/js/sat-player.js` |
 | Practice Rush | `sat/rush.html`, `sat/js/sat-rush.js` |
 | Desmos Chat | `sat/math-chat.html`, `sat/math-chat.js` |
+| Study Planner | `sat/study-plan.html`, `sat/js/study-plan.js` |
 | Study Module | `study/new.html`, `study/item.html`, `study/js/study-api.js`, `study/js/sidebar.js` |
 | General Chat | `chat.html`, `app/korah-chat.js` |
 | AI Proxy Client | `study/js/study-api.js`, `sat/math-chat.js` |
@@ -472,8 +481,9 @@ The new Study Planner (`study-plan.js` + `study-plan.html`) follows all conventi
 
 ## 14. Environment Notes
 
-- **Local dev**: `npx serve korah-bot` or any static server
+- **Local dev**: `python -m http.server 8000` or `npx serve korah-bot` — static file server only
+- **Local dev limitation**: AI features (score extraction, plan generation, chat, study content) require the Vercel serverless backend — they will **not** work locally since `/api/r` is a serverless function, not a static route
 - **Firebase**: Uses project `korah-app` (production)
-- **API**: Vercel functions at `/api/*` (deployed with frontend)
+- **API**: Vercel functions at `/api/*` (deployed with frontend). Requires `GEMINI_API_KEY` env var in Vercel project settings
 - **No environment variables in client** — all config in HTML
-- **Offline**: Firestore `persistentLocalCache()` enables full offline read/write
+- **Offline**: Firestore `persistentLocalCache()` enables full offline read/write for Firestore data

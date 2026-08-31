@@ -209,15 +209,16 @@
               <div class="panel-card" style="padding:2rem;border-radius:1.5rem;" x-transition>
                 <h3 style="font-size:1.5rem;font-weight:800;color:var(--tx);margin:0 0 0.5rem;">Upload your score report</h3>
                 <p class="tx2" style="font-size:1rem;margin-bottom:1.5rem;line-height:1.5;">We will read your Math and Reading and Writing scores automatically. Upload a screenshot of your official score report.</p>
-                <div class="drop-zone" @click="$refs.fileInput.click()" @dragover.prevent @drop.prevent="handleDrop" :class="{ 'has-file': scoreImage }" style="min-height:16rem;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;">
-                  <div x-show="!scoreImage" style="display:flex;flex-direction:column;align-items:center;gap:1rem;">
-                    <div style="width:4.5rem;height:4.5rem;border-radius:1.125rem;background:rgba(124,58,237,0.12);display:flex;align-items:center;justify-content:center;">
+                <div class="drop-zone" @click="$refs.fileInput.click()" @dragover.prevent @drop.prevent="handleDrop" :class="{ 'has-file': scoreImage }" style="min-height:16rem;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;text-align:center;width:100%;">
+                  <div x-show="!scoreImage" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;text-align:center;">
+                    <div style="width:4.5rem;height:4.5rem;border-radius:1.125rem;background:rgba(124,58,237,0.12);display:flex;align-items:center;justify-content:center;margin:0 auto;">
                       <span class="material-icons-round" style="font-size:2.25rem;color:var(--p5);">cloud_upload</span>
                     </div>
                     <p class="tx" style="font-size:1.125rem;font-weight:700;margin:0;">Click or drag a screenshot here</p>
                     <p class="tx3" style="font-size:0.875rem;margin:0;">PNG, JPG, or WebP · Max 4.5 MB</p>
                   </div>
-                  <div x-show="scoreImage" style="width:100%;text-align:center;">
+                  <div x-show="scoreImage" style="width:100%;text-align:center;position:relative;">
+                    <button @click.stop="scoreImage=null;extractedScores=null;" style="position:absolute;top:0.5rem;right:0.5rem;z-index:2;width:1.75rem;height:1.75rem;border-radius:50%;background:rgba(0,0,0,0.6);border:1px solid var(--bd);color:var(--tx);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1rem;line-height:1;text-align:center;padding:0;" title="Remove image">X</button>
                     <img :src="scoreImage" alt="Score report preview" style="max-width:100%;max-height:24rem;border-radius:1rem;border:1px solid var(--bd);object-fit:contain;margin:0 auto;display:block;"/>
                     <p class="tx2" style="margin-top:1.125rem;font-weight:600;font-size:0.9375rem;">Uploaded — ready to extract</p>
                   </div>
@@ -266,7 +267,7 @@
                     </div>
                   </div>
                   <div style="padding:1.25rem;background:var(--sf2);border-radius:1rem;border:1px solid var(--bd);">
-                    <div style="font-size:0.8125rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:#38bdf8;margin-bottom:1rem;">Reading and Writing domains</div>
+                    <div style="font-size:0.8125rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--p5);margin-bottom:1rem;">Reading and Writing domains</div>
                     <div style="display:grid;gap:1rem;">
                       <template x-for="d in rwDomains" :key="d.key">
                         <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.625rem 0;border-bottom:1px solid var(--bd);">
@@ -297,13 +298,29 @@
             <p class="tx2" style="font-size:1rem;margin-bottom:1.5rem;line-height:1.5;">Pick your official test date. We will build your plan up to that day.</p>
             <div style="margin-bottom:1.75rem;">
               <label style="display:block;font-size:0.875rem;font-weight:700;color:var(--tx2);margin-bottom:0.625rem;">Test date</label>
-              <input type="date" x-model="intake.testDate" style="width:100%;height:3.5rem;padding:0 1.125rem;border-radius:0.875rem;border:1px solid var(--bd);background:var(--sf2);color:var(--tx);font-size:1.0625rem;" :min="todayISO"/>
+              <div style="display:flex;gap:0.75rem;align-items:center;">
+                <select class="sat-date-select" @change="intake.testDate = dateYear + '-' + dateMonth + '-' + dateDay" x-model="dateMonth">
+                  <option value="">Month</option>
+                  <option value="01">Jan</option><option value="02">Feb</option><option value="03">Mar</option>
+                  <option value="04">Apr</option><option value="05">May</option><option value="06">Jun</option>
+                  <option value="07">Jul</option><option value="08">Aug</option><option value="09">Sep</option>
+                  <option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option>
+                </select>
+                <select class="sat-date-select" @change="intake.testDate = dateYear + '-' + dateMonth + '-' + dateDay" x-model="dateDay" style="flex:1;">
+                  <option value="">Day</option>
+                  <template x-for="d in 31" :key="d"><option :value="String(d).padStart(2,'0')" x-text="d"></option></template>
+                </select>
+                <select class="sat-date-select" @change="intake.testDate = dateYear + '-' + dateMonth + '-' + dateDay" x-model="dateYear" style="flex:1;">
+                  <option value="">Year</option>
+                  <option value="2026">2026</option><option value="2027">2027</option><option value="2028">2028</option>
+                </select>
+              </div>
             </div>
             <div style="height:1px;background:var(--bd);margin:1.5rem 0;"></div>
             <p style="font-size:0.875rem;font-weight:700;color:var(--tx2);margin-bottom:1rem;">Or pick an official SAT date</p>
-            <div style="display:flex;flex-wrap:wrap;gap:0.75rem;">
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(10rem,1fr));gap:0.75rem;">
               <template x-for="d in officialDates" :key="d">
-                <button type="button" style="padding:0.75rem 1.25rem;border-radius:999px;font-size:0.9375rem;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap;" :style="intake.testDate===d ? 'background: var(--p4); color: #fff; border: 1px solid var(--p4); box-shadow: 0 2px 12px rgba(124,58,237,0.3);' : 'background: var(--sf2); color: var(--tx); border: 1px solid var(--bd);'" @click="intake.testDate=d" x-text="formatDate(d)"></button>
+                <button type="button" class="sat-date-btn" :class="{ selected: intake.testDate === d }" @click="selectOfficialDate(d)" x-text="formatDate(d)"></button>
               </template>
             </div>
           </div>
@@ -325,10 +342,16 @@
             <div>
               <label style="display:block;font-size:0.875rem;font-weight:700;color:var(--tx2);margin-bottom:0.625rem;">Hours per week</label>
               <div style="display:flex;align-items:center;gap:1.125rem;">
-                <input type="number" x-model.number="intake.hoursPerWeek" min="2" max="30" step="1" style="width:8rem;height:3.5rem;padding:0 1rem;border-radius:0.875rem;border:1px solid var(--bd);background:var(--sf2);color:var(--tx);font-size:1.25rem;font-weight:700;text-align:center;"/>
+                <input type="text" inputmode="numeric" maxlength="2" pattern="[0-9]*" :value="intake.hoursPerWeek" @input="intake.hoursPerWeek = Math.min(30, Math.max(2, parseInt($event.target.value) || 2))" style="width:8rem;height:3.5rem;padding:0 1rem;border-radius:0.875rem;border:1px solid var(--bd);background:var(--sf2);color:var(--tx);font-size:1.25rem;font-weight:700;text-align:center;"/>
                 <span class="tx2" style="font-size:0.9375rem;">hours per week</span>
               </div>
               <p class="tx3" style="font-size:0.8125rem;margin-top:0.625rem;line-height:1.4;">We will spread this evenly across your chosen days. Sessions are 30 to 90 minutes each.</p>
+            </div>
+            <div style="margin-top:1.75rem;display:flex;justify-content:center;">
+              <button class="sat-button sat-button-primary" style="min-width:12rem;height:3.5rem;font-size:1.125rem;font-weight:700;border-radius:1rem;" @click="submitWizard()" :disabled="!canProceed() || generating" :style="(!canProceed() || generating) ? 'opacity:0.5;cursor:not-allowed;' : ''">
+                <span x-show="!generating">Create My Plan</span>
+                <span x-show="generating" style="display:flex;align-items:center;gap:0.625rem;"><span style="width:1.125rem;height:1.125rem;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;"></span>Generating…</span>
+              </button>
             </div>
           </div>
         </template>
@@ -337,11 +360,7 @@
         <div class="panel-card" style="padding:1.25rem 1.75rem;border-radius:1.25rem;display:flex;justify-content:flex-end;align-items:center;gap:1rem;position:sticky;bottom:1rem;z-index:10;box-shadow:0 8px 32px rgba(0,0,0,0.35);">
           <button class="sat-button sat-button-secondary" style="min-width:7rem;height:3.25rem;font-size:1rem;font-weight:700;" @click="prevStep()" x-show="step>1" x-transition>Back</button>
           <span class="tx3" style="font-size:0.875rem;margin-right:auto;" x-show="step<4 && !canProceed()">Complete this step to continue</span>
-          <button class="sat-button sat-button-primary" style="min-width:8rem;height:3.25rem;font-size:1rem;font-weight:700;display:inline-flex;align-items:center;gap:0.5rem;" @click="nextStep()" x-show="step<4" :disabled="!canProceed()" :style="!canProceed() ? 'opacity:0.5;cursor:not-allowed;' : ''">Next <span class="material-icons-round" style="font-size:1.25rem;">arrow_forward</span></button>
-          <button class="sat-button sat-button-primary" style="min-width:10rem;height:3.25rem;font-size:1rem;font-weight:700;" @click="submitWizard()" x-show="step===4" :disabled="!canProceed() || generating" :style="(!canProceed() || generating) ? 'opacity:0.5;cursor:not-allowed;' : ''">
-            <span x-show="!generating">Create My Plan</span>
-            <span x-show="generating" style="display:flex;align-items:center;gap:0.625rem;"><span style="width:1.125rem;height:1.125rem;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;"></span>Generating…</span>
-          </button>
+          <button class="sat-button sat-button-primary" style="min-width:8rem;height:3.25rem;font-size:1rem;font-weight:700;display:inline-flex;align-items:center;gap:0.5rem;" @click="nextStep()" :class="{ 'wizard-hide': step === 4 }" :disabled="!canProceed()" :style="!canProceed() ? 'opacity:0.5;cursor:not-allowed;' : ''">Next <span class="material-icons-round" style="font-size:1.25rem;">arrow_forward</span></button>
         </div>
       </div>
     </template>
@@ -454,12 +473,22 @@
       extractedScores: null,
       extracting: false,
       generating: false,
+      dateMonth: "",
+      dateDay: "",
+      dateYear: "",
+      selectOfficialDate(d) {
+        const [y, m, day] = d.split('-');
+        this.dateYear = y;
+        this.dateMonth = m;
+        this.dateDay = day;
+        this.intake.testDate = d;
+      },
       
       mathDomains: [
-        { key: "heartOfAlgebra", label: "Heart of Algebra" },
-        { key: "problemSolvingData", label: "Problem Solving & Data Analysis" },
-        { key: "passportAdvancedMath", label: "Passport to Advanced Math" },
-        { key: "additionalTopicsMath", label: "Additional Topics in Math" }
+        { key: "heartOfAlgebra", label: "Algebra" },
+        { key: "passportAdvancedMath", label: "Advanced Math" },
+        { key: "problemSolvingData", label: "Problem-Solving and Data Analysis" },
+        { key: "additionalTopicsMath", label: "Geometry and Trigonometry" }
       ],
       rwDomains: [
         { key: "informationIdeas", label: "Information & Ideas" },
@@ -472,8 +501,8 @@
         { key: "thu", label: "Thu" }, { key: "fri", label: "Fri" }, { key: "sat", label: "Sat" }, { key: "sun", label: "Sun" }
       ],
       officialDates: [
-        "2025-08-23", "2025-09-13", "2025-10-04", "2025-11-08", "2025-12-06",
-        "2026-03-14", "2026-05-02", "2026-06-06"
+        "2026-09-12", "2026-10-03", "2026-11-07", "2026-12-05",
+        "2027-03-06", "2027-05-01", "2027-06-05"
       ],
       get todayISO() { return new Date().toISOString().split('T')[0]; },
 
@@ -481,7 +510,8 @@
         if (this.step === 1) return !!this.intake.startPoint;
         if (this.step === 2) {
           if (this.intake.startPoint !== 'none') return !!this.extractedScores?.mathScore && !!this.extractedScores?.rwScore;
-          return Object.values(this.intake.confidenceRatings).every(v => v >= 1 && v <= 3);
+          const allKeys = [...this.mathDomains, ...this.rwDomains].map(d => d.key);
+          return allKeys.every(k => this.intake.confidenceRatings[k] >= 1 && this.intake.confidenceRatings[k] <= 3);
         }
         if (this.step === 3) return !!this.intake.testDate && new Date(this.intake.testDate) > new Date();
         if (this.step === 4) return this.intake.studyDays.length >= 2 && this.intake.hoursPerWeek >= 2;
@@ -494,7 +524,7 @@
         if (i >= 0) this.intake.studyDays.splice(i, 1);
         else this.intake.studyDays.push(key);
       },
-      formatDate(iso) { return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); },
+      formatDate(iso) { return new Date(iso + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); },
       handleFileSelect(e) { this.processFile(e.target.files[0]); },
       handleDrop(e) { this.processFile(e.dataTransfer.files[0]); },
       async processFile(file) {
@@ -651,6 +681,63 @@
   .wizard-step-circle { width:2.5rem !important; height:2.5rem !important; min-width:2.5rem !important; min-height:2.5rem !important; border-radius:9999px !important; display:flex !important; align-items:center !important; justify-content:center !important; font-weight:800 !important; font-size:1rem !important; line-height:1 !important; padding:0 !important; flex-shrink:0 !important; aspect-ratio: 1 / 1 !important; }
   .wizard-step-circle.active { background: var(--p4) !important; color:#fff !important; border: 2px solid var(--p4) !important; box-shadow: 0 0 14px rgba(124,58,237,0.4) !important; }
   .wizard-step-circle:not(.active) { background: var(--sf2) !important; color: var(--tx3) !important; border: 2px solid var(--bd) !important; }
+
+  .wizard-hide { display: none !important; }
+
+  input[type="date"]::-webkit-datetime-edit-year-field { max-width: 4ch; }
+  input[type="date"]::-webkit-datetime-edit { display: inline-flex; gap: 0; }
+  input[type="date"]::-webkit-inner-spin-button,
+  input[type="date"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
+  .sat-date-select {
+    height: 3.5rem;
+    padding: 0 1rem;
+    border-radius: 999px;
+    border: 1px solid var(--bd);
+    background: var(--sf2);
+    color: var(--tx);
+    font-size: 1.0625rem;
+    font-weight: 600;
+    cursor: pointer;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.875rem center;
+    padding-right: 2.25rem;
+  }
+  .sat-date-select:focus { outline: none; border-color: var(--p4); box-shadow: 0 0 0 3px rgba(124,58,237,0.15); }
+  .sat-date-select option { background: var(--sf2); color: var(--tx); }
+  .sat-date-select option:checked { background: var(--p4); color: #fff; }
+
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type="number"] { -moz-appearance: textfield; }
+
+  .sat-date-btn {
+    padding: 0.875rem 1.25rem;
+    border-radius: 999px;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    background: var(--sf2);
+    color: var(--tx);
+    border: 1px solid var(--bd);
+    transition: all 0.25s ease;
+  }
+  .sat-date-btn:hover {
+    border-color: var(--p4);
+    box-shadow: 0 0 16px rgba(124,58,237,0.4), 0 0 32px rgba(124,58,237,0.15);
+    transform: translateY(-2px);
+  }
+  .sat-date-btn.selected {
+    background: var(--p4);
+    color: #fff;
+    border-color: var(--p4);
+    box-shadow: 0 0 16px rgba(124,58,237,0.5), 0 0 32px rgba(124,58,237,0.25), 0 0 48px rgba(124,58,237,0.1);
+  }
 
   .session-row { padding:1.15rem; border-radius:1rem; }
   .session-row.completed { opacity:0.6;background:rgba(34,197,94,0.08);border-color:rgba(34,197,94,0.3); }
