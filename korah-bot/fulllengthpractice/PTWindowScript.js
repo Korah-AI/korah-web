@@ -305,7 +305,7 @@ function wireUI() {
   });
 
   // Results
-  $("resultsReviewBtn").addEventListener("click", () => openReview());
+  $("resultsReviewBtn").addEventListener("click", () => openReview(true));
   $("resultsExitBtn").addEventListener("click", () => {
     resetAll(); shown("screen-results", false); setStep("start"); showScreen("start");
   });
@@ -423,7 +423,7 @@ function renderQuestion() {
         ${q.domain ? `<span class="domain-chip">${esc(q.domain)}</span>` : ""}
       </div>
       ${q.passage ? `<div class="passage">${esc(q.passage)}</div>` : ""}
-      ${q.figure ? `<div class="figure"><img src="../docs/practice-tests/test-4/figures/${encodeURIComponent(q.figure)}" alt="figure for question ${q.n}"/></div>` : ""}
+      ${q.figure ? `<div class="figure"><img src="../docs/practice-tests/${testSlug}/figures/${encodeURIComponent(q.figure)}" alt="figure for question ${q.n}"/></div>` : ""}
       ${renderStem(q)}
       ${isSpr ? renderSpr(selected, key) : renderMcq(selected, key, q)}
     </div>
@@ -451,7 +451,7 @@ function renderQuestion() {
 
 function renderStem(q) {
   if (q.stemImg) {
-    return `<div class="stem stem-img-only"><img src="../docs/practice-tests/test-4/question-imgs/${encodeURIComponent(q.stemImg)}" alt="question ${q.n} stem"/></div>`;
+    return `<div class="stem stem-img-only"><img src="../docs/practice-tests/${testSlug}/question-imgs/${encodeURIComponent(q.stemImg)}" alt="question ${q.n} stem"/></div>`;
   }
   return `<div class="stem">${esc(q.stem)}</div>`;
 }
@@ -462,8 +462,11 @@ function renderMcq(selected, key, q) {
       const letter = String.fromCharCode(65 + i); // A, B, C, D
       const text = opt.replace(/^[A-D]\)\s*/, ""); // strip leading letter if present
       const sel = selected === letter;
+      const optImg = q.optionImgs && q.optionImgs[i]
+        ? `<div class="opt-img-wrap"><img class="opt-img" src="../docs/practice-tests/${testSlug}/question-imgs/${encodeURIComponent(q.optionImgs[i])}" alt="option ${letter}"/></div>`
+        : `<span>${esc(text)}</span>`;
       return `<div class="option${sel ? " is-selected" : ""}" data-letter="${letter}" role="button" tabindex="0">
-        <span class="opt-key">${letter}</span><span>${esc(text)}</span>
+        <span class="opt-key">${letter}</span>${optImg}
       </div>`;
     }).join("")}
   </div>`;
@@ -533,7 +536,24 @@ function updateQMenuCounts() {
 }
 
 // ── Review page ──────────────────────────────────
-function openReview() {
+function openReview(showAnswers) {
+  const prevStep = state.step;
+
+  if (showAnswers) {
+    // Post-test review: full breakdown of every question. Shows what the
+    // student answered and, only when they got it wrong, the correct answer.
+    buildAnswerReview();
+    state.step = "review";
+    persist();
+    $("reviewBackBtn").onclick = () => {
+      setStep("results");
+      renderResults();
+      showScreen("results");
+    };
+    showScreen("review");
+    return;
+  }
+
   const m = MODULES[state.currentMod];
   const qs = currentQuestions();
   $("reviewTitle").textContent = `${m.label} · ${m.module} · Review`;
@@ -566,7 +586,6 @@ function openReview() {
   });
   // Keep the module timer running while on the review page (matches the real
   // test — the clock keeps counting down as you review).
-  const prevStep = state.step;
   state.step = "review";
   persist();
   $("reviewBackBtn").onclick = () => {
@@ -575,6 +594,70 @@ function openReview() {
     else { showScreen("module"); startModuleTimer(); renderQuestion(); }
   };
   showScreen("review");
+}
+
+// Renders the full post-test answer breakdown across every module, grouped by
+// section/module. For each question it shows the student's answer and, only if
+// they got it wrong, the correct answer.
+function buildAnswerReview() {
+  let totalRight = 0, totalSeen = 0;
+  const sections = MODULES.map((m, mi) => {
+    const qs = test[m.key] || [];
+    if (!qs.length) return "";
+    let right = 0;
+    const rows = qs.map((q) => {
+      const sel = state.answers[`${m.key}:${q.n}`];
+      const ok = isCorrect(q, sel);
+      if (ok) right++;
+      totalSeen++;
+      if (ok) totalRight++;
+      return reviewRow(q, sel, ok, m.key);
+    }).join("");
+    return (
+      `<div class="review-sec">` +
+        `<div class="review-sec-head">${m.label} · ${m.module} <span>${right}/${qs.length} correct</span></div>` +
+        `<div class="review-rows">${rows}</div>` +
+      `</div>`
+    );
+  }).join("");
+
+  $("reviewTitle").textContent = "Answer Review";
+  $("reviewList").innerHTML =
+    `<div class="review-summary">You answered ${totalRight} of ${totalSeen} questions correctly.</div>` +
+    sections;
+}
+
+// One row of the post-test answer review.
+function reviewRow(q, sel, ok, modKey) {
+  const answeredText = answerLabel(q, sel) || "Not answered";
+  const correctText = answerLabel(q, q.correct);
+  const mark = ok
+    ? `<span class="rev-mark rev-ok">✓</span>`
+    : `<span class="rev-mark rev-bad">✗</span>`;
+  const correctLine = ok
+    ? ""
+    : `<div class="rev-correct">Correct answer: <b>${esc(correctText)}</b></div>`;
+  return (
+    `<div class="rev-row${ok ? " is-right" : " is-wrong"}">` +
+      `<div class="rev-q">Q${q.n}${mark}</div>` +
+      `<div class="rev-detail">` +
+        `<div class="rev-answered">Your answer: <b>${esc(answeredText)}</b></div>` +
+        correctLine +
+      `</div>` +
+    `</div>`
+  );
+}
+
+// Human-readable answer label. For multiple-choice, resolves the letter to its
+// option text; for student-produced response, returns the raw text.
+function answerLabel(q, val) {
+  if (val == null || val === "") return null;
+  if (q.type === "mcq") {
+    const opt = (q.options || []).find((o, i) => String.fromCharCode(65 + i) === String(val).trim().toUpperCase());
+    if (opt) return opt.replace(/^[A-D]\)\s*/, "");
+    return String(val).toUpperCase();
+  }
+  return String(val);
 }
 
 // ── Results & scoring ────────────────────────────
