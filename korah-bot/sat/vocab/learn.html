@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en" x-data="{
+  theme: localStorage.getItem('korah_theme') || 'dark',
+  sidebarCollapsed: window.innerWidth <= 768 ? false : localStorage.getItem('korah_sidebar_collapsed') === 'true',
+  mobileOpen: false,
+  getEffectiveTheme() {
+    if (this.theme === 'system') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return this.theme;
+  },
+  toggleSidebar() {
+    if (window.innerWidth <= 768) {
+      this.mobileOpen = !this.mobileOpen;
+      const overlay = document.querySelector('.sidebar-overlay');
+      if (overlay) overlay.classList.toggle('show', this.mobileOpen);
+    } else {
+      this.sidebarCollapsed = !this.sidebarCollapsed;
+      localStorage.setItem('korah_sidebar_collapsed', this.sidebarCollapsed);
+    }
+  }
+}" :data-theme="getEffectiveTheme()" x-cloak>
+<head>
+<link rel="stylesheet" href="../../transitions/page-transitions.css"/>
+<script src="../../transitions/page-transitions.js"></script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Korah AI — Vocab Learn</title>
+<link rel="icon" type="image/png" href="../../logo-images/newlogo0.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script src="../../sidebar-loader.js" defer></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="../../study/js/sidebar.js"></script>
+<link rel="stylesheet" href="../../app/korah-chat.css"/>
+<link rel="stylesheet" href="../sat.css"/>
+<link rel="stylesheet" href="./css/vocab.css"/>
+<script src="./js/vocab-data.js"></script>
+<script src="./js/vocab-store.js"></script>
+</head>
+
+<body>
+<style>
+  html:not(.korah-page-ready) { background: #06040f !important; }
+  html[data-theme="light"]:not(.korah-page-ready) { background: #d2d2d2 !important; }
+  html:not(.korah-page-ready) body { opacity: 0 !important; }
+</style>
+
+<script>
+  (function() {
+    const t = localStorage.getItem('korah_theme') || 'dark';
+    if (t === 'light' || (t === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  })();
+</script>
+
+<div id="sidebar-root"></div>
+
+<div id="main-area-wrapper" class="main-area-wrapper">
+<main id="main-content" class="main-content" x-data="vocabLearn()">
+
+  <!-- Top bar -->
+  <header class="chat-topbar bg-sf glass-sm t-theme bd" style="opacity: 0.95;">
+    <button id="sidebar-toggle" @click="toggleSidebar()" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+    <div class="flex items-center gap-2 tx2">
+      <span class="material-icons-round" style="font-size:1.15rem;">menu_book</span>
+      <span class="font-semibold tx text-sm">Vocab Study</span>
+    </div>
+  </header>
+
+  <!-- ═══ LEARN VIEW ═══ -->
+  <div x-show="dataStatus === 'loading'" class="vocab-state" x-cloak>
+    <div class="vocab-state-card">
+      <div class="vocab-spinner"></div>
+      <p class="vocab-state-title">Loading word database…</p>
+    </div>
+  </div>
+
+  <div x-show="dataStatus === 'error'" class="vocab-state" x-cloak>
+    <div class="vocab-state-card">
+      <span class="material-icons-round vocab-state-icon">cloud_off</span>
+      <p class="vocab-state-title">Word database unavailable</p>
+      <p class="vocab-state-sub">We couldn't fetch the SAT vocabulary words. Your saved words are safe.</p>
+      <button class="vocab-start-btn t-btn" style="margin-top:1.25rem;" @click="retryData()">
+        <span class="material-icons-round">refresh</span><span>Try again</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="vocab-learn" x-show="dataStatus === 'ready'" x-cloak>
+
+    <!-- Header: title + wordbank count + practice CTA -->
+    <div class="vocab-learn-hero">
+      <div class="vocab-learn-title-group">
+        <div class="vocab-kicker">SAT VOCABULARY</div>
+        <h1 class="vocab-title">Build your word bank</h1>
+        <p class="vocab-sub">Search 988 SAT words and save the ones you want to master. Add at least 5 to unlock practice.</p>
+      </div>
+      <div class="vocab-learn-hero-actions">
+        <div class="vocab-count-pill">
+          <span class="material-icons-round">library_books</span>
+          <span class="vocab-count-num" x-text="learntWords.length">0</span>
+          <span class="vocab-count-label">saved</span>
+        </div>
+        <a href="./practice.html"
+           class="vocab-practice-cta t-btn"
+           :class="learntWords.length >= 5 ? '' : 'is-disabled'"
+           :data-hint="learntWords.length >= 5 ? 'Start practicing' : 'Add at least 5 words to unlock practice'">
+          <span class="material-icons-round">play_arrow</span>
+          <span>Practice these words</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Search bar -->
+    <div class="vocab-search-wrap">
+      <span class="material-icons-round vocab-search-icon">search</span>
+      <input x-model.debounce.250ms="query" type="search" placeholder="Search a word, e.g. 'abase', 'eloquent'..." class="vocab-search-input" />
+      <button class="vocab-filter-toggle t-btn" @click="showFilters = !showFilters"
+              :class="{ 'is-active': showFilters || hasActiveFilters }">
+        <span class="material-icons-round">tune</span>
+        <span class="vocab-filter-toggle-label">Filters</span>
+        <span class="vocab-filter-count" x-show="activeFilterCount > 0" x-text="activeFilterCount"></span>
+      </button>
+    </div>
+
+    <!-- Filter panel -->
+    <div class="vocab-filters" x-show="showFilters" x-transition.opacity.duration.200ms x-cloak>
+      <div class="vocab-filter-group">
+        <span class="vocab-filter-label">Part of speech</span>
+        <div class="vocab-filter-chips">
+          <button class="vocab-filter-chip t-btn" :class="{ 'is-on': filterPos === 'all' }" @click="filterPos = 'all'">All</button>
+          <button class="vocab-filter-chip t-btn" :class="{ 'is-on': filterPos === 'noun' }" @click="filterPos = 'noun'">Noun</button>
+          <button class="vocab-filter-chip t-btn" :class="{ 'is-on': filterPos === 'verb' }" @click="filterPos = 'verb'">Verb</button>
+          <button class="vocab-filter-chip t-btn" :class="{ 'is-on': filterPos === 'adjective' }" @click="filterPos = 'adjective'">Adjective</button>
+          <button class="vocab-filter-chip t-btn" :class="{ 'is-on': filterPos === 'adverb' }" @click="filterPos = 'adverb'">Adverb</button>
+        </div>
+      </div>
+      <div class="vocab-filter-group">
+        <span class="vocab-filter-label">Difficulty</span>
+        <div class="vocab-filter-chips">
+          <button class="vocab-filter-chip t-btn" :class="{ 'is-on': filterDiff === 'all' }" @click="filterDiff = 'all'">All</button>
+          <button class="vocab-filter-chip t-btn" :class="{ 'is-on': filterDiff === 'easy' }" @click="filterDiff = 'easy'"><span class="vocab-diff-dot is-easy"></span>Easy</button>
+          <button class="vocab-filter-chip t-btn" :class="{ 'is-on': filterDiff === 'medium' }" @click="filterDiff = 'medium'"><span class="vocab-diff-dot is-medium"></span>Medium</button>
+          <button class="vocab-filter-chip t-btn" :class="{ 'is-on': filterDiff === 'hard' }" @click="filterDiff = 'hard'"><span class="vocab-diff-dot is-hard"></span>Hard</button>
+        </div>
+      </div>
+      <button class="vocab-filter-clear t-btn" @click="clearFilters" x-show="hasActiveFilters">Clear filters</button>
+    </div>
+
+    <!-- Results / suggestions -->
+    <div class="vocab-results">
+      <template x-if="query.trim() === '' && filteredCards.length > 0">
+        <div>
+          <div class="vocab-section-head">
+            <span class="vocab-section-title">Discover words</span>
+            <span class="vocab-section-hint">Easy &amp; medium picks to get you started</span>
+          </div>
+          <div class="vocab-card-grid">
+            <template x-for="w in filteredCards" :key="w.word">
+              <div class="vocab-word-card" :class="{ 'is-added': isLearnt(w.word) }">
+                <div class="vocab-word-card-top">
+                  <div>
+                    <div class="vocab-word-name">
+                      <span x-text="w.word"></span>
+                      <span class="vocab-pos-chip" :data-pos="w.part_of_speech" x-text="w.part_of_speech"></span>
+                    </div>
+                    <div class="vocab-diff-dot" :class="'is-' + w.difficulty"></div>
+                  </div>
+                  <button class="vocab-add-btn t-btn"
+                          :class="{ 'is-added': isLearnt(w.word) }"
+                          @click="toggleWord(w.word)"
+                          :aria-label="isLearnt(w.word) ? 'Remove from word bank' : 'Add to word bank'">
+                    <span class="material-icons-round" x-text="isLearnt(w.word) ? 'check' : 'add'"></span>
+                  </button>
+                </div>
+                <p class="vocab-word-def" x-text="w.definition"></p>
+              </div>
+            </template>
+          </div>
+        </div>
+      </template>
+
+      <template x-if="query.trim() !== '' && filtered.length > 0">
+        <div>
+          <div class="vocab-section-head">
+            <span class="vocab-section-title" x-text="`${filtered.length} result${filtered.length === 1 ? '' : 's'} for “${query}”`"></span>
+          </div>
+          <div class="vocab-search-results-list">
+            <template x-for="w in filtered" :key="w.word">
+              <div>
+                <div class="vocab-result-row" :class="{ 'is-added': isLearnt(w.word) }" @click="toggleExpand(w.word)">
+                  <div class="vocab-result-main">
+                    <div class="vocab-result-label">
+                      <span class="vocab-word-name">
+                        <span x-text="w.word"></span>
+                        <span class="vocab-pos-chip" :data-pos="w.part_of_speech" x-text="w.part_of_speech"></span>
+                      </span>
+                      <div class="vocab-diff-dot" :class="'is-' + w.difficulty"></div>
+                    </div>
+                    <p class="vocab-word-def" x-text="w.definition"></p>
+                  </div>
+                  <button class="vocab-add-btn t-btn"
+                          :class="{ 'is-added': isLearnt(w.word) }"
+                          @click.stop="toggleWord(w.word)"
+                          :aria-label="isLearnt(w.word) ? 'Remove from word bank' : 'Add to word bank'">
+                    <span class="material-icons-round" x-text="isLearnt(w.word) ? 'check' : 'add'"></span>
+                  </button>
+                </div>
+                <div class="vocab-word-detail" x-show="expanded.has(w.word)" x-transition.opacity.duration.200ms x-cloak>
+                  <p class="vocab-word-detail-def"><span class="vocab-word-detail-label">Definition</span><span x-text="w.definition"></span></p>
+                  <p class="vocab-word-detail-ex" x-show="w.example"><span class="vocab-word-detail-label">Example</span>“<span x-text="w.example"></span>”</p>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+      </template>
+
+      <template x-if="(query.trim() === '' && filteredCards.length === 0) || (query.trim() !== '' && filtered.length === 0)">
+        <div class="vocab-empty-state">
+          <span class="material-icons-round vocab-empty-icon">search_off</span>
+          <p class="vocab-empty-title">No words found</p>
+          <p class="vocab-empty-sub">Try a different spelling, or adjust your filters.</p>
+        </div>
+      </template>
+    </div>
+
+    <!-- ═══ BROWSE ALL WORDS (always visible) ═══ -->
+    <div class="vocab-browse-all">
+      <div class="vocab-browse-header">
+        <span class="vocab-section-title">
+          <span class="material-icons-round vocab-browse-icon">apps</span>
+          Browse all words
+        </span>
+        <div class="vocab-browse-count" x-text="`${allWords.length} total words`"></div>
+      </div>
+      <div class="vocab-browse-list">
+        <template x-for="w in allWords" :key="w.word">
+          <div>
+            <div class="vocab-browse-row" :class="{ 'is-added': isLearnt(w.word) }" @click="toggleExpand(w.word)">
+              <div class="vocab-browse-word">
+                <span class="vocab-word-name">
+                  <span x-text="w.word"></span>
+                  <span class="vocab-pos-chip" :data-pos="w.part_of_speech" x-text="w.part_of_speech"></span>
+                </span>
+                <div class="vocab-diff-dot" :class="'is-' + w.difficulty"></div>
+              </div>
+              <p class="vocab-browse-def" x-text="w.definition"></p>
+              <button class="vocab-add-btn t-btn"
+                      :class="{ 'is-added': isLearnt(w.word) }"
+                      @click.stop="toggleWord(w.word)"
+                      :aria-label="isLearnt(w.word) ? 'Remove from word bank' : 'Add to word bank'">
+                <span class="material-icons-round" x-text="isLearnt(w.word) ? 'check' : 'add'"></span>
+              </button>
+            </div>
+            <div class="vocab-word-detail" x-show="expanded.has(w.word)" x-transition.opacity.duration.200ms x-cloak>
+              <p class="vocab-word-detail-def"><span class="vocab-word-detail-label">Definition</span><span x-text="w.definition"></span></p>
+              <p class="vocab-word-detail-ex" x-show="w.example"><span class="vocab-word-detail-label">Example</span>“<span x-text="w.example"></span>”</p>
+            </div>
+          </div>
+        </template>
+      </div>
+      <div class="vocab-browse-fade"></div>
+    </div>
+
+  </div>
+
+</main>
+</div>
+
+<script>
+  document.addEventListener('alpine:init', () => {
+    Alpine.data('vocabLearn', () => ({
+      dataStatus: 'loading',
+      query: '',
+      learntWords: [],
+      expanded: new Set(),
+      showFilters: false,
+      filterPos: 'all',
+      filterDiff: 'all',
+      pool: [],
+
+      init() {
+        this.resetLearnt();
+        VocabData.ready().then(() => {
+          if (VocabData.status === 'ready') {
+            this.pool = VocabData.all.slice();
+            this.dataStatus = 'ready';
+          } else {
+            this.dataStatus = 'error';
+          }
+        });
+      },
+      retryData() {
+        this.dataStatus = 'loading';
+        VocabData.retry().then(() => {
+          if (VocabData.status === 'ready') {
+            this.pool = VocabData.all.slice();
+            this.dataStatus = 'ready';
+          } else {
+            this.dataStatus = 'error';
+          }
+        });
+      },
+      resetLearnt() {
+        this.learntWords = VocabStore.learnt().slice();
+      },
+
+      filtersApplied(w) {
+        if (this.filterPos !== 'all' && w.part_of_speech !== this.filterPos) return false;
+        if (this.filterDiff !== 'all' && w.difficulty !== this.filterDiff) return false;
+        return true;
+      },
+      get hasActiveFilters() {
+        return this.filterPos !== 'all' || this.filterDiff !== 'all';
+      },
+      get activeFilterCount() {
+        let n = 0;
+        if (this.filterPos !== 'all') n++;
+        if (this.filterDiff !== 'all') n++;
+        return n;
+      },
+      get suggestions() {
+        return this.pool.filter(w => w.difficulty === 'easy' || w.difficulty === 'medium').slice(0, 10);
+      },
+      get filteredCards() {
+        return this.hasActiveFilters ? this.pool.filter(w => this.filtersApplied(w)) : this.suggestions;
+      },
+      get allWords() {
+        return this.pool;
+      },
+      get filtered() {
+        const q = this.query.trim().toLowerCase();
+        if (!q) return [];
+        return this.pool
+          .filter(w => this.filtersApplied(w))
+          .filter(w => w.word.startsWith(q) || w.word.includes(q))
+          .slice(0, 50);
+      },
+      clearFilters() {
+        this.filterPos = 'all';
+        this.filterDiff = 'all';
+      },
+      isLearnt(word) { return this.learntWords.includes(VocabData.normalize(word)); },
+      toggleWord(word) {
+        const n = VocabData.normalize(word);
+        const idx = this.learntWords.indexOf(n);
+        if (idx >= 0) {
+          VocabStore.removeWord(n);
+          this.learntWords.splice(idx, 1);
+        } else {
+          VocabStore.addWord(n);
+          this.learntWords.push(n);
+        }
+      },
+      toggleExpand(word) {
+        if (this.expanded.has(word)) this.expanded.delete(word);
+        else this.expanded.add(word);
+      }
+    }));
+  });
+</script>
+
+<script>
+  window.addEventListener('load', () => {
+    document.body.dispatchEvent(new CustomEvent('korahThemeReady'));
+  });
+</script>
+
+</body>
+</html>
