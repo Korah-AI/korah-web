@@ -500,7 +500,7 @@
   .retry-panel    { --spotlight-color: rgba(232,121,249,.3);
     background: linear-gradient(135deg, rgba(232,121,249,.08), rgba(240,171,252,.03)) !important;
     border-color: rgba(232,121,249,.25) !important; }
-  .heatmap-panel  { --spotlight-color: rgba(34,197,94,.3); }
+  .heatmap-panel  { --spotlight-color: rgba(139,92,246,.3); }
 
   .trend-legend { display: flex; gap: 0.625rem; margin-bottom: 0.875rem; }
   .trend-chip {
@@ -560,11 +560,65 @@
   .quad-tile .q-value { font-size: 1.25rem; font-weight: 800; color: var(--tx); margin-top: 0.25rem; font-variant-numeric: tabular-nums; }
   .quad-tile .q-sub { font-size: 0.625rem; color: var(--tx2); margin-top: 0.125rem; }
 
-  .heat-grid { display: flex; gap: 0.25rem; }
-  .heat-week { flex: 1; display: flex; flex-direction: column; gap: 0.25rem; }
-  .heat-cell { width: 100%; aspect-ratio: 1; border-radius: 0.1875rem; background: rgba(139,92,246,.1); }
-  .heat-scale { display: flex; align-items: center; gap: 0.3125rem; justify-content: flex-end; margin-top: 0.625rem; font-size: 0.625rem; color: var(--tx2); }
-  .heat-scale .heat-cell { width: 0.625rem; flex: none; }
+  /* ── Practice activity calendar heatmap ── */
+  .heatmap-panel h3 {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    text-transform: none; letter-spacing: normal;
+    font-size: 1rem; font-weight: 800;
+    background: none; -webkit-text-fill-color: var(--tx); color: var(--tx);
+  }
+  .cal-months {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+  @media (max-width: 60rem) { .cal-months { grid-template-columns: 1fr; } }
+  .cal-month-block {
+    background: rgba(139,92,246,.04);
+    border: 0.0625rem solid rgba(139,92,246,.14);
+    border-radius: 0.75rem;
+    padding: 0.75rem;
+  }
+  .cal-month-head {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-size: 0.75rem; font-weight: 800; color: var(--tx);
+    text-transform: none; letter-spacing: normal;
+    margin-bottom: 0.5rem;
+  }
+  .cal-month-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.3125rem;
+  }
+  .cal-dow {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-size: 0.5625rem; font-weight: 700; color: var(--tx);
+    text-transform: none; letter-spacing: normal;
+    text-align: center; height: 1em;
+  }
+  .cal-day {
+    aspect-ratio: 1;
+    border-radius: 0.3125rem;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-size: 0.6875rem; font-weight: 700; color: var(--tx);
+    background: rgba(139,92,246,.06);
+    border: 0.0625rem solid rgba(139,92,246,.1);
+    text-transform: none; letter-spacing: normal;
+  }
+  .cal-day.is-blank { background: transparent; border-color: transparent; visibility: hidden; }
+  .cal-day.has-activity { border-color: rgba(167,139,250,.5); }
+  .heat-scale {
+    display: flex; align-items: center; justify-content: flex-end; gap: 0.3125rem;
+    margin-top: 1rem; font-size: 0.6875rem; font-weight: 700;
+    color: var(--tx); font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    text-transform: none; letter-spacing: normal;
+  }
+  .heat-scale .heat-cell { width: 0.75rem; height: 0.75rem; flex: none; aspect-ratio: auto; border-radius: 0.1875rem; }
+  .heatmap-panel .report-hint {
+    color: var(--tx); font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    text-transform: none; letter-spacing: normal;
+  }
 </style>
 </head>
 
@@ -917,10 +971,10 @@
       </div>
 
       <div class="panel-card heatmap-panel report-span2">
-        <h3>Consistency</h3>
-        <div class="heat-grid" id="heatGrid"></div>
+        <h3>Your practice activity</h3>
+        <div class="cal-months" id="heatGrid"></div>
         <div class="heat-scale" id="heatScale"></div>
-        <div class="report-hint">Last 12 weeks of practice. One column per week.</div>
+        <div class="report-hint">Last 3 months of practice. Each square is one day; darker squares mean more questions.</div>
       </div>
     </section>
 
@@ -1781,34 +1835,55 @@
       retryEl.innerHTML = `<div class="empty-hint">Retry missed questions to see if reviews stick.</div>`;
     }
 
-    // ── Consistency heatmap (last 12 weeks, all attempts) ──
+    // ── Practice activity calendar heatmap (all attempts, month grids) ──
     const perDay = new Map();
     for (const r of REPORT.attempts) {
       const d = new Date(r._d); d.setHours(0, 0, 0, 0);
       perDay.set(d.getTime(), (perDay.get(d.getTime()) || 0) + 1);
     }
     const today = new Date(); today.setHours(0, 0, 0, 0);
-    const thisWeekStart = new Date(today); thisWeekStart.setDate(thisWeekStart.getDate() - thisWeekStart.getDay());
     const maxHeat = Math.max(1, ...perDay.values());
-    let heatHtml = "";
-    for (let w = -11; w <= 0; w++) {
-      const ws = new Date(thisWeekStart); ws.setDate(ws.getDate() + w * 7);
+    const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    const DOW = ["S", "M", "T", "W", "T", "F", "S"];
+    const MONTH_COUNT = 3;
+    const PURPLE = "139,92,246";
+
+    const monthBlocks = [];
+    for (let i = 0; i < MONTH_COUNT; i++) {
+      const first = new Date(today.getFullYear(), today.getMonth() - (MONTH_COUNT - 1 - i), 1);
+      const year = first.getFullYear();
+      const month = first.getMonth();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const lead = first.getDay(); // 0 = Sunday
+      const totalCells = Math.ceil((lead + daysInMonth) / 7) * 7;
+
       let cells = "";
-      for (let d = 0; d < 7; d++) {
-        const day = new Date(ws); day.setDate(day.getDate() + d);
-        if (day.getTime() > today.getTime()) { cells += `<div class="heat-cell" style="background:transparent;"></div>`; continue; }
+      for (let c = 0; c < totalCells; c++) {
+        if (c < lead || c >= lead + daysInMonth) { cells += `<div class="cal-day is-blank"></div>`; continue; }
+        const dayNum = c - lead + 1;
+        const day = new Date(year, month, dayNum);
+        if (day.getTime() > today.getTime()) { cells += `<div class="cal-day is-blank"></div>`; continue; }
         const n = perDay.get(day.getTime()) || 0;
-        const bg = n ? `rgba(34,197,94,${(0.25 + (n / maxHeat) * 0.75).toFixed(2)})` : "";
-        cells += `<div class="heat-cell"${bg ? ` style="background:${bg};"` : ""} title="${day.toLocaleDateString()} · ${n} question${n === 1 ? "" : "s"}"></div>`;
+        const alpha = n ? (0.25 + (n / maxHeat) * 0.85) : 0;
+        const style = alpha ? ` style="background:rgba(${PURPLE},${alpha.toFixed(2)});${alpha >= 0.55 ? "color:#fff;" : ""}"` : "";
+        const title = alpha ? ` title="${day.toLocaleDateString()} · ${n} question${n === 1 ? "" : "s"}"` : "";
+        cells += `<div class="cal-day${alpha ? " has-activity" : ""}"${style}${title}>${dayNum}</div>`;
       }
-      heatHtml += `<div class="heat-week">${cells}</div>`;
+
+      const dow = DOW.map((d) => `<span class="cal-dow">${d}</span>`).join("");
+      monthBlocks.push(`
+        <div class="cal-month-block">
+          <div class="cal-month-head">${MONTH_NAMES[month]} ${year}</div>
+          <div class="cal-month-grid">${dow}${cells}</div>
+        </div>`);
     }
-    document.getElementById("heatGrid").innerHTML = heatHtml;
+
+    document.getElementById("heatGrid").innerHTML = monthBlocks.join("");
     document.getElementById("heatScale").innerHTML = `Less
       <div class="heat-cell"></div>
-      <div class="heat-cell" style="background:rgba(34,197,94,.4);"></div>
-      <div class="heat-cell" style="background:rgba(34,197,94,.7);"></div>
-      <div class="heat-cell" style="background:rgba(34,197,94,1);"></div> More`;
+      <div class="heat-cell" style="background:rgba(${PURPLE},.4);"></div>
+      <div class="heat-cell" style="background:rgba(${PURPLE},.7);"></div>
+      <div class="heat-cell" style="background:rgba(${PURPLE},1);"></div> More`;
   }
 
   // Range chips
