@@ -84,6 +84,11 @@ test("accepts a complete structurally valid exam", () => {
   assert.deepEqual(validateFixture(validExam()).errors, []);
 });
 
+test("accepts the authored Calculus AB mock exam", () => {
+  const examPath = path.resolve(__dirname, "..", "korah-bot", "ap", "data", "calc-ab", "mock-1.json");
+  assert.deepEqual(validateExam(examPath).errors, []);
+});
+
 test("reports duplicate ids and an answer outside the choice keys", () => {
   const exam = validExam();
   exam.parts[0].questions[1].id = exam.parts[0].questions[0].id;

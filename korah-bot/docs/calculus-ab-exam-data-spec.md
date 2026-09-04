@@ -2,8 +2,8 @@
 
 > Status: implementation spec for the first milestone of the AP mock-exam
 > issue. The 2027 MCQ timing/parts, College Board as the second source, and CED
-> weight bands are confirmed. The predicted-score curve and redistribution
-> basis must still be resolved before `mock-1.json` is finalized.
+> weight bands, original question authoring, and the proportional MCQ-only
+> predicted-score curve are confirmed. `mock-1.json` is release-ready.
 
 ## 1. Goal
 
@@ -28,11 +28,9 @@ AP US History exam, and Firestore persistence belong to later milestones.
   key embedded.
 - Question IDs and unit IDs are stable persistence keys. Never renumber them
   after release; correct bad content in place.
-- Source questions from `highschooltestprep.com` and one author-approved second
-  source. The issue recommends College Board CED samples or released practice
-  material. Ask before choosing a different second source.
-- Credit both sources in the exam JSON. Confirm that the selected material and
-  assets can be redistributed in this public repository before committing it.
+- Use original Korah-authored questions aligned to the College Board CED. This
+  avoids copying third-party question banks into the public repository.
+- Credit Korah as item author and the College Board CED as alignment reference.
 - Match the authored question mix to the AP Calculus AB CED unit weightings.
   The distribution is decided while building the file, not dynamically.
 - PNG assets are acceptable; SVG is preferred for figures and equations.
@@ -202,20 +200,20 @@ The issue author has confirmed:
 - the 2027 format of 42 MCQs over 100 minutes, split into a 29-question,
   62-minute no-calculator Part A and a 13-question, 38-minute calculator Part B;
 - College Board as the second source; and
-- the current eight CED unit-weight bands in `course-catalog.json`.
+- the current eight CED unit-weight bands in `course-catalog.json`; and
+- the provisional MCQ-only raw-score thresholds: 11 for a 2, 16 for a 3, 21
+  for a 4, and 27 for a 5.
 
-Before the exam becomes `ready`, obtain written approval or documentation for:
+The following decisions are recorded for the first mock:
 
-1. **Predicted-score curve:** every `rawMin` threshold for AP scores 1 through 5
-   and any scoring assumptions behind that public prediction.
+1. **Predicted-score curve:** this is an unofficial proportional MCQ-only
+   prediction, not an official College Board conversion. Actual AP scoring also
+   includes FRQs and can vary by form.
 2. **CED distribution rule:** the rounding or
    tolerance used to turn its percentage ranges into question counts.
-3. **Content provenance:** permission or licensing basis for storing question
-   text, explanations, and extracted assets in the public repository.
+3. **Content provenance:** resolved by approval to author original questions.
 
-Placeholder values from the issue example are not approval. Until these items
-are confirmed, the validator and a clearly marked draft/fixture may be built,
-but `mock-1.json` must not be called complete or set to `ready`.
+The exam contains no placeholder values and may be marked `ready`.
 
 ## 8. Acceptance criteria
 
