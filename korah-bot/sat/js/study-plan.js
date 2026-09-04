@@ -29,6 +29,44 @@ const DOMAIN_LABELS = {
 };
 const CONFIDENCE_LABELS = ["", "shaky", "okay", "strong"];
 
+// Canonical domain codes, shared with iOS (SATCatalog domain codes in
+// Models/SATModels.swift:262) and with the /api/sat/s breakdown keys. The
+// wizard's own rating keys differ, so map them across rather than teaching the
+// extraction prompt two vocabularies.
+const DOMAIN_CODE_LABELS = {
+  H: "Algebra",
+  P: "Advanced Math",
+  Q: "Problem-Solving and Data Analysis",
+  S: "Geometry and Trigonometry",
+  INI: "Information and Ideas",
+  CAS: "Craft and Structure",
+  EOI: "Expression of Ideas",
+  SEC: "Standard English Conventions"
+};
+// Math first, then Reading & Writing, matching the confidence step and
+// StudyPlanDomains.ordered on iOS. Alphabetical codes interleave the sections.
+const DOMAIN_CODE_ORDER = ["H", "P", "Q", "S", "INI", "CAS", "EOI", "SEC"];
+// 1 = needs work, 2 = growing, 3 = strong. Same 1-3 scale as the self-rated
+// confidence step, so the planner reads one vocabulary either way.
+const PERFORMANCE_LABELS = ["", "needs work", "growing", "strong"];
+
+// The model is asked for an array of {code, level}; the rest of the app wants a
+// { code: level } map. Drop unknown codes and out-of-range levels rather than
+// letting them reach the plan prompt.
+function normalizeDomainLevels(raw) {
+  const out = {};
+  if (!Array.isArray(raw)) return out;
+  raw.forEach((entry) => {
+    if (!entry || typeof entry !== "object") return;
+    const code = String(entry.code || "").trim().toUpperCase();
+    const level = Number(entry.level);
+    if (!DOMAIN_CODE_LABELS[code]) return;
+    if (!Number.isInteger(level) || level < 1 || level > 3) return;
+    out[code] = level;
+  });
+  return out;
+}
+
 function now() { return new Date().toISOString(); }
 
 // Parse "yyyy-MM-dd" in local time. new Date("2026-09-02") is UTC midnight,
@@ -203,7 +241,12 @@ async function initStudyPlan(app, userId) {
         temperature: 0.1
       })
     });
-    return readAiJson(res, "Reading your score report");
+    const parsed = await readAiJson(res, "Reading your score report");
+    return {
+      mathScore: parsed.mathScore ?? null,
+      rwScore: parsed.rwScore ?? null,
+      domains: normalizeDomainLevels(parsed.domains)
+    };
   }
 
   async function generatePlan(intake) {
@@ -275,16 +318,22 @@ async function initStudyPlan(app, userId) {
     });
   }
 
-  const api = { listen, getPlan, createPlan, updateSession, deletePlan, downscaleImage, extractScoresFromImage };
+  const api = { listen, getPlan, createPlan, updateSession, deletePlan, downscaleImage, extractScoresFromImage,
+                domainCodeLabels: DOMAIN_CODE_LABELS, performanceLabels: PERFORMANCE_LABELS };
   window.KorahStudyPlan = api;
   window.dispatchEvent(new CustomEvent("korahStudyPlanReady"));
   return api;
 }
 
-// Ported from StudyPlanGenerationService.swift:37-44.
-const SCORE_EXTRACTION_PROMPT = `You read SAT practice score reports (College Board, Bluebook, Khan Academy and similar). Extract the section scores. Respond with ONLY a single valid JSON object, no code fences:
-{ "mathScore": number or null, "rwScore": number or null }
-mathScore is the Math section score (200-800). rwScore is the Reading and Writing section score (200-800). If the report shows only a total score out of 1600, split it evenly. If you can't find a score, use null.`;
+// Ported from StudyPlanGenerationService.swift:37-60.
+const SCORE_EXTRACTION_PROMPT = `You read SAT practice score reports (College Board, Bluebook, Khan Academy and similar). Extract the section scores AND the per-domain performance breakdown. Respond with ONLY a single valid JSON object, no code fences:
+{ "mathScore": number or null, "rwScore": number or null, "domains": [ { "code": "H", "level": 2 } ] }
+mathScore is the Math section score (200-800). rwScore is the Reading and Writing section score (200-800). If the report shows only a total score out of 1600, split it evenly. If you can't find a score, use null.
+"domains" is the Knowledge and Skills / performance-by-category breakdown these reports show under the scores. Use these codes only:
+H = Algebra, P = Advanced Math, Q = Problem-Solving and Data Analysis, S = Geometry and Trigonometry, INI = Information and Ideas, CAS = Craft and Structure, EOI = Expression of Ideas, SEC = Standard English Conventions.
+level is 1, 2, or 3: 1 = weak (shown as "Needs work", an empty or nearly empty bar, or a low percent correct), 2 = middling (shown as "Growing", a half-filled bar, or a middling percent correct), 3 = strong (shown as "Strong", a full or nearly full bar, or a high percent correct).
+Read the level off whatever the report actually shows: a written label, the fill of a bar, a percent correct, or a raw correct-out-of-total. If the report shows percent correct, use 1 for under 60, 2 for 60 to 84, and 3 for 85 or more.
+Only include a domain you can actually see in this image. Never guess a level from the section score alone. If the image has no breakdown at all, return an empty array.`;
 
 // Ported from StudyPlanGenerationService.swift:100-124. The hard rules are
 // there because the model gets it wrong without them.
@@ -306,7 +355,14 @@ Hard rules:
 - Start times between 15:30 and 20:00 unless weekends, where 09:00 to 20:00 is fine.
 - If the test is more than 10 weeks away, plan only the first 10 weeks.
 - skillName must be a real Digital SAT skill from the official domains (Algebra, Advanced Math, Problem-Solving and Data Analysis, Geometry and Trigonometry, Information and Ideas, Craft and Structure, Expression of Ideas, Standard English Conventions).
-- Spend more time on the student's weakest areas, but keep at least a third of time maintaining strengths.
+- Domain levels arrive in words. "needs work" and "shaky" mean weak, "growing" and "okay" mean middling, "strong" means strong.
+- You will often get levels for only some of the eight domains, because a score report may only show part of the breakdown. Work with whatever you are given. Never drop a domain just because you have no data on it, and never fall back to giving everything equal time just because the data is incomplete.
+- Settle every domain into weak, middling, or strong using the best evidence you have for that specific domain, in this order: a measured level from their score report, then their self-rating, then their score for that domain's section (under 600 is weak, 600 to 699 is middling, 700 or above is strong), then middling if you have nothing at all.
+- A level you were given outranks one you inferred, so when two domains look equally weak, spend the time on the one you have real data on.
+- Weight time by those levels. Each week, spend about 55% of total minutes on weak domains, about 30% on middling ones, and about 15% on strong ones. A weak domain should get roughly three times the minutes of a strong one.
+- Never spread time evenly across all eight domains. Within a tier, split time evenly between the domains in that tier.
+- Strong domains still get a hard floor: at least one short review session every two weeks, so they don't decay.
+- Name the weak domains in feedback.priorities so the student knows why the plan looks the way it does.
 - activity is one short concrete line, e.g. "Practice set: 10 linear function questions" or "Timed reading drill: inferences".
 - Vary activities: practice sets, timed drills, review of missed questions, one full-length practice test roughly every 3 weeks (on a weekend day, 120 min is allowed for these only).
 - feedback is short and encouraging. Never use em dashes anywhere. Use contractions. Talk to "you".`;
@@ -325,6 +381,28 @@ function buildUserPrompt(intake) {
 
   if (intake.mathScore != null) lines.push("Math score: " + intake.mathScore);
   if (intake.rwScore != null) lines.push("Reading and Writing score: " + intake.rwScore);
+
+  // Measured performance from the score report. Stated before the self-rating
+  // and marked as measured, because the plan should trust it over a guess.
+  const performance = intake.domainPerformance || {};
+  const measured = DOMAIN_CODE_ORDER.map((code) => {
+    const name = DOMAIN_CODE_LABELS[code];
+    const level = performance[code];
+    if (!name || !(level >= 1 && level <= 3)) return null;
+    return name + ": " + PERFORMANCE_LABELS[level];
+  }).filter(Boolean);
+  if (measured.length) {
+    lines.push("Measured performance per domain, read from their score report: " + measured.join("; "));
+    // Named explicitly so a domain missing from the list reads as "the report
+    // didn't show it" rather than "it was left out because it's fine".
+    const unread = DOMAIN_CODE_ORDER
+      .filter((code) => !(performance[code] >= 1 && performance[code] <= 3))
+      .map((code) => DOMAIN_CODE_LABELS[code]);
+    if (unread.length) {
+      lines.push("Their report did not show these domains, so infer those levels yourself: " + unread.join("; "));
+    }
+    lines.push("Treat the measured levels as the truth about what they struggle with, and budget time against them.");
+  }
 
   const ratings = intake.confidenceRatings || {};
   const described = Object.keys(ratings).sort().map((code) => {
