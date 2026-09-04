@@ -343,54 +343,47 @@
 
     <!-- STATE: HAS PLAN (CALENDAR) -->
     <template x-if="$store.studyPlan.planState === 'hasPlan'">
-      <div x-data="calendarView($store.studyPlan.planData)">
+      <div x-data="calendarView($store.studyPlan.planData)" class="sp-calendar">
         <!-- Header -->
-        <div class="study-plan-header glass" style="margin: 0 0 1.5rem; padding: 1rem 1.25rem; border-radius: 1.25rem; backdrop-filter: blur(1rem); -webkit-backdrop-filter: blur(1rem); border: 1px solid var(--bd2);">
-          <div class="flex items-center gap-2">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tx2">
-              <polygon points="12 2 15 8 22 8 22 15 15 22 12 22 9 15 2 15 2 8 12 2"/>
-            </svg>
-            <div>
-              <div class="text-xs uppercase tracking-wider tx3" style="color: var(--p4);">Your Study Plan</div>
-              <p class="text-sm tx2" style="margin: 0.25rem 0 0;">Plan active · <span x-text="planData.hoursPerWeek"></span> hrs/week · <span x-text="planData.studyDays.join(', ')"></span></p>
-            </div>
+        <div class="spc-header">
+          <span class="spc-header-icon material-icons-round">event_note</span>
+          <div class="spc-header-text">
+            <div class="spc-eyebrow">Your Study Plan</div>
+            <p>Plan active · <span x-text="planData.hoursPerWeek"></span> hrs/week · <span x-text="planData.studyDays.join(', ')"></span></p>
           </div>
-          <button class="sat-button sat-button-ghost tx-xs" style="margin-left: auto; padding: 0.5rem 0.75rem; font-size: 0.6875rem;" @click="viewMode = viewMode === 'week' ? 'month' : 'week'">
-            <span class="material-icons-round" style="font-size: 1rem;" x-text="viewMode==='week' ? 'date_range' : 'view_week'"></span>
+          <button type="button" class="spc-view-btn" :class="viewMode === 'week' ? 'tone-blue' : 'tone-teal'" @click="viewMode = viewMode === 'week' ? 'month' : 'week'">
+            <span class="material-icons-round" x-text="viewMode==='week' ? 'date_range' : 'view_week'"></span>
             <span x-text="viewMode==='week' ? 'Week' : 'Month'"></span>
           </button>
         </div>
 
         <!-- Feedback banner -->
-        <div class="panel-card glass" style="margin-bottom:1.5rem;padding:1rem;border-radius:1rem;backdrop-filter:blur(1rem);-webkit-backdrop-filter:blur(1rem);border:1px solid var(--bd2);background:rgba(56,189,248,0.08);border-color:rgba(56,189,248,0.25);">
-          <div style="display:flex;gap:0.75rem;align-items:flex-start;">
-            <span class="material-icons-round" style="font-size:1.5rem;color:#38bdf8;margin-top:0.125rem;">lightbulb</span>
-            <div class="tx" style="line-height:1.6;" x-text="$store.studyPlan.planData.feedback?.headline"></div>
-          </div>
+        <div class="spc-feedback tone-cyan">
+          <span class="material-icons-round">lightbulb</span>
+          <div x-text="$store.studyPlan.planData.feedback?.headline"></div>
         </div>
 
         <!-- Weekly view -->
         <template x-if="viewMode === 'week'">
-          <template x-for="week in weeks" :key="week.weekStart">
-            <div class="panel-card" style="margin-bottom:1rem;">
-              <h4 class="tx" style="margin:0 0 1rem;font-size:1rem;color:var(--p5);" x-text="week.label"></h4>
+          <template x-for="(week, wi) in weeks" :key="week.weekStart">
+            <div class="spc-card" :class="toneAt(wi)">
+              <h4 class="spc-card-title" x-text="week.label"></h4>
               <template x-for="session in week.sessions" :key="session.id">
-                <div class="session-row glass" style="display:flex;align-items:center;gap:1rem;padding:0.75rem 1rem;border-radius:1rem;background:var(--sf);border:1px solid var(--bd2);margin-bottom:0.5rem;backdrop-filter:blur(1rem);-webkit-backdrop-filter:blur(1rem);transition:all .2s;" :class="{ 'completed': session.completed }">
-                  <input type="checkbox" @change="toggleSession(session.id, $event.target.checked)" :checked="session.completed" style="width:1.25rem;height:1.25rem;accent-color:var(--p4);flex-shrink:0;"/>
-                  <div style="flex:1;min-width:0;">
-                    <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
-                      <strong class="tx" x-text="session.skillName"></strong>
-                      <span class="tx2" style="font-size:0.75rem;background:var(--bd);padding:0.125rem 0.5rem;border-radius:62.4375rem;" x-text="session.subject.toUpperCase()"></span>
-                      <span class="tx2" style="font-size:0.75rem;" x-text="session.activity"></span>
+                <div class="spc-session" :class="[subjectTone(session.subject), session.completed ? 'is-done' : '']">
+                  <button type="button" class="spc-check" :class="{ 'is-done': session.completed }" @click="toggleSession(session.id, !session.completed)" :aria-pressed="session.completed" aria-label="Mark session complete">
+                    <span class="material-icons-round">check</span>
+                  </button>
+                  <div class="spc-session-body">
+                    <div class="spc-session-head">
+                      <strong x-text="session.skillName"></strong>
+                      <span class="spc-subject-chip" x-text="session.subject === 'math' ? 'MATH' : 'READING AND WRITING'"></span>
+                      <span class="spc-session-activity" x-text="session.activity"></span>
                     </div>
-                    <div class="tx2" style="font-size:0.8125rem;margin-top:0.25rem;display:flex;gap:1rem;flex-wrap:wrap;">
+                    <div class="spc-session-meta">
                       <span x-text="formatTime(session.start) + ' · ' + session.durationMin + ' min'"></span>
                       <span x-text="session.date"></span>
                     </div>
                   </div>
-                  <template x-if="session.completed">
-                    <span class="material-icons-round" style="color:#22c55e;font-size:1.5rem;opacity:0.8;">check_circle</span>
-                  </template>
                 </div>
               </template>
             </div>
@@ -399,21 +392,21 @@
 
         <!-- Monthly view -->
         <template x-if="viewMode === 'month'">
-          <template x-for="month in months" :key="month.key">
-            <div class="panel-card glass" style="margin-bottom:1rem;padding:1rem;border-radius:1rem;backdrop-filter:blur(1rem);-webkit-backdrop-filter:blur(1rem);border:1px solid var(--bd2);">
-              <h4 class="tx" style="margin:0 0 1rem;font-size:1rem;color:var(--p5);" x-text="month.label"></h4>
-              <div class="month-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:0.375rem;">
-                <template x-for="d in ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']" :key="d">
-                  <div class="month-dow" style="text-align:center;font-size:0.6875rem;font-weight:700;color:var(--tx3);padding:0.375rem 0.25rem;border-radius:0.5rem 0.5rem 0 0;text-transform:uppercase;background:var(--sf2);border:1px solid var(--bd2);border-bottom: none;" x-text="d"></div>
+          <template x-for="(month, mi) in months" :key="month.key">
+            <div class="spc-card" :class="toneAt(mi)">
+              <h4 class="spc-card-title" x-text="month.label"></h4>
+              <div class="spc-month-grid">
+                <template x-for="(d, di) in weekdayLabels" :key="d">
+                  <div class="spc-dow" :class="weekdayTone(di)" x-text="d"></div>
                 </template>
                 <template x-for="day in month.days" :key="day.date">
-                  <div class="month-day" :class="{ 'other-month': day.otherMonth, 'has-sessions': day.sessions.length>0 }" style="min-height:4.5rem;padding:0.375rem 0.25rem;border-radius:0 0 0.5rem 0.5rem;background:var(--sf);border:1px solid var(--bd2);border-top: none;display:flex;flex-direction:column;gap:0.15rem;transition:all .2s;position:relative;">
-                    <span class="tx" style="font-weight:600;text-align:right;padding-right:0.25rem;font-size:0.8125rem;" x-text="day.date.getDate()"></span>
+                  <div class="spc-day" :class="[weekdayTone(day.date.getDay() === 0 ? 6 : day.date.getDay() - 1), day.otherMonth ? 'is-other-month' : '', day.sessions.length > 0 ? 'has-sessions' : '']">
+                    <span class="spc-day-num" x-text="day.date.getDate()"></span>
                     <template x-for="s in day.sessions" :key="s.id">
-                      <div class="month-session" @click="toggleSession(s.id, !s.completed)" :class="{ completed: s.completed }" style="font-size:0.625rem;padding:0.1rem 0.25rem;border-radius:0.2rem;background:var(--p4);color:#fff;cursor:pointer;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;box-shadow:0 0.125rem 0.25rem rgba(139,92,246,0.2);" x-text="s.skillName"></div>
+                      <div class="spc-day-session" @click="toggleSession(s.id, !s.completed)" :class="[subjectTone(s.subject), s.completed ? 'is-done' : '']" x-text="s.skillName"></div>
                     </template>
-                    <template x-if="!day.sessions">
-                      <span class="text-xs tx3 text-center opacity-60" style="flex:1;">—</span>
+                    <template x-if="!day.sessions.length">
+                      <span class="spc-day-empty">—</span>
                     </template>
                   </div>
                 </template>
@@ -662,6 +655,13 @@
     return {
       planData: plan,
       viewMode: 'week',
+      // Color blocking, same system as the wizard: tones cycle by index where
+      // they only need to differ, and carry meaning where one exists.
+      tones: ["tone-red", "tone-orange", "tone-amber", "tone-green", "tone-teal", "tone-blue", "tone-pink"],
+      toneAt(i) { return this.tones[i % this.tones.length]; },
+      subjectTone(subject) { return subject === 'math' ? 'tone-blue' : 'tone-pink'; },
+      weekdayLabels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+      weekdayTone(i) { return this.tones[i]; },
       get weeks() {
         const out = [];
         const start = new Date(today);
@@ -952,13 +952,158 @@
   input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
   input[type="number"] { -moz-appearance: textfield; }
 
-  .session-row { padding:1.15rem; border-radius:1rem; }
-  .session-row.completed { opacity:0.6;background:rgba(34,197,94,0.08);border-color:rgba(34,197,94,0.3); }
-  .month-day { min-height:6.5rem;padding:0.5rem;border-radius:0.75rem;transition:all .2s; }
-  .month-day.other-month { opacity:0.3; }
-  .month-day.has-sessions { border-color:var(--p4); }
-  .month-session { font-size:0.75rem;padding:0.3rem 0.5rem;border-radius:0.5rem;transition:all .2s; box-shadow:0 0.125rem 0.25rem rgba(139,92,246,0.15); }
-  .month-session.completed { background:#22c55e;text-decoration:line-through; }
+  /* ── Calendar (post-wizard) ────────────────────────────────────────────
+     Same rules as .sp-wizard: neutral grey resting surfaces, per-item accent
+     tones via --acc, filled-not-outlined for state, no dimmed text. Scoped to
+     .sp-calendar so nothing else on the page changes. */
+  .sp-calendar {
+    --tone-red: #ef4444;    --tone-orange: #f97316;
+    --tone-amber: #f59e0b;  --tone-green: #22c55e;
+    --tone-teal: #14b8a6;   --tone-cyan: #06b6d4;
+    --tone-blue: #3b82f6;   --tone-pink: #ec4899;
+    --sp-sf: #26262e;
+    --sp-sf2: #31313c;
+    --sp-bd: #454553;
+    --acc: var(--tone-blue);
+    --tx2: var(--tx);
+    --tx3: var(--tx);
+  }
+  html[data-theme="light"] .sp-calendar {
+    --sp-sf: #eceef2;
+    --sp-sf2: #e0e3ea;
+    --sp-bd: #c3c8d2;
+  }
+  .sp-calendar .tone-red    { --acc: var(--tone-red); }
+  .sp-calendar .tone-orange { --acc: var(--tone-orange); }
+  .sp-calendar .tone-amber  { --acc: var(--tone-amber); }
+  .sp-calendar .tone-green  { --acc: var(--tone-green); }
+  .sp-calendar .tone-teal   { --acc: var(--tone-teal); }
+  .sp-calendar .tone-cyan   { --acc: var(--tone-cyan); }
+  .sp-calendar .tone-blue   { --acc: var(--tone-blue); }
+  .sp-calendar .tone-pink   { --acc: var(--tone-pink); }
+
+  /* Header */
+  .spc-header {
+    display: flex; align-items: center; gap: 0.85rem; flex-wrap: wrap;
+    margin: 0 0 1.25rem; padding: 1rem 1.25rem;
+    border-radius: 1.25rem;
+    background: var(--sp-sf); border: 0.0625rem solid var(--sp-bd);
+    box-shadow: 0 0.25rem 0 0 var(--sp-bd);
+  }
+  .spc-header-icon { color: var(--tone-teal); font-size: 1.6rem; }
+  .spc-header-text { min-width: 0; }
+  .spc-header-text p { margin: 0.2rem 0 0; font-size: 0.9rem; color: var(--tx); font-weight: 600; }
+  .spc-eyebrow {
+    font-size: 0.7rem; font-weight: 800; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--tone-teal);
+  }
+  .spc-view-btn {
+    margin-left: auto; display: inline-flex; align-items: center; gap: 0.4rem;
+    padding: 0.5rem 0.9rem; border-radius: 0.75rem; cursor: pointer;
+    font-size: 0.8rem; font-weight: 800;
+    color: #fff; border: 0.0625rem solid var(--acc);
+    background: linear-gradient(180deg, var(--acc), color-mix(in srgb, var(--acc) 78%, #000));
+    box-shadow: 0 0.25rem 0 0 color-mix(in srgb, var(--acc) 55%, #000);
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+  }
+  .spc-view-btn .material-icons-round { font-size: 1rem; }
+  .spc-view-btn:active { transform: translateY(0.15rem); box-shadow: 0 0.1rem 0 0 color-mix(in srgb, var(--acc) 55%, #000); }
+
+  /* Feedback banner — grey surface, the tone only on the rule and the icon. */
+  .spc-feedback {
+    display: flex; gap: 0.75rem; align-items: flex-start;
+    margin-bottom: 1.25rem; padding: 1rem 1.15rem;
+    border-radius: 1rem; line-height: 1.6; color: var(--tx); font-weight: 600;
+    background: var(--sp-sf);
+    border: 0.0625rem solid var(--sp-bd);
+    border-left: 0.35rem solid var(--acc);
+  }
+  .spc-feedback .material-icons-round { color: var(--acc); font-size: 1.5rem; }
+
+  /* Week / month cards */
+  .sp-calendar .spc-card {
+    margin-bottom: 1rem; padding: 1.15rem 1.25rem;
+    border-radius: 1.125rem;
+    background: var(--sp-sf); border: 0.0625rem solid var(--sp-bd);
+    border-top: 0.25rem solid var(--acc);
+    animation: riseIn 0.55s cubic-bezier(.22,1,.36,1) both;
+  }
+  .spc-card-title { margin: 0 0 1rem; font-size: 1rem; font-weight: 800; color: var(--acc); }
+
+  /* Session rows: grey at rest with the subject tone on the edge, solid fill
+     when done — a border alone reads as unfinished. */
+  .spc-session {
+    display: flex; align-items: center; gap: 1rem;
+    padding: 0.85rem 1rem; margin-bottom: 0.5rem;
+    border-radius: 1rem; color: var(--tx);
+    background: var(--sp-sf2);
+    border: 0.0625rem solid var(--sp-bd);
+    border-left: 0.35rem solid var(--acc);
+    transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+  }
+  .spc-session:hover { border-color: color-mix(in srgb, var(--acc) 70%, var(--sp-bd)); border-left-color: var(--acc); }
+  .spc-session.is-done {
+    color: #fff;
+    border-color: var(--tone-green); border-left-color: var(--tone-green);
+    background: linear-gradient(180deg, var(--tone-green), color-mix(in srgb, var(--tone-green) 78%, #000));
+  }
+  .spc-session.is-done .spc-session-body strong { text-decoration: line-through; }
+  .spc-session-body { flex: 1; min-width: 0; }
+  .spc-session-head { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+  .spc-session-head strong { font-weight: 800; }
+  .spc-session-activity { font-size: 0.8rem; font-weight: 600; }
+  .spc-session-meta { font-size: 0.8125rem; font-weight: 600; margin-top: 0.3rem; display: flex; gap: 1rem; flex-wrap: wrap; }
+  /* Subject chip is pure identity, so it is always filled. */
+  .spc-subject-chip {
+    font-size: 0.68rem; font-weight: 800; letter-spacing: 0.04em;
+    padding: 0.15rem 0.55rem; border-radius: 62.4375rem;
+    color: #fff; background: var(--acc);
+  }
+  .spc-session.is-done .spc-subject-chip { background: rgba(0,0,0,0.28); }
+  .spc-check {
+    flex-shrink: 0; width: 1.6rem; height: 1.6rem; padding: 0; cursor: pointer;
+    display: grid; place-items: center; border-radius: 0.5rem;
+    background: transparent; border: 0.125rem solid var(--tx); color: transparent;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+  .spc-check .material-icons-round { font-size: 1.05rem; }
+  .spc-check:hover { background: color-mix(in srgb, var(--tx) 20%, transparent); }
+  .spc-check.is-done { background: #fff; border-color: #fff; color: var(--tone-green); }
+
+  /* Month grid */
+  .spc-month-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.375rem; }
+  .spc-dow {
+    text-align: center; font-size: 0.6875rem; font-weight: 800;
+    text-transform: uppercase; padding: 0.4rem 0.25rem;
+    border-radius: 0.5rem 0.5rem 0 0;
+    color: #fff; background: var(--acc);
+  }
+  .spc-day {
+    min-height: 5.5rem; padding: 0.375rem 0.3rem;
+    border-radius: 0 0 0.5rem 0.5rem;
+    display: flex; flex-direction: column; gap: 0.2rem;
+    background: var(--sp-sf2);
+    border: 0.0625rem solid var(--sp-bd); border-top: none;
+    transition: border-color 0.18s ease, background 0.18s ease;
+  }
+  .spc-day.is-other-month { opacity: 0.45; }
+  .spc-day.has-sessions { border-color: color-mix(in srgb, var(--acc) 55%, var(--sp-bd)); }
+  .spc-day-num { font-weight: 700; font-size: 0.8125rem; text-align: right; padding-right: 0.15rem; color: var(--tx); }
+  .spc-day-empty { flex: 1; display: grid; place-items: center; font-size: 0.75rem; color: var(--tx); opacity: 0.5; }
+  .spc-day-session {
+    font-size: 0.65rem; font-weight: 700; line-height: 1.25;
+    padding: 0.2rem 0.35rem; border-radius: 0.35rem; cursor: pointer;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    color: #fff; background: var(--acc);
+    transition: filter 0.15s ease;
+  }
+  .spc-day-session:hover { filter: brightness(1.12); }
+  .spc-day-session.is-done { background: var(--tone-green); text-decoration: line-through; }
+
+  @media (max-width: 40rem) {
+    .spc-day { min-height: 4rem; }
+    .spc-day-session { font-size: 0.55rem; }
+  }
   .sat-spinner { width:1.15rem;height:1.15rem;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite; }
 </style>
 
