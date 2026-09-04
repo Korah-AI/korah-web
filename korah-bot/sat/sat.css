@@ -34,18 +34,18 @@
   gap: 0.5rem;
   padding: 0.625rem 1.125rem;
   border-radius: 62.4375rem;
-  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+  background: #ec4899;
   color: #fff;
   font-weight: 700;
   font-size: 0.875rem;
   text-decoration: none;
-  border: 1px solid rgba(139, 92, 246, 0.3);
+  border: 1px solid #ec4899;
   margin-top: 1rem;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 .sat-new-questions-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
+  box-shadow: 0 4px 16px rgba(236, 72, 153, 0.35);
 }
 .sat-new-questions-btn:active {
   transform: translateY(0);
@@ -60,7 +60,8 @@
   letter-spacing: 0.05em;
 }
 html[data-theme="light"] .sat-new-questions-btn {
-  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+  background: #db2777;
+  border-color: #db2777;
 }
 
 /* Matches korah-bot coding patterns: rem units, CSS variables, consistent spacing */
@@ -1072,15 +1073,17 @@ html[data-theme="light"] .sat-chip.is-active {
     gap: 1.125rem;
 }
 
+/* Neutral grey resting surface (same palette as the Study Plan wizard) so the
+   cards never read as "the same color as the background". Section identity
+   stays in the accent-colored header. Palette vars live on .sat-grey. */
 .sat-section-card {
     overflow: hidden;
     border-radius: 1.5rem;
-    background: var(--sf);
-    backdrop-filter: blur(1.875rem);
-    -webkit-backdrop-filter: blur(1.875rem);
-    border: 0.0625rem solid var(--bd);
+    background: var(--sat-card-sf);
+    border: 0.0625rem solid var(--sat-card-bd);
     box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.15);
 }
+
 
 .sat-section-header {
     display: flex;
@@ -1196,7 +1199,7 @@ html[data-theme="light"] .sat-section-header:hover {
 
 .sat-domain-group {
     padding: 1.125rem 1.375rem 0.75rem;
-    border-top: 0.0625rem solid var(--bd);
+    border-top: 0.0625rem solid var(--sat-card-bd);
 }
 
 .sat-domain-heading,
@@ -1259,7 +1262,8 @@ html[data-theme="light"] .sat-section-header:hover {
     align-items: center;
     gap: 0.75rem;
     padding: 0.75rem 1.375rem 0.5rem;
-    border-top: 0.0625rem solid var(--bd);
+    background: var(--sat-card-sf2);
+    border-top: 0.0625rem solid var(--sat-card-bd);
     font-size: 0.6875rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -1282,7 +1286,7 @@ html[data-theme="light"] .sat-section-header:hover {
     flex: 1;
     height: 0.375rem;
     border-radius: 62.4375rem;
-    background: var(--bd);
+    background: var(--sat-card-bd);
     overflow: hidden;
 }
 
@@ -2162,7 +2166,7 @@ html[data-theme="light"] .reference-content {
 
 /* ── Light Theme Adjustments ── */
 html[data-theme="light"] .sat-section-card {
-    border: 0.0625rem solid var(--bd);
+    border: 0.0625rem solid var(--sat-card-bd);
     box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.06);
 }
 
@@ -4296,3 +4300,198 @@ html[data-theme="light"] .sat-more-dropdown .more-dropdown-item::before {
 .skel-domain-bar   { height: 0.375rem; border-radius: 0.375rem; }
 
 .skel-skill-meta { display: flex; flex-direction: column; gap: 0.25rem; }
+
+
+/* ══ Grey color blocking — Question Bank + Latest Questions ═════════════════
+   Same system as the Study Plan wizard: every resting surface is neutral grey
+   (never the purple app surface, which reads as "same color as the
+   background"), and color appears only to mark identity or state. Each control
+   group carries a .tone via --acc that drives its hover/active accent.
+   Scoped to .sat-grey (set on <body> of the two bank pages) so no other page
+   is affected. */
+.sat-grey {
+    --sat-card-sf: #50505e;
+    --sat-card-sf2: #5c5c6c;
+    --sat-card-bd: #78788c;
+    --tone-amber: #f59e0b;
+    --tone-blue: #3b82f6;
+    --tone-teal: #14b8a6;
+    --tone-green: #22c55e;
+    --tone-pink: #ec4899;
+    --tone-purple: #8b5cf6;
+    --acc: var(--tone-purple);
+}
+html[data-theme="light"] .sat-grey {
+    --sat-card-sf: #eceef2;
+    --sat-card-sf2: #e0e3ea;
+    --sat-card-bd: #c3c8d2;
+}
+
+/* No dimmed text on these pages — the muted greys and the purple accent both
+   disappear against the grey surfaces. Collapsing --tx2/--tx3 onto --tx makes
+   every label full contrast (white in dark theme, near-black in light) in one
+   move. Scoped to the page content, pill and modals so the sidebar and topbar
+   keep the app's own text colors. */
+.sat-grey .sat-page,
+.sat-grey .sat-selection-pill,
+.sat-grey .delete-modal,
+.sat-grey .goal-modal,
+.sat-grey .settings-modal {
+    --tx2: var(--tx);
+    --tx3: var(--tx);
+}
+
+/* Checkboxes: white outline at rest instead of the barely-there purple, and a
+   filled box with a cut-out tick when active. */
+.sat-grey .sat-check {
+    border-color: var(--tx);
+}
+.sat-grey .sat-check:hover {
+    border-color: var(--tx);
+    background: color-mix(in srgb, var(--tx) 22%, transparent);
+    box-shadow: none;
+}
+.sat-grey .sat-check.is-active {
+    background: var(--tx);
+    border-color: var(--tx);
+    box-shadow: none;
+}
+.sat-grey .sat-check.is-active::after {
+    border-right-color: var(--sat-card-sf);
+    border-bottom-color: var(--sat-card-sf);
+}
+
+/* ── Page header ── */
+.sat-grey .sat-bank-header {
+    background: var(--sat-card-sf);
+    border-color: var(--sat-card-bd);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+/* These two are hardcoded white, which disappears on the light grey surface. */
+.sat-grey .sat-eyebrow,
+.sat-grey .sat-bank-desc { color: var(--tx); }
+
+/* ── Controls: grey rest, accent on hover/open, wizard's chunky bottom edge ── */
+.sat-grey .sat-filters-toggle,
+.sat-grey .sat-filter-btn,
+.sat-grey .sat-limit-input,
+.sat-grey .sat-filter-select,
+.sat-grey .sat-field input {
+    background: var(--sat-card-sf2);
+    border-color: var(--sat-card-bd);
+    color: var(--tx);
+}
+.sat-grey .sat-filters-toggle,
+.sat-grey .sat-filter-btn {
+    box-shadow: 0 0.25rem 0 0 var(--sat-card-bd);
+    transition: border-color .15s ease, background .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+.sat-grey .sat-filters-toggle:hover,
+.sat-grey .sat-filter-btn:hover {
+    border-color: var(--acc);
+    box-shadow: 0 0.25rem 0 0 color-mix(in srgb, var(--acc) 45%, var(--sat-card-bd));
+}
+.sat-grey .sat-filters-toggle:active,
+.sat-grey .sat-filter-btn:active {
+    transform: translateY(0.15rem);
+    box-shadow: 0 0.1rem 0 0 var(--sat-card-bd);
+}
+.sat-grey .sat-limit-input:focus,
+.sat-grey .sat-filter-select:focus,
+.sat-grey .sat-field input:focus { border-color: var(--acc); }
+
+/* One accent per control, keyed off the filter it drives — so the row is a set
+   of distinct colors rather than one repeated highlight. */
+.sat-grey .sat-limit-dd                          { --acc: var(--tone-amber); }
+.sat-grey #filtersToggle                         { --acc: var(--tone-blue); }
+.sat-grey .sat-filter-dd[data-filter="questionset"] { --acc: var(--tone-purple); }
+.sat-grey .sat-filter-dd[data-filter="difficulty"]  { --acc: var(--tone-amber); }
+.sat-grey .sat-filter-dd[data-filter="timespent"]   { --acc: var(--tone-teal); }
+.sat-grey .sat-filter-dd[data-filter="saved"]       { --acc: var(--tone-blue); }
+.sat-grey .sat-filter-dd[data-filter="completed"]   { --acc: var(--tone-green); }
+.sat-grey .sat-filter-dd[data-filter="result"]      { --acc: var(--tone-pink); }
+
+/* Open, but nothing chosen yet: accent outline only. */
+.sat-grey .sat-filters-toggle.is-open,
+.sat-grey .sat-filter-dd.is-open .sat-filter-btn {
+    background: color-mix(in srgb, var(--acc) 18%, var(--sat-card-sf2));
+    border-color: var(--acc);
+    color: var(--tx);
+}
+
+/* Carrying data: fill solid with the control's own color. */
+.sat-grey .sat-filter-btn.is-active,
+.sat-grey .sat-filters-toggle.is-set,
+.sat-grey .sat-filter-dd.is-open .sat-filter-btn.is-active {
+    background: var(--acc);
+    border-color: var(--acc);
+    color: #fff;
+    box-shadow: 0 0.25rem 0 0 color-mix(in srgb, var(--acc) 55%, #000);
+}
+.sat-grey .sat-filter-btn.is-active .sat-filter-btn-count,
+.sat-grey .sat-filters-toggle.is-set .sat-filters-badge {
+    color: #fff;
+}
+.sat-grey .sat-filters-toggle.is-set .sat-filters-badge {
+    background: rgba(0, 0, 0, 0.28);
+}
+.sat-grey .sat-filter-btn-count { color: var(--acc); }
+
+/* ── Dropdown menus ── */
+.sat-grey .sat-filter-menu,
+.sat-grey .sat-limit-menu {
+    background: var(--sat-card-sf);
+    border-color: var(--sat-card-bd);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+.sat-grey .sat-filter-option:hover { background: var(--sat-card-sf2); }
+.sat-grey .sat-filter-option .sat-filter-check { color: var(--acc); }
+
+/* ── Bottom selection pill ── */
+.sat-grey .sat-selection-pill {
+    background: var(--sat-card-sf);
+    border-color: var(--sat-card-bd);
+}
+.sat-grey .sat-pill-count { color: var(--tx); }
+.sat-grey .sat-pill-btn { color: var(--tx2); }
+.sat-grey .sat-pill-randomize { --acc: var(--tone-teal); }
+.sat-grey .sat-pill-randomize:hover {
+    color: var(--tx);
+    background: var(--sat-card-sf2);
+}
+.sat-grey .sat-pill-randomize.is-active {
+    color: #fff;
+    background: var(--acc);
+}
+
+/* ── Modals (onboarding, settings, rename, delete) ── */
+.sat-grey .delete-modal-content,
+.sat-grey .settings-modal-content {
+    background: var(--sat-card-sf);
+    border-color: var(--sat-card-bd);
+}
+.sat-grey .settings-section { border-color: var(--sat-card-bd); }
+.sat-grey .create-input,
+.sat-grey .settings-input,
+.sat-grey .settings-select-trigger,
+.sat-grey .delete-modal-btn.cancel,
+.sat-grey .settings-btn {
+    background: var(--sat-card-sf2);
+    border-color: var(--sat-card-bd);
+    color: var(--tx);
+}
+.sat-grey .settings-select-menu {
+    background: var(--sat-card-sf);
+    border-color: var(--sat-card-bd);
+}
+.sat-grey .create-input:focus,
+.sat-grey .settings-input:focus,
+.sat-grey .settings-select-trigger:hover,
+.sat-grey .settings-btn:hover,
+.sat-grey .delete-modal-btn.cancel:hover {
+    background: var(--sat-card-sf2);
+    border-color: var(--acc);
+    color: var(--tx);
+}

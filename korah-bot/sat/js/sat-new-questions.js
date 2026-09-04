@@ -336,6 +336,13 @@
   ];
 
   const sectionColumns = document.getElementById("sectionColumns");
+  const limitDropdown = document.getElementById("limitDropdown");
+  const limitToggle = document.getElementById("limitToggle");
+  const limitToggleLabel = document.getElementById("limitToggleLabel");
+  const limitInput = document.getElementById("limitInput");
+  const filtersToggle = document.getElementById("filtersToggle");
+  const filtersBadge = document.getElementById("filtersBadge");
+  const filterRow = document.getElementById("filterRow");
   const selectionPill = document.getElementById("selectionPill");
   const pillCountLabel = document.getElementById("pillCountLabel");
   const pillRandomize = document.getElementById("pillRandomize");
@@ -344,21 +351,49 @@
   const state = {
     selectedSection: null,
     selectedSkills: [],
+    difficulties: [], // [] = all; otherwise "E" | "M" | "H"
+    limit: null,
     random: false,
+    skillProgress: null, // null until the user's stats load
   };
+
+  // Difficulty is the only filter with data behind it in this set — the bank's
+  // other filters (question set, saved, completed…) have nothing to read here.
+  const FILTERS = [
+    {
+      key: "difficulty", label: "Difficulty", type: "multi",
+      options: [
+        { value: "E", label: "Easy" },
+        { value: "M", label: "Medium" },
+        { value: "H", label: "Hard" }
+      ]
+    }
+  ];
+
+  let hasRevealed = false; // animate progress once on first data load
 
   // ── SVG icons ──
   function svg(body, extra) {
     return '<svg class="sat-ico ' + (extra || "") + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + body + '</svg>';
   }
 
-  // ── Count questions per skill ──
+  // ── Count questions per skill (difficulty-filtered, like the bank) ──
+  function matchesDifficulty(q) {
+    return state.difficulties.length === 0 || state.difficulties.indexOf(q.df) !== -1;
+  }
+
   function countForSkill(skillCode) {
-    return NEW_QUESTIONS.filter(function(q) { return q.sc === skillCode; }).length;
+    return NEW_QUESTIONS.filter(function(q) { return q.sc === skillCode && matchesDifficulty(q); }).length;
   }
 
   function countForSection(sectionKey) {
-    return NEW_QUESTIONS.filter(function(q) { return q.s === sectionKey; }).length;
+    return NEW_QUESTIONS.filter(function(q) { return q.s === sectionKey && matchesDifficulty(q); }).length;
+  }
+
+  // ── User's practice progress per skill ──
+  function skillProg(code) {
+    var p = state.skillProgress && state.skillProgress[code];
+    return { attempts: (p && p.attempts) || 0, correct: (p && p.correct) || 0 };
   }
 
   // ── Render ──
@@ -377,13 +412,19 @@
           return state.selectedSkills.indexOf(sk.code) !== -1;
         });
 
-        var skillsHtml = domain.skills.filter(function(sk) { return sk.count > 0; }).map(function(skill) {
+        var skillsHtml = domain.skills.filter(function(sk) { return countForSkill(sk.code) > 0; }).map(function(skill) {
           var skillSelected = state.selectedSkills.indexOf(skill.code) !== -1;
+          var count = countForSkill(skill.code);
+          var prog = skillProg(skill.code);
+          var pct = Math.min(100, Math.round((prog.attempts / count) * 100));
           return '<div class="sat-topic-row">' +
             '<button class="sat-check ' + (skillSelected ? 'is-active' : '') + '" type="button" data-select-skill="' + section.key + '::' + domain.key + '::' + skill.code + '" aria-label="Select ' + skill.key + '"></button>' +
             '<span class="sat-topic-heading">' + skill.key + '</span>' +
-            '<div class="sat-topic-progress"><span class="sat-progress-frac"><b>' + skill.count + '</b> questions</span></div>' +
-            '<div class="sat-topic-accuracy"><span class="sat-acc-val">' + (skill.count > 0 ? skill.count : '\u2013') + '</span></div>' +
+            '<div class="sat-topic-progress">' +
+              '<div class="sat-progress-track"><span class="sat-progress-fill" data-pct="' + pct + '"></span></div>' +
+              '<span class="sat-progress-frac"><b data-count="' + prog.attempts + '">' + prog.attempts + '</b>/' + count + '</span>' +
+            '</div>' +
+            '<div class="sat-topic-accuracy"><span class="sat-acc-val" data-count="' + count + '">' + count + '</span></div>' +
           '</div>';
         }).join('');
 
@@ -410,12 +451,69 @@
         '</header>' +
         '<div class="sat-topic-columns">' +
           '<span class="sat-col-topic">Topic</span>' +
-          '<span class="sat-col-progress">Questions</span>' +
+          '<span class="sat-col-progress">Progress</span>' +
           '<span class="sat-col-accuracy">Count</span>' +
         '</div>' +
         '<div class="sat-domain-grid">' + domainsHtml + '</div>' +
       '</article>';
     }).join('');
+
+    // Re-render wipes the DOM, so re-apply bar widths.
+    paintProgress(false);
+  }
+
+  // Set progress-bar widths (and optionally count numbers up) after a render.
+  function paintProgress(animate) {
+    var fills = sectionColumns.querySelectorAll(".sat-progress-fill");
+    fills.forEach(function(el) {
+      var pct = Math.max(0, Math.min(100, parseFloat(el.dataset.pct) || 0));
+      if (animate) {
+        el.style.transition = "none";
+        el.style.width = "0%";
+        void el.offsetWidth; // force reflow so the transition runs from 0
+        el.style.transition = "";
+        requestAnimationFrame(function() { el.style.width = pct + "%"; });
+      } else {
+        el.style.transition = "none";
+        el.style.width = pct + "%";
+      }
+    });
+    if (animate) {
+      sectionColumns.querySelectorAll("[data-count]").forEach(countUp);
+    }
+  }
+
+  function countUp(el) {
+    var target = parseInt(el.dataset.count, 10) || 0;
+    if (target <= 0) { el.textContent = "0"; return; }
+    var duration = 900;
+    var start = performance.now();
+    function tick(now) {
+      var t = Math.min(1, (now - start) / duration);
+      var eased = 1 - Math.pow(1 - t, 3);
+      el.textContent = Math.round(target * eased);
+      if (t < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+
+  function loadUserProgress() {
+    var analytics = window.KorahSATAnalytics;
+    if (!analytics) {
+      window.addEventListener("korahSATAnalyticsReady", loadUserProgress, { once: true });
+      return;
+    }
+    analytics.getAllSkillStats()
+      .then(function(list) {
+        var map = {};
+        (list || []).forEach(function(s) { if (s && s.skillCd) map[s.skillCd] = s; });
+        state.skillProgress = map;
+      })
+      .catch(function() { state.skillProgress = {}; })
+      .finally(function() {
+        renderSections();
+        if (!hasRevealed) { hasRevealed = true; paintProgress(true); }
+      });
   }
 
   function renderPill() {
@@ -443,7 +541,7 @@
       state.selectedSkills = [];
       section.domains.forEach(function(domain) {
         domain.skills.forEach(function(sk) {
-          if (sk.count > 0) state.selectedSkills.push(sk.code);
+          if (countForSkill(sk.code) > 0) state.selectedSkills.push(sk.code);
         });
       });
     }
@@ -461,12 +559,12 @@
       state.selectedSkills = [];
     }
 
-    var allSelected = domain.skills.filter(function(sk) { return sk.count > 0; }).every(function(sk) {
+    var allSelected = domain.skills.filter(function(sk) { return countForSkill(sk.code) > 0; }).every(function(sk) {
       return state.selectedSkills.indexOf(sk.code) !== -1;
     });
 
     domain.skills.forEach(function(sk) {
-      if (sk.count <= 0) return;
+      if (countForSkill(sk.code) <= 0) return;
       if (allSelected) {
         state.selectedSkills = state.selectedSkills.filter(function(s) { return s !== sk.code; });
       } else {
@@ -504,20 +602,169 @@
   function renderAll() {
     renderSections();
     renderPill();
+    updateFilterUI();
   }
 
   // ── Navigation ──
   function navigate() {
     var ids = NEW_QUESTIONS
-      .filter(function(q) { return state.selectedSkills.indexOf(q.sc) !== -1; })
+      .filter(function(q) { return state.selectedSkills.indexOf(q.sc) !== -1 && matchesDifficulty(q); })
       .map(function(q) { return q.id; });
 
+    if (state.limit !== null) ids = ids.slice(0, state.limit);
     if (ids.length === 0) return;
 
     var url = "./questions.html?questionIds=" + ids.join(",");
     if (state.random) url += "&random=1";
     window.KorahTransitions.go(url);
   }
+
+  // ── Filters ──
+  const ICONS = {
+    difficulty: svg('<line x1="6" y1="20" x2="6" y2="14"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="18" y1="20" x2="18" y2="10"/>'),
+    caret: svg('<polyline points="6 9 12 15 18 9"/>', "sat-caret"),
+    check: svg('<polyline points="20 6 9 17 4 12"/>', "sat-filter-check"),
+    reset: svg('<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>')
+  };
+
+  function selectedValues(key) {
+    return key === "difficulty" ? state.difficulties : [];
+  }
+
+  function renderFilters() {
+    filterRow.innerHTML = FILTERS.map(function(f) {
+      return '<div class="sat-filter-dd" data-filter="' + f.key + '">' +
+        '<button class="sat-filter-btn" type="button" data-filter-btn="' + f.key + '" aria-haspopup="true" aria-expanded="false">' +
+          (ICONS[f.key] || "") +
+          '<span class="sat-filter-btn-label">' + f.label + '</span>' +
+          '<span class="sat-filter-btn-count" data-count-for="' + f.key + '"></span>' +
+          ICONS.caret +
+        '</button>' +
+        '<div class="sat-filter-menu" role="menu" aria-label="' + f.label + '">' +
+          f.options.map(function(o) {
+            return '<button class="sat-filter-option" type="button" role="menuitemcheckbox" data-filter="' + f.key + '" data-value="' + o.value + '">' +
+              '<span class="sat-filter-option-label">' + o.label + '</span>' + ICONS.check +
+            '</button>';
+          }).join('') +
+        '</div>' +
+      '</div>';
+    }).join('') +
+      '<button id="resetFiltersBtn" class="sat-reset-filters t-btn" type="button">' + ICONS.reset + '<span>Reset filters</span></button>';
+    updateFilterUI();
+  }
+
+  function updateFilterUI() {
+    var activeCount = 0;
+    FILTERS.forEach(function(f) {
+      var sel = selectedValues(f.key);
+      filterRow.querySelectorAll('.sat-filter-option[data-filter="' + f.key + '"]').forEach(function(opt) {
+        opt.classList.toggle("is-selected", sel.indexOf(opt.dataset.value) !== -1);
+      });
+      var btn = filterRow.querySelector('[data-filter-btn="' + f.key + '"]');
+      var countEl = filterRow.querySelector('[data-count-for="' + f.key + '"]');
+      if (countEl) countEl.textContent = sel.length ? '(' + sel.length + ')' : '';
+      if (btn) btn.classList.toggle("is-active", sel.length > 0);
+      if (sel.length > 0) activeCount++;
+    });
+    if (filtersBadge) {
+      filtersBadge.textContent = String(activeCount);
+      filtersBadge.hidden = activeCount === 0;
+    }
+    // Fills the toggle with its own color once any filter carries data.
+    filtersToggle.classList.toggle("is-set", activeCount > 0);
+  }
+
+  function closeMenus() {
+    filterRow.querySelectorAll(".sat-filter-dd.is-open").forEach(function(dd) { dd.classList.remove("is-open"); });
+    filterRow.querySelectorAll("[data-filter-btn]").forEach(function(b) { b.setAttribute("aria-expanded", "false"); });
+  }
+
+  function closeLimitMenu() {
+    limitDropdown.classList.remove("is-open");
+    limitToggle.classList.remove("is-open");
+    limitToggle.setAttribute("aria-expanded", "false");
+  }
+
+  function resetFilters() {
+    state.difficulties = [];
+    state.limit = null;
+    state.random = false;
+    limitInput.value = "";
+    limitToggleLabel.textContent = "Question Limit";
+    limitToggle.classList.remove("is-set");
+    closeMenus();
+    closeLimitMenu();
+    renderAll();
+  }
+
+  filterRow.addEventListener("click", function(event) {
+    var option = event.target.closest(".sat-filter-option");
+    if (option) {
+      var value = option.dataset.value;
+      state.difficulties = state.difficulties.indexOf(value) !== -1
+        ? state.difficulties.filter(function(d) { return d !== value; })
+        : state.difficulties.concat([value]);
+      // Skills can drop to zero questions under a filter; keep only live ones.
+      state.selectedSkills = state.selectedSkills.filter(function(code) { return countForSkill(code) > 0; });
+      if (state.selectedSkills.length === 0) state.selectedSection = null;
+      renderAll(); // multi-select: leave the menu open
+      return;
+    }
+    if (event.target.closest("#resetFiltersBtn")) { resetFilters(); return; }
+    var btn = event.target.closest("[data-filter-btn]");
+    if (btn) {
+      var dd = btn.closest(".sat-filter-dd");
+      var willOpen = !dd.classList.contains("is-open");
+      closeMenus();
+      if (willOpen) {
+        closeLimitMenu();
+        dd.classList.add("is-open");
+        btn.setAttribute("aria-expanded", "true");
+      }
+    }
+  });
+
+  limitInput.addEventListener("input", function() {
+    var val = limitInput.value.trim();
+    if (val === "" || val.toLowerCase() === "none") {
+      state.limit = null;
+    } else {
+      var parsed = Number(val);
+      state.limit = isFinite(parsed) && parsed > 0 ? parsed : null;
+    }
+    limitToggleLabel.textContent = state.limit !== null ? "Limit: " + state.limit : "Question Limit";
+    limitToggle.classList.toggle("is-set", state.limit !== null);
+  });
+
+  limitToggle.addEventListener("click", function() {
+    var willOpen = !limitDropdown.classList.contains("is-open");
+    limitDropdown.classList.toggle("is-open", willOpen);
+    limitToggle.classList.toggle("is-open", willOpen);
+    limitToggle.setAttribute("aria-expanded", willOpen ? "true" : "false");
+    if (willOpen) {
+      closeMenus();
+      setTimeout(function() { limitInput.focus(); }, 50);
+    }
+  });
+
+  filtersToggle.addEventListener("click", function() {
+    var willOpen = filterRow.hasAttribute("hidden");
+    filterRow.toggleAttribute("hidden", !willOpen);
+    filtersToggle.classList.toggle("is-open", willOpen);
+    filtersToggle.setAttribute("aria-expanded", willOpen ? "true" : "false");
+    if (willOpen) {
+      filterRow.classList.add("is-entering");
+      setTimeout(function() { filterRow.classList.remove("is-entering"); }, 200);
+      closeLimitMenu();
+    } else {
+      closeMenus();
+    }
+  });
+
+  document.addEventListener("click", function(event) {
+    if (!event.target.closest(".sat-filter-dd")) closeMenus();
+    if (!event.target.closest(".sat-limit-dd")) closeLimitMenu();
+  });
 
   // ── Event delegation ──
   sectionColumns.addEventListener("click", function(event) {
@@ -547,5 +794,7 @@
   });
   pillStart.addEventListener("click", function() { navigate(); });
 
+  renderFilters();
   renderAll();
+  loadUserProgress();
 })();

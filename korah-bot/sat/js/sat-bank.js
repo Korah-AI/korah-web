@@ -156,6 +156,8 @@
       filtersBadge.textContent = String(activeCount);
       filtersBadge.hidden = activeCount === 0;
     }
+    // Fills the toggle with its own color once any filter carries data.
+    filtersToggle.classList.toggle("is-set", activeCount > 0);
   }
 
   function renderPill() {
@@ -520,6 +522,7 @@
     state.placeholders = { timespent: "any", saved: "all", completed: "all", result: "all" };
     limitInput.value = "";
     limitToggleLabel.textContent = "Question Limit";
+    limitToggle.classList.remove("is-set");
     closeMenus();
     closeLimitMenu();
     if (hadAssessment) fetchGlobalStats(); // reload counts for the SAT set
@@ -584,6 +587,7 @@
       state.limit = Number.isFinite(parsed) && parsed > 0 ? parsed : null;
     }
     limitToggleLabel.textContent = state.limit !== null ? `Limit: ${state.limit}` : "Question Limit";
+    limitToggle.classList.toggle("is-set", state.limit !== null);
   });
 
   limitToggle.addEventListener("click", () => {
