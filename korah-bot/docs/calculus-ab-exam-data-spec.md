@@ -1,8 +1,9 @@
 # AP Calculus AB mock-exam data milestone
 
 > Status: implementation spec for the first milestone of the AP mock-exam
-> issue. Exam timing, calculator policy, and predicted-score curve must be
-> confirmed with the issue author before `mock-1.json` is finalized.
+> issue. The 2027 MCQ timing/parts, College Board as the second source, and CED
+> weight bands are confirmed. The predicted-score curve and redistribution
+> basis must still be resolved before `mock-1.json` is finalized.
 
 ## 1. Goal
 
@@ -79,9 +80,10 @@ course-specific player branches.
     { "name": "High School Test Prep", "url": "https://highschooltestprep.com/ap/calculus-ab/" },
     { "name": "AUTHOR_APPROVED_SECOND_SOURCE", "url": "TO_BE_RECORDED" }
   ],
-  "durationSec": null,
-  "calculator": null,
-  "questions": [],
+  "parts": [
+    { "id": "part-a", "title": "Part A", "durationSec": 3720, "calculator": "prohibited", "questions": [] },
+    { "id": "part-b", "title": "Part B", "durationSec": 2280, "calculator": "required", "questions": [] }
+  ],
   "curve": []
 }
 ```
@@ -94,11 +96,10 @@ Top-level requirements:
 - `id`, `course`, and `title` are non-empty; `course` is
   `ap-calculus-ab` for this file.
 - `sources` identifies and links both source families used in the exam.
-- `durationSec` is the confirmed positive-integer exam countdown duration.
-- `calculator` is the confirmed exam-wide Boolean policy. If the author instead
-  confirms mixed calculator sections, revise the contract before authoring the
-  exam rather than overloading this Boolean.
-- `questions` is the full ordered MCQ exam.
+- `parts` contains the confirmed 2027 MCQ format: Part A has 29 questions in
+  3,720 seconds with calculators prohibited; Part B has 13 questions in 2,280
+  seconds with a graphing calculator required. Questions remain globally
+  ordered and numbered across both parts.
 - `curve` covers every possible raw score from zero through the question count.
 
 Each question contains:
@@ -196,21 +197,20 @@ structural validity from a release-valid exam.
 
 ## 7. Required issue-author confirmation
 
-Before the exam becomes `ready`, send the issue author one compact table or JSON
-excerpt and obtain written approval for:
+The issue author has confirmed:
 
-1. **Full question count and timing:** total MCQs and `durationSec`, including
-   whether the countdown covers one uninterrupted exam.
-2. **Calculator policy:** the exact Boolean value, or confirmation that the exam
-   needs separate calculator/no-calculator sections and therefore a schema
-   revision.
-3. **Predicted-score curve:** every `rawMin` threshold for AP scores 1 through 5
+- the 2027 format of 42 MCQs over 100 minutes, split into a 29-question,
+  62-minute no-calculator Part A and a 13-question, 38-minute calculator Part B;
+- College Board as the second source; and
+- the current eight CED unit-weight bands in `course-catalog.json`.
+
+Before the exam becomes `ready`, obtain written approval or documentation for:
+
+1. **Predicted-score curve:** every `rawMin` threshold for AP scores 1 through 5
    and any scoring assumptions behind that public prediction.
-4. **Second source:** College Board CED/released material or another explicitly
-   approved source.
-5. **CED distribution rule:** the unit-weight source/version and the rounding or
+2. **CED distribution rule:** the rounding or
    tolerance used to turn its percentage ranges into question counts.
-6. **Content provenance:** permission or licensing basis for storing question
+3. **Content provenance:** permission or licensing basis for storing question
    text, explanations, and extracted assets in the public repository.
 
 Placeholder values from the issue example are not approval. Until these items
@@ -234,7 +234,7 @@ but `mock-1.json` must not be called complete or set to `ready`.
 
 ## 9. Implementation sequence
 
-1. Confirm the six decisions in section 7 with the issue author.
+1. Confirm the remaining decisions in section 7 with the issue author.
 2. Document the stable Calculus AB unit catalog and count-rounding rule.
 3. Finalize the JSON shape and implement the validator.
 4. Build the complete authorized exam by hand, mixing both sources and matching

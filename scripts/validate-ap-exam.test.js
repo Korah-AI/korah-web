@@ -41,9 +41,22 @@ function validExam() {
       { name: "Original Source One", url: "https://example.com/source-one" },
       { name: "Original Source Two", url: "https://example.org/source-two" },
     ],
-    durationSec: 6000,
-    calculator: false,
-    questions: units.map((unit, index) => question(index + 1, unit)),
+    parts: [
+      {
+        id: "part-a",
+        title: "Part A",
+        durationSec: 3720,
+        calculator: "prohibited",
+        questions: units.slice(0, 29).map((unit, index) => question(index + 1, unit)),
+      },
+      {
+        id: "part-b",
+        title: "Part B",
+        durationSec: 2280,
+        calculator: "required",
+        questions: units.slice(29).map((unit, index) => question(index + 30, unit)),
+      },
+    ],
     curve: [
       { rawMin: 0, apScore: 1 },
       { rawMin: 12, apScore: 2 },
@@ -73,8 +86,8 @@ test("accepts a complete structurally valid exam", () => {
 
 test("reports duplicate ids and an answer outside the choice keys", () => {
   const exam = validExam();
-  exam.questions[1].id = exam.questions[0].id;
-  exam.questions[1].answer = "Z";
+  exam.parts[0].questions[1].id = exam.parts[0].questions[0].id;
+  exam.parts[0].questions[1].answer = "Z";
   const messages = validateFixture(exam).errors.join("\n");
   assert.match(messages, /duplicate question id/);
   assert.match(messages, /must exactly match one declared choice key/);
@@ -82,7 +95,7 @@ test("reports duplicate ids and an answer outside the choice keys", () => {
 
 test("reports missing assets and incomplete curves", () => {
   const exam = validExam();
-  exam.questions[0].assets = [{ path: "../../assets/calc-ab/mock-1/missing.svg", alt: "Graph" }];
+  exam.parts[0].questions[0].assets = [{ path: "../../../assets/calc-ab/mock-1/missing.svg", alt: "Graph" }];
   exam.curve = [{ rawMin: 1, apScore: 1 }];
   const messages = validateFixture(exam).errors.join("\n");
   assert.match(messages, /asset file not found/);
@@ -92,8 +105,8 @@ test("reports missing assets and incomplete curves", () => {
 
 test("reports a unit distribution outside CED bounds", () => {
   const exam = validExam();
-  exam.questions[0].unit = "unit-3";
-  exam.questions[1].unit = "unit-3";
+  exam.parts[0].questions[0].unit = "unit-3";
+  exam.parts[0].questions[1].unit = "unit-3";
   const messages = validateFixture(exam).errors.join("\n");
   assert.match(messages, /unit-1 has 4 questions; expected 5-6/);
   assert.match(messages, /unit-3 has 5 questions; expected 3-4/);

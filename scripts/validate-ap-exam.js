@@ -14,11 +14,10 @@ const TOP_LEVEL_KEYS = new Set([
   "course",
   "title",
   "sources",
-  "durationSec",
-  "calculator",
-  "questions",
+  "parts",
   "curve",
 ]);
+const PART_KEYS = new Set(["id", "title", "durationSec", "calculator", "questions"]);
 const QUESTION_KEYS = new Set(["id", "unit", "stem", "assets", "choices", "answer", "explanation"]);
 const SOURCE_KEYS = new Set(["name", "url"]);
 const ASSET_KEYS = new Set(["path", "alt"]);
@@ -119,14 +118,13 @@ function validateAssets(assets, questionPath, examDir, errors) {
   });
 }
 
-function validateQuestions(questions, unitsById, examId, examDir, errors) {
+function validateQuestions(questions, unitsById, examId, examDir, errors, startingIndex = 0, questionIds = new Set()) {
   const counts = new Map([...unitsById.keys()].map((unitId) => [unitId, 0]));
   if (!Array.isArray(questions) || questions.length === 0) {
     errors.push("$.questions: expected a non-empty array");
     return { counts, total: 0 };
   }
 
-  const questionIds = new Set();
   questions.forEach((question, index) => {
     const questionPath = `$.questions[${index}]`;
     if (!isObject(question)) {
@@ -138,7 +136,7 @@ function validateQuestions(questions, unitsById, examId, examDir, errors) {
     else {
       if (questionIds.has(question.id)) errors.push(`${questionPath}.id: duplicate question id ${JSON.stringify(question.id)}`);
       questionIds.add(question.id);
-      const expectedId = `${examId}-q${index + 1}`;
+      const expectedId = `${examId}-q${startingIndex + index + 1}`;
       if (question.id !== expectedId) errors.push(`${questionPath}.id: expected ${JSON.stringify(expectedId)} for this stable position`);
     }
 
@@ -173,6 +171,53 @@ function validateQuestions(questions, unitsById, examId, examDir, errors) {
     }
   });
   return { counts, total: questions.length };
+}
+
+function validateParts(parts, course, examId, examDir, errors) {
+  const counts = new Map(course.units.map((unit) => [unit.id, 0]));
+  const format = course.mockExamFormat;
+  if (!Array.isArray(parts) || parts.length === 0) {
+    errors.push("$.parts: expected a non-empty array");
+    return { counts, total: 0 };
+  }
+  if (!format || !Array.isArray(format.parts)) {
+    errors.push("$catalog.mockExamFormat: expected a configured exam format");
+    return { counts, total: 0 };
+  }
+  if (parts.length !== format.parts.length) errors.push(`$.parts: expected ${format.parts.length} parts`);
+
+  const partIds = new Set();
+  const questionIds = new Set();
+  const unitsById = new Map(course.units.map((unit) => [unit.id, unit]));
+  let startingIndex = 0;
+  parts.forEach((part, index) => {
+    const partPath = `$.parts[${index}]`;
+    const expected = format.parts[index];
+    if (!isObject(part)) {
+      errors.push(`${partPath}: expected an object`);
+      return;
+    }
+    addUnknownKeyErrors(part, PART_KEYS, partPath, errors);
+    if (!isNonEmptyString(part.id)) errors.push(`${partPath}.id: expected a non-empty string`);
+    else if (partIds.has(part.id)) errors.push(`${partPath}.id: duplicate part id ${JSON.stringify(part.id)}`);
+    else partIds.add(part.id);
+    if (!isNonEmptyString(part.title)) errors.push(`${partPath}.title: expected a non-empty string`);
+    if (!Number.isInteger(part.durationSec) || part.durationSec <= 0) errors.push(`${partPath}.durationSec: expected a positive integer`);
+    if (!["prohibited", "required"].includes(part.calculator)) errors.push(`${partPath}.calculator: expected "prohibited" or "required"`);
+    if (expected) {
+      if (part.id !== expected.id) errors.push(`${partPath}.id: expected ${JSON.stringify(expected.id)}`);
+      if (part.durationSec !== expected.durationSec) errors.push(`${partPath}.durationSec: expected ${expected.durationSec}`);
+      if (part.calculator !== expected.calculator) errors.push(`${partPath}.calculator: expected ${JSON.stringify(expected.calculator)}`);
+      if (!Array.isArray(part.questions) || part.questions.length !== expected.questionCount) errors.push(`${partPath}.questions: expected ${expected.questionCount} questions`);
+    }
+    const result = validateQuestions(part.questions, unitsById, examId, examDir, errors, startingIndex, questionIds);
+    for (const [unitId, count] of result.counts) counts.set(unitId, counts.get(unitId) + count);
+    startingIndex += result.total;
+  });
+  if (startingIndex !== format.totalQuestions) errors.push(`$.parts: expected ${format.totalQuestions} total questions, found ${startingIndex}`);
+  const duration = parts.reduce((sum, part) => sum + (Number.isInteger(part?.durationSec) ? part.durationSec : 0), 0);
+  if (duration !== format.totalDurationSec) errors.push(`$.parts: expected ${format.totalDurationSec} total seconds, found ${duration}`);
+  return { counts, total: startingIndex };
 }
 
 function validateCurve(curve, totalQuestions, errors) {
@@ -256,11 +301,9 @@ function validateExam(examPath) {
   const course = catalog.courses?.[exam.course];
   if (!course || !Array.isArray(course.units)) errors.push(`$.course: unsupported course ${JSON.stringify(exam.course)}`);
   validateSources(exam.sources, ready, errors);
-  if (!Number.isInteger(exam.durationSec) || exam.durationSec <= 0) errors.push("$.durationSec: expected a positive integer");
-  if (typeof exam.calculator !== "boolean") errors.push("$.calculator: expected a boolean");
-
-  const unitsById = new Map((course?.units || []).map((unit) => [unit.id, unit]));
-  const questionResult = validateQuestions(exam.questions, unitsById, exam.id, path.dirname(examPath), errors);
+  const questionResult = course
+    ? validateParts(exam.parts, course, exam.id, path.dirname(examPath), errors)
+    : { counts: new Map(), total: 0 };
   validateCurve(exam.curve, questionResult.total, errors);
   const rows = distributionRows(course || { units: [] }, questionResult.counts, questionResult.total);
   for (const row of rows) {
@@ -282,7 +325,8 @@ function main(argv) {
     result.errors.forEach((error) => console.error(`- ${error}`));
     return 1;
   }
-  console.log(`\nValid ${result.exam.status} exam: ${result.exam.title} (${result.exam.questions.length} questions)`);
+  const total = result.exam.parts.reduce((sum, part) => sum + part.questions.length, 0);
+  console.log(`\nValid ${result.exam.status} exam: ${result.exam.title} (${total} questions)`);
   return 0;
 }
 
