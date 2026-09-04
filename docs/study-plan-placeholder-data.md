@@ -11,13 +11,18 @@ placeholder data for everything.
   this with `DEMO_QUESTIONS`, copy that pattern.
 
 - Two places call the API, both in `js/study-plan.js`: `extractScoresFromImage`
-  (line 31) and `generatePlan` (line 53). Wrap each fetch in try/catch and
+  (line 227) and `generatePlan` (line 252). Wrap each fetch in try/catch and
   return placeholder data in the catch.
 
-- Also check `!res.ok`. A 404 does not throw, so right now the failure silently
-  becomes `{}` and the "Scores extracted" card renders with blank numbers.
+- `!res.ok` is already handled by `readAiJson`, which throws instead of letting
+  a 404 or 500 silently become `{}`.
 
-- For scores, anything realistic works, e.g. `{ mathScore: 680, rwScore: 720 }`.
+- For scores, anything realistic works, but include the per-domain breakdown
+  too, since the plan prompt budgets study time against it, e.g.
+  `{ mathScore: 680, rwScore: 720, domains: { H: 3, P: 1, Q: 2, S: 1, INI: 2, CAS: 3, EOI: 2, SEC: 1 } }`.
+  Domain codes and levels are documented on `DOMAIN_CODE_LABELS` and
+  `PERFORMANCE_LABELS` in `js/study-plan.js`. A partial `domains` map is fine,
+  the prompt infers the rest from the section scores.
 
 - For the plan, generate the sessions in a loop from `intake.studyDays` and
   `intake.hoursPerWeek` rather than hardcoding a list. You need about 10 weeks of

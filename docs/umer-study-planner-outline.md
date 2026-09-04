@@ -108,8 +108,9 @@ Three states: `loading` → `empty` (wizard) → `hasPlan` (calendar).
 
 **Call 1: Score Extraction**
 - Input: base64 data URL (downscaled to ≤1024px, quality 0.7)
-- Prompt: Extract Math + Reading & Writing scores
-- Output: `{ "mathScore": number|null, "rwScore": number|null }`
+- Prompt: Extract Math + Reading & Writing scores, plus the per-domain
+  Knowledge and Skills breakdown
+- Output: `{ "mathScore": number|null, "rwScore": number|null, "domains": [{ "code": "H", "level": 1-3 }] }`
 
 **Call 2: Plan Generation**
 - Input: full intake object
@@ -220,9 +221,9 @@ Add to `korah-bot/sidebar.html` under "SAT Practice":
 
 ### Prompt 1: Score Extraction
 ```
-You are an SAT score report reader. Extract the Math section score and the Reading & Writing section score from this screenshot.
-Return ONLY valid JSON: { "mathScore": number|null, "rwScore": number|null }
-If a score is not visible or unclear, use null. Do not guess.
+You are an SAT score report reader. Extract the Math section score, the Reading & Writing section score, and the per-domain Knowledge and Skills breakdown from this screenshot.
+Return ONLY valid JSON: { "mathScore": number|null, "rwScore": number|null, "domains": [{ "code": "H", "level": 1-3 }] }
+If a score is not visible or unclear, use null. Only include domains actually visible in the image. Do not guess.
 ```
 
 ### Prompt 2: Plan Generation
