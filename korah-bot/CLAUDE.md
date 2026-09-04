@@ -66,6 +66,42 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ---
 
+## Commit Messages
+
+**Simple label, simple description. No em dashes.**
+
+- One short label line, then a plain description of what changed and why.
+- Write straightforwardly. No em dashes, no marketing tone, no filler.
+- Describe what the change does, not how impressive it is.
+- Get as technical as the change warrants. File names, function names,
+  selectors, CSS tokens, and API routes are fine and often better than a vague
+  summary. Just keep the prose plain.
+
+Simple change:
+```
+Fix logout button race on the SAT sidebar
+
+The logout handler fired before the session cleared, so the redirect
+sometimes landed back on the dashboard. Wait for the clear first.
+```
+
+Bigger change, more technical:
+```
+Move sidebar greying into a shared stylesheet
+
+Pulled the duplicated .sidebar rules out of sat/dashboard.html,
+study/feed.html, and study/guide.html into study-grey.css. Swapped the
+purple --sf/--bd tokens for the grey resting surfaces per
+docs/WIZARD-UI-PATTERNS.md. Scrollbar width stays at 6px.
+```
+
+**Co-sign trailers (`Co-Authored-By`, `Claude-Session`):**
+- Only for bigger commits: multi-file changes, new features, refactors.
+- Small commits (typos, one-line fixes, style tweaks) don't need them.
+- When in doubt, ask before adding them.
+
+---
+
 ## Project Notes
 
 See `../README.md` for the API route map.
