@@ -1,195 +1,243 @@
-# Calculus AB exam-data milestone
+# AP Calculus AB mock-exam data milestone
 
-> Status: proposed implementation spec. The Calculus AB timing, calculator
-> policy, and predicted-score curve remain approval gates; placeholder values
-> must not ship as final exam metadata.
+> Status: implementation spec for the first milestone of the AP mock-exam
+> issue. Exam timing, calculator policy, and predicted-score curve must be
+> confirmed with the issue author before `mock-1.json` is finalized.
 
 ## 1. Goal
 
-Add one complete Calculus AB exam as validated JSON, together with a repeatable
-command-line validator.
+Create one complete, predetermined AP Calculus AB multiple-choice mock exam as
+static JSON, plus a standalone validator for authors to run before committing.
+There is no question pool or runtime assembler: all students receive the same
+questions in the same order.
 
-The Calculus AB player is explicitly deferred to the next milestone. This
-milestone defines and validates the data contract that player work will consume.
+This milestone is deliberately data-only. The exam picker, player, results,
+AP US History exam, and Firestore persistence belong to later milestones.
 
-## 2. Repository and change constraints
+## 2. Constraints
 
-- Work on a feature branch created from the latest `development` branch.
-- Do not modify `korah-bot/sat/js/sat-player.js`.
-- Do not modify `korah-bot/sat/questions.html`.
-- Store Calculus AB material outside the SAT runtime so the new format does not
-  accidentally become coupled to the existing SAT player.
-- Do not commit copyrighted third-party exam content unless its license or the
-  issue author explicitly permits repository redistribution. If the supplied
-  questions are original or authorized, record their provenance in the exam
-  metadata.
+- Work on a feature branch based on the latest `development` branch and open
+  the eventual PR against `development`.
+- Do not modify `korah-bot/sat/js/sat-player.js` or
+  `korah-bot/sat/questions.html`.
+- Scope the format to AP Calculus AB and AP US History, but build only the first
+  Calculus AB exam now. Do not generalize for other AP courses yet.
+- Include multiple-choice questions only. FRQs and AI grading are out of scope.
+- One JSON file is one complete exam with fixed question order and its answer
+  key embedded.
+- Question IDs and unit IDs are stable persistence keys. Never renumber them
+  after release; correct bad content in place.
+- Source questions from `highschooltestprep.com` and one author-approved second
+  source. The issue recommends College Board CED samples or released practice
+  material. Ask before choosing a different second source.
+- Credit both sources in the exam JSON. Confirm that the selected material and
+  assets can be redistributed in this public repository before committing it.
+- Match the authored question mix to the AP Calculus AB CED unit weightings.
+  The distribution is decided while building the file, not dynamically.
+- PNG assets are acceptable; SVG is preferred for figures and equations.
 
-## 3. Milestone boundaries
-
-### 3.1 Included
-
-- One complete, internally consistent Calculus AB exam JSON file.
-- Every exam section and every question required by the approved exam design.
-- Answer keys, scoring metadata, topic tags, calculator policy, and timing
-  metadata.
-- A dependency-free validator runnable with the repository's existing runtime.
-- Validator tests or invalid fixtures covering the principal failure modes.
-- Brief usage documentation.
-
-### 3.2 Deferred
-
-- Exam picker, player, timer, calculator integration, persistence, review, and
-  results UI.
-- Importing additional exams.
-- Any change to the SAT player or SAT question page.
-
-## 4. Proposed file layout
+## 3. Deliverables
 
 ```text
-korah-bot/calculus-ab/
+korah-bot/ap/
   data/
-    exam-01.json
-    exam.schema.json
-  scripts/
-    validate-exam.js
-  tests/
-    fixtures/                 # minimal intentionally-invalid JSON documents
-    validate-exam.test.js
-  README.md
+    calc-ab/
+      mock-1.json
+  assets/
+    calc-ab/
+      mock-1/
+        ...
+scripts/
+  validate-ap-exam.js
 ```
 
-`exam.schema.json` documents the contract and enables editor support. The
-JavaScript validator remains the normative repository check because it can
-enforce relationships that JSON Schema alone cannot express clearly.
+Also update relevant repository documentation with the validator command and
+the stable Calculus AB unit vocabulary. A separate schema document or automated
+test fixtures may be added if they reduce authoring mistakes, but neither may
+replace the standalone validator required by the issue.
 
-## 5. Exam JSON contract
+The required command is:
 
-Top-level shape:
+```text
+node scripts/validate-ap-exam.js korah-bot/ap/data/calc-ab/mock-1.json
+```
+
+## 4. Exam JSON contract
+
+The issue's draft shape is the starting point. The milestone should converge on
+the smallest format that also supports the later AP US History exam without
+course-specific player branches.
 
 ```json
 {
   "schemaVersion": 1,
-  "id": "calculus-ab-exam-01",
-  "title": "Calculus AB Exam 1",
-  "course": "calculus-ab",
-  "provenance": {
-    "kind": "original-or-authorized",
-    "source": "TO_BE_RECORDED",
-    "license": "TO_BE_RECORDED"
-  },
-  "examPolicy": {
-    "timingStatus": "pending-author-confirmation",
-    "calculatorStatus": "pending-author-confirmation"
-  },
-  "sections": [],
-  "scoring": {
-    "status": "pending-author-confirmation",
-    "multipleChoiceWeight": null,
-    "freeResponseWeight": null,
-    "predictedScoreCurve": []
-  }
+  "status": "draft",
+  "id": "calc-ab-mock-1",
+  "course": "ap-calculus-ab",
+  "title": "AP Calculus AB Mock Exam 1",
+  "sources": [
+    { "name": "High School Test Prep", "url": "https://highschooltestprep.com/ap/calculus-ab/" },
+    { "name": "AUTHOR_APPROVED_SECOND_SOURCE", "url": "TO_BE_RECORDED" }
+  ],
+  "durationSec": null,
+  "calculator": null,
+  "questions": [],
+  "curve": []
 }
 ```
 
-The exact question count and section configuration are derived only after the
-issue author confirms the policy values in section 7. Each section contains:
+Top-level requirements:
 
-- stable `id`, unique within the exam;
-- display `title` and integer `order`;
-- `durationMinutes` as a positive integer;
-- `calculator` as `required`, `allowed`, or `prohibited`;
-- `questionType` as `multiple-choice` or `free-response`;
-- ordered `questions` array.
+- `schemaVersion` is an integer understood by the validator.
+- `status` is `draft` or `ready`; unresolved placeholders are allowed only in a
+  draft.
+- `id`, `course`, and `title` are non-empty; `course` is
+  `ap-calculus-ab` for this file.
+- `sources` identifies and links both source families used in the exam.
+- `durationSec` is the confirmed positive-integer exam countdown duration.
+- `calculator` is the confirmed exam-wide Boolean policy. If the author instead
+  confirms mixed calculator sections, revise the contract before authoring the
+  exam rather than overloading this Boolean.
+- `questions` is the full ordered MCQ exam.
+- `curve` covers every possible raw score from zero through the question count.
 
-Every question contains:
+Each question contains:
 
-- stable `id`, globally unique within the exam;
-- integer `order`, contiguous within its section;
-- `prompt` as non-empty text;
-- optional `stimulus` and ordered `parts` for multi-part free response;
-- `topics`, using a documented controlled vocabulary;
-- `answer` with a type appropriate to the question;
-- `pointsPossible` as a positive integer;
-- optional `choices` for multiple choice only;
-- optional asset references as repository-relative paths with alternative text.
+```json
+{
+  "id": "calc-ab-mock-1-q1",
+  "unit": "unit-2",
+  "stem": "Question text",
+  "assets": [
+    { "path": "../../assets/calc-ab/mock-1/q1.svg", "alt": "Description" }
+  ],
+  "choices": [
+    { "key": "A", "text": "Choice A" },
+    { "key": "B", "text": "Choice B" },
+    { "key": "C", "text": "Choice C" },
+    { "key": "D", "text": "Choice D" }
+  ],
+  "answer": "B",
+  "explanation": "Post-submission explanation"
+}
+```
 
-Multiple-choice answers reference exactly one declared choice ID. Free-response
-answers include an explicit scoring rubric: each rubric row has a stable ID,
-point value, and criterion. The sum of rubric points must equal
-`pointsPossible`.
+Question requirements:
 
-No field that affects timing, calculator access, or scoring may retain a
-`pending-*`, `TO_BE_*`, or `null` placeholder when the exam is marked ready.
+- Array position is exam order; IDs stay stable even if content is corrected.
+- `unit` uses a documented stable CED unit ID and drives results grouping.
+- `stem` and `explanation` are non-empty strings.
+- `assets` is optional; each entry uses a JSON-file-relative repository path
+  plus meaningful alternative text.
+- `choices` contains unique keys and non-empty content.
+- `answer` exactly matches one declared choice key. Grading later uses strict
+  string comparison only after the exam is submitted.
+
+Curve entries use ascending raw-score thresholds:
+
+```json
+[
+  { "rawMin": 0, "apScore": 1 },
+  { "rawMin": 15, "apScore": 2 }
+]
+```
+
+The first `rawMin` must be zero. Each threshold begins an inclusive band that
+ends immediately before the next threshold; the final band ends at the total
+question count. `apScore` must be an integer from 1 through 5.
+
+## 5. Unit distribution
+
+Maintain a controlled catalog for AP Calculus AB unit IDs, labels, and official
+CED weight ranges. The exam author must calculate target counts for the
+confirmed full question count, select questions from both approved sources, and
+record every question's unit.
+
+The validator output must show, for every unit:
+
+- unit ID and label;
+- actual question count;
+- actual percentage of the exam;
+- CED target weight or range; and
+- whether the authored distribution is inside the accepted range.
+
+Rounding and tolerance rules must be documented so a small exam is not rejected
+merely because a percentage range cannot map cleanly to whole questions.
 
 ## 6. Validator behavior
 
-Usage:
+`scripts/validate-ap-exam.js` must be dependency-free and runnable with the
+repository's available Node.js runtime. It validates one path supplied on the
+command line, does not mutate input, and reports all detected errors with clear
+JSON-style locations.
 
-```text
-node korah-bot/calculus-ab/scripts/validate-exam.js \
-  korah-bot/calculus-ab/data/exam-01.json
-```
+It exits `0` only for a release-valid exam and prints an exam summary plus the
+unit-distribution comparison. It exits nonzero for at least:
 
-The command exits `0` and prints a concise success summary for a valid exam. It
-exits nonzero and prints every discovered error with a JSON-style path for an
-invalid exam. It must detect at least:
+- missing argument, unreadable file, or malformed JSON;
+- missing, unknown, placeholder, or incorrectly typed required fields;
+- a `ready` exam without exactly two credited source families;
+- empty exam, stem, explanation, choice text, or unit;
+- duplicate question IDs or duplicate choice keys within a question;
+- a question answer that is not exactly one of its choice keys;
+- unsupported or unstable unit IDs;
+- absolute asset paths, paths escaping the repository, missing asset files, or
+  assets without useful alternative text;
+- a question distribution outside the documented CED count ranges;
+- an empty, unordered, duplicate, non-integer, or out-of-range curve;
+- a curve whose first threshold is not zero or which does not cover the complete
+  raw-score range; and
+- values left as `null`, `TO_BE_*`, or another unresolved placeholder when
+  `status` is `ready`.
 
-- unreadable or malformed JSON;
-- missing, unknown, or incorrectly typed required fields;
-- unsupported schema version, course, section type, or calculator value;
-- duplicate exam, section, question, choice, part, or rubric IDs as applicable;
-- non-contiguous or duplicate ordering;
-- empty prompts, topics, choices, answers, or rubric criteria;
-- multiple-choice answers that do not map to exactly one choice;
-- choices on free-response items or missing rubrics for scored free response;
-- rubric totals that disagree with `pointsPossible`;
-- missing assets, absolute asset paths, or asset paths escaping the repository;
-- question, point, and section totals that disagree with declared totals;
-- overlapping, unordered, incomplete, or non-integer score-curve ranges;
-- predicted scores outside the approved score scale;
-- any unresolved placeholder when release status is `ready`.
-
-The validator must not mutate input. Tests should prove one complete valid exam
-passes and targeted invalid fixtures fail for the cases above.
+The validator may accept explicitly marked draft files while reporting their
+unresolved release blockers, but its success message must distinguish draft
+structural validity from a release-valid exam.
 
 ## 7. Required issue-author confirmation
 
-Before the complete exam JSON is finalized, ask the issue author to approve the
-following in writing:
+Before the exam becomes `ready`, send the issue author one compact table or JSON
+excerpt and obtain written approval for:
 
-1. **Timing:** section names/order, question counts, minutes per section, break
-   policy if any, and whether timing applies per section or exam-wide.
-2. **Calculator sections:** the calculator state for every section, including
-   whether `allowed` means optional access throughout that entire section.
-3. **Predicted-score curve:** the composite-score formula, rounding rules,
-   score scale, and every inclusive raw/composite interval mapped to a predicted
-   score.
+1. **Full question count and timing:** total MCQs and `durationSec`, including
+   whether the countdown covers one uninterrupted exam.
+2. **Calculator policy:** the exact Boolean value, or confirmation that the exam
+   needs separate calculator/no-calculator sections and therefore a schema
+   revision.
+3. **Predicted-score curve:** every `rawMin` threshold for AP scores 1 through 5
+   and any scoring assumptions behind that public prediction.
+4. **Second source:** College Board CED/released material or another explicitly
+   approved source.
+5. **CED distribution rule:** the unit-weight source/version and the rounding or
+   tolerance used to turn its percentage ranges into question counts.
+6. **Content provenance:** permission or licensing basis for storing question
+   text, explanations, and extracted assets in the public repository.
 
-Also confirm the question source and redistribution rights. Send the proposed
-values as a compact table or JSON excerpt so the author can approve exact data,
-not a prose approximation.
-
-Until approval arrives, development may proceed with an explicitly labeled
-fixture, but `exam-01.json` must not be described as complete, set to `ready`,
-or accepted by the release validation command.
+Placeholder values from the issue example are not approval. Until these items
+are confirmed, the validator and a clearly marked draft/fixture may be built,
+but `mock-1.json` must not be called complete or set to `ready`.
 
 ## 8. Acceptance criteria
 
-- The issue author has confirmed timing, calculator policy, predicted-score
-  curve, and content provenance.
-- `exam-01.json` contains the complete approved exam and no placeholders.
-- The schema and validator agree on the contract.
-- The valid exam passes with exit code `0`.
-- Invalid fixtures fail with actionable paths and nonzero exit codes.
-- No player UI is added.
+- The issue author has confirmed every item in section 7.
+- `korah-bot/ap/data/calc-ab/mock-1.json` contains the complete confirmed MCQ
+  exam, fixed ordering, answer key, explanations, unit IDs, both source credits,
+  and no unresolved placeholders.
+- The authored unit mix satisfies the documented CED weight/count rule.
+- `node scripts/validate-ap-exam.js korah-bot/ap/data/calc-ab/mock-1.json`
+  prints the unit distribution and exits `0`.
+- Targeted invalid inputs demonstrate that the required validation failures
+  produce actionable messages and nonzero exits.
+- No AP player or results UI is added in this milestone.
 - `sat-player.js` and `questions.html` are byte-for-byte unchanged from the
   branch baseline.
 
 ## 9. Implementation sequence
 
-1. Obtain issue-author confirmation for section 8.
-2. Finalize schema and controlled topic vocabulary.
-3. Author/import the complete authorized exam and any referenced assets.
-4. Implement the validator and negative tests; validate the full exam.
-5. Verify protected-file hashes, inspect the final diff, and document any
-   environment limitations in the handoff.
+1. Confirm the six decisions in section 7 with the issue author.
+2. Document the stable Calculus AB unit catalog and count-rounding rule.
+3. Finalize the JSON shape and implement the validator.
+4. Build the complete authorized exam by hand, mixing both sources and matching
+   the CED distribution; extract only necessary figures or equations.
+5. Run the validator, exercise invalid cases, verify protected-file hashes, and
+   inspect the final diff.
