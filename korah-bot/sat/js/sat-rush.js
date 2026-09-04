@@ -43,11 +43,17 @@
   // ── Static config ─────────────────────────────────────────────────────────
   const icon = (name, tint) => `<span class="material-icons-round${tint ? " rush-icon-tint-" + tint : ""}">${name}</span>`;
 
+  // Color blocking: every option in a group carries its own accent tone.
+  const TONES = ["tone-blue", "tone-pink", "tone-teal", "tone-amber", "tone-green", "tone-orange", "tone-red"];
   const SUBJECTS = [
-    { key: "math", section: "math", label: "Math", icon: "calculate", desc: "Algebra, advanced math, data analysis, geometry" },
-    { key: "english", section: "english", label: "Reading & Writing", icon: "menu_book", desc: "Reading comprehension, grammar, and expression" },
+    { key: "math", section: "math", label: "Math", icon: "calculate", tone: "tone-blue", desc: "Algebra, advanced math, data analysis, geometry" },
+    { key: "english", section: "english", label: "Reading & Writing", icon: "menu_book", tone: "tone-pink", desc: "Reading comprehension, grammar, and expression" },
   ];
-  const DIFFICULTIES = [{ v: "E", label: "Easy" }, { v: "M", label: "Medium" }, { v: "H", label: "Hard" }];
+  const DIFFICULTIES = [
+    { v: "E", label: "Easy", tone: "tone-green" },
+    { v: "M", label: "Medium", tone: "tone-amber" },
+    { v: "H", label: "Hard", tone: "tone-red" },
+  ];
   const DOMAIN_ICON = {
     H: "functions", P: "calculate", Q: "bar_chart", S: "straighten",
     INI: "lightbulb", CAS: "architecture", EOI: "edit_note", SEC: "spellcheck",
@@ -150,8 +156,8 @@
 
   function renderSubjects() {
     $("rushSubjectGrid").innerHTML = SUBJECTS.map((s) => `
-      <button class="rush-card ${sel.subject === s.key ? "is-selected" : ""}" data-subject="${s.key}" type="button">
-        ${icon(s.icon, "blue")}
+      <button class="rush-card ${s.tone} ${sel.subject === s.key ? "is-selected" : ""}" data-subject="${s.key}" type="button">
+        ${icon(s.icon)}
         <span class="rush-card-title">${s.label}</span>
         <span class="rush-card-desc">${s.desc}</span>
       </button>`).join("");
@@ -160,7 +166,7 @@
 
   function renderDomains() {
     const domains = currentDomains();
-    $("rushDomainGrid").innerHTML = domains.map((d) => {
+    $("rushDomainGrid").innerHTML = domains.map((d, di) => {
       const isSel = sel.domains.has(d.code);
       const skills = d.skills || [];
       const skillsHtml = isSel
@@ -170,7 +176,7 @@
             </div>`).join("")}</div>`
         : `<div class="rush-skills-preview">${skills.slice(0, 3).map((sk) => `<span>${sk.key}</span>`).join("")}${skills.length > 3 ? `<span>+${skills.length - 3} more</span>` : ""}</div>`;
       return `
-        <div class="rush-domain ${isSel ? "is-selected" : ""}" data-domain="${d.code}">
+        <div class="rush-domain ${TONES[di % TONES.length]} ${isSel ? "is-selected" : ""}" data-domain="${d.code}">
           <div class="rush-domain-head">
             <span class="rush-domain-emoji material-icons-round">${DOMAIN_ICON[d.code] || "menu_book"}</span>
             <span class="rush-domain-name">${d.key}</span>
@@ -183,7 +189,7 @@
 
   function renderDiffs() {
     $("rushDiffGrid").innerHTML = DIFFICULTIES.map((d) => `
-      <div class="rush-diff ${sel.difficulties.has(d.v) ? "is-selected" : ""}" data-diff="${d.v}">${d.label}</div>`).join("");
+      <div class="rush-diff ${d.tone} ${sel.difficulties.has(d.v) ? "is-selected" : ""}" data-diff="${d.v}">${d.label}</div>`).join("");
   }
 
   function refreshDomainNext() {

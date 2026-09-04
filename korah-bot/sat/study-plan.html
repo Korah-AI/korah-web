@@ -36,6 +36,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="../app/korah-chat.css"/>
   <link rel="stylesheet" href="./sat.css"/>
+  <link rel="stylesheet" href="./sat-rush.css"/>
 </head>
 
 <body>
@@ -88,6 +89,8 @@
   });
 </script>
 
+<script src="../study/js/sidebar.js"></script>
+
 <canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
 <div id="sidebar-root"></div>
 
@@ -128,260 +131,213 @@
 
     <!-- STATE: EMPTY (WIZARD) -->
     <template x-if="$store.studyPlan.planState === 'empty'">
-      <div x-data="wizard()" class="wizard-container" style="max-width:64rem;width:100%;margin:0 auto;display:flex;flex-direction:column;gap:2rem;padding:0 1rem;">
-        <!-- Progress header - SEPARATE CARD -->
-        <div class="panel-card" style="padding:2rem 2.25rem;border-radius:1.5rem;">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1.25rem;">
-            <div style="display:flex;align-items:center;gap:1rem;">
-              <div style="width:3rem;height:3rem;border-radius:0.875rem;background:linear-gradient(135deg,#7c3aed,#a78bfa);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                <span class="material-icons-round" style="font-size:1.5rem;color:#fff;">auto_awesome</span>
-              </div>
-              <div>
-                <div style="font-size:0.75rem;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:var(--p5);">Step</div>
-                <div style="font-size:1.25rem;font-weight:800;color:var(--tx);">Step <span x-text="step"></span> of 4</div>
-              </div>
-            </div>
-            <div style="font-size:1rem;font-weight:800;color:var(--p5);background:rgba(124,58,237,0.15);padding:0.5rem 1rem;border-radius:999px;" x-text="progressPercentage + '%'"></div>
+      <div x-data="wizard()" class="rush-shell sp-wizard" :class="{ 'is-step1': step === 1 }">
+
+        <div class="rush-hero">
+          <h1>Your Study Plan</h1>
+          <p>Four quick questions and Korah builds a day-by-day plan up to your test date.</p>
+        </div>
+
+        <!-- Step indicator -->
+        <div class="rush-steps-indicator">
+          <template x-for="i in 4" :key="i">
+            <span class="rush-step-dot" :class="{ 'is-active': step === i, 'is-done': i < step }"></span>
+          </template>
+        </div>
+
+        <!-- ── Step 1: start point ── -->
+        <div class="rush-step" x-show="step === 1" :class="anim">
+          <h2 class="rush-step-title">Where are you starting from?</h2>
+          <div class="rush-card-grid cols-3 rush-stagger">
+            <button type="button" class="rush-card tone-green" :class="[startPointPicked && intake.startPoint==='real_sat' ? 'is-selected' : '', flashOn.start[0] ? 'is-flash' : '']" @click="pickStart('real_sat')">
+              <span class="material-icons-round">assignment_turned_in</span>
+              <span class="rush-card-title">Took the real SAT</span>
+              <span class="rush-card-desc">You have an official score report</span>
+            </button>
+            <button type="button" class="rush-card tone-blue" :class="[startPointPicked && intake.startPoint==='practice_test' ? 'is-selected' : '', flashOn.start[1] ? 'is-flash' : '']" @click="pickStart('practice_test')">
+              <span class="material-icons-round">assignment</span>
+              <span class="rush-card-title">Took a practice test</span>
+              <span class="rush-card-desc">Bluebook, Khan Academy, or another full test</span>
+            </button>
+            <button type="button" class="rush-card tone-amber" :class="[startPointPicked && intake.startPoint==='none' ? 'is-selected' : '', flashOn.start[2] ? 'is-flash' : '']" @click="pickStart('none')">
+              <span class="material-icons-round">help_outline</span>
+              <span class="rush-card-title">Haven't tested yet</span>
+              <span class="rush-card-desc">Rate your confidence on each domain instead</span>
+            </button>
           </div>
-          <div style="height:0.625rem;background:var(--sf2);border-radius:999px;overflow:hidden;">
-            <div style="height:100%;background:linear-gradient(90deg,#7c3aed,#a78bfa,#c084fc);border-radius:999px;transition:width .35s ease;" :style="`width: ${progressPercentage}%`"></div>
-          </div>
-          <div style="display:flex;justify-content:space-between;margin-top:1.5rem;gap:0.75rem;">
-            <template x-for="i in 4" :key="i">
-              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:0.75rem;min-width:0;">
-                <div class="wizard-step-circle" :class="step >= i ? 'active' : ''" x-text="i"></div>
-                <span style="font-size:0.8125rem;font-weight:700;white-space:nowrap;text-align:center;line-height:1.2;" :style="step >= i ? 'color: var(--tx);' : 'color: var(--tx3);'" x-text="i===1 ? 'Start' : i===2 ? 'Level' : i===3 ? 'Test Date' : 'Schedule'"></span>
-              </div>
-            </template>
+          <div class="rush-btn-row">
+            <button class="rush-btn" @click="nextStep()" :disabled="!canProceed()">Continue</button>
           </div>
         </div>
 
-        <!-- Step 1: Start Point - SEPARATE CARD -->
-        <template x-if="step === 1">
-          <div class="panel-card" style="padding:2.25rem;border-radius:1.5rem;display:flex;flex-direction:column;align-items:center;" x-transition>
-            <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;width:100%;">
-              <h3 style="font-size:1.625rem;font-weight:800;color:var(--tx);margin:0 0 0.5rem;">Where are you starting from?</h3>
-              <p class="tx2" style="font-size:1.0625rem;margin:0 auto 0;line-height:1.5;max-width:36rem;">Choose the option that best describes your current preparation level.</p>
-            </div>
-            <div class="radio-group" style="text-align:left;width:100%;margin-top:1.75rem;">
-              <label class="radio-card" @click="intake.startPoint='real_sat'" style="padding:1.75rem;border-radius:1rem;cursor:pointer;">
-                <input type="radio" name="startPoint" value="real_sat" x-model="intake.startPoint" class="hidden"/>
-                <div class="radio-card-content" style="gap:1.125rem;">
-                  <span class="material-icons-round" style="font-size:2rem;color:var(--p5);">assignment_turned_in</span>
-                  <div style="display:flex;flex-direction:column;gap:0.375rem;flex:1;">
-                    <strong class="tx" style="font-size:1.125rem;">Took the real SAT</strong>
-                    <span class="tx2" style="font-size:0.9375rem;">You have an official score report</span>
-                  </div>
-                </div>
-                <span class="radio-check" :class="{ active: intake.startPoint==='real_sat' }"></span>
-              </label>
-              <label class="radio-card" @click="intake.startPoint='practice_test'" style="padding:1.75rem;border-radius:1rem;cursor:pointer;">
-                <input type="radio" name="startPoint" value="practice_test" x-model="intake.startPoint" class="hidden"/>
-                <div class="radio-card-content" style="gap:1.125rem;">
-                  <span class="material-icons-round" style="font-size:2rem;color:var(--p5);">assignment</span>
-                  <div style="display:flex;flex-direction:column;gap:0.375rem;flex:1;">
-                    <strong class="tx" style="font-size:1.125rem;">Took a practice test</strong>
-                    <span class="tx2" style="font-size:0.9375rem;">Bluebook, Khan Academy, or other full practice test</span>
-                  </div>
-                </div>
-                <span class="radio-check" :class="{ active: intake.startPoint==='practice_test' }"></span>
-              </label>
-              <label class="radio-card" @click="intake.startPoint='none'" style="padding:1.75rem;border-radius:1rem;cursor:pointer;">
-                <input type="radio" name="startPoint" value="none" x-model="intake.startPoint" class="hidden"/>
-                <div class="radio-card-content" style="gap:1.125rem;">
-                  <span class="material-icons-round" style="font-size:2rem;color:var(--p5);">help_outline</span>
-                  <div style="display:flex;flex-direction:column;gap:0.375rem;flex:1;">
-                    <strong class="tx" style="font-size:1.125rem;">Haven't tested yet</strong>
-                    <span class="tx2" style="font-size:0.9375rem;">Rate your confidence on each SAT domain instead</span>
-                  </div>
-                </div>
-                <span class="radio-check" :class="{ active: intake.startPoint==='none' }"></span>
-              </label>
-            </div>
-          </div>
-        </template>
+        <!-- ── Step 2: level ── -->
+        <div class="rush-step" x-show="step === 2" :class="anim">
 
-        <!-- Step 2: Level -->
-        <template x-if="step === 2">
-          <div style="display:flex;flex-direction:column;gap:1.5rem;">
-            <!-- If tested: image upload -->
-            <template x-if="intake.startPoint !== 'none'">
-              <div class="panel-card" style="padding:2rem;border-radius:1.5rem;" x-transition>
-                <h3 style="font-size:1.5rem;font-weight:800;color:var(--tx);margin:0 0 0.5rem;">Upload your score report</h3>
-                <p class="tx2" style="font-size:1rem;margin-bottom:1.5rem;line-height:1.5;">We will read your Math and Reading and Writing scores automatically. Upload a screenshot of your official score report.</p>
-                <div class="drop-zone" @click="$refs.fileInput.click()" @dragover.prevent @drop.prevent="handleDrop" :class="{ 'has-file': scoreImages.length }" style="min-height:16rem;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;text-align:center;width:100%;">
-                  <div x-show="!scoreImages.length" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;text-align:center;">
-                    <div style="width:4.5rem;height:4.5rem;border-radius:1.125rem;background:rgba(124,58,237,0.12);display:flex;align-items:center;justify-content:center;margin:0 auto;">
-                      <span class="material-icons-round" style="font-size:2.25rem;color:var(--p5);">cloud_upload</span>
-                    </div>
-                    <p class="tx" style="font-size:1.125rem;font-weight:700;margin:0;">Click or drag a screenshot here</p>
-                    <p class="tx3" style="font-size:0.875rem;margin:0;">PNG, JPG, or WebP · Max 4.5 MB each · You can add more than one</p>
-                  </div>
-                  <div x-show="scoreImages.length" style="width:100%;">
-                    <template x-for="(img, i) in scoreImages" :key="i">
-                      <div style="position:relative;margin-bottom:1rem;">
-                        <button @click.stop="removeImage(i)" style="position:absolute;top:0.5rem;right:0.5rem;z-index:2;width:1.75rem;height:1.75rem;border-radius:50%;background:rgba(0,0,0,0.6);border:1px solid var(--bd);color:var(--tx);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1rem;line-height:1;text-align:center;padding:0;" title="Remove image">X</button>
-                        <img :src="img" alt="Score report preview" style="max-width:100%;max-height:24rem;border-radius:1rem;border:1px solid var(--bd);object-fit:contain;margin:0 auto;display:block;"/>
-                      </div>
-                    </template>
-                    <p class="tx2" style="margin-top:0.5rem;font-weight:600;font-size:0.9375rem;">Click or drag to add another screenshot</p>
-                  </div>
-                  <input type="file" x-ref="fileInput" accept="image/*" multiple class="hidden" @change="handleFileSelect"/>
-                </div>
-                <div x-show="extracting" style="margin-top:1.5rem;text-align:center;padding:1.5rem;background:var(--sf2);border-radius:1rem;border:1px solid var(--bd);">
-                  <div style="width:2.5rem;height:2.5rem;margin:0 auto 1rem;border:3px solid var(--bd);border-top-color:var(--p4);border-radius:50%;animation:spin 1s linear infinite;"></div>
-                  <p class="tx" style="font-weight:700;font-size:1rem;">Reading scores from image…</p>
-                </div>
-                <div x-show="extractedScores" style="margin-top:1.5rem;padding:1.5rem;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.25);border-radius:1rem;">
-                  <p style="margin:0;color:#22c55e;font-weight:800;font-size:1rem;"><span class="material-icons-round" style="font-size:1.25rem;vertical-align:middle;margin-right:0.5rem;">check_circle</span>Scores extracted</p>
-                  <div style="display:flex;gap:1.25rem;margin-top:1rem;flex-wrap:wrap;">
-                    <div style="flex:1;min-width:10rem;padding:1.125rem;background:var(--sf);border-radius:0.875rem;border:1px solid var(--bd);text-align:center;">
-                      <div style="font-size:0.8125rem;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:0.05em;">Math</div>
-                      <div style="font-size:1.75rem;font-weight:800;color:var(--p5);margin-top:0.25rem;" x-text="extractedScores?.mathScore ?? '—'"></div>
-                    </div>
-                    <div style="flex:1;min-width:10rem;padding:1.125rem;background:var(--sf);border-radius:0.875rem;border:1px solid var(--bd);text-align:center;">
-                      <div style="font-size:0.8125rem;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:0.05em;">Reading and Writing</div>
-                      <div style="font-size:1.75rem;font-weight:800;color:var(--p5);margin-top:0.25rem;" x-text="extractedScores?.rwScore ?? '—'"></div>
-                    </div>
-                  </div>
-                  <button class="sat-button sat-button-secondary" style="margin-top:1.25rem;width:100%;height:3rem;font-size:1rem;" @click="clearScores()">Start over</button>
-                </div>
+          <!-- Tested: score report -->
+          <template x-if="intake.startPoint !== 'none'">
+            <div>
+              <h2 class="rush-step-title">Upload your score report</h2>
+              <p class="rush-step-sub">We read your Math and Reading and Writing scores automatically.</p>
 
-                <!-- Manual entry, so a failed or unavailable extraction is not a dead end -->
-                <div style="margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid var(--bd);">
-                  <p class="tx2" style="font-size:0.9375rem;margin:0 0 1rem;">Or enter your scores yourself.</p>
-                  <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end;">
-                    <label style="flex:1;min-width:9rem;display:flex;flex-direction:column;gap:0.5rem;">
-                      <span class="tx3" style="font-size:0.8125rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;">Math</span>
-                      <input type="text" inputmode="numeric" maxlength="3" x-model="manualMath" placeholder="680" class="sat-date-select" style="text-align:center;"/>
-                    </label>
-                    <label style="flex:1;min-width:9rem;display:flex;flex-direction:column;gap:0.5rem;">
-                      <span class="tx3" style="font-size:0.8125rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;">Reading and Writing</span>
-                      <input type="text" inputmode="numeric" maxlength="3" x-model="manualRw" placeholder="720" class="sat-date-select" style="text-align:center;"/>
-                    </label>
-                    <button class="sat-button sat-button-secondary" style="height:3.5rem;min-width:9rem;font-size:1rem;" @click="applyManualScores()">Use these scores</button>
+              <div class="rush-drop tone-cyan" @click="$refs.fileInput.click()" @dragover.prevent @drop.prevent="handleDrop" :class="{ 'has-file': scoreImages.length }">
+                <div x-show="!scoreImages.length" class="rush-drop-empty">
+                  <span class="material-icons-round" style="font-size:3rem;color:var(--acc);">cloud_upload</span>
+                  <strong>Click or drag a screenshot here</strong>
+                  <span style="font-size:0.85rem;">PNG, JPG, or WebP · Max 4.5 MB each · Add more than one</span>
+                </div>
+                <div x-show="scoreImages.length" style="width:100%;">
+                  <template x-for="(img, i) in scoreImages" :key="i">
+                    <div style="position:relative;margin-bottom:1rem;">
+                      <button type="button" class="rush-img-remove" @click.stop="removeImage(i)" title="Remove image" aria-label="Remove image">
+                        <span class="material-icons-round" style="font-size:1.1rem;">close</span>
+                      </button>
+                      <img :src="img" alt="Score report preview" style="max-width:100%;max-height:22rem;border-radius:1rem;border:0.125rem solid var(--acc);object-fit:contain;margin:0 auto;display:block;"/>
+                    </div>
+                  </template>
+                  <span style="font-size:0.9rem;font-weight:700;">Click or drag to add another screenshot</span>
+                </div>
+                <input type="file" x-ref="fileInput" accept="image/*" multiple class="hidden" @change="handleFileSelect"/>
+              </div>
+
+              <div x-show="extracting" class="rush-loading" style="padding:2rem 1rem;">
+                <div class="rush-spinner"></div>
+                <p>Reading scores from image…</p>
+              </div>
+
+              <div x-show="extractedScores" x-cloak>
+                <div class="rush-section-label">Scores found</div>
+                <div class="rush-stat-grid">
+                  <div class="rush-stat tone-blue">
+                    <span class="rush-stat-icon material-icons-round">calculate</span>
+                    <div class="rush-stat-value" x-text="extractedScores?.mathScore ?? '—'"></div>
+                    <div class="rush-stat-label">Math</div>
+                  </div>
+                  <div class="rush-stat tone-pink">
+                    <span class="rush-stat-icon material-icons-round">menu_book</span>
+                    <div class="rush-stat-value" x-text="extractedScores?.rwScore ?? '—'"></div>
+                    <div class="rush-stat-label">Reading and Writing</div>
                   </div>
                 </div>
               </div>
-            </template>
 
-            <!-- If not tested: confidence ratings -->
-            <template x-if="intake.startPoint === 'none'">
-              <div class="panel-card" style="padding:2rem;border-radius:1.5rem;" x-transition>
-                <h3 style="font-size:1.5rem;font-weight:800;color:var(--tx);margin:0 0 0.5rem;">Rate your confidence</h3>
-                <p class="tx2" style="font-size:1rem;margin-bottom:1.5rem;line-height:1.5;">1 = Need lots of work, 2 = Okay, 3 = Strong. Be honest so the plan can target your weak spots.</p>
-                <div style="display:grid;gap:1.25rem;">
-                  <div style="padding:1.25rem;background:var(--sf2);border-radius:1rem;border:1px solid var(--bd);">
-                    <div style="font-size:0.8125rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--p5);margin-bottom:1rem;">Math domains</div>
-                    <div style="display:grid;gap:1rem;">
-                      <template x-for="d in mathDomains" :key="d.key">
-                        <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.625rem 0;border-bottom:1px solid var(--bd);">
-                          <span class="tx" style="font-size:1rem;font-weight:600;flex:1;min-width:0;" x-text="d.label"></span>
-                          <div style="display:flex;gap:0.625rem;flex-shrink:0;">
-                            <template x-for="v in [1,2,3]" :key="v">
-                              <button type="button" class="rating-btn" style="width:3rem;height:3rem;font-size:1.125rem;" :class="{ active: intake.confidenceRatings[d.key]===v }" @click="intake.confidenceRatings[d.key]=v" x-text="v"></button>
-                            </template>
-                          </div>
-                        </div>
+              <!-- Manual entry, so a failed or unavailable extraction is not a
+                   dead end. Typed scores apply as you type and beat the image. -->
+              <div class="rush-section-label">Or enter them yourself</div>
+              <div class="rush-field-row">
+                <label class="rush-field tone-blue">
+                  <span class="rush-field-label">Math</span>
+                  <input type="text" inputmode="numeric" maxlength="3" x-model="manualMath" @input="applyManualScores()" placeholder="680" class="rush-spr-input" style="text-align:center;"/>
+                </label>
+                <label class="rush-field tone-pink">
+                  <span class="rush-field-label">Reading and Writing</span>
+                  <input type="text" inputmode="numeric" maxlength="3" x-model="manualRw" @input="applyManualScores()" placeholder="720" class="rush-spr-input" style="text-align:center;"/>
+                </label>
+              </div>
+            </div>
+          </template>
+
+          <!-- Not tested: confidence ratings -->
+          <template x-if="intake.startPoint === 'none'">
+            <div>
+              <h2 class="rush-step-title">Rate your confidence</h2>
+              <p class="rush-step-sub">1 = needs lots of work, 2 = okay, 3 = strong. Be honest so the plan can target your weak spots.</p>
+
+              <div class="rush-section-label">Math domains</div>
+              <div class="rush-domains is-single rush-stagger">
+                <template x-for="d in mathDomains" :key="d.key">
+                  <div class="rush-domain tone-blue" :class="{ 'is-selected': intake.confidenceRatings[d.key] >= 1 }">
+                    <div class="rush-domain-head">
+                      <span class="rush-domain-name" x-text="d.label"></span>
+                    </div>
+                    <div class="rush-diffs" style="margin-top:0.85rem;">
+                      <template x-for="v in [1,2,3]" :key="v">
+                        <div class="rush-diff" :class="[ratingTone(v), intake.confidenceRatings[d.key]===v ? 'is-selected' : '']" @click="intake.confidenceRatings[d.key]=v" x-text="v"></div>
                       </template>
                     </div>
                   </div>
-                  <div style="padding:1.25rem;background:var(--sf2);border-radius:1rem;border:1px solid var(--bd);">
-                    <div style="font-size:0.8125rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--p5);margin-bottom:1rem;">Reading and Writing domains</div>
-                    <div style="display:grid;gap:1rem;">
-                      <template x-for="d in rwDomains" :key="d.key">
-                        <div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:0.625rem 0;border-bottom:1px solid var(--bd);">
-                          <span class="tx" style="font-size:1rem;font-weight:600;flex:1;min-width:0;" x-text="d.label"></span>
-                          <div style="display:flex;gap:0.625rem;flex-shrink:0;">
-                            <template x-for="v in [1,2,3]" :key="v">
-                              <button type="button" class="rating-btn" style="width:3rem;height:3rem;font-size:1.125rem;" :class="{ active: intake.confidenceRatings[d.key]===v }" @click="intake.confidenceRatings[d.key]=v" x-text="v"></button>
-                            </template>
-                          </div>
-                        </div>
-                      </template>
-                    </div>
-                  </div>
-                </div>
-                <div style="margin-top:1.75rem;">
-                  <label class="tx" style="display:block;font-size:1rem;font-weight:700;margin-bottom:0.75rem;">What do you want from this plan? <span style="font-weight:400;color:var(--tx3);font-size:0.9375rem;">(optional)</span></label>
-                  <textarea x-model="intake.freeTextGoals" rows="4" style="width:100%;min-height:7rem;padding:1rem 1.125rem;border-radius:0.875rem;border:1px solid var(--bd);background:var(--sf2);color:var(--tx);font-family:inherit;font-size:1rem;resize:vertical;line-height:1.5;" placeholder="e.g. Focus on algebra word problems, improve reading speed, practice full tests under timed conditions…"></textarea>
-                </div>
-              </div>
-            </template>
-          </div>
-        </template>
-
-        <!-- Step 3: Test Date -->
-        <template x-if="step === 3">
-          <div class="panel-card" style="padding:2rem;border-radius:1.5rem;" x-transition>
-            <h3 style="font-size:1.5rem;font-weight:800;color:var(--tx);margin:0 0 0.5rem;">When is your test?</h3>
-            <p class="tx2" style="font-size:1rem;margin-bottom:1.5rem;line-height:1.5;">Pick your official test date. We will build your plan up to that day.</p>
-            <div style="margin-bottom:1.75rem;">
-              <label style="display:block;font-size:0.875rem;font-weight:700;color:var(--tx2);margin-bottom:0.625rem;">Test date</label>
-              <div style="display:flex;gap:0.75rem;align-items:center;">
-                <select class="sat-date-select" @change="intake.testDate = dateYear + '-' + dateMonth + '-' + dateDay" x-model="dateMonth">
-                  <option value="">Month</option>
-                  <option value="01">Jan</option><option value="02">Feb</option><option value="03">Mar</option>
-                  <option value="04">Apr</option><option value="05">May</option><option value="06">Jun</option>
-                  <option value="07">Jul</option><option value="08">Aug</option><option value="09">Sep</option>
-                  <option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option>
-                </select>
-                <select class="sat-date-select" @change="intake.testDate = dateYear + '-' + dateMonth + '-' + dateDay" x-model="dateDay" style="flex:1;">
-                  <option value="">Day</option>
-                  <template x-for="d in 31" :key="d"><option :value="String(d).padStart(2,'0')" x-text="d"></option></template>
-                </select>
-                <select class="sat-date-select" @change="intake.testDate = dateYear + '-' + dateMonth + '-' + dateDay" x-model="dateYear" style="flex:1;">
-                  <option value="">Year</option>
-                  <option value="2026">2026</option><option value="2027">2027</option><option value="2028">2028</option>
-                </select>
-              </div>
-            </div>
-            <div style="height:1px;background:var(--bd);margin:1.5rem 0;"></div>
-            <p style="font-size:0.875rem;font-weight:700;color:var(--tx2);margin-bottom:1rem;">Or pick an official SAT date</p>
-            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(10rem,1fr));gap:0.75rem;">
-              <template x-for="d in officialDates" :key="d">
-                <button type="button" class="sat-date-btn" :class="{ selected: intake.testDate === d }" @click="selectOfficialDate(d)" x-text="formatDate(d)"></button>
-              </template>
-            </div>
-          </div>
-        </template>
-
-        <!-- Step 4: Schedule -->
-        <template x-if="step === 4">
-          <div class="panel-card" style="padding:2rem;border-radius:1.5rem;" x-transition>
-            <h3 style="font-size:1.5rem;font-weight:800;color:var(--tx);margin:0 0 0.5rem;">When can you study?</h3>
-            <p class="tx2" style="font-size:1rem;margin-bottom:1.5rem;line-height:1.5;">Choose the days that work for you and how many hours you can study each week.</p>
-            <div style="margin-bottom:1.75rem;">
-              <label style="display:block;font-size:0.875rem;font-weight:700;color:var(--tx2);margin-bottom:0.875rem;">Pick weekdays <span style="font-weight:400;color:var(--tx3);">(at least 2)</span></label>
-              <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
-                <template x-for="d in weekdays" :key="d.key">
-                  <button type="button" class="weekday-btn" style="min-width:4rem;padding:1rem 0.75rem;font-size:0.9375rem;font-weight:700;" :class="{ active: intake.studyDays.includes(d.key) }" @click="toggleDay(d.key)" x-text="d.label"></button>
                 </template>
               </div>
-            </div>
-            <div>
-              <label style="display:block;font-size:0.875rem;font-weight:700;color:var(--tx2);margin-bottom:0.625rem;">Hours per week</label>
-              <div style="display:flex;align-items:center;gap:1.125rem;">
-                <input type="text" inputmode="numeric" maxlength="2" pattern="[0-9]*" :value="intake.hoursPerWeek" @input="intake.hoursPerWeek = Math.min(30, Math.max(2, parseInt($event.target.value) || 2))" style="width:8rem;height:3.5rem;padding:0 1rem;border-radius:0.875rem;border:1px solid var(--bd);background:var(--sf2);color:var(--tx);font-size:1.25rem;font-weight:700;text-align:center;"/>
-                <span class="tx2" style="font-size:0.9375rem;">hours per week</span>
-              </div>
-              <p class="tx3" style="font-size:0.8125rem;margin-top:0.625rem;line-height:1.4;">We will spread this evenly across your chosen days. Sessions are 30 to 90 minutes each.</p>
-            </div>
-            <div style="margin-top:1.75rem;display:flex;justify-content:center;">
-              <button class="sat-button sat-button-primary" style="min-width:12rem;height:3.5rem;font-size:1.125rem;font-weight:700;border-radius:1rem;" @click="submitWizard()" :disabled="!canProceed() || generating" :style="(!canProceed() || generating) ? 'opacity:0.5;cursor:not-allowed;' : ''">
-                <span x-show="!generating">Create My Plan</span>
-                <span x-show="generating" style="display:flex;align-items:center;gap:0.625rem;"><span style="width:1.125rem;height:1.125rem;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;"></span>Generating…</span>
-              </button>
-            </div>
-          </div>
-        </template>
 
-        <!-- Navigation - Bottom Bar -->
-        <div class="panel-card" style="padding:1.25rem 1.75rem;border-radius:1.25rem;display:flex;justify-content:flex-end;align-items:center;gap:1rem;position:sticky;bottom:1rem;z-index:10;box-shadow:0 8px 32px rgba(0,0,0,0.35);">
-          <button class="sat-button sat-button-secondary" style="min-width:7rem;height:3.25rem;font-size:1rem;font-weight:700;" @click="prevStep()" x-show="step>1" x-transition>Back</button>
-          <span class="tx3" style="font-size:0.875rem;margin-right:auto;" x-show="step<4 && !canProceed()">Complete this step to continue</span>
-          <button class="sat-button sat-button-primary" style="min-width:8rem;height:3.25rem;font-size:1rem;font-weight:700;display:inline-flex;align-items:center;gap:0.5rem;" @click="nextStep()" :class="{ 'wizard-hide': step === 4 }" :disabled="!canProceed()" :style="!canProceed() ? 'opacity:0.5;cursor:not-allowed;' : ''">Next <span class="material-icons-round" style="font-size:1.25rem;">arrow_forward</span></button>
+              <div class="rush-section-label">Reading and Writing domains</div>
+              <div class="rush-domains is-single rush-stagger">
+                <template x-for="d in rwDomains" :key="d.key">
+                  <div class="rush-domain tone-pink" :class="{ 'is-selected': intake.confidenceRatings[d.key] >= 1 }">
+                    <div class="rush-domain-head">
+                      <span class="rush-domain-name" x-text="d.label"></span>
+                    </div>
+                    <div class="rush-diffs" style="margin-top:0.85rem;">
+                      <template x-for="v in [1,2,3]" :key="v">
+                        <div class="rush-diff" :class="[ratingTone(v), intake.confidenceRatings[d.key]===v ? 'is-selected' : '']" @click="intake.confidenceRatings[d.key]=v" x-text="v"></div>
+                      </template>
+                    </div>
+                  </div>
+                </template>
+              </div>
+
+              <div class="rush-section-label">What do you want from this plan?</div>
+              <textarea x-model="intake.freeTextGoals" rows="4" class="rush-spr-input" style="resize:vertical;line-height:1.5;font-weight:500;" placeholder="Optional — e.g. focus on algebra word problems, improve reading speed, practice full tests under timed conditions…"></textarea>
+            </div>
+          </template>
+
+          <div class="rush-hint" x-show="!canProceed()" x-cloak>
+            <span x-text="intake.startPoint === 'none' ? 'Rate every domain to continue.' : 'Add your Math and Reading and Writing scores to continue.'"></span>
+          </div>
+          <div class="rush-btn-row">
+            <button class="rush-btn" @click="nextStep()" :disabled="!canProceed()">Continue</button>
+            <button class="rush-btn is-ghost" type="button" @click="prevStep()">Back</button>
+          </div>
+          <div class="sp-reset-row" x-show="intake.startPoint !== 'none' && (scoreImages.length || extractedScores || manualMath || manualRw)" x-cloak>
+            <button class="rush-mini-btn" type="button" @click="clearScores()">Start over</button>
+          </div>
         </div>
+
+        <!-- ── Step 3: test date ── -->
+        <div class="rush-step" x-show="step === 3" :class="anim">
+          <h2 class="rush-step-title">When is your test?</h2>
+          <p class="rush-step-sub">Pick an official SAT date. We build your plan up to that day.</p>
+
+          <div class="rush-date-grid rush-stagger">
+            <template x-for="(d, i) in officialDates" :key="d">
+              <div class="rush-diff" :class="[toneAt(i), intake.testDate === d ? 'is-selected' : '', flashOn.dates[i] ? 'is-flash' : '']" @click="selectOfficialDate(d)" x-text="formatDate(d)"></div>
+            </template>
+          </div>
+
+          <div class="rush-hint" x-show="!canProceed()" x-cloak>Pick a date to continue.</div>
+          <div class="rush-btn-row">
+            <button class="rush-btn" @click="nextStep()" :disabled="!canProceed()">Continue</button>
+            <button class="rush-btn is-ghost" type="button" @click="prevStep()">Back</button>
+          </div>
+        </div>
+
+        <!-- ── Step 4: schedule ── -->
+        <div class="rush-step" x-show="step === 4" :class="anim">
+          <h2 class="rush-step-title">When can you study?</h2>
+          <p class="rush-step-sub">Choose your study days and how many hours you can put in each week.</p>
+
+          <div class="rush-week-grid rush-stagger">
+            <template x-for="d in weekdays" :key="d.key">
+              <div class="rush-diff" :class="[d.tone, intake.studyDays.includes(d.key) ? 'is-selected' : '']" @click="toggleDay(d.key)" x-text="d.label"></div>
+            </template>
+          </div>
+
+          <div class="rush-toggle-row tone-orange">
+            <div class="rush-toggle-text">
+              <strong>Hours per week</strong>
+              <span>Spread evenly across your days · sessions run 30–90 min</span>
+            </div>
+            <input type="text" inputmode="numeric" maxlength="2" pattern="[0-9]*" class="rush-spr-input rush-hours-input" :value="intake.hoursPerWeek" @input="intake.hoursPerWeek = Math.min(30, Math.max(2, parseInt($event.target.value) || 2))"/>
+          </div>
+
+          <div class="rush-hint" x-show="!canProceed()" x-cloak>Pick at least 2 study days to continue.</div>
+          <div class="rush-btn-row">
+            <button class="rush-btn is-green" @click="submitWizard()" :disabled="!canProceed() || generating">
+              <span x-show="!generating">Create my plan</span>
+              <span x-show="generating" style="display:inline-flex;align-items:center;gap:0.5rem;"><span class="sat-spinner"></span>Generating…</span>
+            </button>
+            <button class="rush-btn is-ghost" type="button" @click="prevStep()" :disabled="generating">Back</button>
+          </div>
+        </div>
+
       </div>
     </template>
 
@@ -409,7 +365,7 @@
         <div class="panel-card glass" style="margin-bottom:1.5rem;padding:1rem;border-radius:1rem;backdrop-filter:blur(1rem);-webkit-backdrop-filter:blur(1rem);border:1px solid var(--bd2);background:rgba(56,189,248,0.08);border-color:rgba(56,189,248,0.25);">
           <div style="display:flex;gap:0.75rem;align-items:flex-start;">
             <span class="material-icons-round" style="font-size:1.5rem;color:#38bdf8;margin-top:0.125rem;">lightbulb</span>
-            <div class="tx" style="line-height:1.6;" x-html="$store.studyPlan.planData.feedback"></div>
+            <div class="tx" style="line-height:1.6;" x-text="$store.studyPlan.planData.feedback?.headline"></div>
           </div>
         </div>
 
@@ -423,12 +379,12 @@
                   <input type="checkbox" @change="toggleSession(session.id, $event.target.checked)" :checked="session.completed" style="width:1.25rem;height:1.25rem;accent-color:var(--p4);flex-shrink:0;"/>
                   <div style="flex:1;min-width:0;">
                     <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
-                      <strong class="tx" x-text="session.domain"></strong>
-                      <span class="tx2" style="font-size:0.75rem;background:var(--bd);padding:0.125rem 0.5rem;border-radius:62.4375rem;" x-text="session.section.toUpperCase()"></span>
-                      <span class="tx2" style="font-size:0.75rem;" x-text="session.taskType.replace('_',' ')"></span>
+                      <strong class="tx" x-text="session.skillName"></strong>
+                      <span class="tx2" style="font-size:0.75rem;background:var(--bd);padding:0.125rem 0.5rem;border-radius:62.4375rem;" x-text="session.subject.toUpperCase()"></span>
+                      <span class="tx2" style="font-size:0.75rem;" x-text="session.activity"></span>
                     </div>
                     <div class="tx2" style="font-size:0.8125rem;margin-top:0.25rem;display:flex;gap:1rem;flex-wrap:wrap;">
-                      <span x-text="formatTime(session.startTime) + ' · ' + session.durationMinutes + ' min'"></span>
+                      <span x-text="formatTime(session.start) + ' · ' + session.durationMin + ' min'"></span>
                       <span x-text="session.date"></span>
                     </div>
                   </div>
@@ -454,7 +410,7 @@
                   <div class="month-day" :class="{ 'other-month': day.otherMonth, 'has-sessions': day.sessions.length>0 }" style="min-height:4.5rem;padding:0.375rem 0.25rem;border-radius:0 0 0.5rem 0.5rem;background:var(--sf);border:1px solid var(--bd2);border-top: none;display:flex;flex-direction:column;gap:0.15rem;transition:all .2s;position:relative;">
                     <span class="tx" style="font-weight:600;text-align:right;padding-right:0.25rem;font-size:0.8125rem;" x-text="day.date.getDate()"></span>
                     <template x-for="s in day.sessions" :key="s.id">
-                      <div class="month-session" @click="toggleSession(s.id, !s.completed)" :class="{ completed: s.completed }" style="font-size:0.625rem;padding:0.1rem 0.25rem;border-radius:0.2rem;background:var(--p4);color:#fff;cursor:pointer;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;box-shadow:0 0.125rem 0.25rem rgba(139,92,246,0.2);" x-text="s.domain"></div>
+                      <div class="month-session" @click="toggleSession(s.id, !s.completed)" :class="{ completed: s.completed }" style="font-size:0.625rem;padding:0.1rem 0.25rem;border-radius:0.2rem;background:var(--p4);color:#fff;cursor:pointer;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;box-shadow:0 0.125rem 0.25rem rgba(139,92,246,0.2);" x-text="s.skillName"></div>
                     </template>
                     <template x-if="!day.sessions">
                       <span class="text-xs tx3 text-center opacity-60" style="flex:1;">—</span>
@@ -478,7 +434,7 @@
   function wizard() {
     return {
       step: 1,
-      get progressPercentage() { return Math.round((this.step / 4) * 100); },
+      anim: '',
       intake: {
         startPoint: "none",
         mathScore: null,
@@ -495,16 +451,57 @@
       manualRw: "",
       extracting: false,
       generating: false,
-      dateMonth: "",
-      dateDay: "",
-      dateYear: "",
-      selectOfficialDate(d) {
-        const [y, m, day] = d.split('-');
-        this.dateYear = y;
-        this.dateMonth = m;
-        this.dateDay = day;
-        this.intake.testDate = d;
+      // Until a choice is made, the tiles in a group light up on their own
+      // timers, so several are lit at once and the pattern never repeats.
+      flashOn: { start: [], dates: [] },
+      _flashTimers: {},
+      startPointPicked: false,
+      flashCount(group) { return group === 'start' ? 3 : this.officialDates.length; },
+      flashActive(group) {
+        if (group === 'start') return this.step === 1 && !this.startPointPicked;
+        return this.step === 3 && !this.intake.testDate;
       },
+      startFlashing(group) {
+        this.stopFlashing(group);
+        if (!this.flashActive(group)) return;
+        const count = this.flashCount(group);
+        this.flashOn[group] = Array.from({ length: count }, () => false);
+        for (let i = 0; i < count; i++) this.scheduleFlash(group, i, Math.random() * 900);
+      },
+      scheduleFlash(group, i, delay) {
+        const key = group + ':' + i;
+        this._flashTimers[key] = setTimeout(() => {
+          if (!this.flashActive(group)) { this.stopFlashing(group); return; }
+          this.flashOn[group][i] = true;
+          this._flashTimers[key] = setTimeout(() => {
+            this.flashOn[group][i] = false;
+            this.scheduleFlash(group, i, 550 + Math.random() * 1100);
+          }, 400 + Math.random() * 350);
+        }, delay);
+      },
+      stopFlashing(group) {
+        Object.keys(this._flashTimers).forEach((k) => {
+          if (group && !k.startsWith(group + ':')) return;
+          clearTimeout(this._flashTimers[k]);
+          delete this._flashTimers[k];
+        });
+        const groups = group ? [group] : Object.keys(this.flashOn);
+        groups.forEach((g) => { this.flashOn[g] = (this.flashOn[g] || []).map(() => false); });
+      },
+      pickStart(v) {
+        this.intake.startPoint = v;
+        this.startPointPicked = true;
+        this.stopFlashing('start');
+      },
+      init() { this.startFlashing('start'); },
+      selectOfficialDate(d) {
+        this.intake.testDate = d;
+        this.stopFlashing();
+      },
+      // Color blocking: every option in a group gets its own accent.
+      tones: ["tone-red", "tone-orange", "tone-amber", "tone-green", "tone-teal", "tone-blue", "tone-pink"],
+      toneAt(i) { return this.tones[i % this.tones.length]; },
+      ratingTone(v) { return v === 1 ? "tone-red" : v === 2 ? "tone-amber" : "tone-green"; },
       
       mathDomains: [
         { key: "heartOfAlgebra", label: "Algebra" },
@@ -519,8 +516,10 @@
         { key: "standardEnglish", label: "Standard English Conventions" }
       ],
       weekdays: [
-        { key: "mon", label: "Mon" }, { key: "tue", label: "Tue" }, { key: "wed", label: "Wed" },
-        { key: "thu", label: "Thu" }, { key: "fri", label: "Fri" }, { key: "sat", label: "Sat" }, { key: "sun", label: "Sun" }
+        { key: "mon", label: "Mon", tone: "tone-red" }, { key: "tue", label: "Tue", tone: "tone-orange" },
+        { key: "wed", label: "Wed", tone: "tone-amber" }, { key: "thu", label: "Thu", tone: "tone-green" },
+        { key: "fri", label: "Fri", tone: "tone-teal" }, { key: "sat", label: "Sat", tone: "tone-blue" },
+        { key: "sun", label: "Sun", tone: "tone-pink" }
       ],
       officialDates: [
         "2026-09-12", "2026-10-03", "2026-11-07", "2026-12-05",
@@ -529,7 +528,7 @@
       get todayISO() { return new Date().toISOString().split('T')[0]; },
 
       canProceed() {
-        if (this.step === 1) return !!this.intake.startPoint;
+        if (this.step === 1) return this.startPointPicked;
         if (this.step === 2) {
           if (this.intake.startPoint !== 'none') return this.intake.mathScore != null && this.intake.rwScore != null;
           const allKeys = [...this.mathDomains, ...this.rwDomains].map(d => d.key);
@@ -539,8 +538,23 @@
         if (this.step === 4) return this.intake.studyDays.length >= 2 && this.intake.hoursPerWeek >= 2;
         return false;
       },
-      nextStep() { if (this.canProceed()) this.step++; },
-      prevStep() { if (this.step > 1) this.step--; },
+      // Mirrors the Practice Rush wizard: slide the current step out, then
+      // slide the next one in from the matching side.
+      goToStep(target) {
+        if (target === this.step || target < 1 || target > 4) return;
+        const dir = target > this.step ? 1 : -1;
+        this.anim = dir > 0 ? 'anim-out-left' : 'anim-out-right';
+        setTimeout(() => {
+          this.step = target;
+          this.anim = dir > 0 ? 'anim-in-right' : 'anim-in-left';
+          this.stopFlashing();
+          if (target === 1) this.startFlashing('start');
+          if (target === 3) this.startFlashing('dates');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }, 240);
+      },
+      nextStep() { if (this.canProceed()) this.goToStep(this.step + 1); },
+      prevStep() { this.goToStep(this.step - 1); },
       toggleDay(key) {
         const i = this.intake.studyDays.indexOf(key);
         if (i >= 0) this.intake.studyDays.splice(i, 1);
@@ -570,7 +584,7 @@
             const scores = await api.extractScoresFromImage(dataUrl);
             this.mergeScores(scores);
           }
-        } catch (e) { console.error(e); alert(e.message || "Failed to read scores. Try a clearer image."); }
+        } catch (e) { console.error(e); showPlanAlert(e.message || "Failed to read scores. Try a clearer image.", "Couldn't read that image"); }
         finally { this.extracting = false; }
       },
       // Score reports are often split across screenshots, so keep whichever
@@ -581,8 +595,8 @@
         if (scores.mathScore != null) next.mathScore = scores.mathScore;
         if (scores.rwScore != null) next.rwScore = scores.rwScore;
         this.extractedScores = next;
-        if (next.mathScore != null) this.intake.mathScore = next.mathScore;
-        if (next.rwScore != null) this.intake.rwScore = next.rwScore;
+        if (next.mathScore != null && !this.manualMath.trim()) this.intake.mathScore = next.mathScore;
+        if (next.rwScore != null && !this.manualRw.trim()) this.intake.rwScore = next.rwScore;
       },
       removeImage(i) {
         this.scoreImages.splice(i, 1);
@@ -596,14 +610,18 @@
         this.intake.mathScore = null;
         this.intake.rwScore = null;
       },
+      // Applied on every keystroke: a typed score wins over whatever the image
+      // said, and a half-typed or out-of-range one clears it so the step can't
+      // continue on a stale value.
       applyManualScores() {
-        const math = parseInt(this.manualMath, 10);
-        const rw = parseInt(this.manualRw, 10);
-        if (!(math >= 200 && math <= 800) || !(rw >= 200 && rw <= 800)) {
-          alert("Enter a Math score and a Reading and Writing score between 200 and 800.");
-          return;
-        }
-        this.mergeScores({ mathScore: math, rwScore: rw });
+        const valid = (v) => Number.isInteger(v) && v >= 200 && v <= 800;
+        const read = (raw, extracted) => {
+          if (!raw.trim()) return extracted ?? null;
+          const n = parseInt(raw, 10);
+          return valid(n) ? n : null;
+        };
+        this.intake.mathScore = read(this.manualMath, this.extractedScores?.mathScore);
+        this.intake.rwScore = read(this.manualRw, this.extractedScores?.rwScore);
       },
       async submitWizard() {
         if (!this.canProceed()) return;
@@ -618,10 +636,22 @@
             payload.rwScore = null;
           }
           await this.planApi().createPlan(payload);
-        } catch (e) { console.error(e); alert(e.message || "Failed to create plan. Try again."); }
+        } catch (e) { console.error(e); showPlanAlert(e.message || "Failed to create plan. Try again.", "Couldn't create your plan"); }
         finally { this.generating = false; }
       }
     };
+  }
+
+  // "yyyy-MM-dd" parsed in local time. new Date("2026-09-07") is UTC midnight,
+  // which buckets sessions into the wrong day and week outside UTC.
+  function localDay(value) {
+    const [y, m, d] = String(value).split('-').map(Number);
+    return new Date(y, m - 1, d);
+  }
+  function localDayString(date) {
+    return date.getFullYear() + '-' +
+      String(date.getMonth() + 1).padStart(2, '0') + '-' +
+      String(date.getDate()).padStart(2, '0');
   }
 
   // Calendar view component
@@ -638,8 +668,8 @@
         start.setDate(start.getDate() - start.getDay() + 1); // Monday
         for (let w = 0; w < 10; w++) {
           const weekStart = new Date(start);
-          const weekSessions = plan.sessions.filter(s => {
-            const d = new Date(s.date);
+          const weekSessions = (plan.sessions || []).filter(s => {
+            const d = localDay(s.date);
             return d >= weekStart && d < new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
           }).sort((a,b) => new Date(a.date) - new Date(b.date));
           if (weekSessions.length > 0) {
@@ -665,7 +695,7 @@
           let d = new Date(monthStart);
           d.setDate(d.getDate() - d.getDay() + 1); // Monday
           for (let i = 0; i < 42; i++) {
-            const sessions = plan.sessions.filter(s => s.date === d.toISOString().split('T')[0]);
+            const sessions = (plan.sessions || []).filter(s => s.date === localDayString(d));
             days.push({
               date: new Date(d),
               otherMonth: d.getMonth() !== cur.getMonth(),
@@ -687,14 +717,20 @@
         try {
           if (!window.KorahStudyPlan) throw new Error("You need to be signed in to update a session.");
           await window.KorahStudyPlan.updateSession(id, { completed });
-        } catch (e) { console.error(e); alert(e.message || "Failed to update the session."); }
+        } catch (e) { console.error(e); showPlanAlert(e.message || "Failed to update the session.", "Couldn't save that"); }
       },
-      async confirmReset() {
-        if (!confirm("Delete your study plan and start over?")) return;
+      confirmReset() {
+        showPlanConfirm("This deletes your plan and every session in it. You can't undo this.", {
+          title: "Start over?",
+          confirmLabel: "Delete plan",
+          icon: "delete"
+        }, () => this.resetPlan());
+      },
+      async resetPlan() {
         try {
           if (!window.KorahStudyPlan) throw new Error("You need to be signed in to delete your plan.");
           await window.KorahStudyPlan.deletePlan();
-        } catch (e) { console.error(e); alert(e.message || "Failed to delete the plan."); }
+        } catch (e) { console.error(e); showPlanAlert(e.message || "Failed to delete the plan.", "Couldn't delete the plan"); }
       }
     };
   }
@@ -721,91 +757,200 @@
   .panel-card:nth-child(3) { animation-delay: 0.16s; }
   .panel-card:nth-child(4) { animation-delay: 0.24s; }
 
-  .radio-group { display:flex !important; flex-direction:row !important; gap:1.25rem !important; align-items:stretch !important; flex-wrap:nowrap !important; }
-  .radio-group .radio-card { flex:1 1 0 !important; min-width:0 !important; }
-  @media (max-width: 640px) { .radio-group { flex-direction:column !important; } }
-  .radio-card { display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:0.875rem;padding:1.75rem 1.25rem;border-radius:1.125rem;border:2px solid var(--bd);background:var(--sf);cursor:pointer;transition:all .2s; min-height:11rem; }
-  .radio-card:hover { border-color:var(--p4); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(124,58,237,0.15); }
-  .radio-card-content { display:flex;flex-direction:column;align-items:center;gap:0.5rem;flex:1;justify-content:center; }
-  .radio-check { width:1.35rem;height:1.35rem;border-radius:50%;border:2px solid var(--bd);display:flex;align-items:center;justify-content:center;transition:all .2s; flex-shrink:0; }
-  .radio-check.active { border-color:var(--p4);background:var(--p4); }
-  .radio-check.active::after { content:'';width:0.6rem;height:0.6rem;border-radius:50%;background:#fff; }
+  /* Alpine hasn't booted yet on first paint; keep x-show elements hidden. */
+  [x-cloak] { display: none !important; }
 
-  .drop-zone { border:2px dashed var(--bd);border-radius:1rem;padding:2.5rem;text-align:center;cursor:pointer;transition:all .2s; }
-  .drop-zone:hover { border-color:var(--p4);background:rgba(139,92,246,0.05); }
-  .drop-zone.has-file { border-style:solid;border-color:var(--p4); }
+  /* ── Wizard (Practice Rush UX) ──────────────────────────────────────────
+     Layout and surfaces come from sat-rush.css. Everything here is scoped to
+     .sp-wizard so the calendar view and rush.html are untouched.
 
-  .rating-row { display:flex;align-items:center;justify-content:space-between;gap:1.25rem; padding:0.875rem 0; border-bottom:1px solid var(--bd); }
-  .rating-row:last-child { border-bottom:none; }
-  .rating-btn { width:3rem;height:3rem;border-radius:0.75rem;border:2px solid var(--bd);background:var(--sf);color:var(--tx);font-weight:700;font-size:1.125rem;cursor:pointer;transition:all .15s; flex-shrink:0; }
-  .rating-btn:hover { border-color:var(--p4); transform: scale(1.05); }
-  .rating-btn.active { background:var(--p4);border-color:var(--p4);color:#fff; box-shadow: 0 4px 12px rgba(124,58,237,0.3); }
+     Color blocking: each option in a group carries a .tone-* class that sets
+     --acc, and every accent (border, fill, glow, icon, spotlight) reads from
+     it — so a group of buttons is never one flat color. */
+  .sp-wizard {
+    max-width: 46rem;
+    --tone-red: #ef4444;    --tone-orange: #f97316;
+    --tone-amber: #f59e0b;  --tone-green: #22c55e;
+    --tone-teal: #14b8a6;   --tone-cyan: #06b6d4;
+    --tone-blue: #3b82f6;
+    --tone-pink: #ec4899;
+  }
+  .sp-wizard .tone-red    { --acc: var(--tone-red); }
+  .sp-wizard .tone-orange { --acc: var(--tone-orange); }
+  .sp-wizard .tone-amber  { --acc: var(--tone-amber); }
+  .sp-wizard .tone-green  { --acc: var(--tone-green); }
+  .sp-wizard .tone-teal   { --acc: var(--tone-teal); }
+  .sp-wizard .tone-cyan   { --acc: var(--tone-cyan); }
+  .sp-wizard .tone-blue   { --acc: var(--tone-blue); }
+  .sp-wizard .tone-pink   { --acc: var(--tone-pink); }
+  .sp-wizard [class*="tone-"] { --spotlight-color: color-mix(in srgb, var(--acc) 40%, transparent); }
 
-  .weekday-btn { min-width:4rem;padding:0.875rem 1rem;border-radius:0.75rem;border:2px solid var(--bd);background:var(--sf);color:var(--tx);font-weight:700;font-size:0.9375rem;cursor:pointer;transition:all .15s; }
-  .weekday-btn:hover { border-color:var(--p4); }
-  .weekday-btn.active { background:var(--p4);border-color:var(--p4);color:#fff; }
+  /* Resting state is neutral grey — never the purple app surface, which reads
+     as "same color as the background". Accent color only on hover/selected. */
+  .sp-wizard.is-step1 { justify-content: center; min-height: calc(100vh - 9.5rem); }
+  .sp-wizard {
+    --sp-sf: #26262e;
+    --sp-sf2: #31313c;
+    --sp-bd: #454553;
+  }
+  html[data-theme="light"] .sp-wizard {
+    --sp-sf: #eceef2;
+    --sp-sf2: #e0e3ea;
+    --sp-bd: #c3c8d2;
+  }
+  .sp-wizard .rush-card,
+  .sp-wizard .rush-diff,
+  .sp-wizard .rush-domain,
+  .sp-wizard .rush-drop,
+  .sp-wizard .rush-toggle-row,
+  .sp-wizard .rush-spr-input {
+    background: var(--sp-sf);
+    border-color: var(--sp-bd);
+  }
+  .sp-wizard .rush-card,
+  .sp-wizard .rush-diff { box-shadow: 0 0.25rem 0 0 var(--sp-bd); }
+  .sp-wizard .rush-btn.is-ghost {
+    background: var(--sp-sf2);
+    color: var(--tx);
+    box-shadow: 0 0.25rem 0 0 var(--sp-bd);
+  }
+  .sp-wizard .rush-btn.is-ghost:active:not(:disabled) { box-shadow: 0 0.05rem 0 0 var(--sp-bd); }
+  .sp-reset-row { display: flex; justify-content: center; margin-top: 0.85rem; }
+  .sp-wizard .rush-mini-btn {
+    background: var(--sp-sf2);
+    color: var(--tx);
+    box-shadow: 0 0.15rem 0 0 var(--sp-bd);
+  }
+  .sp-wizard .rush-mini-btn:hover { background: var(--sp-bd); }
 
-  /* Step circles - perfect circles, not rectangles */
-  .wizard-step-circle { width:2.5rem !important; height:2.5rem !important; min-width:2.5rem !important; min-height:2.5rem !important; border-radius:9999px !important; display:flex !important; align-items:center !important; justify-content:center !important; font-weight:800 !important; font-size:1rem !important; line-height:1 !important; padding:0 !important; flex-shrink:0 !important; aspect-ratio: 1 / 1 !important; }
-  .wizard-step-circle.active { background: var(--p4) !important; color:#fff !important; border: 2px solid var(--p4) !important; box-shadow: 0 0 14px rgba(124,58,237,0.4) !important; }
-  .wizard-step-circle:not(.active) { background: var(--sf2) !important; color: var(--tx3) !important; border: 2px solid var(--bd) !important; }
+  /* Full-contrast text everywhere — no dimmed greys in the wizard. */
+  .sp-wizard,
+  .sp-wizard .rush-hero p,
+  .sp-wizard .rush-step-sub,
+  .sp-wizard .rush-card-desc,
+  .sp-wizard .rush-stat-label,
+  .sp-wizard .rush-field-label,
+  .sp-wizard .rush-toggle-text span,
+  .sp-wizard .rush-drop-empty span,
+  .sp-wizard .rush-loading p,
+  .sp-wizard .rush-hint,
+  .sp-wizard .rush-section-label,
+  .sp-wizard .tx2, .sp-wizard .tx3 { color: var(--tx); }
+  .sp-wizard .rush-spr-input::placeholder { color: var(--tx); opacity: 0.75; }
 
-  .wizard-hide { display: none !important; }
+  /* Accent-driven card states, overriding rush's single blue. */
+  .sp-wizard .rush-card:hover,
+  .sp-wizard .rush-domain:hover,
+  .sp-wizard .rush-diff:hover:not(.is-selected) {
+    border-color: color-mix(in srgb, var(--acc) 70%, var(--sp-bd));
+    box-shadow: 0 0.6rem 1.6rem color-mix(in srgb, var(--acc) 30%, transparent),
+                0 0.3rem 0 0 color-mix(in srgb, var(--acc) 45%, var(--sp-bd));
+  }
+  .sp-wizard .rush-card.is-selected,
+  .sp-wizard .rush-diff.is-selected {
+    color: #fff;
+    border-color: var(--acc);
+    background: linear-gradient(180deg, var(--acc), color-mix(in srgb, var(--acc) 78%, #000));
+    box-shadow: 0 0.25rem 0 0 color-mix(in srgb, var(--acc) 55%, #000);
+  }
+  .sp-wizard .rush-card.is-selected .rush-card-desc,
+  .sp-wizard .rush-card.is-selected .material-icons-round,
+  .sp-wizard .rush-card.is-flash .rush-card-desc,
+  .sp-wizard .rush-card.is-flash .material-icons-round { color: #fff; }
+  .sp-wizard .rush-card .material-icons-round { color: var(--acc); }
+  .sp-wizard .rush-domain.is-selected {
+    border-color: var(--acc);
+    background: color-mix(in srgb, var(--acc) 16%, var(--sp-sf));
+  }
+  .sp-wizard .rush-domains.is-single { grid-template-columns: 1fr; }
+  .sp-wizard .rush-diff { font-size: 1rem; }
+  /* Memory-lights flash on the unpicked date tiles: same solid fill as a
+     selected tile, just brief. */
+  .sp-wizard .rush-diff.is-flash:not(.is-selected),
+  .sp-wizard .rush-card.is-flash:not(.is-selected) {
+    color: #fff;
+    border-color: var(--acc);
+    background: linear-gradient(180deg, var(--acc), color-mix(in srgb, var(--acc) 78%, #000));
+    box-shadow: 0 0 1.5rem color-mix(in srgb, var(--acc) 60%, transparent),
+                0 0.25rem 0 0 color-mix(in srgb, var(--acc) 55%, #000);
+    transition-duration: 0.2s;
+  }
+
+  .sp-wizard .rush-hint {
+    background: color-mix(in srgb, var(--tone-amber) 18%, var(--sp-sf));
+    border-color: color-mix(in srgb, var(--tone-amber) 55%, transparent);
+    font-weight: 700;
+  }
+  .sp-wizard .rush-section-label { font-size: 1rem; }
+  .sp-wizard .rush-spinner { border-top-color: var(--tone-cyan); }
+  .sp-wizard .rush-step-sub { text-align: center; font-size: 1rem; margin: -1rem 0 1.75rem; }
+
+  .sp-wizard .rush-card-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .sp-wizard .rush-card-grid.cols-3 .rush-card { min-height: clamp(11rem, 26vh, 15rem); justify-content: center; }
+  @media (max-width: 40rem) { .sp-wizard .rush-card-grid.cols-3 { grid-template-columns: 1fr; } }
+
+  /* Rush colors dots 1-3; this wizard has four steps. */
+  .sp-wizard .rush-step-dot { background: var(--sp-bd); }
+  .rush-step-dot:nth-child(1).is-active { background: #ef4444; }
+  .rush-step-dot:nth-child(2).is-active { background: #f97316; }
+  .rush-step-dot:nth-child(3).is-active { background: #eab308; }
+  .rush-step-dot:nth-child(4).is-active { background: #22c55e; }
+
+  /* Score report upload */
+  .sp-wizard .rush-drop {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 15rem; padding: 2rem; text-align: center; cursor: pointer;
+    border: 0.125rem dashed var(--sp-bd);
+    border-radius: 1.25rem; color: var(--tx);
+    backdrop-filter: blur(1.5rem); -webkit-backdrop-filter: blur(1.5rem);
+    transition: border-color 0.18s ease, background 0.18s ease;
+  }
+  .sp-wizard .rush-drop:hover { border-color: var(--acc); background: color-mix(in srgb, var(--acc) 12%, var(--sp-sf)); }
+  .sp-wizard .rush-drop.has-file { border-style: solid; border-color: var(--acc); }
+  .sp-wizard .rush-drop-empty { display: flex; flex-direction: column; align-items: center; gap: 0.6rem; }
+  .sp-wizard .rush-drop-empty strong { font-size: 1.05rem; font-weight: 800; }
+  .sp-wizard .rush-img-remove {
+    position: absolute; top: 0.5rem; right: 0.5rem; z-index: 2;
+    width: 2rem; height: 2rem; border-radius: 50%; padding: 0; cursor: pointer;
+    display: grid; place-items: center;
+    background: rgba(0,0,0,0.6); border: 0.125rem solid var(--sp-bd); color: #fff;
+  }
+  .sp-wizard .rush-img-remove:hover { border-color: var(--tone-red); color: var(--tone-red); }
+
+  /* Extracted scores */
+  .sp-wizard .rush-stat {
+    color: #fff;
+    border-color: var(--acc);
+    background: linear-gradient(180deg, var(--acc), color-mix(in srgb, var(--acc) 78%, #000));
+    box-shadow: 0 0.25rem 0 0 color-mix(in srgb, var(--acc) 55%, #000);
+  }
+  .sp-wizard .rush-stat-icon,
+  .sp-wizard .rush-stat-value,
+  .sp-wizard .rush-stat-label { color: #fff; }
+
+  /* Manual score entry */
+  .sp-wizard .rush-field-row { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+  .sp-wizard .rush-field { flex: 1; min-width: 9rem; display: flex; flex-direction: column; gap: 0.4rem; }
+  .sp-wizard .rush-field-label { font-size: 0.78rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; }
+  .sp-wizard .rush-field .rush-spr-input { border-color: var(--sp-bd); }
+  .sp-wizard .rush-spr-input:focus { border-color: var(--acc); }
+
+  .sp-wizard .rush-date-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); gap: 0.75rem; }
+
+  /* Schedule */
+  .sp-wizard .rush-week-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.5rem; }
+  @media (max-width: 30rem) { .sp-wizard .rush-week-grid { grid-template-columns: repeat(4, 1fr); } }
+  .sp-wizard .rush-toggle-row { border-color: var(--sp-bd); }
+  .sp-wizard .rush-hours-input { width: 5.5rem; flex-shrink: 0; text-align: center; }
 
   input[type="date"]::-webkit-datetime-edit-year-field { max-width: 4ch; }
   input[type="date"]::-webkit-datetime-edit { display: inline-flex; gap: 0; }
   input[type="date"]::-webkit-inner-spin-button,
   input[type="date"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 
-  .sat-date-select {
-    height: 3.5rem;
-    padding: 0 1rem;
-    border-radius: 999px;
-    border: 1px solid var(--bd);
-    background: var(--sf2);
-    color: var(--tx);
-    font-size: 1.0625rem;
-    font-weight: 600;
-    cursor: pointer;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 0.875rem center;
-    padding-right: 2.25rem;
-  }
-  .sat-date-select:focus { outline: none; border-color: var(--p4); box-shadow: 0 0 0 3px rgba(124,58,237,0.15); }
-  .sat-date-select option { background: var(--sf2); color: var(--tx); }
-  .sat-date-select option:checked { background: var(--p4); color: #fff; }
-
   input[type="number"]::-webkit-inner-spin-button,
   input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
   input[type="number"] { -moz-appearance: textfield; }
-
-  .sat-date-btn {
-    padding: 0.875rem 1.25rem;
-    border-radius: 999px;
-    font-size: 0.9375rem;
-    font-weight: 700;
-    cursor: pointer;
-    white-space: nowrap;
-    background: var(--sf2);
-    color: var(--tx);
-    border: 1px solid var(--bd);
-    transition: all 0.25s ease;
-  }
-  .sat-date-btn:hover {
-    border-color: var(--p4);
-    box-shadow: 0 0 16px rgba(124,58,237,0.4), 0 0 32px rgba(124,58,237,0.15);
-    transform: translateY(-2px);
-  }
-  .sat-date-btn.selected {
-    background: var(--p4);
-    color: #fff;
-    border-color: var(--p4);
-    box-shadow: 0 0 16px rgba(124,58,237,0.5), 0 0 32px rgba(124,58,237,0.25), 0 0 48px rgba(124,58,237,0.1);
-  }
 
   .session-row { padding:1.15rem; border-radius:1rem; }
   .session-row.completed { opacity:0.6;background:rgba(34,197,94,0.08);border-color:rgba(34,197,94,0.3); }
@@ -918,5 +1063,118 @@
     }
   }, 25000);
 </script>
+
+<script>
+  // initSidebar() draws the starfield/shooting-star background and wires the
+  // sidebar. Signed-out visitors never get korahReady, so fall back to load.
+  (function () {
+    let started = false;
+    function start() {
+      if (started || !window.KorahSidebar) return;
+      started = true;
+      window.KorahSidebar.initSidebar({
+        chatBaseUrl: "../chat.html",
+        itemPageUrl: "../study/item.html"
+      });
+    }
+    window.addEventListener("korahReady", start, { once: true });
+    window.addEventListener("load", start, { once: true });
+  })();
+</script>
+
+<!-- Error / confirm popup — reuses the app's modal styling from korah-chat.css -->
+<div id="plan-modal" class="delete-modal">
+  <div class="delete-modal-content">
+    <div class="delete-modal-icon"><span class="material-icons-round" id="plan-modal-icon" style="font-size:2.25rem;color:var(--red,#ef4444);">error_outline</span></div>
+    <h3 class="delete-modal-title" id="plan-modal-title">Something went wrong</h3>
+    <p class="delete-modal-desc" id="plan-modal-desc"></p>
+    <div class="delete-modal-actions">
+      <button id="plan-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
+      <button id="plan-modal-confirm" class="delete-modal-btn confirm t-btn">OK</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Replaces alert()/confirm() on this page so failures show up in the app's
+  // own modal instead of a browser dialog.
+  (function () {
+    const modal = document.getElementById("plan-modal");
+    const iconEl = document.getElementById("plan-modal-icon");
+    const titleEl = document.getElementById("plan-modal-title");
+    const descEl = document.getElementById("plan-modal-desc");
+    const cancelBtn = document.getElementById("plan-modal-cancel");
+    const confirmBtn = document.getElementById("plan-modal-confirm");
+    let onConfirm = null;
+
+    function close() { modal.classList.remove("show"); onConfirm = null; }
+
+    function open(message, opts, cb) {
+      const o = opts || {};
+      iconEl.textContent = o.icon || "error_outline";
+      titleEl.textContent = o.title || "Something went wrong";
+      descEl.textContent = message || "";
+      confirmBtn.textContent = o.confirmLabel || (cb ? "Confirm" : "OK");
+      cancelBtn.hidden = !cb;
+      onConfirm = cb || null;
+      modal.classList.add("show");
+      confirmBtn.focus();
+    }
+
+    cancelBtn.addEventListener("click", close);
+    confirmBtn.addEventListener("click", () => { const cb = onConfirm; close(); if (cb) cb(); });
+    modal.addEventListener("click", (e) => { if (e.target === modal) close(); });
+    document.addEventListener("keydown", (e) => {
+      if (!modal.classList.contains("show")) return;
+      if (e.key === "Escape") close();
+      if (e.key === "Enter") confirmBtn.click();
+    });
+
+    window.showPlanAlert = (message, title) => open(message, { title });
+    window.showPlanConfirm = (message, opts, cb) => open(message, opts, cb || (() => {}));
+  })();
+</script>
+
+<!-- Spotlight glow + cursor tilt for the wizard cards (same behavior as
+     Practice Rush). Driven through CSS vars consumed by the ::before overlay
+     defined in sat-rush.css. -->
+<script>
+  (function () {
+    var SPOTLIGHT_SELECTOR = ".rush-card, .rush-domain, .rush-diff, .rush-stat";
+    var TILT_SELECTOR = ".rush-card, .rush-domain, .rush-diff";
+    var MAX_TILT = 7; // degrees
+
+    document.addEventListener("pointermove", function (e) {
+      var card = e.target.closest && e.target.closest(SPOTLIGHT_SELECTOR);
+      if (!card) return;
+      var rect = card.getBoundingClientRect();
+      var relX = e.clientX - rect.left;
+      var relY = e.clientY - rect.top;
+
+      card.style.setProperty("--spotlight-x", relX + "px");
+      card.style.setProperty("--spotlight-y", relY + "px");
+      card.style.setProperty("--spotlight-opacity", "0.6");
+
+      // !important because the .rush-stagger entrance animation keeps applying
+      // `transform: none` (fill-mode: forwards), outranking a plain inline one.
+      if (card.matches(TILT_SELECTOR)) {
+        var rotY = ((relX / rect.width) - 0.5) * 2 * MAX_TILT;
+        var rotX = (0.5 - (relY / rect.height)) * 2 * MAX_TILT;
+        card.style.setProperty("transform",
+          "perspective(43.75rem) rotateX(" + rotX.toFixed(2) + "deg) rotateY(" +
+          rotY.toFixed(2) + "deg) scale(1.02)", "important");
+      }
+    }, { passive: true });
+
+    document.addEventListener("pointerout", function (e) {
+      var card = e.target.closest && e.target.closest(SPOTLIGHT_SELECTOR);
+      if (!card) return;
+      if (e.relatedTarget && card.contains(e.relatedTarget)) return;
+      card.style.setProperty("--spotlight-opacity", "0");
+      card.style.removeProperty("transform");
+    }, { passive: true });
+  })();
+</script>
+
 </body>
 </html>

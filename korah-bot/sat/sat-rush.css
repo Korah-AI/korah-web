@@ -536,3 +536,98 @@ html[data-theme="light"] .rush-qcard {
     transparent 80%
   );
 }
+
+/* ══ Grey color blocking ════════════════════════════════════════════════════
+   Same system as the Study Plan wizard and the Question Bank: resting
+   surfaces are neutral grey (the app's --sf/--sf2 are purple-tinted and read
+   as "same color as the background"), and color appears only to mark identity
+   or state. Each option in a group carries a .tone-* class that sets --acc,
+   which every accent — border, fill, glow, icon, spotlight — reads from. */
+:root {
+  --rush-sf: #26262e;
+  --rush-sf2: #31313c;
+  --rush-bd: #454553;
+  --tone-red: #ef4444;    --tone-orange: #f97316;
+  --tone-amber: #f59e0b;  --tone-green: #22c55e;
+  --tone-teal: #14b8a6;   --tone-blue: #3b82f6;
+  --tone-pink: #ec4899;
+}
+html[data-theme="light"] {
+  --rush-sf: #eceef2;
+  --rush-sf2: #e0e3ea;
+  --rush-bd: #c3c8d2;
+}
+
+/* No dimmed text: the muted greys disappear against the grey surfaces. */
+.rush-page, .rush-overlay, .rush-modal { --tx2: var(--tx); --tx3: var(--tx); }
+
+.tone-red { --acc: var(--tone-red); }
+.tone-orange { --acc: var(--tone-orange); }
+.tone-amber { --acc: var(--tone-amber); }
+.tone-green { --acc: var(--tone-green); }
+.tone-teal { --acc: var(--tone-teal); }
+.tone-blue { --acc: var(--tone-blue); }
+.tone-pink { --acc: var(--tone-pink); }
+[class*="tone-"] { --spotlight-color: color-mix(in srgb, var(--acc) 40%, transparent); }
+
+/* Resting surfaces */
+.rush-card, .rush-domain, .rush-diff, .rush-toggle-row, .rush-qcard,
+.rush-choice, .rush-spr-input, .rush-skill, .rush-explanation,
+.rush-btn.is-ghost, .rush-mini-btn, .rush-timer-pill, .rush-chip,
+.rush-progress, .rush-bd-bar, .rush-skills-preview, .rush-stat,
+.rush-modal-card, .rush-overlay-card.is-info {
+  background: var(--rush-sf);
+  border-color: var(--rush-bd);
+  color: var(--tx);
+}
+.rush-card, .rush-diff, .rush-stat, .rush-qcard { box-shadow: 0 0.25rem 0 0 var(--rush-bd); }
+.rush-btn.is-ghost, .rush-mini-btn { background: var(--rush-sf2); box-shadow: 0 0.25rem 0 0 var(--rush-bd); }
+.rush-btn.is-ghost:active:not(:disabled) { box-shadow: 0 0.05rem 0 0 var(--rush-bd); }
+.rush-skill, .rush-chip, .rush-progress, .rush-bd-bar { background: var(--rush-sf2); }
+.rush-spr-input:focus { border-color: var(--acc, var(--rush-blue)); }
+
+/* Hover and selected states follow the group's own accent */
+.rush-card:hover, .rush-domain:hover, .rush-diff:hover:not(.is-selected) {
+  border-color: color-mix(in srgb, var(--acc) 70%, var(--rush-bd));
+  box-shadow: 0 0.6rem 1.6rem color-mix(in srgb, var(--acc) 30%, transparent),
+              0 0.3rem 0 0 color-mix(in srgb, var(--acc) 45%, var(--rush-bd));
+}
+.rush-card.is-selected, .rush-diff.is-selected {
+  color: #fff;
+  border-color: var(--acc);
+  background: linear-gradient(180deg, var(--acc), color-mix(in srgb, var(--acc) 78%, #000));
+  box-shadow: 0 0.25rem 0 0 color-mix(in srgb, var(--acc) 55%, #000);
+}
+.rush-card.is-selected .rush-card-desc,
+.rush-card.is-selected .material-icons-round { color: #fff; }
+.rush-card .material-icons-round { color: var(--acc); }
+.rush-domain.is-selected {
+  border-color: var(--acc);
+  background: color-mix(in srgb, var(--acc) 16%, var(--rush-sf));
+}
+.rush-domain-emoji.material-icons-round { color: var(--acc); }
+.rush-domain.is-selected .rush-domain-check,
+.rush-skill.is-selected .rush-skill-check { background: var(--acc); border-color: var(--acc); }
+.rush-skill.is-selected { border-color: var(--acc); background: color-mix(in srgb, var(--acc) 18%, var(--rush-sf2)); }
+.rush-skill:hover { border-color: color-mix(in srgb, var(--acc) 55%, var(--rush-bd)); background: color-mix(in srgb, var(--acc) 10%, var(--rush-sf2)); }
+.rush-mini-btn:hover { background: var(--rush-bd); }
+
+/* Stat tiles read as data, so they stay filled in their own color */
+.rush-stat { --acc: var(--tone-blue); }
+.rush-stat:nth-child(2) { --acc: var(--tone-pink); }
+.rush-stat:nth-child(3) { --acc: var(--tone-amber); }
+.rush-stat:nth-child(4) { --acc: var(--tone-green); }
+.rush-stat {
+  color: #fff;
+  border-color: var(--acc);
+  background: linear-gradient(180deg, var(--acc), color-mix(in srgb, var(--acc) 78%, #000));
+  box-shadow: 0 0.25rem 0 0 color-mix(in srgb, var(--acc) 55%, #000);
+}
+.rush-stat-icon, .rush-stat-value, .rush-stat-label { color: #fff; }
+
+.rush-hint {
+  background: color-mix(in srgb, var(--tone-amber) 18%, var(--rush-sf));
+  border-color: color-mix(in srgb, var(--tone-amber) 55%, transparent);
+  color: var(--tx);
+  font-weight: 700;
+}
