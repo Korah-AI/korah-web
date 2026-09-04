@@ -1,11 +1,62 @@
 import {
-  initializeFirestore, getFirestore, doc, setDoc, getDoc, onSnapshot
+  initializeFirestore, getFirestore, doc, setDoc, getDoc, deleteDoc, onSnapshot
 } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
 
 const COLLECTION = "studyPlans";
-const DOC_ID = "main";
+// iOS reads users/{uid}/studyPlans/current (Managers/StudyPlanService.swift:28).
+const DOC_ID = "current";
+
+// iOS StudyPlan.source vocabulary (Models/StudyPlanModels.swift:47).
+const SOURCE_BY_START_POINT = {
+  real_sat: "sat",
+  practice_test: "practice",
+  none: "self"
+};
+
+// Monday-first, matching StudyPlanDates.dayKeys.
+const DAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+
+// Domain labels iOS uses in its prompt, keyed by the wizard's rating keys.
+const DOMAIN_LABELS = {
+  heartOfAlgebra: "Algebra",
+  passportAdvancedMath: "Advanced Math",
+  problemSolvingData: "Problem-Solving and Data Analysis",
+  additionalTopicsMath: "Geometry and Trigonometry",
+  informationIdeas: "Information and Ideas",
+  craftStructure: "Craft and Structure",
+  expressionIdeas: "Expression of Ideas",
+  standardEnglish: "Standard English Conventions"
+};
+const CONFIDENCE_LABELS = ["", "shaky", "okay", "strong"];
 
 function now() { return new Date().toISOString(); }
+
+// Parse "yyyy-MM-dd" in local time. new Date("2026-09-02") is UTC midnight,
+// which lands on the previous day west of UTC and puts sessions in the wrong
+// day and week.
+function parseDay(value) {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const [y, m, d] = value.split("-").map(Number);
+  const dt = new Date(y, m - 1, d);
+  if (Number.isNaN(dt.getTime()) || dt.getMonth() !== m - 1) return null;
+  return dt;
+}
+
+function dayString(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function startOfToday() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+// getDay() is 0=Sunday..6=Saturday; DAY_KEYS is Monday-first.
+function dayKey(date) { return DAY_KEYS[(date.getDay() + 6) % 7]; }
 
 // Models routinely wrap JSON in code fences even in JSON mode, so parse
 // defensively instead of handing the raw text to JSON.parse.
@@ -42,6 +93,76 @@ async function readAiJson(res, label) {
     throw new Error(label + " failed: the AI service did not return usable JSON.");
   }
   return parsed;
+}
+
+// Port of StudyPlanGenerationService.buildPlan (Swift:188-234). Never trust the
+// model straight into Firestore: drop sessions that are in the past, on or
+// after the test date, not on a chosen study day, or missing skillName or
+// activity; clamp durationMin to 20-150; sort by date then start.
+function buildPlan(raw, intake) {
+  const feedback = { headline: "", priorities: [], weeklyFocus: "" };
+  const fb = raw && raw.feedback;
+  if (fb && typeof fb === "object" && !Array.isArray(fb)) {
+    if (typeof fb.headline === "string") feedback.headline = fb.headline;
+    if (typeof fb.weeklyFocus === "string") feedback.weeklyFocus = fb.weeklyFocus;
+    if (Array.isArray(fb.priorities)) {
+      feedback.priorities = fb.priorities.filter(p => typeof p === "string" && p).slice(0, 3);
+    }
+  }
+
+  const today = startOfToday();
+  const testDay = parseDay(intake.testDate);
+  if (!testDay) {
+    throw new Error("Building your plan failed: the test date is not a valid yyyy-MM-dd date.");
+  }
+  // iOS decodes hoursPerWeek as Int, so a string here fails the whole document.
+  const hoursPerWeek = Math.trunc(Number(intake.hoursPerWeek));
+  if (!Number.isFinite(hoursPerWeek)) {
+    throw new Error("Building your plan failed: hours per week is not a number.");
+  }
+  const allowedDays = new Set(intake.studyDays || []);
+  const rawSessions = Array.isArray(raw && raw.sessions) ? raw.sessions : [];
+
+  const sessions = [];
+  for (const s of rawSessions) {
+    if (!s || typeof s !== "object") continue;
+    const day = parseDay(s.date);
+    if (!day || day < today) continue;
+    if (day >= testDay) continue;
+    if (!allowedDays.has(dayKey(day))) continue;
+    if (typeof s.start !== "string" || !/^\d{2}:\d{2}$/.test(s.start)) continue;
+    const skillName = typeof s.skillName === "string" ? s.skillName.trim() : "";
+    const activity = typeof s.activity === "string" ? s.activity.trim() : "";
+    if (!skillName || !activity) continue;
+    const parsedDuration = Number(s.durationMin);
+    const durationMin = Number.isFinite(parsedDuration) ? Math.trunc(parsedDuration) : 45;
+    sessions.push({
+      // Stable, generated here. iOS matches sessions by id on every write, and
+      // a model-invented id is neither unique nor stable.
+      id: crypto.randomUUID(),
+      date: s.date,
+      start: s.start,
+      durationMin: Math.min(Math.max(durationMin, 20), 150),
+      subject: s.subject === "math" ? "math" : "english",
+      skillName,
+      activity,
+      completed: false
+    });
+  }
+
+  sessions.sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start));
+  if (sessions.length === 0) {
+    throw new Error("Building your plan failed: none of the sessions Korah returned fit your study days and test date. Please try again.");
+  }
+
+  return {
+    testDate: intake.testDate,
+    studyDays: Array.from(allowedDays),
+    hoursPerWeek,
+    source: SOURCE_BY_START_POINT[intake.startPoint] || "self",
+    feedback,
+    sessions
+  };
 }
 
 async function initStudyPlan(app, userId) {
@@ -93,27 +214,21 @@ async function initStudyPlan(app, userId) {
         model: "gemini-2.5-flash",
         messages: [
           { role: "system", content: PLAN_GENERATION_PROMPT },
-          { role: "user", content: JSON.stringify(intake) }
+          { role: "user", content: buildUserPrompt(intake) }
         ],
         response_format: { type: "json_object" },
-        temperature: 0.3
+        temperature: 0.4
       })
     });
     return readAiJson(res, "Building your plan");
   }
 
   async function createPlan(intake) {
-    const { feedback, sessions } = await generatePlan(intake);
-    if (!Array.isArray(sessions) || sessions.length === 0) {
-      throw new Error("Building your plan failed: the AI service returned no study sessions.");
-    }
-    const payload = {
-      ...intake,
-      sessions: sessions.map(s => ({ ...s, completed: false, completedAt: null })),
-      feedback,
-      createdAt: now(),
-      updatedAt: now()
-    };
+    const raw = await generatePlan(intake);
+    // Only the eight fields iOS decodes are written. The wizard intake
+    // (scores, confidence ratings, free text) is not part of the shared
+    // schema, so it stays out of the document.
+    const payload = { ...buildPlan(raw, intake), createdAt: now(), updatedAt: now() };
     await setDoc(planRef, payload);
     return payload;
   }
@@ -121,14 +236,17 @@ async function initStudyPlan(app, userId) {
   async function updateSession(sessionId, { completed }) {
     const plan = await getPlan();
     if (!plan) throw new Error("No plan");
-    const sessions = plan.sessions.map(s =>
-      s.id === sessionId ? { ...s, completed, completedAt: completed ? now() : null } : s
+    const sessions = (plan.sessions || []).map(s =>
+      s.id === sessionId ? { ...s, completed } : s
     );
     await setDoc(planRef, { sessions, updatedAt: now() }, { merge: true });
   }
 
   async function deletePlan() {
-    await setDoc(planRef, { deletedAt: now() });
+    // iOS deletes the document outright (StudyPlanService.swift:80). Writing a
+    // tombstone instead leaves snap.exists() true and strands the page on an
+    // empty calendar.
+    await deleteDoc(planRef);
   }
 
   function downscaleImage(file, maxDim = 1024, quality = 0.7) {
@@ -163,44 +281,68 @@ async function initStudyPlan(app, userId) {
   return api;
 }
 
-const SCORE_EXTRACTION_PROMPT = `You are an SAT score report reader. Extract the Math section score and the Reading & Writing section score from this screenshot.
-Return ONLY valid JSON: { "mathScore": number|null, "rwScore": number|null }
-If a score is not visible or unclear, use null. Do not guess.`;
+// Ported from StudyPlanGenerationService.swift:37-44.
+const SCORE_EXTRACTION_PROMPT = `You read SAT practice score reports (College Board, Bluebook, Khan Academy and similar). Extract the section scores. Respond with ONLY a single valid JSON object, no code fences:
+{ "mathScore": number or null, "rwScore": number or null }
+mathScore is the Math section score (200-800). rwScore is the Reading and Writing section score (200-800). If the report shows only a total score out of 1600, split it evenly. If you can't find a score, use null.`;
 
-const PLAN_GENERATION_PROMPT = `You are Korah's SAT Study Planner. Create a 10-week study plan.
-
-Input:
+// Ported from StudyPlanGenerationService.swift:100-124. The hard rules are
+// there because the model gets it wrong without them.
+const PLAN_GENERATION_PROMPT = `You are Korah, a warm SAT coach who builds realistic study schedules. Respond with ONLY a single valid JSON object, no code fences, no commentary:
 {
-  "startPoint": "real_sat" | "practice_test" | "none",
-  "mathScore": 680,
-  "rwScore": 720,
-  "confidenceRatings": {
-    "heartOfAlgebra": 2,
-    "problemSolvingData": 1,
-    "passportAdvancedMath": 3,
-    "additionalTopicsMath": 2,
-    "informationIdeas": 2,
-    "craftStructure": 3,
-    "expressionIdeas": 1,
-    "standardEnglish": 2
+  "feedback": {
+    "headline": "One encouraging sentence about the student's starting point.",
+    "priorities": ["Up to 3 short bullets naming their biggest score levers"],
+    "weeklyFocus": "One sentence on how the plan is structured week to week."
   },
-  "freeTextGoals": "Focus on algebra and reading speed",
-  "testDate": "2025-11-08",
-  "studyDays": ["mon","wed","fri","sat","sun"],
-  "hoursPerWeek": 6
+  "sessions": [
+    { "date": "yyyy-MM-dd", "start": "HH:mm", "durationMin": 45,
+      "subject": "math" or "english", "skillName": "...", "activity": "..." }
+  ]
 }
+Hard rules:
+- Sessions ONLY on the student's chosen study days, starting next occurrence of a chosen day, ending before the test date.
+- Total session minutes per week must roughly equal their weekly hours. Sessions are 30 to 90 minutes.
+- Start times between 15:30 and 20:00 unless weekends, where 09:00 to 20:00 is fine.
+- If the test is more than 10 weeks away, plan only the first 10 weeks.
+- skillName must be a real Digital SAT skill from the official domains (Algebra, Advanced Math, Problem-Solving and Data Analysis, Geometry and Trigonometry, Information and Ideas, Craft and Structure, Expression of Ideas, Standard English Conventions).
+- Spend more time on the student's weakest areas, but keep at least a third of time maintaining strengths.
+- activity is one short concrete line, e.g. "Practice set: 10 linear function questions" or "Timed reading drill: inferences".
+- Vary activities: practice sets, timed drills, review of missed questions, one full-length practice test roughly every 3 weeks (on a weekend day, 120 min is allowed for these only).
+- feedback is short and encouraging. Never use em dashes anywhere. Use contractions. Talk to "you".`;
 
-HARD RULES (follow exactly):
-1. Sessions ONLY on chosen studyDays.
-2. Each session 30-90 minutes.
-3. Total weekly minutes ≈ hoursPerWeek × 60 (distribute evenly across chosen days).
-4. Plan ONLY the first 10 weeks from today.
-5. Use REAL SAT skill/domain names:
-   Math: "Heart of Algebra", "Problem Solving & Data Analysis", "Passport to Advanced Math", "Additional Topics in Math"
-   Reading & Writing: "Information & Ideas", "Craft & Structure", "Expression of Ideas", "Standard English Conventions"
-6. Include a FULL PRACTICE TEST every ~3 weeks (weeks 3, 6, 9) — 135-180 min, on a chosen day.
-7. Mix domains each week; don't cluster same domain.
-8. session.id = stable UUID v4 (generate client-side, send in prompt context).
-9. Output ONLY valid JSON: { "feedback": "string", "sessions": [ { "id": "uuid", "date": "2025-08-28", "dayOfWeek": "thu", "startTime": "19:00", "durationMinutes": 60, "domain": "Heart of Algebra", "section": "math", "taskType": "practice" } ] }`;
+// Ported from StudyPlanGenerationService.userPrompt (Swift:126-170).
+function buildUserPrompt(intake) {
+  const lines = [];
+  lines.push("Today's date: " + dayString(new Date()));
+  lines.push("Test date: " + intake.testDate);
+  lines.push("Study days: " + (intake.studyDays || []).join(", "));
+  lines.push("Hours per week: " + intake.hoursPerWeek);
+
+  if (intake.startPoint === "real_sat") lines.push("Starting point: took the real SAT.");
+  else if (intake.startPoint === "practice_test") lines.push("Starting point: took a practice test.");
+  else lines.push("Starting point: hasn't taken the SAT or a practice test yet.");
+
+  if (intake.mathScore != null) lines.push("Math score: " + intake.mathScore);
+  if (intake.rwScore != null) lines.push("Reading and Writing score: " + intake.rwScore);
+
+  const ratings = intake.confidenceRatings || {};
+  const described = Object.keys(ratings).sort().map((code) => {
+    const name = DOMAIN_LABELS[code];
+    const level = ratings[code];
+    if (!name || !(level >= 1 && level <= 3)) return null;
+    return name + ": " + CONFIDENCE_LABELS[level];
+  }).filter(Boolean);
+  if (described.length) {
+    lines.push("Self-rated confidence per domain: " + described.join("; "));
+  }
+
+  if ((intake.freeTextGoals || "").trim()) {
+    lines.push("What the student wants from the plan: " + intake.freeTextGoals.trim());
+  }
+
+  lines.push("Build my study plan.");
+  return lines.join("\n");
+}
 
 export { initStudyPlan };
