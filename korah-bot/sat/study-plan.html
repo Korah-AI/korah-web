@@ -525,21 +525,30 @@
         else this.intake.studyDays.push(key);
       },
       formatDate(iso) { return new Date(iso + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); },
+      // Optional chaining on window.KorahStudyPlan silently no-ops when the
+      // module never initialised (no signed-in user), so ask for it explicitly.
+      planApi() {
+        if (!window.KorahStudyPlan) {
+          throw new Error("You need to be signed in to build a study plan. Sign in and try again.");
+        }
+        return window.KorahStudyPlan;
+      },
       handleFileSelect(e) { this.processFile(e.target.files[0]); },
       handleDrop(e) { this.processFile(e.dataTransfer.files[0]); },
       async processFile(file) {
         if (!file || !file.type.startsWith('image/')) return;
-        this.scoreImage = await window.KorahStudyPlan?.downscaleImage(file);
+        try { this.scoreImage = await this.planApi().downscaleImage(file); }
+        catch (e) { console.error(e); alert(e.message); return; }
         await this.extractScores();
       },
       async extractScores() {
         if (!this.scoreImage) return;
         this.extracting = true;
         try {
-          this.extractedScores = await window.KorahStudyPlan?.extractScoresFromImage(this.scoreImage);
+          this.extractedScores = await this.planApi().extractScoresFromImage(this.scoreImage);
           if (this.extractedScores?.mathScore != null) this.intake.mathScore = this.extractedScores.mathScore;
           if (this.extractedScores?.rwScore != null) this.intake.rwScore = this.extractedScores.rwScore;
-        } catch (e) { console.error(e); alert("Failed to read scores. Try a clearer image."); }
+        } catch (e) { console.error(e); alert(e.message || "Failed to read scores. Try a clearer image."); }
         finally { this.extracting = false; }
       },
       async submitWizard() {
@@ -554,8 +563,8 @@
             payload.mathScore = null;
             payload.rwScore = null;
           }
-          await window.KorahStudyPlan?.createPlan(payload);
-        } catch (e) { console.error(e); alert("Failed to create plan. Try again."); }
+          await this.planApi().createPlan(payload);
+        } catch (e) { console.error(e); alert(e.message || "Failed to create plan. Try again."); }
         finally { this.generating = false; }
       }
     };
@@ -621,12 +630,17 @@
       },
       formatTime(t) { return t; },
       async toggleSession(id, completed) {
-        await window.KorahStudyPlan?.updateSession(id, { completed });
+        try {
+          if (!window.KorahStudyPlan) throw new Error("You need to be signed in to update a session.");
+          await window.KorahStudyPlan.updateSession(id, { completed });
+        } catch (e) { console.error(e); alert(e.message || "Failed to update the session."); }
       },
-      confirmReset() {
-        if (confirm("Delete your study plan and start over?")) {
-          window.KorahStudyPlan?.deletePlan();
-        }
+      async confirmReset() {
+        if (!confirm("Delete your study plan and start over?")) return;
+        try {
+          if (!window.KorahStudyPlan) throw new Error("You need to be signed in to delete your plan.");
+          await window.KorahStudyPlan.deletePlan();
+        } catch (e) { console.error(e); alert(e.message || "Failed to delete the plan."); }
       }
     };
   }

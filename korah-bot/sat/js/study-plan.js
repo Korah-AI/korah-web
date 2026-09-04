@@ -7,6 +7,43 @@ const DOC_ID = "main";
 
 function now() { return new Date().toISOString(); }
 
+// Models routinely wrap JSON in code fences even in JSON mode, so parse
+// defensively instead of handing the raw text to JSON.parse.
+// Same approach as study/js/study-api.js.
+function stripCodeFences(text) {
+  var trimmed = (text || "").trim();
+  if (!trimmed) return "";
+  if (trimmed.indexOf("```") !== -1) {
+    trimmed = trimmed.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+  }
+  return trimmed.trim();
+}
+
+function parseJsonFromResponse(text) {
+  var trimmed = stripCodeFences(text);
+  if (!trimmed) return null;
+  try { return JSON.parse(trimmed); } catch (_) {}
+  var start = trimmed.indexOf("{");
+  var end = trimmed.lastIndexOf("}") + 1;
+  if (start === -1 || end <= start) return null;
+  try { return JSON.parse(trimmed.slice(start, end)); } catch (_) { return null; }
+}
+
+// A 404 or 500 from /api/r does not throw, so check res.ok before reading the
+// body. Otherwise the failure silently becomes {} and the UI renders blanks.
+async function readAiJson(res, label) {
+  if (!res.ok) {
+    throw new Error(label + " failed: the AI service returned " + res.status + ".");
+  }
+  const data = await res.json().catch(() => null);
+  const content = data?.choices?.[0]?.message?.content;
+  const parsed = parseJsonFromResponse(content);
+  if (!parsed) {
+    throw new Error(label + " failed: the AI service did not return usable JSON.");
+  }
+  return parsed;
+}
+
 async function initStudyPlan(app, userId) {
   let db;
   try { 
@@ -45,9 +82,7 @@ async function initStudyPlan(app, userId) {
         temperature: 0.1
       })
     });
-    const data = await res.json();
-    const content = data.choices?.[0]?.message?.content || "{}";
-    return JSON.parse(content);
+    return readAiJson(res, "Reading your score report");
   }
 
   async function generatePlan(intake) {
@@ -64,13 +99,14 @@ async function initStudyPlan(app, userId) {
         temperature: 0.3
       })
     });
-    const data = await res.json();
-    const content = data.choices?.[0]?.message?.content || "{}";
-    return JSON.parse(content);
+    return readAiJson(res, "Building your plan");
   }
 
   async function createPlan(intake) {
     const { feedback, sessions } = await generatePlan(intake);
+    if (!Array.isArray(sessions) || sessions.length === 0) {
+      throw new Error("Building your plan failed: the AI service returned no study sessions.");
+    }
     const payload = {
       ...intake,
       sessions: sessions.map(s => ({ ...s, completed: false, completedAt: null })),
