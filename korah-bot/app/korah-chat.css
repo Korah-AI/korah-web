@@ -5075,3 +5075,96 @@ html[data-theme="light"] .more-dropdown-theme-header {
 .ic-quiz  { color: #EF5350; }
 .ic-fire  { color: #ef4444; }
 .ic-gems  { color: #38bdf8; }
+
+/* ══ Sidebar nav buttons — grey color blocking ══════════════════════════════
+   Follows docs/WIZARD-UI-PATTERNS.md: neutral grey resting surfaces instead of
+   the purple --sf2/--bd (which read as "same color as the background"), with
+   color reserved for identity and state. Each link carries its own bright
+   --acc, which drives the icon and label; the current page is filled with it. */
+:root {
+    --nav-sf: #31313c;
+    --nav-bd: #454553;
+}
+html[data-theme="light"] {
+    --nav-sf: #e0e3ea;
+    --nav-bd: #c3c8d2;
+}
+/* ── Sidebar nav buttons ────────────────────────────────────────────────────
+   Same grey blocking as the cards: the nav buttons rest on the neutral wizard
+   grey instead of the purple --sf2/--bd, and each one carries its own bright
+   --acc so the column is a set of distinct colors rather than one repeated
+   white. Applies to every page that loads this stylesheet. */
+.sidebar-nav-link {
+    background: var(--nav-sf);
+    border-color: var(--nav-bd);
+    box-shadow: none;
+    /* Fallback keeps any link without a tone (e.g. the productivity link) legible. */
+    color: var(--acc, var(--tx));
+    transition: border-color .15s ease, background .15s ease, box-shadow .15s ease, transform .15s ease, color .15s ease;
+}
+
+/* One bright tone per destination. */
+.sidebar-nav-link[href*="/index.html"]:not([href*="/sat/"]) { --acc: #34d399; }
+.sidebar-nav-link[href*="/chat.html"]:not([href*="math-chat"])                       { --acc: #22d3ee; }
+.sidebar-nav-link[href*="/study/feed.html"]                 { --acc: #60a5fa; }
+.sidebar-nav-link[href*="/sat/dashboard.html"]              { --acc: #f472b6; }
+.sidebar-nav-link[href*="/sat/index.html"]                  { --acc: #fbbf24; }
+.sidebar-nav-link[href*="/sat/latest-questions.html"]       { --acc: #4ade80; }
+.sidebar-nav-link[href*="/sat/math-chat.html"]              { --acc: #38bdf8; }
+.sidebar-nav-link[href*="/sat/rush.html"]                   { --acc: #fb923c; }
+.sidebar-nav-link[href*="/sat/study-plan.html"]             { --acc: #f87171; }
+
+/* Deeper shades in light theme — the bright set washes out on the pale grey. */
+html[data-theme="light"] .sidebar-nav-link[href*="/index.html"]:not([href*="/sat/"]) { --acc: #059669; }
+html[data-theme="light"] .sidebar-nav-link[href*="/chat.html"]:not([href*="math-chat"])                       { --acc: #0e7490; }
+html[data-theme="light"] .sidebar-nav-link[href*="/study/feed.html"]                 { --acc: #2563eb; }
+html[data-theme="light"] .sidebar-nav-link[href*="/sat/dashboard.html"]              { --acc: #db2777; }
+html[data-theme="light"] .sidebar-nav-link[href*="/sat/index.html"]                  { --acc: #b45309; }
+html[data-theme="light"] .sidebar-nav-link[href*="/sat/latest-questions.html"]       { --acc: #15803d; }
+html[data-theme="light"] .sidebar-nav-link[href*="/sat/math-chat.html"]              { --acc: #0369a1; }
+html[data-theme="light"] .sidebar-nav-link[href*="/sat/rush.html"]                   { --acc: #c2410c; }
+html[data-theme="light"] .sidebar-nav-link[href*="/sat/study-plan.html"]             { --acc: #dc2626; }
+
+.sidebar-nav-link:hover {
+    color: var(--acc, var(--tx));
+    background: color-mix(in srgb, var(--acc, var(--tx)) 16%, var(--nav-sf));
+    border-color: var(--acc, var(--nav-bd));
+}
+
+/* The page you're on is filled with its own color, per the wizard pattern. */
+.sidebar-nav-link.active,
+.sidebar-nav-link.active:hover {
+    color: #fff;
+    background: linear-gradient(180deg, var(--acc, var(--p4)), color-mix(in srgb, var(--acc, var(--p4)) 78%, #000));
+    border-color: var(--acc, var(--p4));
+    box-shadow: none;
+}
+
+/* More vertical breathing room — the default 0.375rem gap and 0.5rem padding
+   packed the column too tightly once the buttons became solid grey blocks. */
+.sidebar-nav {
+    gap: 0.625rem;
+}
+.sidebar-nav-link {
+    padding: 0.6875rem 0.75rem;
+}
+.sidebar-section-label {
+    margin-top: 0.5rem;
+}
+.sidebar.collapsed .sidebar-nav {
+    gap: 0.875rem;
+}
+
+/* The nav is taller now, so on short viewports the column can outgrow 100vh.
+   Let the whole sidebar scroll as one piece rather than only the chat list —
+   .sidebar sets overflow:hidden and .sidebar-middle absorbs the slack, which
+   squeezes the history to nothing instead of revealing what's cut off. */
+.sidebar {
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+}
+.sidebar-middle {
+    flex: 0 0 auto;
+    overflow: visible;
+}
