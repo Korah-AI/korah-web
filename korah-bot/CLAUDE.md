@@ -69,3 +69,10 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 ## Project Notes
 
 See `../README.md` for the API route map.
+
+**Building a wizard or multi-step flow?** Read `../docs/WIZARD-UI-PATTERNS.md` first.
+It covers the house UI/UX conventions — grey resting surfaces (never the purple
+`--sf`/`--bd` tokens), per-option accent tones, filled-not-outlined selected states,
+no dimmed text, the step shell and transitions, custom popups instead of
+`alert()`/`confirm()` — with the reference implementations in
+`korah-bot/sat/study-plan.html`, `sat-rush.css` and `js/sat-rush.js`.
