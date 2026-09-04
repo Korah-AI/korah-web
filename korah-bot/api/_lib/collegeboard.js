@@ -236,6 +236,57 @@ async function fetchRegularQuestion(externalId, signal) {
   return null;
 }
 
+// ── MathML <mfenced> expansion ─────────────────────────────────────────
+// College Board's math HTML encodes parentheses (and absolute-value bars) with
+// the deprecated <mfenced> element. MathML Core (what Chrome and Safari ship)
+// never implemented it, so the browser renders the children and silently drops
+// the fences: "x(x-1)(x+5)" displays as "xx-1x+5". Rewrite each <mfenced> to the
+// equivalent <mrow><mo>(</mo> … <mo>)</mo></mrow>, which every engine renders.
+//
+// The `separators` attribute is not translated: CB never emits a multi-child
+// <mfenced>, so there is nothing to separate.
+function mfencedAttr(attrs, name, fallback) {
+  const match = new RegExp(`\\b${name}\\s*=\\s*"([^"]*)"`, "i").exec(attrs);
+  return match ? match[1] : fallback;
+}
+
+function escapeFence(ch) {
+  return ch.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+export function expandMfenced(html) {
+  if (typeof html !== "string" || !html.includes("<mfenced")) return html;
+  // Open tags push their close delimiter so nested fences pair up correctly.
+  const closers = [];
+  return html.replace(/<(\/?)mfenced\b([^>]*)>/gi, (_, slash, attrs) => {
+    if (slash) {
+      return `<mo>${escapeFence(closers.pop() ?? ")")}</mo></mrow>`;
+    }
+    const open = escapeFence(mfencedAttr(attrs, "open", "("));
+    const close = mfencedAttr(attrs, "close", ")");
+    // <mfenced/> has no children and no closing tag, so emit both delimiters now.
+    if (attrs.trim().endsWith("/")) {
+      return `<mrow><mo>${open}</mo><mo>${escapeFence(close)}</mo></mrow>`;
+    }
+    closers.push(close);
+    return `<mrow><mo>${open}</mo>`;
+  });
+}
+
+// Every question's HTML passes through here on its way to the API routes.
+function expandDetailMfenced(detail) {
+  if (!detail) return detail;
+  for (const field of ["stem", "stimulus", "rationale"]) {
+    detail[field] = expandMfenced(detail[field]);
+  }
+  if (detail.answerOptions) {
+    for (const key of Object.keys(detail.answerOptions)) {
+      detail.answerOptions[key] = expandMfenced(detail.answerOptions[key]);
+    }
+  }
+  return detail;
+}
+
 export async function fetchQuestionDetail(idParam, signal) {
   if (!idParam) return null;
   const id = String(idParam);
@@ -244,9 +295,11 @@ export async function fetchQuestionDetail(idParam, signal) {
     return cached.detail;
   }
   try {
-    const detail = id.includes("-DC")
-      ? await fetchDisclosedQuestion(id, signal)
-      : await fetchRegularQuestion(id, signal);
+    const detail = expandDetailMfenced(
+      id.includes("-DC")
+        ? await fetchDisclosedQuestion(id, signal)
+        : await fetchRegularQuestion(id, signal)
+    );
     if (detail) {
       cacheSet(detailCache, id, { detail, fetchedAt: Date.now() }, DETAIL_CACHE_MAX);
     }

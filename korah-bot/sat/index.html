@@ -62,6 +62,7 @@
   import { setupKorahDB } from "../app/data/firestore-store.js";
   import { initSatAnalytics } from "./js/sat-analytics.js";
   import { startAuthGuard } from '../auth-guard.js';
+  import { initGuestGate, startGuestSession, showGuestToastOnce } from '../guest-gate.js';
 
   const firebaseConfig = {
     apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
@@ -77,7 +78,11 @@
 
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
-      window.KorahTransitions.go('../landing/index.html');
+      // Question bank is served by /api/sat/* and needs no Firebase, so guests
+      // can browse it. Analytics stays undefined; sat-bank.js already handles that.
+      startGuestSession();
+      initGuestGate('../');
+      showGuestToastOnce();
       return;
     }
     // Set up Firestore and expose window.KorahDB before notifying the app.
@@ -97,7 +102,7 @@
     } catch (e) {
       console.warn("[SAT] onboarding check failed", e);
     }
-    startAuthGuard(auth, '../landing/index.html');
+    startAuthGuard(auth, '../index.html');
   });
 
   // #logout-btn lives in the sidebar, which sidebar-loader.js injects asynchronously,

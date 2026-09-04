@@ -296,7 +296,7 @@ const firebaseConfig = {
 2. `onAuthStateChanged(auth, async (user) => { ... })`
 3. `setupKorahDB(app, user.uid)` — initializes Firestore with offline persistence
 4. `initStudyPlan(app, user.uid)` — attaches listener
-5. `startAuthGuard(auth, '../landing/index.html')` — polls auth every 10s
+5. `startAuthGuard(auth, '../index.html')` — polls auth every 10s
 
 ### Firestore Access Pattern
 ```js

@@ -60,6 +60,41 @@ For multi-step tasks, state a brief plan:
 
 Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
 
+## 5. Read the Docs First
+
+**There are two documentation directories. Check both before starting work.**
+
+- `../docs/` — repo-level docs (architecture, APIs, feature designs, proposals)
+- `docs/` — `korah-bot/docs/`, feature and research notes
+
+Do this before writing code, not after:
+
+1. `ls ../docs docs` and read the filenames.
+2. Open anything whose subject overlaps your task. If nothing obviously matches,
+   grep both directories for the feature, file, or route you're about to touch.
+3. Note the doc's status. Some describe what exists; some are proposals that were
+   never implemented (`rate-limiting-upstash.md` says **"Status: Proposed, not
+   implemented"** in its header). Do not treat a proposal as a description of the
+   current code.
+4. Filenames are not reliable signposts. Several are named after their author
+   (`daniels-docs.md`, `Om-docs.md`, `bushis-docs.md`) rather than their subject —
+   `daniels-docs.md` is the full architecture map, and it is the best entry point
+   for locating a feature or tracing a request.
+
+**Verify before you rely on it.** These docs are hand-maintained and drift behind
+the code. Confirm any specific claim (a file path, a route name, a function
+signature) against the actual file before acting on it.
+
+**When you find a doc that is wrong, fix it as part of your work.** Correct the
+stale lines in place — don't rewrite the document, don't restructure it, and
+don't add new sections beyond the correction. Same rule as §3: surgical.
+
+**When your change makes a doc wrong, update it in the same commit.** If you
+rename a route, move a page, or change a data shape that a doc describes, the doc
+edit is part of the change, not a follow-up.
+
+Creating a *new* doc is a separate task. Ask first — don't add one unprompted.
+
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
@@ -104,7 +139,8 @@ docs/WIZARD-UI-PATTERNS.md. Scrollbar width stays at 6px.
 
 ## Project Notes
 
-See `../README.md` for the API route map.
+See `../README.md` for the API route map and the source-control tips (there is no
+working local preview — you commit and check the deployed site).
 
 **Building a wizard or multi-step flow?** Read `../docs/WIZARD-UI-PATTERNS.md` first.
 It covers the house UI/UX conventions — grey resting surfaces (never the purple

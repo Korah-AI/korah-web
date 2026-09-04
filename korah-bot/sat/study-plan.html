@@ -55,6 +55,7 @@
   import { setupKorahDB } from "../app/data/firestore-store.js";
   import { initStudyPlan } from "./js/study-plan.js";
   import { startAuthGuard } from '../auth-guard.js';
+  import { startGuestSession, showAuthWall } from '../guest-gate.js';
 
   const firebaseConfig = {
     apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
@@ -69,15 +70,19 @@
   const auth = getAuth(app);
 
   onAuthStateChanged(auth, async (user) => {
-    // Signed-out users are not redirected for now, so the page stays reachable
-    // on Live Server where sign-in is unavailable.
-    if (!user) { console.warn('[StudyPlan] no signed-in user'); return; }
+    if (!user) {
+      // The plan lives entirely under users/{uid}, so there is nothing to show
+      // a guest. Render the empty shell, then hard-block with the auth wall.
+      startGuestSession();
+      showAuthWall('../');
+      return;
+    }
     await setupKorahDB(app, user.uid);
     await initStudyPlan(app, user.uid);
     const detail = { uid: user.uid };
     window._korahReadyFired = detail;
     window.dispatchEvent(new CustomEvent('korahReady', { detail }));
-    startAuthGuard(auth, '../landing/index.html');
+    startAuthGuard(auth, '../index.html');
   });
 
   // #logout-btn lives in the sidebar, which sidebar-loader.js injects asynchronously,

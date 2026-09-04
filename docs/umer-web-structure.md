@@ -9,12 +9,14 @@ Korah Web is a single-page-application-style static site (no React, no build ste
 
 ```
 korah-bot/
-├── index.html                 # Landing page (post-login home)
+├── index.html                 # Public landing page (site root)
+├── home.html                  # Signed-in home dashboard
 ├── login.html                 # Authentication page
 ├── chat.html                  # Ask Korah (general chat)
 ├── sidebar.html               # Shared sidebar (loaded via sidebar-loader.js)
 ├── sidebar-loader.js          # Fetches & injects sidebar.html
-├── auth-guard.js              # Polls auth, redirects if logged out
+├── auth-guard.js              # Polls auth, raises the auth wall if logged out
+├── guest-gate.js              # Signed-out handling (browse-and-gate / auth wall)
 ├── korah.js                   # Global utilities (transitions, theme, etc.)
 ├── korah.css                  # Global design system (CSS variables, components)
 ├── transitions/               # Page transition animations
@@ -51,8 +53,6 @@ korah-bot/
 │   └── js/
 │       ├── sidebar.js         # Study sidebar (history, items)
 │       └── study-api.js       # AI content generation proxy
-└── landing/
-    └── index.html             # Public landing page
 ```
 
 ---
@@ -75,11 +75,16 @@ Every authenticated page follows this pattern (see `dashboard.html:587-634`):
   const auth = getAuth(app);
 
   onAuthStateChanged(auth, async (user) => {
-    if (!user) { window.KorahTransitions.go('../landing/index.html'); return; }
+    if (!user) {                                 // No redirect. Guests stay put:
+      startGuestSession();                       // browse-and-gate via
+      initGuestGate('../');                      // initGuestGate(), or hard
+      showGuestToastOnce();                      // block via showAuthWall('../')
+      return;
+    }
     await setupKorahDB(app, user.uid);           // Init Firestore
     await initSatAnalytics(app, user.uid);       // Page-specific init
     window.dispatchEvent(new CustomEvent('korahReady', { detail: { uid: user.uid } }));
-    startAuthGuard(auth, '../landing/index.html'); // 10s poll guard
+    startAuthGuard(auth, '../index.html');       // 10s poll guard
   });
 </script>
 ```
