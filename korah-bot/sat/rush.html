@@ -89,7 +89,10 @@
     startAuthGuard(auth, '../landing/index.html');
   });
 
-  document.getElementById('logout-btn')?.addEventListener('click', () => {
+  // #logout-btn lives in the sidebar, which sidebar-loader.js injects asynchronously,
+  // so it does not exist yet when this module runs. Delegate from document instead.
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#logout-btn')) return;
     window.confirmLogout(async () => {
       await signOut(auth);
       localStorage.removeItem('korah_first_name');

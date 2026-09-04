@@ -1079,8 +1079,8 @@ html[data-theme="light"] .sat-chip.is-active {
 .sat-section-card {
     overflow: hidden;
     border-radius: 1.5rem;
-    background: var(--sat-card-sf);
-    border: 0.0625rem solid var(--sat-card-bd);
+    background: var(--sat-panel-sf);
+    border: 0.0625rem solid var(--sat-panel-bd);
     box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.15);
 }
 
@@ -1199,7 +1199,7 @@ html[data-theme="light"] .sat-section-header:hover {
 
 .sat-domain-group {
     padding: 1.125rem 1.375rem 0.75rem;
-    border-top: 0.0625rem solid var(--sat-card-bd);
+    border-top: 0.0625rem solid var(--sat-panel-bd);
 }
 
 .sat-domain-heading,
@@ -1262,8 +1262,8 @@ html[data-theme="light"] .sat-section-header:hover {
     align-items: center;
     gap: 0.75rem;
     padding: 0.75rem 1.375rem 0.5rem;
-    background: var(--sat-card-sf2);
-    border-top: 0.0625rem solid var(--sat-card-bd);
+    background: var(--sat-panel-sf2);
+    border-top: 0.0625rem solid var(--sat-panel-bd);
     font-size: 0.6875rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -1286,7 +1286,7 @@ html[data-theme="light"] .sat-section-header:hover {
     flex: 1;
     height: 0.375rem;
     border-radius: 62.4375rem;
-    background: var(--sat-card-bd);
+    background: var(--sat-panel-bd);
     overflow: hidden;
 }
 
@@ -2166,7 +2166,7 @@ html[data-theme="light"] .reference-content {
 
 /* ── Light Theme Adjustments ── */
 html[data-theme="light"] .sat-section-card {
-    border: 0.0625rem solid var(--sat-card-bd);
+    border: 0.0625rem solid var(--sat-panel-bd);
     box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.06);
 }
 
@@ -4328,6 +4328,11 @@ html[data-theme="light"] .sat-more-dropdown .more-dropdown-item::before {
     --sat-card-sf: #50505e;
     --sat-card-sf2: #5c5c6c;
     --sat-card-bd: #78788c;
+    /* Cards use the canonical wizard grey from docs/WIZARD-UI-PATTERNS.md.
+       The lighter set above stays on the controls, menus and modals. */
+    --sat-panel-sf: #26262e;
+    --sat-panel-sf2: #31313c;
+    --sat-panel-bd: #454553;
     --tone-amber: #f59e0b;
     --tone-blue: #3b82f6;
     --tone-teal: #14b8a6;
@@ -4340,6 +4345,9 @@ html[data-theme="light"] .sat-grey {
     --sat-card-sf: #eceef2;
     --sat-card-sf2: #e0e3ea;
     --sat-card-bd: #c3c8d2;
+    --sat-panel-sf: #eceef2;
+    --sat-panel-sf2: #e0e3ea;
+    --sat-panel-bd: #c3c8d2;
 }
 
 /* No dimmed text on these pages — the muted greys and the purple accent both
@@ -4372,8 +4380,8 @@ html[data-theme="light"] .sat-grey {
     box-shadow: none;
 }
 .sat-grey .sat-check.is-active::after {
-    border-right-color: var(--sat-card-sf);
-    border-bottom-color: var(--sat-card-sf);
+    border-right-color: var(--sat-panel-sf);
+    border-bottom-color: var(--sat-panel-sf);
 }
 
 /* ── Page header ── */
@@ -4509,4 +4517,83 @@ html[data-theme="light"] .sat-grey {
     background: var(--sat-card-sf2);
     border-color: var(--acc);
     color: var(--tx);
+}
+
+/* ── Sidebar nav buttons ────────────────────────────────────────────────────
+   Same grey blocking as the cards: the nav buttons rest on the neutral wizard
+   grey instead of the purple --sf2/--bd, and each one carries its own bright
+   --acc so the column is a set of distinct colors rather than one repeated
+   white. Scoped to .sat-grey, so only the two bank pages are affected. */
+body.sat-grey .sidebar-nav-link {
+    background: var(--sat-panel-sf2);
+    border-color: var(--sat-panel-bd);
+    box-shadow: none;
+    color: var(--acc);
+    transition: border-color .15s ease, background .15s ease, box-shadow .15s ease, transform .15s ease, color .15s ease;
+}
+
+/* One bright tone per destination. */
+body.sat-grey .sidebar-nav-link[href*="/index.html"]:not([href*="/sat/"]) { --acc: #34d399; }
+body.sat-grey .sidebar-nav-link[href*="/chat.html"]:not([href*="math-chat"])                       { --acc: #22d3ee; }
+body.sat-grey .sidebar-nav-link[href*="/study/feed.html"]                 { --acc: #60a5fa; }
+body.sat-grey .sidebar-nav-link[href*="/sat/dashboard.html"]              { --acc: #f472b6; }
+body.sat-grey .sidebar-nav-link[href*="/sat/index.html"]                  { --acc: #fbbf24; }
+body.sat-grey .sidebar-nav-link[href*="/sat/latest-questions.html"]       { --acc: #4ade80; }
+body.sat-grey .sidebar-nav-link[href*="/sat/math-chat.html"]              { --acc: #38bdf8; }
+body.sat-grey .sidebar-nav-link[href*="/sat/rush.html"]                   { --acc: #fb923c; }
+body.sat-grey .sidebar-nav-link[href*="/sat/study-plan.html"]             { --acc: #f87171; }
+
+/* Deeper shades in light theme — the bright set washes out on the pale grey. */
+html[data-theme="light"] body.sat-grey .sidebar-nav-link[href*="/index.html"]:not([href*="/sat/"]) { --acc: #059669; }
+html[data-theme="light"] body.sat-grey .sidebar-nav-link[href*="/chat.html"]:not([href*="math-chat"])                       { --acc: #0e7490; }
+html[data-theme="light"] body.sat-grey .sidebar-nav-link[href*="/study/feed.html"]                 { --acc: #2563eb; }
+html[data-theme="light"] body.sat-grey .sidebar-nav-link[href*="/sat/dashboard.html"]              { --acc: #db2777; }
+html[data-theme="light"] body.sat-grey .sidebar-nav-link[href*="/sat/index.html"]                  { --acc: #b45309; }
+html[data-theme="light"] body.sat-grey .sidebar-nav-link[href*="/sat/latest-questions.html"]       { --acc: #15803d; }
+html[data-theme="light"] body.sat-grey .sidebar-nav-link[href*="/sat/math-chat.html"]              { --acc: #0369a1; }
+html[data-theme="light"] body.sat-grey .sidebar-nav-link[href*="/sat/rush.html"]                   { --acc: #c2410c; }
+html[data-theme="light"] body.sat-grey .sidebar-nav-link[href*="/sat/study-plan.html"]             { --acc: #dc2626; }
+
+body.sat-grey .sidebar-nav-link:hover {
+    color: var(--acc);
+    background: color-mix(in srgb, var(--acc) 16%, var(--sat-panel-sf2));
+    border-color: var(--acc);
+}
+
+/* The page you're on is filled with its own color, per the wizard pattern. */
+body.sat-grey .sidebar-nav-link.active,
+body.sat-grey .sidebar-nav-link.active:hover {
+    color: #fff;
+    background: linear-gradient(180deg, var(--acc), color-mix(in srgb, var(--acc) 78%, #000));
+    border-color: var(--acc);
+    box-shadow: none;
+}
+
+/* More vertical breathing room — the default 0.375rem gap and 0.5rem padding
+   packed the column too tightly once the buttons became solid grey blocks. */
+body.sat-grey .sidebar-nav {
+    gap: 0.625rem;
+}
+body.sat-grey .sidebar-nav-link {
+    padding: 0.6875rem 0.75rem;
+}
+body.sat-grey .sidebar-section-label {
+    margin-top: 0.5rem;
+}
+body.sat-grey .sidebar.collapsed .sidebar-nav {
+    gap: 0.875rem;
+}
+
+/* The nav is taller now, so on short viewports the column can outgrow 100vh.
+   Let the whole sidebar scroll as one piece rather than only the chat list —
+   .sidebar sets overflow:hidden and .sidebar-middle absorbs the slack, which
+   squeezes the history to nothing instead of revealing what's cut off. */
+body.sat-grey .sidebar {
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+}
+body.sat-grey .sidebar-middle {
+    flex: 0 0 auto;
+    overflow: visible;
 }

@@ -142,14 +142,14 @@ html[data-theme="light"] {
     startAuthGuard(auth, '../landing/index.html');
   });
 
-  const _logoutBtn = document.getElementById('logout-btn');
-  if (_logoutBtn) {
-    _logoutBtn.addEventListener('click', async () => {
-      await signOut(auth);
-      localStorage.removeItem('korah_first_name');
-      window.KorahTransitions.go('../login.html');
-    });
-  }
+  // #logout-btn lives in the sidebar, which sidebar-loader.js injects asynchronously,
+  // so it does not exist yet when this module runs. Delegate from document instead.
+  document.addEventListener('click', async (e) => {
+    if (!e.target.closest('#logout-btn')) return;
+    await signOut(auth);
+    localStorage.removeItem('korah_first_name');
+    window.KorahTransitions.go('../login.html');
+  });
 </script>
 
 <canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
