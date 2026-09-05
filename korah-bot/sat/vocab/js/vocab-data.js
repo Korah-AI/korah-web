@@ -26,6 +26,28 @@
     return a;
   }
 
+  /* Deterministic per-day shuffle: the picks rotate every calendar day but
+     stay stable for the whole of that day (mulberry32 seeded from the date). */
+  function daySeed(date) {
+    const d = date || new Date();
+    return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+  }
+
+  function seededShuffle(arr, seed) {
+    const a = arr.slice();
+    let s = seed >>> 0;
+    for (let i = a.length - 1; i > 0; i--) {
+      s = (s + 0x6D2B79F5) >>> 0;
+      let t = s;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      const rand = ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      const j = Math.floor(rand * (i + 1));
+      const tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+    }
+    return a;
+  }
+
   async function load() {
     status = 'loading';
     errorObj = null;
@@ -93,10 +115,15 @@
       }
       return prefix.concat(substring).slice(0, 50);
     },
-    /* 20 random easy/medium words for the "discover" row */
-    suggestions() {
+    /* today's easy/medium picks for the "discover" row — same set all day,
+       a different set tomorrow */
+    dailyPicks(count) {
       const pool = all.filter(r => r.difficulty === 'easy' || r.difficulty === 'medium');
-      return shuffle(pool).slice(0, 20);
+      return seededShuffle(pool, daySeed()).slice(0, count || 20);
+    },
+    /* 20 easy/medium words for the "discover" row */
+    suggestions() {
+      return api.dailyPicks(20);
     },
     /* pick N random records of a POS, excluding given words (quiz distractors) */
     samplesOf(pos, excludeWords, count) {
