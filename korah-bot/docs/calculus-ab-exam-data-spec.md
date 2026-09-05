@@ -1,9 +1,9 @@
 # AP Calculus AB mock-exam data milestone
 
 > Status: implementation spec for the first milestone of the AP mock-exam
-> issue. The 2027 MCQ timing/parts, College Board as the second source, and CED
-> weight bands, original question authoring, and the proportional MCQ-only
-> predicted-score curve are confirmed. `mock-1.json` is release-ready.
+> issue. PR #46 review requires the current 45-question format, source-derived
+> questions from two credited practice sources, representative visual assets,
+> and a documented AP score curve. `mock-1.json` is not release-ready yet.
 
 ## 1. Goal
 
@@ -28,9 +28,9 @@ AP US History exam, and Firestore persistence belong to later milestones.
   key embedded.
 - Question IDs and unit IDs are stable persistence keys. Never renumber them
   after release; correct bad content in place.
-- Use original Korah-authored questions aligned to the College Board CED. This
-  avoids copying third-party question banks into the public repository.
-- Credit Korah as item author and the College Board CED as alignment reference.
+- Select questions from High School Test Prep plus one approved practice-exam
+  source, preserving their provenance and crediting both actual question
+  sources. Do not credit the CED as though it supplied questions.
 - Match the authored question mix to the AP Calculus AB CED unit weightings.
   The distribution is decided while building the file, not dynamically.
 - PNG assets are acceptable; SVG is preferred for figures and equations.
@@ -94,8 +94,8 @@ Top-level requirements:
 - `id`, `course`, and `title` are non-empty; `course` is
   `ap-calculus-ab` for this file.
 - `sources` identifies and links both source families used in the exam.
-- `parts` contains the confirmed 2027 MCQ format: Part A has 29 questions in
-  3,720 seconds with calculators prohibited; Part B has 13 questions in 2,280
+- `parts` contains the issue-author-reviewed format: Part A has 30 questions in
+  3,600 seconds with calculators prohibited; Part B has 15 questions in 2,700
   seconds with a graphing calculator required. Questions remain globally
   ordered and numbered across both parts.
 - `curve` covers every possible raw score from zero through the question count.
@@ -163,6 +163,11 @@ The validator output must show, for every unit:
 Rounding and tolerance rules must be documented so a small exam is not rejected
 merely because a percentage range cannot map cleanly to whole questions.
 
+For the 45-question mock, the researched target counts are Units 1–8:
+`5, 5, 4, 5, 8, 8, 4, 6`. Each count lies inside the whole-question bounds
+derived from the College Board ranges using `ceil(total × minimum)` and
+`floor(total × maximum)`.
+
 ## 6. Validator behavior
 
 `scripts/validate-ap-exam.js` must be dependency-free and runnable with the
@@ -195,29 +200,33 @@ structural validity from a release-valid exam.
 
 ## 7. Required issue-author confirmation
 
-The issue author has confirmed:
+PR #46 review confirms the 45-question, 105-minute format: 30 no-calculator
+questions in 60 minutes and 15 calculator questions in 45 minutes.
 
-- the 2027 format of 42 MCQs over 100 minutes, split into a 29-question,
-  62-minute no-calculator Part A and a 13-question, 38-minute calculator Part B;
-- College Board as the second source; and
-- the current eight CED unit-weight bands in `course-catalog.json`; and
-- the provisional MCQ-only raw-score thresholds: 11 for a 2, 16 for a 3, 21
-  for a 4, and 27 for a 5.
+Before the exam becomes `ready`, document and obtain review for:
 
-The following decisions are recorded for the first mock:
+1. **Question provenance:** the exact High School Test Prep and approved second
+   practice source used for the selected questions.
+2. **CED distribution:** the College Board CED version used, its unit weight
+   bands, and the whole-question rounding used to select the unit counts.
+3. **Assets:** representative graphs, figures, or tables stored as SVG or PNG
+   under `korah-bot/ap/assets/calc-ab/mock-1/` and referenced by the questions.
+4. **Predicted-score curve:** released scoring evidence and the precise method
+   used to map an MCQ-only raw score to a predicted AP score. Score-distribution
+   percentages alone do not provide raw-score cut points.
 
-1. **Predicted-score curve:** this is an unofficial proportional MCQ-only
-   prediction, not an official College Board conversion. Actual AP scoring also
-   includes FRQs and can vary by form.
-2. **CED distribution rule:** the rounding or
-   tolerance used to turn its percentage ranges into question counts.
-3. **Content provenance:** resolved by approval to author original questions.
-
-The exam contains no placeholder values and may be marked `ready`.
+The curve proposed for review uses Mathaversity's estimated 2026 composite
+thresholds of 28, 42, 54, and 69 out of 108. Because this mock has no FRQs, it
+assumes equal performance rates on the MCQ and FRQ halves, projects each
+composite percentage onto 45 questions, and rounds upward. The resulting
+MCQ-only thresholds are 12, 18, 23, and 29. These are predicted-score cutoffs,
+not an official College Board conversion. The official 2026 score-distribution
+percentages are a reasonableness check only and cannot be inverted into raw
+cutoffs.
 
 ## 8. Acceptance criteria
 
-- The issue author has confirmed every item in section 7.
+- Review has accepted every item in section 7.
 - `korah-bot/ap/data/calc-ab/mock-1.json` contains the complete confirmed MCQ
   exam, fixed ordering, answer key, explanations, unit IDs, both source credits,
   and no unresolved placeholders.

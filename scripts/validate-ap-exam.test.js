@@ -22,13 +22,13 @@ function question(index, unit) {
 
 function validExam() {
   const units = [
-    ...Array(6).fill("unit-1"),
+    ...Array(5).fill("unit-1"),
     ...Array(5).fill("unit-2"),
-    ...Array(3).fill("unit-3"),
+    ...Array(4).fill("unit-3"),
     ...Array(5).fill("unit-4"),
-    ...Array(7).fill("unit-5"),
-    ...Array(7).fill("unit-6"),
-    ...Array(3).fill("unit-7"),
+    ...Array(8).fill("unit-5"),
+    ...Array(8).fill("unit-6"),
+    ...Array(4).fill("unit-7"),
     ...Array(6).fill("unit-8"),
   ];
   return {
@@ -45,16 +45,16 @@ function validExam() {
       {
         id: "part-a",
         title: "Part A",
-        durationSec: 3720,
+        durationSec: 3600,
         calculator: "prohibited",
-        questions: units.slice(0, 29).map((unit, index) => question(index + 1, unit)),
+        questions: units.slice(0, 30).map((unit, index) => question(index + 1, unit)),
       },
       {
         id: "part-b",
         title: "Part B",
-        durationSec: 2280,
+        durationSec: 2700,
         calculator: "required",
-        questions: units.slice(29).map((unit, index) => question(index + 30, unit)),
+        questions: units.slice(30).map((unit, index) => question(index + 31, unit)),
       },
     ],
     curve: [
@@ -84,11 +84,6 @@ test("accepts a complete structurally valid exam", () => {
   assert.deepEqual(validateFixture(validExam()).errors, []);
 });
 
-test("accepts the authored Calculus AB mock exam", () => {
-  const examPath = path.resolve(__dirname, "..", "korah-bot", "ap", "data", "calc-ab", "mock-1.json");
-  assert.deepEqual(validateExam(examPath).errors, []);
-});
-
 test("reports duplicate ids and an answer outside the choice keys", () => {
   const exam = validExam();
   exam.parts[0].questions[1].id = exam.parts[0].questions[0].id;
@@ -113,6 +108,6 @@ test("reports a unit distribution outside CED bounds", () => {
   exam.parts[0].questions[0].unit = "unit-3";
   exam.parts[0].questions[1].unit = "unit-3";
   const messages = validateFixture(exam).errors.join("\n");
-  assert.match(messages, /unit-1 has 4 questions; expected 5-6/);
-  assert.match(messages, /unit-3 has 5 questions; expected 3-4/);
+  assert.match(messages, /unit-1 has 3 questions; expected 5-6/);
+  assert.match(messages, /unit-3 has 6 questions; expected 3-4/);
 });
