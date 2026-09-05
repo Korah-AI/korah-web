@@ -227,6 +227,27 @@
             <p class="vocab-feedback-ex" x-show="current.example" x-text="current.example"></p>
           </div>
 
+          <!-- Use it in a sentence -->
+          <div class="vocab-sentence-section" x-show="current.answered" x-transition.opacity.duration.250ms x-cloak>
+            <label class="vocab-sentence-label" :for="'vocab-sentence-' + currentIndex">
+              Use <strong x-text="current.word"></strong> in a sentence
+            </label>
+            <textarea class="vocab-sentence-input" :id="'vocab-sentence-' + currentIndex"
+                      x-model="sentenceInput" rows="2"
+                      :disabled="sentenceState === 'checking'"
+                      placeholder="Write your own sentence using this word…"></textarea>
+            <div class="vocab-sentence-actions">
+              <button class="vocab-ghost-btn t-btn" @click="checkSentence()"
+                      :disabled="sentenceState === 'checking' || !sentenceInput.trim()">
+                <span class="material-icons-round">spellcheck</span>
+                <span x-text="sentenceState === 'checking' ? 'Checking…' : 'Check my sentence'"></span>
+              </button>
+            </div>
+            <div class="vocab-sentence-feedback" x-show="sentenceFeedback" x-cloak
+                 :class="{ 'is-correct': sentenceState === 'good', 'is-incorrect': sentenceState === 'bad', 'is-error': sentenceState === 'error' }"
+                 x-text="sentenceFeedback"></div>
+          </div>
+
           <!-- Nav -->
           <div class="vocab-quiz-nav">
             <button class="vocab-nav-btn t-btn" @click="prev()" :disabled="currentIndex === 0">
@@ -328,6 +349,10 @@
       questionStartTime: 0,
       attemptedWords: new Set(),
 
+      sentenceInput: '',
+      sentenceFeedback: '',
+      sentenceState: 'idle',   // idle | checking | good | bad | error
+
       init() {
         this.learntCount = VocabStore.learntCount();
         VocabData.ready().then(() => {
@@ -354,7 +379,48 @@
         this.currentIndex = 0;
         this.attemptedWords = new Set();
         this.questionStartTime = Date.now();
+        this.loadSentence();
         this.stage = 'quiz';
+      },
+      /* sentence box follows the current question — restore anything saved */
+      loadSentence() {
+        const q = this.current;
+        this.sentenceInput = q ? VocabStore.getSentence(q.word) : '';
+        this.sentenceFeedback = '';
+        this.sentenceState = 'idle';
+      },
+      async checkSentence() {
+        const q = this.current;
+        const sentence = this.sentenceInput.trim();
+        if (!q || !sentence || this.sentenceState === 'checking') return;
+        this.sentenceState = 'checking';
+        this.sentenceFeedback = '';
+        VocabStore.saveSentence(q.word, sentence);
+        try {
+          const res = await fetch('/api/r', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: 'gemini-2.5-flash',
+              temperature: 0.2,
+              messages: [
+                { role: 'system', content: 'You check whether a student used an SAT vocabulary word correctly. Reply with ONLY a single JSON object and no markdown, in this exact shape: { "correct": true, "explanation": "one or two sentences" }. Judge meaning and context only, not spelling or style.' },
+                { role: 'user', content: 'Word: ' + q.word + '\nMeaning: ' + q.definition + '\nStudent sentence: ' + sentence },
+              ],
+            }),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const raw = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+          if (!raw) throw new Error('Empty response');
+          const parsed = JSON.parse(String(raw).replace(/^```(?:json)?/, '').replace(/```$/, '').trim());
+          if (typeof parsed.correct !== 'boolean') throw new Error('Bad response shape');
+          this.sentenceState = parsed.correct ? 'good' : 'bad';
+          this.sentenceFeedback = (parsed.correct ? 'Good usage. ' : 'Not quite. ') + (parsed.explanation || '');
+        } catch (e) {
+          this.sentenceState = 'error';
+          this.sentenceFeedback = 'Could not check that sentence right now. It is saved — try again later.';
+        }
       },
       choose(i) {
         const q = this.current;
@@ -383,6 +449,7 @@
         if (this.currentIndex < this.questionCount - 1) {
           this.currentIndex++;
           this.questionStartTime = Date.now();
+          this.loadSentence();
         } else {
           this.stage = 'results';
         }
@@ -391,6 +458,7 @@
         if (this.currentIndex === 0) return;
         this.currentIndex--;
         if (!this.current.answered) this.questionStartTime = Date.now();
+        this.loadSentence();
       },
       backToModes() {
         const answered = this.questions.some(q => q.answered);
@@ -420,6 +488,7 @@
         this.currentIndex = 0;
         this.attemptedWords = new Set();
         this.questionStartTime = Date.now();
+        this.loadSentence();
         this.stage = 'quiz';
       }
     }));

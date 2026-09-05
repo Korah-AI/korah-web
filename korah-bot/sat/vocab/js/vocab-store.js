@@ -129,6 +129,20 @@
     return learnt().length;
   }
 
+  /* ── user sentences (Form-a-Sentence practice) ────── */
+
+  function saveSentence(word, sentence) {
+    const data = readData();
+    const n = normalize(word);
+    if (!n) return false;
+    data.userSentences[n] = String(sentence == null ? '' : sentence);
+    return writeData(data);
+  }
+
+  function getSentence(word) {
+    return readData().userSentences[normalize(word)] || '';
+  }
+
   /* ── mastery math (verbatim from SETUP.md §4) ─────── */
 
   function deriveMastery(p) {
@@ -219,6 +233,8 @@
     addWord,
     removeWord,
     hasWord,
+    saveSentence,
+    getSentence,
     learnt,
     learntCount,
     recordAttempt,

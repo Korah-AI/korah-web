@@ -173,7 +173,10 @@
                       <span x-text="w.word"></span>
                       <span class="vocab-pos-chip" :data-pos="w.part_of_speech" x-text="w.part_of_speech"></span>
                     </div>
-                    <div class="vocab-diff-dot" :class="'is-' + w.difficulty"></div>
+                    <div class="vocab-word-card-meta">
+                      <div class="vocab-diff-dot" :class="'is-' + w.difficulty"></div>
+                      <span class="vocab-etym-chip" x-show="hasEtymology(w)" x-text="w.etymology"></span>
+                    </div>
                   </div>
                   <button class="vocab-add-btn t-btn"
                           :class="{ 'is-added': isLearnt(w.word) }"
@@ -218,6 +221,7 @@
                 <div class="vocab-word-detail" x-show="expanded.has(w.word)" x-transition.opacity.duration.200ms x-cloak>
                   <p class="vocab-word-detail-def"><span class="vocab-word-detail-label">Definition</span><span x-text="w.definition"></span></p>
                   <p class="vocab-word-detail-ex" x-show="w.example"><span class="vocab-word-detail-label">Example</span>“<span x-text="w.example"></span>”</p>
+                  <p class="vocab-word-detail-def" x-show="hasEtymology(w)"><span class="vocab-word-detail-label">Origin</span><span x-text="w.etymology"></span></p>
                 </div>
               </div>
             </template>
@@ -241,10 +245,19 @@
           <span class="material-icons-round vocab-browse-icon">apps</span>
           Browse all words
         </span>
-        <div class="vocab-browse-count" x-text="`${allWords.length} total words`"></div>
+        <div class="vocab-browse-count" x-text="browseWords.length === allWords.length ? `${allWords.length} total words` : `${browseWords.length} of ${allWords.length} words`"></div>
+      </div>
+      <div class="vocab-browse-toolbar">
+        <div class="vocab-browse-search-wrap">
+          <span class="material-icons-round vocab-search-icon">search</span>
+          <input x-model.debounce.250ms="browseQuery" type="search" placeholder="Filter this list…" class="vocab-search-input vocab-browse-search" />
+        </div>
+        <button class="vocab-ghost-btn t-btn" x-show="isBrowseNarrowed" x-cloak
+                @click="addAllShown()" :disabled="browseAddableCount === 0"
+                x-text="browseAddableCount === 0 ? 'All shown words saved' : `Add all ${browseAddableCount} shown`"></button>
       </div>
       <div class="vocab-browse-list">
-        <template x-for="w in allWords" :key="w.word">
+        <template x-for="w in browseWords" :key="w.word">
           <div>
             <div class="vocab-browse-row" :class="{ 'is-added': isLearnt(w.word) }" @click="toggleExpand(w.word)">
               <div class="vocab-browse-word">
@@ -265,6 +278,7 @@
             <div class="vocab-word-detail" x-show="expanded.has(w.word)" x-transition.opacity.duration.200ms x-cloak>
               <p class="vocab-word-detail-def"><span class="vocab-word-detail-label">Definition</span><span x-text="w.definition"></span></p>
               <p class="vocab-word-detail-ex" x-show="w.example"><span class="vocab-word-detail-label">Example</span>“<span x-text="w.example"></span>”</p>
+              <p class="vocab-word-detail-def" x-show="hasEtymology(w)"><span class="vocab-word-detail-label">Origin</span><span x-text="w.etymology"></span></p>
             </div>
           </div>
         </template>
@@ -287,6 +301,7 @@
       showFilters: false,
       filterPos: 'all',
       filterDiff: 'all',
+      browseQuery: '',
       pool: [],
 
       init() {
@@ -330,13 +345,28 @@
         return n;
       },
       get suggestions() {
-        return VocabData.dailyPicks(20);
+        // read this.pool so Alpine re-evaluates once the word DB finishes loading
+        return this.pool.length ? VocabData.dailyPicks(20) : [];
       },
       get filteredCards() {
         return this.hasActiveFilters ? this.pool.filter(w => this.filtersApplied(w)) : this.suggestions;
       },
       get allWords() {
         return this.pool;
+      },
+      /* Browse list respects the page filter chips plus its own text filter, so
+         "Add all shown" can be narrowed to e.g. every easy noun. */
+      get browseWords() {
+        const q = this.browseQuery.trim().toLowerCase();
+        return this.pool
+          .filter(w => this.filtersApplied(w))
+          .filter(w => !q || w.word.includes(q));
+      },
+      get isBrowseNarrowed() {
+        return this.hasActiveFilters || this.browseQuery.trim() !== '';
+      },
+      get browseAddableCount() {
+        return this.browseWords.filter(w => !this.isLearnt(w.word)).length;
       },
       get filtered() {
         const q = this.query.trim().toLowerCase();
@@ -361,6 +391,16 @@
           VocabStore.addWord(n);
           this.learntWords.push(n);
         }
+      },
+      addAllShown() {
+        for (const w of this.browseWords) {
+          const n = VocabData.normalize(w.word);
+          if (this.learntWords.includes(n)) continue;
+          if (VocabStore.addWord(n)) this.learntWords.push(n);
+        }
+      },
+      hasEtymology(w) {
+        return !!w.etymology && w.etymology !== 'Unknown';
       },
       toggleExpand(word) {
         if (this.expanded.has(word)) this.expanded.delete(word);
