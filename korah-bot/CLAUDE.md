@@ -148,3 +148,11 @@ It covers the house UI/UX conventions — grey resting surfaces (never the purpl
 no dimmed text, the step shell and transitions, custom popups instead of
 `alert()`/`confirm()` — with the reference implementations in
 `korah-bot/sat/study-plan.html`, `sat-rush.css` and `js/sat-rush.js`.
+
+### UI conventions
+
+- **Hover and selected states scale, they never translate.** Use
+  `transform: scale(1.01–1.08)` (bigger scale for smaller elements) with a
+  ~0.18s ease transition. No `translateY` lifts or `translateX` nudges — sliding
+  drags neighbouring alignment and reads as a jump. `translate` is still fine for
+  positioning (e.g. `translateY(-50%)` centering).

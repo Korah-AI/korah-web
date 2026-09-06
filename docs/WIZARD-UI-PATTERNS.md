@@ -44,24 +44,34 @@ Each option in a group carries a `.tone-*` class that sets `--acc`. Every accent
 border, selected fill, hover glow, icon, spotlight color — reads from `--acc`, so one
 class colors the whole element.
 
-```css
-.tone-red { --acc: #ef4444; }  .tone-orange { --acc: #f97316; }
-.tone-amber { --acc: #f59e0b; } .tone-green { --acc: #22c55e; }
-.tone-teal { --acc: #14b8a6; }  .tone-blue  { --acc: #3b82f6; }
-.tone-pink { --acc: #ec4899; }
+Each tone carries two values: `--acc`, the bright mark used for borders, dots and
+icons, and `--acc-fill`, the deeper shade used for the opaque filled state (white
+text stays readable on it).
 
-.rush-card:hover, .rush-diff:hover:not(.is-selected) {
-  border-color: color-mix(in srgb, var(--acc) 70%, var(--sp-bd));
-  box-shadow: 0 0.6rem 1.6rem color-mix(in srgb, var(--acc) 30%, transparent),
-              0 0.3rem 0 0 color-mix(in srgb, var(--acc) 45%, var(--sp-bd));
+```css
+.tone-red   { --acc: #ef4444; --acc-fill: #b91c1c; }
+.tone-orange{ --acc: #f97316; --acc-fill: #c2410c; }
+.tone-amber { --acc: #f59e0b; --acc-fill: #b45309; }
+.tone-green { --acc: #22c55e; --acc-fill: #15803d; }
+.tone-teal  { --acc: #14b8a6; --acc-fill: #0f766e; }
+.tone-blue  { --acc: #3b82f6; --acc-fill: #1d4ed8; }
+.tone-pink  { --acc: #ec4899; --acc-fill: #be185d; }
+
+.rush-card:hover:not(.is-selected), .rush-diff:hover:not(.is-selected) {
+  border-color: var(--acc);
+  background: var(--sp-sf2);
+  transform: scale(1.02);
 }
 .rush-card.is-selected, .rush-diff.is-selected {
   color: #fff;
-  border-color: var(--acc);
-  background: linear-gradient(180deg, var(--acc), color-mix(in srgb, var(--acc) 78%, #000));
-  box-shadow: 0 0.25rem 0 0 color-mix(in srgb, var(--acc) 55%, #000);
+  background: var(--acc-fill);
+  border-color: var(--acc-fill);
+  transform: scale(1.03);
 }
 ```
+
+**Fills are flat.** No gradients — a solid `--acc-fill` reads as one deliberate
+block; a gradient reads as decoration and fights the grey surfaces around it.
 
 Assign tones so they carry meaning where one exists, and just differ where it doesn't:
 
@@ -71,13 +81,32 @@ Assign tones so they carry meaning where one exists, and just differ where it do
   by index (`toneAt(i)` / `TONES[i % TONES.length]`).
 
 **Selected means filled.** A colored border alone is too weak — fill with the tone's
-gradient and flip the text (and any icon/description) to white. Same for pure data
+`--acc-fill` and flip the text (and any icon/description) to white. Same for pure data
 tiles like score readouts: they're always filled, never grey.
 
 Avoid indigo/violet next to blue — it reads as the purple you're trying to get away
 from. The year dropdown was moved off indigo for exactly this reason.
 
-## 3. No dimmed text
+## 3. Hover and selection grow — they never slide
+
+Interactive elements scale up slightly; they do **not** translate. A card that
+slides on hover drags its neighbours' alignment with it and reads as a jump,
+while a scale reads as the element coming forward and keeps the grid still.
+
+```css
+.rush-card, .rush-diff, .rush-btn { transition: transform .18s ease, background .18s ease,
+                                                border-color .18s ease, box-shadow .18s ease; }
+.rush-card:hover:not(.is-selected) { transform: scale(1.02); }
+.rush-card.is-selected             { transform: scale(1.03); }
+.rush-btn:hover:not(:disabled)     { transform: scale(1.03); }
+```
+
+Rough scale budget: full-width rows 1.01, cards and buttons 1.02–1.03, icon
+buttons 1.05–1.08 — the smaller the element, the larger the scale it can take.
+No `translateY(-2px)` lifts, no `translateX` nudges on rows. `translate` stays
+allowed where it is *positioning*, not motion (centering with `translateY(-50%)`).
+
+## 4. No dimmed text
 
 `--tx2`/`--tx3` vanish against grey surfaces. Collapse them in one move rather than
 hunting down each label:
@@ -89,7 +118,7 @@ hunting down each label:
 `sat.css` does the same under `.sat-grey`. Where a page uses the `tx2`/`tx3` *classes*
 instead of the vars, override those too.
 
-## 4. Buttons are filled, or grey — never translucent purple
+## 5. Buttons are filled, or grey — never translucent purple
 
 - Advance → blue `.rush-btn`
 - Finish/save → green `.rush-btn.is-green`
