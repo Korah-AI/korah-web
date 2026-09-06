@@ -258,53 +258,48 @@
     align-items: stretch; margin-bottom: 2.5rem;
   }
   @media (max-width: 55rem) { .pt-widget-grid { grid-template-columns: 1fr; } }
+  /* Filled tone cards, per docs/WIZARD-UI-PATTERNS.md: flat opaque --acc-fill,
+     white text, no gradients, hover scales instead of translating. */
   .pt-card {
+    --acc-fill: #3472d9;
     border-radius: 1.125rem; padding: 1.5rem 1.625rem;
     display: flex; flex-direction: column; justify-content: space-between; gap: 1rem;
-    backdrop-filter: blur(0.875rem);
-    transition: border-color .2s, box-shadow .2s, transform .2s;
+    background: var(--acc-fill);
+    border: 1px solid var(--acc-fill);
+    color: #fff;
+    /* The starfield #bg-canvas is fixed z-0; without its own stacking context
+       an unpositioned card paints underneath it and the stars show through. */
+    position: relative; z-index: 1;
+    transition: box-shadow .18s ease, transform .18s ease;
   }
-  .pt-card:hover { box-shadow: 0 0.375rem 1.375rem rgba(139,92,246,.12); transform: translateY(-0.125rem); }
+  .pt-card:hover { box-shadow: 0 0.375rem 1.375rem rgba(0,0,0,.22); transform: scale(1.02); }
   .pt-card.is-hidden { display: none; }
-  .pt-continue {
-    background: linear-gradient(135deg, rgba(139,92,246,.16), rgba(139,92,246,.04));
-    border: 1px solid rgba(139,92,246,.32);
-  }
-  .pt-result {
-    background: linear-gradient(135deg, rgba(139,92,246,.16), rgba(139,92,246,.04));
-    border: 1px solid rgba(139,92,246,.32);
-  }
+  .pt-continue { --acc-fill: #d88b0a; }
+  .pt-result   { --acc-fill: #3472d9; }
+  .pt-empty    { --acc-fill: #12a292; grid-column: 1 / -1; }
   .pt-card-top { display: flex; align-items: center; gap: 0.875rem; }
   .pt-card-icon {
     width: 3rem; height: 3rem; flex: 0 0 3rem; border-radius: 0.875rem;
     display: flex; align-items: center; justify-content: center;
-    background: rgba(139,92,246,.18); color: var(--p5); font-size: 1.5rem;
+    background: rgba(255,255,255,.2); color: #fff; font-size: 1.5rem;
   }
-  .pt-result .pt-card-icon { background: rgba(139,92,246,.18); color: #8b5cf6; }
-  .pt-card-title { font-size: 1.125rem; font-weight: 800; color: var(--tx); letter-spacing: -0.01em; }
-  .pt-card-sub { font-size: 0.8125rem; color: var(--tx2); margin-top: 0.25rem; }
+  .pt-card-title { font-size: 1.125rem; font-weight: 800; color: #fff; letter-spacing: -0.01em; }
+  .pt-card-sub { font-size: 0.8125rem; color: #fff; margin-top: 0.25rem; }
   .pt-result-scores { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
-  .pt-score-block { text-align: center; padding: 0.75rem 0.5rem; border-radius: 0.875rem; background: rgba(255,255,255,.04); border: 1px solid rgba(139,92,246,.16); }
-  .pt-score-value { font-size: 1.75rem; font-weight: 800; color: var(--tx); font-variant-numeric: tabular-nums; line-height: 1.1; }
-  .pt-score-label { font-size: 0.6875rem; color: var(--tx2); margin-top: 0.25rem; }
+  .pt-score-block { text-align: center; padding: 0.75rem 0.5rem; border-radius: 0.875rem; background: rgba(0,0,0,.18); border: 1px solid rgba(255,255,255,.18); }
+  .pt-score-value { font-size: 1.75rem; font-weight: 800; color: #fff; font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .pt-score-label { font-size: 0.6875rem; color: #fff; margin-top: 0.25rem; }
 
-  .pt-empty {
-    grid-column: 1 / -1;
-    background: linear-gradient(135deg, rgba(139,92,246,.16), rgba(56,189,248,.05));
-    border: 1px dashed rgba(139,92,246,.45);
-  }
-  .pt-empty .pt-card-icon { background: rgba(139,92,246,.2); color: var(--p5); }
   /* Full-length practice test card buttons (Continue / Start New Test) */
   .pt-card-btn {
     display: inline-flex; align-items: center; gap: 0.375rem;
-    background: #8b5cf6;
-    color: #fff; font-weight: 700; font-size: 0.8125rem;
+    background: #fff;
+    color: var(--acc-fill); font-weight: 700; font-size: 0.8125rem;
     padding: 0.625rem 1.25rem; border-radius: 62.4375rem; border: none;
     cursor: pointer; text-decoration: none; align-self: flex-start;
-    box-shadow: 0 0.25rem 0.875rem rgba(139,92,246,.3);
-    transition: box-shadow .2s, transform .15s;
+    transition: transform .18s ease, box-shadow .18s ease;
   }
-  .pt-card-btn:hover { box-shadow: 0 0.375rem 1.25rem rgba(139,92,246,.4); transform: translateY(-1px); }
+  .pt-card-btn:hover { box-shadow: 0 0.375rem 1.25rem rgba(0,0,0,.2); transform: scale(1.03); }
   .cta-btn {
     display: inline-flex; align-items: center; gap: 0.375rem; align-self: flex-start;
     background: linear-gradient(135deg, #7c3aed, #a78bfa);
@@ -1002,6 +997,47 @@
       </div>
     </section>
 
+    <section class="study-plan-grid">
+      <a href="sat/math-chat.html" class="plan-card no-underline" style="display:block;">
+        <div class="plan-icon">
+          <div style="display: flex; justify-content: center; align-items: center; height: 100%;">
+            <img src="logo-images/newlogo2.png" style="height: 10rem;">
+          </div>
+        </div>
+        <h3>Learn how to use Desmos</h3>
+        <p>Get started in <strong>Desmos Chat</strong> to get that math score up, fast. </p>
+      </a>
+
+      <div class="plan-side" style="gap: 1.125rem;">
+        <div class="plan-stat-label">Score Journey</div>
+        <div style="width:100%; display:flex; flex-direction:column; gap:1rem;">
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:0.375rem;">
+              <span style="font-size:0.75rem; font-weight:700; color:var(--tx); text-transform:uppercase; letter-spacing:.0.5rem;">Reading &amp; Writing</span>
+              <span style="font-size:0.8125rem; font-weight:700; color:var(--tx); font-variant-numeric:tabular-nums;" id="plan-english-label">— / —</span>
+            </div>
+            <div style="height:1.75rem; background:var(--kg-sf2); border-radius:0.75rem; overflow:hidden; position:relative;">
+              <div id="plan-english-bar" style="height:100%; width:0%; border-radius:0.75rem; background:linear-gradient(90deg,#0ea5e9,#38bdf8,#7dd3fc); box-shadow:0 0 1.25rem rgba(56,189,248,.6); position:relative; overflow:hidden; transition:width .5s ease;">
+                <span style="position:absolute; top:0; left:-100%; width:60%; height:100%; background:linear-gradient(90deg,transparent,rgba(255,255,255,.4),transparent); animation:bar-flow 2.5s linear infinite;"></span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:0.375rem;">
+              <span style="font-size:0.75rem; font-weight:700; color:var(--tx); text-transform:uppercase; letter-spacing:.0.5rem;">Math</span>
+              <span style="font-size:0.8125rem; font-weight:700; color:var(--tx); font-variant-numeric:tabular-nums;" id="plan-math-label">— / —</span>
+            </div>
+            <div style="height:1.75rem; background:var(--kg-sf2); border-radius:0.75rem; overflow:hidden; position:relative;">
+              <div id="plan-math-bar" style="height:100%; width:0%; border-radius:0.75rem; background:linear-gradient(90deg,#10b981,#34d399,#6ee7b7); box-shadow:0 0 1.25rem rgba(16,185,129,.6); position:relative; overflow:hidden; transition:width .5s ease;">
+                <span style="position:absolute; top:0; left:-100%; width:60%; height:100%; background:linear-gradient(90deg,transparent,rgba(255,255,255,.4),transparent); animation:bar-flow 2.5s linear infinite; animation-delay:.8s;"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="score-sub" id="plan-score-sub" style="margin-top:0;">Set a goal to track your progress.</div>
+      </div>
+    </section>
+
     <!-- Full-Length Practice Test -->
     <h2 class="home-section-head" style="margin-top: 2.5rem"><span class="material-icons-round">timer</span> Full-Length Practice Test</h2>
     <section class="pt-widget-grid" id="pt-widgets">
@@ -1053,53 +1089,9 @@
             <div class="pt-card-sub">Looks like you haven't taken a practice test yet — it's the best way to eliminate mistakes!</div>
           </div>
         </div>
-        <a class="cta-btn" href="sat/practice-test/index.html">Choose a Practice Test →</a>
+        <a class="pt-card-btn" href="sat/practice-test/index.html">Choose a Practice Test →</a>
       </div>
 
-    </section>
-
-
-
-
-<section class="study-plan-grid">
-      <a href="sat/math-chat.html" class="plan-card no-underline" style="display:block;">
-        <div class="plan-icon">
-          <div style="display: flex; justify-content: center; align-items: center; height: 100%;">
-            <img src="logo-images/newlogo2.png" style="height: 10rem;">
-          </div>
-        </div>
-        <h3>Learn how to use Desmos</h3>
-        <p>Get started in <strong>Desmos Chat</strong> to get that math score up, fast. </p>
-      </a>
-
-      <div class="plan-side" style="gap: 1.125rem;">
-        <div class="plan-stat-label">Score Journey</div>
-        <div style="width:100%; display:flex; flex-direction:column; gap:1rem;">
-          <div>
-            <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:0.375rem;">
-              <span style="font-size:0.75rem; font-weight:700; color:var(--tx); text-transform:uppercase; letter-spacing:.0.5rem;">Reading &amp; Writing</span>
-              <span style="font-size:0.8125rem; font-weight:700; color:var(--tx); font-variant-numeric:tabular-nums;" id="plan-english-label">— / —</span>
-            </div>
-            <div style="height:1.75rem; background:var(--kg-sf2); border-radius:0.75rem; overflow:hidden; position:relative;">
-              <div id="plan-english-bar" style="height:100%; width:0%; border-radius:0.75rem; background:linear-gradient(90deg,#0ea5e9,#38bdf8,#7dd3fc); box-shadow:0 0 1.25rem rgba(56,189,248,.6); position:relative; overflow:hidden; transition:width .5s ease;">
-                <span style="position:absolute; top:0; left:-100%; width:60%; height:100%; background:linear-gradient(90deg,transparent,rgba(255,255,255,.4),transparent); animation:bar-flow 2.5s linear infinite;"></span>
-              </div>
-            </div>
-          </div>
-          <div>
-            <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:0.375rem;">
-              <span style="font-size:0.75rem; font-weight:700; color:var(--tx); text-transform:uppercase; letter-spacing:.0.5rem;">Math</span>
-              <span style="font-size:0.8125rem; font-weight:700; color:var(--tx); font-variant-numeric:tabular-nums;" id="plan-math-label">— / —</span>
-            </div>
-            <div style="height:1.75rem; background:var(--kg-sf2); border-radius:0.75rem; overflow:hidden; position:relative;">
-              <div id="plan-math-bar" style="height:100%; width:0%; border-radius:0.75rem; background:linear-gradient(90deg,#10b981,#34d399,#6ee7b7); box-shadow:0 0 1.25rem rgba(16,185,129,.6); position:relative; overflow:hidden; transition:width .5s ease;">
-                <span style="position:absolute; top:0; left:-100%; width:60%; height:100%; background:linear-gradient(90deg,transparent,rgba(255,255,255,.4),transparent); animation:bar-flow 2.5s linear infinite; animation-delay:.8s;"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="score-sub" id="plan-score-sub" style="margin-top:0;">Set a goal to track your progress.</div>
-      </div>
     </section>
 
     <!-- Today's Focus -->
