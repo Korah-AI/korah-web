@@ -440,13 +440,26 @@
     if (markReviewBtn) markReviewBtn.classList.toggle("is-active", isReviewed);
   }
 
+  // The domain label is tinted per domain (see .sat-domain-label[data-domain]
+  // in questions.html). CSS cannot match on text, so slug the name onto the
+  // element alongside it.
+  function setDomainLabel(text) {
+    const label = String(text || "");
+    questionDomain.textContent = label;
+    if (label) {
+      questionDomain.dataset.domain = label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    } else {
+      delete questionDomain.dataset.domain;
+    }
+  }
+
   function renderQuestion() {
     const current = getCurrentQuestion();
 
     // RESTORED: Loading state with all button disabled
     if (loadState === "loading") {
       if (questionNumberEl) questionNumberEl.textContent = "—";
-      questionDomain.textContent = "";
+      setDomainLabel("");
       if (questionStemTitle) {
         questionStemTitle.textContent = "Loading questions…";
         questionStemTitle.classList.remove("is-hidden");
@@ -471,7 +484,7 @@
     // RESTORED: Error state with retry button
     if (loadState === "error") {
       if (questionNumberEl) questionNumberEl.textContent = "!";
-      questionDomain.textContent = "";
+      setDomainLabel("");
       if (questionStemTitle) {
         questionStemTitle.textContent = "College Board connection issue";
         questionStemTitle.classList.remove("is-hidden");
@@ -499,7 +512,7 @@
     // RESTORED: Empty state
     if (loadState === "empty") {
       if (questionNumberEl) questionNumberEl.textContent = "—";
-      questionDomain.textContent = "";
+      setDomainLabel("");
       if (questionStemTitle) {
         questionStemTitle.textContent = "No questions matched this selection";
         questionStemTitle.classList.remove("is-hidden");
@@ -533,7 +546,7 @@
     // and let ensureDetail(currentIndex) hydrate it in the background.
     if (!current.loaded) {
       if (questionNumberEl) questionNumberEl.textContent = state.currentIndex + 1;
-      questionDomain.textContent = current.domain || "";
+      setDomainLabel(current.domain || "");
       if (questionStemTitle) {
         questionStemTitle.textContent = current._loadError ? "Could not load question" : "Loading question…";
         questionStemTitle.classList.remove("is-hidden");
@@ -578,7 +591,7 @@
 
     // Question number display
     if (questionNumberEl) questionNumberEl.textContent = state.currentIndex + 1;
-    questionDomain.textContent = current.domain;
+    setDomainLabel(current.domain);
     if (questionStemTitle) {
       questionStemTitle.textContent = "";
       questionStemTitle.classList.add("is-hidden");
