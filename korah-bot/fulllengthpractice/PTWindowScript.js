@@ -67,6 +67,8 @@ const MODULES = [
   { key: "mathModule1", section: "math", label: "Math", module: "Module 1", minutes: 43 },
   { key: "mathModule2", section: "math", label: "Math", module: "Module 2", minutes: 43 },
 ];
+const RW_MODULES = MODULES.filter((m) => m.section === "english");
+const MATH_MODULES = MODULES.filter((m) => m.section === "math");
 
 let test = null;         // parsed test-4.json
 let state = null;        // runtime session state
@@ -78,6 +80,8 @@ let breakHandle = null;
 const $ = (id) => document.getElementById(id);
 const shown = (id, on) => { const el = $(id); if (el) el.classList.toggle("is-hidden", !on); };
 const esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+// Encodes each path segment separately so the "/" in relative image paths survives.
+const encPath = (p) => String(p).split("/").map((seg) => encodeURIComponent(seg)).join("/");
 
 // ── UI dialogs (replace native confirm/alert) ─────────────
 let _fork = null; // the not-yet-invoked action when a confirm is pending
@@ -202,8 +206,8 @@ function updateBottomBar() {
 // Fills the test-format summary (organization, per-module timing/question
 // counts, pacing) and personalizes the greeting with the inferred name.
 function renderConfirmScreen() {
-  const rwMods = MODULES.filter((m) => m.section === "english");
-  const mathMods = MODULES.filter((m) => m.section === "math");
+  const rwMods = RW_MODULES;
+  const mathMods = MATH_MODULES;
   const count = (mods) => mods.reduce((sum, m) => sum + ((test?.[m.key] || []).length || 0), 0);
   const minutes = (mods) => mods.reduce((sum, m) => sum + m.minutes, 0);
 
@@ -410,11 +414,15 @@ function startBreak() {
   let left = state.breakRemaining != null ? state.breakRemaining : 600;
   state.breakRemaining = left;
   const end = Date.now() + left * 1000;
+  let lastWhole = null;
   const draw = () => {
     left = Math.max(0, (end - Date.now()) / 1000);
     state.breakRemaining = left;
     $("breakTimer").textContent = fmt(left);
-    persist();
+    // The text redraws 4x/second, but re-stringifying the whole state that
+    // often is wasteful — only save when the displayed second actually changes.
+    const whole = Math.ceil(left);
+    if (whole !== lastWhole) { lastWhole = whole; persist(); }
     // Informational only — never auto-start the next subject. The student must
     // click "Resume Testing Now" (spec requirement).
   };
@@ -446,7 +454,6 @@ function renderQuestion() {
         ${q.domain ? `<span class="domain-chip">${esc(q.domain)}</span>` : ""}
       </div>
       ${q.passage ? `<div class="passage">${esc(q.passage)}</div>` : ""}
-      ${q.figure ? `<div class="figure"><img src="../docs/practice-tests/${testSlug}/figures/${encodeURIComponent(q.figure)}" alt="figure for question ${q.n}"/></div>` : ""}
       ${renderStem(q)}
       ${isSpr ? renderSpr(selected, key) : renderMcq(selected, key, q)}
     </div>
@@ -474,7 +481,7 @@ function renderQuestion() {
 
 function renderStem(q) {
   if (q.stemImg) {
-    return `<div class="stem stem-img-only"><img src="../docs/practice-tests/${testSlug}/question-imgs/${encodeURIComponent(q.stemImg)}" alt="question ${q.n} stem"/></div>`;
+    return `<div class="stem stem-img-only"><img src="../docs/practice-tests/${testSlug}/question-imgs/${encPath(q.stemImg)}" alt="question ${q.n} stem"/></div>`;
   }
   return `<div class="stem">${esc(q.stem)}</div>`;
 }
@@ -486,7 +493,7 @@ function renderMcq(selected, key, q) {
       const text = opt.replace(/^[A-D]\)\s*/, ""); // strip leading letter if present
       const sel = selected === letter;
       const optImg = q.optionImgs && q.optionImgs[i]
-        ? `<div class="opt-img-wrap"><img class="opt-img" src="../docs/practice-tests/${testSlug}/question-imgs/${encodeURIComponent(q.optionImgs[i])}" alt="option ${letter}"/></div>`
+        ? `<div class="opt-img-wrap"><img class="opt-img" src="../docs/practice-tests/${testSlug}/question-imgs/${encPath(q.optionImgs[i])}" alt="option ${letter}"/></div>`
         : `<span>${esc(text)}</span>`;
       return `<div class="option${sel ? " is-selected" : ""}" data-letter="${letter}" role="button" tabindex="0">
         <span class="opt-key">${letter}</span>${optImg}
@@ -510,7 +517,10 @@ document.addEventListener("click", (e) => {
   const key = qKey();
   state.answers[key] = opt.dataset.letter;
   persist();
-  renderQuestion();
+  // Move the "is-selected" class in place — that class is the only thing a full
+  // renderQuestion() would change here, and rebuilding #qCard reloads the images.
+  opt.parentElement.querySelectorAll(".option").forEach((el) => el.classList.toggle("is-selected", el === opt));
+  updateQMenuCounts();
 });
 
 // ── Question menu ────────────────────────────────
@@ -789,9 +799,12 @@ async function saveResultsFirestore(rwScale, mthScale, rwCorrect, mthCorrect) {
     await K.saveProfile({ mathScore: mthScale, englishScore: rwScale, currentScore: rwScale + mthScale });
     // log each attempt
     const DIFF = "M";
+    // Sent in chunks rather than one round trip at a time; a rejection anywhere
+    // still propagates to the catch below and leaves firestoreSaved unset.
+    let batch = [];
     for (const [mk, q] of allQuestionsWithModule()) {
       const sel = state.answers[`${mk}:${q.n}`];
-      await K.recordAttempt({
+      batch.push(K.recordAttempt({
         questionId: `pt${testId}-${mk}-${q.n}`,
         type: q.type || "mcq",
         skillCd: q.skill || q.domain || "_unknown",
@@ -802,17 +815,17 @@ async function saveResultsFirestore(rwScale, mthScale, rwCorrect, mthCorrect) {
         correct: isCorrect(q, sel),
         timeSpent: 0,
         mode: "fullpractice",
-      });
+      }));
+      if (batch.length === 20) { await Promise.all(batch); batch = []; }
     }
+    if (batch.length) await Promise.all(batch);
     state.firestoreSaved = true;
     persist();
     console.log("[PT] results saved to Firestore");
   } catch (e) { console.warn("[PT] Firestore save failed", e); }
 }
-function allQuestionsWithModule() {
-  const out = [];
-  MODULES.forEach((m) => (test[m.key] || []).forEach((q) => out.push([m.key, q])));
-  return out;
+function* allQuestionsWithModule() {
+  for (const m of MODULES) for (const q of (test[m.key] || [])) yield [m.key, q];
 }
 
 // ── Exit ─────────────────────────────────────────
