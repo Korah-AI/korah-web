@@ -17,6 +17,7 @@
     selected: [],
     allocations: [],
     totalQuestions: 0,
+    confirmedSelection: null,
     recentIds: new Set(),
   };
 
@@ -220,12 +221,16 @@
       : "Korah will prefer questions you have not answered recently and keep this set stable until your results change.";
   }
 
+  function renderSourceLine() {
+    const totalAttempts = state.normalized.reduce((sum, skill) => sum + skill.attempts, 0);
+    byId("tailoredSource").textContent = `${state.totalQuestions} questions across ${state.selected.length} priorit${state.selected.length === 1 ? "y" : "ies"}, based on ${totalAttempts} SAT answer${totalAttempts === 1 ? "" : "s"}.`;
+  }
+
   function showReady() {
     byId("tailoredLoading").hidden = true;
     byId("tailoredState").hidden = true;
     byId("tailoredReady").hidden = false;
-    const totalAttempts = state.normalized.reduce((sum, skill) => sum + skill.attempts, 0);
-    byId("tailoredSource").textContent = `${state.totalQuestions} questions across ${state.selected.length} priorit${state.selected.length === 1 ? "y" : "ies"}, based on ${totalAttempts} SAT answer${totalAttempts === 1 ? "" : "s"}.`;
+    renderSourceLine();
     renderPriorityCards();
     renderSetSummary();
     announce("Your tailored SAT priorities are ready.");
@@ -250,6 +255,7 @@
     byId("tailoredLoading").hidden = false;
     byId("tailoredState").hidden = true;
     byId("tailoredReady").hidden = true;
+    state.confirmedSelection = null;
     try {
       const analytics = window.KorahSATAnalytics;
       if (!analytics) throw new Error("SAT analytics is not ready");
@@ -393,10 +399,59 @@
     return `/api/sat/q?${params.toString()}`;
   }
 
+  function launchSet(selected) {
+    const questionIds = selected.map(candidateId);
+    const url = window.KorahSAT.buildOpenSatV1QuestionUrl({
+      questionIds,
+      assessment: "SAT",
+      limit: questionIds.length,
+      random: false,
+      mode: "tailored",
+    });
+    announce(`Opening ${questionIds.length} tailored questions.`);
+    if (window.KorahTransitions) window.KorahTransitions.go(url);
+    else window.location.href = url;
+  }
+
+  function applyActualCounts(selected) {
+    for (const allocation of state.allocations) {
+      const mix = { E: 0, M: 0, H: 0 };
+      let count = 0;
+      for (const question of selected) {
+        if (question.skillCd !== allocation.skill.skillCd) continue;
+        count += 1;
+        if (DIFFICULTIES.includes(question.difficulty)) mix[question.difficulty] += 1;
+      }
+      allocation.count = count;
+      allocation.mix = mix;
+    }
+    state.totalQuestions = selected.length;
+  }
+
+  function confirmShortSet(selected) {
+    state.confirmedSelection = selected;
+    applyActualCounts(selected);
+    renderSourceLine();
+    renderPriorityCards();
+    renderSetSummary();
+    const notice = byId("tailoredSetShortNotice");
+    notice.textContent = `The question bank only has ${selected.length} matching question${selected.length === 1 ? "" : "s"} right now. Select the button again to practice this set.`;
+    notice.hidden = false;
+    const button = byId("tailoredBuild");
+    button.disabled = false;
+    button.innerHTML = `<span>Start ${selected.length} question${selected.length === 1 ? "" : "s"}</span>`;
+    announce(`Only ${selected.length} matching questions are available right now. Select the button again to start them.`);
+  }
+
   async function buildPracticeSet() {
     const button = byId("tailoredBuild");
     const errorBox = byId("tailoredBuildError");
+    if (state.confirmedSelection) {
+      launchSet(state.confirmedSelection);
+      return;
+    }
     errorBox.hidden = true;
+    byId("tailoredSetShortNotice").hidden = true;
     button.disabled = true;
     button.innerHTML = '<span class="tailored-inline-spinner"></span><span>Choosing your questions...</span>';
     announce("Choosing your tailored questions.");
@@ -406,19 +461,14 @@
       const payload = await response.json();
       const selected = selectQuestions(Array.isArray(payload?.questions) ? payload.questions : []);
       if (selected.length < 5) throw new Error("Not enough matching questions are available right now.");
-      const questionIds = selected.map(candidateId);
-      const url = window.KorahSAT.buildOpenSatV1QuestionUrl({
-        questionIds,
-        assessment: "SAT",
-        limit: questionIds.length,
-        random: false,
-        mode: "tailored",
-      });
-      announce(`Opening ${questionIds.length} tailored questions.`);
-      if (window.KorahTransitions) window.KorahTransitions.go(url);
-      else window.location.href = url;
+      if (selected.length < state.totalQuestions) {
+        confirmShortSet(selected);
+        return;
+      }
+      launchSet(selected);
     } catch (error) {
       console.error("[Tailored] failed to build set", error);
+      state.confirmedSelection = null;
       errorBox.textContent = error.message || "We could not build your set. Try again.";
       errorBox.hidden = false;
       button.disabled = false;
