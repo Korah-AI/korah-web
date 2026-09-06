@@ -40,7 +40,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css"/>
 </head>
 
-<body>
+<body class="sat-grey">
 <style>
   html:not(.korah-page-ready) { background: #06040f !important; }
   html[data-theme="light"]:not(.korah-page-ready) { background: #d2d2d2 !important; }
@@ -105,7 +105,10 @@
     startAuthGuard(auth, '../index.html');
   });
 
-  document.getElementById('logout-btn').addEventListener('click', () => {
+  // #logout-btn lives in the sidebar, which sidebar-loader.js injects asynchronously,
+  // so it does not exist yet when this module runs. Delegate from document instead.
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#logout-btn')) return;
     window.confirmLogout(async () => {
       await signOut(auth);
       localStorage.removeItem('korah_first_name');
@@ -157,6 +160,11 @@
             Pick a section and domain, choose how many questions you want, and start cooking up. <br>
             We get all of our questions fresh from <strong> College Board</strong>, so you get the real SAT experience.
           </p>
+          <a href="./latest-questions.html" class="sat-new-questions-btn">
+            <span class="sat-new-badge">NEW</span>
+            Latest Questions
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </a>
         </div>
         <img src="../logo-images/newlogo3.png" class="sat-bank-header-deco" alt=""/>
       </section>

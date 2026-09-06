@@ -101,7 +101,58 @@ Creating a *new* doc is a separate task. Ask first — don't add one unprompted.
 
 ---
 
+## Commit Messages
+
+**Simple label, simple description. No em dashes.**
+
+- One short label line, then a plain description of what changed and why.
+- Write straightforwardly. No em dashes, no marketing tone, no filler.
+- Describe what the change does, not how impressive it is.
+- Get as technical as the change warrants. File names, function names,
+  selectors, CSS tokens, and API routes are fine and often better than a vague
+  summary. Just keep the prose plain.
+
+Simple change:
+```
+Fix logout button race on the SAT sidebar
+
+The logout handler fired before the session cleared, so the redirect
+sometimes landed back on the dashboard. Wait for the clear first.
+```
+
+Bigger change, more technical:
+```
+Move sidebar greying into a shared stylesheet
+
+Pulled the duplicated .sidebar rules out of sat/dashboard.html,
+study/feed.html, and study/guide.html into study-grey.css. Swapped the
+purple --sf/--bd tokens for the grey resting surfaces per
+docs/WIZARD-UI-PATTERNS.md. Scrollbar width stays at 6px.
+```
+
+**Co-sign trailers (`Co-Authored-By`, `Claude-Session`):**
+- Only for bigger commits: multi-file changes, new features, refactors.
+- Small commits (typos, one-line fixes, style tweaks) don't need them.
+- When in doubt, ask before adding them.
+
+---
+
 ## Project Notes
 
 See `../README.md` for the API route map and the source-control tips (there is no
 working local preview — you commit and check the deployed site).
+
+**Building a wizard or multi-step flow?** Read `../docs/WIZARD-UI-PATTERNS.md` first.
+It covers the house UI/UX conventions — grey resting surfaces (never the purple
+`--sf`/`--bd` tokens), per-option accent tones, filled-not-outlined selected states,
+no dimmed text, the step shell and transitions, custom popups instead of
+`alert()`/`confirm()` — with the reference implementations in
+`korah-bot/sat/study-plan.html`, `sat-rush.css` and `js/sat-rush.js`.
+
+### UI conventions
+
+- **Hover and selected states scale, they never translate.** Use
+  `transform: scale(1.01–1.08)` (bigger scale for smaller elements) with a
+  ~0.18s ease transition. No `translateY` lifts or `translateX` nudges — sliding
+  drags neighbouring alignment and reads as a jump. `translate` is still fine for
+  positioning (e.g. `translateY(-50%)` centering).

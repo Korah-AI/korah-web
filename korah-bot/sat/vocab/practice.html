@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="en" x-data="{
+  theme: localStorage.getItem('korah_theme') || 'dark',
+  sidebarCollapsed: window.innerWidth <= 768 ? false : localStorage.getItem('korah_sidebar_collapsed') === 'true',
+  mobileOpen: false,
+  getEffectiveTheme() {
+    if (this.theme === 'system') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return this.theme;
+  },
+  toggleSidebar() {
+    if (window.innerWidth <= 768) {
+      this.mobileOpen = !this.mobileOpen;
+      const overlay = document.querySelector('.sidebar-overlay');
+      if (overlay) overlay.classList.toggle('show', this.mobileOpen);
+    } else {
+      this.sidebarCollapsed = !this.sidebarCollapsed;
+      localStorage.setItem('korah_sidebar_collapsed', this.sidebarCollapsed);
+    }
+  }
+}" :data-theme="getEffectiveTheme()" x-cloak>
+<head>
+<link rel="stylesheet" href="../../transitions/page-transitions.css"/>
+<script src="../../transitions/page-transitions.js"></script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Korah AI — Vocab Practice</title>
+<link rel="icon" type="image/png" href="../../logo-images/newlogo0.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script src="../../sidebar-loader.js" defer></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="../../study/js/sidebar.js"></script>
+<link rel="stylesheet" href="../../app/korah-chat.css"/>
+<link rel="stylesheet" href="../sat.css"/>
+<link rel="stylesheet" href="./css/vocab.css"/>
+<script src="./js/vocab-data.js"></script>
+<script src="./js/vocab-store.js"></script>
+<script src="./js/vocab-quiz.js"></script>
+</head>
+
+<body>
+<style>
+  html:not(.korah-page-ready) { background: #06040f !important; }
+  html[data-theme="light"]:not(.korah-page-ready) { background: #d2d2d2 !important; }
+  html:not(.korah-page-ready) body { opacity: 0 !important; }
+</style>
+
+<script>
+  (function() {
+    const t = localStorage.getItem('korah_theme') || 'dark';
+    if (t === 'light' || (t === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  })();
+</script>
+
+<canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
+<script>
+  /* The starfield/shooting stars live in sidebar.js. korahReady only fires
+     once the Firestore bootstrap below resolves, so kick it off on whichever
+     of korahReady / load lands first. */
+  (function () {
+    let started = false;
+    function startBackground() {
+      if (started || !window.KorahSidebar || !window.KorahSidebar.initBackground) return;
+      started = true;
+      window.KorahSidebar.initBackground();
+    }
+    window.addEventListener('korahReady', startBackground, { once: true });
+    window.addEventListener('load', startBackground, { once: true });
+    if (document.readyState === 'complete') startBackground();
+  })();
+</script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+  import { setupKorahDB } from "../../app/data/firestore-store.js";
+  import { initVocabSync } from "./js/vocab-sync.js";
+  import { startAuthGuard } from '../../auth-guard.js';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
+    authDomain: "korah-app.firebaseapp.com",
+    projectId: "korah-app",
+    storageBucket: "korah-app.firebasestorage.app",
+    messagingSenderId: "226169460321",
+    appId: "1:226169460321:web:b166fc8260107c55dafc20"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      window.KorahTransitions.go('../../index.html');
+      return;
+    }
+    await setupKorahDB(app, user.uid);
+    await initVocabSync(app, user.uid);
+    const detail = { uid: user.uid };
+    window._korahReadyFired = detail;
+    window.dispatchEvent(new CustomEvent('korahReady', { detail }));
+    startAuthGuard(auth, '../../index.html');
+  });
+
+  document.getElementById('logout-btn')?.addEventListener('click', () => {
+    window.confirmLogout(async () => {
+      await signOut(auth);
+      localStorage.removeItem('korah_first_name');
+      window.KorahTransitions.go('../../login.html');
+    });
+  });
+</script>
+
+<div id="sidebar-root"></div>
+
+<div id="main-area-wrapper" class="main-area-wrapper">
+<main id="main-content" class="main-content" x-data="vocabPractice()">
+
+  <!-- Top bar -->
+  <header class="chat-topbar bg-sf glass-sm t-theme bd">
+    <button id="sidebar-toggle" @click="toggleSidebar()" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+    <div class="flex items-center gap-2 tx2">
+      <span class="material-icons-round" style="font-size:1.15rem;">menu_book</span>
+      <span class="font-semibold tx text-sm">Vocab Practice</span>
+    </div>
+  </header>
+
+  <!-- ═══ LOADING / ERROR ═══ -->
+  <div x-show="dataStatus === 'loading'" class="vocab-state" x-cloak>
+    <div class="vocab-state-card">
+      <div class="vocab-spinner"></div>
+      <p class="vocab-state-title">Loading word database…</p>
+    </div>
+  </div>
+
+  <div x-show="dataStatus === 'error'" class="vocab-state" x-cloak>
+    <div class="vocab-state-card">
+      <span class="material-icons-round vocab-state-icon">cloud_off</span>
+      <p class="vocab-state-title">Word database unavailable</p>
+      <p class="vocab-state-sub">We couldn't fetch the SAT vocabulary words. Your saved words and progress are safe.</p>
+      <button class="vocab-start-btn t-btn" style="margin-top:1.25rem;" @click="retryData()">
+        <span class="material-icons-round">refresh</span><span>Try again</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══ SETUP WIZARD: 1 mode → 2 source ═══ -->
+  <div class="vocab-practice vocab-practice-select" x-show="dataStatus === 'ready' && stage === 'select'" x-transition.opacity.duration.200ms x-cloak>
+
+    <div class="vocab-practice-hero">
+      <div class="vocab-kicker">vocab practice</div>
+      <h1 class="vocab-title" x-text="step === 1 ? 'Pick a practice mode' : 'Pick what to practice'"></h1>
+      <p class="vocab-sub" x-text="step === 1
+        ? 'Quizzes adapt to show your weakest words first.'
+        : 'Drill your whole word bank, one study set, or a slice of the word database.'"></p>
+    </div>
+
+    <div class="vocab-steps" x-show="!skipSource">
+      <span class="vocab-step-dot tone-blue" :class="{ 'is-on': step >= 1 }"></span>
+      <span class="vocab-step-dot tone-teal" :class="{ 'is-on': step >= 2 }"></span>
+    </div>
+
+    <!-- ── step 1: mode ── -->
+    <div class="vocab-step" :class="stepAnim" x-show="step === 1">
+      <div class="vocab-mode-grid vocab-stagger">
+        <button class="vocab-mode-card t-btn tone-blue" :class="{ 'is-active': selectedMode === 'definition-quiz' }" @click="selectedMode = 'definition-quiz'">
+          <span class="vocab-mode-icon"><span class="material-icons-round">menu_book</span></span>
+          <span class="vocab-mode-body">
+            <span class="vocab-mode-name">Definition Quiz</span>
+            <span class="vocab-mode-desc">See a word, choose its meaning</span>
+          </span>
+          <span class="vocab-mode-check material-icons-round">check_circle</span>
+        </button>
+
+        <button class="vocab-mode-card t-btn tone-pink" :class="{ 'is-active': selectedMode === 'vocab-quiz' }" @click="selectedMode = 'vocab-quiz'">
+          <span class="vocab-mode-icon"><span class="material-icons-round">swap_horiz</span></span>
+          <span class="vocab-mode-body">
+            <span class="vocab-mode-name">Vocab Quiz</span>
+            <span class="vocab-mode-desc">See a meaning, choose the word</span>
+          </span>
+          <span class="vocab-mode-check material-icons-round">check_circle</span>
+        </button>
+
+        <button class="vocab-mode-card t-btn tone-teal" :class="{ 'is-active': selectedMode === 'flashcards' }" @click="selectedMode = 'flashcards'">
+          <span class="vocab-mode-icon"><span class="material-icons-round">style</span></span>
+          <span class="vocab-mode-body">
+            <span class="vocab-mode-name">Flashcards</span>
+            <span class="vocab-mode-desc">Flip cards and write your own sentences</span>
+          </span>
+          <span class="vocab-mode-check material-icons-round">check_circle</span>
+        </button>
+      </div>
+
+      <div class="vocab-practice-actions">
+        <template x-if="!skipSource">
+          <button class="vocab-start-btn t-btn" @click="goStep(2)">
+            <span>Continue</span><span class="material-icons-round">chevron_right</span>
+          </button>
+        </template>
+        <template x-if="skipSource">
+          <div class="vocab-lock-wrap" :class="{ 'is-nudged': startNudged }">
+            <button class="vocab-start-btn is-green t-btn"
+                    :class="{ 'is-locked': !canStart, 'is-shaking': startShaking }"
+                    @click="canStart ? startPractice() : nudgeStart()">
+              <span class="material-icons-round">play_arrow</span>
+              <span x-text="startLabel"></span>
+            </button>
+            <span class="vocab-lock-hint" x-show="!canStart" x-cloak>
+              <span class="material-icons-round">lock</span>
+              <span x-text="startBlockedReason"></span>
+            </span>
+          </div>
+        </template>
+      </div>
+      <!-- with the source already decided, step 1 says what it resolved to -->
+      <p class="vocab-bank-summary" x-show="skipSource" x-cloak>
+        <span x-text="sourceSentence"></span> — <a href="./learn.html" class="vocab-bank-edit">edit your words</a>.
+      </p>
+      <div class="vocab-mini-row">
+        <a href="./learn.html" class="vocab-mini-btn t-btn">Cancel</a>
+      </div>
+    </div>
+
+    <!-- ── step 2: word source ── -->
+    <div class="vocab-step" :class="stepAnim" x-show="step === 2" x-cloak>
+      <div class="vocab-mode-grid vocab-stagger">
+        <!-- Each source owns its own dropdown, so choosing one never pushes the
+             rest of the step down the page. -->
+        <div class="vocab-mode-drop" @click.outside="if (openMenu === 'bank') openMenu = null">
+          <button class="vocab-mode-card t-btn tone-blue" :class="{ 'is-active': source === 'bank' }" @click="pickSource('bank')">
+            <span class="vocab-mode-icon"><span class="material-icons-round">library_books</span></span>
+            <span class="vocab-mode-body">
+              <span class="vocab-mode-name">My selected words</span>
+              <span class="vocab-mode-desc" x-text="`${bankWords.length} word${bankWords.length === 1 ? '' : 's'} selected`"></span>
+            </span>
+            <span class="vocab-mode-check material-icons-round">check_circle</span>
+          </button>
+
+          <div class="vocab-set-menu" x-show="openMenu === 'bank'" x-transition.opacity.duration.150ms x-cloak @click.stop>
+            <div class="vocab-set-menu-head" x-text="`${bankWords.length} selected word${bankWords.length === 1 ? '' : 's'}`"></div>
+            <div class="vocab-word-chips" x-show="bankWords.length">
+              <template x-for="w in bankWords" :key="w">
+                <span class="vocab-word-chip" x-text="w"></span>
+              </template>
+            </div>
+            <p class="vocab-source-empty" x-show="!bankWords.length">
+              No words selected yet. Save some from the word bank first.
+            </p>
+          </div>
+        </div>
+
+        <div class="vocab-mode-drop" @click.outside="if (openMenu === 'set') openMenu = null">
+          <button class="vocab-mode-card t-btn tone-teal" :class="{ 'is-active': source === 'set' }" @click="pickSource('set')">
+            <span class="vocab-mode-icon"><span class="material-icons-round">bookmarks</span></span>
+            <span class="vocab-mode-body">
+              <span class="vocab-mode-name">A study set</span>
+              <span class="vocab-mode-desc" x-text="selectedSet ? selectedSet.name : `${studySets.length} set${studySets.length === 1 ? '' : 's'} saved`"></span>
+            </span>
+            <span class="vocab-mode-check material-icons-round">check_circle</span>
+          </button>
+
+          <div class="vocab-set-menu" x-show="openMenu === 'set'" x-transition.opacity.duration.150ms x-cloak @click.stop>
+            <div class="vocab-set-menu-head">Study set</div>
+            <div class="vocab-set-menu-list" x-show="studySets.length">
+              <template x-for="(set, i) in studySets" :key="set.id">
+                <button class="vocab-set-tile t-btn"
+                        :class="[toneAt(i), selectedSetId === set.id ? 'is-active' : '',
+                                 setTooSmall(set) ? 'is-locked' : '',
+                                 nudgedSet === set.id ? 'is-nudged' : '',
+                                 shakeSet === set.id ? 'is-shaking' : '']"
+                        @click="chooseSet(set)">
+                  <span class="vocab-set-tile-name" x-text="set.name"></span>
+                  <span class="vocab-set-tile-count" x-text="`${set.words.length} word${set.words.length === 1 ? '' : 's'}`"></span>
+                  <template x-if="setTooSmall(set)">
+                    <span class="vocab-sets-lock">
+                      <span class="material-icons-round">lock</span>
+                      <span x-text="`Add at least ${minWords} words to practice!`"></span>
+                    </span>
+                  </template>
+                </button>
+              </template>
+            </div>
+            <p class="vocab-source-empty" x-show="!studySets.length">
+              No study sets yet. Save one from the word bank first.
+            </p>
+          </div>
+        </div>
+
+        <div class="vocab-mode-drop" @click.outside="if (openMenu === 'filter') openMenu = null">
+          <button class="vocab-mode-card t-btn tone-amber" :class="{ 'is-active': source === 'filter' }" @click="pickSource('filter')">
+            <span class="vocab-mode-icon"><span class="material-icons-round">tune</span></span>
+            <span class="vocab-mode-body">
+              <span class="vocab-mode-name">Filter Words</span>
+              <span class="vocab-mode-desc" x-text="filterLabel"></span>
+            </span>
+            <span class="vocab-mode-check material-icons-round">check_circle</span>
+          </button>
+
+          <div class="vocab-set-menu is-wide" x-show="openMenu === 'filter'" x-transition.opacity.duration.150ms x-cloak @click.stop>
+            <div class="vocab-filter-group">
+              <span class="vocab-filter-label">Part of speech</span>
+              <div class="vocab-filter-chips">
+                <button class="vocab-filter-chip t-btn tone-blue" :class="{ 'is-on': filterPos === 'all' }" @click="filterPos = 'all'">All</button>
+                <button class="vocab-filter-chip t-btn tone-teal" :class="{ 'is-on': filterPos === 'noun' }" @click="filterPos = 'noun'">Noun</button>
+                <button class="vocab-filter-chip t-btn tone-green" :class="{ 'is-on': filterPos === 'verb' }" @click="filterPos = 'verb'">Verb</button>
+                <button class="vocab-filter-chip t-btn tone-amber" :class="{ 'is-on': filterPos === 'adjective' }" @click="filterPos = 'adjective'">Adjective</button>
+                <button class="vocab-filter-chip t-btn tone-pink" :class="{ 'is-on': filterPos === 'adverb' }" @click="filterPos = 'adverb'">Adverb</button>
+              </div>
+            </div>
+            <div class="vocab-filter-group">
+              <span class="vocab-filter-label">Difficulty</span>
+              <div class="vocab-filter-chips">
+                <button class="vocab-filter-chip t-btn tone-blue" :class="{ 'is-on': filterDiff === 'all' }" @click="filterDiff = 'all'">All</button>
+                <button class="vocab-filter-chip t-btn tone-green" :class="{ 'is-on': filterDiff === 'easy' }" @click="filterDiff = 'easy'"><span class="vocab-diff-dot is-easy"></span>Easy</button>
+                <button class="vocab-filter-chip t-btn tone-amber" :class="{ 'is-on': filterDiff === 'medium' }" @click="filterDiff = 'medium'"><span class="vocab-diff-dot is-medium"></span>Medium</button>
+                <button class="vocab-filter-chip t-btn tone-red" :class="{ 'is-on': filterDiff === 'hard' }" @click="filterDiff = 'hard'"><span class="vocab-diff-dot is-hard"></span>Hard</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="vocab-practice-actions">
+        <button class="vocab-ghost-btn t-btn" @click="goStep(1)">
+          <span class="material-icons-round">chevron_left</span><span>Back</span>
+        </button>
+        <div class="vocab-lock-wrap" :class="{ 'is-nudged': startNudged }">
+          <button class="vocab-start-btn is-green t-btn"
+                  :class="{ 'is-locked': !canStart, 'is-shaking': startShaking }"
+                  @click="canStart ? startPractice() : nudgeStart()">
+            <span class="material-icons-round">play_arrow</span>
+            <span x-text="startLabel"></span>
+          </button>
+          <span class="vocab-lock-hint" x-show="!canStart" x-cloak>
+            <span class="material-icons-round">lock</span>
+            <span x-text="startBlockedReason"></span>
+          </span>
+        </div>
+      </div>
+      <!-- what the wizard resolved to -->
+      <p class="vocab-bank-summary">
+        <span x-text="sourceSentence"></span> — <a href="./learn.html" class="vocab-bank-edit">edit your words</a>.
+      </p>
+      <div class="vocab-mini-row">
+        <a href="./learn.html" class="vocab-mini-btn t-btn">Cancel</a>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══ QUIZ STAGE ═══ -->
+  <div class="vocab-practice" x-show="stage === 'quiz'" x-transition.opacity.duration.200ms x-cloak>
+    <div class="vocab-quiz-stage">
+      <div class="vocab-quiz-topbar">
+        <button class="vocab-back-btn t-btn" @click="backToModes()"><span class="material-icons-round">arrow_back</span><span>Modes</span></button>
+        <div class="vocab-quiz-progress"><div class="vocab-quiz-progress-fill" :style="'width:' + progressPct + '%'"></div></div>
+        <div class="vocab-quiz-counter"><span x-text="currentIndex + 1"></span>/<span x-text="questionCount"></span></div>
+      </div>
+
+      <template x-if="questions.length">
+        <div>
+          <!-- Prompt: same flashcard shell as learn.html — it flips to the answer -->
+          <div class="vocab-flip vocab-quiz-flip"
+               :class="[current.answered ? (current.isCorrect ? 'tone-green' : 'tone-red') : 'tone-blue', current.answered ? 'is-flipped' : '']">
+            <div class="vocab-flip-inner">
+
+              <div class="vocab-flip-face vocab-flip-front">
+                <div class="vocab-flip-label" x-text="selectedMode === 'definition-quiz' ? 'choose the meaning' : 'choose the word'"></div>
+                <template x-if="selectedMode === 'definition-quiz'">
+                  <div class="vocab-flip-word">
+                    <span x-text="current.word"></span>
+                    <span class="vocab-pos-chip" :data-pos="current.pos" x-text="current.pos"></span>
+                  </div>
+                </template>
+                <template x-if="selectedMode === 'vocab-quiz'">
+                  <div class="vocab-flip-def" x-text="current.definition"></div>
+                </template>
+              </div>
+
+              <div class="vocab-flip-face vocab-flip-back">
+                <div class="vocab-flip-verdict">
+                  <span class="material-icons-round" x-text="current.isCorrect ? 'check_circle' : 'cancel'"></span>
+                  <span x-text="current.isCorrect ? 'Correct!' : 'Not quite'"></span>
+                </div>
+                <div class="vocab-flip-back-word">
+                  <span x-text="current.word"></span>
+                </div>
+                <p class="vocab-flip-def" x-text="current.definition"></p>
+                <p class="vocab-flip-ex" x-show="current.example">“<span x-text="current.example"></span>”</p>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Options -->
+          <div class="vocab-options-list">
+            <template x-for="(opt, i) in current.options" :key="opt.key">
+              <button class="vocab-option t-btn"
+                      :class="optionClass(opt, i)"
+                      @click="choose(i)"
+                      :disabled="current.answered">
+                <span class="vocab-option-key" x-text="optionKey(i)"></span>
+                <span class="vocab-option-text">
+                  <template x-if="selectedMode === 'definition-quiz'"><span x-text="opt.text"></span></template>
+                  <template x-if="selectedMode === 'vocab-quiz'">
+                    <span class="flex items-center gap-2">
+                      <span x-text="opt.text"></span>
+                      <span class="vocab-pos-chip" :data-pos="opt.pos" x-text="opt.pos"></span>
+                    </span>
+                  </template>
+                </span>
+              </button>
+            </template>
+          </div>
+
+          <!-- Use it in a sentence -->
+          <div class="vocab-sentence-section" x-show="current.answered" x-transition.opacity.duration.250ms x-cloak>
+            <label class="vocab-sentence-label" :for="'vocab-sentence-' + currentIndex">
+              Use <strong x-text="current.word"></strong> in a sentence
+            </label>
+            <textarea class="vocab-sentence-input" :id="'vocab-sentence-' + currentIndex"
+                      x-model="sentenceInput" rows="2"
+                      :disabled="sentenceState === 'checking'"
+                      placeholder="Write your own sentence using this word…"></textarea>
+            <div class="vocab-sentence-actions">
+              <button class="vocab-start-btn is-green t-btn" @click="checkSentence()"
+                      :disabled="sentenceState === 'checking' || !sentenceInput.trim()">
+                <span class="material-icons-round">spellcheck</span>
+                <span x-text="sentenceState === 'checking' ? 'Checking…' : 'Check my sentence'"></span>
+              </button>
+            </div>
+            <div class="vocab-sentence-feedback" x-show="sentenceFeedback" x-cloak
+                 :class="{ 'is-correct': sentenceState === 'good', 'is-incorrect': sentenceState === 'bad', 'is-error': sentenceState === 'error' }"
+                 x-text="sentenceFeedback"></div>
+          </div>
+
+          <!-- Nav -->
+          <div class="vocab-quiz-nav">
+            <button class="vocab-nav-btn t-btn" @click="prev()" :disabled="currentIndex === 0">
+              <span class="material-icons-round">chevron_left</span><span>Prev</span>
+            </button>
+            <button class="vocab-start-btn t-btn" style="padding:0.7rem 1.6rem;" @click="next()" :disabled="!current.answered">
+              <span x-text="currentIndex === questionCount - 1 ? 'Finish' : 'Next'"></span>
+              <span class="material-icons-round">chevron_right</span>
+            </button>
+          </div>
+        </div>
+      </template>
+
+      <div x-show="!questions.length" class="vocab-state">
+        <div class="vocab-state-card">
+          <span class="material-icons-round vocab-state-icon">psychology</span>
+          <p class="vocab-state-title">No practiceable words</p>
+          <p class="vocab-state-sub">None of your saved words matched the word database. Add more words and try again.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ FLASHCARD STAGE ═══ -->
+  <div class="vocab-practice vocab-card-view" x-show="stage === 'cards'" x-transition.opacity.duration.200ms x-cloak
+       @keydown.window="cardKey($event)">
+
+    <div class="vocab-card-hero">
+      <h1 class="vocab-title">Flashcards</h1>
+      <p class="vocab-card-meta" x-show="card">
+        <span x-show="round > 1">Round <span x-text="round"></span></span>
+        <span class="vocab-card-sep" x-show="round > 1">•</span>
+        <span>Card <span x-text="cardIndex + 1"></span> of <span x-text="deck.length"></span></span>
+        <span class="vocab-card-sep">•</span>
+        <span class="vocab-card-viewing" x-text="sourceLabel"></span>
+      </p>
+      <!-- The two piles are the whole point of the mode, so they stay on
+           screen instead of only showing up on the results card. -->
+      <div class="vocab-card-tally" x-show="card">
+        <span class="vocab-card-tally-chip is-learning">
+          <span class="material-icons-round">school</span>
+          <span x-text="learningCount"></span>
+          <span>still learning</span>
+        </span>
+        <span class="vocab-card-tally-chip is-known">
+          <span class="material-icons-round">check_circle</span>
+          <span x-text="knownWords.length"></span>
+          <span>know it</span>
+        </span>
+      </div>
+    </div>
+
+    <template x-if="card">
+      <div class="vocab-flip" :class="[diffTone(card), flipped ? 'is-flipped' : '', isLearnt(card.word) ? 'is-added' : '', cardAnim, instantFlip ? 'is-instant' : '']"
+           @click="flipped = !flipped" role="button" tabindex="0">
+        <div class="vocab-flip-inner">
+
+          <div class="vocab-flip-face vocab-flip-front">
+            <button class="vocab-add-btn vocab-flip-add t-btn"
+                    :class="{ 'is-added': isLearnt(card.word) }"
+                    @click.stop="toggleWord(card.word)"
+                    :aria-label="isLearnt(card.word) ? 'Remove from word bank' : 'Add to word bank'">
+              <span class="material-icons-round" x-text="isLearnt(card.word) ? 'check' : 'add'"></span>
+            </button>
+            <div class="vocab-flip-word" x-text="card.word"></div>
+            <div class="vocab-flip-chips">
+              <span class="vocab-pos-chip" :data-pos="card.part_of_speech" x-text="card.part_of_speech"></span>
+              <span class="vocab-diff-chip" :class="'is-' + card.difficulty" x-text="card.difficulty"></span>
+            </div>
+            <span class="vocab-etym-chip" x-show="hasEtymology(card)" x-text="card.etymology"></span>
+            <div class="vocab-flip-hint">Click to see definition</div>
+          </div>
+
+          <div class="vocab-flip-face vocab-flip-back">
+            <div class="vocab-flip-back-word" x-text="card.word"></div>
+            <p class="vocab-flip-def" x-text="card.definition"></p>
+            <p class="vocab-flip-ex" x-show="card.example">“<span x-text="card.example"></span>”</p>
+            <p class="vocab-flip-origin" x-show="hasEtymology(card)">
+              <span class="vocab-word-detail-label">Origin</span><span x-text="card.etymology"></span>
+            </p>
+            <div class="vocab-flip-hint">Click to flip back</div>
+          </div>
+
+        </div>
+      </div>
+    </template>
+
+    <div class="vocab-empty-state" x-show="!card" x-cloak>
+      <span class="material-icons-round vocab-empty-icon">search_off</span>
+      <p class="vocab-empty-title">Nothing to flip through</p>
+      <p class="vocab-empty-sub">That selection came back empty. Pick a different source.</p>
+    </div>
+
+    <!-- Self-graded verdict: the deck keeps recycling whatever gets sent left,
+         so a session ends when nothing is still-learning rather than when the
+         list runs out once. -->
+    <div class="vocab-card-verdict" x-show="card">
+      <button class="vocab-verdict-btn is-learning t-btn" @click="markCard(false)" :disabled="cardBusy">
+        <span class="material-icons-round">west</span><span>Still learning</span>
+      </button>
+      <button class="vocab-verdict-btn is-known t-btn" @click="markCard(true)" :disabled="cardBusy">
+        <span>I know this</span><span class="material-icons-round">east</span>
+      </button>
+    </div>
+    <p class="vocab-card-keyhint" x-show="card">Space flips &bull; &larr; still learning &bull; &rarr; I know this</p>
+
+    <div class="vocab-card-sentence" x-show="card">
+      <div class="vocab-sentence-row">
+        <input class="vocab-sentence-input" type="text"
+               x-model="sentenceInput"
+               :disabled="sentenceState === 'checking'"
+               @keydown.enter="checkSentence()"
+               placeholder="Use this word in a sentence" />
+        <button class="vocab-start-btn is-green t-btn" @click="checkSentence()"
+                :disabled="sentenceState === 'checking' || !sentenceInput.trim()">
+          <span x-text="sentenceState === 'checking' ? 'Checking…' : 'Submit'"></span>
+        </button>
+      </div>
+      <div class="vocab-sentence-feedback" x-show="sentenceFeedback" x-cloak
+           :class="{ 'is-correct': sentenceState === 'good', 'is-incorrect': sentenceState === 'bad', 'is-error': sentenceState === 'error' }"
+           x-text="sentenceFeedback"></div>
+    </div>
+
+    <div class="vocab-card-nav">
+      <button class="vocab-ghost-btn t-btn" @click="exitCards()">
+        <span class="material-icons-round">tune</span><span>Back to modes</span>
+      </button>
+    </div>
+
+  </div>
+
+  <!-- ═══ RESULTS STAGE (quiz modes) ═══ -->
+  <div class="vocab-practice" x-show="stage === 'results' && selectedMode !== 'flashcards'" x-transition.opacity.duration.200ms x-cloak>
+    <div class="vocab-results-stage">
+      <span class="material-icons-round vocab-results-icon">emoji_events</span>
+      <div class="vocab-results-score">
+        <span class="vocab-results-ring" :style="'--score:' + accuracyPct">
+          <span class="vocab-results-num" x-text="`${correctCount}/${questionCount}`"></span>
+          <span class="vocab-results-acc" x-text="accuracyPct + '%'"></span>
+        </span>
+      </div>
+      <h2 class="vocab-results-title" x-text="accuracyPct >= 80 ? 'Nice work!' : accuracyPct >= 50 ? 'Good effort' : 'Keep practicing'"></h2>
+      <p class="vocab-results-sub" x-text="accuracyPct >= 80 ? 'Your vocabulary is on the right track.' : 'Review the ones you missed below — your weaker words come first next time.'"></p>
+
+      <div class="vocab-review-list">
+        <template x-for="q in questions" :key="q.word">
+          <div class="vocab-review-row">
+            <span class="material-icons-round vocab-review-dot"
+                  :class="q.isCorrect ? 'is-correct' : 'is-incorrect'"
+                  x-text="q.isCorrect ? 'check_circle' : 'cancel'"></span>
+            <div class="vocab-review-main">
+              <div class="vocab-review-word">
+                <span x-text="q.word"></span>
+                <span class="vocab-pos-chip" :data-pos="q.pos" x-text="q.pos"></span>
+              </div>
+              <p class="vocab-review-def" x-text="q.definition"></p>
+            </div>
+            <div class="vocab-review-answer" :class="{ 'is-correct': q.isCorrect }">
+              <span class="vocab-review-answer-label" x-text="q.isCorrect ? 'Your answer' : 'Correct:'"></span>
+              <span class="vocab-review-answer-text" x-text="selectedMode === 'definition-quiz' ? q.definition : q.word"></span>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <div class="vocab-results-actions">
+        <button class="vocab-start-btn t-btn" @click="retryMissed()" :disabled="missedCount === 0" :title="missedCount === 0 ? 'No missed words' : ''">
+          <span class="material-icons-round">replay</span><span x-text="`Retry missed (${missedCount})`"></span>
+        </button>
+        <button class="vocab-ghost-btn t-btn" @click="restart()">
+          <span class="material-icons-round">shuffle</span><span>New session</span>
+        </button>
+        <button class="vocab-ghost-btn t-btn" @click="stage = 'select'">
+          <span class="material-icons-round">tune</span><span>Back to modes</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ RESULTS STAGE (flashcards) ═══
+       Every card ended up in the "know it" pile — the score that matters is
+       how many got there without a detour, so that is what the ring shows. -->
+  <div class="vocab-practice" x-show="stage === 'results' && selectedMode === 'flashcards'" x-transition.opacity.duration.200ms x-cloak>
+    <div class="vocab-results-stage">
+      <span class="material-icons-round vocab-results-icon">style</span>
+      <div class="vocab-results-score">
+        <span class="vocab-results-ring" :style="'--score:' + firstTryPct">
+          <span class="vocab-results-num" x-text="`${firstTryCount}/${cardTotal}`"></span>
+          <span class="vocab-results-acc" x-text="firstTryPct + '%'"></span>
+        </span>
+      </div>
+      <h2 class="vocab-results-title" x-text="trickyCount === 0 ? 'Deck cleared!' : 'Deck cleared'"></h2>
+      <p class="vocab-results-sub"
+         x-text="trickyCount === 0
+           ? 'Every card went right on the first pass.'
+           : `${firstTryCount} known first time, ${trickyCount} needed another look across ${round} round${round === 1 ? '' : 's'}.`"></p>
+
+      <div class="vocab-review-list">
+        <template x-for="c in cardReview" :key="c.word">
+          <div class="vocab-review-row">
+            <span class="material-icons-round vocab-review-dot"
+                  :class="cardMisses[c.word] ? 'is-incorrect' : 'is-correct'"
+                  x-text="cardMisses[c.word] ? 'refresh' : 'check_circle'"></span>
+            <div class="vocab-review-main">
+              <div class="vocab-review-word">
+                <span x-text="c.word"></span>
+                <span class="vocab-pos-chip" :data-pos="c.part_of_speech" x-text="c.part_of_speech"></span>
+              </div>
+              <p class="vocab-review-def" x-text="c.definition"></p>
+            </div>
+            <div class="vocab-review-answer" :class="{ 'is-correct': !cardMisses[c.word] }">
+              <span class="vocab-review-answer-label">Sent left</span>
+              <span class="vocab-review-answer-text"
+                    x-text="cardMisses[c.word] ? `${cardMisses[c.word]}\u00d7` : 'never'"></span>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <div class="vocab-results-actions">
+        <button class="vocab-start-btn t-btn" @click="retryTricky()" :disabled="trickyCount === 0"
+                :title="trickyCount === 0 ? 'Nothing tripped you up' : ''">
+          <span class="material-icons-round">replay</span><span x-text="`Redo the tricky ones (${trickyCount})`"></span>
+        </button>
+        <button class="vocab-ghost-btn t-btn" @click="restart()">
+          <span class="material-icons-round">shuffle</span><span>New session</span>
+        </button>
+        <button class="vocab-ghost-btn t-btn" @click="stage = 'select'">
+          <span class="material-icons-round">tune</span><span>Back to modes</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+<!-- Exit confirm modal (matches delete-modal pattern) -->
+<div id="vocab-exit-modal" class="delete-modal" :class="{ 'show': showExitConfirm }" x-cloak @click.self="showExitConfirm = false">
+  <div class="delete-modal-content">
+    <div class="delete-modal-icon"><span class="material-icons-round" style="color: var(--red); font-size: 1.25rem;" aria-label="exit">logout</span></div>
+    <h3 class="delete-modal-title">Leave this session?</h3>
+    <p class="delete-modal-desc">Your answers so far are saved to your performance data, but this active quiz will be lost.</p>
+    <div class="delete-modal-actions">
+      <button class="delete-modal-btn cancel t-btn" @click="showExitConfirm = false">Keep practicing</button>
+      <button class="delete-modal-btn confirm t-btn" @click="confirmExit()">Leave session</button>
+    </div>
+  </div>
+</div>
+
+</main>
+</div>
+
+<script>
+  document.addEventListener('alpine:init', () => {
+    Alpine.data('vocabPractice', () => ({
+      dataStatus: 'loading',
+      stage: 'select',       // select | quiz | cards | results
+      step: 1,               // setup wizard: 1 mode, 2 word source
+      stepAnim: '',          // direction-aware enter/exit class on the live step
+      stepping: false,
+      openMenu: null,        // 'bank' | 'set' | 'filter' — dropdown hanging off that card
+      nudgedSet: null,       // set holding its "needs N words" hint open
+      shakeSet: null,
+      selectedMode: 'definition-quiz',
+      showExitConfirm: false,
+
+      /* word source */
+      source: 'bank',        // bank | set | filter
+      skipSource: false,     // arrived with the source already decided
+      studySets: [],
+      selectedSetId: null,
+      filterPos: 'all',
+      filterDiff: 'all',
+      learntWords: [],
+
+      startNudged: false,
+      startShaking: false,
+
+      /* flashcard deck — Quizlet-style two piles. `deck` is the current
+         round; anything sent left is requeued into the next one. */
+      deck: [],
+      cardIndex: 0,
+      flipped: false,
+      round: 1,
+      cardAnim: '',          // '' | 'is-swipe-left' | 'is-swipe-right'
+      cardBusy: false,       // swipe in flight — ignore further verdicts
+      instantFlip: false,    // suppress the flip transition while swapping cards
+      stillLearning: [],     // records queued for the next round
+      knownWords: [],        // words retired from the deck this session
+      cardMisses: {},        // word → times sent left this session
+      sessionCards: [],      // every distinct card the session opened with
+      cardStartTime: 0,
+
+      questions: [],
+      currentIndex: 0,
+      questionStartTime: 0,
+      attemptedWords: new Set(),
+
+      sentenceInput: '',
+      sentenceFeedback: '',
+      sentenceState: 'idle',   // idle | checking | good | bad | error
+
+      init() {
+        this.refreshStore();
+        this.readParams();
+        this.watchSync();
+        VocabData.ready().then(() => {
+          this.dataStatus = VocabData.status === 'ready' ? 'ready' : 'error';
+        });
+      },
+      retryData() {
+        this.dataStatus = 'loading';
+        VocabData.retry().then(() => {
+          this.dataStatus = VocabData.status === 'ready' ? 'ready' : 'error';
+        });
+      },
+      refreshStore() {
+        this.learntWords = VocabStore.learnt().slice();
+        this.studySets = VocabStore.studySets().slice();
+      },
+      /* learn.html hands the wizard a starting point: ?set=<id> for one study
+         set, ?source=set to open the picker, ?pos=/?diff= for a filtered slice. */
+      readParams() {
+        const p = new URLSearchParams(location.search);
+        const setId = p.get('set');
+        const set = setId ? this.studySets.find(s => s.id === setId) : null;
+        if (set) {
+          this.source = 'set';
+          this.selectedSetId = set.id;
+          this.skipSource = true;
+        } else if (p.get('source') === 'set') {
+          this.source = 'set';
+        } else if (p.get('source') === 'filter' || p.get('pos') || p.get('diff')) {
+          this.source = 'filter';
+          this.filterPos = p.get('pos') || 'all';
+          this.filterDiff = p.get('diff') || 'all';
+          this.skipSource = true;
+        } else if (p.get('source') === 'bank') {
+          this.source = 'bank';
+          this.skipSource = true;
+        }
+      },
+      /* The wordbank and the study sets change under us when Firestore
+         reconciles on sign-in, which is when a linked set can first appear. */
+      watchSync() {
+        const apply = () => { this.refreshStore(); this.readParams(); };
+        if (window._korahVocabReadyFired) apply();
+        window.addEventListener('korahVocabReady', apply);
+      },
+
+      /* Steps slide out before the next one slides in, so the two are never
+         laid out at once — that overlap is what made the page jump. Mirrors
+         the rush wizard's timing (240ms out, 400ms in). */
+      goStep(target) {
+        if (target === this.step || this.stepping) return;
+        const dir = target > this.step ? 1 : -1;
+        this.stepping = true;
+        this.stepAnim = dir > 0 ? 'anim-out-left' : 'anim-out-right';
+        setTimeout(() => {
+          this.step = target;
+          this.stepAnim = dir > 0 ? 'anim-in-right' : 'anim-in-left';
+          this.stepping = false;
+          setTimeout(() => { this.stepAnim = ''; }, 400);
+        }, 240);
+      },
+
+      /* ── Word source ────────────────────────────────── */
+      /* tones here only need to be distinct, so cycle them by index */
+      toneAt(i) {
+        return 'tone-' + ['blue', 'teal', 'green', 'amber', 'pink', 'red'][i % 6];
+      },
+      /* Each source card doubles as the toggle for its own dropdown: the first
+         click selects the source and opens it, a second click closes it. */
+      pickSource(key) {
+        if (this.source !== key) {
+          this.source = key;
+          this.openMenu = key;
+          return;
+        }
+        this.openMenu = this.openMenu === key ? null : key;
+      },
+      setTooSmall(set) { return set.words.length < this.minWords; },
+      /* A set too small to practice can't be selected at all — it says so on
+         itself rather than letting Start explain later. */
+      chooseSet(set) {
+        if (this.setTooSmall(set)) { this.nudgeSet(set.id); return; }
+        this.selectedSetId = set.id;
+        this.openMenu = null;
+      },
+      nudgeSet(id) {
+        this.nudgedSet = id;
+        this.shakeSet = null;
+        requestAnimationFrame(() => { this.shakeSet = id; });
+        clearTimeout(this._setNudgeTimer);
+        this._setNudgeTimer = setTimeout(() => {
+          if (this.nudgedSet === id) this.nudgedSet = null;
+          if (this.shakeSet === id) this.shakeSet = null;
+        }, 2500);
+      },
+      get bankWords() { return this.learntWords; },
+      get selectedSet() {
+        return this.studySets.find(s => s.id === this.selectedSetId) || null;
+      },
+      get filteredWords() {
+        if (VocabData.status !== 'ready') return [];
+        return VocabData.all
+          .filter(w => this.filterPos === 'all' || w.part_of_speech === this.filterPos)
+          .filter(w => this.filterDiff === 'all' || w.difficulty === this.filterDiff)
+          .map(w => w.word);
+      },
+      get sourceWords() {
+        if (this.source === 'set') return this.selectedSet ? this.selectedSet.words : [];
+        if (this.source === 'filter') return this.filteredWords;
+        return this.bankWords;
+      },
+      /* The filter card's subtitle carries the current filter, so the choice
+         still reads at a glance once the dropdown is shut. */
+      get filterLabel() {
+        if (this.filterPos === 'all' && this.filterDiff === 'all') return 'Pick a part of speech and difficulty';
+        const pos = this.filterPos === 'all' ? 'any word' : this.filterPos;
+        const diff = this.filterDiff === 'all' ? '' : `, ${this.filterDiff}`;
+        return pos + diff;
+      },
+      /* the summary under Start reads as a sentence, so it carries its own
+         phrasing rather than reusing the bare sourceLabel fragment */
+      get sourceSentence() {
+        const n = this.sourceWords.length;
+        const words = `${n} word${n === 1 ? '' : 's'}`;
+        if (this.source === 'set') {
+          return this.selectedSet
+            ? `Practicing ${words} from “${this.selectedSet.name}”`
+            : 'No study set picked yet';
+        }
+        if (this.source === 'filter') return `Practicing ${words} that match this filter`;
+        return `Practicing ${words} you selected`;
+      },
+      get sourceLabel() {
+        if (this.source === 'set') return this.selectedSet ? `words in “${this.selectedSet.name}”` : 'words — pick a set';
+        if (this.source === 'filter') return 'words match this filter';
+        return 'words selected';
+      },
+      /* Quizzes need four distractors' worth of words to feel like a quiz;
+         flashcards only need something to flip. */
+      get minWords() { return this.selectedMode === 'flashcards' ? 1 : 5; },
+      get canStart() { return this.sourceWords.length >= this.minWords; },
+      get startBlockedReason() {
+        if (this.source === 'set' && !this.selectedSet) return 'Pick a study set to practice.';
+        return `Add at least ${this.minWords} words to practice!`;
+      },
+      get startLabel() {
+        if (this.selectedMode === 'flashcards') return 'Start Flashcards';
+        return this.selectedMode === 'definition-quiz' ? 'Start Definition Quiz' : 'Start Vocab Quiz';
+      },
+
+      /* A locked Start says why on hover; clicking wobbles it and holds the
+         reason open, same as a study set that is too small to practice. */
+      nudgeStart() {
+        this.startNudged = true;
+        this.startShaking = false;
+        requestAnimationFrame(() => { this.startShaking = true; });
+        clearTimeout(this._nudgeTimer);
+        this._nudgeTimer = setTimeout(() => {
+          this.startNudged = false;
+          this.startShaking = false;
+        }, 2500);
+      },
+
+      /* ── Flashcards ─────────────────────────────────── */
+      get card() { return this.deck[this.cardIndex] || null; },
+      diffTone(w) {
+        return { easy: 'tone-green', medium: 'tone-amber', hard: 'tone-red' }[w.difficulty] || 'tone-blue';
+      },
+      hasEtymology(w) { return !!w.etymology && w.etymology !== 'Unknown'; },
+      isLearnt(word) { return this.learntWords.includes(VocabData.normalize(word)); },
+      toggleWord(word) {
+        const n = VocabData.normalize(word);
+        const i = this.learntWords.indexOf(n);
+        if (i >= 0) {
+          VocabStore.removeWord(n);
+          this.learntWords.splice(i, 1);
+        } else {
+          VocabStore.addWord(n);
+          this.learntWords.push(n);
+        }
+      },
+      startCards(records) {
+        this.deck = records;
+        this.sessionCards = records.slice();
+        this.cardIndex = 0;
+        this.round = 1;
+        this.flipped = false;
+        this.cardAnim = '';
+        this.cardBusy = false;
+        this.stillLearning = [];
+        this.knownWords = [];
+        this.cardMisses = {};
+        this.cardStartTime = Date.now();
+        this.loadSentence();
+        this.stage = 'cards';
+      },
+      /* The pile waiting for the next round. Cards not reached yet are unseen,
+         not "still learning", so they stay out of this count. */
+      get learningCount() { return this.stillLearning.length; },
+      get cardsGraded() { return this.knownWords.length + Object.keys(this.cardMisses).length; },
+      /**
+       * Grade the current card. Both verdicts are real attempts as far as the
+       * store is concerned: "I know this" is a correct answer and "Still
+       * learning" an incorrect one, which is what moves the word's mastery
+       * level and the Your Progress panel on learn.html.
+       */
+      markCard(known) {
+        const rec = this.card;
+        if (!rec || this.cardBusy) return;
+        this.cardBusy = true;
+        VocabStore.recordAttempt({
+          word: rec.word,
+          questionType: 'flashcards',
+          isCorrect: !!known,
+          userAnswer: known ? 'know-it' : 'still-learning',
+          correctAnswer: rec.definition,
+          timeSpent: Date.now() - this.cardStartTime,
+        });
+        if (known) {
+          this.knownWords.push(rec.word);
+        } else {
+          this.stillLearning.push(rec);
+          this.cardMisses[rec.word] = (this.cardMisses[rec.word] || 0) + 1;
+        }
+        this.cardAnim = known ? 'is-swipe-right' : 'is-swipe-left';
+        // Let the card finish leaving before the next one takes its place.
+        setTimeout(() => {
+          this.cardAnim = '';
+          this.cardBusy = false;
+          this.advanceCard();
+        }, 420);
+      },
+      advanceCard() {
+        // The face content swaps instantly, so un-flipping with the usual
+        // 0.55s rotate would spin the *new* card. Kill the transition for
+        // one frame instead.
+        this.instantFlip = true;
+        this.flipped = false;
+        requestAnimationFrame(() => requestAnimationFrame(() => { this.instantFlip = false; }));
+
+        if (this.cardIndex < this.deck.length - 1) {
+          this.cardIndex++;
+        } else if (this.stillLearning.length) {
+          this.deck = this.stillLearning;
+          this.stillLearning = [];
+          this.cardIndex = 0;
+          this.round++;
+        } else {
+          this.stage = 'results';
+          return;
+        }
+        this.cardStartTime = Date.now();
+        this.loadSentence();
+      },
+      cardKey(e) {
+        if (this.stage !== 'cards' || !this.card) return;
+        const el = document.activeElement;
+        if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
+        if (e.key === 'ArrowLeft') { e.preventDefault(); this.markCard(false); }
+        else if (e.key === 'ArrowRight') { e.preventDefault(); this.markCard(true); }
+        else if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); this.flipped = !this.flipped; }
+      },
+      exitCards() {
+        if (this.cardsGraded) this.showExitConfirm = true;
+        else this.stage = 'select';
+      },
+
+      /* ── Flashcard results ──────────────────────────── */
+      get cardTotal() { return this.sessionCards.length; },
+      get firstTryCount() { return this.sessionCards.filter(r => !this.cardMisses[r.word]).length; },
+      get firstTryPct() {
+        return this.cardTotal ? Math.round((this.firstTryCount / this.cardTotal) * 100) : 0;
+      },
+      /* Hardest first — the list doubles as the "what to redo" preview. */
+      get cardReview() {
+        return this.sessionCards.slice()
+          .sort((a, b) => (this.cardMisses[b.word] || 0) - (this.cardMisses[a.word] || 0));
+      },
+      get trickyWords() { return this.sessionCards.filter(r => this.cardMisses[r.word]); },
+      get trickyCount() { return this.trickyWords.length; },
+      retryTricky() {
+        if (!this.trickyCount) return;
+        this.startCards(this.trickyWords.slice());
+      },
+
+      get current() { return this.questions[this.currentIndex]; },
+      get questionCount() { return this.questions.length; },
+      get progressPct() {
+        if (!this.questionCount) return 0;
+        return Math.round(((this.currentIndex + 1) / this.questionCount) * 100);
+      },
+      optionKey(i) { return String.fromCharCode(97 + i); },
+      /* options have no inherent meaning, so tones just make them distinct */
+      optionTone(i) { return 'tone-' + ['blue', 'teal', 'amber', 'pink'][i % 4]; },
+      /* one flat string — Alpine drops an object nested inside a :class array */
+      optionClass(opt, i) {
+        const q = this.current;
+        const classes = [this.optionTone(i)];
+        if (q.selectedIndex === i) classes.push('is-selected');
+        if (q.answered && opt.isCorrect) classes.push('is-correct');
+        if (q.answered && q.selectedIndex === i && !opt.isCorrect) classes.push('is-incorrect');
+        return classes.join(' ');
+      },
+
+      startPractice() {
+        if (!this.canStart) return;
+        const words = this.sourceWords;
+        VocabQuiz.useWords(words);
+        if (this.selectedMode === 'flashcards') {
+          this.startCards(VocabQuiz.resolveWords(words));
+          return;
+        }
+        this.questions = VocabQuiz.buildSession(this.selectedMode);
+        this.currentIndex = 0;
+        this.attemptedWords = new Set();
+        this.questionStartTime = Date.now();
+        this.loadSentence();
+        this.stage = 'quiz';
+      },
+      /* the flashcard and the quiz question both carry .word/.definition, so
+         the sentence box works off whichever stage is showing */
+      get activeWord() { return this.stage === 'cards' ? this.card : this.current; },
+      /* sentence box follows the current word — restore anything saved */
+      loadSentence() {
+        const q = this.activeWord;
+        this.sentenceInput = q ? VocabStore.getSentence(q.word) : '';
+        this.sentenceFeedback = '';
+        this.sentenceState = 'idle';
+      },
+      async checkSentence() {
+        const q = this.activeWord;
+        const sentence = this.sentenceInput.trim();
+        if (!q || !sentence || this.sentenceState === 'checking') return;
+        this.sentenceState = 'checking';
+        this.sentenceFeedback = '';
+        VocabStore.saveSentence(q.word, sentence);
+        try {
+          const res = await fetch('/api/r', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: 'gemini-2.5-flash',
+              temperature: 0.2,
+              messages: [
+                { role: 'system', content: 'You check whether a student used an SAT vocabulary word correctly. Reply with ONLY a single JSON object and no markdown, in this exact shape: { "correct": true, "explanation": "one or two sentences" }. Judge meaning and context only, not spelling or style.' },
+                { role: 'user', content: 'Word: ' + q.word + '\nMeaning: ' + q.definition + '\nStudent sentence: ' + sentence },
+              ],
+            }),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const raw = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+          if (!raw) throw new Error('Empty response');
+          const parsed = JSON.parse(String(raw).replace(/^```(?:json)?/, '').replace(/```$/, '').trim());
+          if (typeof parsed.correct !== 'boolean') throw new Error('Bad response shape');
+          this.sentenceState = parsed.correct ? 'good' : 'bad';
+          this.sentenceFeedback = (parsed.correct ? 'Good usage. ' : 'Not quite. ') + (parsed.explanation || '');
+        } catch (e) {
+          this.sentenceState = 'error';
+          this.sentenceFeedback = 'Could not check that sentence right now. It is saved — try again later.';
+        }
+      },
+      choose(i) {
+        const q = this.current;
+        if (!q || q.answered) return;
+        q.selectedIndex = i;
+        q.answered = true;
+        q.isCorrect = q.options[i].isCorrect;
+        const timeSpent = Date.now() - this.questionStartTime;
+        q.timeSpent = timeSpent;
+        const picked = q.options[i];
+        if (!this.attemptedWords.has(q.word)) {
+          this.attemptedWords.add(q.word);
+          VocabStore.recordAttempt({
+            word: q.word,
+            questionType: this.selectedMode,
+            isCorrect: q.isCorrect,
+            userAnswer: picked.text,
+            correctAnswer: this.selectedMode === 'definition-quiz' ? q.definition : q.word,
+            timeSpent,
+          });
+        }
+      },
+      next() {
+        const q = this.current;
+        if (!q || !q.answered) return;
+        if (this.currentIndex < this.questionCount - 1) {
+          this.currentIndex++;
+          this.questionStartTime = Date.now();
+          this.loadSentence();
+        } else {
+          this.stage = 'results';
+        }
+      },
+      prev() {
+        if (this.currentIndex === 0) return;
+        this.currentIndex--;
+        if (!this.current.answered) this.questionStartTime = Date.now();
+        this.loadSentence();
+      },
+      backToModes() {
+        const answered = this.questions.some(q => q.answered);
+        if (answered) this.showExitConfirm = true;
+        else this.stage = 'select';
+      },
+      confirmExit() {
+        this.showExitConfirm = false;
+        this.questions = [];
+        this.currentIndex = 0;
+        this.deck = [];
+        this.stillLearning = [];
+        this.cardBusy = false;
+        this.cardAnim = '';
+        this.stage = 'select';
+      },
+
+      get correctCount() { return this.questions.filter(q => q.isCorrect).length; },
+      get accuracyPct() {
+        if (!this.questionCount) return 0;
+        return Math.round((this.correctCount / this.questionCount) * 100);
+      },
+      get missedWords() {
+        return this.questions.filter(q => q.answered && !q.isCorrect).map(q => q.word);
+      },
+      get missedCount() { return this.missedWords.length; },
+      restart() { this.startPractice(); },
+      retryMissed() {
+        if (!this.missedCount) return;
+        this.questions = VocabQuiz.buildFromIncorrect(this.missedWords, this.selectedMode);
+        this.currentIndex = 0;
+        this.attemptedWords = new Set();
+        this.questionStartTime = Date.now();
+        this.loadSentence();
+        this.stage = 'quiz';
+      }
+    }));
+  });
+</script>
+
+</body>
+</html>

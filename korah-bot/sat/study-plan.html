@@ -1,0 +1,1386 @@
+<!DOCTYPE html>
+<html lang="en" x-data="{
+  theme: localStorage.getItem('korah_theme') || 'dark',
+  sidebarCollapsed: window.innerWidth <= 768 ? false : localStorage.getItem('korah_sidebar_collapsed') === 'true',
+  mobileOpen: false,
+  getEffectiveTheme() {
+    if (this.theme === 'system') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return this.theme;
+  },
+  toggleSidebar() {
+    if (window.innerWidth <= 768) {
+      this.mobileOpen = !this.mobileOpen;
+      const overlay = document.querySelector('.sidebar-overlay');
+      if (overlay) overlay.classList.toggle('show', this.mobileOpen);
+    } else {
+      this.sidebarCollapsed = !this.sidebarCollapsed;
+      localStorage.setItem('korah_sidebar_collapsed', this.sidebarCollapsed);
+    }
+  }
+}" :data-theme="getEffectiveTheme()" x-cloak>
+<head>
+  <link rel="stylesheet" href="../transitions/page-transitions.css"/>
+  <script src="../transitions/page-transitions.js"></script>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Korah AI — SAT Study Plan</title>
+  <link rel="icon" type="image/png" href="../logo-images/newlogo0.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <script src="../sidebar-loader.js" defer></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../app/korah-chat.css"/>
+  <link rel="stylesheet" href="./sat.css"/>
+  <link rel="stylesheet" href="./sat-rush.css"/>
+</head>
+
+<body>
+<script>
+  (function() {
+    const t = localStorage.getItem('korah_theme') || 'dark';
+    if (t === 'light' || (t === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  })();
+</script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+  import { setupKorahDB } from "../app/data/firestore-store.js";
+  import { initStudyPlan } from "./js/study-plan.js";
+  import { startAuthGuard } from '../auth-guard.js';
+  import { startGuestSession, showAuthWall } from '../guest-gate.js';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
+    authDomain: "korah-app.firebaseapp.com",
+    projectId: "korah-app",
+    storageBucket: "korah-app.firebasestorage.app",
+    messagingSenderId: "226169460321",
+    appId: "1:226169460321:web:b166fc8260107c55dafc20"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      // The plan lives entirely under users/{uid}, so there is nothing to show
+      // a guest. Render the empty shell, then hard-block with the auth wall.
+      startGuestSession();
+      showAuthWall('../');
+      return;
+    }
+    await setupKorahDB(app, user.uid);
+    await initStudyPlan(app, user.uid);
+    const detail = { uid: user.uid };
+    window._korahReadyFired = detail;
+    window.dispatchEvent(new CustomEvent('korahReady', { detail }));
+    startAuthGuard(auth, '../index.html');
+  });
+
+  // #logout-btn lives in the sidebar, which sidebar-loader.js injects asynchronously,
+  // so it does not exist yet when this module runs. Delegate from document instead.
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#logout-btn')) return;
+    window.confirmLogout(async () => {
+      await signOut(auth);
+      localStorage.removeItem('korah_first_name');
+      window.KorahTransitions.go('../login.html');
+    });
+  });
+</script>
+
+<script src="../study/js/sidebar.js"></script>
+
+<canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
+<div id="sidebar-root"></div>
+
+<!-- ═══ MAIN AREA WRAPPER ═══ -->
+<div id="main-area-wrapper" class="main-area-wrapper">
+<main id="main-content" class="main-content">
+
+  <header class="chat-topbar bg-sf glass-sm t-theme bd" style="opacity: 0.95;">
+    <button id="sidebar-toggle" @click="toggleSidebar()" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+    <div class="chat-title-area">
+      <div class="korah-status-dot"></div>
+      <span class="font-semibold tx text-sm">Study Plan</span>
+    </div>
+  </header>
+
+  <div class="sat-page" style="padding: 1.5rem; max-width: 72rem; margin: 0 auto; overflow-y: auto; flex: 1; min-height: 0;">
+
+    <!-- STATE: LOADING -->
+    <template x-if="$store.studyPlan.planState === 'loading'">
+      <div class="panel-card" style="text-align:center; padding:4rem;">
+        <div class="sat-spinner" style="width:2.5rem;height:2.5rem;margin:0 auto 1rem;border:3px solid var(--bd);border-top-color:var(--p4);border-radius:50%;animation:spin 1s linear infinite;"></div>
+        <p class="tx2">Loading your study plan…</p>
+        <template x-if="$store.studyPlan.initError">
+          <p class="tx3" style="margin-top:1rem;color:#ef4444;">Error: {{ $store.studyPlan.initError }}</p>
+          <button class="sat-button sat-button-secondary" style="margin-top:1rem;" @click="location.reload()">Retry</button>
+        </template>
+        <template x-if="!$store.studyPlan.initError && $store.studyPlan.initStages.length > 0">
+          <p class="tx3" style="margin-top:1rem;color:var(--p5);">
+            Initializing: {{ $store.studyPlan.initStages.join(', ') }}
+          </p>
+        </template>
+      </div>
+    </template>
+
+    <!-- STATE: EMPTY (WIZARD) -->
+    <template x-if="$store.studyPlan.planState === 'empty'">
+      <div x-data="wizard()" class="rush-shell sp-wizard" :class="{ 'is-step1': step === 1 }">
+
+        <div class="rush-hero">
+          <h1>Your Study Plan</h1>
+          <p>Four quick questions and Korah builds a day-by-day plan up to your test date.</p>
+        </div>
+
+        <!-- Step indicator -->
+        <div class="rush-steps-indicator">
+          <template x-for="i in 4" :key="i">
+            <span class="rush-step-dot" :class="{ 'is-active': step === i, 'is-done': i < step }"></span>
+          </template>
+        </div>
+
+        <!-- ── Step 1: start point ── -->
+        <div class="rush-step" x-show="step === 1" :class="anim">
+          <h2 class="rush-step-title">Where are you starting from?</h2>
+          <div class="rush-card-grid cols-3 rush-stagger">
+            <button type="button" class="rush-card tone-green" :class="[startPointPicked && intake.startPoint==='real_sat' ? 'is-selected' : '', flashOn.start[0] ? 'is-flash' : '']" @click="pickStart('real_sat')">
+              <span class="material-icons-round">assignment_turned_in</span>
+              <span class="rush-card-title">Took the real SAT</span>
+              <span class="rush-card-desc">You have an official score report</span>
+            </button>
+            <button type="button" class="rush-card tone-blue" :class="[startPointPicked && intake.startPoint==='practice_test' ? 'is-selected' : '', flashOn.start[1] ? 'is-flash' : '']" @click="pickStart('practice_test')">
+              <span class="material-icons-round">assignment</span>
+              <span class="rush-card-title">Took a practice test</span>
+              <span class="rush-card-desc">Bluebook, Khan Academy, or another full test</span>
+            </button>
+            <button type="button" class="rush-card tone-amber" :class="[startPointPicked && intake.startPoint==='none' ? 'is-selected' : '', flashOn.start[2] ? 'is-flash' : '']" @click="pickStart('none')">
+              <span class="material-icons-round">help_outline</span>
+              <span class="rush-card-title">Haven't tested yet</span>
+              <span class="rush-card-desc">Rate your confidence on each domain instead</span>
+            </button>
+          </div>
+          <div class="rush-btn-row">
+            <button class="rush-btn" @click="nextStep()" :disabled="!canProceed()">Continue</button>
+          </div>
+        </div>
+
+        <!-- ── Step 2: level ── -->
+        <div class="rush-step" x-show="step === 2" :class="anim">
+
+          <!-- Tested: score report -->
+          <template x-if="intake.startPoint !== 'none'">
+            <div>
+              <h2 class="rush-step-title">Upload your score report</h2>
+              <p class="rush-step-sub">We read your Math and Reading and Writing scores automatically.</p>
+
+              <div class="rush-drop tone-cyan" @click="$refs.fileInput.click()" @dragover.prevent @drop.prevent="handleDrop" :class="{ 'has-file': scoreImages.length }">
+                <div x-show="!scoreImages.length" class="rush-drop-empty">
+                  <span class="material-icons-round" style="font-size:3rem;color:var(--acc);">cloud_upload</span>
+                  <strong>Click or drag a screenshot here</strong>
+                  <span style="font-size:0.85rem;">PNG, JPG, or WebP · Max 4.5 MB each · Add more than one</span>
+                </div>
+                <div x-show="scoreImages.length" style="width:100%;">
+                  <template x-for="(img, i) in scoreImages" :key="i">
+                    <div style="position:relative;margin-bottom:1rem;">
+                      <button type="button" class="rush-img-remove" @click.stop="removeImage(i)" title="Remove image" aria-label="Remove image">
+                        <span class="material-icons-round" style="font-size:1.1rem;">close</span>
+                      </button>
+                      <img :src="img" alt="Score report preview" style="max-width:100%;max-height:22rem;border-radius:1rem;border:0.125rem solid var(--acc);object-fit:contain;margin:0 auto;display:block;"/>
+                    </div>
+                  </template>
+                  <span style="font-size:0.9rem;font-weight:700;">Click or drag to add another screenshot</span>
+                </div>
+                <input type="file" x-ref="fileInput" accept="image/*" multiple class="hidden" @change="handleFileSelect"/>
+              </div>
+
+              <div x-show="extracting" class="rush-loading" style="padding:2rem 1rem;">
+                <div class="rush-spinner"></div>
+                <p>Reading scores from image…</p>
+              </div>
+
+              <div x-show="extractedScores" x-cloak>
+                <div class="rush-section-label">Scores found</div>
+                <div class="rush-stat-grid">
+                  <div class="rush-stat tone-blue">
+                    <span class="rush-stat-icon material-icons-round">calculate</span>
+                    <div class="rush-stat-value" x-text="extractedScores?.mathScore ?? '—'"></div>
+                    <div class="rush-stat-label">Math</div>
+                  </div>
+                  <div class="rush-stat tone-pink">
+                    <span class="rush-stat-icon material-icons-round">menu_book</span>
+                    <div class="rush-stat-value" x-text="extractedScores?.rwScore ?? '—'"></div>
+                    <div class="rush-stat-label">Reading and Writing</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Read-only: what Korah read out of the Knowledge and Skills
+                   breakdown. Shown so a misread domain is visible before it
+                   skews the whole plan. Scores below stay the editable path. -->
+              <div x-show="performanceRows().length" x-cloak>
+                <div class="rush-section-label">How you did by topic</div>
+                <p class="rush-step-sub" style="margin-top:-0.5rem;">Korah spends the most time on what you struggled with.</p>
+                <div class="rush-domains is-single rush-stagger">
+                  <template x-for="row in performanceRows()" :key="row.code">
+                    <div class="rush-domain sp-perf is-selected" :class="ratingTone(row.level)">
+                      <div class="rush-domain-head">
+                        <span class="rush-domain-name" x-text="row.label"></span>
+                        <span class="sp-perf-level" x-text="row.levelLabel"></span>
+                      </div>
+                    </div>
+                  </template>
+                </div>
+              </div>
+
+              <!-- Manual entry, so a failed or unavailable extraction is not a
+                   dead end. Typed scores apply as you type and beat the image. -->
+              <div class="rush-section-label">Or enter them yourself</div>
+              <div class="rush-field-row">
+                <label class="rush-field tone-blue">
+                  <span class="rush-field-label">Math</span>
+                  <input type="text" inputmode="numeric" maxlength="3" x-model="manualMath" @input="applyManualScores()" placeholder="680" class="rush-spr-input" style="text-align:center;"/>
+                </label>
+                <label class="rush-field tone-pink">
+                  <span class="rush-field-label">Reading and Writing</span>
+                  <input type="text" inputmode="numeric" maxlength="3" x-model="manualRw" @input="applyManualScores()" placeholder="720" class="rush-spr-input" style="text-align:center;"/>
+                </label>
+              </div>
+            </div>
+          </template>
+
+          <!-- Not tested: confidence ratings -->
+          <template x-if="intake.startPoint === 'none'">
+            <div>
+              <h2 class="rush-step-title">Rate your confidence</h2>
+              <p class="rush-step-sub">1 = needs lots of work, 2 = okay, 3 = strong. Be honest so the plan can target your weak spots.</p>
+
+              <div class="rush-section-label">Math domains</div>
+              <div class="rush-domains is-single rush-stagger">
+                <template x-for="d in mathDomains" :key="d.key">
+                  <div class="rush-domain tone-blue" :class="{ 'is-selected': intake.confidenceRatings[d.key] >= 1 }">
+                    <div class="rush-domain-head">
+                      <span class="rush-domain-name" x-text="d.label"></span>
+                    </div>
+                    <div class="rush-diffs" style="margin-top:0.85rem;">
+                      <template x-for="v in [1,2,3]" :key="v">
+                        <div class="rush-diff" :class="[ratingTone(v), intake.confidenceRatings[d.key]===v ? 'is-selected' : '']" @click="intake.confidenceRatings[d.key]=v" x-text="v"></div>
+                      </template>
+                    </div>
+                  </div>
+                </template>
+              </div>
+
+              <div class="rush-section-label">Reading and Writing domains</div>
+              <div class="rush-domains is-single rush-stagger">
+                <template x-for="d in rwDomains" :key="d.key">
+                  <div class="rush-domain tone-pink" :class="{ 'is-selected': intake.confidenceRatings[d.key] >= 1 }">
+                    <div class="rush-domain-head">
+                      <span class="rush-domain-name" x-text="d.label"></span>
+                    </div>
+                    <div class="rush-diffs" style="margin-top:0.85rem;">
+                      <template x-for="v in [1,2,3]" :key="v">
+                        <div class="rush-diff" :class="[ratingTone(v), intake.confidenceRatings[d.key]===v ? 'is-selected' : '']" @click="intake.confidenceRatings[d.key]=v" x-text="v"></div>
+                      </template>
+                    </div>
+                  </div>
+                </template>
+              </div>
+
+              <div class="rush-section-label">What do you want from this plan?</div>
+              <textarea x-model="intake.freeTextGoals" rows="4" class="rush-spr-input" style="resize:vertical;line-height:1.5;font-weight:500;" placeholder="Optional — e.g. focus on algebra word problems, improve reading speed, practice full tests under timed conditions…"></textarea>
+            </div>
+          </template>
+
+          <div class="rush-hint" x-show="!canProceed()" x-cloak>
+            <span x-text="intake.startPoint === 'none' ? 'Rate every domain to continue.' : 'Add your Math and Reading and Writing scores to continue.'"></span>
+          </div>
+          <div class="rush-btn-row">
+            <button class="rush-btn" @click="nextStep()" :disabled="!canProceed()">Continue</button>
+            <button class="rush-btn is-ghost" type="button" @click="prevStep()">Back</button>
+          </div>
+          <div class="sp-reset-row" x-show="intake.startPoint !== 'none' && (scoreImages.length || extractedScores || manualMath || manualRw)" x-cloak>
+            <button class="rush-mini-btn" type="button" @click="clearScores()">Start over</button>
+          </div>
+        </div>
+
+        <!-- ── Step 3: test date ── -->
+        <div class="rush-step" x-show="step === 3" :class="anim">
+          <h2 class="rush-step-title">When is your test?</h2>
+          <p class="rush-step-sub">Pick an official SAT date. We build your plan up to that day.</p>
+
+          <div class="rush-date-grid rush-stagger">
+            <template x-for="(d, i) in officialDates" :key="d">
+              <div class="rush-diff" :class="[toneAt(i), intake.testDate === d ? 'is-selected' : '', flashOn.dates[i] ? 'is-flash' : '']" @click="selectOfficialDate(d)" x-text="formatDate(d)"></div>
+            </template>
+          </div>
+
+          <div class="rush-hint" x-show="!canProceed()" x-cloak>Pick a date to continue.</div>
+          <div class="rush-btn-row">
+            <button class="rush-btn" @click="nextStep()" :disabled="!canProceed()">Continue</button>
+            <button class="rush-btn is-ghost" type="button" @click="prevStep()">Back</button>
+          </div>
+        </div>
+
+        <!-- ── Step 4: schedule ── -->
+        <div class="rush-step" x-show="step === 4" :class="anim">
+          <h2 class="rush-step-title">When can you study?</h2>
+          <p class="rush-step-sub">Choose your study days and how many hours you can put in each week.</p>
+
+          <div class="rush-week-grid rush-stagger">
+            <template x-for="d in weekdays" :key="d.key">
+              <div class="rush-diff" :class="[d.tone, intake.studyDays.includes(d.key) ? 'is-selected' : '']" @click="toggleDay(d.key)" x-text="d.label"></div>
+            </template>
+          </div>
+
+          <div class="rush-toggle-row tone-orange">
+            <div class="rush-toggle-text">
+              <strong>Hours per week</strong>
+              <span>Spread evenly across your days · sessions run 30–90 min</span>
+            </div>
+            <input type="text" inputmode="numeric" maxlength="2" pattern="[0-9]*" class="rush-spr-input rush-hours-input" :value="intake.hoursPerWeek" @input="intake.hoursPerWeek = Math.min(30, Math.max(2, parseInt($event.target.value) || 2))"/>
+          </div>
+
+          <div class="rush-hint" x-show="!canProceed()" x-cloak>Pick at least 2 study days to continue.</div>
+          <div class="rush-btn-row">
+            <button class="rush-btn is-green" @click="submitWizard()" :disabled="!canProceed() || generating">
+              <span x-show="!generating">Create my plan</span>
+              <span x-show="generating" style="display:inline-flex;align-items:center;gap:0.5rem;"><span class="sat-spinner"></span>Generating…</span>
+            </button>
+            <button class="rush-btn is-ghost" type="button" @click="prevStep()" :disabled="generating">Back</button>
+          </div>
+        </div>
+
+      </div>
+    </template>
+
+    <!-- STATE: HAS PLAN (CALENDAR) -->
+    <template x-if="$store.studyPlan.planState === 'hasPlan'">
+      <div x-data="calendarView($store.studyPlan.planData)" class="sp-calendar">
+        <!-- Header -->
+        <div class="spc-header">
+          <span class="spc-header-icon material-icons-round">event_note</span>
+          <div class="spc-header-text">
+            <div class="spc-eyebrow">Your Study Plan</div>
+            <p>Plan active · <span x-text="planData.hoursPerWeek"></span> hrs/week · <span x-text="planData.studyDays.join(', ')"></span></p>
+          </div>
+          <button type="button" class="spc-view-btn" :class="viewMode === 'week' ? 'tone-blue' : 'tone-teal'" @click="viewMode = viewMode === 'week' ? 'month' : 'week'">
+            <span class="material-icons-round" x-text="viewMode==='week' ? 'date_range' : 'view_week'"></span>
+            <span x-text="viewMode==='week' ? 'Week' : 'Month'"></span>
+          </button>
+        </div>
+
+        <!-- Feedback banner -->
+        <div class="spc-feedback tone-cyan">
+          <span class="material-icons-round">lightbulb</span>
+          <div x-text="$store.studyPlan.planData.feedback?.headline"></div>
+        </div>
+
+        <!-- Weekly view -->
+        <template x-if="viewMode === 'week'">
+          <template x-for="(week, wi) in weeks" :key="week.weekStart">
+            <div class="spc-card" :class="toneAt(wi)">
+              <h4 class="spc-card-title" x-text="week.label"></h4>
+              <template x-for="session in week.sessions" :key="session.id">
+                <div class="spc-session" :class="[subjectTone(session.subject), session.completed ? 'is-done' : '']">
+                  <button type="button" class="spc-check" :class="{ 'is-done': session.completed }" @click="toggleSession(session.id, !session.completed)" :aria-pressed="session.completed" aria-label="Mark session complete">
+                    <span class="material-icons-round">check</span>
+                  </button>
+                  <div class="spc-session-body">
+                    <div class="spc-session-head">
+                      <strong x-text="session.skillName"></strong>
+                      <span class="spc-subject-chip" x-text="session.subject === 'math' ? 'MATH' : 'READING AND WRITING'"></span>
+                      <span class="spc-session-activity" x-text="session.activity"></span>
+                    </div>
+                    <div class="spc-session-meta">
+                      <span x-text="formatTime(session.start) + ' · ' + session.durationMin + ' min'"></span>
+                      <span x-text="session.date"></span>
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </template>
+        </template>
+
+        <!-- Monthly view -->
+        <template x-if="viewMode === 'month'">
+          <template x-for="(month, mi) in months" :key="month.key">
+            <div class="spc-card" :class="toneAt(mi)">
+              <h4 class="spc-card-title" x-text="month.label"></h4>
+              <div class="spc-month-grid">
+                <template x-for="(d, di) in weekdayLabels" :key="d">
+                  <div class="spc-dow" :class="weekdayTone(di)" x-text="d"></div>
+                </template>
+                <template x-for="day in month.days" :key="day.date">
+                  <div class="spc-day" :class="[weekdayTone(day.date.getDay() === 0 ? 6 : day.date.getDay() - 1), day.otherMonth ? 'is-other-month' : '', day.sessions.length > 0 ? 'has-sessions' : '']">
+                    <span class="spc-day-num" x-text="day.date.getDate()"></span>
+                    <template x-for="s in day.sessions" :key="s.id">
+                      <div class="spc-day-session" @click="toggleSession(s.id, !s.completed)" :class="[subjectTone(s.subject), s.completed ? 'is-done' : '']" x-text="s.skillName"></div>
+                    </template>
+                    <template x-if="!day.sessions.length">
+                      <span class="spc-day-empty">—</span>
+                    </template>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </template>
+        </template>
+      </div>
+    </template>
+
+  </div>
+</main>
+</div>
+
+<!-- Alpine components -->
+<script>
+  // Wizard component
+  function wizard() {
+    return {
+      step: 1,
+      anim: '',
+      intake: {
+        startPoint: "none",
+        mathScore: null,
+        rwScore: null,
+        confidenceRatings: {},
+        // Domain code -> 1..3, read off the score report screenshots.
+        domainPerformance: {},
+        freeTextGoals: "",
+        testDate: "",
+        studyDays: [],
+        hoursPerWeek: 6
+      },
+      scoreImages: [],
+      extractedScores: null,
+      manualMath: "",
+      manualRw: "",
+      extracting: false,
+      generating: false,
+      // Until a choice is made, the tiles in a group light up on their own
+      // timers, so several are lit at once and the pattern never repeats.
+      flashOn: { start: [], dates: [] },
+      _flashTimers: {},
+      startPointPicked: false,
+      flashCount(group) { return group === 'start' ? 3 : this.officialDates.length; },
+      flashActive(group) {
+        if (group === 'start') return this.step === 1 && !this.startPointPicked;
+        return this.step === 3 && !this.intake.testDate;
+      },
+      startFlashing(group) {
+        this.stopFlashing(group);
+        if (!this.flashActive(group)) return;
+        const count = this.flashCount(group);
+        this.flashOn[group] = Array.from({ length: count }, () => false);
+        for (let i = 0; i < count; i++) this.scheduleFlash(group, i, Math.random() * 900);
+      },
+      scheduleFlash(group, i, delay) {
+        const key = group + ':' + i;
+        this._flashTimers[key] = setTimeout(() => {
+          if (!this.flashActive(group)) { this.stopFlashing(group); return; }
+          this.flashOn[group][i] = true;
+          this._flashTimers[key] = setTimeout(() => {
+            this.flashOn[group][i] = false;
+            this.scheduleFlash(group, i, 550 + Math.random() * 1100);
+          }, 400 + Math.random() * 350);
+        }, delay);
+      },
+      stopFlashing(group) {
+        Object.keys(this._flashTimers).forEach((k) => {
+          if (group && !k.startsWith(group + ':')) return;
+          clearTimeout(this._flashTimers[k]);
+          delete this._flashTimers[k];
+        });
+        const groups = group ? [group] : Object.keys(this.flashOn);
+        groups.forEach((g) => { this.flashOn[g] = (this.flashOn[g] || []).map(() => false); });
+      },
+      pickStart(v) {
+        this.intake.startPoint = v;
+        this.startPointPicked = true;
+        this.stopFlashing('start');
+      },
+      init() { this.startFlashing('start'); },
+      selectOfficialDate(d) {
+        this.intake.testDate = d;
+        this.stopFlashing();
+      },
+      // Color blocking: every option in a group gets its own accent.
+      tones: ["tone-red", "tone-orange", "tone-amber", "tone-green", "tone-teal", "tone-blue", "tone-pink"],
+      toneAt(i) { return this.tones[i % this.tones.length]; },
+      ratingTone(v) { return v === 1 ? "tone-red" : v === 2 ? "tone-amber" : "tone-green"; },
+      
+      mathDomains: [
+        { key: "heartOfAlgebra", label: "Algebra" },
+        { key: "passportAdvancedMath", label: "Advanced Math" },
+        { key: "problemSolvingData", label: "Problem-Solving and Data Analysis" },
+        { key: "additionalTopicsMath", label: "Geometry and Trigonometry" }
+      ],
+      rwDomains: [
+        { key: "informationIdeas", label: "Information & Ideas" },
+        { key: "craftStructure", label: "Craft & Structure" },
+        { key: "expressionIdeas", label: "Expression of Ideas" },
+        { key: "standardEnglish", label: "Standard English Conventions" }
+      ],
+      weekdays: [
+        { key: "mon", label: "Mon", tone: "tone-red" }, { key: "tue", label: "Tue", tone: "tone-orange" },
+        { key: "wed", label: "Wed", tone: "tone-amber" }, { key: "thu", label: "Thu", tone: "tone-green" },
+        { key: "fri", label: "Fri", tone: "tone-teal" }, { key: "sat", label: "Sat", tone: "tone-blue" },
+        { key: "sun", label: "Sun", tone: "tone-pink" }
+      ],
+      officialDates: [
+        "2026-09-12", "2026-10-03", "2026-11-07", "2026-12-05",
+        "2027-03-06", "2027-05-01", "2027-06-05"
+      ],
+      get todayISO() { return new Date().toISOString().split('T')[0]; },
+
+      canProceed() {
+        if (this.step === 1) return this.startPointPicked;
+        if (this.step === 2) {
+          if (this.intake.startPoint !== 'none') return this.intake.mathScore != null && this.intake.rwScore != null;
+          const allKeys = [...this.mathDomains, ...this.rwDomains].map(d => d.key);
+          return allKeys.every(k => this.intake.confidenceRatings[k] >= 1 && this.intake.confidenceRatings[k] <= 3);
+        }
+        if (this.step === 3) return !!this.intake.testDate && new Date(this.intake.testDate) > new Date();
+        if (this.step === 4) return this.intake.studyDays.length >= 2 && this.intake.hoursPerWeek >= 2;
+        return false;
+      },
+      // Mirrors the Practice Rush wizard: slide the current step out, then
+      // slide the next one in from the matching side.
+      goToStep(target) {
+        if (target === this.step || target < 1 || target > 4) return;
+        const dir = target > this.step ? 1 : -1;
+        this.anim = dir > 0 ? 'anim-out-left' : 'anim-out-right';
+        setTimeout(() => {
+          this.step = target;
+          this.anim = dir > 0 ? 'anim-in-right' : 'anim-in-left';
+          this.stopFlashing();
+          if (target === 1) this.startFlashing('start');
+          if (target === 3) this.startFlashing('dates');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }, 240);
+      },
+      nextStep() { if (this.canProceed()) this.goToStep(this.step + 1); },
+      prevStep() { this.goToStep(this.step - 1); },
+      toggleDay(key) {
+        const i = this.intake.studyDays.indexOf(key);
+        if (i >= 0) this.intake.studyDays.splice(i, 1);
+        else this.intake.studyDays.push(key);
+      },
+      formatDate(iso) { return new Date(iso + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); },
+      // Optional chaining on window.KorahStudyPlan silently no-ops when the
+      // module never initialised (no signed-in user), so ask for it explicitly.
+      planApi() {
+        if (!window.KorahStudyPlan) {
+          throw new Error("You need to be signed in to build a study plan. Sign in and try again.");
+        }
+        return window.KorahStudyPlan;
+      },
+      handleFileSelect(e) { this.processFiles(e.target.files); },
+      handleDrop(e) { this.processFiles(e.dataTransfer.files); },
+      async processFiles(fileList) {
+        const files = Array.from(fileList || []).filter(f => f.type.startsWith('image/'));
+        if (files.length === 0) return;
+        this.extracting = true;
+        try {
+          const api = this.planApi();
+          for (const file of files) {
+            const dataUrl = await api.downscaleImage(file);
+            if (!dataUrl) continue;
+            this.scoreImages.push(dataUrl);
+            const scores = await api.extractScoresFromImage(dataUrl);
+            this.mergeScores(scores);
+          }
+        } catch (e) { console.error(e); showPlanAlert(e.message || "Failed to read scores. Try a clearer image.", "Couldn't read that image"); }
+        finally { this.extracting = false; }
+      },
+      // Score reports are often split across screenshots, so keep whichever
+      // score each image contributes rather than replacing the whole result.
+      mergeScores(scores) {
+        if (!scores) return;
+        const next = { ...(this.extractedScores || {}) };
+        if (scores.mathScore != null) next.mathScore = scores.mathScore;
+        if (scores.rwScore != null) next.rwScore = scores.rwScore;
+        // The Knowledge and Skills breakdown is usually on a different
+        // screenshot than the scores, so accumulate domains the same way.
+        next.domains = { ...(next.domains || {}), ...(scores.domains || {}) };
+        this.extractedScores = next;
+        this.intake.domainPerformance = next.domains;
+        if (next.mathScore != null && !this.manualMath.trim()) this.intake.mathScore = next.mathScore;
+        if (next.rwScore != null && !this.manualRw.trim()) this.intake.rwScore = next.rwScore;
+      },
+      // Ordered math-then-english like the confidence step, and limited to the
+      // domains an uploaded report actually showed.
+      perfDomains: [
+        { code: "H", label: "Algebra" },
+        { code: "P", label: "Advanced Math" },
+        { code: "Q", label: "Problem-Solving and Data Analysis" },
+        { code: "S", label: "Geometry and Trigonometry" },
+        { code: "INI", label: "Information and Ideas" },
+        { code: "CAS", label: "Craft and Structure" },
+        { code: "EOI", label: "Expression of Ideas" },
+        { code: "SEC", label: "Standard English Conventions" }
+      ],
+      perfLevelLabels: ["", "Needs work", "Growing", "Strong"],
+      performanceRows() {
+        const found = this.intake.domainPerformance || {};
+        return this.perfDomains
+          .filter(d => found[d.code] >= 1 && found[d.code] <= 3)
+          .map(d => ({ ...d, level: found[d.code], levelLabel: this.perfLevelLabels[found[d.code]] }));
+      },
+      removeImage(i) {
+        this.scoreImages.splice(i, 1);
+        if (this.scoreImages.length === 0) this.clearScores();
+      },
+      clearScores() {
+        this.scoreImages = [];
+        this.extractedScores = null;
+        this.manualMath = "";
+        this.manualRw = "";
+        this.intake.mathScore = null;
+        this.intake.rwScore = null;
+        this.intake.domainPerformance = {};
+      },
+      // Applied on every keystroke: a typed score wins over whatever the image
+      // said, and a half-typed or out-of-range one clears it so the step can't
+      // continue on a stale value.
+      applyManualScores() {
+        const valid = (v) => Number.isInteger(v) && v >= 200 && v <= 800;
+        const read = (raw, extracted) => {
+          if (!raw.trim()) return extracted ?? null;
+          const n = parseInt(raw, 10);
+          return valid(n) ? n : null;
+        };
+        this.intake.mathScore = read(this.manualMath, this.extractedScores?.mathScore);
+        this.intake.rwScore = read(this.manualRw, this.extractedScores?.rwScore);
+      },
+      async submitWizard() {
+        if (!this.canProceed()) return;
+        this.generating = true;
+        try {
+          const payload = { ...this.intake };
+          if (payload.startPoint !== 'none') {
+            payload.confidenceRatings = {};
+            payload.freeTextGoals = "";
+          } else {
+            payload.mathScore = null;
+            payload.rwScore = null;
+            payload.domainPerformance = {};
+          }
+          await this.planApi().createPlan(payload);
+        } catch (e) { console.error(e); showPlanAlert(e.message || "Failed to create plan. Try again.", "Couldn't create your plan"); }
+        finally { this.generating = false; }
+      }
+    };
+  }
+
+  // "yyyy-MM-dd" parsed in local time. new Date("2026-09-07") is UTC midnight,
+  // which buckets sessions into the wrong day and week outside UTC.
+  function localDay(value) {
+    const [y, m, d] = String(value).split('-').map(Number);
+    return new Date(y, m - 1, d);
+  }
+  function localDayString(date) {
+    return date.getFullYear() + '-' +
+      String(date.getMonth() + 1).padStart(2, '0') + '-' +
+      String(date.getDate()).padStart(2, '0');
+  }
+
+  // Calendar view component
+  function calendarView(plan) {
+    const today = new Date();
+    const testDate = new Date(plan.testDate);
+
+    return {
+      planData: plan,
+      viewMode: 'week',
+      // Color blocking, same system as the wizard: tones cycle by index where
+      // they only need to differ, and carry meaning where one exists.
+      tones: ["tone-red", "tone-orange", "tone-amber", "tone-green", "tone-teal", "tone-blue", "tone-pink"],
+      toneAt(i) { return this.tones[i % this.tones.length]; },
+      subjectTone(subject) { return subject === 'math' ? 'tone-blue' : 'tone-pink'; },
+      weekdayLabels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+      weekdayTone(i) { return this.tones[i]; },
+      get weeks() {
+        const out = [];
+        const start = new Date(today);
+        start.setDate(start.getDate() - start.getDay() + 1); // Monday
+        for (let w = 0; w < 10; w++) {
+          const weekStart = new Date(start);
+          const weekSessions = (plan.sessions || []).filter(s => {
+            const d = localDay(s.date);
+            return d >= weekStart && d < new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+          }).sort((a,b) => new Date(a.date) - new Date(b.date));
+          if (weekSessions.length > 0) {
+            out.push({
+              weekStart,
+              label: `Week of ${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
+              sessions: weekSessions
+            });
+          }
+          start.setDate(start.getDate() + 7);
+        }
+        return out;
+      },
+      get months() {
+        const out = [];
+        const start = new Date(today.getFullYear(), today.getMonth(), 1);
+        const end = new Date(testDate.getFullYear(), testDate.getMonth() + 1, 0);
+        let cur = new Date(start);
+        while (cur <= end) {
+          const monthStart = new Date(cur);
+          const monthEnd = new Date(cur.getFullYear(), cur.getMonth() + 1, 0);
+          const days = [];
+          let d = new Date(monthStart);
+          d.setDate(d.getDate() - d.getDay() + 1); // Monday
+          for (let i = 0; i < 42; i++) {
+            const sessions = (plan.sessions || []).filter(s => s.date === localDayString(d));
+            days.push({
+              date: new Date(d),
+              otherMonth: d.getMonth() !== cur.getMonth(),
+              sessions
+            });
+            d.setDate(d.getDate() + 1);
+          }
+          out.push({
+            key: cur.toISOString(),
+            label: cur.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+            days
+          });
+          cur.setMonth(cur.getMonth() + 1);
+        }
+        return out;
+      },
+      formatTime(t) { return t; },
+      async toggleSession(id, completed) {
+        try {
+          if (!window.KorahStudyPlan) throw new Error("You need to be signed in to update a session.");
+          await window.KorahStudyPlan.updateSession(id, { completed });
+        } catch (e) { console.error(e); showPlanAlert(e.message || "Failed to update the session.", "Couldn't save that"); }
+      },
+      confirmReset() {
+        showPlanConfirm("This deletes your plan and every session in it. You can't undo this.", {
+          title: "Start over?",
+          confirmLabel: "Delete plan",
+          icon: "delete"
+        }, () => this.resetPlan());
+      },
+      async resetPlan() {
+        try {
+          if (!window.KorahStudyPlan) throw new Error("You need to be signed in to delete your plan.");
+          await window.KorahStudyPlan.deletePlan();
+        } catch (e) { console.error(e); showPlanAlert(e.message || "Failed to delete the plan.", "Couldn't delete the plan"); }
+      }
+    };
+  }
+</script>
+
+<style>
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes riseIn { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+
+  .panel-card {
+    background: linear-gradient(135deg, rgba(255,255,255,0.02), rgba(255,255,255,0.005));
+    border: 1px solid rgba(139,92,246,.22);
+    border-radius: 1.125rem; padding: 1.25rem 1.375rem;
+    backdrop-filter: blur(1rem); -webkit-backdrop-filter: blur(1rem);
+    transition: border-color .2s, box-shadow .2s;
+    animation: riseIn 0.55s cubic-bezier(.22,1,.36,1) both;
+  }
+  .panel-card:hover { border-color: rgba(167,139,250,.4); box-shadow: 0 0.25rem 1.25rem rgba(139,92,246,0.08); }
+  [data-theme="light"] .panel-card {
+    background: linear-gradient(135deg, rgba(255,255,255,0.85), rgba(255,255,255,0.6));
+    box-shadow: 0 0.125rem 0.5rem rgba(0,0,0,0.06);
+  }
+  .panel-card:nth-child(2) { animation-delay: 0.08s; }
+  .panel-card:nth-child(3) { animation-delay: 0.16s; }
+  .panel-card:nth-child(4) { animation-delay: 0.24s; }
+
+  /* Alpine hasn't booted yet on first paint; keep x-show elements hidden. */
+  [x-cloak] { display: none !important; }
+
+  /* ── Wizard (Practice Rush UX) ──────────────────────────────────────────
+     Layout and surfaces come from sat-rush.css. Everything here is scoped to
+     .sp-wizard so the calendar view and rush.html are untouched.
+
+     Color blocking: each option in a group carries a .tone-* class that sets
+     --acc, and every accent (border, fill, glow, icon, spotlight) reads from
+     it — so a group of buttons is never one flat color. */
+  .sp-wizard {
+    max-width: 46rem;
+    --tone-red: #ef4444;    --tone-orange: #f97316;
+    --tone-amber: #f59e0b;  --tone-green: #22c55e;
+    --tone-teal: #14b8a6;   --tone-cyan: #06b6d4;
+    --tone-blue: #3b82f6;
+    --tone-pink: #ec4899;
+  }
+  .sp-wizard .tone-red    { --acc: var(--tone-red); }
+  .sp-wizard .tone-orange { --acc: var(--tone-orange); }
+  .sp-wizard .tone-amber  { --acc: var(--tone-amber); }
+  .sp-wizard .tone-green  { --acc: var(--tone-green); }
+  .sp-wizard .tone-teal   { --acc: var(--tone-teal); }
+  .sp-wizard .tone-cyan   { --acc: var(--tone-cyan); }
+  .sp-wizard .tone-blue   { --acc: var(--tone-blue); }
+  .sp-wizard .tone-pink   { --acc: var(--tone-pink); }
+  .sp-wizard [class*="tone-"] { --spotlight-color: color-mix(in srgb, var(--acc) 40%, transparent); }
+
+  /* Resting state is neutral grey — never the purple app surface, which reads
+     as "same color as the background". Accent color only on hover/selected. */
+  .sp-wizard.is-step1 { justify-content: center; min-height: calc(100vh - 9.5rem); }
+  .sp-wizard {
+    --sp-sf: #26262e;
+    --sp-sf2: #31313c;
+    --sp-bd: #454553;
+  }
+  html[data-theme="light"] .sp-wizard {
+    --sp-sf: #eceef2;
+    --sp-sf2: #e0e3ea;
+    --sp-bd: #c3c8d2;
+  }
+  .sp-wizard .rush-card,
+  .sp-wizard .rush-diff,
+  .sp-wizard .rush-domain,
+  .sp-wizard .rush-drop,
+  .sp-wizard .rush-toggle-row,
+  .sp-wizard .rush-spr-input {
+    background: var(--sp-sf);
+    border-color: var(--sp-bd);
+  }
+  .sp-wizard .rush-card,
+  .sp-wizard .rush-diff { box-shadow: 0 0.25rem 0 0 var(--sp-bd); }
+  .sp-wizard .rush-btn.is-ghost {
+    background: var(--sp-sf2);
+    color: var(--tx);
+    box-shadow: 0 0.25rem 0 0 var(--sp-bd);
+  }
+  .sp-wizard .rush-btn.is-ghost:active:not(:disabled) { box-shadow: 0 0.05rem 0 0 var(--sp-bd); }
+  /* The breakdown is reported, not chosen, so it drops the affordances of a
+     pickable .rush-domain but keeps the filled selected look. */
+  .sp-wizard .rush-domain.sp-perf { cursor: default; }
+  .sp-wizard .rush-domain.sp-perf:hover { transform: none; box-shadow: none; border-color: var(--acc); }
+  .sp-perf-level {
+    font-weight: 800; font-size: 0.85rem; color: var(--tx);
+    text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap;
+  }
+  .sp-reset-row { display: flex; justify-content: center; margin-top: 0.85rem; }
+  .sp-wizard .rush-mini-btn {
+    background: var(--sp-sf2);
+    color: var(--tx);
+    box-shadow: 0 0.15rem 0 0 var(--sp-bd);
+  }
+  .sp-wizard .rush-mini-btn:hover { background: var(--sp-bd); }
+
+  /* Full-contrast text everywhere — no dimmed greys in the wizard. */
+  .sp-wizard,
+  .sp-wizard .rush-hero p,
+  .sp-wizard .rush-step-sub,
+  .sp-wizard .rush-card-desc,
+  .sp-wizard .rush-stat-label,
+  .sp-wizard .rush-field-label,
+  .sp-wizard .rush-toggle-text span,
+  .sp-wizard .rush-drop-empty span,
+  .sp-wizard .rush-loading p,
+  .sp-wizard .rush-hint,
+  .sp-wizard .rush-section-label,
+  .sp-wizard .tx2, .sp-wizard .tx3 { color: var(--tx); }
+  .sp-wizard .rush-spr-input::placeholder { color: var(--tx); opacity: 0.75; }
+
+  /* Accent-driven card states, overriding rush's single blue. */
+  .sp-wizard .rush-card:hover,
+  .sp-wizard .rush-domain:hover,
+  .sp-wizard .rush-diff:hover:not(.is-selected) {
+    border-color: color-mix(in srgb, var(--acc) 70%, var(--sp-bd));
+    box-shadow: 0 0.6rem 1.6rem color-mix(in srgb, var(--acc) 30%, transparent),
+                0 0.3rem 0 0 color-mix(in srgb, var(--acc) 45%, var(--sp-bd));
+  }
+  .sp-wizard .rush-card.is-selected,
+  .sp-wizard .rush-diff.is-selected {
+    color: #fff;
+    border-color: var(--acc);
+    background: linear-gradient(180deg, var(--acc), color-mix(in srgb, var(--acc) 78%, #000));
+    box-shadow: 0 0.25rem 0 0 color-mix(in srgb, var(--acc) 55%, #000);
+  }
+  .sp-wizard .rush-card.is-selected .rush-card-desc,
+  .sp-wizard .rush-card.is-selected .material-icons-round,
+  .sp-wizard .rush-card.is-flash .rush-card-desc,
+  .sp-wizard .rush-card.is-flash .material-icons-round { color: #fff; }
+  .sp-wizard .rush-card .material-icons-round { color: var(--acc); }
+  .sp-wizard .rush-domain.is-selected {
+    border-color: var(--acc);
+    background: color-mix(in srgb, var(--acc) 16%, var(--sp-sf));
+  }
+  .sp-wizard .rush-domains.is-single { grid-template-columns: 1fr; }
+  .sp-wizard .rush-diff { font-size: 1rem; }
+  /* Memory-lights flash on the unpicked date tiles: same solid fill as a
+     selected tile, just brief. */
+  .sp-wizard .rush-diff.is-flash:not(.is-selected),
+  .sp-wizard .rush-card.is-flash:not(.is-selected) {
+    color: #fff;
+    border-color: var(--acc);
+    background: linear-gradient(180deg, var(--acc), color-mix(in srgb, var(--acc) 78%, #000));
+    box-shadow: 0 0 1.5rem color-mix(in srgb, var(--acc) 60%, transparent),
+                0 0.25rem 0 0 color-mix(in srgb, var(--acc) 55%, #000);
+    transition-duration: 0.2s;
+  }
+
+  .sp-wizard .rush-hint {
+    background: color-mix(in srgb, var(--tone-amber) 18%, var(--sp-sf));
+    border-color: color-mix(in srgb, var(--tone-amber) 55%, transparent);
+    font-weight: 700;
+  }
+  .sp-wizard .rush-section-label { font-size: 1rem; }
+  .sp-wizard .rush-spinner { border-top-color: var(--tone-cyan); }
+  .sp-wizard .rush-step-sub { text-align: center; font-size: 1rem; margin: -1rem 0 1.75rem; }
+
+  .sp-wizard .rush-card-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .sp-wizard .rush-card-grid.cols-3 .rush-card { min-height: clamp(11rem, 26vh, 15rem); justify-content: center; }
+  @media (max-width: 40rem) { .sp-wizard .rush-card-grid.cols-3 { grid-template-columns: 1fr; } }
+
+  /* Rush colors dots 1-3; this wizard has four steps. */
+  .sp-wizard .rush-step-dot { background: var(--sp-bd); }
+  .rush-step-dot:nth-child(1).is-active { background: #ef4444; }
+  .rush-step-dot:nth-child(2).is-active { background: #f97316; }
+  .rush-step-dot:nth-child(3).is-active { background: #eab308; }
+  .rush-step-dot:nth-child(4).is-active { background: #22c55e; }
+
+  /* Score report upload */
+  .sp-wizard .rush-drop {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 15rem; padding: 2rem; text-align: center; cursor: pointer;
+    border: 0.125rem dashed var(--sp-bd);
+    border-radius: 1.25rem; color: var(--tx);
+    backdrop-filter: blur(1.5rem); -webkit-backdrop-filter: blur(1.5rem);
+    transition: border-color 0.18s ease, background 0.18s ease;
+  }
+  .sp-wizard .rush-drop:hover { border-color: var(--acc); background: color-mix(in srgb, var(--acc) 12%, var(--sp-sf)); }
+  .sp-wizard .rush-drop.has-file { border-style: solid; border-color: var(--acc); }
+  .sp-wizard .rush-drop-empty { display: flex; flex-direction: column; align-items: center; gap: 0.6rem; }
+  .sp-wizard .rush-drop-empty strong { font-size: 1.05rem; font-weight: 800; }
+  .sp-wizard .rush-img-remove {
+    position: absolute; top: 0.5rem; right: 0.5rem; z-index: 2;
+    width: 2rem; height: 2rem; border-radius: 50%; padding: 0; cursor: pointer;
+    display: grid; place-items: center;
+    background: rgba(0,0,0,0.6); border: 0.125rem solid var(--sp-bd); color: #fff;
+  }
+  .sp-wizard .rush-img-remove:hover { border-color: var(--tone-red); color: var(--tone-red); }
+
+  /* Extracted scores */
+  .sp-wizard .rush-stat {
+    color: #fff;
+    border-color: var(--acc);
+    background: linear-gradient(180deg, var(--acc), color-mix(in srgb, var(--acc) 78%, #000));
+    box-shadow: 0 0.25rem 0 0 color-mix(in srgb, var(--acc) 55%, #000);
+  }
+  .sp-wizard .rush-stat-icon,
+  .sp-wizard .rush-stat-value,
+  .sp-wizard .rush-stat-label { color: #fff; }
+
+  /* Manual score entry */
+  .sp-wizard .rush-field-row { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+  .sp-wizard .rush-field { flex: 1; min-width: 9rem; display: flex; flex-direction: column; gap: 0.4rem; }
+  .sp-wizard .rush-field-label { font-size: 0.78rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; }
+  .sp-wizard .rush-field .rush-spr-input { border-color: var(--sp-bd); }
+  .sp-wizard .rush-spr-input:focus { border-color: var(--acc); }
+
+  .sp-wizard .rush-date-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); gap: 0.75rem; }
+
+  /* Schedule */
+  .sp-wizard .rush-week-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.5rem; }
+  @media (max-width: 30rem) { .sp-wizard .rush-week-grid { grid-template-columns: repeat(4, 1fr); } }
+  .sp-wizard .rush-toggle-row { border-color: var(--sp-bd); }
+  .sp-wizard .rush-hours-input { width: 5.5rem; flex-shrink: 0; text-align: center; }
+
+  input[type="date"]::-webkit-datetime-edit-year-field { max-width: 4ch; }
+  input[type="date"]::-webkit-datetime-edit { display: inline-flex; gap: 0; }
+  input[type="date"]::-webkit-inner-spin-button,
+  input[type="date"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type="number"] { -moz-appearance: textfield; }
+
+  /* ── Calendar (post-wizard) ────────────────────────────────────────────
+     Same rules as .sp-wizard: neutral grey resting surfaces, per-item accent
+     tones via --acc, filled-not-outlined for state, no dimmed text. Scoped to
+     .sp-calendar so nothing else on the page changes. */
+  .sp-calendar {
+    --tone-red: #ef4444;    --tone-orange: #f97316;
+    --tone-amber: #f59e0b;  --tone-green: #22c55e;
+    --tone-teal: #14b8a6;   --tone-cyan: #06b6d4;
+    --tone-blue: #3b82f6;   --tone-pink: #ec4899;
+    --sp-sf: #26262e;
+    --sp-sf2: #31313c;
+    --sp-bd: #454553;
+    --acc: var(--tone-blue);
+    --tx2: var(--tx);
+    --tx3: var(--tx);
+  }
+  html[data-theme="light"] .sp-calendar {
+    --sp-sf: #eceef2;
+    --sp-sf2: #e0e3ea;
+    --sp-bd: #c3c8d2;
+  }
+  .sp-calendar .tone-red    { --acc: var(--tone-red); }
+  .sp-calendar .tone-orange { --acc: var(--tone-orange); }
+  .sp-calendar .tone-amber  { --acc: var(--tone-amber); }
+  .sp-calendar .tone-green  { --acc: var(--tone-green); }
+  .sp-calendar .tone-teal   { --acc: var(--tone-teal); }
+  .sp-calendar .tone-cyan   { --acc: var(--tone-cyan); }
+  .sp-calendar .tone-blue   { --acc: var(--tone-blue); }
+  .sp-calendar .tone-pink   { --acc: var(--tone-pink); }
+
+  /* Header */
+  .spc-header {
+    display: flex; align-items: center; gap: 0.85rem; flex-wrap: wrap;
+    margin: 0 0 1.25rem; padding: 1rem 1.25rem;
+    border-radius: 1.25rem;
+    background: var(--sp-sf); border: 0.0625rem solid var(--sp-bd);
+    box-shadow: 0 0.25rem 0 0 var(--sp-bd);
+  }
+  .spc-header-icon { color: var(--tone-teal); font-size: 1.6rem; }
+  .spc-header-text { min-width: 0; }
+  .spc-header-text p { margin: 0.2rem 0 0; font-size: 0.9rem; color: var(--tx); font-weight: 600; }
+  .spc-eyebrow {
+    font-size: 0.7rem; font-weight: 800; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--tone-teal);
+  }
+  .spc-view-btn {
+    margin-left: auto; display: inline-flex; align-items: center; gap: 0.4rem;
+    padding: 0.5rem 0.9rem; border-radius: 0.75rem; cursor: pointer;
+    font-size: 0.8rem; font-weight: 800;
+    color: #fff; border: 0.0625rem solid var(--acc);
+    background: linear-gradient(180deg, var(--acc), color-mix(in srgb, var(--acc) 78%, #000));
+    box-shadow: 0 0.25rem 0 0 color-mix(in srgb, var(--acc) 55%, #000);
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+  }
+  .spc-view-btn .material-icons-round { font-size: 1rem; }
+  .spc-view-btn:active { transform: translateY(0.15rem); box-shadow: 0 0.1rem 0 0 color-mix(in srgb, var(--acc) 55%, #000); }
+
+  /* Feedback banner — grey surface, the tone only on the rule and the icon. */
+  .spc-feedback {
+    display: flex; gap: 0.75rem; align-items: flex-start;
+    margin-bottom: 1.25rem; padding: 1rem 1.15rem;
+    border-radius: 1rem; line-height: 1.6; color: var(--tx); font-weight: 600;
+    background: var(--sp-sf);
+    border: 0.0625rem solid var(--sp-bd);
+    border-left: 0.35rem solid var(--acc);
+  }
+  .spc-feedback .material-icons-round { color: var(--acc); font-size: 1.5rem; }
+
+  /* Week / month cards */
+  .sp-calendar .spc-card {
+    margin-bottom: 1rem; padding: 1.15rem 1.25rem;
+    border-radius: 1.125rem;
+    background: var(--sp-sf); border: 0.0625rem solid var(--sp-bd);
+    border-top: 0.25rem solid var(--acc);
+    animation: riseIn 0.55s cubic-bezier(.22,1,.36,1) both;
+  }
+  .spc-card-title { margin: 0 0 1rem; font-size: 1rem; font-weight: 800; color: var(--acc); }
+
+  /* Session rows: grey at rest with the subject tone on the edge, solid fill
+     when done — a border alone reads as unfinished. */
+  .spc-session {
+    display: flex; align-items: center; gap: 1rem;
+    padding: 0.85rem 1rem; margin-bottom: 0.5rem;
+    border-radius: 1rem; color: var(--tx);
+    background: var(--sp-sf2);
+    border: 0.0625rem solid var(--sp-bd);
+    border-left: 0.35rem solid var(--acc);
+    transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+  }
+  .spc-session:hover { border-color: color-mix(in srgb, var(--acc) 70%, var(--sp-bd)); border-left-color: var(--acc); }
+  .spc-session.is-done {
+    color: #fff;
+    border-color: var(--tone-green); border-left-color: var(--tone-green);
+    background: linear-gradient(180deg, var(--tone-green), color-mix(in srgb, var(--tone-green) 78%, #000));
+  }
+  .spc-session.is-done .spc-session-body strong { text-decoration: line-through; }
+  .spc-session-body { flex: 1; min-width: 0; }
+  .spc-session-head { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+  .spc-session-head strong { font-weight: 800; }
+  .spc-session-activity { font-size: 0.8rem; font-weight: 600; }
+  .spc-session-meta { font-size: 0.8125rem; font-weight: 600; margin-top: 0.3rem; display: flex; gap: 1rem; flex-wrap: wrap; }
+  /* Subject chip is pure identity, so it is always filled. */
+  .spc-subject-chip {
+    font-size: 0.68rem; font-weight: 800; letter-spacing: 0.04em;
+    padding: 0.15rem 0.55rem; border-radius: 62.4375rem;
+    color: #fff; background: var(--acc);
+  }
+  .spc-session.is-done .spc-subject-chip { background: rgba(0,0,0,0.28); }
+  .spc-check {
+    flex-shrink: 0; width: 1.6rem; height: 1.6rem; padding: 0; cursor: pointer;
+    display: grid; place-items: center; border-radius: 0.5rem;
+    background: transparent; border: 0.125rem solid var(--tx); color: transparent;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+  .spc-check .material-icons-round { font-size: 1.05rem; }
+  .spc-check:hover { background: color-mix(in srgb, var(--tx) 20%, transparent); }
+  .spc-check.is-done { background: #fff; border-color: #fff; color: var(--tone-green); }
+
+  /* Month grid */
+  .spc-month-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.375rem; }
+  .spc-dow {
+    text-align: center; font-size: 0.6875rem; font-weight: 800;
+    text-transform: uppercase; padding: 0.4rem 0.25rem;
+    border-radius: 0.5rem 0.5rem 0 0;
+    color: #fff; background: var(--acc);
+  }
+  .spc-day {
+    min-height: 5.5rem; padding: 0.375rem 0.3rem;
+    border-radius: 0 0 0.5rem 0.5rem;
+    display: flex; flex-direction: column; gap: 0.2rem;
+    background: var(--sp-sf2);
+    border: 0.0625rem solid var(--sp-bd); border-top: none;
+    transition: border-color 0.18s ease, background 0.18s ease;
+  }
+  .spc-day.is-other-month { opacity: 0.45; }
+  .spc-day.has-sessions { border-color: color-mix(in srgb, var(--acc) 55%, var(--sp-bd)); }
+  .spc-day-num { font-weight: 700; font-size: 0.8125rem; text-align: right; padding-right: 0.15rem; color: var(--tx); }
+  .spc-day-empty { flex: 1; display: grid; place-items: center; font-size: 0.75rem; color: var(--tx); opacity: 0.5; }
+  .spc-day-session {
+    font-size: 0.65rem; font-weight: 700; line-height: 1.25;
+    padding: 0.2rem 0.35rem; border-radius: 0.35rem; cursor: pointer;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    color: #fff; background: var(--acc);
+    transition: filter 0.15s ease;
+  }
+  .spc-day-session:hover { filter: brightness(1.12); }
+  .spc-day-session.is-done { background: var(--tone-green); text-decoration: line-through; }
+
+  @media (max-width: 40rem) {
+    .spc-day { min-height: 4rem; }
+    .spc-day-session { font-size: 0.55rem; }
+  }
+  .sat-spinner { width:1.15rem;height:1.15rem;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite; }
+</style>
+
+<script>
+  (function() {
+    const t = localStorage.getItem('korah_theme') || 'dark';
+    if (t === 'light' || (t === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  })();
+</script>
+
+<script>
+  // Global state for plan using Alpine store (properly reactive)
+  document.addEventListener('alpine:init', () => {
+    Alpine.store('studyPlan', {
+      planState: 'loading',
+      planData: null,
+      initError: null,
+      initStages: [],
+      
+      setState(state, data) {
+        this.planState = state;
+        this.planData = data;
+        this.initError = null;
+        console.log('[Alpine Store] State changed:', state);
+      },
+      
+      setError(error) {
+        this.planState = 'empty';
+        this.initError = error;
+        console.error('[Alpine Store] Error:', error);
+      },
+      
+      addStage(name) {
+        this.initStages.push(name);
+        console.log('[Alpine Store] Stage:', name);
+      }
+    });
+  });
+
+  // Backward compatibility - expose for non-Alpine code
+  let planState = 'loading';
+  let planData = null;
+  let initError = null;
+  const initStages = [];
+
+  const stage = (name) => {
+    initStages.push(name);
+    console.log('[StudyPlan Init]', name);
+    if (initStages.length >= 3) {
+      window._initStages = initStages;
+    }
+  };
+
+  window.planState = planState;
+  window.planData = planData;
+  window.initError = initError;
+
+  // ===== Listen for study plan ready event =====
+  window.addEventListener('korahStudyPlanReady', () => {
+    console.log('[StudyPlan] korahStudyPlanReady event fired');
+    if (!window.KorahStudyPlan) {
+      console.error('[StudyPlan] KorahStudyPlan not found');
+      initError = 'Study plan module not found';
+      Alpine.store('studyPlan').setError(initError);
+      return;
+    }
+
+    const unsub = window.KorahStudyPlan.listen(({ state, data }) => {
+      console.log('[StudyPlan] listener callback:', state);
+      Alpine.store('studyPlan').setState(state, data);
+      
+      // Keep global vars in sync for backward compat
+      planState = state;
+      planData = data;
+      initError = null;
+      window.planState = planState;
+      window.planData = planData;
+      window.initError = initError;
+      document.dispatchEvent(new CustomEvent('planStateChange', { detail: { state, data } }));
+    });
+    window._studyPlanUnsub = unsub;
+
+    // Fallback if listener doesn't fire within 10 seconds
+    setTimeout(() => {
+      if (Alpine.store('studyPlan').planState === 'loading') {
+        const err = 'Timeout: Firestore listener not responding';
+        console.error('[StudyPlan] timeout error:', err);
+        Alpine.store('studyPlan').setError(err);
+        unsub?.();
+      }
+    }, 10000);
+  });
+
+  // ===== FORCED TIMEOUT: If still loading after 25 seconds, force empty state =====
+  setTimeout(() => {
+    if (Alpine.store('studyPlan').planState === 'loading') {
+      console.error('[StudyPlan] FORCED TIMEOUT after 25s - showing wizard');
+      const err = 'Initialization timeout - showing setup wizard';
+      Alpine.store('studyPlan').setError(err);
+    }
+  }, 25000);
+</script>
+
+<script>
+  // initSidebar() draws the starfield/shooting-star background and wires the
+  // sidebar. Signed-out visitors never get korahReady, so fall back to load.
+  (function () {
+    let started = false;
+    function start() {
+      if (started || !window.KorahSidebar) return;
+      started = true;
+      window.KorahSidebar.initSidebar({
+        chatBaseUrl: "../chat.html",
+        itemPageUrl: "../study/item.html"
+      });
+    }
+    window.addEventListener("korahReady", start, { once: true });
+    window.addEventListener("load", start, { once: true });
+  })();
+</script>
+
+<!-- Error / confirm popup — reuses the app's modal styling from korah-chat.css -->
+<div id="plan-modal" class="delete-modal">
+  <div class="delete-modal-content">
+    <div class="delete-modal-icon"><span class="material-icons-round" id="plan-modal-icon" style="font-size:2.25rem;color:var(--red,#ef4444);">error_outline</span></div>
+    <h3 class="delete-modal-title" id="plan-modal-title">Something went wrong</h3>
+    <p class="delete-modal-desc" id="plan-modal-desc"></p>
+    <div class="delete-modal-actions">
+      <button id="plan-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
+      <button id="plan-modal-confirm" class="delete-modal-btn confirm t-btn">OK</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Replaces alert()/confirm() on this page so failures show up in the app's
+  // own modal instead of a browser dialog.
+  (function () {
+    const modal = document.getElementById("plan-modal");
+    const iconEl = document.getElementById("plan-modal-icon");
+    const titleEl = document.getElementById("plan-modal-title");
+    const descEl = document.getElementById("plan-modal-desc");
+    const cancelBtn = document.getElementById("plan-modal-cancel");
+    const confirmBtn = document.getElementById("plan-modal-confirm");
+    let onConfirm = null;
+
+    function close() { modal.classList.remove("show"); onConfirm = null; }
+
+    function open(message, opts, cb) {
+      const o = opts || {};
+      iconEl.textContent = o.icon || "error_outline";
+      titleEl.textContent = o.title || "Something went wrong";
+      descEl.textContent = message || "";
+      confirmBtn.textContent = o.confirmLabel || (cb ? "Confirm" : "OK");
+      cancelBtn.hidden = !cb;
+      onConfirm = cb || null;
+      modal.classList.add("show");
+      confirmBtn.focus();
+    }
+
+    cancelBtn.addEventListener("click", close);
+    confirmBtn.addEventListener("click", () => { const cb = onConfirm; close(); if (cb) cb(); });
+    modal.addEventListener("click", (e) => { if (e.target === modal) close(); });
+    document.addEventListener("keydown", (e) => {
+      if (!modal.classList.contains("show")) return;
+      if (e.key === "Escape") close();
+      if (e.key === "Enter") confirmBtn.click();
+    });
+
+    window.showPlanAlert = (message, title) => open(message, { title });
+    window.showPlanConfirm = (message, opts, cb) => open(message, opts, cb || (() => {}));
+  })();
+</script>
+
+<!-- Spotlight glow + cursor tilt for the wizard cards (same behavior as
+     Practice Rush). Driven through CSS vars consumed by the ::before overlay
+     defined in sat-rush.css. -->
+<script>
+  (function () {
+    var SPOTLIGHT_SELECTOR = ".rush-card, .rush-domain, .rush-diff, .rush-stat";
+    var TILT_SELECTOR = ".rush-card, .rush-domain, .rush-diff";
+    var MAX_TILT = 7; // degrees
+
+    document.addEventListener("pointermove", function (e) {
+      var card = e.target.closest && e.target.closest(SPOTLIGHT_SELECTOR);
+      if (!card) return;
+      var rect = card.getBoundingClientRect();
+      var relX = e.clientX - rect.left;
+      var relY = e.clientY - rect.top;
+
+      card.style.setProperty("--spotlight-x", relX + "px");
+      card.style.setProperty("--spotlight-y", relY + "px");
+      card.style.setProperty("--spotlight-opacity", "0.6");
+
+      // !important because the .rush-stagger entrance animation keeps applying
+      // `transform: none` (fill-mode: forwards), outranking a plain inline one.
+      if (card.matches(TILT_SELECTOR)) {
+        var rotY = ((relX / rect.width) - 0.5) * 2 * MAX_TILT;
+        var rotX = (0.5 - (relY / rect.height)) * 2 * MAX_TILT;
+        card.style.setProperty("transform",
+          "perspective(43.75rem) rotateX(" + rotX.toFixed(2) + "deg) rotateY(" +
+          rotY.toFixed(2) + "deg) scale(1.02)", "important");
+      }
+    }, { passive: true });
+
+    document.addEventListener("pointerout", function (e) {
+      var card = e.target.closest && e.target.closest(SPOTLIGHT_SELECTOR);
+      if (!card) return;
+      if (e.relatedTarget && card.contains(e.relatedTarget)) return;
+      card.style.setProperty("--spotlight-opacity", "0");
+      card.style.removeProperty("transform");
+    }, { passive: true });
+  })();
+</script>
+
+</body>
+</html>

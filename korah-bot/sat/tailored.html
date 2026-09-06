@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en" x-data="{
+  theme: localStorage.getItem('korah_theme') || 'dark',
+  sidebarCollapsed: window.innerWidth <= 768 ? false : localStorage.getItem('korah_sidebar_collapsed') === 'true',
+  mobileOpen: false,
+  getEffectiveTheme() {
+    if (this.theme === 'system') return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    return this.theme;
+  },
+  toggleSidebar() {
+    if (window.innerWidth <= 768) {
+      this.mobileOpen = !this.mobileOpen;
+      const overlay = document.querySelector('.sidebar-overlay');
+      if (overlay) overlay.classList.toggle('show', this.mobileOpen);
+    } else {
+      this.sidebarCollapsed = !this.sidebarCollapsed;
+      localStorage.setItem('korah_sidebar_collapsed', this.sidebarCollapsed);
+    }
+  }
+}" :data-theme="getEffectiveTheme()" x-cloak>
+<head>
+  <link rel="stylesheet" href="../transitions/page-transitions.css"/>
+  <script src="../transitions/page-transitions.js"></script>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Korah AI | Tailored Practice</title>
+  <link rel="icon" type="image/png" href="../logo-images/newlogo0.png"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <script src="../sidebar-loader.js" defer></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../app/korah-chat.css"/>
+  <link rel="stylesheet" href="./sat.css"/>
+  <link rel="stylesheet" href="./tailored.css"/>
+</head>
+<body>
+  <style>
+    html:not(.korah-page-ready) { background: #06040f !important; }
+    html[data-theme="light"]:not(.korah-page-ready) { background: #d2d2d2 !important; }
+    html:not(.korah-page-ready) body { opacity: 0 !important; }
+  </style>
+
+  <script>
+    (function () {
+      const theme = localStorage.getItem('korah_theme') || 'dark';
+      if (theme === 'light' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    })();
+  </script>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+    import { setupKorahDB } from "../app/data/firestore-store.js";
+    import { initSatAnalytics } from "./js/sat-analytics.js";
+    import { startAuthGuard } from "../auth-guard.js";
+    import { startGuestSession, showAuthWall } from "../guest-gate.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
+      authDomain: "korah-app.firebaseapp.com",
+      projectId: "korah-app",
+      storageBucket: "korah-app.firebasestorage.app",
+      messagingSenderId: "226169460321",
+      appId: "1:226169460321:web:b166fc8260107c55dafc20"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // Localhost renders the page against ./js/tailored-mock.js placeholder data
+    // so the UI can be inspected without an account or real practice history.
+    const LOCAL_PREVIEW = ["localhost", "127.0.0.1", "[::1]", ""].includes(location.hostname);
+
+    if (LOCAL_PREVIEW) {
+      startGuestSession();
+    } else onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        startGuestSession();
+        showAuthWall('../');
+        return;
+      }
+      try {
+        await setupKorahDB(app, user.uid);
+        await initSatAnalytics(app, user.uid);
+        const detail = { uid: user.uid };
+        window._korahReadyFired = detail;
+        window.dispatchEvent(new CustomEvent('korahReady', { detail }));
+        startAuthGuard(auth, '../index.html');
+      } catch (error) {
+        console.error('[Tailored] initialization failed', error);
+        window._korahReadyError = true;
+        window.dispatchEvent(new CustomEvent('korahReadyError'));
+      }
+    });
+
+    document.addEventListener('click', (event) => {
+      if (!event.target.closest('#logout-btn')) return;
+      window.confirmLogout(async () => {
+        await signOut(auth);
+        localStorage.removeItem('korah_first_name');
+        window.KorahTransitions.go('../login.html');
+      });
+    });
+  </script>
+
+  <canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
+  <div id="sidebar-root"></div>
+
+  <div id="main-area-wrapper" class="main-area-wrapper">
+    <main id="main-content" class="main-content">
+      <header class="chat-topbar bg-sf glass-sm t-theme bd" style="opacity:0.95;">
+        <button id="sidebar-toggle" @click="toggleSidebar()" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
+        <div class="chat-title-area">
+          <div class="korah-status-dot"></div>
+          <span class="font-semibold tx text-sm">Tailored Practice</span>
+        </div>
+      </header>
+
+      <div class="tailored-scroll tailored-grey">
+        <div class="tailored-page">
+          <header class="tailored-page-header" aria-labelledby="tailored-title">
+            <div>
+              <h1 id="tailored-title">Tailored Practice</h1>
+              <p>Practice the SAT skills that need your attention first.</p>
+            </div>
+            <img class="tailored-mascot" src="../logo-images/newlogo3.png" alt="Korah holding a checklist"/>
+          </header>
+
+          <div id="tailoredLive" class="tailored-sr-only" aria-live="polite"></div>
+
+          <section id="tailoredLoading" class="tailored-loading" aria-label="Loading your SAT priorities">
+            <span class="tailored-skeleton tailored-skeleton-source"></span>
+            <div class="tailored-content-grid">
+              <div>
+              <div class="tailored-skeleton-headings">
+                <span class="tailored-skeleton"></span>
+                <span class="tailored-skeleton"></span>
+              </div>
+              <div class="tailored-priority-list">
+                <div class="tailored-skeleton-row">
+                  <div class="tailored-skeleton-top">
+                    <span class="tailored-skeleton tailored-skeleton-rank"></span>
+                    <div class="tailored-skeleton-title">
+                      <span class="tailored-skeleton"></span>
+                      <span class="tailored-skeleton"></span>
+                    </div>
+                    <span class="tailored-skeleton tailored-skeleton-plan"></span>
+                  </div>
+                  <div class="tailored-skeleton-stats">
+                    <span class="tailored-skeleton"></span>
+                    <span class="tailored-skeleton"></span>
+                  </div>
+                  <span class="tailored-skeleton tailored-skeleton-text"></span>
+                </div>
+                <div class="tailored-skeleton-row">
+                  <div class="tailored-skeleton-top">
+                    <span class="tailored-skeleton tailored-skeleton-rank"></span>
+                    <div class="tailored-skeleton-title">
+                      <span class="tailored-skeleton"></span>
+                      <span class="tailored-skeleton"></span>
+                    </div>
+                    <span class="tailored-skeleton tailored-skeleton-plan"></span>
+                  </div>
+                  <div class="tailored-skeleton-stats">
+                    <span class="tailored-skeleton"></span>
+                    <span class="tailored-skeleton"></span>
+                  </div>
+                  <span class="tailored-skeleton tailored-skeleton-text"></span>
+                </div>
+                <div class="tailored-skeleton-row">
+                  <div class="tailored-skeleton-top">
+                    <span class="tailored-skeleton tailored-skeleton-rank"></span>
+                    <div class="tailored-skeleton-title">
+                      <span class="tailored-skeleton"></span>
+                      <span class="tailored-skeleton"></span>
+                    </div>
+                    <span class="tailored-skeleton tailored-skeleton-plan"></span>
+                  </div>
+                  <div class="tailored-skeleton-stats">
+                    <span class="tailored-skeleton"></span>
+                    <span class="tailored-skeleton"></span>
+                  </div>
+                  <span class="tailored-skeleton tailored-skeleton-text"></span>
+                </div>
+              </div>
+              </div>
+              <div class="tailored-skeleton-side">
+                <span class="tailored-skeleton tailored-skeleton-heading"></span>
+                <span class="tailored-skeleton tailored-skeleton-total"></span>
+                <div class="tailored-skeleton-skills">
+                  <span class="tailored-skeleton"></span>
+                  <span class="tailored-skeleton"></span>
+                  <span class="tailored-skeleton"></span>
+                  <span class="tailored-skeleton"></span>
+                </div>
+                <div class="tailored-skeleton-chips">
+                  <span class="tailored-skeleton"></span>
+                  <span class="tailored-skeleton"></span>
+                  <span class="tailored-skeleton"></span>
+                </div>
+                <span class="tailored-skeleton tailored-skeleton-note"></span>
+                <span class="tailored-skeleton tailored-skeleton-btn"></span>
+              </div>
+            </div>
+          </section>
+
+          <section id="tailoredState" class="tailored-state" hidden>
+            <span id="tailoredStateIcon" class="material-icons-round">insights</span>
+            <h2 id="tailoredStateTitle">We need a little more practice history</h2>
+            <p id="tailoredStateText"></p>
+            <div class="tailored-state-actions">
+              <a class="tailored-btn" href="./index.html">Open Question Bank</a>
+              <a class="tailored-btn is-ghost" href="./rush.html">Try Practice Rush</a>
+              <button id="tailoredRetry" class="tailored-btn is-ghost" type="button" hidden>Try again</button>
+            </div>
+          </section>
+
+          <section id="tailoredReady" hidden>
+            <p class="tailored-source" id="tailoredSource">Based on your Korah SAT activity.</p>
+
+            <div class="tailored-content-grid">
+              <section aria-labelledby="priority-heading">
+                <div class="tailored-section-heading">
+                  <div>
+                    <h2 id="priority-heading">Practice priorities</h2>
+                    <p>Start at the top and work down.</p>
+                  </div>
+                </div>
+                <ol id="tailoredPriorityList" class="tailored-priority-list"></ol>
+              </section>
+
+              <aside class="tailored-set-card" aria-labelledby="set-heading">
+                <h2 id="set-heading">Practice set</h2>
+                <div class="tailored-set-total">
+                  <strong id="tailoredSetTotal">20</strong>
+                  <span>questions</span>
+                </div>
+                <div id="tailoredSetSkills" class="tailored-set-skills"></div>
+                <div class="tailored-set-difficulty" id="tailoredSetDifficulty"></div>
+                <p id="tailoredSetNote" class="tailored-set-note"></p>
+                <p id="tailoredSetShortNotice" class="tailored-set-short-notice" hidden></p>
+                <div id="tailoredBuildError" class="tailored-build-error" role="alert" hidden></div>
+                <button id="tailoredBuild" class="tailored-btn tailored-build-btn" type="button">
+                  <span>Start tailored practice</span>
+                </button>
+                <a class="tailored-manual-link" href="./index.html">Choose questions manually</a>
+              </aside>
+            </div>
+
+            <section id="tailoredLimited" class="tailored-limited" aria-labelledby="limited-heading" hidden>
+              <div class="tailored-section-heading">
+                <h2 id="limited-heading">Not enough data yet</h2>
+                <p>Korah has only seen a couple of questions in these skills, so they stay out of the tailored set for now.</p>
+              </div>
+              <ul id="tailoredLimitedList" class="tailored-limited-list"></ul>
+            </section>
+          </section>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="../app/timer-manager.js"></script>
+  <script src="../study/js/sidebar.js"></script>
+  <script src="../study/js/study-api.js"></script>
+  <script src="../app/korah-chat.js"></script>
+  <script>
+    window.addEventListener('korahReady', () => {
+      window.KorahSidebar?.initSidebar?.({ chatBaseUrl: '../chat.html', itemPageUrl: '../study/item.html' });
+    }, { once: true });
+  </script>
+  <script src="./js/sat-shared.js"></script>
+  <script src="./js/tailored-mock.js"></script>
+  <script src="./js/sat-tailored.js"></script>
+</body>
+</html>

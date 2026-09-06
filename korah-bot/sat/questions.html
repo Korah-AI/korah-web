@@ -80,9 +80,628 @@ html[data-theme="light"] {
 }
 
 </style>
+
+<style>
+  /* ══ Color blocking — SAT practice player ══════════════════════════════════
+     The system from docs/WIZARD-UI-PATTERNS.md, applied to this page only.
+
+     Every resting surface is a solid opaque grey. The app tokens --sf/--sf2/--bd
+     are translucent and purple-tinted, so a card wearing them reads as "the same
+     color as the background" rather than as a control; the panel/passage/answer
+     stack below points at --pl-* instead, and the blur on the dropdown and the
+     question navigator is switched off.
+
+     Color only marks identity or state:
+       · purple  — Korah's own marks: the question number, a selected choice,
+                   the Ask Korah button. Solid, never a 12%-alpha wash.
+       · pink    — Check Answer, the one grading action in the footer
+       · green / red   — graded correct / incorrect
+       · amber   — marked for review
+     Everything else (Previous, Next, the toolbar, the counter) is grey.
+
+     Scoped to .sat-player-grey on <body>, so the other pages sharing sat.css
+     and sat-player-theme.css are untouched. Rules that fight a rule carrying
+     !important (the light theme's footer, timer and question number) repeat it. */
+  body.sat-player-grey {
+    --pl-page: #1a1a20;  /* page behind the panel  */
+    --pl-sf:   #26262e;  /* panels, cards, bubbles */
+    --pl-sf2:  #31313c;  /* inner controls, chips  */
+    --pl-sf3:  #43434f;  /* raised: Korah's reply  */
+    --pl-bd:   #454553;  /* borders + 3D shadow    */
+    --tone-purple: #8b5cf6; --tone-purple-fill: #6d28d9;
+    --tone-pink:   #f9a8d4; --tone-pink-fill:   #f472b6;
+    --tone-green:  #22c55e; --tone-green-fill:  #15803d;
+    --tone-red:    #ef4444; --tone-red-fill:    #b91c1c;
+    --tone-amber:  #f59e0b; --tone-amber-fill:  #b45309;
+    --tone-blue:   #3b82f6; --tone-blue-fill:   #1d4ed8;
+    --tone-teal:   #14b8a6; --tone-teal-fill:   #0f766e;
+    /* Sky marks the choice you are on. It is the only color the answer list
+       carries before grading, and it is a border, never a fill. */
+    --tone-sky:    #22b8e6; --tone-sky-fill:    #0ea5e9;
+    --pl-card: var(--pl-sf);    /* answer cards, panes  */
+    --pl-bar:  var(--pl-sf2);   /* question header bar  */
+    --pl-line: var(--pl-bd);    /* card outlines        */
+    /* The passage and the question read as a document, so they are set in a
+       serif; the chrome around them stays in the app's sans. */
+    --pl-serif: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+    background: var(--pl-page) !important;
+  }
+  html[data-theme="light"] body.sat-player-grey {
+    --pl-page: #f2f3f7;
+    --pl-sf:   #ffffff;
+    --pl-sf2:  #eceef2;
+    --pl-sf3:  #ffffff;
+    --pl-bd:   #c3c8d2;
+    --pl-card: #ffffff;
+    --pl-bar:  #f4f4f5;
+    --pl-line: #d4d4d8;
+  }
+  /* Flat page — the starfield sits behind opaque surfaces anyway */
+  body.sat-player-grey #bg-canvas { display: none; }
+
+  /* No dimmed text: --tx2/--tx3 disappear against the greys */
+  body.sat-player-grey .sat-player-topbar,
+  body.sat-player-grey .sat-player-split,
+  body.sat-player-grey .sat-player-footer,
+  body.sat-player-grey .q-nav-panel,
+  body.sat-player-grey .more-dropdown-menu,
+  body.sat-player-grey .reference-panel,
+  body.sat-player-grey .settings-modal,
+  body.sat-player-grey .delete-modal { --tx2: var(--tx); --tx3: var(--tx); }
+
+  /* ── Topbar ─────────────────────────────────────────────────────────────── */
+  body.sat-player-grey .sat-player-topbar {
+    background: var(--pl-sf);
+    border: none;
+    border-bottom: 0.0625rem solid var(--pl-bd);
+    box-shadow: none;
+  }
+  body.sat-player-grey #stopwatchContainer {
+    background: var(--pl-sf2) !important;
+    border: 0.0625rem solid var(--pl-bd) !important;
+    box-shadow: none !important;
+  }
+  body.sat-player-grey .sat-timer-display { color: var(--tx) !important; }
+  body.sat-player-grey .sat-stopwatch-btn { color: var(--tx); }
+  body.sat-player-grey .sat-stopwatch-btn:hover { color: var(--tone-purple); }
+  body.sat-player-grey #clockIcon { color: var(--tone-purple) !important; }
+
+  /* Toolbar controls carry no button chrome at all — no fill, no border, no
+     rounded box. They are icon + label, and hover reads as the pair growing
+     and brightening rather than a background appearing under them. Each tool
+     keeps its own accent for the grown/active state, so the row is a set of
+     distinct colors rather than one repeated highlight. */
+  body.sat-player-grey .sat-player-topbar .sat-button,
+  body.sat-player-grey .sat-player-topbar .nav-labeled-btn,
+  body.sat-player-grey .sat-topbar-left .sat-button {
+    --acc: var(--tone-purple);
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: var(--tx) !important;
+    transition: transform .18s ease, color .18s ease;
+  }
+  body.sat-player-grey #referenceBtn   { --acc: var(--tone-teal); }
+  body.sat-player-grey #toggleCalcBtn  { --acc: var(--tone-blue); }
+  body.sat-player-grey #markReviewBtn  { --acc: var(--tone-amber); }
+  body.sat-player-grey #showExplanationBtn { --acc: var(--tone-green); }
+  body.sat-player-grey .sat-player-topbar .sat-button svg,
+  body.sat-player-grey .sat-player-topbar .sat-button .material-icons-round { color: currentColor; }
+  body.sat-player-grey .sat-player-topbar .sat-button:hover,
+  body.sat-player-grey .sat-player-topbar .nav-labeled-btn:hover {
+    background: transparent !important;
+    border: none !important;
+    color: var(--acc) !important;
+    transform: scale(1.08) !important;
+  }
+  /* Back to Bank is navigation, not a tool, so it grows on hover but never
+     takes an accent — and being an <a>, it needs the link states pinned too. */
+  body.sat-player-grey .sat-topbar-left .sat-button,
+  body.sat-player-grey .sat-topbar-left .sat-button:hover,
+  body.sat-player-grey .sat-topbar-left .sat-button:active,
+  body.sat-player-grey .sat-topbar-left .sat-button:focus,
+  body.sat-player-grey .sat-topbar-left .sat-button:visited {
+    background: transparent !important;
+    border: none !important;
+    color: var(--tx) !important;
+  }
+  body.sat-player-grey .sat-topbar-left .sat-button:hover { transform: scale(1.08) !important; }
+  /* Open / on: the accent stays, still with nothing drawn behind it */
+  body.sat-player-grey .sat-player-topbar .sat-button.is-active,
+  body.sat-player-grey .sat-player-topbar .nav-labeled-btn.is-active {
+    background: transparent !important;
+    border: none !important;
+    color: var(--acc) !important;
+    opacity: 1;
+  }
+  body.sat-player-grey .sat-player-topbar .sat-button.is-active svg,
+  body.sat-player-grey .sat-player-topbar .sat-button.is-active .material-icons-round { color: currentColor; }
+
+  /* ── More dropdown ──────────────────────────────────────────────────────── */
+  body.sat-player-grey .more-dropdown-menu {
+    background: var(--pl-sf);
+    border: 0.0625rem solid var(--pl-bd);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: 0 0.75rem 2rem rgba(0,0,0,0.35);
+  }
+  body.sat-player-grey .more-dropdown-item { color: var(--tx); }
+  body.sat-player-grey .more-dropdown-item .material-icons-round { color: var(--tx); }
+  body.sat-player-grey .more-dropdown-item:hover { background: var(--pl-sf2); }
+  body.sat-player-grey .more-dropdown-item:hover .material-icons-round { color: var(--tone-purple); }
+  body.sat-player-grey .more-dropdown-item::before { background: var(--tone-purple); }
+  body.sat-player-grey .more-dropdown-check { color: var(--tone-purple); }
+
+  /* ── Question panel ─────────────────────────────────────────────────────── */
+  /* ── Question pane ────────────────────────────────────────────────────────
+     Bluebook geometry: the question is a plain pane, not a card. The only
+     drawn boxes are the header bar, the answer cards and the divider to the
+     passage, so nothing competes with the text. */
+  body.sat-player-grey .sat-player-content-panel,
+  body.sat-player-grey .sat-player-passage-panel { background: var(--pl-card); }
+  body.sat-player-grey .sat-question-panel {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    gap: 1.25rem;
+  }
+  body.sat-player-grey .sat-question-panel:hover { box-shadow: none; }
+
+  /* Passage pane: its own scroll, divided from the question by one line */
+  .sat-player-passage-panel {
+    display: none;               /* setPassage() opens it per question */
+    min-width: 0; min-height: 0;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .sat-player-split.has-passage:not(.has-desmos) {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 100%;
+  }
+  .sat-player-split.has-desmos .sat-player-passage-panel { display: none !important; }
+  /* Narrow screens stack: passage above the question, same as Desmos does */
+  @media (max-width: 56.25rem) {
+    .sat-player-split.has-passage:not(.has-desmos) {
+      display: flex;
+      flex-direction: column;
+      grid-template-columns: unset;
+      grid-template-rows: unset;
+    }
+    .sat-player-split.has-passage .sat-player-passage-panel { flex: 0 0 40%; }
+    body.sat-player-grey .sat-player-passage-panel {
+      border-right: none;
+      border-bottom: 0.0625rem solid var(--pl-line);
+    }
+  }
+  .sat-player-passage-scroll {
+    flex: 1 1 0; overflow-y: auto; overflow-x: hidden;
+    padding: 1.75rem 2rem; box-sizing: border-box; min-height: 0;
+  }
+  body.sat-player-grey .sat-player-passage-panel {
+    border-right: 0.0625rem solid var(--pl-line);
+  }
+  body.sat-player-grey .sat-passage-card {
+    background: transparent;
+    border: none;
+    padding: 0;
+    box-shadow: none;
+  }
+  body.sat-player-grey .sat-passage-text,
+  body.sat-player-grey .sat-question-stem,
+  body.sat-player-grey .sat-answer-choice,
+  body.sat-player-grey .sat-question-title {
+    font-family: var(--pl-serif);
+    color: var(--tx) !important;
+    font-size: 1.0625rem;
+    line-height: 1.6;
+  }
+  body.sat-player-grey .sat-question-stem {
+    margin: 0; padding: 0; font-weight: 400;
+  }
+
+  /* ── Header bar ───────────────────────────────────────────────────────────
+     One full-width grey strip: black number badge, Mark for Review, and the
+     question's identity chips pushed to the right end. */
+  body.sat-player-grey .sat-question-head {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    flex-wrap: nowrap;
+    background: var(--pl-bar);
+    border-radius: 0.5rem;
+    padding: 0.3125rem;
+    min-height: 2.875rem;
+  }
+  body.sat-player-grey .sat-question-number {
+    background: #e4e4e7 !important;
+    border: none !important;
+    color: #27272a !important;
+    width: 2.25rem; min-width: 2.25rem; height: 2.25rem;
+    border-radius: 0.375rem;
+    font-size: 1rem; font-weight: 700;
+  }
+  /* Mark for Review is text + icon, no button box; it fills in when set */
+  body.sat-player-grey .sat-inline-review-btn {
+    background: transparent;
+    border: none;
+    color: var(--tx);
+    font-size: 0.875rem;
+    font-weight: 700;
+    padding: 0.25rem 0.375rem;
+    border-radius: 0.375rem;
+    transition: transform .18s ease, color .18s ease, background .18s ease;
+  }
+  body.sat-player-grey .sat-inline-review-btn:hover {
+    background: transparent; color: var(--tone-amber); transform: scale(1.03);
+  }
+  body.sat-player-grey .sat-inline-review-btn.is-active {
+    background: transparent;
+    border: none;
+    color: var(--tone-amber);
+  }
+  body.sat-player-grey .sat-domain-label,
+  body.sat-player-grey .sat-filter-chip-row { margin-left: auto; }
+  body.sat-player-grey .sat-domain-label { flex-shrink: 0; }
+  body.sat-player-grey .sat-filter-chip-row:not(:empty) { margin-left: 0.375rem; }
+  body.sat-player-grey .sat-filter-chip {
+    background: var(--pl-card);
+    border: 0.0625rem solid var(--pl-line);
+    color: var(--tx);
+  }
+  /* The domain label carries the question's identity, so it is filled in a
+     tone of its own — one per SAT domain, keyed off the data-domain slug
+     setDomainLabel() writes in js/sat-player.js. Grey is the fallback for a
+     domain the catalog gains later. */
+  body.sat-player-grey .sat-domain-label {
+    --acc-fill: var(--pl-sf2);
+    background: var(--acc-fill);
+    border: 0.0625rem solid var(--acc-fill);
+    color: var(--tx);
+  }
+  body.sat-player-grey .sat-domain-label[data-domain] { color: #ffffff; }
+  /* English */
+  body.sat-player-grey .sat-domain-label[data-domain="information-and-ideas"]          { --acc-fill: var(--tone-blue-fill); }
+  body.sat-player-grey .sat-domain-label[data-domain="craft-and-structure"]            { --acc-fill: var(--tone-teal-fill); }
+  body.sat-player-grey .sat-domain-label[data-domain="expression-of-ideas"]            { --acc-fill: var(--tone-purple-fill); }
+  body.sat-player-grey .sat-domain-label[data-domain="standard-english-conventions"]   { --acc-fill: var(--tone-green-fill); }
+  /* Math */
+  body.sat-player-grey .sat-domain-label[data-domain="algebra"]                        { --acc-fill: var(--tone-amber-fill); }
+  body.sat-player-grey .sat-domain-label[data-domain="advanced-math"]                  { --acc-fill: var(--tone-red-fill); }
+  body.sat-player-grey .sat-domain-label[data-domain="problem-solving-and-data-analysis"] { --acc-fill: #0369a1; }
+  body.sat-player-grey .sat-domain-label[data-domain="geometry-and-trigonometry"]      { --acc-fill: #7e22ce; }
+
+  /* ── Answer choices ───────────────────────────────────────────────────────
+     Outlined cards, never filled: the letter sits in a ring on the left and
+     the row keeps its own surface. Selection is the border turning sky blue,
+     which is why a graded answer can still be read at a glance — green and
+     red are the only fills the list ever takes, and only after Check. */
+  body.sat-player-grey .sat-answer-list { gap: 0.75rem; }
+  body.sat-player-grey .sat-answer-row { gap: 0.875rem; }
+  body.sat-player-grey .sat-answer-choice {
+    --acc: var(--tone-sky);
+    display: flex; align-items: center; gap: 0.75rem;
+    background: var(--pl-card);
+    border: 0.09375rem solid var(--pl-line);
+    color: var(--tx);
+    border-radius: 0.75rem;
+    padding: 0.8125rem 1rem;
+    min-height: 3.5rem;
+    transition: border-color .18s ease, background .18s ease;
+  }
+  body.sat-player-grey .sat-answer-choice:hover {
+    background: var(--pl-card);
+    border-color: var(--acc);
+    transform: none;
+  }
+  /* Selected: the border alone, plus the letter ring filling in */
+  body.sat-player-grey .sat-answer-choice.is-selected {
+    background: var(--pl-card);
+    border-color: var(--tone-sky);
+    color: var(--tx);
+  }
+  /* Graded: the grade colour is worth a fill */
+  body.sat-player-grey .sat-answer-choice.is-correct {
+    --acc: var(--tone-green);
+    background: color-mix(in srgb, var(--tone-green) 14%, var(--pl-card));
+    border-color: var(--tone-green);
+  }
+  body.sat-player-grey .sat-answer-choice.is-incorrect {
+    --acc: var(--tone-red);
+    background: color-mix(in srgb, var(--tone-red) 14%, var(--pl-card));
+    border-color: var(--tone-red);
+  }
+
+  /* Letter ring */
+  body.sat-player-grey .sat-answer-key {
+    background: transparent;
+    border: 0.09375rem solid var(--tx);
+    color: var(--tx);
+    width: 1.875rem; height: 1.875rem;
+    margin-right: 0;
+    flex-shrink: 0;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-size: 0.8125rem;
+    transition: background .18s ease, border-color .18s ease, color .18s ease;
+  }
+  body.sat-player-grey .sat-answer-choice.is-selected .sat-answer-key {
+    background: var(--tone-sky); border-color: var(--tone-sky); color: #ffffff;
+  }
+  body.sat-player-grey .sat-answer-choice.is-correct .sat-answer-key {
+    background: var(--tone-green); border-color: var(--tone-green); color: #ffffff;
+  }
+  body.sat-player-grey .sat-answer-choice.is-incorrect .sat-answer-key {
+    background: var(--tone-red); border-color: var(--tone-red); color: #ffffff;
+  }
+  body.sat-player-grey .sat-answer-choice.is-eliminated { opacity: 0.5; }
+
+  /* Eliminate button: sits outside the card, and always draws the strike so
+     the affordance reads before you click it. Active darkens it. */
+  body.sat-player-grey .sat-elim-btn {
+    background: transparent;
+    border: 0.09375rem solid var(--tx);
+    color: var(--tx);
+    width: 1.75rem; height: 1.75rem;
+    opacity: .65;
+    transition: transform .18s ease, opacity .18s ease, background .18s ease;
+  }
+  body.sat-player-grey .sat-elim-btn::after { opacity: 1; }
+  body.sat-player-grey .sat-elim-btn:hover {
+    background: transparent; border-color: var(--tx); color: var(--tx);
+    opacity: 1; transform: scale(1.08);
+  }
+  body.sat-player-grey .sat-elim-btn.is-active {
+    background: var(--tx); border-color: var(--tx); color: var(--pl-card);
+    opacity: 1;
+  }
+
+  /* Student-response input */
+  body.sat-player-grey .sat-spr-input {
+    background: var(--pl-sf2);
+    border: 0.125rem solid var(--pl-bd);
+    color: var(--tx);
+  }
+  body.sat-player-grey .sat-spr-input:focus {
+    background: var(--pl-sf2);
+    border-color: var(--tone-purple);
+    box-shadow: 0 0 0 0.1875rem color-mix(in srgb, var(--tone-purple) 25%, transparent);
+  }
+  body.sat-player-grey .sat-spr-input.is-correct   { background: var(--tone-green-fill); border-color: var(--tone-green-fill); color: #fff; }
+  body.sat-player-grey .sat-spr-input.is-incorrect { background: var(--tone-red-fill);   border-color: var(--tone-red-fill);   color: #fff; }
+
+  /* Feedback panel — opaque tint of the grade color over the card grey */
+  body.sat-player-grey .sat-feedback-panel {
+    background: var(--pl-sf2);
+    border: 0.0625rem solid var(--pl-bd);
+    color: var(--tx);
+  }
+  body.sat-player-grey .sat-feedback-panel.is-correct {
+    background: color-mix(in srgb, var(--tone-green) 22%, var(--pl-sf2));
+    border-color: var(--tone-green);
+  }
+  body.sat-player-grey .sat-feedback-panel.is-incorrect {
+    background: color-mix(in srgb, var(--tone-red) 22%, var(--pl-sf2));
+    border-color: var(--tone-red);
+  }
+
+  /* ── Footer ─────────────────────────────────────────────────────────────────
+     Buttons are filled, or grey — never translucent purple. Check Answer is the
+     grading action and wears pink; Previous/Next stay grey. */
+  body.sat-player-grey .sat-player-footer {
+    background: var(--pl-sf) !important;
+    border-top: 0.0625rem solid var(--pl-bd) !important;
+    box-shadow: none !important;
+  }
+  body.sat-player-grey .sat-player-footer .sat-button-ghost,
+  body.sat-player-grey #sessionInfoBtn,
+  body.sat-player-grey .q-nav-trigger {
+    background: var(--pl-sf2) !important;
+    border: 0.0625rem solid var(--pl-bd) !important;
+    color: var(--tx) !important;
+    border-radius: 0.75rem;
+    box-shadow: 0 0.25rem 0 0 var(--pl-bd) !important;
+    transition: transform .18s ease, background .18s ease, border-color .18s ease;
+  }
+  body.sat-player-grey .sat-player-footer .sat-button-ghost:hover,
+  body.sat-player-grey #sessionInfoBtn:hover,
+  body.sat-player-grey .q-nav-trigger:hover,
+  body.sat-player-grey .q-nav-trigger.is-open {
+    background: var(--pl-bd) !important;
+    border-color: var(--pl-bd) !important;
+    color: var(--tx) !important;
+    transform: scale(1.03) !important;
+  }
+  /* Next is the advance action, so it is filled blue; Previous stays grey. */
+  body.sat-player-grey #nextQuestionBtn,
+  body.sat-player-grey #nextQuestionBtn:hover {
+    background: linear-gradient(180deg, var(--tone-blue), var(--tone-blue-fill)) !important;
+    border: 0.0625rem solid var(--tone-blue-fill) !important;
+    color: #ffffff !important;
+    box-shadow: 0 0.25rem 0 0 color-mix(in srgb, var(--tone-blue) 55%, #000) !important;
+  }
+  body.sat-player-grey #nextQuestionBtn:hover { filter: brightness(1.08); }
+  /* Previous and the question counter are solid dark grey with white text,
+     and they do not move or shift on hover. */
+  body.sat-player-grey #prevQuestionBtn,
+  body.sat-player-grey #prevQuestionBtn:hover,
+  body.sat-player-grey .q-nav-trigger,
+  body.sat-player-grey .q-nav-trigger:hover,
+  body.sat-player-grey .q-nav-trigger.is-open {
+    background: #3f3f46 !important;
+    border: 0.0625rem solid #3f3f46 !important;
+    color: #ffffff !important;
+    box-shadow: 0 0.25rem 0 0 #27272a !important;
+    opacity: 1 !important;
+    filter: none !important;
+    transform: none !important;
+  }
+  body.sat-player-grey #prevQuestionBtn svg,
+  body.sat-player-grey .q-nav-trigger svg { color: #ffffff; }
+
+  /* Check sits at the end of the answer list, right-aligned under the last
+     choice, so grading reads as the end of the question rather than a footer
+     control. Light pink — the one grading action on the card. */
+  .sat-check-row { display: flex; justify-content: flex-end; }
+  .sat-check-row:empty { display: none; }
+  /* When an answer is picked, sat-player.js moves this button into that row
+     (a move, not a re-render, so its click handler survives) and it becomes a
+     pill at the right end of the card, the way Bluebook does it. */
+  body.sat-player-grey .sat-answer-row { position: relative; }
+  body.sat-player-grey #checkAnswerBtn.is-inline {
+    /* The choice itself is a <button>, so Check cannot nest inside it. It is
+       laid over the card's right end instead, clear of the eliminate circle
+       (1.75rem) and the row gap (0.875rem). */
+    position: absolute;
+    right: 3.375rem;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 2rem !important;
+    padding: 0 0.9375rem !important;
+    border-radius: 62.4375rem !important;
+    font-size: 0.875rem;
+    box-shadow: none !important;
+    z-index: 2;
+  }
+  body.sat-player-grey #checkAnswerBtn.is-inline:hover:not(:disabled) {
+    transform: translateY(-50%) scale(1.05) !important;
+  }
+  /* Reserve the space it covers so long choices do not run under it */
+  body.sat-player-grey .sat-answer-choice.is-selected:not(.is-correct):not(.is-incorrect) {
+    padding-right: 6.5rem;
+  }
+  body.sat-player-grey #checkAnswerBtn,
+  body.sat-player-grey .sat-button-primary {
+    background: linear-gradient(180deg, var(--tone-pink), var(--tone-pink-fill)) !important;
+    border: 0.0625rem solid var(--tone-pink-fill) !important;
+    color: #3b0a24 !important;
+    border-radius: 0.875rem !important;
+    box-shadow: 0 0.25rem 0 0 color-mix(in srgb, var(--tone-pink-fill) 70%, #000) !important;
+    transition: transform .18s ease, filter .18s ease;
+  }
+  body.sat-player-grey #checkAnswerBtn { height: 2.5rem; padding: 0 1.75rem; }
+  body.sat-player-grey #checkAnswerBtn:hover:not(:disabled),
+  body.sat-player-grey .sat-button-primary:hover {
+    filter: brightness(1.06);
+    transform: scale(1.03) !important;
+  }
+  body.sat-player-grey #checkAnswerBtn:disabled {
+    filter: grayscale(0.5) brightness(0.9);
+    opacity: .6;
+    cursor: not-allowed;
+    transform: none !important;
+  }
+
+  /* ── Question navigator ─────────────────────────────────────────────────── */
+  body.sat-player-grey .q-nav-panel {
+    background: var(--pl-sf);
+    border: 0.0625rem solid var(--pl-bd);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: 0 0.75rem 2rem rgba(0,0,0,0.4);
+  }
+  body.sat-player-grey .q-nav-panel::before { background: var(--tone-purple); }
+  body.sat-player-grey .q-nav-stats { border-bottom-color: var(--pl-bd); }
+  body.sat-player-grey .q-stat-item,
+  body.sat-player-grey .q-nav-section-label,
+  body.sat-player-grey .q-legend-item { color: var(--tx); }
+  body.sat-player-grey .q-nav-section-label,
+  body.sat-player-grey .sat-stopwatch-btn {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    text-transform: none;
+    letter-spacing: normal;
+  }
+  body.sat-player-grey .q-nav-section-label { font-size: 0.8125rem; font-weight: 600; }
+  body.sat-player-grey .sat-stopwatch-btn { font-size: 0.75rem !important; font-weight: 600; }
+  body.sat-player-grey .q-nav-section-label::after { background: var(--pl-bd); }
+  body.sat-player-grey .q-stat-total {
+    background: var(--pl-sf2); border-color: var(--pl-bd); color: var(--tx);
+  }
+  body.sat-player-grey .q-nav-legend { border-top-color: var(--pl-bd); }
+  body.sat-player-grey .q-nav-inner::-webkit-scrollbar-thumb { background: var(--pl-bd); }
+
+  /* Pills: grey at rest, filled in their state's color */
+  body.sat-player-grey .q-pill {
+    background: var(--pl-sf2);
+    border: 0.0625rem solid var(--pl-bd);
+    color: var(--tx);
+  }
+  body.sat-player-grey .q-pill:hover {
+    background: var(--pl-bd); border-color: var(--pl-bd); color: var(--tx);
+  }
+  body.sat-player-grey .q-pill.is-attempted { background: var(--tone-amber-fill); border-color: var(--tone-amber-fill); color: #fff; }
+  body.sat-player-grey .q-pill.is-correct   { background: var(--tone-green-fill);  border-color: var(--tone-green-fill);  color: #fff; }
+  body.sat-player-grey .q-pill.is-incorrect { background: var(--tone-red-fill);    border-color: var(--tone-red-fill);    color: #fff; }
+  body.sat-player-grey .q-pill.is-current {
+    border-color: var(--tone-purple);
+    box-shadow: 0 0 0 0.125rem var(--tone-purple);
+  }
+  body.sat-player-grey .q-pill.is-current::after { background: var(--tone-purple); }
+  body.sat-player-grey .q-legend-unanswered { background: var(--pl-sf2);         border-color: var(--pl-bd); }
+  body.sat-player-grey .q-legend-attempted,
+  body.sat-player-grey .q-legend-icon-attempted { background: var(--tone-amber-fill); border-color: var(--tone-amber-fill); }
+  body.sat-player-grey .q-legend-correct,
+  body.sat-player-grey .q-legend-icon-correct   { background: var(--tone-green-fill);  border-color: var(--tone-green-fill);  color: #fff; }
+  body.sat-player-grey .q-legend-incorrect,
+  body.sat-player-grey .q-legend-icon-incorrect { background: var(--tone-red-fill);    border-color: var(--tone-red-fill);    color: #fff; }
+  body.sat-player-grey .q-legend-current    { background: var(--pl-sf2); border-color: var(--tone-purple); }
+
+  /* ── Reference panel, modals ────────────────────────────────────────────── */
+  body.sat-player-grey .reference-panel {
+    background: var(--pl-sf);
+    border: 0.0625rem solid var(--pl-bd);
+  }
+  body.sat-player-grey .reference-drag-handle {
+    background: var(--tone-teal-fill);
+    border-bottom: 0.0625rem solid var(--tone-teal-fill);
+    color: #ffffff;
+  }
+  body.sat-player-grey .reference-content { background: var(--pl-sf2); }
+  body.sat-player-grey .reference-collapse-btn { color: #ffffff; }
+  body.sat-player-grey .settings-modal-content,
+  body.sat-player-grey .delete-modal-content {
+    background: var(--pl-sf);
+    border: 0.0625rem solid var(--pl-bd);
+    color: var(--tx);
+  }
+  /* .settings-section ships with --sf2 (translucent purple) and a purple
+     title; both go grey and opaque. It sits on --pl-sf, so it steps up. */
+  body.sat-player-grey .settings-section {
+    background: var(--pl-sf2);
+    border: 0.0625rem solid var(--pl-bd);
+  }
+  body.sat-player-grey .settings-section-title,
+  body.sat-player-grey .settings-item-label { color: var(--tx); }
+  body.sat-player-grey .settings-header { border-bottom-color: var(--pl-bd); }
+  body.sat-player-grey .settings-close,
+  body.sat-player-grey .create-input,
+  body.sat-player-grey .delete-modal-btn.cancel {
+    background: var(--pl-sf2);
+    border: 0.0625rem solid var(--pl-bd);
+    color: var(--tx);
+  }
+  body.sat-player-grey .settings-close:hover,
+  body.sat-player-grey .delete-modal-btn.cancel:hover { background: var(--pl-bd); color: var(--tx); }
+  body.sat-player-grey .delete-modal-btn.confirm {
+    background: var(--tone-red-fill) !important;
+    border-color: var(--tone-red-fill) !important;
+    color: #ffffff !important;
+  }
+  body.sat-player-grey #rename-modal-confirm {
+    background: var(--tone-purple-fill) !important;
+    border-color: var(--tone-purple-fill) !important;
+    color: #ffffff !important;
+  }
+  /* The modal readouts are hard-coded to the purple utility class */
+  body.sat-player-grey .settings-item-control.tx-p5 { color: var(--tx) !important; }
+
+  /* Scrollbars follow the greys, not the purple */
+  body.sat-player-grey ::-webkit-scrollbar-thumb { background: var(--pl-bd) !important; }
+  body.sat-player-grey ::-webkit-scrollbar-thumb:hover { background: var(--tone-purple) !important; }
+</style>
 </head>
 
-<body class="bg-base tx sat-shell">
+<body class="bg-base tx sat-shell sat-player-grey">
 <style>
   html:not(.korah-page-ready) { background: #06040f !important; }
   html[data-theme="light"]:not(.korah-page-ready) { background: #d2d2d2 !important; }
@@ -147,14 +766,14 @@ html[data-theme="light"] {
     startAuthGuard(auth, '../index.html');
   });
 
-  const _logoutBtn = document.getElementById('logout-btn');
-  if (_logoutBtn) {
-    _logoutBtn.addEventListener('click', async () => {
-      await signOut(auth);
-      localStorage.removeItem('korah_first_name');
-      window.KorahTransitions.go('../login.html');
-    });
-  }
+  // #logout-btn lives in the sidebar, which sidebar-loader.js injects asynchronously,
+  // so it does not exist yet when this module runs. Delegate from document instead.
+  document.addEventListener('click', async (e) => {
+    if (!e.target.closest('#logout-btn')) return;
+    await signOut(auth);
+    localStorage.removeItem('korah_first_name');
+    window.KorahTransitions.go('../login.html');
+  });
 </script>
 
 <canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
@@ -309,13 +928,23 @@ html[data-theme="light"] {
     <!-- Resize handle (hidden by default) -->
     <div class="sat-player-resize-handle" id="resize-handle"></div>
 
+    <!-- Panel A2: passage pane — only for questions that carry one, so Math
+         (which has no passage but does have Desmos) never competes for it -->
+    <div class="sat-player-passage-panel" id="passagePanel">
+      <div class="sat-player-passage-scroll">
+        <article class="sat-passage-card">
+          <p id="questionParagraph" class="sat-passage-text"></p>
+        </article>
+      </div>
+    </div>
+
     <!-- Panel B: SAT question content (always visible) -->
     <div class="sat-player-content-panel" id="contentWrapper">
       <div class="sat-player-scroll" id="playerScroll">
 
         <!-- question panel card -->
         <section class="sat-question-panel" id="satQuestionPanel">
-          <div class="sat-question-head" style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+          <div class="sat-question-head">
             <span id="questionNumber" class="sat-question-number"></span>
             <button id="inlineReviewBtn" class="sat-inline-review-btn" type="button" title="Mark for review">
               <svg id="inlineReviewIcon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -325,13 +954,11 @@ html[data-theme="light"] {
             </button>
             <span id="questionDomain" class="sat-domain-label"></span>
             <span id="sessionFilterChips" class="sat-filter-chip-row" aria-label="Active filters" style="display:inline-flex; gap:0.375rem;"></span>
-            <h2 id="questionStemTitle" class="sat-question-title is-hidden" style="margin:0; width:100%; font-size:1rem;"></h2>
           </div>
-          <article class="sat-passage-card">
-            <p id="questionParagraph" class="sat-passage-text"></p>
-            <p id="questionStem" class="sat-question-stem"></p>
-          </article>
+          <h2 id="questionStemTitle" class="sat-question-title is-hidden" style="margin:0; width:100%; font-size:1rem;"></h2>
+          <p id="questionStem" class="sat-question-stem"></p>
           <div id="answerChoices" class="sat-answer-list"></div>
+          <div class="sat-check-row"><button id="checkAnswerBtn" class="sat-button sat-button-primary" type="button" data-requires-auth>Check</button></div>
           <section id="feedbackPanel" class="sat-feedback-panel is-hidden"></section>
         </section>
 
@@ -398,7 +1025,6 @@ html[data-theme="light"] {
       </svg>
     </button>
     
-    <button id="checkAnswerBtn" class="sat-button sat-button-primary" type="button" data-requires-auth>Check Answer</button>
     <button id="prevQuestionBtn" class="sat-button sat-button-ghost" type="button">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right: 0.375rem;">
         <polyline points="15 18 9 12 15 6"/>
@@ -493,31 +1119,39 @@ html[data-theme="light"] {
 </aside>
 
 <style>
+  /* ── Ask Korah panel ───────────────────────────────────────────────────────
+     Same color system as korah-bot/chat.html: every surface is an opaque grey
+     (never the app's --sf/--sf2, which are translucent and purple-tinted, so a
+     control wearing them reads as "the same color as the background"), and
+     color is spent only where it says something — purple on the send button
+     and the step numbers, green on the answer pill. The greys come from the
+     .sat-player-grey palette declared in <head>. */
   :root { --ask-korah-w: 26.25rem; }
 
-  /* Solid accent — teal, distinct from the page's purple palette */
+  /* Footer trigger — filled purple, the page's "talk to Korah" action */
   .ask-korah-trigger {
     display: inline-flex; align-items: center; justify-content: center;
     height: 2.875rem; padding: 0 1rem; border-radius: 0.875rem;
-    background: #0d9488; color: #ffffff; border: 0.0625rem solid #0d9488;
+    background: linear-gradient(180deg, var(--tone-purple), var(--tone-purple-fill));
+    color: #ffffff; border: 0.0625rem solid var(--tone-purple-fill);
     font: inherit; font-weight: 700; cursor: pointer;
-    transition: transform .2s cubic-bezier(.23,1,.32,1), background .2s ease, border-color .2s ease;
+    box-shadow: 0 0.25rem 0 0 color-mix(in srgb, var(--tone-purple) 55%, #000);
+    transition: transform .18s ease, filter .18s ease;
   }
-  .ask-korah-trigger:hover {
-    background: #0f766e; border-color: #0f766e; transform: translateY(-0.125rem);
-  }
+  .ask-korah-trigger:hover { filter: brightness(1.08); transform: scale(1.03); }
 
   .ask-korah-panel {
     position: fixed; top: 0; right: 0; height: 100vh;
     width: var(--ask-korah-w);
-    background: var(--bg); /* solid, opaque */
-    border-left: 1px solid var(--bd);
+    background: var(--pl-page); /* solid, opaque */
+    border-left: 0.0625rem solid var(--pl-bd);
     color: var(--tx); z-index: 1100;
     transform: translateX(100%); transition: transform .25s ease;
     display: flex; flex-direction: column;
     box-shadow: -0.5rem 0 2rem rgba(0,0,0,0.18);
+    /* No dimmed text — --tx2/--tx3 vanish against the greys */
+    --tx2: var(--tx); --tx3: var(--tx);
   }
-  html[data-theme="light"] .ask-korah-panel { background: #ffffff; }
   .ask-korah-panel.open { transform: translateX(0); }
 
   /* Push the rest of the page left when panel is open — smoothly */
@@ -533,34 +1167,36 @@ html[data-theme="light"] {
     padding: 0.625rem 0.875rem; min-height: 2.75rem;
   }
   .ask-korah-close {
-    background: transparent; border: none; color: var(--tx2);
-    cursor: pointer; padding: 0.25rem; border-radius: 0.375rem;
+    background: var(--pl-sf2); border: 0.0625rem solid var(--pl-bd); color: var(--tx);
+    cursor: pointer; padding: 0.25rem; border-radius: 0.5rem;
     display: inline-flex; align-items: center; justify-content: center;
+    transition: transform .18s ease, background .18s ease;
   }
-  .ask-korah-close:hover { background: var(--sf2); color: var(--tx); }
+  .ask-korah-close:hover { background: var(--pl-bd); color: var(--tx); transform: scale(1.06); }
 
   .ask-korah-tabs {
     display: flex; gap: 1.5rem; padding: 0 1.25rem;
-    border-bottom: 1px solid var(--bd);
+    border-bottom: 0.0625rem solid var(--pl-bd);
   }
   .ask-korah-tab {
-    background: transparent; border: none; color: var(--tx3);
+    background: transparent; border: none; color: var(--tx);
     padding: 0.5rem 0; display: inline-flex; align-items: center; gap: 0.5rem;
     font-size: 0.9rem; font-weight: 600; cursor: pointer;
-    border-bottom: 0.125rem solid transparent; margin-bottom: -1px;
+    border-bottom: 0.125rem solid transparent; margin-bottom: -0.0625rem;
   }
-  .ask-korah-tab.active { color: var(--tx); border-bottom-color: var(--tx); }
+  .ask-korah-tab.active { color: var(--tone-purple); border-bottom-color: var(--tone-purple); }
 
   .ask-korah-subrow {
     display: flex; justify-content: space-between; align-items: center;
-    padding: 0.625rem 1.25rem; border-bottom: 1px solid var(--bd);
+    padding: 0.625rem 1.25rem; border-bottom: 0.0625rem solid var(--pl-bd);
   }
   .ask-korah-subbtn {
-    background: transparent; border: none; color: var(--tx3); cursor: pointer;
-    display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.8rem;
-    padding: 0.25rem 0.375rem; border-radius: 0.375rem;
+    background: var(--pl-sf2); border: 0.0625rem solid var(--pl-bd); color: var(--tx);
+    cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;
+    font-size: 0.8rem; padding: 0.3rem 0.625rem; border-radius: 0.5rem;
+    transition: transform .18s ease, background .18s ease;
   }
-  .ask-korah-subbtn:hover { color: var(--tx); background: var(--sf2); }
+  .ask-korah-subbtn:hover { background: var(--pl-bd); color: var(--tx); transform: scale(1.03); }
 
   .ask-korah-body {
     flex: 1; overflow-y: auto; padding: 1rem 1.25rem;
@@ -573,46 +1209,74 @@ html[data-theme="light"] {
   }
   .ask-korah-welcome-logo {
     width: 5.5rem; height: 5.5rem; object-fit: contain;
-    filter: drop-shadow(0 0.5rem 1.5rem rgba(139,92,246,.35));
   }
   .ask-korah-welcome-title { font-size: 1.25rem; font-weight: 800; margin: 0.5rem 0 0; color: var(--tx); }
-  .ask-korah-welcome-sub { font-size: 0.9rem; color: var(--tx3); margin: 0 0 1rem; }
+  .ask-korah-welcome-sub { font-size: 0.9rem; color: var(--tx); margin: 0 0 1rem; }
   .ask-korah-suggestions { display: flex; flex-direction: column; gap: 0.5rem; width: 100%; align-items: center; }
+  /* Grey at rest, filled in the accent when picked up — same as chat.html's
+     suggestion chips. One accent per chip so the stack is a set of colors. */
   .ask-korah-suggestion {
-    background: transparent; color: var(--p5);
-    border: 1px solid var(--p5); border-radius: 62.4375rem;
-    padding: 0.4rem 0.95rem; font-size: 0.825rem; font-weight: 600;
+    --acc: var(--tone-purple);
+    background: var(--pl-sf); color: var(--tx);
+    border: 0.0625rem solid var(--pl-bd); border-radius: 62.4375rem;
+    padding: 0.45rem 0.95rem; font-size: 0.825rem; font-weight: 600;
     cursor: pointer; text-decoration: none; display: inline-block;
-    transition: background .15s ease;
+    box-shadow: 0 0.25rem 0 0 var(--pl-bd);
+    transition: transform .18s ease, background .18s ease, border-color .18s ease, box-shadow .18s ease;
   }
-  .ask-korah-suggestion:hover { background: rgba(139,92,246,0.1); }
+  .ask-korah-suggestions .ask-korah-suggestion:nth-child(2) { --acc: var(--tone-teal); }
+  .ask-korah-suggestion-math { --acc: var(--tone-blue); }
+  .ask-korah-suggestion:hover {
+    background: var(--pl-sf2);
+    border-color: var(--acc);
+    box-shadow: 0 0.25rem 0 0 color-mix(in srgb, var(--acc) 45%, var(--pl-bd));
+    transform: scale(1.03);
+  }
 
   .ask-korah-messages { display: flex; flex-direction: column; gap: 0.75rem; }
-  .ask-korah-msg { padding: 0.625rem 0.75rem; border-radius: 0.5rem; font-size: 0.9rem; line-height: 1.5; }
-  .ask-korah-msg.user { background: rgba(139,92,246,0.12); align-self: flex-end; max-width: 85%; }
-  .ask-korah-msg.korah { background: var(--sf2); border: 1px solid var(--bd); }
+  /* The two sides of a transcript separate by weight, not hue: the user's
+     bubble is the base grey, Korah's is a step lighter. */
+  .ask-korah-msg {
+    padding: 0.625rem 0.75rem; border-radius: 0.75rem;
+    font-size: 0.9rem; line-height: 1.5;
+    border: 0.0625rem solid var(--pl-bd); color: var(--tx);
+  }
+  .ask-korah-msg.user { background: var(--pl-sf); align-self: flex-end; max-width: 85%; }
+  .ask-korah-msg.korah { background: var(--pl-sf3); }
   .ask-korah-msg.korah .cached-badge {
     display: inline-block; font-size: 0.65rem; text-transform: uppercase;
-    letter-spacing: 0.05em; color: var(--p5); margin-bottom: 0.25rem;
+    letter-spacing: 0.05em; color: var(--tx); opacity: .75; margin-bottom: 0.25rem;
   }
-  .ask-korah-loading { font-size: 0.85rem; color: var(--tx3); font-style: italic; padding: 0.5rem 0; }
+  .ask-korah-loading { font-size: 0.85rem; color: var(--tx); font-style: italic; padding: 0.5rem 0; }
 
   .ask-korah-footer {
-    margin: 0 1.25rem; padding: 0.5rem 0.625rem;
-    background: var(--sf2); border: 1px solid var(--bd); border-radius: 0.875rem;
+    margin: 0 1.25rem 0.25rem; padding: 0.5rem 0.625rem;
+    background: var(--pl-sf); border: 0.0625rem solid var(--pl-bd); border-radius: 0.875rem;
+    box-shadow: 0 0.25rem 0 0 var(--pl-bd);
     display: flex; align-items: flex-end; gap: 0.5rem;
+    transition: border-color .18s ease, box-shadow .18s ease;
+  }
+  .ask-korah-footer:focus-within {
+    border-color: var(--tone-purple);
+    box-shadow: 0 0.25rem 0 0 var(--pl-bd),
+                0 0 0 0.1875rem color-mix(in srgb, var(--tone-purple) 25%, transparent);
   }
   .ask-korah-input {
     flex: 1; resize: none; background: transparent; border: none; outline: none;
     color: var(--tx); font-family: inherit; font-size: 0.9rem; padding: 0.375rem;
   }
+  .ask-korah-input::placeholder { color: var(--tx); opacity: .55; }
+  /* The send button is the one action in the composer, so it is the one fill */
   .ask-korah-send {
-    background: var(--tx); color: var(--bg); border: none; border-radius: 62.4375rem;
+    background: linear-gradient(180deg, var(--tone-purple), var(--tone-purple-fill));
+    color: #ffffff; border: 0.0625rem solid var(--tone-purple-fill);
+    border-radius: 62.4375rem;
     width: 2rem; height: 2rem; display: inline-flex; align-items: center; justify-content: center;
-    cursor: pointer;
+    cursor: pointer; transition: transform .18s ease, filter .18s ease;
   }
+  .ask-korah-send:hover { filter: brightness(1.08); transform: scale(1.06); }
   .ask-korah-disclaimer {
-    text-align: center; font-size: 0.7rem; color: var(--tx3);
+    text-align: center; font-size: 0.7rem; color: var(--tx); opacity: .7;
     padding: 0.5rem 1rem 0.75rem; margin: 0;
   }
 
@@ -625,7 +1289,7 @@ html[data-theme="light"] {
 </style>
 
 <style>
-  /* Explanation pane (steps) */
+  /* Explanation pane (steps) — grey cards, purple step numbers */
   .ask-korah-explanation {
     display: flex; flex-direction: column; gap: 0.75rem;
   }
@@ -633,28 +1297,28 @@ html[data-theme="light"] {
     display: inline-flex; align-items: center; gap: 0.5rem;
     align-self: flex-start;
     padding: 0.375rem 0.75rem; border-radius: 62.4375rem;
-    background: rgba(13, 148, 136, 0.12); color: #0d9488;
-    border: 1px solid rgba(13, 148, 136, 0.35);
+    background: var(--tone-green-fill); color: #ffffff;
+    border: 0.0625rem solid var(--tone-green-fill);
     font-size: 0.8rem; font-weight: 700;
   }
   .ask-korah-explanation .explain-cached {
     font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em;
-    color: var(--tx3); align-self: flex-start;
+    color: var(--tx); opacity: .75; align-self: flex-start;
   }
   .ask-korah-explanation .explain-step {
-    background: var(--sf2); border: 1px solid var(--bd);
+    background: var(--pl-sf); border: 0.0625rem solid var(--pl-bd);
     border-radius: 0.625rem; padding: 0.75rem 0.875rem;
     display: flex; flex-direction: column; gap: 0.375rem;
   }
   .ask-korah-explanation .explain-step-head {
     display: flex; align-items: center; gap: 0.5rem;
-    font-size: 0.8rem; font-weight: 700; color: var(--p5);
+    font-size: 0.8rem; font-weight: 700; color: var(--tx);
     text-transform: uppercase; letter-spacing: 0.04em;
   }
   .ask-korah-explanation .explain-step-num {
     display: inline-flex; align-items: center; justify-content: center;
     width: 1.375rem; height: 1.375rem; border-radius: 62.4375rem;
-    background: var(--p5); color: #fff; font-size: 0.75rem; font-weight: 800;
+    background: var(--tone-purple-fill); color: #fff; font-size: 0.75rem; font-weight: 800;
   }
   .ask-korah-explanation .explain-step-body {
     font-size: 0.875rem; line-height: 1.55; color: var(--tx);
@@ -664,31 +1328,31 @@ html[data-theme="light"] {
   .ask-korah-msg.korah .ask-korah-md p { margin: 0.25rem 0; }
   .ask-korah-msg.korah .ask-korah-md { font-size: 0.9rem; line-height: 1.55; }
 
-  /* Explanation source toggle (Korah ↔ CollegeBoard) */
+  /* Explanation source toggle (Korah ↔ CollegeBoard) — selected means filled */
   .explain-source-toggle {
     display: inline-flex; align-self: flex-start;
-    background: var(--sf2); border: 1px solid var(--bd);
+    background: var(--pl-sf); border: 0.0625rem solid var(--pl-bd);
     border-radius: 62.4375rem; padding: 0.1875rem; gap: 0.125rem;
   }
   .explain-source-toggle button {
     background: transparent; border: none; cursor: pointer;
     padding: 0.3125rem 0.75rem; border-radius: 62.4375rem;
-    font-size: 0.75rem; font-weight: 700; color: var(--tx3);
+    font-size: 0.75rem; font-weight: 700; color: var(--tx);
     transition: background .15s ease, color .15s ease;
   }
   .explain-source-toggle button.active {
-    background: var(--p5); color: #fff;
+    background: var(--tone-purple-fill); color: #fff;
   }
-  .explain-source-toggle button:not(.active):hover { color: var(--tx); }
+  .explain-source-toggle button:not(.active):hover { background: var(--pl-sf2); }
 
   .explain-cb-body {
-    background: var(--sf2); border: 1px solid var(--bd);
+    background: var(--pl-sf); border: 0.0625rem solid var(--pl-bd);
     border-radius: 0.625rem; padding: 0.875rem 1rem;
     font-size: 0.9rem; line-height: 1.6; color: var(--tx);
   }
   .explain-cb-body p { margin: 0.35rem 0; }
   .explain-cb-empty {
-    font-size: 0.85rem; color: var(--tx3); font-style: italic;
+    font-size: 0.85rem; color: var(--tx); opacity: .8; font-style: italic;
     padding: 0.75rem 0;
   }
 </style>
@@ -747,7 +1411,7 @@ html[data-theme="light"] {
   }
 
   function collectQuestionSvgs() {
-    const nodes = document.querySelectorAll('.sat-passage-card svg, #answerChoices svg');
+    const nodes = document.querySelectorAll('.sat-passage-card svg, #questionStem svg, #answerChoices svg');
     const out = [];
     nodes.forEach(svg => {
       // Skip tiny decorative icons; only forward figure-sized SVGs.
@@ -1485,7 +2149,7 @@ RULES:
 
     <!-- Question grid -->
     <div>
-      <div class="q-nav-section-label" aria-hidden="true">all questions</div>
+      <div class="q-nav-section-label" aria-hidden="true">All questions</div>
       <div
         class="q-nav-grid"
         id="qNavGrid"

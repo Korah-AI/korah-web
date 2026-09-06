@@ -89,9 +89,10 @@
   .opp-feature-intro-btn.secondary { background: transparent; color: var(--tx2); border-color: var(--bd); }
   .opp-feature-intro-btn.secondary:hover { background: var(--sf2); color: var(--tx); }
 </style>
+<link rel="stylesheet" href="app/korah-chat-grey.css"/>
 </head>
 
-<body class="bg-base tx korah-home-chat">
+<body class="bg-base tx korah-home-chat korah-grey">
 <style>
   html:not(.korah-page-ready) { background: #06040f !important; }
   html[data-theme="light"]:not(.korah-page-ready) { background: #d2d2d2 !important; }
@@ -143,7 +144,10 @@
     startAuthGuard(auth, 'index.html');
   });
 
-  document.getElementById('logout-btn').addEventListener('click', () => {
+  // #logout-btn lives in the sidebar, which sidebar-loader.js injects asynchronously,
+  // so it does not exist yet when this module runs. Delegate from document instead.
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#logout-btn')) return;
     window.confirmLogout(async () => {
       await signOut(auth);
       localStorage.removeItem('korah_first_name');

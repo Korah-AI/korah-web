@@ -1,0 +1,723 @@
+/* ══ Color blocking — Study pages ════════════════════════════════════════════
+   Same system as the Study Plan wizard and the SAT stat tiles; see
+   docs/WIZARD-UI-PATTERNS.md.
+
+   Cards are filled in their own tone rather than painted with the app's
+   --sf/--sf2/--bd (those are translucent and purple-tinted, so a card wearing
+   them reads as "the same color as the background", and a grid of them reads
+   as one flat block). Each element carries one --acc — from a .tone-* class,
+   from its page, or cycled by position where the only requirement is "not the
+   same as its neighbour" — and its fill, border, 3D shadow, icon and hover
+   glow all read from it.
+
+   Two fills, because these pages are half content and half forms:
+     bright  for content and choice cards: a feed card, a method card, a
+             question, a player item. White text.
+     deep    the same tone at panel weight, for surfaces that wrap form
+             controls or other cards — a create panel, a config row, the
+             player stage. Inputs keep the neutral base so they stay readable,
+             and they read clearly against the deep panel.
+   Modals and dropdowns stay on the neutral base: they are mostly forms, and a
+   saturated fill would make their fields unreadable.
+
+   Fills are flat — a solid block, never a gradient. The bright fill is the
+   tone's --acc-fill, set next to --acc on the same rule that assigns the tone;
+   the deep fill mixes --acc into the panel grey where it is used. Neither is
+   held in one shared custom property on <body>: a custom property's var() is
+   substituted where the property is *declared*, so a --kg-fill on <body> would
+   freeze --acc at the body's tone and every card would come out the same
+   colour.
+
+   The feed's own chrome — hero, toolbar, empty state — stays on the neutral
+   grey. It frames the feed rather than being an item in it, so the colour on
+   that page belongs to the cards.
+
+   A filled card re-points --tx/--tx2/--tx3 at #fff, so every label inside goes
+   white in one move instead of being listed here one by one.
+
+   Loaded last on the study pages and scoped to .korah-grey on <body>, so the
+   shared sidebar/topbar chrome and the pages that don't opt in are untouched.
+
+   Page tone (set as a second body class): feed/new/flashcards = blue,
+   guide + guide-create = green, test + test-create = amber, item = teal. */
+
+.korah-grey {
+  --kg-sf:  #26262e;   /* neutral base: inputs, modals, ghost buttons */
+  --kg-sf2: #31313c;
+  --kg-bd:  #454553;
+  /* Each tone carries two values: --acc, the bright mark used for borders,
+     icons and hover, and --acc-fill, the shade a filled surface takes (white
+     text stays readable on it). See docs/WIZARD-UI-PATTERNS.md §2.
+
+     --acc-fill is the tone at 88% against black, which is the flat equivalent
+     of the fill sat-rush.css ramps across on .rush-card.is-selected and
+     .rush-stat. The 700-weight shades this used to carry came out much darker
+     than the reference and the grid read as muddy. */
+  --tone-red: #ef4444;    --tone-red-fill: #d23c3c;
+  --tone-orange: #f97316; --tone-orange-fill: #db6513;
+  --tone-amber: #f59e0b;  --tone-amber-fill: #d88b0a;
+  --tone-green: #22c55e;  --tone-green-fill: #1ead53;
+  --tone-teal: #14b8a6;   --tone-teal-fill: #12a292;
+  --tone-blue: #3b82f6;   --tone-blue-fill: #3472d9;
+  --tone-pink: #ec4899;   --tone-pink-fill: #d03f87;
+  --acc: var(--tone-blue);
+  --acc-fill: var(--tone-blue-fill);
+}
+html[data-theme="light"] .korah-grey {
+  --kg-sf: #eceef2; --kg-sf2: #e0e3ea; --kg-bd: #c3c8d2;
+}
+
+.korah-grey.tone-red    { --acc: var(--tone-red); --acc-fill: var(--tone-red-fill); }
+.korah-grey.tone-orange { --acc: var(--tone-orange); --acc-fill: var(--tone-orange-fill); }
+.korah-grey.tone-amber  { --acc: var(--tone-amber); --acc-fill: var(--tone-amber-fill); }
+.korah-grey.tone-green  { --acc: var(--tone-green); --acc-fill: var(--tone-green-fill); }
+.korah-grey.tone-teal   { --acc: var(--tone-teal); --acc-fill: var(--tone-teal-fill); }
+.korah-grey.tone-blue   { --acc: var(--tone-blue); --acc-fill: var(--tone-blue-fill); }
+.korah-grey.tone-pink   { --acc: var(--tone-pink); --acc-fill: var(--tone-pink-fill); }
+
+/* ── Nothing translucent inside a page ──────────────────────────────────────
+   Two things at once, on the same list of containers.
+
+   The app's surface tokens are translucent rgba (--sf is rgba(18,12,40,.7),
+   --bd is rgba(139,92,246,.2), and so on), so any rule still reaching for one
+   paints a see-through purple wash. Repointing them at the neutral greys makes
+   every such rule opaque in one move, in both themes, instead of rewriting each
+   declaration on eight pages. --bg/--bg2/--bg3 are already opaque and stay.
+
+   And --tx2/--tx3 vanish against these surfaces, so they collapse onto --tx.
+   The .tx2/.tx3 utility classes read the same vars, so this covers the markup
+   that uses the classes as well as the markup that uses the vars.
+
+   .main-content is the page body on all eight pages; the modals and dropdowns
+   sit outside it at body level, so they are listed too. The sidebar and topbar
+   are not on the list and keep the app's own surfaces. */
+.korah-grey .main-content,
+.korah-grey .study-feed-body,
+.korah-grey .create-page-scroll,
+.korah-grey .modal-overlay,
+.korah-grey .creation-modal,
+.korah-grey .import-modal,
+.korah-grey .guide-reader-modal,
+.korah-grey .test-setup-modal,
+.korah-grey .delete-modal,
+.korah-grey .settings-modal,
+.korah-grey .drag-overlay,
+.korah-grey .create-study-dropdown {
+  --tx2: var(--tx);
+  --tx3: var(--tx);
+  --sf: var(--kg-sf);
+  --sf2: var(--kg-sf2);
+  --bd: var(--kg-bd);
+  --bd2: var(--kg-bd);
+  --cu: var(--kg-bd);
+  --cb: var(--kg-sf);
+  --ca: var(--kg-sf);
+  --nb: var(--kg-sf);
+}
+
+/* The glass utilities are the last translucent surfaces in the markup: .glass
+   and .glass-sm carry a blur plus the see-through --sf, and the topbars add an
+   inline opacity on top of it. Opaque grey, no blur, full opacity. (.glass-card
+   is a different class and keeps its tone fill below.) */
+.korah-grey .chat-topbar,
+.korah-grey .glass,
+.korah-grey .glass-sm,
+.korah-grey .bg-sf,
+.korah-grey .bg-sf2 {
+  background: var(--kg-sf);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.korah-grey .chat-topbar {
+  border-color: var(--kg-bd);
+  opacity: 1;
+}
+
+/* ── Identity ───────────────────────────────────────────────────────────────
+   Groups of tiles cycle the tone list by position so a grid is never one flat
+   colour; where a tile has a meaning (manual vs AI) the tone carries it. */
+.korah-grey .import-source-card:nth-child(7n+1),
+.korah-grey .question-list > *:nth-child(7n+1),
+.korah-grey .create-type-card:nth-child(7n+1),
+.korah-grey .card-list > *:nth-child(7n+1) { --acc: var(--tone-blue); --acc-fill: var(--tone-blue-fill); }
+.korah-grey .import-source-card:nth-child(7n+2),
+.korah-grey .question-list > *:nth-child(7n+2),
+.korah-grey .create-type-card:nth-child(7n+2),
+.korah-grey .card-list > *:nth-child(7n+2) { --acc: var(--tone-green); --acc-fill: var(--tone-green-fill); }
+.korah-grey .import-source-card:nth-child(7n+3),
+.korah-grey .question-list > *:nth-child(7n+3),
+.korah-grey .create-type-card:nth-child(7n+3),
+.korah-grey .card-list > *:nth-child(7n+3) { --acc: var(--tone-pink); --acc-fill: var(--tone-pink-fill); }
+.korah-grey .import-source-card:nth-child(7n+4),
+.korah-grey .question-list > *:nth-child(7n+4),
+.korah-grey .create-type-card:nth-child(7n+4),
+.korah-grey .card-list > *:nth-child(7n+4) { --acc: var(--tone-amber); --acc-fill: var(--tone-amber-fill); }
+.korah-grey .import-source-card:nth-child(7n+5),
+.korah-grey .question-list > *:nth-child(7n+5),
+.korah-grey .create-type-card:nth-child(7n+5),
+.korah-grey .card-list > *:nth-child(7n+5) { --acc: var(--tone-teal); --acc-fill: var(--tone-teal-fill); }
+.korah-grey .import-source-card:nth-child(7n+6),
+.korah-grey .question-list > *:nth-child(7n+6),
+.korah-grey .create-type-card:nth-child(7n+6),
+.korah-grey .card-list > *:nth-child(7n+6) { --acc: var(--tone-orange); --acc-fill: var(--tone-orange-fill); }
+.korah-grey .import-source-card:nth-child(7n+7),
+.korah-grey .question-list > *:nth-child(7n+7),
+.korah-grey .create-type-card:nth-child(7n+7),
+.korah-grey .card-list > *:nth-child(7n+7) { --acc: var(--tone-red); --acc-fill: var(--tone-red-fill); }
+
+/* data-tone on the element itself, for anything whose tone is a fact about the
+   item rather than its position: a feed card is filled in its type's tone
+   (flashcards blue, study guides green, practice tests amber, set by
+   renderCards in feed.html), and a chosen dropdown option fills its trigger. */
+.korah-grey [data-tone="red"]    { --acc: var(--tone-red);    --acc-fill: var(--tone-red-fill); }
+.korah-grey [data-tone="orange"] { --acc: var(--tone-orange); --acc-fill: var(--tone-orange-fill); }
+.korah-grey [data-tone="amber"]  { --acc: var(--tone-amber);  --acc-fill: var(--tone-amber-fill); }
+.korah-grey [data-tone="green"]  { --acc: var(--tone-green);  --acc-fill: var(--tone-green-fill); }
+.korah-grey [data-tone="teal"]   { --acc: var(--tone-teal);   --acc-fill: var(--tone-teal-fill); }
+.korah-grey [data-tone="blue"]   { --acc: var(--tone-blue);   --acc-fill: var(--tone-blue-fill); }
+.korah-grey [data-tone="pink"]   { --acc: var(--tone-pink);   --acc-fill: var(--tone-pink-fill); }
+
+
+/* Manual vs AI is a real distinction, so it gets two real colours — and
+   neither is indigo or violet, which read as the purple we are leaving. */
+.korah-grey .method-card[data-method="manual"],
+.korah-grey .method-pill[data-method="manual"] { --acc: var(--tone-blue); --acc-fill: var(--tone-blue-fill); }
+.korah-grey .method-card[data-method="ai-prompt"],
+.korah-grey .method-card[data-method="ai"],
+.korah-grey .method-pill[data-method="ai"] { --acc: var(--tone-pink); --acc-fill: var(--tone-pink-fill); }
+
+/* The three player modes and the summary tiles differ by position */
+.korah-grey .player-modes .player-mode-btn:nth-child(1),
+.korah-grey .test-summary-grid .test-summary-card:nth-child(1) { --acc: var(--tone-blue); --acc-fill: var(--tone-blue-fill); }
+.korah-grey .player-modes .player-mode-btn:nth-child(2),
+.korah-grey .test-summary-grid .test-summary-card:nth-child(2) { --acc: var(--tone-green); --acc-fill: var(--tone-green-fill); }
+.korah-grey .player-modes .player-mode-btn:nth-child(3),
+.korah-grey .test-summary-grid .test-summary-card:nth-child(3) { --acc: var(--tone-amber); --acc-fill: var(--tone-amber-fill); }
+.korah-grey .test-summary-grid .test-summary-card:nth-child(4) { --acc: var(--tone-pink); --acc-fill: var(--tone-pink-fill); }
+.korah-grey .test-preview-list > *:nth-child(2n) { --acc: var(--tone-teal); --acc-fill: var(--tone-teal-fill); }
+.korah-grey .player-list > *:nth-child(2n) { --acc: var(--tone-pink); --acc-fill: var(--tone-pink-fill); }
+
+/* ── Filled cards ───────────────────────────────────────────────────────────
+   Bright fill for content and choice cards. Re-pointing --tx/--tx2/--tx3 at
+   white is what turns every label inside the card white in one move. */
+.korah-grey.study-modern .feed-card,
+.korah-grey .create-type-card,
+.korah-grey .method-card,
+.korah-grey .import-source-card,
+.korah-grey .player-hero,
+.korah-grey .player-content-card,
+.korah-grey .player-list-item,
+.korah-grey .guide-open-card,
+.korah-grey .study-guide-markdown,
+.korah-grey .test-question,
+.korah-grey .test-preview-item,
+.korah-grey .test-summary-card,
+.korah-grey .card-item,
+.korah-grey .question-card,
+.korah-grey .upload-file,
+.korah-grey .doc-upload-item,
+.korah-grey .test-score,
+html[data-theme="light"] .korah-grey.study-modern .feed-card,
+html[data-theme="light"] .korah-grey .method-card,
+html[data-theme="light"] .korah-grey .import-source-card {
+  --tx: #fff; --tx2: #fff; --tx3: #fff;
+  color: #fff;
+  background: var(--acc-fill);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: 1px solid var(--acc);
+  box-shadow: 0 0.25rem 0 0 color-mix(in srgb, var(--acc-fill) 62%, #000);
+}
+
+/* Panel weight for the surfaces that wrap form controls or other cards */
+.korah-grey .glass-card,
+.korah-grey .create-card,
+.korah-grey .section-card,
+.korah-grey .ai-form,
+.korah-grey .manual-form,
+.korah-grey .config-tile,
+.korah-grey .option-row,
+.korah-grey .player-stage,
+.korah-grey .test-config,
+.korah-grey .test-action-card,
+html[data-theme="light"] .korah-grey .section-card,
+html[data-theme="light"] .korah-grey .ai-form,
+html[data-theme="light"] .korah-grey .glass-card {
+  --tx: #fff; --tx2: #fff; --tx3: #fff;
+  color: #fff;
+  background: color-mix(in srgb, var(--acc) 38%, #15151d);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: 1px solid var(--acc);
+  box-shadow: 0 0.25rem 0 0 color-mix(in srgb, var(--acc-fill) 62%, #000);
+}
+/* korah-chat.css pins a 0.25rem purple bar to the top of every feed card and
+   fades it in on hover, so the hovered card looks like it has one thick edge.
+   Its hover also lifts the card, which the house rules replace with a scale. */
+.korah-grey .feed-card::before { display: none; }
+.korah-grey .feed-card:hover { transform: scale(1.02); box-shadow: none; }
+.korah-grey .feed-card-type,
+.korah-grey .feed-card-title,
+.korah-grey .feed-card-desc,
+.korah-grey .feed-card-meta,
+.korah-grey .feed-card-btn:hover { color: #fff; }
+
+/* ── Feed chrome ────────────────────────────────────────────────────────────
+   The hero, the toolbar and the empty state frame the feed rather than being
+   items in it, so they stay on the neutral grey. Colour on this page belongs
+   to the cards. */
+.korah-grey.study-modern .feed-hero,
+.korah-grey.study-modern .study-feed-toolbar,
+.korah-grey.study-modern .feed-empty,
+.korah-grey .feed-empty-hero,
+html[data-theme="light"] .korah-grey.study-modern .feed-hero,
+html[data-theme="light"] .korah-grey.study-modern .study-feed-toolbar {
+  background: var(--kg-sf);
+  border: 1px solid var(--kg-bd);
+  color: var(--tx);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.korah-grey.study-modern .feed-hero-title,
+.korah-grey.study-modern .feed-hero-sub,
+.korah-grey .feed-empty-hero .empty-title-new,
+.korah-grey .feed-empty-hero .empty-sub-new { color: var(--tx); }
+
+/* A card nested straight inside a deep panel drops its own drop shadow so the
+   two do not stack into a double frame. */
+.korah-grey .player-stage .player-content-card,
+.korah-grey .player-stage .player-list-item { box-shadow: none; }
+
+.korah-grey.study-modern .feed-card.is-clickable:hover,
+.korah-grey.study-modern .feed-card.is-clickable:focus-visible,
+.korah-grey .import-source-card:hover,
+.korah-grey .method-card:hover,
+.korah-grey .player-list-item:hover,
+.korah-grey .test-summary-card:hover,
+.korah-grey .test-preview-item:hover,
+.korah-grey .card-item:hover,
+.korah-grey .create-type-card:hover,
+.korah-grey .question-card:hover,
+html[data-theme="light"] .korah-grey .method-card:hover {
+  background: color-mix(in srgb, var(--acc-fill) 84%, #fff);
+  border-color: color-mix(in srgb, var(--acc) 40%, #fff);
+  box-shadow: 0 0.3rem 0 0 color-mix(in srgb, var(--acc-fill) 62%, #000);
+}
+
+/* Labels the pages hard-code in mint, slate or an accent of their own */
+.korah-grey .create-subtext,
+.korah-grey .create-card-sub,
+.korah-grey .create-card-title,
+.korah-grey .section-copy,
+.korah-grey .section-title,
+.korah-grey .support-copy,
+.korah-grey .support-title,
+.korah-grey .field-label,
+.korah-grey .card-eyebrow,
+.korah-grey .question-eyebrow,
+.korah-grey .import-source-desc,
+.korah-grey .import-source-icon,
+.korah-grey .import-source-name,
+.korah-grey .import-input-row label,
+.korah-grey .upload-file-meta,
+.korah-grey .upload-file-name,
+.korah-grey .method-desc,
+.korah-grey .method-name,
+.korah-grey .method-icon,
+.korah-grey .player-sub,
+.korah-grey .player-title,
+.korah-grey .player-content-eyebrow,
+.korah-grey .player-content-answer,
+.korah-grey .player-list-item-title,
+.korah-grey .player-stage-top,
+.korah-grey .player-progress-text,
+.korah-grey .test-summary-val,
+.korah-grey .test-summary-lbl,
+.korah-grey .test-pool-title,
+.korah-grey.study-modern .feed-card-open-hint,
+html[data-theme="light"] .korah-grey .import-source-icon {
+  color: #fff;
+  filter: none;
+}
+/* Labels the pages dim with opacity rather than with --tx2 */
+.korah-grey .dropdown-item-desc,
+.korah-grey.study-modern .feed-card-open-hint,
+.korah-grey .create-type-desc,
+.korah-grey .create-form .create-label,
+.korah-grey .import-chip-remove { opacity: 1; }
+
+/* Anything sitting on top of a filled card goes translucent white */
+.korah-grey .feed-card-source,
+.korah-grey .player-progress-track,
+.korah-grey .test-preview-badge,
+.korah-grey .mini-stat {
+  background: color-mix(in srgb, var(--acc-fill) 68%, #000);
+  border-color: color-mix(in srgb, var(--acc-fill) 56%, #fff);
+  color: #fff;
+}
+.korah-grey .player-progress-fill { background: #fff; }
+.korah-grey .player-content-answer,
+.korah-grey .test-ai-box,
+.korah-grey .test-preview-a,
+.korah-grey .test-pool-header { border-color: color-mix(in srgb, var(--acc-fill) 58%, #fff); }
+
+/* ── Inputs stay on the neutral base ────────────────────────────────────────
+   They sit inside the deep panels, where a filled field would be unreadable. */
+.korah-grey .input-field,
+.korah-grey .test-textarea,
+.korah-grey .test-config-field input,
+.korah-grey .test-setup-input,
+.korah-grey .test-setup-select,
+.korah-grey .config-tile input,
+.korah-grey .option-row input[type="text"],
+.korah-grey .question-card input,
+.korah-grey .question-card textarea,
+.korah-grey .card-item input,
+.korah-grey .card-item textarea,
+.korah-grey .import-input-row input,
+.korah-grey .import-input-row textarea,
+.korah-grey .import-input-row select,
+.korah-grey .import-url-input-group input,
+.korah-grey .import-text-panel textarea,
+.korah-grey .import-chip,
+.korah-grey .import-source-panel,
+.korah-grey .import-target-type-trigger,
+.korah-grey .doc-thumb,
+.korah-grey.study-modern .feed-search,
+.korah-grey.study-modern .feed-filter-trigger,
+html[data-theme="light"] .korah-grey .import-input-row input,
+html[data-theme="light"] .korah-grey .import-input-row textarea,
+html[data-theme="light"] .korah-grey.study-modern .feed-filter-trigger {
+  background-color: var(--kg-sf);
+  border: 1px solid var(--kg-bd);
+  color: var(--tx);
+}
+/* A filled card paints --tx white for its labels; a field on top needs it back
+   only where the field itself sits on the card rather than on a panel. */
+.korah-grey .config-tile input,
+.korah-grey .option-row input[type="text"],
+.korah-grey .question-card input,
+.korah-grey .question-card textarea,
+.korah-grey .card-item input,
+.korah-grey .card-item textarea { color: #fff; }
+.korah-grey .input-field:focus,
+.korah-grey .test-textarea:focus,
+.korah-grey .test-config-field input:focus,
+.korah-grey .test-setup-input:focus,
+.korah-grey .import-input-row input:focus,
+.korah-grey .import-input-row textarea:focus,
+.korah-grey .import-url-input-group input:focus,
+.korah-grey .import-text-panel textarea:focus {
+  border-color: #fff;
+  box-shadow: 0 0 0 0.1875rem rgba(255,255,255,.28);
+  animation: none;
+}
+.korah-grey.study-modern .feed-search:focus,
+.korah-grey.study-modern .feed-filter-trigger:focus-visible {
+  border-color: var(--acc);
+  box-shadow: 0 0 0 0.1875rem color-mix(in srgb, var(--acc) 30%, transparent);
+  animation: none;
+  outline: none;
+}
+.korah-grey.study-modern .feed-search:hover,
+.korah-grey.study-modern .feed-filter-trigger:hover {
+  background-color: var(--kg-sf2);
+  border-color: var(--acc);
+  box-shadow: none;
+  transform: none;
+}
+
+/* Drop zones: dashed white on the deep panel, filling in on drag */
+.korah-grey .upload-zone,
+html[data-theme="light"] .korah-grey .upload-zone {
+  background: color-mix(in srgb, var(--acc-fill) 74%, #000);
+  border: 0.125rem dashed color-mix(in srgb, var(--acc-fill) 40%, #fff);
+  color: #fff;
+}
+.korah-grey .upload-zone:hover,
+.korah-grey .upload-zone.drag-active,
+html[data-theme="light"] .korah-grey .upload-zone:hover,
+html[data-theme="light"] .korah-grey .upload-zone.drag-active {
+  border-color: #fff;
+  background: color-mix(in srgb, var(--acc-fill) 84%, #000);
+  box-shadow: none;
+}
+.korah-grey .upload-icon,
+.korah-grey .upload-text,
+.korah-grey .upload-hint { color: #fff; filter: none; }
+
+/* ── Selected means filled ──────────────────────────────────────────────────
+   The switch sits on a deep panel, so a resting pill is translucent white and
+   the active one takes its own tone. */
+.korah-grey .create-method-switch,
+html[data-theme="light"] .korah-grey .create-method-switch {
+  background: color-mix(in srgb, var(--acc-fill) 72%, #000);
+  border: 1px solid color-mix(in srgb, var(--acc-fill) 66%, #fff);
+}
+.korah-grey .method-pill,
+.korah-grey .player-mode-btn,
+html[data-theme="light"] .korah-grey .method-pill {
+  background: color-mix(in srgb, var(--acc-fill) 62%, #000);
+  border: 1px solid color-mix(in srgb, var(--acc-fill) 58%, #fff);
+  color: #fff;
+}
+.korah-grey .method-pill:hover,
+.korah-grey .player-mode-btn:hover:not(.active) {
+  background: color-mix(in srgb, var(--acc-fill) 80%, #000);
+  border-color: #fff;
+  color: #fff;
+}
+.korah-grey .method-pill.is-active,
+.korah-grey .player-mode-btn.active,
+.korah-grey .test-setup-toggle.active {
+  color: #fff;
+  border-color: var(--acc);
+  background: var(--acc-fill);
+  box-shadow: 0 0.25rem 0 0 color-mix(in srgb, var(--acc-fill) 62%, #000);
+}
+
+/* ── Buttons ────────────────────────────────────────────────────────────────
+   On a filled card they invert to a white fill with the card's tone as the
+   text, which keeps them legible whatever colour the card landed on. */
+.korah-grey .create-submit,
+.korah-grey .test-setup-start-btn,
+.korah-grey .test-start-btn,
+.korah-grey .test-submit-btn,
+.korah-grey .test-btn-primary,
+.korah-grey .guide-open-btn,
+.korah-grey .import-url-input-group button,
+.korah-grey.study-modern .feed-card-btn,
+.korah-grey .ghost-action,
+.korah-grey .test-btn-outline,
+.korah-grey .player-nav-btn,
+.korah-grey .player-util-btn,
+.korah-grey .empty-cta-secondary,
+.korah-grey .feed-card-rename-btn,
+html[data-theme="light"] .korah-grey .ghost-action {
+  background: #fff;
+  color: color-mix(in srgb, var(--acc) 78%, #000);
+  border: 1px solid #fff;
+  box-shadow: 0 0.25rem 0 0 rgba(0,0,0,.22);
+  font-weight: 700;
+}
+.korah-grey .create-submit:hover,
+.korah-grey .test-setup-start-btn:hover,
+.korah-grey .test-start-btn:hover,
+.korah-grey .test-submit-btn:hover,
+.korah-grey .test-btn-primary:hover,
+.korah-grey .guide-open-btn:hover,
+.korah-grey .import-url-input-group button:hover,
+.korah-grey.study-modern .feed-card-btn:hover,
+.korah-grey .ghost-action:hover,
+.korah-grey .test-btn-outline:hover,
+.korah-grey .player-nav-btn:hover:not(:disabled),
+.korah-grey .player-util-btn:hover,
+.korah-grey .empty-cta-secondary:hover,
+.korah-grey .feed-card-rename-btn:hover {
+  background: #eef0f4;
+  color: color-mix(in srgb, var(--acc) 78%, #000);
+  border-color: #fff;
+}
+.korah-grey .player-nav-btn:active:not(:disabled) { box-shadow: 0 0.05rem 0 0 rgba(0,0,0,.22); }
+
+/* Destructive stays red wherever it lands */
+.korah-grey .card-remove,
+.korah-grey .question-remove,
+.korah-grey .upload-file-remove,
+.korah-grey .feed-card-delete-btn,
+html[data-theme="light"] .korah-grey .card-remove,
+html[data-theme="light"] .korah-grey .upload-file-remove {
+  background: var(--tone-red);
+  border: 1px solid #fff;
+  color: #fff;
+}
+.korah-grey .card-remove:hover,
+.korah-grey .question-remove:hover,
+.korah-grey .upload-file-remove:hover,
+.korah-grey .feed-card-delete-btn:hover {
+  background: color-mix(in srgb, var(--tone-red) 82%, #000);
+  border-color: #fff;
+  color: #fff;
+}
+
+/* ── Modals and dropdowns keep the neutral base ─────────────────────────────
+   They are mostly forms; a saturated fill would make their fields unreadable.
+   The page tone still shows on their icons and their primary button. */
+.korah-grey .creation-modal,
+.korah-grey .import-modal,
+.korah-grey .create-study-dropdown,
+.korah-grey .guide-reader-dialog,
+.korah-grey .test-setup-dialog,
+.korah-grey .item-edit-modal-content {
+  background: var(--kg-sf);
+  border: 1px solid var(--kg-bd);
+  color: var(--tx);
+}
+.korah-grey .modal-close,
+.korah-grey .guide-reader-close,
+.korah-grey .test-setup-close {
+  background: var(--kg-sf2);
+  border: 1px solid var(--kg-bd);
+  color: var(--tx);
+}
+.korah-grey .modal-close:hover,
+.korah-grey .guide-reader-close:hover,
+.korah-grey .test-setup-close:hover { background: var(--kg-bd); color: var(--tx); }
+.korah-grey .modal-header,
+.korah-grey .test-setup-header,
+.korah-grey .test-setup-footer,
+.korah-grey .test-setup-divider,
+.korah-grey .guide-reader-head { border-color: var(--kg-bd); }
+.korah-grey .create-dropdown-item::before,
+html[data-theme="light"] .korah-grey .create-dropdown-item::before { background: var(--kg-sf2); }
+.korah-grey .create-dropdown-emoji { color: var(--acc); }
+
+/* ── Custom select ──────────────────────────────────────────────────────────
+   Resting, the trigger is a grey field like any other input. Choosing an option
+   fills it in that option's tone, so the current filter is readable without
+   opening the menu; the "All types" / "All sources" rows carry no tone and
+   leave it grey. custom-select.js copies data-tone from the row onto the
+   trigger. */
+.korah-grey .ks-trigger[data-tone],
+.korah-grey.study-modern .feed-filter-trigger[data-tone],
+.korah-grey .test-setup-select[data-tone],
+.korah-grey .input-field[data-tone] {
+  background-color: var(--acc-fill);
+  border: 1px solid var(--acc);
+  color: #fff;
+}
+.korah-grey .ks-trigger[data-tone]:hover,
+.korah-grey.study-modern .feed-filter-trigger[data-tone]:hover {
+  background-color: color-mix(in srgb, var(--acc-fill) 84%, #fff);
+  border-color: var(--acc);
+}
+/* Selected means filled in the menu too */
+.korah-grey .create-dropdown-item.is-selected[data-tone] {
+  background: var(--acc-fill);
+  color: #fff;
+}
+.korah-grey .create-dropdown-item.is-selected[data-tone] .dropdown-item-name,
+.korah-grey .create-dropdown-item.is-selected[data-tone] .dropdown-item-desc { color: #fff; }
+.korah-grey .create-dropdown-item.is-selected[data-tone]::before { opacity: 0; }
+/* Each row shows its tone as a dot, so the menu is not one flat grey list */
+.korah-grey .create-dropdown-item[data-tone] .dropdown-item-name::before {
+  content: '';
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--acc);
+  margin-right: 0.5rem;
+  vertical-align: middle;
+}
+.korah-grey .create-dropdown-item.is-selected[data-tone] .dropdown-item-name::before { background: #fff; }
+
+/* ── Surfaces the pages still painted with the app tokens ───────────────────
+   --sf/--sf2/--bd are translucent and purple-tinted, so anything resting on
+   them reads as the background. These are the last few that were left. */
+.korah-grey .test-setup-toggle,
+.korah-grey .test-setup-return,
+.korah-grey .test-setup-icon,
+.korah-grey .item-edit-row,
+.korah-grey .item-edit-add {
+  background: var(--kg-sf2);
+  border: 1px solid var(--kg-bd);
+  color: var(--tx);
+}
+.korah-grey .test-setup-toggle:hover,
+.korah-grey .test-setup-return:hover,
+.korah-grey .item-edit-add:hover {
+  background: var(--kg-bd);
+  border-color: var(--acc);
+  color: var(--tx);
+}
+/* An answer choice sits on a filled question card, so it goes a step darker
+   than the card rather than onto the grey. */
+.korah-grey .test-option,
+.korah-grey .test-option:hover {
+  background: color-mix(in srgb, var(--acc-fill) 68%, #000);
+  border: 1px solid color-mix(in srgb, var(--acc-fill) 56%, #fff);
+  color: #fff;
+}
+.korah-grey .test-option:hover {
+  background: color-mix(in srgb, var(--acc-fill) 84%, #000);
+  border-color: #fff;
+}
+/* The radio sits on that patch, so it marks in white rather than in purple */
+.korah-grey .test-option input[type="radio"] {
+  border: 0.125rem solid color-mix(in srgb, var(--acc-fill) 40%, #fff);
+  background: transparent;
+}
+.korah-grey .test-option input[type="radio"]:hover { border-color: #fff; }
+.korah-grey .test-option input[type="radio"]:checked {
+  border-color: #fff;
+  background: #fff;
+}
+.korah-grey .test-option input[type="radio"]:checked::after { background: var(--acc-fill); }
+
+/* The create buttons wear .new-chat-btn and .grad-bg from korah-chat.css: one
+   is a translucent violet, the other a gradient. Both become the page tone. */
+.korah-grey .new-chat-btn,
+.korah-grey .grad-bg {
+  background: var(--acc-fill);
+  border: 1px solid var(--acc);
+  color: #fff;
+}
+.korah-grey .new-chat-btn:hover,
+.korah-grey .grad-bg:hover {
+  background: color-mix(in srgb, var(--acc-fill) 84%, #fff);
+  transform: scale(1.02);
+  box-shadow: none;
+}
+
+/* The shared modal chrome in korah-chat.css hovers with translucent purple and
+   red washes; on these pages they are solid. The scrims behind the settings
+   modal and the drag overlay stay translucent, since that is what a scrim is. */
+.korah-grey .settings-select-option:hover,
+.korah-grey .settings-select-option.active,
+html[data-theme="light"] .korah-grey .settings-select-option:hover,
+html[data-theme="light"] .korah-grey .settings-select-menu { background: var(--kg-sf2); }
+.korah-grey .settings-close:hover,
+.korah-grey .settings-btn.danger:hover,
+.korah-grey .delete-modal-btn.confirm,
+.korah-grey .delete-modal-btn.confirm:hover {
+  background: var(--tone-red);
+  border-color: var(--tone-red);
+  color: #fff;
+}
+.korah-grey .delete-modal-btn.confirm:hover,
+.korah-grey .settings-btn.danger:hover {
+  background: color-mix(in srgb, var(--tone-red) 82%, #000);
+}
+.korah-grey .drag-overlay-inner {
+  background: var(--kg-sf);
+  border: 0.125rem dashed var(--acc);
+  color: var(--tx);
+}
+
+/* Rename / save confirms inherit a washed-out purple tint from korah-chat.css;
+   .confirm-primary fills them in the page tone. Plain .confirm stays red — it
+   is the delete modal's button. */
+.korah-grey .delete-modal-btn.confirm-primary {
+  background: var(--acc-fill);
+  border: 1px solid var(--acc);
+  color: #fff;
+}
+.korah-grey .delete-modal-btn.confirm-primary:hover {
+  background: color-mix(in srgb, var(--acc-fill) 84%, #fff);
+  color: #fff;
+}
+
+.korah-grey .create-error { color: var(--tone-red); }
+.korah-grey .empty-card { border-color: color-mix(in srgb, var(--acc-fill) 58%, #fff); }
+.korah-grey .loading-spinner {
+  border-color: color-mix(in srgb, var(--acc-fill) 56%, #fff);
+  border-top-color: #fff;
+}
+
+/* Text areas and inputs default to the browser's monospace face unless they
+   inherit — keep every control on the page's own Plus Jakarta Sans. */
+.korah-grey input,
+.korah-grey textarea,
+.korah-grey select,
+.korah-grey button { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }

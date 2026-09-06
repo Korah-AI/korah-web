@@ -144,6 +144,9 @@
 
     const randomRaw = (params.get("random") || "").trim().toLowerCase();
     const random = randomRaw === "1" || randomRaw === "true";
+    const mode = (params.get("mode") || "").trim().toLowerCase() === "tailored"
+      ? "tailored"
+      : "player";
 
     return {
       sections: sections.length > 0 ? sections : ["english", "math"],
@@ -154,6 +157,7 @@
       limit: effectiveLimit,
       questionIds,
       random,
+      mode,
       timespent: parseSessionFilter(params, "timespent"),
       saved: parseSessionFilter(params, "saved"),
       completed: parseSessionFilter(params, "completed"),
@@ -193,6 +197,9 @@
     }
     if (state.random) {
       params.set("random", "1");
+    }
+    if (state.mode === "tailored") {
+      params.set("mode", "tailored");
     }
     // Per-question filters — only emit when non-default (first allowed value).
     Object.keys(SESSION_FILTERS).forEach((key) => {
