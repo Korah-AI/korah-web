@@ -653,3 +653,126 @@ html[data-theme="dark"] .sat-math-shell .welcome-title {
     aspect-ratio: 16 / 10;
   }
 }
+
+/* ══ Grey color blocking — SAT Math chat ════════════════════════════════════
+   The page loads app/korah-chat-grey.css, which greys everything this chat
+   shares with chat.html (composer, bubbles, avatars, toasts, modals). What is
+   left below is the SAT-only chrome: the welcome prompt rows, the mode badge,
+   the early-development toast and the feature intro carousel. Same rules as
+   everywhere else — solid opaque greys at rest, a flat fill for the one
+   action, no gradients, no rgba surfaces, and hover scales instead of
+   sliding. See docs/WIZARD-UI-PATTERNS.md. */
+.korah-grey .feature-intro-modal { --tx2: var(--tx); --tx3: var(--tx); }
+
+/* ── Welcome prompt rows ────────────────────────────────────────────────────
+   These were transparent rows that slid right on hover. They are cards now,
+   like the topic pills on chat.html, and they grow rather than slide. */
+.korah-grey .sat-prompt-row {
+  background: var(--kg-sf) !important;
+  border: 0.0625rem solid var(--kg-bd) !important;
+  color: var(--tx) !important;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.5rem;
+  box-shadow: 0 0.25rem 0 0 var(--kg-bd);
+  transition: transform .18s ease, background .18s ease, border-color .18s ease;
+}
+.korah-grey .sat-prompt-row:hover {
+  background: var(--kg-sf2) !important;
+  border-color: var(--tone-green) !important;
+  padding-left: 1rem;
+  transform: scale(1.01);
+}
+.korah-grey .sat-prompt-bold,
+.korah-grey .sat-prompt-row:hover .sat-prompt-bold { color: var(--tx); }
+.korah-grey .sat-prompt-chevron,
+.korah-grey .sat-prompt-row:hover .sat-prompt-chevron {
+  color: var(--tone-green);
+  transform: none;
+}
+
+/* ── Mode badge ─────────────────────────────────────────────────────────────
+   Grey card, green glyph — the same split chat.html uses on its mode badge. */
+.korah-grey .sat-math-badge {
+  background: var(--kg-sf);
+  border: 0.0625rem solid var(--kg-bd);
+  color: var(--tx);
+}
+.korah-grey .sat-math-badge .m-icon { color: var(--tone-green); }
+
+/* ── Early development toast ────────────────────────────────────────────────
+   Grey like the pro-tip toast next to it, with the warning tone on the icon
+   and label instead of a translucent orange panel. */
+.korah-grey #early-dev-toast {
+  --acc: var(--tone-red);
+  background: var(--kg-sf);
+  border: 0.0625rem solid var(--kg-bd);
+  color: var(--tx);
+  box-shadow: 0 0.25rem 0 0 var(--kg-bd);
+}
+.korah-grey #early-dev-toast .pro-tip-toast-label,
+.korah-grey #early-dev-toast .pro-tip-toast-icon .m-icon { color: var(--acc); }
+
+/* ── Feature intro carousel ─────────────────────────────────────────────────*/
+.korah-grey .feature-intro-backdrop {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.korah-grey .feature-intro-content {
+  background: var(--kg-sf);
+  border: 0.0625rem solid var(--kg-bd);
+  color: var(--tx);
+  box-shadow: 0 1.5rem 4rem rgba(0,0,0,0.4);
+}
+html[data-theme="light"] .korah-grey .feature-intro-content {
+  box-shadow: 0 1.5rem 4rem rgba(0,0,0,0.15);
+}
+.korah-grey .feature-intro-title,
+.korah-grey .feature-intro-desc { color: var(--tx); }
+.korah-grey .feature-intro-close,
+.korah-grey .feature-intro-btn.secondary,
+.korah-grey .feature-intro-email {
+  background: var(--kg-sf2);
+  border: 0.0625rem solid var(--kg-bd);
+  color: var(--tx);
+}
+.korah-grey .feature-intro-close:hover,
+.korah-grey .feature-intro-btn.secondary:hover,
+.korah-grey .feature-intro-email:hover {
+  background: var(--kg-bd);
+  border-color: var(--kg-bd);
+  color: var(--tx);
+}
+/* "Next" is the one action in the modal, so it is the one filled control */
+.korah-grey .feature-intro-btn.primary {
+  background: var(--tone-blue);
+  border-color: var(--tone-blue);
+  color: #fff;
+  box-shadow: 0 0.25rem 0 0 color-mix(in srgb, var(--tone-blue) 55%, #000);
+}
+.korah-grey .feature-intro-btn.primary:hover {
+  filter: brightness(1.08);
+  transform: scale(1.02);
+}
+.korah-grey .feature-intro-badge-new {
+  background: var(--tone-pink);
+  color: #fff;
+}
+.korah-grey .feature-intro-dot { background: var(--kg-bd); }
+.korah-grey .feature-intro-dot.active {
+  background: var(--tone-green);
+  box-shadow: none;
+}
+/* Each demo image sits in a framed box; .feature-intro-figure replaces the
+   dashed purple boxes the slides used to carry as inline styles. */
+.korah-grey .feature-intro-img,
+.korah-grey .feature-intro-img-placeholder,
+.korah-grey .feature-intro-figure {
+  background: var(--kg-sf2);
+  border: 0.0625rem solid var(--kg-bd);
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 8.75rem;
+}

@@ -1,0 +1,297 @@
+/* ══ Grey color blocking — chat pages ══════════════════════════════════════
+   Shared by korah-bot/chat.html and korah-bot/sat/math-chat.html. Both set
+   .korah-grey on <body>; load this after every other stylesheet on the page so
+   it wins over the page's own purple/green surface rules.
+
+   Same system as the Study Plan wizard — see docs/WIZARD-UI-PATTERNS.md.
+
+   Every surface here is a solid opaque grey, never the app's --sf/--sf2/--bd
+   (translucent and purple-tinted, so a control wearing them reads as "the
+   same color as the background") and never a glass panel: .input-wrapper
+   ships with backdrop-filter: blur(2.5rem) and .welcome-input-container
+   picks up the .glass-sm utility from its markup, so both are switched off
+   here.
+
+   Colour is spent where it says something:
+     · the send button is blue — it is the one action on the screen
+     · the two sides of a transcript separate by weight, not hue: the user's
+       bubble is the base grey, Korah's is a lighter grey (--kg-sf3)
+     · the mode selector is filled in the current mode's tone
+     · the topic pills and suggestions are grey, with their tone on the icon
+       and on the filled selected state
+   Fills are written out at each rule rather than held in a shared custom
+   property: a custom property's var() is substituted where the property is
+   *declared*, so a --kg-fill on <body> would freeze --acc at the body's tone.
+
+   Scoped to .korah-grey on <body>, so the other pages sharing
+   korah-chat.css are untouched. */
+.korah-grey {
+  --kg-sf:  #26262e;   /* bubbles, composer, modals   */
+  --kg-sf2: #31313c;   /* chips, inner buttons        */
+  --kg-sf3: #43434f;   /* Korah's reply — a step up so
+                          it separates from the user's */
+  --kg-bd:  #454553;   /* borders + 3D shadow         */
+  --tone-red: #ef4444;    --tone-orange: #f97316;
+  --tone-amber: #f59e0b;  --tone-green: #22c55e;
+  --tone-teal: #14b8a6;   --tone-blue: #3b82f6;
+  --tone-pink: #ec4899;
+  --acc: var(--tone-blue);
+}
+html[data-theme="light"] .korah-grey {
+  --kg-sf: #eceef2; --kg-sf2: #e0e3ea; --kg-sf3: #fdfdff; --kg-bd: #c3c8d2;
+}
+
+/* No dimmed text — --tx2/--tx3 vanish against grey */
+.korah-grey .welcome-screen,
+.korah-grey .chat-input-area,
+.korah-grey .mode-dropdown,
+.korah-grey .opp-feature-intro-modal,
+.korah-grey .pro-tip-toast,
+.korah-grey .delete-modal,
+.korah-grey .settings-modal { --tx2: var(--tx); --tx3: var(--tx); }
+
+/* ── Composer ─────────────────────────────────────────────────────────────
+   Solid grey, opaque, no blur. The send button is the only colour in it. */
+.korah-grey .welcome-input-container,
+.korah-grey .input-wrapper,
+.korah-grey .typing-bubble {
+  background: var(--kg-sf);
+  border: 0.0625rem solid var(--kg-bd);
+  color: var(--tx);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: 0 0.25rem 0 0 var(--kg-bd);
+}
+.korah-grey .welcome-input-container:focus-within,
+.korah-grey .input-wrapper:focus-within {
+  background: var(--kg-sf);
+  border-color: var(--tone-blue);
+  box-shadow: 0 0.25rem 0 0 var(--kg-bd),
+              0 0 0 0.1875rem color-mix(in srgb, var(--tone-blue) 25%, transparent);
+}
+.korah-grey .chat-textarea,
+.korah-grey .welcome-textarea { color: var(--tx); background: transparent; }
+.korah-grey .chat-textarea::placeholder,
+.korah-grey .welcome-textarea::placeholder { color: var(--tx); opacity: .55; }
+/* Inner buttons sit one step lighter than the composer */
+.korah-grey .welcome-tool-btn,
+.korah-grey .input-action-btn,
+.korah-grey .welcome-project-btn,
+.korah-grey .input-files-bar {
+  background: var(--kg-sf2);
+  border: 0.0625rem solid var(--kg-bd);
+  color: var(--tx);
+}
+.korah-grey .welcome-tool-btn:hover,
+.korah-grey .input-action-btn:hover,
+.korah-grey .welcome-project-btn:hover { background: var(--kg-bd); color: var(--tx); }
+/* The send button is the action, so it is the one filled control */
+.korah-grey .welcome-send-btn,
+.korah-grey .send-btn-circle,
+body.korah-grey.korah-home-chat .welcome-send-btn,
+body.korah-grey.korah-home-chat .send-btn-circle {
+  background: linear-gradient(180deg, var(--tone-blue), color-mix(in srgb, var(--tone-blue) 78%, #000));
+  border: 0.0625rem solid var(--tone-blue);
+  color: #fff;
+  box-shadow: 0 0.25rem 0 0 color-mix(in srgb, var(--tone-blue) 55%, #000);
+}
+.korah-grey .welcome-send-btn:hover,
+.korah-grey .send-btn-circle:hover { filter: brightness(1.08); }
+
+/* ── Message bubbles ──────────────────────────────────────────────────────
+   Both are solid cards. The user's is plain grey; Korah's is teal so the two
+   sides of a transcript separate at a glance. The assistant reply used to
+   render flat (transparent, no padding), so it needs the card geometry back
+   as well as the fill. */
+.korah-grey .msg-bubble.user {
+  background: var(--kg-sf);
+  border: 0.0625rem solid var(--kg-bd);
+  color: var(--tx);
+  border-radius: 1.25rem;
+  padding: 0.625rem 1rem;
+  box-shadow: 0 0.25rem 0 0 var(--kg-bd);
+}
+/* Korah's reply is a solid, noticeably lighter grey than the user's bubble.
+   Replies run long, so the two sides separate by weight rather than hue —
+   the teal stays on the avatar as the colour cue. */
+.korah-grey .msg-bubble.korah {
+  background: var(--kg-sf3);
+  border: 0.0625rem solid var(--kg-bd);
+  color: var(--tx);
+  border-radius: 1.25rem;
+  padding: 0.875rem 1.125rem;
+  box-shadow: 0 0.25rem 0 0 var(--kg-bd);
+  width: auto;
+}
+.korah-grey .msg-bubble.error {
+  --acc: var(--tone-red);
+  background: color-mix(in srgb, var(--acc) 26%, var(--kg-sf3));
+  border-color: var(--acc);
+}
+/* Markdown inside a reply, off the purple it was hard-coded to */
+.korah-grey .msg-bubble.korah strong,
+.korah-grey .msg-bubble.korah h3,
+.korah-grey .msg-bubble.korah li,
+.korah-grey .msg-bubble.korah p,
+.korah-grey .msg-bubble.korah .fc-q,
+.korah-grey .msg-bubble.korah .fc-a,
+.korah-grey .msg-header-name { color: var(--tx); }
+.korah-grey .msg-bubble.korah em { color: var(--tone-teal); }
+.korah-grey .msg-bubble.korah code,
+.korah-grey .msg-bubble.korah .fc-item {
+  background: var(--kg-sf);
+  border-color: var(--kg-bd);
+  color: var(--tx);
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+}
+/* The action icons under a reply inherit --tx3, which lands dark on the
+   bubble. The SVGs draw with currentColor, so colouring the button is
+   enough to turn the glyph white. */
+.korah-grey .msg-actions .msg-action-btn,
+.korah-grey .msg-actions .msg-action-btn svg { color: #fff; stroke: currentColor; }
+.korah-grey .msg-actions .msg-action-btn:hover {
+  background: rgba(255,255,255,.16);
+  color: #fff;
+}
+.korah-grey .msg-actions .msg-action-btn.active { color: var(--tone-teal); }
+.korah-grey .msg-actions .msg-action-btn.copied { color: var(--tone-green); }
+.korah-grey .msg-avatar.korah-av,
+body.korah-grey.korah-home-chat .msg-avatar.korah-av {
+  background: var(--tone-teal); color: #fff; box-shadow: none;
+}
+.korah-grey .msg-avatar.user-av {
+  background: var(--kg-sf2); border-color: var(--kg-bd); color: var(--tx);
+}
+
+/* ── Pills, chips and the mode selector ───────────────────────────────────
+   Grey at rest so the screen stays calm; the tone lives on the icon and on
+   the filled selected state. */
+.korah-grey .mode-pills .mode-pill:nth-child(6n+1) { --acc: var(--tone-blue); }
+.korah-grey .mode-pills .mode-pill:nth-child(6n+2) { --acc: var(--tone-pink); }
+.korah-grey .mode-pills .mode-pill:nth-child(6n+3) { --acc: var(--tone-green); }
+.korah-grey .mode-pills .mode-pill:nth-child(6n+4) { --acc: var(--tone-teal); }
+.korah-grey .mode-pills .mode-pill:nth-child(6n+5) { --acc: var(--tone-orange); }
+.korah-grey .mode-pills .mode-pill:nth-child(6n+6) { --acc: var(--tone-amber); }
+.korah-grey .mode-option[data-mode="general"]    { --acc: var(--tone-amber); }
+.korah-grey .mode-option[data-mode="math"]       { --acc: var(--tone-blue); }
+.korah-grey .mode-option[data-mode="science"]    { --acc: var(--tone-teal); }
+.korah-grey .mode-option[data-mode="history"]    { --acc: var(--tone-orange); }
+.korah-grey .mode-option[data-mode="literature"] { --acc: var(--tone-pink); }
+
+.korah-grey .mode-pill,
+.korah-grey .suggestion-chip,
+.korah-grey .welcome-mode-badge,
+.korah-grey .pro-tip-toast {
+  background: var(--kg-sf);
+  border: 0.0625rem solid var(--kg-bd);
+  color: var(--tx);
+  box-shadow: 0 0.25rem 0 0 var(--kg-bd);
+  /* .pro-tip-toast ships as a glass panel; it is a solid card here */
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.korah-grey .mode-pill .m-icon,
+.korah-grey .mode-option-icon .m-icon,
+.korah-grey .delete-modal-icon .m-icon { color: var(--acc); }
+.korah-grey .pro-tip-toast { --acc: var(--tone-amber); }
+.korah-grey .pro-tip-toast-icon .m-icon,
+.korah-grey .pro-tip-toast-label { color: var(--acc); }
+.korah-grey .pro-tip-toast-text,
+.korah-grey .welcome-mode-text { color: var(--tx); }
+.korah-grey .mode-pill:hover,
+.korah-grey .suggestion-chip:hover {
+  background: var(--kg-sf2);
+  border-color: color-mix(in srgb, var(--acc) 70%, var(--kg-bd));
+  color: var(--tx);
+  box-shadow: 0 0.3rem 0 0 color-mix(in srgb, var(--acc) 45%, var(--kg-bd));
+}
+
+/* The mode selector is filled, and takes the tone of whatever mode is
+   current. The button has no mode class of its own, so it reads the icon
+   korah-chat.js swaps in. */
+.korah-grey .mode-selector-btn:has(.ic-gen)  { --acc: var(--tone-amber); }
+.korah-grey .mode-selector-btn:has(.ic-math) { --acc: var(--tone-blue); }
+.korah-grey .mode-selector-btn:has(.ic-sci)  { --acc: var(--tone-teal); }
+.korah-grey .mode-selector-btn:has(.ic-hist) { --acc: var(--tone-orange); }
+.korah-grey .mode-selector-btn:has(.ic-lit)  { --acc: var(--tone-pink); }
+.korah-grey .mode-selector-btn {
+  color: #fff;
+  border: 0.0625rem solid var(--acc);
+  background: linear-gradient(180deg, var(--acc), color-mix(in srgb, var(--acc) 78%, #000));
+  box-shadow: 0 0.25rem 0 0 color-mix(in srgb, var(--acc) 55%, #000);
+}
+.korah-grey .mode-selector-btn:hover { filter: brightness(1.08); color: #fff; }
+.korah-grey .mode-selector-btn .m-icon,
+.korah-grey .mode-selector-btn .mode-name { color: #fff; }
+/* Selected means filled */
+.korah-grey .mode-pill.active {
+  color: #fff;
+  border-color: var(--acc);
+  background: linear-gradient(180deg, var(--acc), color-mix(in srgb, var(--acc) 78%, #000));
+  box-shadow: 0 0.25rem 0 0 color-mix(in srgb, var(--acc) 55%, #000);
+}
+.korah-grey .mode-pill.active .m-icon { color: #fff; }
+
+/* ── Dropdowns and modals ─────────────────────────────────────────────────*/
+.korah-grey .mode-dropdown,
+.korah-grey .opp-feature-intro-content,
+.korah-grey .delete-modal-content,
+.korah-grey .settings-modal-content {
+  background: var(--kg-sf);
+  border: 0.0625rem solid var(--kg-bd);
+  color: var(--tx);
+}
+.korah-grey .mode-option { border-left: 0.1875rem solid transparent; }
+.korah-grey .mode-option:hover {
+  background: var(--kg-sf2);
+  border-left-color: var(--acc);
+}
+.korah-grey .settings-section { border-color: var(--kg-bd); }
+.korah-grey .settings-input,
+.korah-grey .settings-select-trigger,
+.korah-grey .settings-select-menu,
+.korah-grey .create-input,
+.korah-grey .opp-feature-intro-btn.secondary,
+.korah-grey .delete-modal-btn.cancel,
+.korah-grey .pro-tip-toast-close,
+.korah-grey .opp-feature-intro-close {
+  background: var(--kg-sf2);
+  border: 0.0625rem solid var(--kg-bd);
+  color: var(--tx);
+}
+.korah-grey .settings-select-option:hover { background: var(--kg-bd); }
+.korah-grey .opp-feature-intro-btn.secondary:hover,
+.korah-grey .delete-modal-btn.cancel:hover,
+.korah-grey .pro-tip-toast-close:hover,
+.korah-grey .opp-feature-intro-close:hover { background: var(--kg-bd); color: var(--tx); }
+
+/* Buttons are filled, or grey — never translucent purple */
+.korah-grey .opp-feature-intro-btn.primary,
+.korah-grey .settings-btn.primary {
+  --acc: var(--tone-blue);
+  color: #fff;
+  border: 0.0625rem solid var(--acc);
+  background: linear-gradient(180deg, var(--acc), color-mix(in srgb, var(--acc) 78%, #000));
+  box-shadow: 0 0.25rem 0 0 color-mix(in srgb, var(--acc) 55%, #000);
+}
+.korah-grey .opp-feature-intro-btn.primary:hover,
+.korah-grey .settings-btn.primary:hover { filter: brightness(1.08); color: #fff; }
+.korah-grey .delete-modal-btn.confirm,
+.korah-grey .settings-btn.danger {
+  --acc: var(--tone-red);
+  color: #fff;
+  border: 0.0625rem solid var(--acc);
+  background: linear-gradient(180deg, var(--acc), color-mix(in srgb, var(--acc) 78%, #000));
+}
+.korah-grey .opp-feature-intro-badge-new { background: var(--tone-pink); color: #fff; }
+.korah-grey .opp-feature-intro-icon-large { color: var(--tone-pink); filter: none; }
+
+.korah-grey .drag-overlay-inner {
+  background: var(--kg-sf);
+  border: 0.125rem dashed var(--tone-blue);
+  color: var(--tx);
+}
+.korah-grey input,
+.korah-grey textarea,
+.korah-grey select,
+.korah-grey button { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
