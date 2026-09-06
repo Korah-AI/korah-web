@@ -179,6 +179,17 @@
     return totals;
   }
 
+  function sectionLabel(section) {
+    return section === "math" ? "Math" : "Reading and Writing";
+  }
+
+  function formatLastSeen(value) {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return date.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+  }
+
   function recommendationText(skill, index) {
     return `You missed ${skill.incorrect} of ${skill.attempts} questions, so this is ${index === 0 ? "the first skill to practice" : `priority ${index + 1}`}.`;
   }
@@ -187,23 +198,39 @@
     byId("tailoredPriorityList").innerHTML = state.selected.map((skill, index) => {
       const allocation = state.allocations.find((item) => item.skill.skillCd === skill.skillCd);
       const accuracy = Math.round(skill.accuracy * 100);
+      const lastSeen = formatLastSeen(skill.lastSeen);
       return `
         <li class="tailored-priority-card is-${escapeHtml(skill.section)}">
           <div class="tailored-card-top">
             <span class="tailored-rank">${index + 1}</span>
             <div class="tailored-card-title">
               <h3>${escapeHtml(skill.skillName)}</h3>
-              <div class="tailored-card-meta">${escapeHtml(skill.domain)} | ${skill.section === "math" ? "Math" : "Reading and Writing"}</div>
+              <div class="tailored-card-meta">${escapeHtml(skill.domain)} | ${sectionLabel(skill.section)}</div>
             </div>
             <div class="tailored-plan"><strong>${allocation.count}</strong><span>questions | ${DIFFICULTY_LABELS[allocation.target]}</span></div>
           </div>
           <div class="tailored-result-line">
             <span>${accuracy}% accuracy</span>
             <span>${skill.correct} of ${skill.attempts} correct</span>
+            ${lastSeen ? `<span>Last practiced ${escapeHtml(lastSeen)}</span>` : ""}
           </div>
           <p class="tailored-explanation">${escapeHtml(recommendationText(skill, index))}</p>
         </li>`;
     }).join("");
+  }
+
+  function renderLimitedSkills() {
+    const section = byId("tailoredLimited");
+    const limited = state.limited
+      .slice()
+      .sort((a, b) => b.attempts - a.attempts || a.skillCd.localeCompare(b.skillCd));
+    section.hidden = !limited.length;
+    byId("tailoredLimitedList").innerHTML = limited.map((skill) => `
+      <li class="tailored-limited-row">
+        <div class="tailored-limited-name">${escapeHtml(skill.skillName)}</div>
+        <div class="tailored-limited-meta">${escapeHtml(skill.domain)} | ${sectionLabel(skill.section)}</div>
+        <div class="tailored-limited-numbers">${skill.correct} of ${skill.attempts} answered correctly</div>
+      </li>`).join("");
   }
 
   function renderSetSummary() {
@@ -233,6 +260,7 @@
     renderSourceLine();
     renderPriorityCards();
     renderSetSummary();
+    renderLimitedSkills();
     announce("Your tailored SAT priorities are ready.");
   }
 
