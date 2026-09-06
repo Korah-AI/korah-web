@@ -1,9 +1,9 @@
 # AP Calculus AB mock-exam data milestone
 
 > Status: implementation spec for the first milestone of the AP mock-exam
-> issue. PR #46 review requires the current 45-question format, source-derived
-> questions from two credited practice sources, representative visual assets,
-> and a documented AP score curve. `mock-1.json` is not release-ready yet.
+> issue. PR #46 review requires the current 45-question format, original
+> AP-style questions informed by credited topic references, representative
+> visual assets, and a documented AP score prediction curve.
 
 ## 1. Goal
 
@@ -28,9 +28,10 @@ AP US History exam, and Firestore persistence belong to later milestones.
   key embedded.
 - Question IDs and unit IDs are stable persistence keys. Never renumber them
   after release; correct bad content in place.
-- Select questions from High School Test Prep plus one approved practice-exam
-  source, preserving their provenance and crediting both actual question
-  sources. Do not credit the CED as though it supplied questions.
+- Author original AP-style questions, independently verify their answers, and
+  credit the repository plus the external topic reference. Do not reproduce
+  restricted released-exam questions or credit the CED as though it supplied
+  questions.
 - Match the authored question mix to the AP Calculus AB CED unit weightings.
   The distribution is decided while building the file, not dynamically.
 - PNG assets are acceptable; SVG is preferred for figures and equations.
@@ -75,12 +76,12 @@ course-specific player branches.
   "course": "ap-calculus-ab",
   "title": "AP Calculus AB Mock Exam 1",
   "sources": [
-    { "name": "High School Test Prep", "url": "https://highschooltestprep.com/ap/calculus-ab/" },
-    { "name": "AUTHOR_APPROVED_SECOND_SOURCE", "url": "TO_BE_RECORDED" }
+    { "name": "Korah original AP-style questions", "url": "https://github.com/Korah-AI/korah-web" },
+    { "name": "High School Test Prep AP Calculus AB topic reference", "url": "https://highschooltestprep.com/ap/calculus-ab/" }
   ],
   "parts": [
-    { "id": "part-a", "title": "Part A", "durationSec": 3720, "calculator": "prohibited", "questions": [] },
-    { "id": "part-b", "title": "Part B", "durationSec": 2280, "calculator": "required", "questions": [] }
+    { "id": "part-a", "title": "Part A", "durationSec": 3600, "calculator": "prohibited", "questions": [] },
+    { "id": "part-b", "title": "Part B", "durationSec": 2700, "calculator": "required", "questions": [] }
   ],
   "curve": []
 }
@@ -149,8 +150,8 @@ question count. `apScore` must be an integer from 1 through 5.
 
 Maintain a controlled catalog for AP Calculus AB unit IDs, labels, and official
 CED weight ranges. The exam author must calculate target counts for the
-confirmed full question count, select questions from both approved sources, and
-record every question's unit.
+confirmed full question count, author and verify every question, and record
+every question's unit.
 
 The validator output must show, for every unit:
 
@@ -205,8 +206,8 @@ questions in 60 minutes and 15 calculator questions in 45 minutes.
 
 Before the exam becomes `ready`, document and obtain review for:
 
-1. **Question provenance:** the exact High School Test Prep and approved second
-   practice source used for the selected questions.
+1. **Question provenance:** Korah owns the original question text and SVGs;
+   High School Test Prep is credited only as a topic and format reference.
 2. **CED distribution:** the College Board CED version used, its unit weight
    bands, and the whole-question rounding used to select the unit counts.
 3. **Assets:** representative graphs, figures, or tables stored as SVG or PNG
@@ -215,14 +216,14 @@ Before the exam becomes `ready`, document and obtain review for:
    used to map an MCQ-only raw score to a predicted AP score. Score-distribution
    percentages alone do not provide raw-score cut points.
 
-The curve proposed for review uses Mathaversity's estimated 2026 composite
-thresholds of 28, 42, 54, and 69 out of 108. Because this mock has no FRQs, it
-assumes equal performance rates on the MCQ and FRQ halves, projects each
-composite percentage onto 45 questions, and rounds upward. The resulting
-MCQ-only thresholds are 12, 18, 23, and 29. These are predicted-score cutoffs,
-not an official College Board conversion. The official 2026 score-distribution
-percentages are a reasonableness check only and cannot be inverted into raw
-cutoffs.
+The predicted-score curve follows College Board's revised 2008 Calculus AB
+Section I table, which reports the most likely AP score for weighted MCQ-only
+ranges. The official worksheet multiplies 45 raw MCQs by 1.2; converting its
+weighted boundaries of 17, 24, 32, and 39 back to integer raw counts and
+rounding upward yields thresholds of 15, 20, 27, and 33. This is an MCQ-only
+prediction based on released evidence, not the undisclosed operational curve
+for a later exam. Source:
+https://apcentral.collegeboard.com/apc/public/repository/calculus-released-exam-2008-scoring-worksheet.pdf
 
 ## 8. Acceptance criteria
 
@@ -241,10 +242,10 @@ cutoffs.
 
 ## 9. Implementation sequence
 
-1. Confirm the remaining decisions in section 7 with the issue author.
+1. Confirm the decisions in section 7 with the issue author.
 2. Document the stable Calculus AB unit catalog and count-rounding rule.
 3. Finalize the JSON shape and implement the validator.
-4. Build the complete authorized exam by hand, mixing both sources and matching
-   the CED distribution; extract only necessary figures or equations.
+4. Build the complete original exam by hand, using external material only for
+   topic and format reference, and match the CED distribution.
 5. Run the validator, exercise invalid cases, verify protected-file hashes, and
    inspect the final diff.

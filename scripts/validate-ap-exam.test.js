@@ -111,3 +111,8 @@ test("reports a unit distribution outside CED bounds", () => {
   assert.match(messages, /unit-1 has 3 questions; expected 5-6/);
   assert.match(messages, /unit-3 has 6 questions; expected 3-4/);
 });
+
+test("accepts the checked-in Calculus AB mock exam", () => {
+  const examPath = path.resolve(__dirname, "..", "korah-bot", "ap", "data", "calc-ab", "mock-1.json");
+  assert.deepEqual(validateExam(examPath).errors, []);
+});
