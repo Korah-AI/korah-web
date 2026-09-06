@@ -27,9 +27,14 @@
     function select(btn, silent) {
       var value = btn.getAttribute("data-value");
       var name = btn.querySelector(".dropdown-item-name");
+      var tone = btn.getAttribute("data-tone");
       hidden.value = value;
       if (label) label.textContent = name ? name.textContent : btn.textContent.trim();
       options.forEach(function (o) { o.classList.toggle("is-selected", o === btn); });
+      // A chosen option fills the trigger in that option's tone; the rows that
+      // mean "no filter" carry no tone and leave it grey.
+      if (tone) trigger.setAttribute("data-tone", tone);
+      else trigger.removeAttribute("data-tone");
       if (!silent) hidden.dispatchEvent(new Event("change", { bubbles: true }));
     }
 

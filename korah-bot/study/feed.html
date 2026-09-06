@@ -743,7 +743,7 @@
 
 
 <main id="main-content" class="main-content">
-  <header class="chat-topbar bg-sf glass-sm t-theme bd" style="opacity: 0.95;">
+  <header class="chat-topbar bg-sf glass-sm t-theme bd">
     <button id="sidebar-toggle" @click="toggleSidebar()" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
@@ -754,7 +754,7 @@
       <span class="font-semibold tx text-sm">Study Feed</span>
     </div>
     <div class="topbar-actions">
-      <button id="create-study-btn" onclick="toggleCreateDropdown(this)" class="new-chat-btn text-white text-xs font-bold px-4 py-2 rounded-full border-none cursor-pointer shadow-glow t-btn inline-flex items-center gap-2" style = "background-color: rgb(18, 192, 192);">
+      <button id="create-study-btn" onclick="toggleCreateDropdown(this)" class="new-chat-btn text-white text-xs font-bold px-4 py-2 rounded-full border-none cursor-pointer shadow-glow t-btn inline-flex items-center gap-2">
         + Create Study Item
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" id="create-study-chevron" style="transition:transform .2s"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
@@ -781,15 +781,15 @@
             <li><button type="button" class="create-dropdown-item" data-value="">
               <span class="dropdown-item-text"><span class="dropdown-item-name">All types</span></span>
             </button></li>
-            <li><button type="button" class="create-dropdown-item" data-value="flashcards">
+            <li><button type="button" class="create-dropdown-item" data-value="flashcards" data-tone="blue">
               <span class="create-dropdown-emoji"><span class="material-icons-round" style="color: #78909C; font-size: 1.25rem;" aria-label="cards">style</span></span>
               <span class="dropdown-item-text"><span class="dropdown-item-name">Flashcards</span></span>
             </button></li>
-            <li><button type="button" class="create-dropdown-item" data-value="studyGuide">
+            <li><button type="button" class="create-dropdown-item" data-value="studyGuide" data-tone="green">
               <span class="create-dropdown-emoji"><span class="material-icons-round" style="color: #5C6BC0; font-size: 1.25rem;" aria-label="book">auto_stories</span></span>
               <span class="dropdown-item-text"><span class="dropdown-item-name">Study Guide</span></span>
             </button></li>
-            <li><button type="button" class="create-dropdown-item" data-value="practiceTest">
+            <li><button type="button" class="create-dropdown-item" data-value="practiceTest" data-tone="amber">
               <span class="create-dropdown-emoji"><span class="material-icons-round" style="color: #EF5350; font-size: 1.25rem;" aria-label="target">gps_fixed</span></span>
               <span class="dropdown-item-text"><span class="dropdown-item-name">Practice Test</span></span>
             </button></li>
@@ -807,16 +807,16 @@
             <li><button type="button" class="create-dropdown-item" data-value="">
               <span class="dropdown-item-text"><span class="dropdown-item-name">All sources</span></span>
             </button></li>
-            <li><button type="button" class="create-dropdown-item" data-value="manual">
+            <li><button type="button" class="create-dropdown-item" data-value="manual" data-tone="blue">
               <span class="dropdown-item-text"><span class="dropdown-item-name">Manual</span></span>
             </button></li>
-            <li><button type="button" class="create-dropdown-item" data-value="ai-prompt">
+            <li><button type="button" class="create-dropdown-item" data-value="ai-prompt" data-tone="pink">
               <span class="dropdown-item-text"><span class="dropdown-item-name">AI from prompt</span></span>
             </button></li>
-            <li><button type="button" class="create-dropdown-item" data-value="ai-doc">
+            <li><button type="button" class="create-dropdown-item" data-value="ai-doc" data-tone="teal">
               <span class="dropdown-item-text"><span class="dropdown-item-name">AI from docs</span></span>
             </button></li>
-            <li><button type="button" class="create-dropdown-item" data-value="chatbot-request">
+            <li><button type="button" class="create-dropdown-item" data-value="chatbot-request" data-tone="orange">
               <span class="dropdown-item-text"><span class="dropdown-item-name">From Chatbot</span></span>
             </button></li>
             </ul>
@@ -844,7 +844,7 @@
 
       <div class="empty-cta-row">
         <div style="position:relative;display:inline-block;">
-          <button id="empty-create-btn" onclick="toggleEmptyCreateDropdown()" class="new-chat-btn grad-bg text-white text-sm font-bold px-6 py-3 rounded-full border-none cursor-pointer shadow-glow t-btn inline-flex items-center gap-2" style="background-color: rgb(18, 192, 192);">
+          <button id="empty-create-btn" onclick="toggleEmptyCreateDropdown()" class="new-chat-btn grad-bg text-white text-sm font-bold px-6 py-3 rounded-full border-none cursor-pointer shadow-glow t-btn inline-flex items-center gap-2">
             + Create Study Item
           </button>
           <div id="empty-create-dropdown" class="create-study-dropdown" style="position:absolute;top:calc(100% + 0.375rem);left:50%;transform:translateX(-50%);right:auto;">
@@ -1242,6 +1242,7 @@
 }, { once: true });
 
   const TYPE_LABELS = { flashcards: "Flashcards", studyGuide: "Study Guide", practiceTest: "Practice Test" };
+  const CARD_TONES = { flashcards: "blue", studyGuide: "green", practiceTest: "amber" };
   const SOURCE_LABELS = { manual: "Manual", "ai-prompt": "AI from prompt", "ai-doc": "AI from Docs", "chatbot-request": "From Chatbot" };
 
   function getItemUrl(item) {
@@ -1280,6 +1281,9 @@
     filtered.forEach(function (item) {
       const card = document.createElement("div");
       card.className = "feed-card bg-card bd t-theme is-clickable";
+      // The card is filled in its type's tone, so a glance at the grid tells
+      // you what each item is. See the tone table in study-grey.css.
+      card.setAttribute("data-tone", CARD_TONES[item.type] || "blue");
       card.setAttribute("role", "link");
       card.setAttribute("tabindex", "0");
       card.setAttribute("aria-label", "Open " + (item.title || "study item"));
