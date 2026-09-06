@@ -51,7 +51,7 @@
   <!-- Styles -->
   <link rel="stylesheet" href="../app/korah-chat.css"/>
   <style>
-    .glass-card { background: var(--sf); backdrop-filter: blur(1rem); border: 1px solid var(--bd); border-radius: 1.5rem; box-shadow: 0 1.125rem 2.25rem rgba(15, 23, 42, 0.14); }
+    .glass-card { border-radius: 1.5rem; }
     .input-field { width: 100%; background: var(--bg2); border: 1px solid var(--bd); border-radius: 0.875rem; color: var(--tx); transition: all 0.2s; }
     .input-field:focus { border-color: var(--p4); box-shadow: 0 0 0 0.25rem var(--glow); outline: none; }
     .loading-spinner { border: 0.1875rem solid rgba(139, 92, 246, 0.1); border-top: 0.1875rem solid var(--p4); border-radius: 50%; width: 1.5rem; height: 1.5rem; animation: spin 1s linear infinite; }
@@ -97,7 +97,7 @@
     .question-eyebrow { font-size: 0.75rem; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: #fca5a5; }
     .question-controls { display: flex; align-items: center; gap: 0.625rem; }
     .question-type { min-width: 10rem; }
-    .question-remove { width: 2.25rem; height: 2.25rem; border-radius: 62.4375rem; border: 1px solid rgba(239, 68, 68, 0.28); background: rgba(239, 68, 68, 0.1); color: #fca5a5; display: inline-flex; align-items: center; justify-content: center; }
+    .question-remove { width: 2.25rem; height: 2.25rem; border-radius: 62.4375rem; display: inline-flex; align-items: center; justify-content: center; }
     .option-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.625rem; }
     .option-row { display: flex; align-items: center; gap: 0.625rem; padding: 0.75rem 0.875rem; border-radius: 1rem; border: 1px solid var(--bd2); background: var(--bg3); }
     .option-row input[type="text"] { flex: 1; border: none; background: transparent; color: var(--tx); }
@@ -134,7 +134,7 @@
       gap: 0.75rem;
       transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
     }
-    .create-submit:hover { transform: translateY(-1px); }
+    .create-submit:hover { transform: scale(1.02); }
     .create-submit:disabled { opacity: 0.65; cursor: wait; transform: none; }
     @media (max-width: 48rem) {
       .create-page-scroll { padding: 1.125rem 0.875rem 1.75rem; }
@@ -147,13 +147,9 @@
 
     /* ── Light mode overrides ── */
     [data-theme="light"] .question-eyebrow { color: #b91c1c; }
-    [data-theme="light"] .question-remove {
-      background: rgba(239, 68, 68, 0.1);
-      border-color: rgba(239, 68, 68, 0.3);
-      color: #dc2626;
-    }
     [data-theme="light"] .create-error { color: #b91c1c; }
   </style>
+<link rel="stylesheet" href="./custom-select.css"/>
 <link rel="stylesheet" href="./study-grey.css"/>
 </head>
 <body class="bg-base tx overflow-hidden h-screen korah-grey tone-amber">
@@ -256,7 +252,7 @@
     <input id="rename-modal-input" type="text" class="create-input" style="width:100%; margin-top:0.25rem;" placeholder="New name…"/>
     <div class="delete-modal-actions">
       <button id="rename-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
-      <button id="rename-modal-confirm" class="delete-modal-btn confirm t-btn" style="background:rgba(139,92,246,.12); color:var(--p5); border-color:rgba(139,92,246,.3);">Rename</button>
+      <button id="rename-modal-confirm" class="delete-modal-btn confirm confirm-primary t-btn">Rename</button>
     </div>
   </div>
 </div>
@@ -379,6 +375,7 @@
 <script src="../app/timer-manager.js"></script>
 <script src="js/sidebar.js"></script>
 <script src="js/study-api.js"></script>
+<script src="js/custom-select.js"></script>
 <script>
   (function () {
     KorahSidebar.initSidebar({ chatBaseUrl: "../chat.html", itemPageUrl: "item.html" });
@@ -480,10 +477,23 @@
           <div class="question-head">
             <div class="question-eyebrow">Question ${index + 1}</div>
             <div class="question-controls">
-              <select class="input-field px-3 py-2.5 question-type" data-field="type" data-question-id="${question.id}">
-                <option value="mcq" ${question.type === "mcq" ? "selected" : ""}>Multiple Choice</option>
-                <option value="openEnded" ${question.type === "openEnded" ? "selected" : ""}>Open Ended</option>
-              </select>
+              <div class="ks-select question-type" data-ks-select>
+                <button type="button" class="ks-trigger input-field px-3 py-2.5" aria-label="Question type">
+                  <span class="ks-trigger-label">Multiple Choice</span>
+                  <svg class="ks-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <input type="hidden" data-field="type" data-question-id="${question.id}" value="${question.type === "openEnded" ? "openEnded" : "mcq"}"/>
+                <div class="create-study-dropdown ks-menu">
+                  <ul class="create-dropdown-list">
+                    <li><button type="button" class="create-dropdown-item" data-value="mcq">
+                      <span class="dropdown-item-text"><span class="dropdown-item-name">Multiple Choice</span></span>
+                    </button></li>
+                    <li><button type="button" class="create-dropdown-item" data-value="openEnded">
+                      <span class="dropdown-item-text"><span class="dropdown-item-name">Open Ended</span></span>
+                    </button></li>
+                  </ul>
+                </div>
+              </div>
               <button type="button" class="question-remove" data-action="remove-question" data-question-id="${question.id}" aria-label="Remove question">
                 <span class="material-icons-round" style="font-size: 1.125rem;">close</span>
               </button>
@@ -495,6 +505,7 @@
         `;
         questionList.appendChild(card);
       });
+      window.KorahSelect.upgrade(questionList);
     }
 
     function getManualQuestions() {

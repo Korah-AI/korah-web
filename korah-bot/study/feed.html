@@ -56,7 +56,6 @@
     }
     .study-modern .feed-hero {
       padding: 1.25rem 1.5rem;
-      border: 1px solid var(--bd);
       margin-bottom: 0.5rem;
     }
     .study-modern .feed-hero-title {
@@ -72,62 +71,24 @@
     }
     .study-modern .study-feed-toolbar {
       padding: 1.125rem;
-      border: 1px solid var(--bd);
-      background: var(--bg2);
       gap: 0.75rem;
     }
+    .study-modern .feed-filters .ks-select { flex: 1; min-width: 9rem; }
     .study-modern .feed-search,
-    .study-modern .feed-filter-select {
+    .study-modern .feed-filter-trigger {
       min-height: 3rem;
       border-radius: 0.75rem;
       font-size: 0.875rem;
       font-weight: 500;
-      padding: 0 2.75rem 0 1rem;
+      padding: 0 1rem;
       border: 1px solid var(--bd2);
       background-color: var(--sf2);
       color: var(--tx);
       font-family: 'Plus Jakarta Sans', sans-serif;
-      transition: all .25s cubic-bezier(.23, 1, .32, 1);
+      transition: background-color .2s ease, border-color .2s ease, box-shadow .2s ease;
       appearance: none;
       -webkit-appearance: none;
       cursor: pointer;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238b5cf6' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 1rem center;
-      box-shadow: 0 0.125rem 0.5rem rgba(0,0,0,.1);
-    }
-    [data-theme="light"] .study-modern .feed-filter-select {
-      background-color: var(--cb);
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%237c3aed' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-      box-shadow: 0 0.125rem 0.5rem rgba(109,40,217,.1);
-    }
-    .study-modern .feed-search:hover,
-    .study-modern .feed-filter-select:hover {
-      border-color: rgba(139,92,246,.4);
-      background-color: var(--cb);
-      transform: translateY(-1px);
-      box-shadow: 0 0.25rem 0.75rem rgba(0,0,0,.15), 0 0 0.75rem rgba(139,92,246,.15);
-    }
-    .study-modern .feed-search:focus,
-    .study-modern .feed-filter-select:focus {
-      outline: none;
-      border-color: var(--p4);
-      background-color: var(--cb);
-      box-shadow: 0 0.25rem 1rem rgba(0,0,0,.2), 0 0 1.25rem rgba(139,92,246,.2);
-      transform: translateY(-1px);
-    }
-    .study-modern .feed-filter-select option {
-      background: var(--bg3);
-      color: var(--tx);
-      padding: 0.5rem;
-    }
-    [data-theme="light"] .study-modern .feed-filter-select option {
-      background: var(--cb);
-      color: var(--tx);
-    }
-    .study-modern .feed-search {
-      background-image: none;
-      padding-right: 1rem;
     }
     .study-modern .feed-search::placeholder {
       color: var(--tx3);
@@ -136,14 +97,6 @@
     .study-modern .feed-search:focus::placeholder {
       color: var(--tx2);
     }
-    @keyframes selectPulse {
-      0% { box-shadow: 0 0.25rem 1rem rgba(0,0,0,.2), 0 0 1.25rem rgba(139,92,246,.2); }
-      50% { box-shadow: 0 0.25rem 1.25rem rgba(0,0,0,.25), 0 0 1.5625rem rgba(139,92,246,.25); }
-      100% { box-shadow: 0 0.25rem 1rem rgba(0,0,0,.2), 0 0 1.25rem rgba(139,92,246,.2); }
-    }
-    .study-modern .feed-filter-select:focus {
-      animation: selectPulse .8s ease-in-out;
-    }
     .study-modern .feed-cards {
       grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
       gap: 1rem;
@@ -151,12 +104,6 @@
     .study-modern .feed-card {
       min-height: 15.375rem;
       padding: 1.375rem;
-      border: 1px solid var(--bd);
-      background: linear-gradient(180deg, rgba(255,255,255,.08) 0%, rgba(255,255,255,.04) 100%);
-    }
-    [data-theme="light"] .study-modern .feed-card {
-      background: linear-gradient(180deg, rgba(100,60,180,.08) 0%, rgba(100,60,180,.04) 100%);
-      border-color: rgba(109,40,217,.2);
     }
     .study-modern .feed-card-title { font-size: 1.375rem; line-height: 1.25; }
     .study-modern .feed-card-desc { font-size: 0.875rem; }
@@ -177,10 +124,7 @@
     }
     .study-modern .feed-card.is-clickable:hover,
     .study-modern .feed-card.is-clickable:focus-visible {
-      transform: translateY(-0.1875rem);
-      border-color: var(--p4);
-      box-shadow: 0 1.125rem 1.875rem rgba(0, 0, 0, 0.18);
-      background: linear-gradient(180deg, rgba(255,255,255,.08) 0%, rgba(255,255,255,.03) 100%);
+      transform: scale(1.02);
       outline: none;
     }
     .study-modern .feed-card-open-hint {
@@ -195,7 +139,6 @@
     .study-modern .feed-card.is-clickable:hover .feed-card-open-hint,
     .study-modern .feed-card.is-clickable:focus-visible .feed-card-open-hint {
       opacity: 1;
-      transform: translateX(0.125rem);
     }
     .study-modern .feed-card-btn {
       min-height: 2.625rem;
@@ -209,34 +152,16 @@
       width: 1.625rem;
       height: 1.625rem;
       border-radius: 0.375rem;
-      border: 1px solid rgba(139,92,246,.3);
-      background: rgba(139,92,246,.12);
-      color: var(--tx2);
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: all .2s;
+      transition: background .2s ease, border-color .2s ease, transform .2s ease;
     }
-    .feed-card-rename-btn:hover {
-      background: rgba(139,92,246,.25);
-      color: var(--p5);
-      border-color: rgba(139,92,246,.5);
-    }
-    .feed-card-delete-btn {
-      border-color: rgba(239,68,68,.3);
-      background: rgba(239,68,68,.08);
-      color: #f87171;
-    }
-    .feed-card-delete-btn:hover {
-      background: rgba(239,68,68,.2);
-      color: #f87171;
-      border-color: rgba(239,68,68,.5);
-    }
+    .feed-card-rename-btn:hover,
+    .feed-card-delete-btn:hover { transform: scale(1.08); }
     .study-modern .feed-empty {
-      border: 1px solid var(--bd);
       padding: 2.625rem 1.5rem;
-      background: var(--bg2);
     }
     @media (max-width: 48rem) {
       .study-modern .study-feed-body { padding: 1.25rem 0.875rem 1.5rem; }
@@ -244,97 +169,28 @@
       .study-modern .feed-hero-title { font-size: 1.5rem; }
       .study-modern .study-feed-toolbar { padding: 0.75rem; gap: 0.625rem; }
       .study-modern .feed-search,
-      .study-modern .feed-filter-select {
+      .study-modern .feed-filter-trigger {
         min-height: 2.75rem;
         font-size: 0.8125rem;
         border-radius: 0.625rem;
-        padding: 0 2.25rem 0 0.875rem;
-        background-position: right 0.75rem center;
+        padding: 0 0.875rem;
       }
       .study-modern .feed-cards { grid-template-columns: 1fr; }
     }
-
-    /* --- CREATE DROPDOWN --- */
-    .create-study-dropdown {
-      position: fixed;
-      min-width: 15rem;
-      background: var(--sf);
-      border-radius: 0.75rem;
-      box-shadow: 0 0.75rem 2rem rgba(0,0,0,0.35), 0 0.125rem 0.25rem rgba(0,0,0,0.15);
-      backdrop-filter: blur(1rem);
-      -webkit-backdrop-filter: blur(1rem);
-      padding: 0;
-      z-index: 9999;
-      opacity: 0;
-      visibility: hidden;
-      transform: translateY(-0.5rem) scale(0.96);
-      transform-origin: top right;
-      transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
-    }
-    .create-study-dropdown.open {
-      opacity: 1;
-      visibility: visible;
-      transform: translateY(0) scale(1);
-    }
-    [data-theme="light"] .create-study-dropdown {
-      background: rgba(255,255,255,0.95);
-      box-shadow: 0 0.75rem 2rem rgba(109,40,217,0.15), 0 0.125rem 0.25rem rgba(109,40,217,0.08);
-    }
-    .create-dropdown-list {
-      list-style: none;
-      margin: 0;
-      padding: 0.375rem 0;
-    }
-    .create-dropdown-item {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      width: 100%;
-      padding: 0.625rem 1rem;
-      border: none;
-      background: transparent;
-      cursor: pointer;
-      text-align: left;
-      color: var(--tx);
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 0.875rem;
-      font-weight: 500;
-      transition: all 0.15s ease;
-      position: relative;
-      overflow: hidden;
-    }
-    .create-dropdown-item::before {
-      content: '';
-      position: absolute;
-      left: 0; top: 0; right: 0; bottom: 0;
-      background: rgba(139,92,246,0.08);
-      opacity: 0;
-      transition: opacity 0.15s ease;
-    }
-    .create-dropdown-item:hover::before { opacity: 1; }
-    [data-theme="light"] .create-dropdown-item::before { background: rgba(109,40,217,0.07); }
-    .create-dropdown-emoji { font-size: 1.25rem; flex-shrink: 0; position: relative; z-index: 1; }
-    .dropdown-item-text { position: relative; z-index: 1; }
-    .dropdown-item-name { display: block; font-size: 0.875rem; font-weight: 600; color: var(--tx); }
-    .dropdown-item-desc { display: block; font-size: 0.75rem; color: var(--tx2); margin-top: 1px; line-height: 1.4; opacity: 0.8; }
 
     /* --- CREATION MODAL --- */
     .modal-overlay {
       position: fixed; top: 0; left: 0; right: 0; bottom: 0;
       background: rgba(0,0,0,0.6);
-      backdrop-filter: blur(0.5rem);
       display: none; align-items: center; justify-content: center;
       z-index: 2000;
       padding: 1.25rem;
     }
     .modal-overlay.active { display: flex; animation: modalFadeIn 0.3s ease-out; }
     [data-theme="light"] .modal-overlay {
-      background: rgba(109,40,217,0.2);
-      backdrop-filter: blur(0.75rem);
+      background: rgba(0,0,0,0.35);
     }
     .creation-modal {
-      background: rgba(15, 9, 35, 0.85);
-      border: 1px solid var(--bd);
       border-radius: 1.5rem;
       width: 95vw;
       max-width: 43.75rem;
@@ -349,7 +205,6 @@
       z-index: 2001;
     }
     .creation-modal.active { display: flex; animation: modalSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
-    [data-theme="light"] .creation-modal { background: rgba(250, 248, 255, 0.95); }
     @keyframes modalFadeIn { from { opacity: 0; } to { opacity: 1; } }
     @keyframes modalSlideUp { from { opacity: 0; transform: translate(-50%, -42%); } to { opacity: 1; transform: translate(-50%, -50%); } }
     .modal-header {
@@ -363,41 +218,22 @@
     .modal-close {
       position: absolute; right: 1.25rem; top: 50%; transform: translateY(-50%);
       width: 2.25rem; height: 2.25rem; border-radius: 0.625rem;
-      border: 1px solid var(--bd); background: var(--sf2); color: var(--tx2);
       cursor: pointer; display: flex; align-items: center; justify-content: center;
-      transition: all .2s;
+      transition: background .2s ease, transform .2s ease;
     }
-    .modal-close:hover { background: var(--cu); border-color: var(--p4); color: var(--p4); }
+    .modal-close:hover { transform: translateY(-50%) scale(1.08); }
     .modal-body { padding: 1.75rem; overflow-y: auto; flex: 1; }
     .method-grid {
       display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;
     }
     @media (max-width: 37.5rem) { .method-grid { grid-template-columns: 1fr; } }
     .method-card {
-      background: var(--sf2); border: 0.125rem solid var(--bd2); border-radius: 1rem;
+      border-radius: 1rem;
       padding: 1.75rem 1.25rem; display: flex; flex-direction: column;
       align-items: center; gap: 1rem; cursor: pointer;
       transition: all 0.22s cubic-bezier(0.4,0,0.2,1); text-align: center;
       min-height: 11rem; justify-content: center; font-family: 'Plus Jakarta Sans', sans-serif;
     }
-    .method-card[data-method="manual"] {
-      border-color: rgba(99,102,241,0.3); background: rgba(99,102,241,0.08);
-    }
-    .method-card[data-method="manual"]:hover {
-      border-color: rgba(99,102,241,0.6); background: rgba(99,102,241,0.15);
-      transform: translateY(-0.25rem); box-shadow: 0 0.75rem 1.75rem rgba(99,102,241,0.15);
-    }
-    .method-card[data-method="ai-prompt"] {
-      border-color: rgba(139,92,246,0.3); background: rgba(139,92,246,0.08);
-    }
-    .method-card[data-method="ai-prompt"]:hover {
-      border-color: rgba(139,92,246,0.6); background: rgba(139,92,246,0.15);
-      transform: translateY(-0.25rem); box-shadow: 0 0.75rem 1.75rem rgba(139,92,246,0.15);
-    }
-    [data-theme="light"] .method-card { background: rgba(255,255,255,0.7); border-color: rgba(109,40,217,.15); }
-    [data-theme="light"] .method-card[data-method="manual"] { border-color: rgba(99,102,241,0.4); background: rgba(99,102,241,0.12); }
-    [data-theme="light"] .method-card[data-method="ai-prompt"] { border-color: rgba(139,92,246,0.4); background: rgba(139,92,246,0.12); }
-    [data-theme="light"] .method-card:hover { background: rgba(255,255,255,0.95); border-color: rgba(109,40,217,.4); }
     .method-icon { font-size: 2.25rem; }
     .method-name { font-size: 1rem; font-weight: 700; display: block; color: var(--tx); }
     .method-desc { font-size: 0.8125rem; color: var(--tx2); line-height: 1.5; margin-top: 0.25rem; }
@@ -428,8 +264,8 @@
       pointer-events: none;
       animation: emptyPulse 4s ease-in-out infinite;
     }
-    .feed-empty-hero .empty-bg-glow.tr { top: -5rem; right: -5rem; background: radial-gradient(circle, rgba(139,92,246,.22), transparent 70%); }
-    .feed-empty-hero .empty-bg-glow.bl { bottom: -5rem; left: -5rem; background: radial-gradient(circle, rgba(139,92,246,.16), transparent 70%); animation-delay: 1.5s; }
+    .feed-empty-hero .empty-bg-glow.tr { top: -5rem; right: -5rem; background: radial-gradient(circle, color-mix(in srgb, var(--acc) 22%, transparent), transparent 70%); }
+    .feed-empty-hero .empty-bg-glow.bl { bottom: -5rem; left: -5rem; background: radial-gradient(circle, color-mix(in srgb, var(--acc) 16%, transparent), transparent 70%); animation-delay: 1.5s; }
     @keyframes emptyPulse { 0%,100% { opacity: .7; } 50% { opacity: 1; } }
 
     .empty-carousel {
@@ -480,16 +316,7 @@
     }
     .empty-card > div { font-size: 1.75rem !important; }
     @media (min-width: 40rem) { .empty-card > div { font-size: 2.25rem !important; } }
-    .empty-card::after {
-      content: '';
-      position: absolute; inset: 0;
-      background: linear-gradient(135deg, rgba(255,255,255,.18) 0%, transparent 50%);
-      opacity: 0;
-      transition: opacity .3s;
-      pointer-events: none;
-    }
-    .empty-card:hover { transform: scale(1.08) translateZ(1.25rem) !important; box-shadow: 0 1.5rem 3.25rem rgba(0,0,0,.5), 0 0 2rem rgba(139,92,246,.3); }
-    .empty-card:hover::after { opacity: 1; }
+    .empty-card:hover { transform: scale(1.08) translateZ(1.25rem) !important; box-shadow: 0 1.5rem 3.25rem rgba(0,0,0,.5); }
     .empty-card:hover img { transform: scale(1.1); }
 
     .feed-empty-hero .empty-title-new {
@@ -547,15 +374,14 @@
     .empty-feature {
       padding: 0.75rem 0.85rem;
       border-radius: 0.75rem;
-      background: rgba(255,255,255,.03);
-      border: 1px solid var(--bd);
-      transition: all .3s ease;
+      background: var(--kg-sf2);
+      border: 1px solid var(--kg-bd);
+      transition: border-color .2s ease, transform .2s ease;
       text-align: center;
     }
-    [data-theme="light"] .empty-feature { background: rgba(109,40,217,.04); border-color: rgba(109,40,217,.15); }
     .empty-feature:hover {
-      border-color: var(--p4);
-      transform: translateY(-0.125rem);
+      border-color: var(--acc);
+      transform: scale(1.02);
       box-shadow: 0 0.5rem 1.125rem rgba(0,0,0,.12);
     }
     .empty-feature h4 {
@@ -575,8 +401,6 @@
 
     /* --- IMPORT MODAL (files / drive) --- */
     .import-modal {
-      background: rgba(15, 9, 35, 0.92);
-      border: 1px solid var(--bd);
       border-radius: 1.5rem;
       width: 95vw;
       max-width: 38.75rem;
@@ -593,7 +417,6 @@
       z-index: 2001;
     }
     .import-modal.active { display: flex; animation: modalSlideUp .4s cubic-bezier(0.16, 1, 0.3, 1); }
-    [data-theme="light"] .import-modal { background: rgba(250, 248, 255, 0.97); }
     .import-modal .modal-header { flex-shrink: 0; }
     .import-modal .modal-body {
       overflow-y: auto;
@@ -603,10 +426,9 @@
     }
     .import-modal .modal-body::-webkit-scrollbar { width: 0.5rem; }
     .import-modal .modal-body::-webkit-scrollbar-thumb {
-      background: rgba(139,92,246,.3);
+      background: var(--kg-bd);
       border-radius: 0.25rem;
     }
-    .import-modal .modal-body::-webkit-scrollbar-thumb:hover { background: rgba(139,92,246,.5); }
     .import-source-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -715,20 +537,11 @@
       transition: transform 0.2s ease;
     }
     .import-target-type-trigger.open svg:last-child { transform: rotate(180deg); }
-    #import-target-type-dropdown {
-      position: absolute;
-      left: 0;
-      right: 0;
-      top: 100%;
-      margin-top: 0.4rem;
-      min-width: 0;
-    }
 
     /* Import Error States */
     .import-input-row.error input,
     .import-input-row.error textarea {
       border-color: #ef4444;
-      background: rgba(239,68,68,0.06);
     }
     .import-input-row.error input:focus,
     .import-input-row.error textarea:focus {
@@ -748,7 +561,7 @@
     #import-form-error {
       display: none;
       padding: 0.75rem 0.9rem;
-      background: rgba(239,68,68,0.1);
+      background: var(--kg-sf2);
       border: 1px solid #ef4444;
       border-radius: 0.5rem;
       color: #ef4444;
@@ -881,7 +694,7 @@
     .import-drive-panel button {
       width: 100%;
       padding: 0.8rem 1rem;
-      background: linear-gradient(135deg, #4285F4 0%, #34A853 100%);
+      background: #4285F4;
       color: white;
       border: none;
       border-radius: 0.5rem;
@@ -891,12 +704,12 @@
       transition: transform 0.15s ease;
     }
     .import-drive-panel button:hover {
-      transform: translateY(-0.125rem);
+      transform: scale(1.02);
     }
     .import-drive-status {
       margin-top: 0.6rem;
       padding: 0.6rem;
-      background: rgba(52, 168, 83, 0.1);
+      background: var(--kg-sf2);
       border-radius: 0.375rem;
       font-size: 0.75rem;
       color: #34A853;
@@ -906,6 +719,7 @@
       display: block;
     }
   </style>
+<link rel="stylesheet" href="./custom-select.css"/>
 <link rel="stylesheet" href="./study-grey.css"/>
 </head>
 <body class="bg-base tx study-modern korah-grey tone-blue">
@@ -956,19 +770,58 @@
     <div class="study-feed-toolbar">
       <input type="search" id="feed-search" class="feed-search tx bg-sf2 bd" placeholder="Search by title or description…" />
       <div class="feed-filters">
-        <select id="filter-type" class="feed-filter-select tx bg-sf2 bd">
-          <option value="">All types</option>
-          <option value="flashcards"><span class="material-icons-round" style="color: #78909C; font-size: 1rem;" aria-label="cards">style</span> Flashcards</option>
-          <option value="studyGuide"><span class="material-icons-round" style="color: #5C6BC0; font-size: 1rem;" aria-label="book">auto_stories</span> Study Guide</option>
-          <option value="practiceTest"><span class="material-icons-round" style="color: #EF5350; font-size: 1rem;" aria-label="target">gps_fixed</span> Practice Test</option>
-        </select>
-        <select id="filter-source" class="feed-filter-select tx bg-sf2 bd">
-          <option value="">All sources</option>
-          <option value="manual">Manual</option>
-          <option value="ai-prompt">AI from prompt</option>
-          <option value="ai-doc">AI from docs</option>
-          <option value="chatbot-request">From Chatbot</option>
-        </select>
+        <div class="ks-select" data-ks-select>
+          <button type="button" class="ks-trigger feed-filter-trigger tx" aria-label="Filter by type">
+            <span class="ks-trigger-label">All types</span>
+            <svg class="ks-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <input type="hidden" id="filter-type" value=""/>
+          <div class="create-study-dropdown ks-menu">
+            <ul class="create-dropdown-list">
+            <li><button type="button" class="create-dropdown-item" data-value="">
+              <span class="dropdown-item-text"><span class="dropdown-item-name">All types</span></span>
+            </button></li>
+            <li><button type="button" class="create-dropdown-item" data-value="flashcards">
+              <span class="create-dropdown-emoji"><span class="material-icons-round" style="color: #78909C; font-size: 1.25rem;" aria-label="cards">style</span></span>
+              <span class="dropdown-item-text"><span class="dropdown-item-name">Flashcards</span></span>
+            </button></li>
+            <li><button type="button" class="create-dropdown-item" data-value="studyGuide">
+              <span class="create-dropdown-emoji"><span class="material-icons-round" style="color: #5C6BC0; font-size: 1.25rem;" aria-label="book">auto_stories</span></span>
+              <span class="dropdown-item-text"><span class="dropdown-item-name">Study Guide</span></span>
+            </button></li>
+            <li><button type="button" class="create-dropdown-item" data-value="practiceTest">
+              <span class="create-dropdown-emoji"><span class="material-icons-round" style="color: #EF5350; font-size: 1.25rem;" aria-label="target">gps_fixed</span></span>
+              <span class="dropdown-item-text"><span class="dropdown-item-name">Practice Test</span></span>
+            </button></li>
+            </ul>
+          </div>
+        </div>
+        <div class="ks-select" data-ks-select>
+          <button type="button" class="ks-trigger feed-filter-trigger tx" aria-label="Filter by source">
+            <span class="ks-trigger-label">All sources</span>
+            <svg class="ks-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <input type="hidden" id="filter-source" value=""/>
+          <div class="create-study-dropdown ks-menu">
+            <ul class="create-dropdown-list">
+            <li><button type="button" class="create-dropdown-item" data-value="">
+              <span class="dropdown-item-text"><span class="dropdown-item-name">All sources</span></span>
+            </button></li>
+            <li><button type="button" class="create-dropdown-item" data-value="manual">
+              <span class="dropdown-item-text"><span class="dropdown-item-name">Manual</span></span>
+            </button></li>
+            <li><button type="button" class="create-dropdown-item" data-value="ai-prompt">
+              <span class="dropdown-item-text"><span class="dropdown-item-name">AI from prompt</span></span>
+            </button></li>
+            <li><button type="button" class="create-dropdown-item" data-value="ai-doc">
+              <span class="dropdown-item-text"><span class="dropdown-item-name">AI from docs</span></span>
+            </button></li>
+            <li><button type="button" class="create-dropdown-item" data-value="chatbot-request">
+              <span class="dropdown-item-text"><span class="dropdown-item-name">From Chatbot</span></span>
+            </button></li>
+            </ul>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1206,7 +1059,7 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <input type="hidden" id="import-target-type" value="flashcards"/>
-        <div id="import-target-type-dropdown" class="create-study-dropdown" style="position:absolute;">
+        <div id="import-target-type-dropdown" class="create-study-dropdown ks-menu">
           <ul class="create-dropdown-list">
             <li>
               <button type="button" class="create-dropdown-item" data-target-type="flashcards">
@@ -1353,7 +1206,7 @@
     <input id="rename-modal-input" type="text" class="create-input" style="width:100%; margin-top:0.25rem;" placeholder="New name…"/>
     <div class="delete-modal-actions">
       <button id="rename-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
-      <button id="rename-modal-confirm" class="delete-modal-btn confirm t-btn" style="background:rgba(139,92,246,.12); color:var(--p5); border-color:rgba(139,92,246,.3);">Rename</button>
+      <button id="rename-modal-confirm" class="delete-modal-btn confirm confirm-primary t-btn">Rename</button>
     </div>
   </div>
 </div>
@@ -1375,6 +1228,7 @@
 <script src="../app/timer-manager.js"></script>
 <script src="js/sidebar.js"></script>
 <script src="js/study-api.js"></script>
+<script src="js/custom-select.js"></script>
 <script>
 (function () {
   // ─── Feed-local in-memory cache, populated by Firestore listener ─────────────
@@ -1668,14 +1522,14 @@ window._selectedType = null;
     if (!inner) return;
 
     const placeholders = [
-      { emoji: '<span class="material-icons-round" style="color: #78909C; font-size: 2.75rem;" aria-label="book">book</span>', bg: "linear-gradient(135deg,#7c3aed,#3b82f6)", rotation: -15 },
-      { emoji: '<span class="material-icons-round" style="color: #26A69A; font-size: 2.75rem;" aria-label="science">science</span>', bg: "linear-gradient(135deg,#ec4899,#8b5cf6)", rotation: -8 },
-      { emoji: '<span class="material-icons-round" style="color: #78909C; font-size: 2.75rem;" aria-label="ruler">straighten</span>', bg: "linear-gradient(135deg,#06b6d4,#3b82f6)", rotation: 5 },
-      { emoji: '<span class="material-icons-round" style="color: #AB47BC; font-size: 2.75rem;" aria-label="brain">psychology</span>', bg: "linear-gradient(135deg,#f59e0b,#ef4444)", rotation: 12 },
-      { emoji: '<span class="material-icons-round" style="color: #78909C; font-size: 2.75rem;" aria-label="scroll">article</span>', bg: "linear-gradient(135deg,#10b981,#06b6d4)", rotation: -12 },
-      { emoji: '<span class="material-icons-round" style="color: #EC407A; font-size: 2.75rem;" aria-label="palette">palette</span>', bg: "linear-gradient(135deg,#8b5cf6,#ec4899)", rotation: 8 },
-      { emoji: '<span class="material-icons-round" style="color: #26A69A; font-size: 2.75rem;" aria-label="microscope">biotech</span>', bg: "linear-gradient(135deg,#3b82f6,#10b981)", rotation: -6 },
-      { emoji: '<span class="material-icons-round" style="color: #78909C; font-size: 2.75rem;" aria-label="world map">map</span>', bg: "linear-gradient(135deg,#f97316,#ec4899)", rotation: 10 }
+      { emoji: '<span class="material-icons-round" style="color: #fff; font-size: 2.75rem;" aria-label="book">book</span>', bg: "#1d4ed8", rotation: -15 },
+      { emoji: '<span class="material-icons-round" style="color: #fff; font-size: 2.75rem;" aria-label="science">science</span>', bg: "#be185d", rotation: -8 },
+      { emoji: '<span class="material-icons-round" style="color: #fff; font-size: 2.75rem;" aria-label="ruler">straighten</span>', bg: "#0f766e", rotation: 5 },
+      { emoji: '<span class="material-icons-round" style="color: #fff; font-size: 2.75rem;" aria-label="brain">psychology</span>', bg: "#b45309", rotation: 12 },
+      { emoji: '<span class="material-icons-round" style="color: #fff; font-size: 2.75rem;" aria-label="scroll">article</span>', bg: "#15803d", rotation: -12 },
+      { emoji: '<span class="material-icons-round" style="color: #fff; font-size: 2.75rem;" aria-label="palette">palette</span>', bg: "#c2410c", rotation: 8 },
+      { emoji: '<span class="material-icons-round" style="color: #fff; font-size: 2.75rem;" aria-label="microscope">biotech</span>', bg: "#b91c1c", rotation: -6 },
+      { emoji: '<span class="material-icons-round" style="color: #fff; font-size: 2.75rem;" aria-label="world map">map</span>', bg: "#1d4ed8", rotation: 10 }
     ];
 
     const cards = placeholders.map((p, i) => {
