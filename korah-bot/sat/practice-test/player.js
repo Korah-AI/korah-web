@@ -41,7 +41,14 @@ let K = null; // window.KorahSATAnalytics (set after auth)
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     onAuthStateChanged(auth, async (user) => {
-      if (!user) return; // play locally; Firestore save skipped
+      if (!user) {
+        // Hard block, same as every other signed-in-only page. Without this the
+        // test runs but every result is silently dropped on the floor.
+        const { startGuestSession, showAuthWall } = await import("../../guest-gate.js");
+        startGuestSession();
+        showAuthWall("../../");
+        return;
+      }
       try {
         const { initSatAnalytics } = await import("../js/sat-analytics.js");
         K = await initSatAnalytics(app, user.uid);

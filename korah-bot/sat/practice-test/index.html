@@ -190,6 +190,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
   import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
   import { startAuthGuard } from '../../auth-guard.js';
+  import { startGuestSession, showAuthWall } from '../../guest-gate.js';
 
   const app = initializeApp({
     apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
@@ -203,13 +204,16 @@
 
   onAuthStateChanged(auth, (user) => {
     if (!user) {
-      window.KorahTransitions.go('../../landing/index.html');
+      // No redirect: render the empty shell, then hard-block with the auth wall.
+      // A practice test only renders users/{uid} data, so there is nothing to browse.
+      startGuestSession();
+      showAuthWall('../../');
       return;
     }
     const detail = { uid: user.uid };
     window._korahReadyFired = detail;
     window.dispatchEvent(new CustomEvent('korahReady', { detail }));
-    startAuthGuard(auth, '../../landing/index.html');
+    startAuthGuard(auth, '../../index.html');
   });
 
   document.getElementById('logout-btn')?.addEventListener('click', () => {
