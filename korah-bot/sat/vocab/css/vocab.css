@@ -71,8 +71,6 @@ html[data-theme="light"] {
 .vocab-mode-card,
 .vocab-option,
 .vocab-filter-chip,
-.vocab-select-btn,
-.vocab-select-opt,
 .vocab-add-btn,
 .vocab-ghost-btn,
 .vocab-nav-btn,
@@ -184,78 +182,6 @@ html[data-theme="light"] {
 .vocab-card-sep { color: var(--v-tx3); }
 .vocab-card-viewing { color: var(--v-blue); font-weight: 700; }
 
-.vocab-card-controls {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1.5rem;
-  flex-wrap: wrap;
-}
-
-/* custom dropdown (no native <select> — its menu is OS-styled) */
-.vocab-select {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
-.vocab-select-label { color: var(--v-tx2); font-size: 0.88rem; font-weight: 600; }
-.vocab-select-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  min-width: 9rem;
-  padding: 0.55rem 0.85rem;
-  border-radius: 0.6rem;
-  background: var(--v-sf2);
-  border: 1px solid var(--v-bd);
-  color: var(--tx);
-  font-size: 0.88rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-.vocab-select-btn .material-icons-round { font-size: 1.15rem; color: var(--v-tx3); }
-.vocab-select-btn:hover { transform: scale(1.03); border-color: var(--v-blue); }
-.vocab-select-btn.is-open { border-color: var(--v-blue); }
-.vocab-select-menu {
-  position: absolute;
-  top: calc(100% + 0.4rem);
-  right: 0;
-  z-index: 40;
-  min-width: 11rem;
-  padding: 0.35rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  border-radius: 0.7rem;
-  background: var(--v-sf);
-  border: 1px solid var(--v-bd);
-  box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.35);
-}
-.vocab-select-opt {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.65rem;
-  border-radius: 0.5rem;
-  background: var(--v-sf2);
-  border: 1px solid var(--v-bd);
-  color: var(--tx);
-  font-size: 0.86rem;
-  font-weight: 600;
-  text-align: left;
-  cursor: pointer;
-}
-.vocab-select-opt:hover { transform: scale(1.02); border-color: var(--acc); }
-.vocab-select-opt.is-on {
-  background: var(--acc-fill);
-  border-color: var(--acc-fill);
-  color: #fff;
-}
-.vocab-select-opt.is-on .vocab-diff-dot { background: #fff; }
-
-/* the card */
 .vocab-flip {
   width: 100%;
   max-width: 38rem;
@@ -1108,6 +1034,7 @@ html[data-theme="light"] {
 .vocab-start-btn.is-green { background: var(--v-green-fill); border-color: var(--v-green-fill); }
 .vocab-start-btn.is-sm { padding: 0.65rem 1.15rem; font-size: 0.9rem; border-radius: 0.75rem; gap: 0.5rem; }
 .vocab-start-btn.is-sm .material-icons-round { font-size: 1.05rem; }
+.vocab-ghost-btn.is-sm { padding: 0.6rem 1rem; font-size: 0.88rem; }
 
 .vocab-practice-cta {
   display: inline-flex;
@@ -1123,13 +1050,12 @@ html[data-theme="light"] {
   text-decoration: none;
 }
 .vocab-practice-cta:hover { transform: scale(1.03); filter: brightness(1.1); }
-/* locked CTA is grey, not a faded ghost */
-.vocab-practice-cta.is-disabled {
-  background: var(--v-sf2);
-  border-color: var(--v-bd);
-  color: var(--v-tx3);
+/* the page's primary action is the filled pink one; everything beside it
+   stays grey so there is one obvious next step */
+.vocab-practice-cta.is-pink {
+  background: var(--v-pink-fill);
+  border-color: var(--v-pink-fill);
 }
-.vocab-practice-cta.is-disabled:hover { transform: none; filter: none; }
 
 .vocab-ghost-btn,
 .vocab-nav-btn,
@@ -1269,7 +1195,87 @@ html[data-theme="light"] {
 .vocab-mode-card.is-active .vocab-mode-desc,
 .vocab-mode-card.is-active .vocab-mode-check { color: #fff; }
 
-.vocab-practice-actions { display: flex; justify-content: center; }
+/* ═══ Practice setup wizard ════════════════════════════ */
+.vocab-steps {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1.75rem;
+}
+.vocab-step-dot {
+  width: 2.25rem;
+  height: 0.3rem;
+  border-radius: 999px;
+  background: var(--v-sf2);
+  transition: background 0.2s ease;
+}
+.vocab-step-dot.is-on { background: var(--acc); }
+
+.vocab-source-panel {
+  width: 100%;
+  max-width: 44rem;
+  margin-top: 1.1rem;
+  padding: 1rem 1.1rem;
+  border-radius: 0.8rem;
+  background: var(--v-sf);
+  border: 1px solid var(--v-bd);
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+.vocab-set-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: 0.6rem;
+}
+.vocab-set-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: 0.7rem;
+  background: var(--v-sf2);
+  border: 1px solid var(--v-bd);
+  color: var(--tx);
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.18s ease, background 0.18s ease,
+              border-color 0.18s ease, color 0.18s ease;
+}
+.vocab-set-tile:hover:not(.is-active) { transform: scale(1.02); border-color: var(--acc); }
+.vocab-set-tile.is-active {
+  transform: scale(1.03);
+  color: #fff;
+  background: var(--acc-fill);
+  border-color: var(--acc-fill);
+}
+.vocab-set-tile-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.vocab-set-tile-count { font-size: 0.75rem; font-weight: 600; color: var(--v-tx3); }
+.vocab-set-tile.is-active .vocab-set-tile-count { color: rgba(255, 255, 255, 0.85); }
+.vocab-source-empty { margin: 0; font-size: 0.85rem; color: var(--v-tx3); }
+
+/* validation reads as a banner, not grey helper text */
+.vocab-hint {
+  width: 100%;
+  max-width: 44rem;
+  margin-top: 1rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: 0.7rem;
+  background: var(--v-amber-fill);
+  border: 1px solid var(--v-amber-fill);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.vocab-practice-actions { display: flex; justify-content: center; gap: 0.75rem; flex-wrap: wrap; }
 .vocab-mini-row { display: flex; justify-content: center; }
 .vocab-mini-btn {
   display: inline-flex;
@@ -1633,9 +1639,6 @@ html[data-theme="light"] {
   .vocab-learn-hero { flex-direction: column; align-items: flex-start; gap: 1.25rem; }
   .vocab-flip { height: 21rem; }
   .vocab-sentence-row { flex-direction: column; }
-  .vocab-card-controls { gap: 0.75rem; }
-  .vocab-select { width: 100%; justify-content: space-between; }
-  .vocab-select-menu { left: 0; right: auto; }
 }
 @media (max-width: 640px) {
   .vocab-browse-row { flex-wrap: wrap; }
