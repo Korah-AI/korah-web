@@ -179,8 +179,7 @@ html[data-theme="light"] {
     border: none !important;
     box-shadow: none !important;
     color: var(--tx) !important;
-    opacity: .78;
-    transition: transform .18s ease, opacity .18s ease, color .18s ease;
+    transition: transform .18s ease, color .18s ease;
   }
   body.sat-player-grey #referenceBtn   { --acc: var(--tone-teal); }
   body.sat-player-grey #toggleCalcBtn  { --acc: var(--tone-blue); }
@@ -189,14 +188,24 @@ html[data-theme="light"] {
   body.sat-player-grey .sat-player-topbar .sat-button svg,
   body.sat-player-grey .sat-player-topbar .sat-button .material-icons-round { color: currentColor; }
   body.sat-player-grey .sat-player-topbar .sat-button:hover,
-  body.sat-player-grey .sat-player-topbar .nav-labeled-btn:hover,
-  body.sat-player-grey .sat-topbar-left .sat-button:hover {
+  body.sat-player-grey .sat-player-topbar .nav-labeled-btn:hover {
     background: transparent !important;
     border: none !important;
     color: var(--acc) !important;
-    opacity: 1;
     transform: scale(1.08) !important;
   }
+  /* Back to Bank is navigation, not a tool, so it grows on hover but never
+     takes an accent — and being an <a>, it needs the link states pinned too. */
+  body.sat-player-grey .sat-topbar-left .sat-button,
+  body.sat-player-grey .sat-topbar-left .sat-button:hover,
+  body.sat-player-grey .sat-topbar-left .sat-button:active,
+  body.sat-player-grey .sat-topbar-left .sat-button:focus,
+  body.sat-player-grey .sat-topbar-left .sat-button:visited {
+    background: transparent !important;
+    border: none !important;
+    color: var(--tx) !important;
+  }
+  body.sat-player-grey .sat-topbar-left .sat-button:hover { transform: scale(1.08) !important; }
   /* Open / on: the accent stays, still with nothing drawn behind it */
   body.sat-player-grey .sat-player-topbar .sat-button.is-active,
   body.sat-player-grey .sat-player-topbar .nav-labeled-btn.is-active {
@@ -512,6 +521,23 @@ html[data-theme="light"] {
     box-shadow: 0 0.25rem 0 0 color-mix(in srgb, var(--tone-blue) 55%, #000) !important;
   }
   body.sat-player-grey #nextQuestionBtn:hover { filter: brightness(1.08); }
+  /* Previous and the question counter are solid dark grey with white text,
+     and they do not move or shift on hover. */
+  body.sat-player-grey #prevQuestionBtn,
+  body.sat-player-grey #prevQuestionBtn:hover,
+  body.sat-player-grey .q-nav-trigger,
+  body.sat-player-grey .q-nav-trigger:hover,
+  body.sat-player-grey .q-nav-trigger.is-open {
+    background: #3f3f46 !important;
+    border: 0.0625rem solid #3f3f46 !important;
+    color: #ffffff !important;
+    box-shadow: 0 0.25rem 0 0 #27272a !important;
+    opacity: 1 !important;
+    filter: none !important;
+    transform: none !important;
+  }
+  body.sat-player-grey #prevQuestionBtn svg,
+  body.sat-player-grey .q-nav-trigger svg { color: #ffffff; }
 
   /* Check sits at the end of the answer list, right-aligned under the last
      choice, so grading reads as the end of the question rather than a footer
@@ -579,6 +605,14 @@ html[data-theme="light"] {
   body.sat-player-grey .q-stat-item,
   body.sat-player-grey .q-nav-section-label,
   body.sat-player-grey .q-legend-item { color: var(--tx); }
+  body.sat-player-grey .q-nav-section-label,
+  body.sat-player-grey .sat-stopwatch-btn {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    text-transform: none;
+    letter-spacing: normal;
+  }
+  body.sat-player-grey .q-nav-section-label { font-size: 0.8125rem; font-weight: 600; }
+  body.sat-player-grey .sat-stopwatch-btn { font-size: 0.75rem !important; font-weight: 600; }
   body.sat-player-grey .q-nav-section-label::after { background: var(--pl-bd); }
   body.sat-player-grey .q-stat-total {
     background: var(--pl-sf2); border-color: var(--pl-bd); color: var(--tx);
@@ -595,7 +629,7 @@ html[data-theme="light"] {
   body.sat-player-grey .q-pill:hover {
     background: var(--pl-bd); border-color: var(--pl-bd); color: var(--tx);
   }
-  body.sat-player-grey .q-pill.is-attempted { background: var(--tone-purple-fill); border-color: var(--tone-purple-fill); color: #fff; }
+  body.sat-player-grey .q-pill.is-attempted { background: var(--tone-amber-fill); border-color: var(--tone-amber-fill); color: #fff; }
   body.sat-player-grey .q-pill.is-correct   { background: var(--tone-green-fill);  border-color: var(--tone-green-fill);  color: #fff; }
   body.sat-player-grey .q-pill.is-incorrect { background: var(--tone-red-fill);    border-color: var(--tone-red-fill);    color: #fff; }
   body.sat-player-grey .q-pill.is-current {
@@ -605,7 +639,7 @@ html[data-theme="light"] {
   body.sat-player-grey .q-pill.is-current::after { background: var(--tone-purple); }
   body.sat-player-grey .q-legend-unanswered { background: var(--pl-sf2);         border-color: var(--pl-bd); }
   body.sat-player-grey .q-legend-attempted,
-  body.sat-player-grey .q-legend-icon-attempted { background: var(--tone-purple-fill); border-color: var(--tone-purple-fill); }
+  body.sat-player-grey .q-legend-icon-attempted { background: var(--tone-amber-fill); border-color: var(--tone-amber-fill); }
   body.sat-player-grey .q-legend-correct,
   body.sat-player-grey .q-legend-icon-correct   { background: var(--tone-green-fill);  border-color: var(--tone-green-fill);  color: #fff; }
   body.sat-player-grey .q-legend-incorrect,
@@ -2115,7 +2149,7 @@ RULES:
 
     <!-- Question grid -->
     <div>
-      <div class="q-nav-section-label" aria-hidden="true">all questions</div>
+      <div class="q-nav-section-label" aria-hidden="true">All questions</div>
       <div
         class="q-nav-grid"
         id="qNavGrid"
