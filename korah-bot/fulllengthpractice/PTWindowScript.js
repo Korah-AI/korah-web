@@ -90,14 +90,14 @@ function closeModal(overlayId, modalId) {
   $(modalId).classList.remove("open");
 }
 function uiAlert(title, message) {
-  $("#alertTitle").textContent = title || "Notice";
-  $("#alertMsg").textContent = message || "";
+  $("alertTitle").textContent = title || "Notice";
+  $("alertMsg").textContent = message || "";
   openModal("alertOverlay", "alertModal");
 }
 function uiConfirm({ title, message, confirmLabel, onConfirm, onCancel }) {
-  $("#confirmTitle").textContent = title || "Are you sure?";
-  $("#confirmMsg").textContent = message || "";
-  $("#confirmOkBtn").textContent = confirmLabel || "Confirm";
+  $("confirmTitle").textContent = title || "Are you sure?";
+  $("confirmMsg").textContent = message || "";
+  $("confirmOkBtn").textContent = confirmLabel || "Confirm";
   openModal("confirmOverlay", "confirmModal");
   $("confirmOkBtn").onclick = () => { closeModal("confirmOverlay", "confirmModal"); if (onConfirm) onConfirm(); };
   $("confirmCancelBtn").onclick = () => { closeModal("confirmOverlay", "confirmModal"); if (onCancel) onCancel(); };
