@@ -373,7 +373,7 @@
         if (!q) return [];
         return this.pool
           .filter(w => this.filtersApplied(w))
-          .filter(w => w.word.startsWith(q) || w.word.includes(q))
+          .filter(w => w.word.includes(q))
           .slice(0, 50);
       },
       clearFilters() {
@@ -393,11 +393,8 @@
         }
       },
       addAllShown() {
-        for (const w of this.browseWords) {
-          const n = VocabData.normalize(w.word);
-          if (this.learntWords.includes(n)) continue;
-          if (VocabStore.addWord(n)) this.learntWords.push(n);
-        }
+        const added = VocabStore.addWords(this.browseWords.map(w => w.word));
+        if (added.length) this.learntWords.push(...added);
       },
       hasEtymology(w) {
         return !!w.etymology && w.etymology !== 'Unknown';

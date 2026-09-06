@@ -74,14 +74,13 @@
         strongWords: Array.isArray(parsed.strongWords) ? parsed.strongWords : [],
         weakWords: Array.isArray(parsed.weakWords) ? parsed.weakWords : [],
       };
-      // Normalize any stored word keys to lowercase.
-      for (const key of Object.keys(perf.wordPerformance)) {
-        const n = normalize(key);
-        if (n !== key) {
-          perf.wordPerformance[n] = perf.wordPerformance[key];
-          delete perf.wordPerformance[key];
-        }
+      // Normalize any stored word keys to lowercase, into a fresh object so we
+      // are not deleting from the map we are walking.
+      const normalized = {};
+      for (const [key, value] of Object.entries(perf.wordPerformance)) {
+        normalized[normalize(key)] = value;
       }
+      perf.wordPerformance = normalized;
       return perf;
     } catch (e) {
       localStorage.removeItem(PERF_KEY);
@@ -106,6 +105,24 @@
     if (!n || data.learntVocabs.includes(n)) return false;
     data.learntVocabs.push(n);
     return writeData(data);
+  }
+
+  /* Bulk add in one read/write. addWord() re-reads and re-writes the whole key
+     per call, which is O(n^2) parses when adding a filtered list of hundreds.
+     Returns the words actually added. */
+  function addWords(words) {
+    const data = readData();
+    const seen = new Set(data.learntVocabs);
+    const added = [];
+    for (const word of words || []) {
+      const n = normalize(word);
+      if (!n || seen.has(n)) continue;
+      seen.add(n);
+      data.learntVocabs.push(n);
+      added.push(n);
+    }
+    if (!added.length) return [];
+    return writeData(data) ? added : [];
   }
 
   function removeWord(word) {
@@ -231,6 +248,7 @@
 
   window.VocabStore = {
     addWord,
+    addWords,
     removeWord,
     hasWord,
     saveSentence,
