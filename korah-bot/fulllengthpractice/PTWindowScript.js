@@ -4,9 +4,11 @@
 // LocalStorage for in-progress state; Firestore (KorahSATAnalytics) for final results.
 // ─────────────────────────────────────────────────────────────
 
-const LS_KEY = "korahPTState";
+const testId = new URLSearchParams(location.search).get("test") || "4";
+// Namespaced per test so Test 4 and Test 11 keep independent progress.
+const LS_KEY = `korahPTState:${testId}`;
 const RESULT_KEY = "korahLastPTResult";
-const testSlug = `test-${new URLSearchParams(location.search).get("test") || "4"}`;
+const testSlug = `test-${testId}`;
 const DATA_URL = `../docs/practice-tests/${testSlug}/${testSlug}.json`;
 
 // Inferred display name — resolved from account data (same heuristic the rest of
@@ -49,10 +51,15 @@ let K = null; // window.KorahSATAnalytics (set after auth)
         if (state) { state.name = firstName; updateBottomBar(); }
       }
       renderConfirmScreen();
+      if (state && state.step === "results") saveResultsOnce();
       console.log("[PT] auth ready; name =", JSON.stringify(firstName));
     });
   }).catch((e) => console.warn("[PT] firebase load failed", e));
 }
+
+// Desmos' publicly documented demo API key. Not a Korah credential and not a
+// secret: it ships in Desmos' own embed docs and is safe in client-side code.
+const DESMOS_DEMO_API_KEY = "dcb31709b452b1cf9dc26972add0fda6";
 
 const MODULES = [
   { key: "rwModule1", section: "english", label: "Reading & Writing", module: "Module 1", minutes: 39 },
@@ -338,7 +345,13 @@ function wireUI() {
 function onResume() {
   if (state.step === "break") { showScreen("break"); startBreak(); }
   else if (state.step === "results") { renderResults(); showScreen("results"); }
-  else if (state.step === "review") showScreen("review");
+  else if (state.step === "review") {
+    // showScreen() alone reveals an empty #reviewList — the markup is built by
+    // openReview(). Rebuild it, in whichever of the two review modes we left in.
+    const answersMode = state.reviewMode === "answers" || state.currentMod >= MODULES.length;
+    if (answersMode) openReview(true);
+    else { openReview(); startModuleTimer(); }
+  }
   else beginModule(true);
 }
 
@@ -554,6 +567,7 @@ function openReview(showAnswers) {
     // student answered and, only when they got it wrong, the correct answer.
     buildAnswerReview();
     state.step = "review";
+    state.reviewMode = "answers";
     persist();
     $("reviewBackBtn").onclick = () => {
       setStep("results");
@@ -597,6 +611,7 @@ function openReview(showAnswers) {
   // Keep the module timer running while on the review page (matches the real
   // test — the clock keeps counting down as you review).
   state.step = "review";
+  state.reviewMode = "module";
   persist();
   $("reviewBackBtn").onclick = () => {
     setStep(prevStep === "results" ? "results" : "module");
@@ -678,20 +693,30 @@ function isCorrect(q, sel) {
 }
 function normalizeSpr(v) {
   if (v == null) return null;
-  const s = String(v).trim().toLowerCase();
+  const s = String(v).trim().toLowerCase().replace(/\s+/g, "");
   if (s === "") return null;
-  const num = parseFloat(s);
-  return isNaN(num) ? s.replace(/\s+/g, "") : String(Number(num.toPrecision(6)));
+  // Fractions and decimals are equivalent on the real SPR grid: 1/5 === 0.2.
+  const frac = s.match(/^([-+]?(?:\d+\.?\d*|\.\d+))\/([-+]?(?:\d+\.?\d*|\.\d+))$/);
+  let num = NaN;
+  if (frac) {
+    const den = parseFloat(frac[2]);
+    if (den !== 0) num = parseFloat(frac[1]) / den;
+  } else if (/^[-+]?(?:\d+\.?\d*|\.\d+)$/.test(s)) {
+    num = parseFloat(s);
+  }
+  return isNaN(num) ? s : String(Number(num.toPrecision(6)));
 }
 
 function finishTest() {
   stopTimer();
   setStep("results");
+  saveResultsOnce();
   renderResults();
   showScreen("results");
 }
 
-function renderResults() {
+// Pure: recomputes the score from `state.answers`. Safe to call repeatedly.
+function computeResults() {
   // raw scores
   let rwCorrect = 0, rwTotal = 0, mthCorrect = 0, mthTotal = 0;
   ["rwModule1", "rwModule2"].forEach((mk) => {
@@ -718,32 +743,48 @@ function renderResults() {
   const mthScale = midpoint(mthRow);
   const total = rwScale + mthScale;
 
-  $("resTotal").textContent = total;
-  $("resEnglish").textContent = rwScale;
-  $("resMath").textContent = mthScale;
+  return { total, rwScale, mthScale, rwCorrect, rwTotal, mthCorrect, mthTotal,
+           rwRange: rwRow.rw, mathRange: mthRow };
+}
+
+// Display only — no writes. Called on every visit to the results screen.
+function renderResults() {
+  const r = computeResults();
+  $("resTotal").textContent = r.total;
+  $("resEnglish").textContent = r.rwScale;
+  $("resMath").textContent = r.mthScale;
   $("resultsStudent").textContent = `Great work, ${state.name || "student"}!`;
   $("resSummary").innerHTML =
-    `Reading &amp; Writing: ${rwCorrect}/${rwTotal} · Math: ${mthCorrect}/${mthTotal}<br/>` +
-    `R&amp;W scaled 200–800: ${rwRow.rw[0]}–${rwRow.rw[1]} · Math scaled: ${mthRow[0]}–${mthRow[1]}`;
-  state.finishedAt = Date.now();
-  state.final = { total, rwScale, mthScale, rwCorrect, rwTotal, mthCorrect, mthTotal };
+    `Reading &amp; Writing: ${r.rwCorrect}/${r.rwTotal} · Math: ${r.mthCorrect}/${r.mthTotal}<br/>` +
+    `R&amp;W scaled 200–800: ${r.rwRange[0]}–${r.rwRange[1]} · Math scaled: ${r.mathRange[0]}–${r.mathRange[1]}`;
+}
+
+// Writes — runs exactly once per completed test, so a refresh or a trip back
+// from "Review Answers" can never log a duplicate attempt to analytics.
+function saveResultsOnce() {
+  const { total, rwScale, mthScale, rwCorrect, rwTotal, mthCorrect, mthTotal } = computeResults();
+  if (!state.resultsSaved) {
+    state.resultsSaved = true;
+    state.finishedAt = Date.now();
+    state.final = { total, rwScale, mthScale, rwCorrect, rwTotal, mthCorrect, mthTotal };
+    // Persist the most recent result so the home dashboard can surface it.
+    try {
+      localStorage.setItem(RESULT_KEY, JSON.stringify({
+        total, rwScale, mthScale, rwCorrect, rwTotal, mthCorrect, mthTotal,
+        finishedAt: state.finishedAt,
+        testId,
+        name: state.name || "Student",
+      }));
+    } catch (e) { console.warn("[PT] last-result persist failed", e); }
+  }
   persist();
-
-  // Persist the most recent result so the home dashboard can surface it.
-  try {
-    localStorage.setItem(RESULT_KEY, JSON.stringify({
-      total, rwScale, mthScale, rwCorrect, rwTotal, mthCorrect, mthTotal,
-      finishedAt: state.finishedAt,
-      name: state.name || "Student",
-    }));
-  } catch (e) { console.warn("[PT] last-result persist failed", e); }
-
-  // Save to Firestore if available
-  saveResultsFirestore(rwScale, mthScale, rwCorrect, mthCorrect);
+  // Tracked separately: auth may not have resolved when the test finished, so
+  // this is retried once Firebase is ready. It flips its own flag on success.
+  if (!state.firestoreSaved) saveResultsFirestore(rwScale, mthScale, rwCorrect, mthCorrect);
 }
 
 async function saveResultsFirestore(rwScale, mthScale, rwCorrect, mthCorrect) {
-  if (!K) return;
+  if (!K || state.firestoreSaved) return;
   try {
     await K.saveProfile({ mathScore: mthScale, englishScore: rwScale, currentScore: rwScale + mthScale });
     // log each attempt
@@ -751,7 +792,7 @@ async function saveResultsFirestore(rwScale, mthScale, rwCorrect, mthCorrect) {
     for (const [mk, q] of allQuestionsWithModule()) {
       const sel = state.answers[`${mk}:${q.n}`];
       await K.recordAttempt({
-        questionId: `pt4-${mk}-${q.n}`,
+        questionId: `pt${testId}-${mk}-${q.n}`,
         type: q.type || "mcq",
         skillCd: q.skill || q.domain || "_unknown",
         domain: q.domain || "",
@@ -763,6 +804,8 @@ async function saveResultsFirestore(rwScale, mthScale, rwCorrect, mthCorrect) {
         mode: "fullpractice",
       });
     }
+    state.firestoreSaved = true;
+    persist();
     console.log("[PT] results saved to Firestore");
   } catch (e) { console.warn("[PT] Firestore save failed", e); }
 }
@@ -829,7 +872,7 @@ function openCalc() {
   $("calcOverlay").classList.add("open");
   if (calcReady) return;
   const s = document.createElement("script");
-  s.src = "https://www.desmos.com/api/v1.12/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6";
+  s.src = `https://www.desmos.com/api/v1.12/calculator.js?apiKey=${DESMOS_DEMO_API_KEY}`;
   s.onload = () => {
     calcReady = true;
     calcInstance = Desmos.Calculator($("calcEl"), { expressions: true, lockViewport: false });

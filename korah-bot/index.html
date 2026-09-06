@@ -795,7 +795,7 @@
             <div class="pt-card-sub" id="pt-continue-detail">Pick up right where you left off.</div>
           </div>
         </div>
-        <a class="pt-card-btn" href="sat/questions.html?mode=full">Continue Test →</a>
+        <a class="pt-card-btn" id="pt-continue-link" href="sat/test-select.html">Continue Test →</a>
       </div>
 
       <!-- Most Recent Performance (shown after finishing a test) -->
@@ -1330,23 +1330,29 @@
     const resultCard = document.getElementById('pt-result-card');
     const emptyCard = document.getElementById('pt-empty-card');
 
-    // 1) In-progress test → Resume widget
-    let inProgress = false;
-    try {
-      const s = JSON.parse(localStorage.getItem('korahPTState') || 'null');
-      if (s && s.name) {
-        const notDone = s.step !== 'results' && s.step !== 'start';
-        const alpha = s.step === 'module' || s.step === 'break' || s.step === 'review';
-        if (notDone && alpha && s.currentMod < 4) inProgress = true;
-      }
-    } catch (e) {}
+    // 1) In-progress test → Resume widget. Progress is stored per test under
+    // `korahPTState:<id>`, so scan for any in-progress test rather than
+    // assuming a single shared key.
+    let inProgress = false, mIdx = 0, testId = null;
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k || k.indexOf('korahPTState:') !== 0) continue;
+      try {
+        const s = JSON.parse(localStorage.getItem(k) || 'null');
+        if (!s || !s.name || !(s.currentMod < 4)) continue;
+        if (s.step !== 'module' && s.step !== 'break' && s.step !== 'review') continue;
+        inProgress = true; mIdx = s.currentMod; testId = k.slice('korahPTState:'.length);
+        break;
+      } catch (e) {}
+    }
 
     if (inProgress && continued) {
       continued.classList.remove('is-hidden');
-      const mIdx = (() => { try { return JSON.parse(localStorage.getItem('korahPTState')).currentMod; } catch (e) { return 0; } })();
       const MOD = ['Reading & Writing · Module 1', 'Reading & Writing · Module 2', 'Math · Module 1', 'Math · Module 2'][mIdx] || 'your test';
       const detail = document.getElementById('pt-continue-detail');
-      if (detail) detail.textContent = `Pick up where you left off — ${MOD}.`;
+      if (detail) detail.textContent = `Pick up where you left off — Test ${testId} · ${MOD}.`;
+      const link = document.getElementById('pt-continue-link');
+      if (link) link.href = `sat/questions.html?mode=full&test=${encodeURIComponent(testId)}`;
     } else if (continued) {
       continued.classList.add('is-hidden');
     }

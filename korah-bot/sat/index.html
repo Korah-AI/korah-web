@@ -156,7 +156,7 @@
         <img src="../logo-images/newlogo3.png" class="sat-bank-header-deco" alt=""/>
       </section>
 
-      <a class="sat-full-length-card" href="./questions.html?mode=full">
+      <a class="sat-full-length-card" href="./test-select.html">
         <div class="sat-full-length-icon" aria-hidden="true">
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
@@ -174,7 +174,7 @@
         <div class="sat-pt-card sat-pt-continue is-hidden" id="pt-continue-card">
           <div class="sat-pt-card-title">Resume Your Practice Test</div>
           <div class="sat-pt-card-sub" id="pt-continue-detail">Pick up right where you left off.</div>
-          <a class="sat-pt-btn" href="./questions.html?mode=full">Continue Test →</a>
+          <a class="sat-pt-btn" id="pt-continue-link" href="./test-select.html">Continue Test →</a>
         </div>
         <div class="sat-pt-card sat-pt-continue is-hidden" id="pt-result-card">
           <div class="sat-pt-card-title">Most Recent Score</div>
@@ -430,19 +430,27 @@
       if (!continued && !resultCard) return;
 
       const MOD = ['Reading & Writing · Module 1', 'Reading & Writing · Module 2', 'Math · Module 1', 'Math · Module 2'];
-      let inProgress = false, modIdx = 0;
-      try {
-        const s = JSON.parse(localStorage.getItem('korahPTState') || 'null');
-        if (s && s.name && s.currentMod < 4) {
-          const alpha = s.step === 'module' || s.step === 'break' || s.step === 'review';
-          if (alpha) { inProgress = true; modIdx = s.currentMod; }
-        }
-      } catch (e) {}
+      // Progress is stored per test under `korahPTState:<id>`, so scan for any
+      // in-progress test rather than assuming a single shared key.
+      let inProgress = false, modIdx = 0, testId = null;
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k || k.indexOf('korahPTState:') !== 0) continue;
+        try {
+          const s = JSON.parse(localStorage.getItem(k) || 'null');
+          if (!s || !s.name || !(s.currentMod < 4)) continue;
+          if (s.step !== 'module' && s.step !== 'break' && s.step !== 'review') continue;
+          inProgress = true; modIdx = s.currentMod; testId = k.slice('korahPTState:'.length);
+          break;
+        } catch (e) {}
+      }
 
       if (inProgress && continued) {
         continued.classList.remove('is-hidden');
         const d = document.getElementById('pt-continue-detail');
-        if (d) d.textContent = `Pick up where you left off: ${MOD[modIdx] || 'your test'}.`;
+        if (d) d.textContent = `Pick up where you left off: Test ${testId} · ${MOD[modIdx] || 'your test'}.`;
+        const link = document.getElementById('pt-continue-link');
+        if (link) link.href = `./questions.html?mode=full&test=${encodeURIComponent(testId)}`;
       } else if (continued) {
         continued.classList.add('is-hidden');
       }
