@@ -6,6 +6,8 @@
   const RECENT_ATTEMPT_LIMIT = 50;
   const DIFFICULTIES = ["E", "M", "H"];
   const DIFFICULTY_LABELS = { E: "Easy", M: "Medium", H: "Hard" };
+  // Difficulty is meaningful state, so the chips carry the house tones.
+  const DIFFICULTY_TONES = { E: "tone-green", M: "tone-amber", H: "tone-red" };
 
   const state = {
     uid: "",
@@ -226,7 +228,7 @@
       .sort((a, b) => b.attempts - a.attempts || a.skillCd.localeCompare(b.skillCd));
     section.hidden = !limited.length;
     byId("tailoredLimitedList").innerHTML = limited.map((skill) => `
-      <li class="tailored-limited-row">
+      <li class="tailored-limited-row is-${escapeHtml(skill.section)}">
         <div class="tailored-limited-name">${escapeHtml(skill.skillName)}</div>
         <div class="tailored-limited-meta">${escapeHtml(skill.domain)} | ${sectionLabel(skill.section)}</div>
         <div class="tailored-limited-numbers">${skill.correct} of ${skill.attempts} answered correctly</div>
@@ -241,7 +243,7 @@
     const totals = difficultyTotals(state.allocations);
     byId("tailoredSetDifficulty").innerHTML = DIFFICULTIES
       .filter((difficulty) => totals[difficulty] > 0)
-      .map((difficulty) => `<span class="tailored-diff"><strong>${DIFFICULTY_LABELS[difficulty]}</strong> ${totals[difficulty]}</span>`)
+      .map((difficulty) => `<span class="tailored-diff ${DIFFICULTY_TONES[difficulty]}"><strong>${DIFFICULTY_LABELS[difficulty]}</strong> ${totals[difficulty]}</span>`)
       .join("");
     byId("tailoredSetNote").textContent = state.selected.length === 1
       ? "This set has 10 questions. Keep practicing other skills to unlock a broader recommendation."

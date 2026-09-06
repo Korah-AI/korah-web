@@ -1,11 +1,79 @@
-:root {
-  --tailored-blue: #55a7eb;
-  --tailored-blue-hover: #4197df;
-  --tailored-purple: #a78bfa;
+/* ══ Tailored Practice — grey color blocking ═══════════════════════════════
+   Same system as the Study Plan wizard and the Question Bank
+   (docs/WIZARD-UI-PATTERNS.md), applied to a single-page layout rather than a
+   step shell. Resting surfaces are neutral grey — the app's --sf/--sf2/--bd
+   are purple-tinted and translucent, so a card painted with them reads as
+   "the same color as the background". Color appears only to mark identity
+   (section) or state (difficulty), through a .tone-* class that sets --acc.
+
+   Everything is scoped to .tailored-grey (set on the page's scroll container)
+   so no other page picks these tokens up. */
+
+.tailored-grey {
+  /* Resting surfaces */
+  --t-sf: #26262e;   /* cards, panels, list rows */
+  --t-sf2: #31313c;  /* chips, ghost buttons, inset rows */
+  --t-bd: #454553;   /* borders */
+
+  /* Tones */
+  --tone-red: #ef4444;
+  --tone-amber: #f59e0b;
+  --tone-green: #22c55e;
+  --tone-blue: #3b82f6;
+  --tone-pink: #ec4899;
+
+  /* Page default accent */
+  --acc: var(--tone-blue);
+  --acc-fill: #3472d9;
+
+  /* No dimmed text: --tx2/--tx3 vanish against the grey surfaces. */
+  --tx2: var(--tx);
+  --tx3: var(--tx);
+
+  /* Type scale */
+  --t-fs-xs: 0.75rem;
+  --t-fs-sm: 0.8125rem;
+  --t-fs-md: 0.875rem;
+  --t-fs-lg: 1rem;
+  --t-fs-xl: 1.25rem;
+
+  /* Rank column width + gutter, so the lower rows of a card line up with the
+     title rather than with the rank badge. */
+  --t-rank: 1.75rem;
+  --t-indent: 2.5rem;
+
+  --t-radius: 0.625rem;
+  --t-radius-sm: 0.5rem;
 }
 
+html[data-theme="light"] .tailored-grey {
+  --t-sf: #eceef2;
+  --t-sf2: #e0e3ea;
+  --t-bd: #c3c8d2;
+}
+
+/* Each tone carries --acc (the bright mark: borders, icons, rules) and
+   --acc-fill (the flat shade used behind white text). */
+.tailored-grey .tone-red { --acc: var(--tone-red); --acc-fill: #d23c3c; }
+.tailored-grey .tone-amber { --acc: var(--tone-amber); --acc-fill: #d88b0a; }
+.tailored-grey .tone-green { --acc: var(--tone-green); --acc-fill: #1ead53; }
+.tailored-grey .tone-blue { --acc: var(--tone-blue); --acc-fill: #3472d9; }
+.tailored-grey .tone-pink { --acc: var(--tone-pink); --acc-fill: #d03f87; }
+
+/* Section identity: Math → blue, Reading and Writing → pink. The renderers
+   already emit .is-math / .is-english on priority and limited rows. */
+.tailored-grey .is-math { --acc: var(--tone-blue); --acc-fill: #3472d9; }
+.tailored-grey .is-english { --acc: var(--tone-pink); --acc-fill: #d03f87; }
+
+/* ── Page shell ─────────────────────────────────────────────────────────── */
+
+/* .main-content is a 100dvh flex column with a flex-shrink:0 topbar, so
+   claiming the remaining space is enough — no need to subtract a hardcoded
+   topbar height (which was also wrong at the two topbar breakpoints and hit
+   the mobile-Safari 100vh toolbar bug). */
 .tailored-scroll {
-  height: calc(100vh - 4rem);
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   position: relative;
   z-index: 1;
@@ -23,7 +91,7 @@
   justify-content: space-between;
   gap: 2rem;
   padding: 0 0 1.5rem;
-  border-bottom: 0.0625rem solid var(--bd);
+  border-bottom: 0.0625rem solid var(--t-bd);
 }
 
 .tailored-page-header h1 {
@@ -36,9 +104,9 @@
 }
 
 .tailored-page-header p {
-  color: var(--tx2);
-  margin: 0.55rem 0 0;
-  font-size: 0.95rem;
+  color: var(--tx);
+  margin: 0.5rem 0 0;
+  font-size: var(--t-fs-md);
   line-height: 1.5;
 }
 
@@ -50,9 +118,9 @@
 }
 
 .tailored-source {
-  color: var(--tx2);
-  margin: 1.15rem 0 1.5rem;
-  font-size: 0.8rem;
+  color: var(--tx);
+  margin: 1rem 0 1.5rem;
+  font-size: var(--t-fs-sm);
 }
 
 .tailored-content-grid {
@@ -69,50 +137,65 @@
 .tailored-section-heading h2,
 .tailored-set-card h2 {
   color: var(--tx);
-  font-size: 1.2rem;
+  font-size: var(--t-fs-xl);
   margin: 0;
   font-weight: 800;
 }
 
 .tailored-section-heading p {
-  color: var(--tx2);
-  font-size: 0.78rem;
-  margin: 0.3rem 0 0;
+  color: var(--tx);
+  font-size: var(--t-fs-sm);
+  margin: 0.25rem 0 0;
 }
 
-.tailored-priority-list {
+/* ── Priority list ──────────────────────────────────────────────────────── */
+
+.tailored-priority-list,
+.tailored-limited-list {
   list-style: none;
   padding: 0;
   margin: 0;
-  overflow: hidden;
-  border: 0.0625rem solid var(--bd);
-  border-radius: 0.625rem;
-  background: var(--sf);
+  display: grid;
+  gap: 0.75rem;
 }
 
-.tailored-priority-card {
+.tailored-priority-card,
+.tailored-limited-row {
   padding: 1rem;
-  border-bottom: 0.0625rem solid var(--bd);
+  background: var(--t-sf);
+  border: 0.0625rem solid var(--t-bd);
+  border-radius: var(--t-radius);
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
-.tailored-priority-card:last-child {
-  border-bottom: 0;
+.tailored-priority-card:hover,
+.tailored-limited-row:hover {
+  transform: scale(1.01);
+  border-color: var(--acc);
+  box-shadow: 0 0.35rem 1.1rem color-mix(in srgb, var(--acc) 22%, transparent);
 }
 
 .tailored-card-top {
   display: flex;
   align-items: flex-start;
-  gap: 0.85rem;
+  gap: 0.75rem;
 }
 
+/* The rank is a data tile, so it is always filled in the section's tone. */
 .tailored-rank {
-  width: 1.5rem;
-  color: var(--p5);
-  font-size: 0.9rem;
+  width: var(--t-rank);
+  height: var(--t-rank);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background: var(--acc-fill);
+  border-radius: var(--t-radius-sm);
+  font-size: var(--t-fs-sm);
   font-weight: 800;
-  line-height: 1.4;
+  line-height: 1;
   flex: 0 0 auto;
-  text-align: center;
+  font-variant-numeric: tabular-nums;
 }
 
 .tailored-card-title {
@@ -122,14 +205,14 @@
 
 .tailored-card-title h3 {
   color: var(--tx);
-  font-size: 0.95rem;
+  font-size: var(--t-fs-md);
   margin: 0;
-  font-weight: 750;
+  font-weight: 700;
 }
 
 .tailored-card-meta {
-  color: var(--tx3);
-  font-size: 0.7rem;
+  color: var(--tx);
+  font-size: var(--t-fs-xs);
   margin-top: 0.25rem;
 }
 
@@ -141,94 +224,99 @@
 
 .tailored-plan strong {
   color: var(--tx);
-  font-size: 0.9rem;
+  font-size: var(--t-fs-md);
+  font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
 
 .tailored-plan span {
   display: block;
-  color: var(--tx3);
-  font-size: 0.65rem;
-  margin-top: 0.2rem;
+  color: var(--tx);
+  font-size: var(--t-fs-xs);
+  margin-top: 0.25rem;
 }
 
 .tailored-result-line {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem 1rem;
-  margin: 0.7rem 0 0 2.35rem;
-  color: var(--tx2);
-  font-size: 0.72rem;
+  gap: 0.5rem;
+  margin: 0.75rem 0 0 var(--t-indent);
+  font-size: var(--t-fs-xs);
   font-variant-numeric: tabular-nums;
 }
 
-.tailored-explanation {
-  color: var(--tx2);
-  font-size: 0.76rem;
-  line-height: 1.5;
-  margin: 0.45rem 0 0 2.35rem;
+.tailored-result-line span {
+  color: var(--tx);
+  background: var(--t-sf2);
+  border: 0.0625rem solid var(--t-bd);
+  border-radius: 999rem;
+  padding: 0.1875rem 0.5rem;
+  font-weight: 700;
 }
+
+.tailored-explanation {
+  color: var(--tx);
+  font-size: var(--t-fs-sm);
+  line-height: 1.5;
+  margin: 0.5rem 0 0 var(--t-indent);
+}
+
+/* ── Limited evidence list ──────────────────────────────────────────────── */
 
 .tailored-limited {
   margin-top: 1.75rem;
 }
 
-.tailored-limited-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  overflow: hidden;
-  border: 0.0625rem solid var(--bd);
-  border-radius: 0.625rem;
-  background: var(--sf);
-}
-
-.tailored-limited-row {
-  padding: 0.8rem 1rem;
-  border-bottom: 0.0625rem solid var(--bd);
-}
-
-.tailored-limited-row:last-child {
-  border-bottom: 0;
-}
-
 .tailored-limited-name {
   color: var(--tx);
-  font-size: 0.88rem;
+  font-size: var(--t-fs-md);
   font-weight: 700;
 }
 
 .tailored-limited-meta {
-  color: var(--tx3);
-  font-size: 0.7rem;
-  margin-top: 0.2rem;
+  color: var(--tx);
+  font-size: var(--t-fs-xs);
+  margin-top: 0.25rem;
 }
 
 .tailored-limited-numbers {
-  color: var(--tx2);
-  font-size: 0.72rem;
-  margin-top: 0.35rem;
+  display: inline-block;
+  color: var(--tx);
+  background: var(--t-sf2);
+  border: 0.0625rem solid var(--t-bd);
+  border-radius: 999rem;
+  padding: 0.1875rem 0.5rem;
+  font-size: var(--t-fs-xs);
+  font-weight: 700;
+  margin-top: 0.5rem;
   font-variant-numeric: tabular-nums;
 }
+
+/* ── Practice set card ──────────────────────────────────────────────────── */
 
 .tailored-set-card {
   position: sticky;
   top: 1rem;
-  background: var(--sf);
-  border: 0.0625rem solid var(--bd);
-  border-radius: 0.625rem;
-  padding: 1.1rem;
+  background: var(--t-sf);
+  border: 0.0625rem solid var(--t-bd);
+  border-radius: var(--t-radius);
+  padding: 1rem;
 }
 
+/* Pure readout, so it is filled rather than grey. */
 .tailored-set-total {
   display: flex;
   align-items: baseline;
-  gap: 0.4rem;
-  margin: 1rem 0;
+  gap: 0.5rem;
+  margin: 0.75rem 0 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--t-radius-sm);
+  color: #fff;
+  background: var(--acc-fill);
 }
 
 .tailored-set-total strong {
-  color: var(--tx);
+  color: #fff;
   font-size: 2.25rem;
   line-height: 1;
   font-weight: 800;
@@ -236,26 +324,31 @@
 }
 
 .tailored-set-total span {
-  color: var(--tx2);
-  font-size: 0.78rem;
+  color: #fff;
+  font-size: var(--t-fs-sm);
+  font-weight: 700;
 }
 
 .tailored-set-skills {
   display: grid;
-  gap: 0.6rem;
+  gap: 0.375rem;
 }
 
 .tailored-set-skill {
   display: flex;
   justify-content: space-between;
-  gap: 1rem;
-  color: var(--tx2);
-  font-size: 0.73rem;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--tx);
+  background: var(--t-sf2);
+  border: 0.0625rem solid var(--t-bd);
+  border-radius: var(--t-radius-sm);
+  padding: 0.4375rem 0.625rem;
+  font-size: var(--t-fs-xs);
 }
 
 .tailored-set-skill strong {
-  color: var(--tx);
-  font-weight: 650;
+  font-weight: 700;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -263,65 +356,105 @@
 
 .tailored-set-skill span {
   font-variant-numeric: tabular-nums;
+  font-weight: 800;
   flex: 0 0 auto;
 }
 
 .tailored-set-difficulty {
   display: flex;
-  gap: 1rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
   margin-top: 1rem;
-  padding-top: 0.85rem;
-  border-top: 0.0625rem solid var(--bd);
+  padding-top: 0.75rem;
+  border-top: 0.0625rem solid var(--t-bd);
 }
 
+/* Difficulty is state, so the chips carry the meaningful tones. */
 .tailored-diff {
-  color: var(--tx3);
-  font-size: 0.68rem;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3125rem;
+  color: #fff;
+  background: var(--acc-fill);
+  border-radius: 999rem;
+  padding: 0.25rem 0.625rem;
+  font-size: var(--t-fs-xs);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 .tailored-diff strong {
-  color: var(--tx2);
-  font-weight: 700;
+  color: #fff;
+  font-weight: 800;
 }
 
 .tailored-set-note {
-  color: var(--tx3);
-  font-size: 0.7rem;
+  color: var(--tx);
+  font-size: var(--t-fs-xs);
   line-height: 1.5;
-  margin: 0.85rem 0;
+  margin: 0.75rem 0;
 }
 
 .tailored-set-short-notice {
-  color: var(--tx2);
-  background: var(--sf2);
-  border: 0.0625rem solid var(--bd);
-  border-radius: 0.5rem;
-  padding: 0.7rem;
-  font-size: 0.72rem;
+  color: var(--tx);
+  background: color-mix(in srgb, var(--tone-amber) 18%, var(--t-sf));
+  border: 0.0625rem solid color-mix(in srgb, var(--tone-amber) 55%, transparent);
+  border-radius: var(--t-radius-sm);
+  padding: 0.625rem;
+  font-size: var(--t-fs-xs);
+  font-weight: 700;
   line-height: 1.45;
   margin: 0 0 0.75rem;
 }
 
+.tailored-build-error {
+  color: var(--tx);
+  background: color-mix(in srgb, var(--tone-red) 18%, var(--t-sf));
+  border: 0.0625rem solid color-mix(in srgb, var(--tone-red) 55%, transparent);
+  border-radius: var(--t-radius-sm);
+  padding: 0.625rem;
+  font-size: var(--t-fs-xs);
+  font-weight: 700;
+  line-height: 1.45;
+  margin-bottom: 0.75rem;
+}
+
+/* ── Buttons: filled, or grey — never translucent purple ────────────────── */
+
 .tailored-btn {
-  min-height: 2.65rem;
+  min-height: 2.75rem;
+  padding: 0 1rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.4rem;
-  border: 0.0625rem solid transparent;
-  border-radius: 0.5rem;
-  background: var(--tailored-blue);
-  color: #07111f;
+  gap: 0.4375rem;
+  border: 0.0625rem solid var(--acc-fill);
+  border-radius: var(--t-radius-sm);
+  background: var(--acc-fill);
+  color: #fff;
   font: inherit;
-  font-size: 0.78rem;
+  font-size: var(--t-fs-sm);
   font-weight: 800;
+  line-height: 1;
   text-decoration: none;
   cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  transition: transform 0.18s ease, background-color 0.18s ease, border-color 0.18s ease;
 }
 
-.tailored-btn:hover {
-  background: var(--tailored-blue-hover);
+/* confirmShortSet and the error path both rewrite the button's innerHTML, so
+   whatever lands inside it inherits the fill. */
+.tailored-btn > * {
+  color: inherit;
+}
+
+.tailored-btn .material-icons-round {
+  font-size: 1.125rem;
+}
+
+.tailored-btn:hover:not(:disabled) {
+  background: var(--acc);
+  border-color: var(--acc);
+  transform: scale(1.03);
 }
 
 .tailored-btn:focus-visible {
@@ -336,12 +469,13 @@
 
 .tailored-btn.is-ghost {
   color: var(--tx);
-  background: transparent;
-  border-color: var(--bd);
+  background: var(--t-sf2);
+  border-color: var(--t-bd);
 }
 
-.tailored-btn.is-ghost:hover {
-  background: var(--sf2);
+.tailored-btn.is-ghost:hover:not(:disabled) {
+  background: var(--t-bd);
+  border-color: var(--t-bd);
 }
 
 .tailored-build-btn {
@@ -352,8 +486,9 @@
 .tailored-inline-spinner {
   width: 1rem;
   height: 1rem;
-  border: 0.125rem solid rgba(7, 17, 31, 0.35);
-  border-top-color: #07111f;
+  flex: 0 0 auto;
+  border: 0.125rem solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
   border-radius: 50%;
   animation: tailoredSpin 0.75s linear infinite;
 }
@@ -362,51 +497,62 @@
   to { transform: rotate(360deg); }
 }
 
+/* Tertiary action: a small grey pill in its own centered row, not a third
+   full-width button. */
 .tailored-manual-link {
   display: block;
-  color: var(--p5);
+  width: fit-content;
+  margin: 0.75rem auto 0;
+  padding: 0.375rem 0.75rem;
+  color: var(--tx);
+  background: var(--t-sf2);
+  border: 0.0625rem solid var(--t-bd);
+  border-radius: var(--t-radius-sm);
   text-align: center;
-  font-size: 0.72rem;
+  text-decoration: none;
+  font-size: var(--t-fs-xs);
   font-weight: 700;
-  margin-top: 0.8rem;
+  transition: transform 0.18s ease, background-color 0.18s ease;
 }
 
-.tailored-build-error {
-  color: #fecaca;
-  background: rgba(239, 68, 68, 0.1);
-  border: 0.0625rem solid rgba(239, 68, 68, 0.35);
-  border-radius: 0.5rem;
-  padding: 0.7rem;
-  font-size: 0.72rem;
-  line-height: 1.45;
-  margin-bottom: 0.75rem;
+.tailored-manual-link:hover {
+  background: var(--t-bd);
+  transform: scale(1.03);
 }
+
+.tailored-manual-link:focus-visible {
+  outline: 0.125rem solid var(--tx);
+  outline-offset: 0.125rem;
+}
+
+/* ── Empty / error state ────────────────────────────────────────────────── */
 
 .tailored-state {
   max-width: 38rem;
   margin: 2rem auto 0;
   text-align: center;
   padding: 1.75rem;
-  border-radius: 0.625rem;
-  background: var(--sf);
-  border: 0.0625rem solid var(--bd);
+  border-radius: var(--t-radius);
+  background: var(--t-sf);
+  border: 0.0625rem solid var(--t-bd);
 }
 
 .tailored-state > .material-icons-round {
-  color: var(--p5);
+  color: var(--acc);
   font-size: 2.25rem;
 }
 
 .tailored-state h2 {
   color: var(--tx);
-  font-size: 1.2rem;
-  margin: 0.55rem 0 0.4rem;
+  font-size: var(--t-fs-xl);
+  font-weight: 800;
+  margin: 0.5rem 0 0.5rem;
 }
 
 .tailored-state p {
-  color: var(--tx2);
+  color: var(--tx);
   line-height: 1.55;
-  font-size: 0.82rem;
+  font-size: var(--t-fs-sm);
   margin: 0 auto 1rem;
 }
 
@@ -414,38 +560,110 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 0.6rem;
+  gap: 0.5rem;
 }
 
-.tailored-state-actions .tailored-btn {
-  padding: 0 1rem;
-}
+/* ── Loading skeleton ───────────────────────────────────────────────────────
+   The skeleton mirrors the real row (rank + title + plan + stats +
+   explanation) and the real set card, so nothing jumps when data lands. */
 
 .tailored-loading {
   margin-top: 1.5rem;
 }
 
-.tailored-skeleton {
-  background: rgba(139, 92, 246, 0.12);
-  animation: tailoredPulse 1.2s ease-in-out infinite alternate;
-  border-radius: 0.625rem;
-  border: 0.0625rem solid var(--bd);
-}
-
-.tailored-skeleton-row {
-  height: 8rem;
-  border: 0;
-  border-bottom: 0.0625rem solid var(--bd);
-  border-radius: 0;
-}
-
-.tailored-skeleton-row:last-child {
-  border-bottom: 0;
+.tailored-skeleton-row,
+.tailored-skeleton-side {
+  padding: 1rem;
+  background: var(--t-sf);
+  border: 0.0625rem solid var(--t-bd);
+  border-radius: var(--t-radius);
 }
 
 .tailored-skeleton-side {
-  height: 23rem;
+  position: sticky;
+  top: 1rem;
 }
+
+.tailored-skeleton {
+  display: block;
+  background: var(--t-sf2);
+  border-radius: 0.375rem;
+  animation: tailoredPulse 1.2s ease-in-out infinite alternate;
+}
+
+/* Mirrors .tailored-source and the "Practice priorities" heading block, so the
+   list itself does not slide up the page when the data lands. */
+.tailored-skeleton-source {
+  height: 0.875rem;
+  width: 22rem;
+  max-width: 100%;
+  margin: 1rem 0 1.5rem;
+}
+
+.tailored-skeleton-headings {
+  display: grid;
+  gap: 0.375rem;
+  margin-bottom: 0.75rem;
+}
+
+.tailored-skeleton-headings .tailored-skeleton:first-child { height: 1.375rem; width: 12rem; }
+.tailored-skeleton-headings .tailored-skeleton:last-child { height: 0.8125rem; width: 14rem; }
+
+.tailored-skeleton-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.tailored-skeleton-rank {
+  width: var(--t-rank);
+  height: var(--t-rank);
+  flex: 0 0 auto;
+  border-radius: var(--t-radius-sm);
+}
+
+.tailored-skeleton-title {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 0.375rem;
+}
+
+.tailored-skeleton-title .tailored-skeleton:first-child { height: 1rem; width: 60%; }
+.tailored-skeleton-title .tailored-skeleton:last-child { height: 0.75rem; width: 40%; }
+
+.tailored-skeleton-plan {
+  flex: 0 0 auto;
+  width: 6.5rem;
+  height: 2.125rem;
+}
+
+.tailored-skeleton-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.75rem 0 0 var(--t-indent);
+}
+
+.tailored-skeleton-stats .tailored-skeleton {
+  height: 1.375rem;
+  width: 6rem;
+  border-radius: 999rem;
+}
+
+.tailored-skeleton-text {
+  height: 0.8125rem;
+  margin: 0.6875rem 0 0 var(--t-indent);
+}
+
+.tailored-skeleton-heading { height: 1.25rem; width: 55%; }
+.tailored-skeleton-total { height: 4rem; margin: 0.75rem 0 1rem; border-radius: var(--t-radius-sm); }
+.tailored-skeleton-skills { display: grid; gap: 0.375rem; }
+.tailored-skeleton-skills .tailored-skeleton { height: 1.875rem; border-radius: var(--t-radius-sm); }
+.tailored-skeleton-chips { display: flex; gap: 0.5rem; margin-top: 1rem; padding-top: 0.75rem; border-top: 0.0625rem solid var(--t-bd); }
+.tailored-skeleton-chips .tailored-skeleton { height: 1.5rem; width: 4.5rem; border-radius: 999rem; }
+.tailored-skeleton-note { height: 3rem; margin: 0.75rem 0; }
+.tailored-skeleton-btn { height: 2.75rem; margin-top: 0.25rem; border-radius: var(--t-radius-sm); }
 
 @keyframes tailoredPulse {
   to { opacity: 0.45; }
@@ -463,25 +681,20 @@
   border: 0;
 }
 
-[data-theme="light"] .tailored-build-error {
-  color: #991b1b;
-}
+/* ── Breakpoints ────────────────────────────────────────────────────────── */
 
 @media (max-width: 58rem) {
   .tailored-content-grid {
     grid-template-columns: 1fr;
   }
 
-  .tailored-set-card {
+  .tailored-set-card,
+  .tailored-skeleton-side {
     position: static;
   }
 }
 
 @media (max-width: 48rem) {
-  .tailored-scroll {
-    height: calc(100vh - 3.5rem);
-  }
-
   .tailored-page {
     width: min(100% - 1.25rem, 46rem);
     padding-top: 1.25rem;
@@ -496,7 +709,7 @@
   }
 
   .tailored-page-header p {
-    font-size: 0.82rem;
+    font-size: var(--t-fs-sm);
   }
 
   .tailored-mascot {
@@ -510,23 +723,25 @@
     display: none;
   }
 
-  .tailored-card-top {
+  .tailored-card-top,
+  .tailored-skeleton-top {
     flex-wrap: wrap;
   }
 
-  .tailored-plan {
+  .tailored-plan,
+  .tailored-skeleton-plan {
     width: 100%;
-    margin-left: 2.35rem;
+    margin-left: var(--t-indent);
     text-align: left;
+  }
+
+  .tailored-plan {
+    min-width: 0;
   }
 
   .tailored-plan span {
     display: inline;
     margin-left: 0.25rem;
-  }
-
-  .tailored-set-difficulty {
-    flex-wrap: wrap;
   }
 }
 
@@ -536,7 +751,17 @@
     animation: none;
   }
 
-  .tailored-btn {
+  .tailored-btn,
+  .tailored-manual-link,
+  .tailored-priority-card,
+  .tailored-limited-row {
     transition: none;
+  }
+
+  .tailored-btn:hover:not(:disabled),
+  .tailored-manual-link:hover,
+  .tailored-priority-card:hover,
+  .tailored-limited-row:hover {
+    transform: none;
   }
 }
