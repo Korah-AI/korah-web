@@ -5181,3 +5181,58 @@ html[data-theme="light"] .sidebar-nav-link[href*="/sat/study-plan.html"]        
     background: color-mix(in srgb, var(--nav-bd) 70%, var(--tx)) !important;
 }
 .sidebar { scrollbar-color: var(--nav-bd) transparent; scrollbar-width: thin; }
+
+/* ══ Light chrome — sidebar + topbars ═══════════════════════════════════════
+   The nav buttons, cards and composer are all dark grey blocks (--nav-sf /
+   --kg-sf). The chrome they sit on is the counterweight: one flat, opaque,
+   very light grey, so the dark buttons read as objects placed on a panel
+   rather than as slightly-different shades of the page.
+
+   Every chrome surface here is opaque — no --sf/--glass translucency, no
+   backdrop blur, no inline opacity — and the panel re-points --tx/--sf/--bd
+   at the light set so everything nested inside it (history rows, toggles,
+   labels, topbar buttons) flips with it in one move instead of being listed
+   one by one. !important because the per-page grey sheets (study-grey.css,
+   korah-chat-grey.css) and the inline opacity on the topbar markup load
+   after this file. */
+:root {
+    --chrome-sf:  #24262c;   /* the panel itself                */
+    --chrome-sf2: #2f3138;   /* rows/chips resting on the panel */
+    --chrome-bd:  #3c3f47;   /* borders + dividers              */
+    --chrome-tx:  #f2f3f6;   /* text on the panel               */
+    --chrome-tx2: #cfd2da;   /* secondary text                  */
+}
+
+.sidebar,
+.chat-topbar,
+.home-topbar,
+.ask-korah-topbar,
+.sat-player-topbar {
+    background: var(--chrome-sf) !important;
+    border-color: var(--chrome-bd) !important;
+    color: var(--chrome-tx) !important;
+    opacity: 1 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    /* Nested surfaces + text inherit the light set from here. */
+    --tx:  var(--chrome-tx);
+    --tx2: var(--chrome-tx2);
+    --tx3: var(--chrome-tx2);
+    --sf:  var(--chrome-sf);
+    --sf2: var(--chrome-sf2);
+    --bd:  var(--chrome-bd);
+    --bd2: var(--chrome-bd);
+    --cu:  var(--chrome-sf2);
+    --cb:  var(--chrome-sf);
+    --ca:  var(--chrome-sf);
+    --nb:  var(--chrome-sf);
+}
+
+/* The sidebar's edge highlight was a purple glow gradient; on the light panel
+   it reads as a smudge, so it becomes a plain hairline. */
+.sidebar::after {
+    background: var(--chrome-bd) !important;
+}
+
+/* The logo lockup is a white wordmark — dark it on the light panel. */
+.sidebar .logo-letter img { filter: none; }
