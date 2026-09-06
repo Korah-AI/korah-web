@@ -1,9 +1,105 @@
 /* ═══════════════════════════════════════════════════════
-   VOCAB — Learn + Practice UI
-   Reuses Korah CSS vars (--bg, --sf2, --tx, --p4, --grn, ...)
-   Only page-specific patterns live here.
+   VOCAB — Learn (flashcards + browse) and Practice
+   Follows docs/WIZARD-UI-PATTERNS.md:
+     · neutral grey resting surfaces, never the purple-tinted
+       --sf / --sf2 / --bd app tokens
+     · per-option accent tones; colour marks identity or state
+     · selected means filled — flat, opaque, no gradients
+     · hover/selected grow slightly; they never slide
+     · no dimmed text, no monospace, no display serif
    ═══════════════════════════════════════════════════════ */
 
+:root {
+  /* resting surfaces — solid grey */
+  --v-sf:  #26262e;   /* card / input / panel fill        */
+  --v-sf2: #31313c;   /* ghost buttons, chips, hover fill */
+  --v-sf3: #3c3c48;   /* one step lighter (muted notices) */
+  --v-sf4: #c3c7d2;   /* very light grey — the +/✓ buttons  */
+  --v-sf4-ink: #1b1b22;
+  --v-bd:  #454553;   /* borders                          */
+
+  /* text — nothing dim enough to vanish against grey */
+  --v-tx2: var(--tx);
+  --v-tx3: #a3a6b3;
+
+  /* accents: --acc is the bright mark, --acc-fill the opaque fill */
+  --v-blue:  #3b82f6;  --v-blue-fill:  #1d4ed8;
+  --v-teal:  #14b8a6;  --v-teal-fill:  #0f766e;
+  --v-green: #22c55e;  --v-green-fill: #15803d;
+  --v-amber: #f59e0b;  --v-amber-fill: #b45309;
+  --v-pink:  #ec4899;  --v-pink-fill:  #be185d;
+  --v-red:   #ef4444;  --v-red-fill:   #b91c1c;
+
+  --v-focus: rgba(59, 130, 246, 0.28);
+
+  --acc: var(--v-blue);
+  --acc-fill: var(--v-blue-fill);
+}
+
+html[data-theme="light"] {
+  --v-sf:  #eceef2;
+  --v-sf2: #e0e3ea;
+  --v-sf3: #d4d8e1;
+  --v-sf4: #f6f7fa;
+  --v-sf4-ink: #1a0a3c;
+  --v-bd:  #c3c8d2;
+  --v-tx2: var(--tx);
+  --v-tx3: #5b6272;
+
+  --v-blue:  #2563eb;
+  --v-teal:  #0d9488;
+  --v-green: #16a34a;
+  --v-amber: #d97706;
+  --v-pink:  #db2777;
+  --v-red:   #dc2626;
+
+  --v-focus: rgba(37, 99, 235, 0.22);
+}
+
+/* Per-option accent tones — one class colours the whole element. */
+.tone-blue  { --acc: var(--v-blue);  --acc-fill: var(--v-blue-fill); }
+.tone-teal  { --acc: var(--v-teal);  --acc-fill: var(--v-teal-fill); }
+.tone-green { --acc: var(--v-green); --acc-fill: var(--v-green-fill); }
+.tone-amber { --acc: var(--v-amber); --acc-fill: var(--v-amber-fill); }
+.tone-pink  { --acc: var(--v-pink);  --acc-fill: var(--v-pink-fill); }
+.tone-red   { --acc: var(--v-red);   --acc-fill: var(--v-red-fill); }
+
+/* Interactive things grow a little on hover — they never slide. */
+.vocab-word-card,
+.vocab-result-row,
+.vocab-browse-row,
+.vocab-mode-card,
+.vocab-option,
+.vocab-filter-chip,
+.vocab-select-btn,
+.vocab-select-opt,
+.vocab-add-btn,
+.vocab-ghost-btn,
+.vocab-nav-btn,
+.vocab-back-btn,
+.vocab-bank-edit,
+.vocab-filter-clear,
+.vocab-start-btn,
+.vocab-practice-cta {
+  transition: transform 0.18s ease, background 0.18s ease,
+              border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+}
+
+/* Buttons and form controls don't inherit the page font by default — pin it
+   so nothing falls back to the browser's UI font. */
+.vocab-learn, .vocab-practice, .vocab-state, #vocab-exit-modal {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.vocab-learn button, .vocab-learn input, .vocab-learn textarea, .vocab-learn a,
+.vocab-practice button, .vocab-practice input, .vocab-practice textarea, .vocab-practice a,
+.vocab-state button, #vocab-exit-modal button {
+  font-family: inherit;
+}
+.material-icons-round { font-family: 'Material Icons Round' !important; }
+
+[x-cloak] { display: none !important; }
+
+/* ═══ Page shells ══════════════════════════════════════ */
 .vocab-learn,
 .vocab-practice {
   max-width: 56rem;
@@ -12,25 +108,26 @@
   flex: 1;
   overflow-y: auto;
   animation: fadeUp 0.5s ease both;
+  width: 100%;
 }
 
-[x-cloak] { display: none !important; }
+/* Nothing on these pages uses the dimmed purple text tokens. */
+#main-content .tx2 { color: var(--v-tx2); }
+#main-content .tx3 { color: var(--v-tx3); }
 
-/* ── Hero / header ─────────────────────────────────── */
-.vocab-learn-hero {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 2rem;
-  flex-wrap: wrap;
-  margin-bottom: 1.75rem;
+/* The page's own top bar joins the grey system (the app sidebar keeps the
+   shared purple chrome). */
+.chat-topbar.bg-sf {
+  background: var(--v-sf);
+  border-bottom-color: var(--v-bd);
 }
+
+/* ── Shared type ───────────────────────────────────── */
 .vocab-kicker {
-  font-size: 0.7rem;
+  font-size: 0.85rem;
   font-weight: 800;
-  letter-spacing: 0.22rem;
-  text-transform: uppercase;
-  color: var(--p5);
+  letter-spacing: 0.01em;
+  color: var(--v-blue);
   margin-bottom: 0.4rem;
 }
 .vocab-title {
@@ -42,14 +139,234 @@
   margin: 0 0 0.5rem;
 }
 .vocab-sub {
-  color: var(--tx2);
+  color: var(--v-tx2);
   font-size: 0.95rem;
   max-width: 34rem;
   line-height: 1.5;
   margin: 0;
 }
+.vocab-section-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+.vocab-section-title { font-weight: 800; font-size: 1.05rem; color: var(--tx); }
+.vocab-section-hint { color: var(--v-tx3); font-size: 0.8rem; }
 
-/* header actions: count pill + CTA */
+/* ═══ FLASHCARD MODE (learn) ═══════════════════════════ */
+.vocab-card-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  max-width: 46rem;
+}
+.vocab-card-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  text-align: center;
+}
+.vocab-card-hero .vocab-title { margin: 0; }
+.vocab-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  color: var(--v-tx2);
+  font-size: 0.92rem;
+  margin: 0;
+}
+.vocab-card-sep { color: var(--v-tx3); }
+.vocab-card-viewing { color: var(--v-blue); font-weight: 700; }
+
+.vocab-card-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+/* custom dropdown (no native <select> — its menu is OS-styled) */
+.vocab-select {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.vocab-select-label { color: var(--v-tx2); font-size: 0.88rem; font-weight: 600; }
+.vocab-select-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-width: 9rem;
+  padding: 0.55rem 0.85rem;
+  border-radius: 0.6rem;
+  background: var(--v-sf2);
+  border: 1px solid var(--v-bd);
+  color: var(--tx);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.vocab-select-btn .material-icons-round { font-size: 1.15rem; color: var(--v-tx3); }
+.vocab-select-btn:hover { transform: scale(1.03); border-color: var(--v-blue); }
+.vocab-select-btn.is-open { border-color: var(--v-blue); }
+.vocab-select-menu {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  z-index: 40;
+  min-width: 11rem;
+  padding: 0.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  border-radius: 0.7rem;
+  background: var(--v-sf);
+  border: 1px solid var(--v-bd);
+  box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.35);
+}
+.vocab-select-opt {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: 0.5rem;
+  background: var(--v-sf2);
+  border: 1px solid var(--v-bd);
+  color: var(--tx);
+  font-size: 0.86rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.vocab-select-opt:hover { transform: scale(1.02); border-color: var(--acc); }
+.vocab-select-opt.is-on {
+  background: var(--acc-fill);
+  border-color: var(--acc-fill);
+  color: #fff;
+}
+.vocab-select-opt.is-on .vocab-diff-dot { background: #fff; }
+
+/* the card */
+.vocab-flip {
+  width: 100%;
+  max-width: 38rem;
+  height: 24rem;
+  perspective: 62.5rem;
+  cursor: pointer;
+  outline: none;
+}
+.vocab-flip-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.55s cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+.vocab-flip.is-flipped .vocab-flip-inner { transform: rotateY(180deg); }
+.vocab-flip:hover .vocab-flip-inner { transform: scale(1.015); }
+.vocab-flip.is-flipped:hover .vocab-flip-inner { transform: rotateY(180deg) scale(1.015); }
+.vocab-flip:focus-visible .vocab-flip-face { border-color: var(--acc); }
+
+.vocab-flip-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+  padding: 2.5rem 2rem;
+  text-align: center;
+  border-radius: 1.1rem;
+  background: var(--v-sf);
+  border: 1px solid var(--v-bd);
+  backface-visibility: hidden;
+  box-shadow: 0 0.35rem 0 0 var(--v-bd);
+}
+.vocab-flip-back { transform: rotateY(180deg); }
+.vocab-flip.is-added .vocab-flip-face {
+  border-color: var(--v-green-fill);
+  box-shadow: 0 0.35rem 0 0 var(--v-green-fill);
+}
+.vocab-flip-word {
+  font-size: clamp(2rem, 6vw, 2.9rem);
+  font-weight: 800;
+  color: var(--tx);
+  line-height: 1.1;
+}
+.vocab-flip-chips {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.vocab-flip-hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 1.5rem;
+  color: var(--v-tx3);
+  font-size: 0.85rem;
+}
+.vocab-flip-add { position: absolute; top: 1rem; right: 1rem; }
+.vocab-flip-back-word { font-size: 1.15rem; font-weight: 800; color: var(--v-blue); }
+.vocab-flip-def {
+  font-size: clamp(1.05rem, 2.6vw, 1.3rem);
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--tx);
+  margin: 0;
+  max-width: 30rem;
+}
+.vocab-flip-ex,
+.vocab-flip-origin {
+  color: var(--v-tx2);
+  font-size: 0.9rem;
+  line-height: 1.55;
+  margin: 0;
+  max-width: 30rem;
+}
+.vocab-flip-ex { font-style: italic; }
+
+/* sentence box under the card */
+.vocab-card-sentence { width: 100%; max-width: 38rem; }
+.vocab-sentence-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0.75rem;
+}
+.vocab-sentence-row .vocab-sentence-input { flex: 1; }
+.vocab-sentence-row .vocab-start-btn { flex-shrink: 0; }
+
+.vocab-card-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  width: 100%;
+}
+.vocab-card-cta { display: flex; justify-content: center; }
+
+/* ═══ LEARN — hero, search, filters ════════════════════ */
+.vocab-learn-hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 2rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.75rem;
+}
 .vocab-learn-hero-actions {
   display: flex;
   align-items: center;
@@ -62,51 +379,22 @@
   gap: 0.45rem;
   padding: 0.55rem 0.9rem;
   border-radius: 999px;
-  background: var(--sf2);
-  border: 1px solid var(--bd);
-  color: var(--tx2);
+  background: var(--v-sf);
+  border: 1px solid var(--v-bd);
+  color: var(--v-tx2);
   font-size: 0.85rem;
 }
-.vocab-count-pill .material-icons-round { font-size: 1.1rem; color: var(--p4); }
+.vocab-count-pill .material-icons-round { font-size: 1.1rem; color: var(--v-blue); }
 .vocab-count-num { font-weight: 800; color: var(--tx); font-size: 1rem; }
-.vocab-count-label { text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.7rem; }
+.vocab-count-label { font-size: 0.82rem; }
 
-.vocab-practice-cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.65rem 1.15rem;
-  border-radius: 0.75rem;
-  background: linear-gradient(135deg, var(--p4), var(--p5));
-  color: #fff;
-  font-weight: 700;
-  font-size: 0.9rem;
-  text-decoration: none;
-  transition: filter 0.2s ease, opacity 0.2s ease, transform 0.2s ease;
-  box-shadow: 0 0 0 0 transparent;
-  position: relative;
-}
-.vocab-practice-cta:hover {
-  filter: brightness(1.08);
-  transform: translateY(-1px);
-}
-.vocab-practice-cta.is-disabled {
-  opacity: 0.45;
-  pointer-events: auto;
-  filter: grayscale(0.3);
-}
-
-/* ── Search ────────────────────────────────────────── */
-.vocab-search-wrap {
-  position: relative;
-  margin-bottom: 1.9rem;
-}
+.vocab-search-wrap { position: relative; margin-bottom: 1.9rem; }
 .vocab-search-icon {
   position: absolute;
   left: 1rem;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--tx3);
+  color: var(--v-tx3);
   font-size: 1.35rem;
   pointer-events: none;
 }
@@ -114,63 +402,25 @@
   width: 100%;
   padding: 0.95rem 1rem 0.95rem 3.1rem;
   border-radius: 0.9rem;
-  background: var(--sf2);
-  border: 1px solid var(--bd);
+  background: var(--v-sf);
+  border: 1px solid var(--v-bd);
   color: var(--tx);
   font-size: 0.98rem;
   outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
-.vocab-search-input::placeholder { color: var(--tx3); }
+.vocab-search-input::placeholder { color: var(--v-tx3); }
 .vocab-search-input:focus {
-  border-color: var(--p4);
-  background: var(--sf);
-  box-shadow: 0 0 0 0.25rem var(--cu);
+  border-color: var(--v-blue);
+  box-shadow: 0 0 0 0.25rem var(--v-focus);
 }
 
-/* filter toggle button (inside search) */
-.vocab-filter-toggle {
-  position: absolute;
-  right: 0.55rem;
-  top: 50%;
-  transform: translateY(-50%);
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.45rem 0.7rem;
-  border-radius: 0.6rem;
-  background: var(--sf);
-  border: 1px solid var(--bd);
-  color: var(--tx2);
-  font-size: 0.82rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-.vocab-filter-toggle .material-icons-round { font-size: 1rem; }
-.vocab-filter-toggle:hover { color: var(--p5); border-color: var(--p4); }
-.vocab-filter-toggle.is-active { color: var(--p5); border-color: var(--p4); background: var(--cu); }
-.vocab-filter-count {
-  min-width: 1.1rem;
-  height: 1.1rem;
-  padding: 0 0.25rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  background: var(--p4);
-  color: #fff;
-  font-size: 0.68rem;
-  font-weight: 800;
-}
-
-/* filter panel */
 .vocab-filters {
   margin: -0.75rem 0 1.5rem;
   padding: 1rem 1.1rem;
   border-radius: 0.8rem;
-  background: var(--sf2);
-  border: 1px solid var(--bd);
+  background: var(--v-sf);
+  border: 1px solid var(--v-bd);
   display: flex;
   flex-direction: column;
   gap: 0.9rem;
@@ -182,92 +432,273 @@
   flex-wrap: wrap;
 }
 .vocab-filter-label {
-  font-size: 0.75rem;
+  font-size: 0.85rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--tx3);
+  color: var(--v-tx3);
   min-width: 6.5rem;
 }
-.vocab-filter-chips {
-  display: flex;
-  gap: 0.45rem;
-  flex-wrap: wrap;
-}
+.vocab-filter-chips { display: flex; gap: 0.45rem; flex-wrap: wrap; }
 .vocab-filter-chip {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
   padding: 0.4rem 0.8rem;
   border-radius: 999px;
-  background: var(--sf);
-  border: 1px solid var(--bd);
-  color: var(--tx2);
+  background: var(--v-sf2);
+  border: 1px solid var(--v-bd);
+  color: var(--tx);
   font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
 }
-.vocab-filter-chip:hover { color: var(--p5); border-color: var(--p4); }
+.vocab-filter-chip:hover:not(.is-on) { transform: scale(1.05); border-color: var(--acc); }
 .vocab-filter-chip.is-on {
   color: #fff;
-  background: linear-gradient(135deg, var(--p4), var(--p5));
-  border-color: transparent;
+  background: var(--acc-fill);
+  border-color: var(--acc-fill);
 }
+.vocab-filter-chip.is-on .vocab-diff-dot { background: #fff; }
 .vocab-filter-chip .vocab-diff-dot { width: 0.45rem; height: 0.45rem; }
 .vocab-filter-clear {
   align-self: flex-start;
   padding: 0.35rem 0.75rem;
   border-radius: 0.5rem;
-  background: transparent;
-  border: 1px solid var(--bd);
-  color: var(--tx3);
+  background: var(--v-sf2);
+  border: 1px solid var(--v-bd);
+  color: var(--v-tx2);
   font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
 }
-.vocab-filter-clear:hover { color: var(--red); border-color: var(--red); }
+.vocab-filter-clear:hover { color: #fff; background: var(--v-red-fill); border-color: var(--v-red-fill); transform: scale(1.04); }
 
-/* ── Section headers ───────────────────────────────── */
-.vocab-section-head {
+/* ═══ Progress panel + study sets (left rail) ══════════ */
+.vocab-learn-wide { max-width: 78rem; }
+.vocab-learn-cols {
+  display: grid;
+  grid-template-columns: 21rem minmax(0, 1fr);
+  gap: 1.75rem;
+  align-items: start;
+}
+.vocab-side {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  position: sticky;
+  top: 0;
+  max-height: calc(100vh - 9rem);
+  overflow-y: auto;
+}
+
+.vocab-progress-panel,
+.vocab-sets {
+  background: var(--v-sf);
+  border: 1px solid var(--v-bd);
+  border-radius: 1rem;
+  padding: 1.1rem 1.15rem;
+}
+.vocab-progress-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--tx);
+  margin-bottom: 1rem;
+}
+.vocab-progress-head .material-icons-round { font-size: 1.15rem; color: var(--v-blue); }
+.vocab-progress-h {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--tx);
+  margin: 0 0 0.6rem;
+}
+.vocab-progress-topline {
   display: flex;
   align-items: baseline;
+  justify-content: space-between;
   gap: 0.75rem;
-  margin-bottom: 1rem;
-  flex-wrap: wrap;
 }
-.vocab-section-title {
-  font-weight: 800;
-  font-size: 1.05rem;
+.vocab-progress-topline .vocab-progress-h { margin: 0; }
+.vocab-progress-pct { font-size: 1rem; font-weight: 800; color: var(--tx); }
+.vocab-progress-bar {
+  height: 0.4rem;
+  margin: 0.55rem 0 0;
+  border-radius: 999px;
+  background: var(--v-sf2);
+  overflow: hidden;
+}
+.vocab-progress-bar.is-sm { height: 0.3rem; }
+.vocab-progress-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--v-blue);
+  transition: width 0.3s ease;
+}
+.vocab-progress-bar.is-easy   .vocab-progress-bar-fill { background: var(--v-green); }
+.vocab-progress-bar.is-medium .vocab-progress-bar-fill { background: var(--v-amber); }
+.vocab-progress-bar.is-hard   .vocab-progress-bar-fill { background: var(--v-red); }
+
+.vocab-progress-tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+  margin-top: 0.85rem;
+}
+.vocab-progress-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.75rem 0.5rem;
+  border-radius: 0.75rem;
+  background: var(--v-sf2);
+  border: 1px solid var(--v-bd);
+}
+.vocab-progress-tile-label { font-size: 0.78rem; font-weight: 600; color: var(--v-tx3); }
+.vocab-progress-tile-num { font-size: 1.35rem; font-weight: 800; color: var(--acc); }
+
+.vocab-progress-split {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  margin-top: 1.1rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--v-bd);
+}
+.vocab-progress-row { margin-bottom: 0.7rem; }
+.vocab-progress-row:last-child { margin-bottom: 0; }
+.vocab-progress-row-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  font-size: 0.82rem;
+}
+.vocab-progress-row-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 700;
   color: var(--tx);
 }
-.vocab-section-hint { color: var(--tx3); font-size: 0.8rem; }
+.vocab-progress-row-val { color: var(--v-tx3); font-weight: 600; }
 
-/* ── Word cards (suggestions grid) ─────────────────── */
+.vocab-progress-mastery {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.vocab-progress-mchip {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: 0.6rem;
+  background: var(--v-sf2);
+  border: 1px solid var(--v-bd);
+  font-size: 0.78rem;
+}
+.vocab-progress-mdot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 999px;
+  background: var(--acc);
+  flex: none;
+}
+.vocab-progress-mchip.is-muted .vocab-progress-mdot { background: var(--v-tx3); }
+.vocab-progress-mlabel { color: var(--v-tx2); font-weight: 600; flex: 1; }
+.vocab-progress-mnum { color: var(--tx); font-weight: 800; }
+
+.vocab-progress-foot {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+  margin-top: 1.1rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--v-bd);
+  text-align: center;
+}
+.vocab-progress-stat { display: flex; flex-direction: column; gap: 0.15rem; }
+.vocab-progress-stat-num { font-size: 1.2rem; font-weight: 800; color: var(--tx); }
+.vocab-progress-stat-label { font-size: 0.75rem; color: var(--v-tx3); font-weight: 600; }
+
+.vocab-sets-hint {
+  margin: -0.5rem 0 0.85rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--v-tx3);
+}
+.vocab-sets-form { display: flex; flex-direction: column; gap: 0.55rem; }
+.vocab-sets-input { padding: 0.7rem 0.85rem; font-size: 0.88rem; }
+.vocab-sets-form .vocab-start-btn { width: 100%; justify-content: center; }
+.vocab-sets-note {
+  margin: 0.7rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--v-green);
+  font-weight: 600;
+}
+.vocab-sets-list { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.9rem; }
+.vocab-sets-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.7rem;
+  border-radius: 0.7rem;
+  background: var(--v-sf2);
+  border: 1px solid var(--v-bd);
+}
+.vocab-sets-row-main { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; flex: 1; }
+.vocab-sets-name {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--tx);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.vocab-sets-count { font-size: 0.75rem; color: var(--v-tx3); font-weight: 600; }
+.vocab-sets-row-actions { display: flex; gap: 0.3rem; flex: none; }
+.vocab-sets-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 0.5rem;
+  background: var(--v-sf);
+  border: 1px solid var(--v-bd);
+  color: var(--v-tx2);
+  cursor: pointer;
+  transition: transform 0.18s ease, background 0.18s ease,
+              border-color 0.18s ease, color 0.18s ease;
+}
+.vocab-sets-btn .material-icons-round { font-size: 1.05rem; }
+.vocab-sets-btn:hover { transform: scale(1.08); color: #fff; background: var(--v-blue-fill); border-color: var(--v-blue-fill); }
+.vocab-sets-btn.is-danger:hover { background: var(--v-red-fill); border-color: var(--v-red-fill); }
+.vocab-sets-empty { margin: 0.9rem 0 0; font-size: 0.82rem; color: var(--v-tx3); }
+
+/* ═══ Word cards, rows, browse ═════════════════════════ */
 .vocab-card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
   gap: 0.9rem;
 }
 .vocab-word-card {
-  background: var(--sf2);
-  border: 1px solid var(--bd);
+  background: var(--v-sf);
+  border: 1px solid var(--v-bd);
   border-radius: 0.9rem;
   padding: 1rem 1.1rem;
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
-  transition: all 0.2s ease;
 }
-.vocab-word-card:hover {
-  border-color: var(--p4);
-  background: var(--sf);
-  transform: translateY(-2px);
-}
-.vocab-word-card.is-added {
-  border-color: rgba(52, 211, 153, 0.45);
-  background: rgba(52, 211, 153, 0.06);
+.vocab-word-card:hover:not(.is-added) {
+  transform: scale(1.02);
+  border-color: var(--acc);
+  background: var(--v-sf2);
 }
 .vocab-word-card-top {
   display: flex;
@@ -275,6 +706,7 @@
   justify-content: space-between;
   gap: 0.75rem;
 }
+.vocab-word-card-meta { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
 .vocab-word-name {
   display: inline-flex;
   align-items: center;
@@ -284,17 +716,55 @@
   font-weight: 700;
   font-size: 1.05rem;
 }
-.vocab-pos-chip {
-  font-size: 0.62rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 0.18rem 0.45rem;
-  border-radius: 999px;
-  color: var(--p5);
-  background: var(--cu);
-  border: 1px solid rgba(139, 92, 246, 0.25);
+.vocab-word-def {
+  color: var(--v-tx2);
+  font-size: 0.87rem;
+  line-height: 1.45;
+  margin: 0;
 }
+
+/* part of speech carries the word's identity */
+.vocab-pos-chip {
+  --acc-fill: var(--v-blue-fill);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.22rem 0.6rem;
+  border-radius: 999px;
+  color: #fff;
+  background: var(--acc-fill);
+  border: 1px solid transparent;
+}
+.vocab-pos-chip[data-pos="noun"]      { --acc-fill: var(--v-teal-fill); }
+.vocab-pos-chip[data-pos="verb"]      { --acc-fill: var(--v-green-fill); }
+.vocab-pos-chip[data-pos="adjective"] { --acc-fill: var(--v-amber-fill); }
+.vocab-pos-chip[data-pos="adverb"]    { --acc-fill: var(--v-pink-fill); }
+
+.vocab-etym-chip {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.22rem 0.6rem;
+  border-radius: 999px;
+  color: var(--v-tx3);
+  background: var(--v-sf2);
+  border: 1px solid var(--v-bd);
+}
+
+/* difficulty reads as a word, not just a coloured dot */
+.vocab-diff-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 800;
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  color: #fff;
+}
+.vocab-diff-chip.is-sm { font-size: 0.74rem; padding: 0.2rem 0.6rem; }
+.vocab-diff-chip.is-easy { background: var(--v-green-fill); }
+.vocab-diff-chip.is-medium { background: var(--v-amber-fill); }
+.vocab-diff-chip.is-hard { background: var(--v-red-fill); }
+
 .vocab-diff-dot {
   width: 0.55rem;
   height: 0.55rem;
@@ -302,17 +772,42 @@
   display: inline-block;
   flex-shrink: 0;
 }
-.vocab-diff-dot.is-easy { background: var(--grn); }
-.vocab-diff-dot.is-medium { background: var(--gold); }
-.vocab-diff-dot.is-hard { background: var(--red); }
-.vocab-word-def {
-  color: var(--tx2);
-  font-size: 0.87rem;
-  line-height: 1.45;
-  margin: 0;
-}
+.vocab-diff-dot.is-easy { background: var(--v-green); }
+.vocab-diff-dot.is-medium { background: var(--v-amber); }
+.vocab-diff-dot.is-hard { background: var(--v-red); }
 
-/* add/remove button */
+/* saved words are filled green, opaque */
+.vocab-word-card.is-added,
+.vocab-result-row.is-added,
+.vocab-browse-row.is-added {
+  background: var(--v-green-fill);
+  border-color: var(--v-green-fill);
+  color: #fff;
+}
+.vocab-word-card.is-added .vocab-word-name,
+.vocab-word-card.is-added .vocab-word-def,
+.vocab-result-row.is-added .vocab-word-name,
+.vocab-result-row.is-added .vocab-word-def,
+.vocab-browse-row.is-added .vocab-word-name,
+.vocab-browse-row.is-added .vocab-browse-def { color: #fff; }
+.vocab-word-card.is-added .vocab-etym-chip,
+.vocab-result-row.is-added .vocab-etym-chip,
+.vocab-browse-row.is-added .vocab-etym-chip,
+.vocab-word-card.is-added .vocab-pos-chip,
+.vocab-result-row.is-added .vocab-pos-chip,
+.vocab-browse-row.is-added .vocab-pos-chip,
+.vocab-word-card.is-added .vocab-diff-chip,
+.vocab-result-row.is-added .vocab-diff-chip,
+.vocab-browse-row.is-added .vocab-diff-chip {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: transparent;
+  color: #fff;
+}
+.vocab-word-card.is-added:hover,
+.vocab-result-row.is-added:hover,
+.vocab-browse-row.is-added:hover { transform: scale(1.02); }
+
+/* add / remove button */
 .vocab-add-btn {
   display: inline-flex;
   align-items: center;
@@ -321,30 +816,23 @@
   height: 2rem;
   flex-shrink: 0;
   border-radius: 0.6rem;
-  background: var(--sf);
-  border: 1px solid var(--bd);
-  color: var(--tx3);
+  background: var(--v-sf4);
+  border: 1px solid var(--v-sf4);
+  color: var(--v-sf4-ink);
   cursor: pointer;
-  transition: all 0.2s ease;
 }
 .vocab-add-btn .material-icons-round { font-size: 1.2rem; }
-.vocab-add-btn:hover {
-  color: var(--p5);
-  border-color: var(--p4);
-  background: var(--cu);
-}
-.vocab-add-btn.is-added {
-  color: #fff;
-  background: var(--grn);
-  border-color: var(--grn);
+.vocab-add-btn.is-added { background: var(--v-sf4); border-color: var(--v-sf4); color: var(--v-sf4-ink); }
+.vocab-add-btn:hover,
+.vocab-add-btn.is-added:hover {
+  transform: scale(1.08);
+  background: #fff;
+  border-color: #fff;
+  color: var(--v-sf4-ink);
 }
 
-/* ── Search result rows ────────────────────────────── */
-.vocab-search-results-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
+/* search result rows */
+.vocab-search-results-list { display: flex; flex-direction: column; gap: 0.6rem; }
 .vocab-result-row {
   display: flex;
   align-items: center;
@@ -352,19 +840,15 @@
   gap: 1rem;
   padding: 0.9rem 1.1rem;
   border-radius: 0.8rem;
-  background: var(--sf2);
-  border: 1px solid var(--bd);
+  background: var(--v-sf);
+  border: 1px solid var(--v-bd);
   cursor: pointer;
-  transition: all 0.2s ease;
 }
-.vocab-result-row:hover {
-  border-color: var(--p4);
-  background: var(--sf);
-  transform: translateX(0.2rem);
-}
-.vocab-result-row.is-added {
-  border-color: rgba(52, 211, 153, 0.45);
-  background: rgba(52, 211, 153, 0.05);
+.vocab-result-row:hover:not(.is-added),
+.vocab-browse-row:hover:not(.is-added) {
+  transform: scale(1.01);
+  border-color: var(--acc);
+  background: var(--v-sf2);
 }
 .vocab-result-main { min-width: 0; }
 .vocab-result-label {
@@ -372,32 +856,40 @@
   align-items: center;
   gap: 0.6rem;
   margin-bottom: 0.25rem;
+  flex-wrap: wrap;
 }
 
-/* ── Empty states ──────────────────────────────────── */
-.vocab-empty-state {
-  text-align: center;
-  padding: 3.5rem 1rem;
-  color: var(--tx2);
+/* expandable detail */
+.vocab-word-detail {
+  padding: 0.85rem 1.1rem;
+  border-left: 0.2rem solid var(--v-blue);
+  border-radius: 0 0.6rem 0.6rem 0;
+  background: var(--v-sf2);
+  margin-bottom: 0.6rem;
 }
-.vocab-empty-icon {
-  font-size: 2.6rem;
-  color: var(--tx3);
-  display: block;
-  margin: 0 auto 0.75rem;
+.vocab-word-detail-def,
+.vocab-word-detail-ex {
+  margin: 0 0 0.35rem;
+  font-size: 0.88rem;
+  color: var(--v-tx2);
+  line-height: 1.55;
 }
-.vocab-empty-title { font-weight: 800; color: var(--tx); margin: 0 0 0.3rem; font-size: 1.1rem; }
-.vocab-empty-sub { margin: 0; font-size: 0.88rem; }
+.vocab-word-detail-ex { font-style: italic; margin-bottom: 0; }
+.vocab-word-detail-label {
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--v-blue);
+  margin-right: 0.5rem;
+}
 
-/* ── Browse all words (persistent list) ────────────── */
+/* browse all */
 .vocab-browse-all {
   margin-top: 2.75rem;
-  padding: 1.6rem 1.5rem 1.2rem;
-  border: 1px solid var(--bd);
+  padding: 1.6rem 1.5rem;
+  border: 1px solid var(--v-bd);
   border-radius: 1rem;
-  background: var(--sf2);
-  position: relative;
-  overflow: hidden;
+  background: var(--v-sf);
 }
 .vocab-browse-header {
   display: flex;
@@ -407,16 +899,26 @@
   flex-wrap: wrap;
   margin-bottom: 1rem;
 }
-.vocab-browse-icon { font-size: 1.05rem; color: var(--p5); vertical-align: -0.15rem; margin-right: 0.25rem; }
+.vocab-browse-icon { font-size: 1.05rem; color: var(--v-blue); vertical-align: -0.15rem; margin-right: 0.25rem; }
 .vocab-browse-count {
-  color: var(--tx2);
+  color: var(--v-tx2);
   font-size: 0.8rem;
   font-weight: 600;
   padding: 0.3rem 0.7rem;
   border-radius: 999px;
-  background: var(--sf);
-  border: 1px solid var(--bd);
+  background: var(--v-sf2);
+  border: 1px solid var(--v-bd);
 }
+.vocab-browse-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+.vocab-browse-search-wrap { position: relative; flex: 1 1 14rem; }
+.vocab-browse-search { padding: 0.7rem 1rem 0.7rem 2.9rem; font-size: 0.9rem; }
+.vocab-browse-search-wrap .vocab-search-icon { font-size: 1.2rem; left: 0.85rem; }
 .vocab-browse-list {
   display: flex;
   flex-direction: column;
@@ -429,20 +931,15 @@
   gap: 0.9rem;
   padding: 0.85rem 1rem;
   border-radius: 0.75rem;
-  background: var(--bg2);
-  border: 1px solid var(--bd);
+  background: var(--v-sf2);
+  border: 1px solid var(--v-bd);
   cursor: pointer;
-  transition: all 0.18s ease;
-}
-.vocab-browse-row:hover { border-color: var(--p4); background: var(--sf); transform: translateX(0.2rem); }
-.vocab-browse-row.is-added {
-  border-color: rgba(52, 211, 153, 0.45);
-  background: rgba(52, 211, 153, 0.06);
 }
 .vocab-browse-word {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  align-items: flex-start;
+  gap: 0.35rem;
   flex-shrink: 0;
   min-width: 9.5rem;
 }
@@ -450,78 +947,163 @@
 .vocab-browse-def {
   flex: 1;
   min-width: 0;
-  color: var(--tx2);
+  color: var(--v-tx2);
   font-size: 0.9rem;
   line-height: 1.45;
   margin: 0;
 }
 .vocab-browse-row .vocab-add-btn { flex-shrink: 0; }
-.vocab-browse-fade {
-  position: absolute;
-  left: 1.5rem;
-  right: 1.5rem;
-  bottom: 0;
-  height: 2.5rem;
-  pointer-events: none;
-  background: linear-gradient(transparent, var(--sf2));
+
+/* ── Empty states ──────────────────────────────────── */
+.vocab-empty-state {
+  text-align: center;
+  padding: 3.5rem 1rem;
+  color: var(--v-tx2);
 }
-@media (max-width: 640px) {
-  .vocab-browse-row { flex-wrap: wrap; }
-  .vocab-browse-word { min-width: 0; width: 100%; }
-  .vocab-browse-def { width: 100%; flex-basis: 100%; }
+.vocab-empty-icon {
+  font-size: 2.6rem;
+  color: var(--v-tx3);
+  display: block;
+  margin: 0 auto 0.75rem;
+}
+.vocab-empty-title { font-weight: 800; color: var(--tx); margin: 0 0 0.3rem; font-size: 1.1rem; }
+.vocab-empty-sub { margin: 0; font-size: 0.88rem; }
+
+/* ═══ Buttons — filled, or grey; never translucent ═════ */
+.vocab-start-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  padding: 0.8rem 1.9rem;
+  border-radius: 0.8rem;
+  background: var(--v-blue-fill);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.98rem;
+  border: 1px solid var(--v-blue-fill);
+  cursor: pointer;
+}
+.vocab-start-btn:hover:not(:disabled) { transform: scale(1.03); filter: brightness(1.1); }
+.vocab-start-btn.is-green { background: var(--v-green-fill); border-color: var(--v-green-fill); }
+
+.vocab-practice-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.15rem;
+  border-radius: 0.75rem;
+  background: var(--v-blue-fill);
+  border: 1px solid var(--v-blue-fill);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+.vocab-practice-cta:hover { transform: scale(1.03); filter: brightness(1.1); }
+/* locked CTA is grey, not a faded ghost */
+.vocab-practice-cta.is-disabled {
+  background: var(--v-sf2);
+  border-color: var(--v-bd);
+  color: var(--v-tx3);
+}
+.vocab-practice-cta.is-disabled:hover { transform: none; filter: none; }
+
+.vocab-ghost-btn,
+.vocab-nav-btn,
+.vocab-back-btn,
+.vocab-bank-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.7rem 1.2rem;
+  border-radius: 0.75rem;
+  background: var(--v-sf2);
+  border: 1px solid var(--v-bd);
+  color: var(--tx);
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-decoration: none;
+  cursor: pointer;
+}
+.vocab-nav-btn,
+.vocab-back-btn,
+.vocab-bank-edit { padding: 0.6rem 1rem; font-size: 0.86rem; }
+.vocab-ghost-btn .material-icons-round,
+.vocab-nav-btn .material-icons-round,
+.vocab-back-btn .material-icons-round,
+.vocab-bank-edit .material-icons-round { font-size: 1.1rem; }
+.vocab-ghost-btn:hover:not(:disabled),
+.vocab-nav-btn:hover:not(:disabled),
+.vocab-back-btn:hover,
+.vocab-bank-edit:hover {
+  transform: scale(1.03);
+  border-color: var(--v-blue);
+  background: var(--v-sf3);
 }
 
-/* ── Responsive ────────────────────────────────────── */
-@media (max-width: 768px) {
-  .vocab-learn, .vocab-practice { padding: 1.75rem 1rem 4rem; }
-  .vocab-learn-hero { flex-direction: column; align-items: flex-start; gap: 1.25rem; }
+.vocab-start-btn:disabled,
+.vocab-ghost-btn:disabled,
+.vocab-nav-btn:disabled {
+  background: var(--v-sf2);
+  border-color: var(--v-bd);
+  color: var(--v-tx3);
+  cursor: not-allowed;
+  transform: none !important;
+  filter: none !important;
 }
 
-/* ═══════════════════════════════════════════════════════
-   PRACTICE HUB (mode selector + stages)
-   ═══════════════════════════════════════════════════════ */
-
+/* ═══ PRACTICE HUB ═════════════════════════════════════ */
+/* step 1 sits in the middle of the screen; later stages are taller */
+.vocab-practice-select {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 1.25rem;
+  min-height: calc(100vh - 9.5rem);
+}
+.vocab-practice-select .vocab-practice-hero { margin: 0; }
+.vocab-practice-select .vocab-sub { margin: 0 auto; }
 .vocab-practice-hero { margin-bottom: 1.5rem; }
 
 .vocab-bank-summary {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.6rem;
   padding: 0.7rem 1rem;
   border-radius: 0.8rem;
-  background: var(--sf2);
-  border: 1px solid var(--bd);
-  color: var(--tx2);
+  background: var(--v-sf);
+  border: 1px solid var(--v-bd);
+  color: var(--v-tx2);
   font-size: 0.88rem;
-  margin-bottom: 1.5rem;
+  margin: 0 auto;
 }
-.vocab-bank-summary .material-icons-round { color: var(--p4); font-size: 1.25rem; }
+.vocab-bank-summary .material-icons-round { color: var(--v-blue); font-size: 1.25rem; }
+.vocab-bank-summary .vocab-bank-edit .material-icons-round { color: #fff; }
 .vocab-bank-summary-count { font-weight: 800; color: var(--tx); }
-.vocab-bank-summary-text { color: var(--tx3); }
+.vocab-bank-summary-text { color: var(--v-tx2); }
 .vocab-bank-edit {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
   margin-left: 0.4rem;
-  padding: 0.35rem 0.7rem;
-  border-radius: 0.55rem;
-  background: var(--sf);
-  border: 1px solid var(--bd);
-  color: var(--tx2);
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-decoration: none;
-  transition: all 0.2s ease;
+  background: var(--v-blue-fill);
+  border-color: var(--v-blue-fill);
+  color: #fff;
 }
-.vocab-bank-edit .material-icons-round { font-size: 0.95rem; color: inherit; }
-.vocab-bank-edit:hover { color: var(--p5); border-color: var(--p4); }
+.vocab-bank-edit:hover {
+  background: var(--v-blue-fill);
+  border-color: #fff;
+  color: #fff;
+}
 
 /* mode cards */
 .vocab-mode-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(15.5rem, 1fr));
   gap: 1rem;
-  margin-bottom: 1.75rem;
+  width: 100%;
+  max-width: 44rem;
 }
 .vocab-mode-card {
   display: flex;
@@ -529,18 +1111,20 @@
   gap: 0.9rem;
   padding: 1.1rem 1.2rem;
   border-radius: 0.9rem;
-  background: var(--sf2);
-  border: 1px solid var(--bd);
+  background: var(--v-sf);
+  border: 1px solid var(--v-bd);
   text-align: left;
   cursor: pointer;
-  transition: all 0.2s ease;
-  position: relative;
 }
-.vocab-mode-card:hover { border-color: var(--p4); background: var(--sf); transform: translateY(-2px); }
+.vocab-mode-card:hover:not(.is-active) {
+  transform: scale(1.03);
+  background: var(--v-sf2);
+  border-color: var(--acc);
+}
 .vocab-mode-card.is-active {
-  border-color: var(--p4);
-  background: var(--cu);
-  box-shadow: 0 0 0 0.15rem var(--cu);
+  transform: scale(1.03);
+  background: var(--acc-fill);
+  border-color: var(--acc-fill);
 }
 .vocab-mode-icon {
   display: flex;
@@ -550,101 +1134,63 @@
   height: 2.8rem;
   flex-shrink: 0;
   border-radius: 0.75rem;
-  background: linear-gradient(135deg, var(--p4), var(--p5));
+  background: var(--acc-fill);
   color: #fff;
 }
+.vocab-mode-card.is-active .vocab-mode-icon { background: rgba(255, 255, 255, 0.22); }
 .vocab-mode-icon .material-icons-round { font-size: 1.4rem; }
 .vocab-mode-body { display: flex; flex-direction: column; gap: 0.2rem; }
 .vocab-mode-name { font-weight: 800; color: var(--tx); font-size: 1rem; }
-.vocab-mode-desc { color: var(--tx2); font-size: 0.82rem; line-height: 1.35; }
-.vocab-mode-check {
-  margin-left: auto;
-  color: var(--tx3);
-  font-size: 1.3rem;
-  transition: all 0.2s ease;
-}
-.vocab-mode-card.is-active .vocab-mode-check { color: var(--p5); }
+.vocab-mode-desc { color: var(--v-tx2); font-size: 0.82rem; line-height: 1.35; }
+.vocab-mode-check { margin-left: auto; color: var(--v-tx3); font-size: 1.3rem; }
+.vocab-mode-card.is-active .vocab-mode-name,
+.vocab-mode-card.is-active .vocab-mode-desc,
+.vocab-mode-card.is-active .vocab-mode-check { color: #fff; }
 
-/* start button */
 .vocab-practice-actions { display: flex; justify-content: center; }
-.vocab-start-btn {
+.vocab-mini-row { display: flex; justify-content: center; }
+.vocab-mini-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.55rem;
-  padding: 0.8rem 1.9rem;
-  border-radius: 0.8rem;
-  background: linear-gradient(135deg, var(--p4), var(--p5));
-  color: #fff;
-  font-weight: 800;
-  font-size: 0.98rem;
+  gap: 0.35rem;
+  padding: 0.35rem 0.9rem;
+  border-radius: 0.55rem;
+  background: none;
   border: none;
-  cursor: pointer;
-  transition: filter 0.2s ease, transform 0.2s ease;
-  box-shadow: 0 0.4rem 1.2rem rgba(139, 92, 246, 0.25);
-}
-.vocab-start-btn:hover { filter: brightness(1.08); transform: translateY(-2px); }
-
-/* quiz stage (minimal skeleton — full design in a later checkpoint) */
-.vocab-quiz-stage { display: flex; flex-direction: column; gap: 1rem; }
-.vocab-quiz-topbar {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-.vocab-back-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.5rem 0.9rem;
-  border-radius: 0.6rem;
-  background: var(--sf2);
-  border: 1px solid var(--bd);
-  color: var(--tx2);
+  color: var(--v-tx3);
   font-size: 0.85rem;
-  font-weight: 600;
+  font-weight: 700;
+  text-decoration: none;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: transform 0.18s ease, color 0.18s ease;
 }
-.vocab-back-btn:hover { color: var(--p5); border-color: var(--p4); }
-.vocab-back-btn .material-icons-round { font-size: 1.05rem; }
+.vocab-mini-btn:hover { transform: scale(1.05); color: var(--tx); }
+
+/* ═══ QUIZ STAGE ═══════════════════════════════════════ */
+.vocab-quiz-stage { display: flex; flex-direction: column; gap: 1rem; }
+.vocab-quiz-topbar { display: flex; align-items: center; gap: 1rem; }
 .vocab-quiz-progress {
   flex: 1;
   height: 0.5rem;
   border-radius: 999px;
-  background: var(--sf2);
-  border: 1px solid var(--bd);
+  background: var(--v-sf2);
+  border: 1px solid var(--v-bd);
   overflow: hidden;
 }
 .vocab-quiz-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--p4), var(--p5));
+  background: var(--v-blue);
   border-radius: 999px;
   transition: width 0.3s ease;
 }
-.vocab-quiz-counter { font-weight: 800; color: var(--tx2); font-size: 0.9rem; }
-.vocab-quiz-prompt {
-  padding: 2rem;
-  border-radius: 0.9rem;
-  background: var(--sf2);
-  border: 1px solid var(--bd);
-  text-align: center;
-  color: var(--tx);
-}
-.vocab-quiz-prompt-label {
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  font-size: 0.7rem;
-  color: var(--tx3);
-  margin-bottom: 0.9rem;
-}
+.vocab-quiz-counter { font-weight: 800; color: var(--v-tx2); font-size: 0.9rem; }
 .vocab-quiz-word {
   display: inline-flex;
   align-items: center;
   gap: 0.6rem;
-  font-family: 'Playfair Display', serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: clamp(1.75rem, 5vw, 2.4rem);
-  font-weight: 900;
+  font-weight: 800;
   color: var(--tx);
   line-height: 1.2;
 }
@@ -656,10 +1202,7 @@
   max-width: 34rem;
   margin: 0 auto;
 }
-.vocab-quiz-stage .vocab-pos-chip {
-  font-size: 0.68rem;
-  padding: 0.24rem 0.55rem;
-}
+.vocab-quiz-stage .vocab-pos-chip { font-size: 0.78rem; padding: 0.26rem 0.65rem; }
 
 /* ── Options ───────────────────────────────────────── */
 .vocab-options-list {
@@ -676,46 +1219,17 @@
   text-align: left;
   padding: 0.9rem 1.05rem;
   border-radius: 0.8rem;
-  background: var(--sf2);
-  border: 1px solid var(--bd);
+  background: var(--v-sf);
+  border: 1px solid var(--v-bd);
   color: var(--tx);
   font-size: 0.95rem;
   cursor: pointer;
-  transition: all 0.2s ease;
-  position: relative;
-  overflow: hidden;
-}
-.vocab-option::before {
-  content: '';
-  position: absolute;
-  left: 0; top: 0; bottom: 0;
-  width: 0.25rem;
-  background: var(--p4);
-  transform: scaleY(0);
-  transition: transform 0.2s ease;
-  transform-origin: bottom;
 }
 .vocab-option:hover:not(:disabled) {
-  border-color: var(--p4);
-  background: var(--sf);
-  transform: translateX(0.2rem);
+  transform: scale(1.01);
+  border-color: var(--acc);
+  background: var(--v-sf2);
 }
-.vocab-option:hover::before { transform: scaleY(1); }
-.vocab-option.is-selected {
-  border-color: var(--p5);
-  background: var(--cu);
-}
-.vocab-option.is-selected::before { transform: scaleY(1); background: var(--p5); }
-.vocab-option.is-correct {
-  border-color: var(--grn);
-  background: rgba(52, 211, 153, 0.1);
-}
-.vocab-option.is-correct::before { transform: scaleY(1); background: var(--grn); }
-.vocab-option.is-incorrect {
-  border-color: var(--red);
-  background: rgba(248, 113, 113, 0.1);
-}
-.vocab-option.is-incorrect::before { transform: scaleY(1); background: var(--red); }
 .vocab-option:disabled { cursor: default; }
 .vocab-option-key {
   width: 1.85rem;
@@ -725,52 +1239,125 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: var(--sf);
-  border: 0.125rem solid var(--bd);
+  background: var(--v-sf2);
+  border: 0.125rem solid var(--v-bd);
   font-weight: 700;
   font-size: 0.85rem;
-  color: var(--tx2);
-  transition: all 0.2s ease;
+  color: var(--tx);
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
 }
 .vocab-option:hover:not(:disabled) .vocab-option-key {
-  border-color: var(--p4);
-  background: var(--p4);
+  background: var(--acc-fill);
+  border-color: var(--acc-fill);
   color: #fff;
 }
-.vocab-option.is-selected .vocab-option-key { border-color: var(--p5); background: var(--p5); color: #fff; }
-.vocab-option.is-correct .vocab-option-key { border-color: var(--grn); background: var(--grn); color: #fff; }
-.vocab-option.is-incorrect .vocab-option-key { border-color: var(--red); background: var(--red); color: #fff; }
 .vocab-option-text { font-weight: 500; line-height: 1.45; }
 
-/* ── Feedback panel ────────────────────────────────── */
-.vocab-feedback-panel {
-  margin-top: 0.25rem;
+/* answered: the pick is filled red or green, the right answer always green */
+.vocab-option.is-selected { --acc-fill: var(--v-blue-fill); }
+.vocab-option.is-correct   { --acc: var(--v-green); --acc-fill: var(--v-green-fill); }
+.vocab-option.is-incorrect { --acc: var(--v-red);   --acc-fill: var(--v-red-fill); }
+.vocab-option.is-selected,
+.vocab-option.is-correct,
+.vocab-option.is-incorrect {
+  color: #fff;
+  background: var(--acc-fill);
+  border-color: var(--acc-fill);
+  transform: scale(1.01);
+}
+.vocab-option.is-selected .vocab-option-key,
+.vocab-option.is-correct .vocab-option-key,
+.vocab-option.is-incorrect .vocab-option-key,
+.vocab-option.is-selected .vocab-pos-chip,
+.vocab-option.is-correct .vocab-pos-chip,
+.vocab-option.is-incorrect .vocab-pos-chip {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: transparent;
+  color: #fff;
+}
+
+/* ── Use it in a sentence ──────────────────────────── */
+.vocab-sentence-section {
+  margin-top: 0.9rem;
   padding: 1.1rem 1.2rem;
   border-radius: 0.85rem;
-  border: 1px solid var(--bd);
-  background: var(--sf2);
-  animation: fadeUp 0.3s ease both;
+  border: 1px solid var(--v-bd);
+  background: var(--v-sf);
 }
-.vocab-feedback-panel.is-correct { border-color: rgba(52, 211, 153, 0.5); }
-.vocab-feedback-panel.is-incorrect { border-color: rgba(248, 113, 113, 0.5); }
-.vocab-feedback-head {
+.vocab-sentence-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--v-tx2);
+  margin-bottom: 0.55rem;
+}
+.vocab-sentence-label strong { color: var(--tx); }
+.vocab-sentence-input {
+  width: 100%;
+  resize: vertical;
+  padding: 0.8rem 0.95rem;
+  border-radius: 0.7rem;
+  background: var(--v-sf2);
+  border: 1px solid var(--v-bd);
+  color: var(--tx);
+  font-family: inherit;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.vocab-sentence-input::placeholder { color: var(--v-tx3); }
+.vocab-sentence-input:focus {
+  border-color: var(--v-blue);
+  box-shadow: 0 0 0 0.25rem var(--v-focus);
+}
+.vocab-sentence-input:disabled { color: var(--v-tx3); cursor: not-allowed; }
+.vocab-sentence-actions { display: flex; justify-content: flex-end; margin-top: 0.6rem; }
+.vocab-sentence-feedback {
+  margin-top: 0.7rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: 0.7rem;
+  border: 1px solid var(--v-bd);
+  background: var(--v-sf2);
+  color: var(--v-tx2);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+.vocab-sentence-feedback.is-correct { border-color: var(--v-green); }
+.vocab-sentence-feedback.is-incorrect { border-color: var(--v-red); }
+/* a service hiccup is not a wrong answer — lighter grey, no state colour */
+.vocab-sentence-feedback.is-error {
+  background: var(--v-sf3);
+  border-color: var(--v-sf3);
+  color: var(--v-tx3);
+}
+
+/* the quiz prompt uses the same flashcard shell as learn.html */
+.vocab-quiz-flip {
+  max-width: none;
+  height: 15rem;
+  cursor: default;
+  margin-bottom: 1.75rem;
+}
+.vocab-quiz-flip:hover .vocab-flip-inner { transform: none; }
+.vocab-quiz-flip.is-flipped:hover .vocab-flip-inner { transform: rotateY(180deg); }
+.vocab-flip-label {
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  font-size: 0.95rem;
+  color: var(--tx);
+}
+.vocab-flip-verdict {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-bottom: 0.4rem;
+  font-weight: 800;
+  font-size: 1rem;
+  color: var(--acc);
 }
-.vocab-feedback-panel.is-correct .material-icons-round { color: var(--grn); }
-.vocab-feedback-panel.is-incorrect .material-icons-round { color: var(--red); }
-.vocab-feedback-verdict { font-weight: 800; font-size: 0.95rem; color: var(--tx); }
-.vocab-feedback-def { color: var(--tx2); font-size: 0.92rem; line-height: 1.5; margin: 0 0 0.35rem; }
-.vocab-feedback-def strong { color: var(--tx); }
-.vocab-feedback-ex {
-  color: var(--tx3);
-  font-size: 0.85rem;
-  font-style: italic;
-  line-height: 1.5;
-  margin: 0;
-}
+.vocab-quiz-flip.tone-green .vocab-flip-face,
+.vocab-quiz-flip.tone-red .vocab-flip-face { border-color: var(--acc); box-shadow: 0 0.35rem 0 0 var(--acc); }
+.vocab-quiz-flip .vocab-flip-def { font-size: clamp(1rem, 2.4vw, 1.25rem); }
 
 /* ── Quiz nav ──────────────────────────────────────── */
 .vocab-quiz-nav {
@@ -780,117 +1367,12 @@
   gap: 1rem;
   margin-top: 0.25rem;
 }
-.vocab-nav-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 0.65rem 1.1rem;
-  border-radius: 0.7rem;
-  background: var(--sf2);
-  border: 1px solid var(--bd);
-  color: var(--tx2);
-  font-weight: 600;
-  font-size: 0.88rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-.vocab-nav-btn:hover:not(:disabled) { color: var(--p5); border-color: var(--p4); }
-.vocab-nav-btn:disabled, .vocab-start-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-  transform: none !important;
-  filter: none !important;
-}
 
-/* results stage (minimal skeleton) */
-.vocab-results-stage {
-  text-align: center;
-  padding: 4rem 1rem;
-  color: var(--tx2);
-}
-.vocab-results-icon { font-size: 3rem; color: var(--gold); display: block; margin: 0 auto 1.5rem; }
-
-/* ═══════════════════════════════════════════════════
-   LOADING / ERROR / GATE STATES
-   ═══════════════════════════════════════════════════ */
-
-.vocab-state {
-  max-width: 34rem;
-  margin: 0 auto;
-  padding: 2.5rem 1.5rem;
-}
-.vocab-state-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 0.5rem;
-  padding: 2.75rem 2rem;
-  border-radius: 1rem;
-  background: var(--sf2);
-  border: 1px solid var(--bd);
-}
-.vocab-spinner {
-  width: 2.25rem;
-  height: 2.25rem;
-  border-radius: 50%;
-  border: 0.2rem solid var(--bd);
-  border-top-color: var(--p4);
-  animation: spin 0.8s linear infinite;
-  margin-bottom: 0.75rem;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-.vocab-state-icon { font-size: 2.75rem; color: var(--tx3); display: block; margin-bottom: 0.5rem; }
-.vocab-state-title { font-weight: 800; color: var(--tx); font-size: 1.15rem; margin: 0; }
-.vocab-state-sub { color: var(--tx2); font-size: 0.9rem; line-height: 1.55; margin: 0; max-width: 26rem; }
-
-.vocab-gate-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 0.5rem;
-  padding: 3rem 2rem;
-  border-radius: 1rem;
-  background: var(--sf2);
-  border: 1px solid var(--bd);
-  margin-bottom: 1.75rem;
-}
-.vocab-gate-icon { font-size: 2.75rem; color: var(--p4); display: block; margin-bottom: 0.5rem; }
-.vocab-gate-title { font-weight: 800; color: var(--tx); font-size: 1.2rem; margin: 0; }
-.vocab-gate-sub { color: var(--tx2); font-size: 0.92rem; line-height: 1.55; margin: 0 0 1rem; max-width: 26rem; }
-
-/* ── Expandable word detail (learn) ───────────────── */
-.vocab-word-detail {
-  padding: 0.85rem 1.1rem;
-  border-left: 0.2rem solid var(--p4);
-  border-radius: 0 0.6rem 0.6rem 0;
-  background: var(--sf);
-  margin-bottom: 0.6rem;
-}
-.vocab-word-detail-def,
-.vocab-word-detail-ex {
-  margin: 0 0 0.35rem;
-  font-size: 0.88rem;
-  color: var(--tx2);
-  line-height: 1.55;
-}
-.vocab-word-detail-ex { font-style: italic; color: var(--tx3); margin-bottom: 0; }
-.vocab-word-detail-label {
-  display: inline-block;
-  font-size: 0.66rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--p5);
-  margin-right: 0.5rem;
-}
-
-/* ═══════════════════════════════════════════════════
-   RESULTS STAGE (full)
-   ═══════════════════════════════════════════════════ */
-
+/* ═══ RESULTS ══════════════════════════════════════════ */
+.vocab-results-stage { text-align: center; padding: 3rem 1rem; color: var(--v-tx2); }
+.vocab-results-icon { font-size: 3rem; color: var(--v-amber); display: block; margin: 0 auto 1.5rem; }
 .vocab-results-score { margin-bottom: 1rem; }
+/* hard stops only — this reads as two solid sectors, not a blend */
 .vocab-results-ring {
   --score: 0;
   width: 9.5rem;
@@ -901,14 +1383,14 @@
   align-items: center;
   justify-content: center;
   background:
-    radial-gradient(closest-side, var(--sf2) 78%, transparent 80% 100%),
-    conic-gradient(var(--grn) calc(var(--score) * 1%), var(--bd2) 0);
+    radial-gradient(closest-side, var(--v-sf) 78%, transparent 80% 100%),
+    conic-gradient(var(--v-green) calc(var(--score) * 1%), var(--v-bd) 0);
   margin: 0 auto;
 }
 .vocab-results-num { font-size: 1.7rem; font-weight: 800; color: var(--tx); line-height: 1.1; }
-.vocab-results-acc { font-size: 0.8rem; font-weight: 700; color: var(--tx3); text-transform: uppercase; letter-spacing: 0.06em; }
+.vocab-results-acc { font-size: 0.9rem; font-weight: 700; color: var(--v-tx3); }
 .vocab-results-title { font-size: 1.4rem; font-weight: 800; color: var(--tx); margin: 0 0 0.3rem; }
-.vocab-results-sub { color: var(--tx2); font-size: 0.92rem; line-height: 1.5; margin: 0 auto 1.75rem; max-width: 30rem; }
+.vocab-results-sub { color: var(--v-tx2); font-size: 0.92rem; line-height: 1.5; margin: 0 auto 1.75rem; max-width: 30rem; }
 
 .vocab-review-list {
   display: flex;
@@ -924,12 +1406,12 @@
   gap: 0.85rem;
   padding: 0.9rem 1.1rem;
   border-radius: 0.8rem;
-  background: var(--sf2);
-  border: 1px solid var(--bd);
+  background: var(--v-sf);
+  border: 1px solid var(--v-bd);
 }
 .vocab-review-dot { font-size: 1.3rem; flex-shrink: 0; }
-.vocab-review-dot.is-correct { color: var(--grn); }
-.vocab-review-dot.is-incorrect { color: var(--red); }
+.vocab-review-dot.is-correct { color: var(--v-green); }
+.vocab-review-dot.is-incorrect { color: var(--v-red); }
 .vocab-review-main { flex: 1; min-width: 0; }
 .vocab-review-word {
   display: flex;
@@ -939,34 +1421,23 @@
   color: var(--tx);
   margin-bottom: 0.15rem;
 }
-.vocab-review-def {
-  color: var(--tx2);
-  font-size: 0.84rem;
-  line-height: 1.45;
-  margin: 0;
-}
-.vocab-review-answer {
-  flex-shrink: 0;
-  max-width: 16rem;
-  text-align: right;
-}
+.vocab-review-def { color: var(--v-tx2); font-size: 0.84rem; line-height: 1.45; margin: 0; }
+.vocab-review-answer { flex-shrink: 0; max-width: 16rem; text-align: right; }
 .vocab-review-answer-label {
-  font-size: 0.64rem;
+  font-size: 0.78rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--tx3);
+  color: var(--v-tx3);
   display: block;
   margin-bottom: 0.15rem;
 }
 .vocab-review-answer-text {
   font-size: 0.84rem;
   font-weight: 600;
-  color: var(--tx2);
+  color: var(--v-tx2);
   line-height: 1.4;
   display: block;
 }
-.vocab-review-answer.is-correct .vocab-review-answer-text { color: var(--grn); }
+.vocab-review-answer.is-correct .vocab-review-answer-text { color: var(--v-green); }
 
 .vocab-results-actions {
   display: flex;
@@ -975,121 +1446,79 @@
   gap: 0.75rem;
   flex-wrap: wrap;
 }
-.vocab-ghost-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  padding: 0.75rem 1.35rem;
-  border-radius: 0.75rem;
-  background: var(--sf2);
-  border: 1px solid var(--bd);
-  color: var(--tx2);
-  font-weight: 700;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-.vocab-ghost-btn:hover { color: var(--p5); border-color: var(--p4); background: var(--sf); transform: translateY(-1px); }
-.vocab-ghost-btn .material-icons-round { font-size: 1.1rem; }
 
+/* ═══ Loading / error / gate states ════════════════════ */
+.vocab-state { max-width: 34rem; margin: 0 auto; padding: 2.5rem 1.5rem; }
+.vocab-state-card,
+.vocab-gate-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.5rem;
+  padding: 2.75rem 2rem;
+  border-radius: 1rem;
+  background: var(--v-sf);
+  border: 1px solid var(--v-bd);
+}
+.vocab-gate-card { padding: 3rem 2rem; margin: 0 auto; }
+.vocab-spinner {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  border: 0.2rem solid var(--v-bd);
+  border-top-color: var(--v-blue);
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 0.75rem;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.vocab-state-icon { font-size: 2.75rem; color: var(--v-tx3); display: block; margin-bottom: 0.5rem; }
+.vocab-state-title { font-weight: 800; color: var(--tx); font-size: 1.15rem; margin: 0; }
+.vocab-state-sub { color: var(--v-tx2); font-size: 0.9rem; line-height: 1.55; margin: 0; max-width: 26rem; }
+.vocab-gate-icon { font-size: 2.75rem; color: var(--v-blue); display: block; margin-bottom: 0.5rem; }
+.vocab-gate-title { font-weight: 800; color: var(--tx); font-size: 1.2rem; margin: 0; }
+.vocab-gate-sub { color: var(--v-tx2); font-size: 0.92rem; line-height: 1.55; margin: 0 0 1rem; max-width: 26rem; }
+
+/* ── Exit modal: solid surfaces, solid confirm ─────── */
+#vocab-exit-modal .delete-modal-content {
+  background: var(--v-sf);
+  border: 1px solid var(--v-bd);
+}
+#vocab-exit-modal .delete-modal-btn.cancel {
+  background: var(--v-sf2);
+  border: 1px solid var(--v-bd);
+  color: var(--tx);
+}
+#vocab-exit-modal .delete-modal-btn.confirm {
+  background: var(--v-red-fill);
+  border: 1px solid var(--v-red-fill);
+  color: #fff;
+  opacity: 1;
+}
+
+/* ── Starfield sits behind the page ────────────────── */
+#bg-canvas { z-index: 0; }
+#main-area-wrapper { position: relative; z-index: 1; }
+
+/* ═══ Responsive ═══════════════════════════════════════ */
+@media (max-width: 1024px) {
+  /* the rail stops being a rail — progress rides above the word list */
+  .vocab-learn-cols { grid-template-columns: minmax(0, 1fr); }
+  .vocab-side { position: static; max-height: none; overflow: visible; }
+}
+@media (max-width: 768px) {
+  .vocab-learn, .vocab-practice { padding: 1.75rem 1rem 4rem; }
+  .vocab-learn-hero { flex-direction: column; align-items: flex-start; gap: 1.25rem; }
+  .vocab-flip { height: 21rem; }
+  .vocab-sentence-row { flex-direction: column; }
+  .vocab-card-controls { gap: 0.75rem; }
+  .vocab-select { width: 100%; justify-content: space-between; }
+  .vocab-select-menu { left: 0; right: auto; }
+}
 @media (max-width: 640px) {
+  .vocab-browse-row { flex-wrap: wrap; }
+  .vocab-browse-word { min-width: 0; width: 100%; }
+  .vocab-browse-def { width: 100%; flex-basis: 100%; }
   .vocab-review-row { flex-wrap: wrap; }
   .vocab-review-answer { max-width: none; text-align: left; }
 }
-
-/* ── Word origin chip (learn cards + detail) ───────── */
-.vocab-word-card-meta {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-.vocab-etym-chip {
-  font-size: 0.62rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 0.18rem 0.45rem;
-  border-radius: 999px;
-  color: var(--tx3);
-  background: var(--sf);
-  border: 1px solid var(--bd);
-}
-
-/* ── Browse toolbar (filter + bulk add) ────────────── */
-.vocab-browse-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-  margin-bottom: 1rem;
-}
-.vocab-browse-search-wrap {
-  position: relative;
-  flex: 1 1 14rem;
-}
-.vocab-browse-search {
-  padding: 0.7rem 1rem 0.7rem 2.9rem;
-  font-size: 0.9rem;
-}
-.vocab-browse-search-wrap .vocab-search-icon { font-size: 1.2rem; left: 0.85rem; }
-
-/* ── Use-it-in-a-sentence (AI check) ───────────────── */
-.vocab-sentence-section {
-  margin-top: 0.9rem;
-  padding: 1.1rem 1.2rem;
-  border-radius: 0.85rem;
-  border: 1px solid var(--bd);
-  background: var(--sf2);
-}
-.vocab-sentence-label {
-  display: block;
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--tx2);
-  margin-bottom: 0.55rem;
-}
-.vocab-sentence-label strong { color: var(--tx); }
-.vocab-sentence-input {
-  width: 100%;
-  resize: vertical;
-  padding: 0.7rem 0.85rem;
-  border-radius: 0.7rem;
-  background: var(--sf);
-  border: 1px solid var(--bd);
-  color: var(--tx);
-  font-family: inherit;
-  font-size: 0.92rem;
-  line-height: 1.5;
-  outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-.vocab-sentence-input::placeholder { color: var(--tx3); }
-.vocab-sentence-input:focus {
-  border-color: var(--p4);
-  box-shadow: 0 0 0 0.25rem var(--cu);
-}
-.vocab-sentence-input:disabled { opacity: 0.6; cursor: not-allowed; }
-.vocab-sentence-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 0.6rem;
-}
-.vocab-sentence-actions .vocab-ghost-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-}
-.vocab-sentence-feedback {
-  margin-top: 0.7rem;
-  padding: 0.7rem 0.85rem;
-  border-radius: 0.7rem;
-  border: 1px solid var(--bd);
-  background: var(--sf);
-  color: var(--tx2);
-  font-size: 0.88rem;
-  line-height: 1.55;
-}
-.vocab-sentence-feedback.is-correct { border-color: rgba(52, 211, 153, 0.5); }
-.vocab-sentence-feedback.is-incorrect { border-color: rgba(248, 113, 113, 0.5); }
-.vocab-sentence-feedback.is-error { border-color: var(--bd); color: var(--tx3); }

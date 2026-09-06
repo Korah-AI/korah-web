@@ -29,7 +29,7 @@
 <link rel="icon" type="image/png" href="../../logo-images/newlogo0.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <script src="../../sidebar-loader.js" defer></script>
@@ -58,13 +58,72 @@
   })();
 </script>
 
+<canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
+<script>
+  /* The starfield/shooting stars live in sidebar.js. korahReady only fires
+     once the Firestore bootstrap below resolves, so kick it off on whichever
+     of korahReady / load lands first. */
+  (function () {
+    let started = false;
+    function startBackground() {
+      if (started || !window.KorahSidebar || !window.KorahSidebar.initBackground) return;
+      started = true;
+      window.KorahSidebar.initBackground();
+    }
+    window.addEventListener('korahReady', startBackground, { once: true });
+    window.addEventListener('load', startBackground, { once: true });
+    if (document.readyState === 'complete') startBackground();
+  })();
+</script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+  import { setupKorahDB } from "../../app/data/firestore-store.js";
+  import { initVocabSync } from "./js/vocab-sync.js";
+  import { startAuthGuard } from '../../auth-guard.js';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
+    authDomain: "korah-app.firebaseapp.com",
+    projectId: "korah-app",
+    storageBucket: "korah-app.firebasestorage.app",
+    messagingSenderId: "226169460321",
+    appId: "1:226169460321:web:b166fc8260107c55dafc20"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      window.KorahTransitions.go('../../landing/index.html');
+      return;
+    }
+    await setupKorahDB(app, user.uid);
+    await initVocabSync(app, user.uid);
+    const detail = { uid: user.uid };
+    window._korahReadyFired = detail;
+    window.dispatchEvent(new CustomEvent('korahReady', { detail }));
+    startAuthGuard(auth, '../../landing/index.html');
+  });
+
+  document.getElementById('logout-btn')?.addEventListener('click', () => {
+    window.confirmLogout(async () => {
+      await signOut(auth);
+      localStorage.removeItem('korah_first_name');
+      window.KorahTransitions.go('../../login.html');
+    });
+  });
+</script>
+
 <div id="sidebar-root"></div>
 
 <div id="main-area-wrapper" class="main-area-wrapper">
 <main id="main-content" class="main-content" x-data="vocabLearn()">
 
   <!-- Top bar -->
-  <header class="chat-topbar bg-sf glass-sm t-theme bd" style="opacity: 0.95;">
+  <header class="chat-topbar bg-sf glass-sm t-theme bd">
     <button id="sidebar-toggle" @click="toggleSidebar()" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
@@ -95,128 +154,494 @@
     </div>
   </div>
 
-  <div class="vocab-learn" x-show="dataStatus === 'ready'" x-cloak>
+  <!-- ═══ FLASHCARD MODE ═══ -->
+  <div class="vocab-learn vocab-card-view" x-show="dataStatus === 'ready' && !showAll" x-cloak>
 
-    <!-- Header: title + wordbank count + practice CTA -->
-    <div class="vocab-learn-hero">
-      <div class="vocab-learn-title-group">
-        <div class="vocab-kicker">SAT VOCABULARY</div>
-        <h1 class="vocab-title">Build your word bank</h1>
-        <p class="vocab-sub">Search 988 SAT words and save the ones you want to master. Add at least 5 to unlock practice.</p>
-      </div>
-      <div class="vocab-learn-hero-actions">
-        <div class="vocab-count-pill">
-          <span class="material-icons-round">library_books</span>
-          <span class="vocab-count-num" x-text="learntWords.length">0</span>
-          <span class="vocab-count-label">saved</span>
-        </div>
-        <a href="./practice.html"
-           class="vocab-practice-cta t-btn"
-           :class="learntWords.length >= 5 ? '' : 'is-disabled'"
-           :data-hint="learntWords.length >= 5 ? 'Start practicing' : 'Add at least 5 words to unlock practice'">
-          <span class="material-icons-round">play_arrow</span>
-          <span>Practice these words</span>
-        </a>
+    <div class="vocab-card-hero">
+      <h1 class="vocab-title">Learn Vocabulary</h1>
+      <p class="vocab-card-meta" x-show="card">
+        <span>Card <span x-text="cardIndex + 1"></span> of <span x-text="deck.length"></span></span>
+        <span class="vocab-card-sep">•</span>
+        <span class="vocab-card-viewing">Viewing: “<span x-text="card ? card.word : ''"></span>”</span>
+      </p>
+      <div class="vocab-count-pill">
+        <span class="material-icons-round">library_books</span>
+        <span class="vocab-count-num" x-text="learntWords.length">0</span>
+        <span class="vocab-count-label">saved</span>
       </div>
     </div>
 
-    <!-- Search bar -->
-    <div class="vocab-search-wrap">
-      <span class="material-icons-round vocab-search-icon">search</span>
-      <input x-model.debounce.250ms="query" type="search" placeholder="Search a word, e.g. 'abase', 'eloquent'..." class="vocab-search-input" />
-      <button class="vocab-filter-toggle t-btn" @click="showFilters = !showFilters"
-              :class="{ 'is-active': showFilters || hasActiveFilters }">
-        <span class="material-icons-round">tune</span>
-        <span class="vocab-filter-toggle-label">Filters</span>
-        <span class="vocab-filter-count" x-show="activeFilterCount > 0" x-text="activeFilterCount"></span>
+    <!-- deck filters -->
+    <div class="vocab-card-controls">
+      <div class="vocab-select" x-data="{ open: false }" @click.outside="open = false">
+        <span class="vocab-select-label">Difficulty:</span>
+        <button class="vocab-select-btn t-btn" @click="open = !open" :class="{ 'is-open': open }">
+          <span x-text="diffLabel"></span>
+          <span class="material-icons-round">expand_more</span>
+        </button>
+        <div class="vocab-select-menu" x-show="open" x-transition.opacity.duration.150ms x-cloak>
+          <template x-for="opt in diffOptions" :key="opt.value">
+            <button class="vocab-select-opt t-btn" :class="[opt.tone, filterDiff === opt.value ? 'is-on' : '']"
+                    @click="setDiff(opt.value); open = false">
+              <span class="vocab-diff-dot" x-show="opt.value !== 'all'" :class="'is-' + opt.value"></span>
+              <span x-text="opt.label"></span>
+            </button>
+          </template>
+        </div>
+      </div>
+
+      <div class="vocab-select" x-data="{ open: false }" @click.outside="open = false">
+        <span class="vocab-select-label">Progress:</span>
+        <button class="vocab-select-btn t-btn" @click="open = !open" :class="{ 'is-open': open }">
+          <span x-text="progressLabel"></span>
+          <span class="material-icons-round">expand_more</span>
+        </button>
+        <div class="vocab-select-menu" x-show="open" x-transition.opacity.duration.150ms x-cloak>
+          <template x-for="opt in progressOptions" :key="opt.value">
+            <button class="vocab-select-opt t-btn" :class="[opt.tone, filterProgress === opt.value ? 'is-on' : '']"
+                    @click="setProgress(opt.value); open = false">
+              <span x-text="opt.label"></span>
+            </button>
+          </template>
+        </div>
+      </div>
+    </div>
+
+    <!-- the card itself -->
+    <template x-if="card">
+      <div class="vocab-flip" :class="[diffTone(card), flipped ? 'is-flipped' : '', isLearnt(card.word) ? 'is-added' : '']"
+           @click="flipped = !flipped" role="button" tabindex="0"
+           @keydown.enter.prevent="flipped = !flipped" @keydown.space.prevent="flipped = !flipped">
+        <div class="vocab-flip-inner">
+
+          <div class="vocab-flip-face vocab-flip-front">
+            <button class="vocab-add-btn vocab-flip-add t-btn"
+                    :class="{ 'is-added': isLearnt(card.word) }"
+                    @click.stop="toggleWord(card.word)"
+                    :aria-label="isLearnt(card.word) ? 'Remove from word bank' : 'Add to word bank'">
+              <span class="material-icons-round" x-text="isLearnt(card.word) ? 'check' : 'add'"></span>
+            </button>
+            <div class="vocab-flip-word" x-text="card.word"></div>
+            <div class="vocab-flip-chips">
+              <span class="vocab-pos-chip" :data-pos="card.part_of_speech" x-text="card.part_of_speech"></span>
+              <span class="vocab-diff-chip" :class="'is-' + card.difficulty" x-text="card.difficulty"></span>
+            </div>
+            <span class="vocab-etym-chip" x-show="hasEtymology(card)" x-text="card.etymology"></span>
+            <div class="vocab-flip-hint">Click to see definition</div>
+          </div>
+
+          <div class="vocab-flip-face vocab-flip-back">
+            <div class="vocab-flip-back-word" x-text="card.word"></div>
+            <p class="vocab-flip-def" x-text="card.definition"></p>
+            <p class="vocab-flip-ex" x-show="card.example">“<span x-text="card.example"></span>”</p>
+            <p class="vocab-flip-origin" x-show="hasEtymology(card)">
+              <span class="vocab-word-detail-label">Origin</span><span x-text="card.etymology"></span>
+            </p>
+            <div class="vocab-flip-hint">Click to flip back</div>
+          </div>
+
+        </div>
+      </div>
+    </template>
+
+    <div class="vocab-empty-state" x-show="!card" x-cloak>
+      <span class="material-icons-round vocab-empty-icon">search_off</span>
+      <p class="vocab-empty-title">No words match these filters</p>
+      <p class="vocab-empty-sub">Widen the difficulty or progress filter to get your deck back.</p>
+    </div>
+
+    <!-- use it in a sentence -->
+    <div class="vocab-card-sentence" x-show="card">
+      <div class="vocab-sentence-row">
+        <input class="vocab-sentence-input" type="text"
+               x-model="sentenceInput"
+               :disabled="sentenceState === 'checking'"
+               @keydown.enter="checkSentence()"
+               placeholder="Use this word in a sentence" />
+        <button class="vocab-start-btn is-green t-btn" @click="checkSentence()"
+                :disabled="sentenceState === 'checking' || !sentenceInput.trim()">
+          <span x-text="sentenceState === 'checking' ? 'Checking…' : 'Submit'"></span>
+        </button>
+      </div>
+      <div class="vocab-sentence-feedback" x-show="sentenceFeedback" x-cloak
+           :class="{ 'is-correct': sentenceState === 'good', 'is-incorrect': sentenceState === 'bad', 'is-error': sentenceState === 'error' }"
+           x-text="sentenceFeedback"></div>
+    </div>
+
+    <!-- nav -->
+    <div class="vocab-card-nav">
+      <button class="vocab-ghost-btn t-btn" @click="prevCard()" :disabled="cardIndex === 0">
+        <span class="material-icons-round">chevron_left</span><span>Previous</span>
+      </button>
+      <button class="vocab-ghost-btn t-btn" @click="showAll = true">
+        <span class="material-icons-round">grid_view</span><span>View All Words</span>
+      </button>
+      <button class="vocab-ghost-btn t-btn" @click="nextCard()" :disabled="cardIndex >= deck.length - 1">
+        <span>Next</span><span class="material-icons-round">chevron_right</span>
       </button>
     </div>
 
-    <!-- Filter panel -->
-    <div class="vocab-filters" x-show="showFilters" x-transition.opacity.duration.200ms x-cloak>
-      <div class="vocab-filter-group">
-        <span class="vocab-filter-label">Part of speech</span>
-        <div class="vocab-filter-chips">
-          <button class="vocab-filter-chip t-btn" :class="{ 'is-on': filterPos === 'all' }" @click="filterPos = 'all'">All</button>
-          <button class="vocab-filter-chip t-btn" :class="{ 'is-on': filterPos === 'noun' }" @click="filterPos = 'noun'">Noun</button>
-          <button class="vocab-filter-chip t-btn" :class="{ 'is-on': filterPos === 'verb' }" @click="filterPos = 'verb'">Verb</button>
-          <button class="vocab-filter-chip t-btn" :class="{ 'is-on': filterPos === 'adjective' }" @click="filterPos = 'adjective'">Adjective</button>
-          <button class="vocab-filter-chip t-btn" :class="{ 'is-on': filterPos === 'adverb' }" @click="filterPos = 'adverb'">Adverb</button>
-        </div>
-      </div>
-      <div class="vocab-filter-group">
-        <span class="vocab-filter-label">Difficulty</span>
-        <div class="vocab-filter-chips">
-          <button class="vocab-filter-chip t-btn" :class="{ 'is-on': filterDiff === 'all' }" @click="filterDiff = 'all'">All</button>
-          <button class="vocab-filter-chip t-btn" :class="{ 'is-on': filterDiff === 'easy' }" @click="filterDiff = 'easy'"><span class="vocab-diff-dot is-easy"></span>Easy</button>
-          <button class="vocab-filter-chip t-btn" :class="{ 'is-on': filterDiff === 'medium' }" @click="filterDiff = 'medium'"><span class="vocab-diff-dot is-medium"></span>Medium</button>
-          <button class="vocab-filter-chip t-btn" :class="{ 'is-on': filterDiff === 'hard' }" @click="filterDiff = 'hard'"><span class="vocab-diff-dot is-hard"></span>Hard</button>
-        </div>
-      </div>
-      <button class="vocab-filter-clear t-btn" @click="clearFilters" x-show="hasActiveFilters">Clear filters</button>
+    <div class="vocab-card-cta">
+      <a href="./practice.html"
+         class="vocab-practice-cta t-btn"
+         :class="learntWords.length >= 5 ? '' : 'is-disabled'"
+         :data-hint="learntWords.length >= 5 ? 'Start practicing' : 'Add at least 5 words to unlock practice'">
+        <span class="material-icons-round">play_arrow</span>
+        <span>Practice these words</span>
+      </a>
     </div>
 
-    <!-- Results / suggestions -->
-    <div class="vocab-results">
-      <template x-if="query.trim() === '' && filteredCards.length > 0">
-        <div>
-          <div class="vocab-section-head">
-            <span class="vocab-section-title">Discover words</span>
-            <span class="vocab-section-hint">Easy &amp; medium picks to get you started</span>
+  </div>
+
+  <!-- ═══ ALL WORDS MODE ═══ -->
+  <div class="vocab-learn vocab-learn-wide" x-show="dataStatus === 'ready' && showAll" x-cloak>
+
+    <div class="vocab-learn-cols">
+
+      <aside class="vocab-side">
+        <!-- Progress panel -->
+        <section class="vocab-progress-panel">
+          <div class="vocab-progress-head">
+            <span class="material-icons-round">insights</span>
+            <span>Your Progress</span>
           </div>
-          <div class="vocab-card-grid">
-            <template x-for="w in filteredCards" :key="w.word">
-              <div class="vocab-word-card" :class="{ 'is-added': isLearnt(w.word) }">
-                <div class="vocab-word-card-top">
-                  <div>
-                    <div class="vocab-word-name">
-                      <span x-text="w.word"></span>
-                      <span class="vocab-pos-chip" :data-pos="w.part_of_speech" x-text="w.part_of_speech"></span>
-                    </div>
-                    <div class="vocab-word-card-meta">
-                      <div class="vocab-diff-dot" :class="'is-' + w.difficulty"></div>
-                      <span class="vocab-etym-chip" x-show="hasEtymology(w)" x-text="w.etymology"></span>
-                    </div>
+
+          <div class="vocab-progress-overall">
+            <div class="vocab-progress-topline">
+              <span class="vocab-progress-h">Overall Progress</span>
+              <span class="vocab-progress-pct" x-text="stats.pct + '%'">0%</span>
+            </div>
+            <div class="vocab-progress-bar">
+              <div class="vocab-progress-bar-fill" :style="'width:' + stats.pct + '%'"></div>
+            </div>
+            <div class="vocab-progress-tiles">
+              <div class="vocab-progress-tile tone-green">
+                <span class="vocab-progress-tile-label">Proficient</span>
+                <span class="vocab-progress-tile-num" x-text="stats.learned">0</span>
+              </div>
+              <div class="vocab-progress-tile tone-amber">
+                <span class="vocab-progress-tile-label">Remaining</span>
+                <span class="vocab-progress-tile-num" x-text="stats.remaining">0</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="vocab-progress-split">
+            <div class="vocab-progress-block">
+              <h3 class="vocab-progress-h">Difficulty Breakdown</h3>
+              <template x-for="row in stats.byDifficulty" :key="row.key">
+                <div class="vocab-progress-row">
+                  <div class="vocab-progress-row-top">
+                    <span class="vocab-progress-row-label">
+                      <span class="vocab-diff-dot" :class="'is-' + row.key"></span>
+                      <span x-text="row.label"></span>
+                    </span>
+                    <span class="vocab-progress-row-val" x-text="`${row.learned}/${row.total} (${row.pct}%)`"></span>
                   </div>
-                  <button class="vocab-add-btn t-btn"
-                          :class="{ 'is-added': isLearnt(w.word) }"
-                          @click="toggleWord(w.word)"
-                          :aria-label="isLearnt(w.word) ? 'Remove from word bank' : 'Add to word bank'">
-                    <span class="material-icons-round" x-text="isLearnt(w.word) ? 'check' : 'add'"></span>
-                  </button>
+                  <div class="vocab-progress-bar is-sm" :class="'is-' + row.key">
+                    <div class="vocab-progress-bar-fill" :style="'width:' + row.pct + '%'"></div>
+                  </div>
                 </div>
-                <p class="vocab-word-def" x-text="w.definition"></p>
+              </template>
+            </div>
+
+            <div class="vocab-progress-block">
+              <h3 class="vocab-progress-h">Mastery Level Breakdown</h3>
+              <div class="vocab-progress-mastery">
+                <template x-for="m in stats.mastery" :key="m.key">
+                  <div class="vocab-progress-mchip" :class="m.tone">
+                    <span class="vocab-progress-mdot"></span>
+                    <span class="vocab-progress-mlabel" x-text="m.label"></span>
+                    <span class="vocab-progress-mnum" x-text="m.count"></span>
+                  </div>
+                </template>
+              </div>
+              <div class="vocab-progress-mchip is-muted">
+                <span class="vocab-progress-mdot"></span>
+                <span class="vocab-progress-mlabel">Not Practiced</span>
+                <span class="vocab-progress-mnum" x-text="stats.notPracticed"></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="vocab-progress-foot">
+            <div class="vocab-progress-stat">
+              <span class="vocab-progress-stat-num" x-text="stats.practiced">0</span>
+              <span class="vocab-progress-stat-label">Words Practiced</span>
+            </div>
+            <div class="vocab-progress-stat">
+              <span class="vocab-progress-stat-num" x-text="stats.sentences">0</span>
+              <span class="vocab-progress-stat-label">Total Sentences</span>
+            </div>
+          </div>
+        </section>
+
+          <!-- Study sets -->
+        <section class="vocab-sets">
+          <div class="vocab-progress-head">
+            <span class="material-icons-round">bookmarks</span>
+            <span>Study Sets</span>
+          </div>
+          <div class="vocab-sets-list">
+            <template x-for="set in studySets" :key="set.id">
+              <div class="vocab-sets-row">
+                <a class="vocab-sets-row-main" :href="'./practice.html?set=' + set.id">
+                  <span class="vocab-sets-name" x-text="set.name"></span>
+                  <span class="vocab-sets-count" x-text="`${set.words.length} word${set.words.length === 1 ? '' : 's'} · practice`"></span>
+                </a>
+                <button class="vocab-sets-btn is-danger t-btn" @click="deleteSet(set.id)" title="Delete this set">
+                  <span class="material-icons-round">delete_outline</span>
+                </button>
               </div>
             </template>
+            <p class="vocab-sets-empty" x-show="studySets.length === 0" x-cloak>No Study Sets Yet</p>
+          </div>
+        </section>
+      </aside>
+
+      <div class="vocab-main-col">
+
+        <!-- Header: title + wordbank count + practice CTA -->
+        <div class="vocab-learn-hero">
+          <div class="vocab-learn-title-group">
+            <div class="vocab-kicker">sat vocabulary</div>
+            <h1 class="vocab-title">Build your word bank</h1>
+            <p class="vocab-sub">Search 988 SAT words and save the ones you want to master. Add at least 5 to unlock practice.</p>
+          </div>
+          <div class="vocab-learn-hero-actions">
+            <a href="../../index.html" class="vocab-ghost-btn t-btn">
+              <span class="material-icons-round">home</span><span>Back to home</span>
+            </a>
+            <button class="vocab-ghost-btn t-btn" @click="showAll = false">
+              <span class="material-icons-round">style</span><span>Back to cards</span>
+            </button>
+            <div class="vocab-count-pill">
+              <span class="material-icons-round">library_books</span>
+              <span class="vocab-count-num" x-text="learntWords.length">0</span>
+              <span class="vocab-count-label">saved</span>
+            </div>
+            <a href="./practice.html"
+               class="vocab-practice-cta t-btn"
+               :class="learntWords.length >= 5 ? '' : 'is-disabled'"
+               :data-hint="learntWords.length >= 5 ? 'Start practicing' : 'Add at least 5 words to unlock practice'">
+              <span class="material-icons-round">play_arrow</span>
+              <span>Practice these words</span>
+            </a>
           </div>
         </div>
-      </template>
 
-      <template x-if="query.trim() !== '' && filtered.length > 0">
-        <div>
-          <div class="vocab-section-head">
-            <span class="vocab-section-title" x-text="`${filtered.length} result${filtered.length === 1 ? '' : 's'} for “${query}”`"></span>
+
+        <!-- Search bar -->
+        <div class="vocab-search-wrap">
+          <span class="material-icons-round vocab-search-icon">search</span>
+          <input x-model.debounce.250ms="query" type="search" placeholder="Search a word, e.g. 'abase', 'eloquent'..." class="vocab-search-input" />
+        </div>
+
+        <!-- Filter panel -->
+        <div class="vocab-filters">
+          <div class="vocab-filter-group">
+            <span class="vocab-filter-label">Part of speech</span>
+            <div class="vocab-filter-chips">
+              <button class="vocab-filter-chip t-btn tone-blue" :class="{ 'is-on': filterPos === 'all' }" @click="filterPos = 'all'">All</button>
+              <button class="vocab-filter-chip t-btn tone-teal" :class="{ 'is-on': filterPos === 'noun' }" @click="filterPos = 'noun'">Noun</button>
+              <button class="vocab-filter-chip t-btn tone-green" :class="{ 'is-on': filterPos === 'verb' }" @click="filterPos = 'verb'">Verb</button>
+              <button class="vocab-filter-chip t-btn tone-amber" :class="{ 'is-on': filterPos === 'adjective' }" @click="filterPos = 'adjective'">Adjective</button>
+              <button class="vocab-filter-chip t-btn tone-pink" :class="{ 'is-on': filterPos === 'adverb' }" @click="filterPos = 'adverb'">Adverb</button>
+            </div>
           </div>
-          <div class="vocab-search-results-list">
-            <template x-for="w in filtered" :key="w.word">
-              <div>
-                <div class="vocab-result-row" :class="{ 'is-added': isLearnt(w.word) }" @click="toggleExpand(w.word)">
-                  <div class="vocab-result-main">
-                    <div class="vocab-result-label">
-                      <span class="vocab-word-name">
-                        <span x-text="w.word"></span>
-                        <span class="vocab-pos-chip" :data-pos="w.part_of_speech" x-text="w.part_of_speech"></span>
-                      </span>
-                      <div class="vocab-diff-dot" :class="'is-' + w.difficulty"></div>
+          <div class="vocab-filter-group">
+            <span class="vocab-filter-label">Difficulty</span>
+            <div class="vocab-filter-chips">
+              <button class="vocab-filter-chip t-btn tone-blue" :class="{ 'is-on': filterDiff === 'all' }" @click="setDiff('all')">All</button>
+              <button class="vocab-filter-chip t-btn tone-green" :class="{ 'is-on': filterDiff === 'easy' }" @click="setDiff('easy')"><span class="vocab-diff-dot is-easy"></span>Easy</button>
+              <button class="vocab-filter-chip t-btn tone-amber" :class="{ 'is-on': filterDiff === 'medium' }" @click="setDiff('medium')"><span class="vocab-diff-dot is-medium"></span>Medium</button>
+              <button class="vocab-filter-chip t-btn tone-red" :class="{ 'is-on': filterDiff === 'hard' }" @click="setDiff('hard')"><span class="vocab-diff-dot is-hard"></span>Hard</button>
+            </div>
+          </div>
+          <button class="vocab-filter-clear t-btn" @click="clearFilters" x-show="hasActiveFilters">Clear filters</button>
+        </div>
+
+        <!-- Results / suggestions -->
+        <div class="vocab-results">
+          <template x-if="query.trim() === '' && filteredCards.length > 0">
+            <div>
+              <div class="vocab-section-head">
+                <span class="vocab-section-title">Discover words</span>
+                <span class="vocab-section-hint">Easy &amp; medium picks to get you started</span>
+              </div>
+              <div class="vocab-card-grid">
+                <template x-for="w in filteredCards" :key="w.word">
+                  <div class="vocab-word-card" :class="[diffTone(w), isLearnt(w.word) ? 'is-added' : '']">
+                    <div class="vocab-word-card-top">
+                      <div>
+                        <div class="vocab-word-name">
+                          <span x-text="w.word"></span>
+                          <span class="vocab-pos-chip" :data-pos="w.part_of_speech" x-text="w.part_of_speech"></span>
+                        </div>
+                        <div class="vocab-word-card-meta">
+                          <span class="vocab-diff-chip is-sm" :class="'is-' + w.difficulty" x-text="w.difficulty"></span>
+                          <span class="vocab-etym-chip" x-show="hasEtymology(w)" x-text="w.etymology"></span>
+                        </div>
+                      </div>
+                      <div class="vocab-card-actions">
+                        <button class="vocab-add-btn t-btn"
+                                :class="{ 'is-added': isLearnt(w.word) }"
+                                @click="toggleWord(w.word)"
+                                :aria-label="isLearnt(w.word) ? 'Remove from word bank' : 'Add to word bank'">
+                          <span class="material-icons-round" x-text="isLearnt(w.word) ? 'check' : 'add'"></span>
+                        </button>
+                        <div class="vocab-kebab-wrap" @click.outside="if (menuWord === w.word) menuWord = null">
+                          <button class="vocab-kebab-btn t-btn" @click.stop="menuWord = menuWord === w.word ? null : w.word"
+                                  :class="{ 'is-open': menuWord === w.word }" aria-label="Word options">
+                            <span class="material-icons-round">more_vert</span>
+                          </button>
+                          <div class="vocab-kebab-menu" x-show="menuWord === w.word" x-transition.opacity.duration.150ms x-cloak @click.stop>
+                            <div class="vocab-kebab-head">Add to set</div>
+                            <template x-for="set in studySets" :key="set.id">
+                              <button class="vocab-kebab-opt t-btn" @click="addWordToSet(set.id, w.word)">
+                                <span class="vocab-kebab-opt-name" x-text="set.name"></span>
+                                <span class="material-icons-round vocab-kebab-check" x-show="setHasWord(set, w.word)">check</span>
+                              </button>
+                            </template>
+                            <p class="vocab-kebab-empty" x-show="studySets.length === 0">No sets yet</p>
+                            <button class="vocab-kebab-opt is-new t-btn" @click="addWordToNewSet(w.word)">
+                              <span class="material-icons-round">add</span><span>New set</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                     <p class="vocab-word-def" x-text="w.definition"></p>
                   </div>
-                  <button class="vocab-add-btn t-btn"
-                          :class="{ 'is-added': isLearnt(w.word) }"
-                          @click.stop="toggleWord(w.word)"
-                          :aria-label="isLearnt(w.word) ? 'Remove from word bank' : 'Add to word bank'">
-                    <span class="material-icons-round" x-text="isLearnt(w.word) ? 'check' : 'add'"></span>
-                  </button>
+                </template>
+              </div>
+            </div>
+          </template>
+
+          <template x-if="query.trim() !== '' && filtered.length > 0">
+            <div>
+              <div class="vocab-section-head">
+                <span class="vocab-section-title" x-text="`${filtered.length} result${filtered.length === 1 ? '' : 's'} for “${query}”`"></span>
+              </div>
+              <div class="vocab-search-results-list">
+                <template x-for="w in filtered" :key="w.word">
+                  <div>
+                    <div class="vocab-result-row" :class="[diffTone(w), isLearnt(w.word) ? 'is-added' : '']" @click="toggleExpand(w.word)">
+                      <div class="vocab-result-main">
+                        <div class="vocab-result-label">
+                          <span class="vocab-word-name">
+                            <span x-text="w.word"></span>
+                            <span class="vocab-pos-chip" :data-pos="w.part_of_speech" x-text="w.part_of_speech"></span>
+                          </span>
+                          <span class="vocab-diff-chip is-sm" :class="'is-' + w.difficulty" x-text="w.difficulty"></span>
+                        </div>
+                        <p class="vocab-word-def" x-text="w.definition"></p>
+                      </div>
+                      <div class="vocab-card-actions">
+                        <button class="vocab-add-btn t-btn"
+                                :class="{ 'is-added': isLearnt(w.word) }"
+                                @click.stop="toggleWord(w.word)"
+                                :aria-label="isLearnt(w.word) ? 'Remove from word bank' : 'Add to word bank'">
+                          <span class="material-icons-round" x-text="isLearnt(w.word) ? 'check' : 'add'"></span>
+                        </button>
+                        <div class="vocab-kebab-wrap" @click.outside="if (menuWord === w.word) menuWord = null">
+                          <button class="vocab-kebab-btn t-btn" @click.stop="menuWord = menuWord === w.word ? null : w.word"
+                                  :class="{ 'is-open': menuWord === w.word }" aria-label="Word options">
+                            <span class="material-icons-round">more_vert</span>
+                          </button>
+                          <div class="vocab-kebab-menu" x-show="menuWord === w.word" x-transition.opacity.duration.150ms x-cloak @click.stop>
+                            <div class="vocab-kebab-head">Add to set</div>
+                            <template x-for="set in studySets" :key="set.id">
+                              <button class="vocab-kebab-opt t-btn" @click="addWordToSet(set.id, w.word)">
+                                <span class="vocab-kebab-opt-name" x-text="set.name"></span>
+                                <span class="material-icons-round vocab-kebab-check" x-show="setHasWord(set, w.word)">check</span>
+                              </button>
+                            </template>
+                            <p class="vocab-kebab-empty" x-show="studySets.length === 0">No sets yet</p>
+                            <button class="vocab-kebab-opt is-new t-btn" @click="addWordToNewSet(w.word)">
+                              <span class="material-icons-round">add</span><span>New set</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="vocab-word-detail" x-show="expanded.has(w.word)" x-transition.opacity.duration.200ms x-cloak>
+                      <p class="vocab-word-detail-def"><span class="vocab-word-detail-label">Definition</span><span x-text="w.definition"></span></p>
+                      <p class="vocab-word-detail-ex" x-show="w.example"><span class="vocab-word-detail-label">Example</span>“<span x-text="w.example"></span>”</p>
+                      <p class="vocab-word-detail-def" x-show="hasEtymology(w)"><span class="vocab-word-detail-label">Origin</span><span x-text="w.etymology"></span></p>
+                    </div>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </template>
+
+          <template x-if="(query.trim() === '' && filteredCards.length === 0) || (query.trim() !== '' && filtered.length === 0)">
+            <div class="vocab-empty-state">
+              <span class="material-icons-round vocab-empty-icon">search_off</span>
+              <p class="vocab-empty-title">No words found</p>
+              <p class="vocab-empty-sub">Try a different spelling, or adjust your filters.</p>
+            </div>
+          </template>
+        </div>
+
+        <!-- ═══ BROWSE ALL WORDS ═══ -->
+        <div class="vocab-browse-all">
+          <div class="vocab-browse-header">
+            <span class="vocab-section-title">
+              <span class="material-icons-round vocab-browse-icon">apps</span>
+              Browse all words
+            </span>
+            <div class="vocab-browse-count" x-text="browseWords.length === allWords.length ? `${allWords.length} total words` : `${browseWords.length} of ${allWords.length} words`"></div>
+          </div>
+          <div class="vocab-browse-toolbar">
+            <div class="vocab-browse-search-wrap">
+              <span class="material-icons-round vocab-search-icon">search</span>
+              <input x-model.debounce.250ms="browseQuery" type="search" placeholder="Filter this list…" class="vocab-search-input vocab-browse-search" />
+            </div>
+            <button class="vocab-ghost-btn t-btn" x-show="isBrowseNarrowed" x-cloak
+                    @click="addAllShown()" :disabled="browseAddableCount === 0"
+                    x-text="browseAddableCount === 0 ? 'All shown words saved' : `Add all ${browseAddableCount} shown`"></button>
+          </div>
+          <div class="vocab-browse-list">
+            <template x-for="w in browseWords" :key="w.word">
+              <div>
+                <div class="vocab-browse-row" :class="[diffTone(w), isLearnt(w.word) ? 'is-added' : '']" @click="toggleExpand(w.word)">
+                  <div class="vocab-browse-word">
+                    <span class="vocab-word-name">
+                      <span x-text="w.word"></span>
+                      <span class="vocab-pos-chip" :data-pos="w.part_of_speech" x-text="w.part_of_speech"></span>
+                    </span>
+                    <span class="vocab-diff-chip is-sm" :class="'is-' + w.difficulty" x-text="w.difficulty"></span>
+                  </div>
+                  <p class="vocab-browse-def" x-text="w.definition"></p>
+                  <div class="vocab-card-actions">
+                    <button class="vocab-add-btn t-btn"
+                            :class="{ 'is-added': isLearnt(w.word) }"
+                            @click.stop="toggleWord(w.word)"
+                            :aria-label="isLearnt(w.word) ? 'Remove from word bank' : 'Add to word bank'">
+                      <span class="material-icons-round" x-text="isLearnt(w.word) ? 'check' : 'add'"></span>
+                    </button>
+                    <div class="vocab-kebab-wrap" @click.outside="if (menuWord === w.word) menuWord = null">
+                      <button class="vocab-kebab-btn t-btn" @click.stop="menuWord = menuWord === w.word ? null : w.word"
+                              :class="{ 'is-open': menuWord === w.word }" aria-label="Word options">
+                        <span class="material-icons-round">more_vert</span>
+                      </button>
+                      <div class="vocab-kebab-menu" x-show="menuWord === w.word" x-transition.opacity.duration.150ms x-cloak @click.stop>
+                        <div class="vocab-kebab-head">Add to set</div>
+                        <template x-for="set in studySets" :key="set.id">
+                          <button class="vocab-kebab-opt t-btn" @click="addWordToSet(set.id, w.word)">
+                            <span class="vocab-kebab-opt-name" x-text="set.name"></span>
+                            <span class="material-icons-round vocab-kebab-check" x-show="setHasWord(set, w.word)">check</span>
+                          </button>
+                        </template>
+                        <p class="vocab-kebab-empty" x-show="studySets.length === 0">No sets yet</p>
+                        <button class="vocab-kebab-opt is-new t-btn" @click="addWordToNewSet(w.word)">
+                          <span class="material-icons-round">add</span><span>New set</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
                 <div class="vocab-word-detail" x-show="expanded.has(w.word)" x-transition.opacity.duration.200ms x-cloak>
                   <p class="vocab-word-detail-def"><span class="vocab-word-detail-label">Definition</span><span x-text="w.definition"></span></p>
@@ -227,63 +652,9 @@
             </template>
           </div>
         </div>
-      </template>
 
-      <template x-if="(query.trim() === '' && filteredCards.length === 0) || (query.trim() !== '' && filtered.length === 0)">
-        <div class="vocab-empty-state">
-          <span class="material-icons-round vocab-empty-icon">search_off</span>
-          <p class="vocab-empty-title">No words found</p>
-          <p class="vocab-empty-sub">Try a different spelling, or adjust your filters.</p>
-        </div>
-      </template>
-    </div>
+      </div>
 
-    <!-- ═══ BROWSE ALL WORDS (always visible) ═══ -->
-    <div class="vocab-browse-all">
-      <div class="vocab-browse-header">
-        <span class="vocab-section-title">
-          <span class="material-icons-round vocab-browse-icon">apps</span>
-          Browse all words
-        </span>
-        <div class="vocab-browse-count" x-text="browseWords.length === allWords.length ? `${allWords.length} total words` : `${browseWords.length} of ${allWords.length} words`"></div>
-      </div>
-      <div class="vocab-browse-toolbar">
-        <div class="vocab-browse-search-wrap">
-          <span class="material-icons-round vocab-search-icon">search</span>
-          <input x-model.debounce.250ms="browseQuery" type="search" placeholder="Filter this list…" class="vocab-search-input vocab-browse-search" />
-        </div>
-        <button class="vocab-ghost-btn t-btn" x-show="isBrowseNarrowed" x-cloak
-                @click="addAllShown()" :disabled="browseAddableCount === 0"
-                x-text="browseAddableCount === 0 ? 'All shown words saved' : `Add all ${browseAddableCount} shown`"></button>
-      </div>
-      <div class="vocab-browse-list">
-        <template x-for="w in browseWords" :key="w.word">
-          <div>
-            <div class="vocab-browse-row" :class="{ 'is-added': isLearnt(w.word) }" @click="toggleExpand(w.word)">
-              <div class="vocab-browse-word">
-                <span class="vocab-word-name">
-                  <span x-text="w.word"></span>
-                  <span class="vocab-pos-chip" :data-pos="w.part_of_speech" x-text="w.part_of_speech"></span>
-                </span>
-                <div class="vocab-diff-dot" :class="'is-' + w.difficulty"></div>
-              </div>
-              <p class="vocab-browse-def" x-text="w.definition"></p>
-              <button class="vocab-add-btn t-btn"
-                      :class="{ 'is-added': isLearnt(w.word) }"
-                      @click.stop="toggleWord(w.word)"
-                      :aria-label="isLearnt(w.word) ? 'Remove from word bank' : 'Add to word bank'">
-                <span class="material-icons-round" x-text="isLearnt(w.word) ? 'check' : 'add'"></span>
-              </button>
-            </div>
-            <div class="vocab-word-detail" x-show="expanded.has(w.word)" x-transition.opacity.duration.200ms x-cloak>
-              <p class="vocab-word-detail-def"><span class="vocab-word-detail-label">Definition</span><span x-text="w.definition"></span></p>
-              <p class="vocab-word-detail-ex" x-show="w.example"><span class="vocab-word-detail-label">Example</span>“<span x-text="w.example"></span>”</p>
-              <p class="vocab-word-detail-def" x-show="hasEtymology(w)"><span class="vocab-word-detail-label">Origin</span><span x-text="w.etymology"></span></p>
-            </div>
-          </div>
-        </template>
-      </div>
-      <div class="vocab-browse-fade"></div>
     </div>
 
   </div>
@@ -298,18 +669,48 @@
       query: '',
       learntWords: [],
       expanded: new Set(),
-      showFilters: false,
       filterPos: 'all',
       filterDiff: 'all',
+      filterProgress: 'all',
       browseQuery: '',
       pool: [],
+      /* bumped whenever the stats' underlying storage changes, so the
+         `stats` getter re-reads localStorage instead of caching stale numbers */
+      perfVersion: 0,
+
+      /* study sets */
+      studySets: [],
+      menuWord: null,   // word whose kebab menu is open
+
+      /* flashcard deck — a refresh always lands on the word-bank view */
+      showAll: true,
+      cardIndex: 0,
+      flipped: false,
+      sentenceInput: '',
+      sentenceFeedback: '',
+      sentenceState: 'idle',   // idle | checking | good | bad | error
+
+      diffOptions: [
+        { value: 'all', label: 'All', tone: 'tone-blue' },
+        { value: 'easy', label: 'Easy', tone: 'tone-green' },
+        { value: 'medium', label: 'Medium', tone: 'tone-amber' },
+        { value: 'hard', label: 'Hard', tone: 'tone-red' },
+      ],
+      progressOptions: [
+        { value: 'all', label: 'All Words', tone: 'tone-blue' },
+        { value: 'saved', label: 'Saved', tone: 'tone-green' },
+        { value: 'unsaved', label: 'Not saved', tone: 'tone-teal' },
+      ],
 
       init() {
         this.resetLearnt();
+        this.refreshSets();
+        this.watchSync();
         VocabData.ready().then(() => {
           if (VocabData.status === 'ready') {
             this.pool = VocabData.all.slice();
             this.dataStatus = 'ready';
+            this.loadSentence();
           } else {
             this.dataStatus = 'error';
           }
@@ -321,6 +722,7 @@
           if (VocabData.status === 'ready') {
             this.pool = VocabData.all.slice();
             this.dataStatus = 'ready';
+            this.loadSentence();
           } else {
             this.dataStatus = 'error';
           }
@@ -328,6 +730,12 @@
       },
       resetLearnt() {
         this.learntWords = VocabStore.learnt().slice();
+      },
+      /* The wordbank changes under us when Firestore reconciles on sign-in. */
+      watchSync() {
+        const apply = () => { this.resetLearnt(); this.refreshSets(); this.perfVersion++; };
+        if (window._korahVocabReadyFired) apply();
+        window.addEventListener('korahVocabReady', apply);
       },
 
       filtersApplied(w) {
@@ -338,12 +746,179 @@
       get hasActiveFilters() {
         return this.filterPos !== 'all' || this.filterDiff !== 'all';
       },
-      get activeFilterCount() {
-        let n = 0;
-        if (this.filterPos !== 'all') n++;
-        if (this.filterDiff !== 'all') n++;
-        return n;
+
+      /* ── Study sets ─────────────────────────────────── */
+      refreshSets() {
+        this.studySets = VocabStore.studySets().slice();
       },
+      setHasWord(set, word) {
+        return set.words.includes(VocabData.normalize(word));
+      },
+      addWordToSet(id, word) {
+        VocabStore.addWordToSet(id, word);
+        this.refreshSets();
+        this.menuWord = null;
+      },
+      /* Sets made from the kebab menu are unnamed by default — numbering keeps
+         them distinguishable until the user cares enough to rename one. */
+      addWordToNewSet(word) {
+        const taken = new Set(this.studySets.map(s => s.name));
+        let name = 'Untitled set';
+        for (let i = 2; taken.has(name); i++) name = `Untitled set ${i}`;
+        VocabStore.saveStudySet(name, [word]);
+        this.refreshSets();
+        this.menuWord = null;
+      },
+      deleteSet(id) {
+        VocabStore.deleteStudySet(id);
+        this.refreshSets();
+      },
+
+      /* ── Progress panel ─────────────────────────────── */
+      /* Reads the same localStorage that vocab-sync.js reconciles with
+         Firestore on sign-in, so these numbers follow the account. */
+      get stats() {
+        this.perfVersion;
+        const perf = VocabStore.performance();
+        const wp = perf.wordPerformance || {};
+        const total = this.pool.length;
+
+        const diffOrder = [
+          { key: 'easy', label: 'Easy' },
+          { key: 'medium', label: 'Medium' },
+          { key: 'hard', label: 'Hard' },
+        ];
+        const byDiff = {};
+        for (const d of diffOrder) byDiff[d.key] = { learned: 0, total: 0 };
+
+        const levels = { struggling: 0, learning: 0, proficient: 0, mastered: 0 };
+        let learned = 0;
+
+        for (const w of this.pool) {
+          const bucket = byDiff[w.difficulty];
+          if (bucket) bucket.total++;
+          const p = wp[VocabData.normalize(w.word)];
+          if (!p) continue;
+          if (levels[p.masteryLevel] !== undefined) levels[p.masteryLevel]++;
+          if (p.masteryLevel === 'proficient' || p.masteryLevel === 'mastered') {
+            learned++;
+            if (bucket) bucket.learned++;
+          }
+        }
+
+        const practiced = Object.keys(wp).length;
+        const sentences = Object.values(VocabStore.data().userSentences || {})
+          .filter(s => s && s.trim()).length;
+        const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
+
+        return {
+          pct: pct(learned, total),
+          learned,
+          remaining: total - learned,
+          practiced,
+          sentences,
+          notPracticed: Math.max(total - practiced, 0),
+          byDifficulty: diffOrder.map(d => ({
+            key: d.key,
+            label: d.label,
+            learned: byDiff[d.key].learned,
+            total: byDiff[d.key].total,
+            pct: pct(byDiff[d.key].learned, byDiff[d.key].total),
+          })),
+          mastery: [
+            { key: 'struggling', label: 'Struggling', tone: 'tone-red', count: levels.struggling },
+            { key: 'learning', label: 'Learning', tone: 'tone-amber', count: levels.learning },
+            /* 'mastered' is the top end of proficient, not a fourth level here */
+            { key: 'proficient', label: 'Proficient', tone: 'tone-green', count: levels.proficient + levels.mastered },
+          ],
+        };
+      },
+
+      /* ── Flashcard deck ─────────────────────────────── */
+      get deck() {
+        return this.pool.filter(w => {
+          if (this.filterDiff !== 'all' && w.difficulty !== this.filterDiff) return false;
+          if (this.filterProgress === 'saved' && !this.isLearnt(w.word)) return false;
+          if (this.filterProgress === 'unsaved' && this.isLearnt(w.word)) return false;
+          return true;
+        });
+      },
+      get card() {
+        return this.deck[this.cardIndex] || null;
+      },
+      get diffLabel() {
+        return (this.diffOptions.find(o => o.value === this.filterDiff) || this.diffOptions[0]).label;
+      },
+      get progressLabel() {
+        return (this.progressOptions.find(o => o.value === this.filterProgress) || this.progressOptions[0]).label;
+      },
+      /* a filter change reshuffles the deck, so start it from the top */
+      setDiff(value) {
+        this.filterDiff = value;
+        this.resetCard();
+      },
+      setProgress(value) {
+        this.filterProgress = value;
+        this.resetCard();
+      },
+      resetCard() {
+        this.cardIndex = 0;
+        this.flipped = false;
+        this.loadSentence();
+      },
+      nextCard() {
+        if (this.cardIndex >= this.deck.length - 1) return;
+        this.cardIndex++;
+        this.flipped = false;
+        this.loadSentence();
+      },
+      prevCard() {
+        if (this.cardIndex === 0) return;
+        this.cardIndex--;
+        this.flipped = false;
+        this.loadSentence();
+      },
+      loadSentence() {
+        const w = this.card;
+        this.sentenceInput = w ? VocabStore.getSentence(w.word) : '';
+        this.sentenceFeedback = '';
+        this.sentenceState = 'idle';
+      },
+      async checkSentence() {
+        const w = this.card;
+        const sentence = this.sentenceInput.trim();
+        if (!w || !sentence || this.sentenceState === 'checking') return;
+        this.sentenceState = 'checking';
+        this.sentenceFeedback = '';
+        VocabStore.saveSentence(w.word, sentence);
+        this.perfVersion++;
+        try {
+          const res = await fetch('/api/r', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: 'gemini-2.5-flash',
+              temperature: 0.2,
+              messages: [
+                { role: 'system', content: 'You check whether a student used an SAT vocabulary word correctly. Reply with ONLY a single JSON object and no markdown, in this exact shape: { "correct": true, "explanation": "one or two sentences" }. Judge meaning and context only, not spelling or style.' },
+                { role: 'user', content: 'Word: ' + w.word + '\nMeaning: ' + w.definition + '\nStudent sentence: ' + sentence },
+              ],
+            }),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const raw = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+          if (!raw) throw new Error('Empty response');
+          const parsed = JSON.parse(String(raw).replace(/^```(?:json)?/, '').replace(/```$/, '').trim());
+          if (typeof parsed.correct !== 'boolean') throw new Error('Bad response shape');
+          this.sentenceState = parsed.correct ? 'good' : 'bad';
+          this.sentenceFeedback = (parsed.correct ? 'Good usage. ' : 'Not quite. ') + (parsed.explanation || '');
+        } catch (e) {
+          this.sentenceState = 'error';
+          this.sentenceFeedback = 'Could not check that sentence right now. It is saved — try again later.';
+        }
+      },
+
       get suggestions() {
         // read this.pool so Alpine re-evaluates once the word DB finishes loading
         return this.pool.length ? VocabData.dailyPicks(20) : [];
@@ -378,7 +953,7 @@
       },
       clearFilters() {
         this.filterPos = 'all';
-        this.filterDiff = 'all';
+        this.setDiff('all');
       },
       isLearnt(word) { return this.learntWords.includes(VocabData.normalize(word)); },
       toggleWord(word) {
@@ -398,6 +973,11 @@
       },
       hasEtymology(w) {
         return !!w.etymology && w.etymology !== 'Unknown';
+      },
+      /* difficulty is the one meaningful axis these rows have, so it picks the
+         card's accent tone (easy/medium/hard -> green/amber/red). */
+      diffTone(w) {
+        return { easy: 'tone-green', medium: 'tone-amber', hard: 'tone-red' }[w.difficulty] || 'tone-blue';
       },
       toggleExpand(word) {
         if (this.expanded.has(word)) this.expanded.delete(word);

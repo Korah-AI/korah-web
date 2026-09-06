@@ -29,7 +29,7 @@
 <link rel="icon" type="image/png" href="../../logo-images/newlogo0.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <script src="../../sidebar-loader.js" defer></script>
@@ -59,13 +59,72 @@
   })();
 </script>
 
+<canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
+<script>
+  /* The starfield/shooting stars live in sidebar.js. korahReady only fires
+     once the Firestore bootstrap below resolves, so kick it off on whichever
+     of korahReady / load lands first. */
+  (function () {
+    let started = false;
+    function startBackground() {
+      if (started || !window.KorahSidebar || !window.KorahSidebar.initBackground) return;
+      started = true;
+      window.KorahSidebar.initBackground();
+    }
+    window.addEventListener('korahReady', startBackground, { once: true });
+    window.addEventListener('load', startBackground, { once: true });
+    if (document.readyState === 'complete') startBackground();
+  })();
+</script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+  import { setupKorahDB } from "../../app/data/firestore-store.js";
+  import { initVocabSync } from "./js/vocab-sync.js";
+  import { startAuthGuard } from '../../auth-guard.js';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
+    authDomain: "korah-app.firebaseapp.com",
+    projectId: "korah-app",
+    storageBucket: "korah-app.firebasestorage.app",
+    messagingSenderId: "226169460321",
+    appId: "1:226169460321:web:b166fc8260107c55dafc20"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      window.KorahTransitions.go('../../landing/index.html');
+      return;
+    }
+    await setupKorahDB(app, user.uid);
+    await initVocabSync(app, user.uid);
+    const detail = { uid: user.uid };
+    window._korahReadyFired = detail;
+    window.dispatchEvent(new CustomEvent('korahReady', { detail }));
+    startAuthGuard(auth, '../../landing/index.html');
+  });
+
+  document.getElementById('logout-btn')?.addEventListener('click', () => {
+    window.confirmLogout(async () => {
+      await signOut(auth);
+      localStorage.removeItem('korah_first_name');
+      window.KorahTransitions.go('../../login.html');
+    });
+  });
+</script>
+
 <div id="sidebar-root"></div>
 
 <div id="main-area-wrapper" class="main-area-wrapper">
 <main id="main-content" class="main-content" x-data="vocabPractice()">
 
   <!-- Top bar -->
-  <header class="chat-topbar bg-sf glass-sm t-theme bd" style="opacity: 0.95;">
+  <header class="chat-topbar bg-sf glass-sm t-theme bd">
     <button id="sidebar-toggle" @click="toggleSidebar()" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
@@ -97,10 +156,10 @@
   </div>
 
   <!-- ═══ MODE SELECTOR (default) ═══ -->
-  <div class="vocab-practice" x-show="dataStatus === 'ready' && stage === 'select'" x-transition.opacity.duration.200ms x-cloak>
+  <div class="vocab-practice vocab-practice-select" x-show="dataStatus === 'ready' && stage === 'select'" x-transition.opacity.duration.200ms x-cloak>
 
     <div class="vocab-practice-hero">
-      <div class="vocab-kicker">VOCAB PRACTICE</div>
+      <div class="vocab-kicker">vocab practice</div>
       <h1 class="vocab-title">Pick a practice mode</h1>
       <p class="vocab-sub">Drill the words in your word bank. Both modes adapt to show your weakest words first.</p>
     </div>
@@ -109,7 +168,7 @@
     <div class="vocab-bank-summary">
       <span class="material-icons-round">library_books</span>
       <span class="vocab-bank-summary-count" x-text="learntCount"></span>
-      <span class="vocab-bank-summary-text">words in your bank</span>
+      <span class="vocab-bank-summary-text" x-text="activeSet ? `words in “${activeSet.name}”` : 'words in your bank'">words in your bank</span>
       <a href="./learn.html" class="vocab-bank-edit t-btn">
         <span class="material-icons-round">edit</span><span>Edit</span>
       </a>
@@ -137,7 +196,7 @@
 
     <!-- mode cards -->
     <div class="vocab-mode-grid" x-show="learntCount >= 5" x-cloak>
-      <button class="vocab-mode-card t-btn" :class="{ 'is-active': selectedMode === 'definition-quiz' }" @click="selectedMode = 'definition-quiz'">
+      <button class="vocab-mode-card t-btn tone-blue" :class="{ 'is-active': selectedMode === 'definition-quiz' }" @click="selectedMode = 'definition-quiz'">
         <span class="vocab-mode-icon"><span class="material-icons-round">menu_book</span></span>
         <span class="vocab-mode-body">
           <span class="vocab-mode-name">Definition Quiz</span>
@@ -146,7 +205,7 @@
         <span class="vocab-mode-check material-icons-round">check_circle</span>
       </button>
 
-      <button class="vocab-mode-card t-btn" :class="{ 'is-active': selectedMode === 'vocab-quiz' }" @click="selectedMode = 'vocab-quiz'">
+      <button class="vocab-mode-card t-btn tone-pink" :class="{ 'is-active': selectedMode === 'vocab-quiz' }" @click="selectedMode = 'vocab-quiz'">
         <span class="vocab-mode-icon"><span class="material-icons-round">swap_horiz</span></span>
         <span class="vocab-mode-body">
           <span class="vocab-mode-name">Vocab Quiz</span>
@@ -157,10 +216,14 @@
     </div>
 
     <div class="vocab-practice-actions" x-show="learntCount >= 5" x-cloak>
-      <button class="vocab-start-btn t-btn" @click="startPractice()">
+      <button class="vocab-start-btn is-green t-btn" @click="startPractice()">
         <span class="material-icons-round">play_arrow</span>
         <span x-text="selectedMode === 'definition-quiz' ? 'Start Definition Quiz' : 'Start Vocab Quiz'"></span>
       </button>
+    </div>
+
+    <div class="vocab-mini-row" x-show="learntCount >= 5" x-cloak>
+      <a href="./learn.html" class="vocab-mini-btn t-btn">Cancel</a>
     </div>
 
   </div>
@@ -176,30 +239,44 @@
 
       <template x-if="questions.length">
         <div>
-          <!-- Prompt -->
-          <div class="vocab-quiz-prompt">
-            <template x-if="selectedMode === 'definition-quiz'">
-              <div>
-                <div class="vocab-quiz-prompt-label">Choose the meaning</div>
-                <div class="vocab-quiz-word">
-                  <span x-text="current.word"></span>
-                  <span class="vocab-pos-chip" :data-pos="current.pos" x-text="current.pos"></span>
+          <!-- Prompt: same flashcard shell as learn.html — it flips to the answer -->
+          <div class="vocab-flip vocab-quiz-flip"
+               :class="[current.answered ? (current.isCorrect ? 'tone-green' : 'tone-red') : 'tone-blue', current.answered ? 'is-flipped' : '']">
+            <div class="vocab-flip-inner">
+
+              <div class="vocab-flip-face vocab-flip-front">
+                <div class="vocab-flip-label" x-text="selectedMode === 'definition-quiz' ? 'choose the meaning' : 'choose the word'"></div>
+                <template x-if="selectedMode === 'definition-quiz'">
+                  <div class="vocab-flip-word">
+                    <span x-text="current.word"></span>
+                    <span class="vocab-pos-chip" :data-pos="current.pos" x-text="current.pos"></span>
+                  </div>
+                </template>
+                <template x-if="selectedMode === 'vocab-quiz'">
+                  <div class="vocab-flip-def" x-text="current.definition"></div>
+                </template>
+              </div>
+
+              <div class="vocab-flip-face vocab-flip-back">
+                <div class="vocab-flip-verdict">
+                  <span class="material-icons-round" x-text="current.isCorrect ? 'check_circle' : 'cancel'"></span>
+                  <span x-text="current.isCorrect ? 'Correct!' : 'Not quite'"></span>
                 </div>
+                <div class="vocab-flip-back-word">
+                  <span x-text="current.word"></span>
+                </div>
+                <p class="vocab-flip-def" x-text="current.definition"></p>
+                <p class="vocab-flip-ex" x-show="current.example">“<span x-text="current.example"></span>”</p>
               </div>
-            </template>
-            <template x-if="selectedMode === 'vocab-quiz'">
-              <div>
-                <div class="vocab-quiz-prompt-label">Choose the word</div>
-                <div class="vocab-quiz-def" x-text="current.definition"></div>
-              </div>
-            </template>
+
+            </div>
           </div>
 
           <!-- Options -->
           <div class="vocab-options-list">
             <template x-for="(opt, i) in current.options" :key="opt.key">
               <button class="vocab-option t-btn"
-                      :class="{ 'is-selected': current.selectedIndex === i, 'is-correct': current.answered && opt.isCorrect, 'is-incorrect': current.answered && current.selectedIndex === i && !opt.isCorrect }"
+                      :class="optionClass(opt, i)"
                       @click="choose(i)"
                       :disabled="current.answered">
                 <span class="vocab-option-key" x-text="optionKey(i)"></span>
@@ -216,17 +293,6 @@
             </template>
           </div>
 
-          <!-- Feedback -->
-          <div class="vocab-feedback-panel" x-show="current.answered" x-transition.opacity.duration.250ms x-cloak
-               :class="{ 'is-correct': current.isCorrect, 'is-incorrect': !current.isCorrect }">
-            <div class="vocab-feedback-head">
-              <span class="material-icons-round" x-text="current.isCorrect ? 'check_circle' : 'cancel'"></span>
-              <span class="vocab-feedback-verdict" x-text="current.isCorrect ? 'Correct!' : 'Not quite'"></span>
-            </div>
-            <p class="vocab-feedback-def"><strong x-text="current.word"></strong> — <span x-text="current.definition"></span></p>
-            <p class="vocab-feedback-ex" x-show="current.example" x-text="current.example"></p>
-          </div>
-
           <!-- Use it in a sentence -->
           <div class="vocab-sentence-section" x-show="current.answered" x-transition.opacity.duration.250ms x-cloak>
             <label class="vocab-sentence-label" :for="'vocab-sentence-' + currentIndex">
@@ -237,7 +303,7 @@
                       :disabled="sentenceState === 'checking'"
                       placeholder="Write your own sentence using this word…"></textarea>
             <div class="vocab-sentence-actions">
-              <button class="vocab-ghost-btn t-btn" @click="checkSentence()"
+              <button class="vocab-start-btn is-green t-btn" @click="checkSentence()"
                       :disabled="sentenceState === 'checking' || !sentenceInput.trim()">
                 <span class="material-icons-round">spellcheck</span>
                 <span x-text="sentenceState === 'checking' ? 'Checking…' : 'Check my sentence'"></span>
@@ -352,9 +418,11 @@
       sentenceInput: '',
       sentenceFeedback: '',
       sentenceState: 'idle',   // idle | checking | good | bad | error
+      activeSet: null,
 
       init() {
-        this.learntCount = VocabStore.learntCount();
+        this.loadActiveSet();
+        this.watchSync();
         VocabData.ready().then(() => {
           this.dataStatus = VocabData.status === 'ready' ? 'ready' : 'error';
         });
@@ -365,6 +433,21 @@
           this.dataStatus = VocabData.status === 'ready' ? 'ready' : 'error';
         });
       },
+      /* ?set=<id> drills one study set instead of the whole wordbank. */
+      loadActiveSet() {
+        const id = new URLSearchParams(location.search).get('set');
+        const set = id ? VocabStore.studySets().find(s => s.id === id) : null;
+        this.activeSet = set || null;
+        VocabQuiz.useWords(set ? set.words : null);
+        this.learntCount = set ? set.words.length : VocabStore.learntCount();
+      },
+      /* The wordbank changes under us when Firestore reconciles on sign-in —
+         and so do the study sets, which is when a linked set can first appear. */
+      watchSync() {
+        const apply = () => { this.loadActiveSet(); };
+        if (window._korahVocabReadyFired) apply();
+        window.addEventListener('korahVocabReady', apply);
+      },
 
       get current() { return this.questions[this.currentIndex]; },
       get questionCount() { return this.questions.length; },
@@ -372,7 +455,18 @@
         if (!this.questionCount) return 0;
         return Math.round(((this.currentIndex + 1) / this.questionCount) * 100);
       },
-      optionKey(i) { return String.fromCharCode(65 + i); },
+      optionKey(i) { return String.fromCharCode(97 + i); },
+      /* options have no inherent meaning, so tones just make them distinct */
+      optionTone(i) { return 'tone-' + ['blue', 'teal', 'amber', 'pink'][i % 4]; },
+      /* one flat string — Alpine drops an object nested inside a :class array */
+      optionClass(opt, i) {
+        const q = this.current;
+        const classes = [this.optionTone(i)];
+        if (q.selectedIndex === i) classes.push('is-selected');
+        if (q.answered && opt.isCorrect) classes.push('is-correct');
+        if (q.answered && q.selectedIndex === i && !opt.isCorrect) classes.push('is-incorrect');
+        return classes.join(' ');
+      },
 
       startPractice() {
         this.questions = VocabQuiz.buildSession(this.selectedMode);
