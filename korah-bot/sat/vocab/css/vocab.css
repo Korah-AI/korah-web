@@ -194,6 +194,9 @@ html[data-theme="light"] * { scrollbar-color: rgba(28, 30, 38, 0.35) transparent
   width: 100%;
   max-width: 38rem;
   height: 24rem;
+  /* the column is a flex parent — without this the card gets squashed on
+     short viewports and the absolutely-positioned hint lands on the chips */
+  flex: 0 0 auto;
   perspective: 62.5rem;
   cursor: pointer;
   outline: none;
@@ -291,6 +294,94 @@ html[data-theme="light"] * { scrollbar-color: rgba(28, 30, 38, 0.35) transparent
   width: 100%;
 }
 .vocab-card-cta { display: flex; justify-content: center; }
+
+/* ── Flashcard verdict (Quizlet-style two piles) ─────── */
+.vocab-card-tally {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.vocab-card-tally-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  background: var(--v-sf2);
+  border: 1px solid var(--v-bd);
+  color: var(--v-tx2);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+.vocab-card-tally-chip .material-icons-round { font-size: 0.95rem; }
+.vocab-card-tally-chip.is-learning { color: var(--v-red); }
+.vocab-card-tally-chip.is-known { color: var(--v-green); }
+
+.vocab-card-verdict {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+  width: 100%;
+}
+.vocab-verdict-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-width: 12rem;
+  padding: 0.8rem 1.6rem;
+  border-radius: 0.8rem;
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.95rem;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+.vocab-verdict-btn.is-learning { background: var(--v-red-fill); border-color: var(--v-red-fill); }
+.vocab-verdict-btn.is-known { background: var(--v-green-fill); border-color: var(--v-green-fill); }
+.vocab-verdict-btn:hover:not(:disabled) { transform: scale(1.03); filter: brightness(1.1); }
+.vocab-verdict-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none !important; filter: none !important; }
+.vocab-card-keyhint {
+  margin: -0.75rem 0 0;
+  color: var(--v-tx3);
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+/* The card leaves toward the pile it was sent to, flashing that pile's colour
+   on the way out. Kept short so it reads as feedback, not as a wait. */
+@keyframes vocabSwipeLeft {
+  from { transform: none; opacity: 1; }
+  to   { transform: translateX(-42%) rotate(-9deg); opacity: 0; }
+}
+@keyframes vocabSwipeRight {
+  from { transform: none; opacity: 1; }
+  to   { transform: translateX(42%) rotate(9deg); opacity: 0; }
+}
+@keyframes vocabGlowRed {
+  0%   { border-color: var(--v-bd); box-shadow: 0 0.35rem 0 0 var(--v-bd); }
+  35%  { border-color: var(--v-red); box-shadow: 0 0 0 0.12rem var(--v-red), 0 0 2.5rem 0.35rem rgba(239, 68, 68, 0.55); }
+  100% { border-color: var(--v-red); box-shadow: 0 0 0 0.12rem var(--v-red), 0 0 1rem 0 rgba(239, 68, 68, 0); }
+}
+@keyframes vocabGlowGreen {
+  0%   { border-color: var(--v-bd); box-shadow: 0 0.35rem 0 0 var(--v-bd); }
+  35%  { border-color: var(--v-green); box-shadow: 0 0 0 0.12rem var(--v-green), 0 0 2.5rem 0.35rem rgba(34, 197, 94, 0.55); }
+  100% { border-color: var(--v-green); box-shadow: 0 0 0 0.12rem var(--v-green), 0 0 1rem 0 rgba(34, 197, 94, 0); }
+}
+.vocab-flip.is-swipe-left,
+.vocab-flip.is-swipe-right { pointer-events: none; }
+.vocab-flip.is-swipe-left  { animation: vocabSwipeLeft 0.42s cubic-bezier(0.45, 0, 0.75, 0.2) forwards; }
+.vocab-flip.is-swipe-right { animation: vocabSwipeRight 0.42s cubic-bezier(0.45, 0, 0.75, 0.2) forwards; }
+/* beat the .is-added / tone border rules above */
+.vocab-flip.is-swipe-left .vocab-flip-face  { animation: vocabGlowRed 0.42s ease-out forwards; }
+.vocab-flip.is-swipe-right .vocab-flip-face { animation: vocabGlowGreen 0.42s ease-out forwards; }
+/* the faces swap content the moment the index moves, so the flip-back has to
+   be instant or the incoming card spins for no reason */
+.vocab-flip.is-instant .vocab-flip-inner { transition: none; }
 
 /* ═══ LEARN — hero, search, filters ════════════════════ */
 .vocab-learn-hero {
@@ -1801,7 +1892,13 @@ html[data-theme="light"] * { scrollbar-color: rgba(28, 30, 38, 0.35) transparent
 
 @media (prefers-reduced-motion: reduce) {
   .vocab-step, .vocab-stagger > *, .vocab-source-panel, .vocab-saved-pill { animation: none !important; }
+  /* the swipe still has to end invisible, so it collapses to a plain fade */
+  .vocab-flip.is-swipe-left,
+  .vocab-flip.is-swipe-right { animation: vocabCardFade 0.2s linear forwards; }
+  .vocab-flip.is-swipe-left .vocab-flip-face,
+  .vocab-flip.is-swipe-right .vocab-flip-face { animation: none !important; }
 }
+@keyframes vocabCardFade { from { opacity: 1; } to { opacity: 0; } }
 
 /* ═══ Study-set dropdown (practice step 2) ═════════════
    The set list hangs off its own mode card so choosing a source never

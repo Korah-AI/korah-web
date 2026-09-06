@@ -469,26 +469,37 @@
   </div>
 
   <!-- ═══ FLASHCARD STAGE ═══ -->
-  <div class="vocab-practice vocab-card-view" x-show="stage === 'cards'" x-transition.opacity.duration.200ms x-cloak>
+  <div class="vocab-practice vocab-card-view" x-show="stage === 'cards'" x-transition.opacity.duration.200ms x-cloak
+       @keydown.window="cardKey($event)">
 
     <div class="vocab-card-hero">
       <h1 class="vocab-title">Flashcards</h1>
       <p class="vocab-card-meta" x-show="card">
+        <span x-show="round > 1">Round <span x-text="round"></span></span>
+        <span class="vocab-card-sep" x-show="round > 1">•</span>
         <span>Card <span x-text="cardIndex + 1"></span> of <span x-text="deck.length"></span></span>
         <span class="vocab-card-sep">•</span>
         <span class="vocab-card-viewing" x-text="sourceLabel"></span>
       </p>
-      <div class="vocab-count-pill">
-        <span class="material-icons-round">library_books</span>
-        <span class="vocab-count-num" x-text="learntWords.length">0</span>
-        <span class="vocab-count-label">saved</span>
+      <!-- The two piles are the whole point of the mode, so they stay on
+           screen instead of only showing up on the results card. -->
+      <div class="vocab-card-tally" x-show="card">
+        <span class="vocab-card-tally-chip is-learning">
+          <span class="material-icons-round">school</span>
+          <span x-text="learningCount"></span>
+          <span>still learning</span>
+        </span>
+        <span class="vocab-card-tally-chip is-known">
+          <span class="material-icons-round">check_circle</span>
+          <span x-text="knownWords.length"></span>
+          <span>know it</span>
+        </span>
       </div>
     </div>
 
     <template x-if="card">
-      <div class="vocab-flip" :class="[diffTone(card), flipped ? 'is-flipped' : '', isLearnt(card.word) ? 'is-added' : '']"
-           @click="flipped = !flipped" role="button" tabindex="0"
-           @keydown.enter.prevent="flipped = !flipped" @keydown.space.prevent="flipped = !flipped">
+      <div class="vocab-flip" :class="[diffTone(card), flipped ? 'is-flipped' : '', isLearnt(card.word) ? 'is-added' : '', cardAnim, instantFlip ? 'is-instant' : '']"
+           @click="flipped = !flipped" role="button" tabindex="0">
         <div class="vocab-flip-inner">
 
           <div class="vocab-flip-face vocab-flip-front">
@@ -527,6 +538,19 @@
       <p class="vocab-empty-sub">That selection came back empty. Pick a different source.</p>
     </div>
 
+    <!-- Self-graded verdict: the deck keeps recycling whatever gets sent left,
+         so a session ends when nothing is still-learning rather than when the
+         list runs out once. -->
+    <div class="vocab-card-verdict" x-show="card">
+      <button class="vocab-verdict-btn is-learning t-btn" @click="markCard(false)" :disabled="cardBusy">
+        <span class="material-icons-round">west</span><span>Still learning</span>
+      </button>
+      <button class="vocab-verdict-btn is-known t-btn" @click="markCard(true)" :disabled="cardBusy">
+        <span>I know this</span><span class="material-icons-round">east</span>
+      </button>
+    </div>
+    <p class="vocab-card-keyhint" x-show="card">Space flips &bull; &larr; still learning &bull; &rarr; I know this</p>
+
     <div class="vocab-card-sentence" x-show="card">
       <div class="vocab-sentence-row">
         <input class="vocab-sentence-input" type="text"
@@ -545,21 +569,15 @@
     </div>
 
     <div class="vocab-card-nav">
-      <button class="vocab-ghost-btn t-btn" @click="prevCard()" :disabled="cardIndex === 0">
-        <span class="material-icons-round">chevron_left</span><span>Previous</span>
-      </button>
-      <button class="vocab-ghost-btn t-btn" @click="stage = 'select'">
+      <button class="vocab-ghost-btn t-btn" @click="exitCards()">
         <span class="material-icons-round">tune</span><span>Back to modes</span>
-      </button>
-      <button class="vocab-start-btn is-sm t-btn" @click="nextCard()" :disabled="cardIndex >= deck.length - 1">
-        <span>Next</span><span class="material-icons-round">chevron_right</span>
       </button>
     </div>
 
   </div>
 
-  <!-- ═══ RESULTS STAGE ═══ -->
-  <div class="vocab-practice" x-show="stage === 'results'" x-transition.opacity.duration.200ms x-cloak>
+  <!-- ═══ RESULTS STAGE (quiz modes) ═══ -->
+  <div class="vocab-practice" x-show="stage === 'results' && selectedMode !== 'flashcards'" x-transition.opacity.duration.200ms x-cloak>
     <div class="vocab-results-stage">
       <span class="material-icons-round vocab-results-icon">emoji_events</span>
       <div class="vocab-results-score">
@@ -595,6 +613,61 @@
       <div class="vocab-results-actions">
         <button class="vocab-start-btn t-btn" @click="retryMissed()" :disabled="missedCount === 0" :title="missedCount === 0 ? 'No missed words' : ''">
           <span class="material-icons-round">replay</span><span x-text="`Retry missed (${missedCount})`"></span>
+        </button>
+        <button class="vocab-ghost-btn t-btn" @click="restart()">
+          <span class="material-icons-round">shuffle</span><span>New session</span>
+        </button>
+        <button class="vocab-ghost-btn t-btn" @click="stage = 'select'">
+          <span class="material-icons-round">tune</span><span>Back to modes</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ RESULTS STAGE (flashcards) ═══
+       Every card ended up in the "know it" pile — the score that matters is
+       how many got there without a detour, so that is what the ring shows. -->
+  <div class="vocab-practice" x-show="stage === 'results' && selectedMode === 'flashcards'" x-transition.opacity.duration.200ms x-cloak>
+    <div class="vocab-results-stage">
+      <span class="material-icons-round vocab-results-icon">style</span>
+      <div class="vocab-results-score">
+        <span class="vocab-results-ring" :style="'--score:' + firstTryPct">
+          <span class="vocab-results-num" x-text="`${firstTryCount}/${cardTotal}`"></span>
+          <span class="vocab-results-acc" x-text="firstTryPct + '%'"></span>
+        </span>
+      </div>
+      <h2 class="vocab-results-title" x-text="trickyCount === 0 ? 'Deck cleared!' : 'Deck cleared'"></h2>
+      <p class="vocab-results-sub"
+         x-text="trickyCount === 0
+           ? 'Every card went right on the first pass.'
+           : `${firstTryCount} known first time, ${trickyCount} needed another look across ${round} round${round === 1 ? '' : 's'}.`"></p>
+
+      <div class="vocab-review-list">
+        <template x-for="c in cardReview" :key="c.word">
+          <div class="vocab-review-row">
+            <span class="material-icons-round vocab-review-dot"
+                  :class="cardMisses[c.word] ? 'is-incorrect' : 'is-correct'"
+                  x-text="cardMisses[c.word] ? 'refresh' : 'check_circle'"></span>
+            <div class="vocab-review-main">
+              <div class="vocab-review-word">
+                <span x-text="c.word"></span>
+                <span class="vocab-pos-chip" :data-pos="c.part_of_speech" x-text="c.part_of_speech"></span>
+              </div>
+              <p class="vocab-review-def" x-text="c.definition"></p>
+            </div>
+            <div class="vocab-review-answer" :class="{ 'is-correct': !cardMisses[c.word] }">
+              <span class="vocab-review-answer-label">Sent left</span>
+              <span class="vocab-review-answer-text"
+                    x-text="cardMisses[c.word] ? `${cardMisses[c.word]}\u00d7` : 'never'"></span>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <div class="vocab-results-actions">
+        <button class="vocab-start-btn t-btn" @click="retryTricky()" :disabled="trickyCount === 0"
+                :title="trickyCount === 0 ? 'Nothing tripped you up' : ''">
+          <span class="material-icons-round">replay</span><span x-text="`Redo the tricky ones (${trickyCount})`"></span>
         </button>
         <button class="vocab-ghost-btn t-btn" @click="restart()">
           <span class="material-icons-round">shuffle</span><span>New session</span>
@@ -648,10 +721,20 @@
       startNudged: false,
       startShaking: false,
 
-      /* flashcard deck */
+      /* flashcard deck — Quizlet-style two piles. `deck` is the current
+         round; anything sent left is requeued into the next one. */
       deck: [],
       cardIndex: 0,
       flipped: false,
+      round: 1,
+      cardAnim: '',          // '' | 'is-swipe-left' | 'is-swipe-right'
+      cardBusy: false,       // swipe in flight — ignore further verdicts
+      instantFlip: false,    // suppress the flip transition while swapping cards
+      stillLearning: [],     // records queued for the next round
+      knownWords: [],        // words retired from the deck this session
+      cardMisses: {},        // word → times sent left this session
+      sessionCards: [],      // every distinct card the session opened with
+      cardStartTime: 0,
 
       questions: [],
       currentIndex: 0,
@@ -845,17 +928,108 @@
           this.learntWords.push(n);
         }
       },
-      nextCard() {
-        if (this.cardIndex >= this.deck.length - 1) return;
-        this.cardIndex++;
+      startCards(records) {
+        this.deck = records;
+        this.sessionCards = records.slice();
+        this.cardIndex = 0;
+        this.round = 1;
         this.flipped = false;
+        this.cardAnim = '';
+        this.cardBusy = false;
+        this.stillLearning = [];
+        this.knownWords = [];
+        this.cardMisses = {};
+        this.cardStartTime = Date.now();
+        this.loadSentence();
+        this.stage = 'cards';
+      },
+      /* The pile waiting for the next round. Cards not reached yet are unseen,
+         not "still learning", so they stay out of this count. */
+      get learningCount() { return this.stillLearning.length; },
+      get cardsGraded() { return this.knownWords.length + Object.keys(this.cardMisses).length; },
+      /**
+       * Grade the current card. Both verdicts are real attempts as far as the
+       * store is concerned: "I know this" is a correct answer and "Still
+       * learning" an incorrect one, which is what moves the word's mastery
+       * level and the Your Progress panel on learn.html.
+       */
+      markCard(known) {
+        const rec = this.card;
+        if (!rec || this.cardBusy) return;
+        this.cardBusy = true;
+        VocabStore.recordAttempt({
+          word: rec.word,
+          questionType: 'flashcards',
+          isCorrect: !!known,
+          userAnswer: known ? 'know-it' : 'still-learning',
+          correctAnswer: rec.definition,
+          timeSpent: Date.now() - this.cardStartTime,
+        });
+        if (known) {
+          this.knownWords.push(rec.word);
+        } else {
+          this.stillLearning.push(rec);
+          this.cardMisses[rec.word] = (this.cardMisses[rec.word] || 0) + 1;
+        }
+        this.cardAnim = known ? 'is-swipe-right' : 'is-swipe-left';
+        // Let the card finish leaving before the next one takes its place.
+        setTimeout(() => {
+          this.cardAnim = '';
+          this.cardBusy = false;
+          this.advanceCard();
+        }, 420);
+      },
+      advanceCard() {
+        // The face content swaps instantly, so un-flipping with the usual
+        // 0.55s rotate would spin the *new* card. Kill the transition for
+        // one frame instead.
+        this.instantFlip = true;
+        this.flipped = false;
+        requestAnimationFrame(() => requestAnimationFrame(() => { this.instantFlip = false; }));
+
+        if (this.cardIndex < this.deck.length - 1) {
+          this.cardIndex++;
+        } else if (this.stillLearning.length) {
+          this.deck = this.stillLearning;
+          this.stillLearning = [];
+          this.cardIndex = 0;
+          this.round++;
+        } else {
+          this.stage = 'results';
+          return;
+        }
+        this.cardStartTime = Date.now();
         this.loadSentence();
       },
-      prevCard() {
-        if (this.cardIndex === 0) return;
-        this.cardIndex--;
-        this.flipped = false;
-        this.loadSentence();
+      cardKey(e) {
+        if (this.stage !== 'cards' || !this.card) return;
+        const el = document.activeElement;
+        if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
+        if (e.key === 'ArrowLeft') { e.preventDefault(); this.markCard(false); }
+        else if (e.key === 'ArrowRight') { e.preventDefault(); this.markCard(true); }
+        else if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); this.flipped = !this.flipped; }
+      },
+      exitCards() {
+        if (this.cardsGraded) this.showExitConfirm = true;
+        else this.stage = 'select';
+      },
+
+      /* ── Flashcard results ──────────────────────────── */
+      get cardTotal() { return this.sessionCards.length; },
+      get firstTryCount() { return this.sessionCards.filter(r => !this.cardMisses[r.word]).length; },
+      get firstTryPct() {
+        return this.cardTotal ? Math.round((this.firstTryCount / this.cardTotal) * 100) : 0;
+      },
+      /* Hardest first — the list doubles as the "what to redo" preview. */
+      get cardReview() {
+        return this.sessionCards.slice()
+          .sort((a, b) => (this.cardMisses[b.word] || 0) - (this.cardMisses[a.word] || 0));
+      },
+      get trickyWords() { return this.sessionCards.filter(r => this.cardMisses[r.word]); },
+      get trickyCount() { return this.trickyWords.length; },
+      retryTricky() {
+        if (!this.trickyCount) return;
+        this.startCards(this.trickyWords.slice());
       },
 
       get current() { return this.questions[this.currentIndex]; },
@@ -882,11 +1056,7 @@
         const words = this.sourceWords;
         VocabQuiz.useWords(words);
         if (this.selectedMode === 'flashcards') {
-          this.deck = VocabQuiz.resolveWords(words);
-          this.cardIndex = 0;
-          this.flipped = false;
-          this.loadSentence();
-          this.stage = 'cards';
+          this.startCards(VocabQuiz.resolveWords(words));
           return;
         }
         this.questions = VocabQuiz.buildSession(this.selectedMode);
@@ -986,6 +1156,10 @@
         this.showExitConfirm = false;
         this.questions = [];
         this.currentIndex = 0;
+        this.deck = [];
+        this.stillLearning = [];
+        this.cardBusy = false;
+        this.cardAnim = '';
         this.stage = 'select';
       },
 
