@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en" x-data="{
+  theme: localStorage.getItem('korah_theme') || 'dark',
+  sidebarCollapsed: window.innerWidth <= 768 ? false : localStorage.getItem('korah_sidebar_collapsed') === 'true',
+  mobileOpen: false,
+  getEffectiveTheme() {
+    if (this.theme === 'system') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return this.theme;
+  },
+  toggleSidebar() {
+    if (window.innerWidth <= 768) {
+      this.mobileOpen = !this.mobileOpen;
+      const overlay = document.querySelector('.sidebar-overlay');
+      if (overlay) overlay.classList.toggle('show', this.mobileOpen);
+    } else {
+      this.sidebarCollapsed = !this.sidebarCollapsed;
+      localStorage.setItem('korah_sidebar_collapsed', this.sidebarCollapsed);
+    }
+  }
+}" :data-theme="getEffectiveTheme()" x-cloak>
+<head>
+<link rel="stylesheet" href="../../transitions/page-transitions.css"/>
+<script src="../../transitions/page-transitions.js"></script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Korah AI · Practice Tests</title>
+<link rel="icon" type="image/png" href="../../logo-images/newlogo0.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script src="../../sidebar-loader.js" defer></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="../../study/js/sidebar.js"></script>
+<link rel="stylesheet" href="../../app/korah-chat.css"/>
+<link rel="stylesheet" href="./practice-test.css"/>
+<style>
+  html:not(.korah-page-ready) { background: #17171d !important; }
+  html[data-theme="light"]:not(.korah-page-ready) { background: #f4f5f8 !important; }
+  html:not(.korah-page-ready) body { opacity: 0 !important; }
+
+  .pt-page {
+    overflow-y: auto;
+    height: calc(100vh - 3.5rem);
+    max-height: calc(100vh - 3.5rem);
+    box-sizing: border-box;
+    padding: 1.5rem 1.25rem 4rem;
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  .pt-back-row { max-width: 46rem; width: 100%; margin: 0 auto 1rem; }
+  .pt-back-link {
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    font-size: 0.88rem; font-weight: 700; text-decoration: none; color: var(--pt-tx);
+    padding: 0.4rem 0.75rem; border-radius: 0.7rem;
+    border: 0.125rem solid var(--pt-bd); background: var(--pt-sf2);
+    transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+  }
+  .pt-back-link:hover { transform: scale(1.04); background: var(--pt-sf); }
+  .pt-step { display: none; }
+  .pt-step.is-active { display: block; }
+
+  /* practice-test.css only scopes .is-hidden to .pt-hint, so the result block
+     needs a generic rule of its own. */
+  .is-hidden { display: none !important; }
+  .pt-perf { margin-top: 1.5rem; }
+  .pt-perf .pt-step-title { display: flex; align-items: center; gap: 0.6rem; }
+  .pt-perf .pt-mini-row { gap: 0.5rem; flex-wrap: wrap; }
+</style>
+</head>
+
+<body>
+<script>
+  (function () {
+    var t = localStorage.getItem('korah_theme') || 'dark';
+    if (t === 'light' || (t === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  })();
+</script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+  import { startAuthGuard } from '../../auth-guard.js';
+
+  const app = initializeApp({
+    apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
+    authDomain: "korah-app.firebaseapp.com",
+    projectId: "korah-app",
+    storageBucket: "korah-app.firebasestorage.app",
+    messagingSenderId: "226169460321",
+    appId: "1:226169460321:web:b166fc8260107c55dafc20"
+  });
+  const auth = getAuth(app);
+
+  onAuthStateChanged(auth, (user) => {
+    if (!user) {
+      window.KorahTransitions.go('../../landing/index.html');
+      return;
+    }
+    const detail = { uid: user.uid };
+    window._korahReadyFired = detail;
+    window.dispatchEvent(new CustomEvent('korahReady', { detail }));
+    startAuthGuard(auth, '../../landing/index.html');
+  });
+
+  document.getElementById('logout-btn')?.addEventListener('click', () => {
+    window.confirmLogout(async () => {
+      await signOut(auth);
+      localStorage.removeItem('korah_first_name');
+      window.KorahTransitions.go('../../login.html');
+    });
+  });
+</script>
+
+<canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
+<div id="sidebar-root"></div>
+
+<div id="main-area-wrapper" class="main-area-wrapper">
+<main id="main-content" class="main-content">
+
+  <header class="chat-topbar bg-sf glass-sm t-theme bd" style="opacity: 0.95;">
+    <button id="sidebar-toggle" @click="toggleSidebar()" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+    <div class="chat-title-area">
+      <div class="korah-status-dot"></div>
+      <span class="font-semibold tx text-sm">Practice Tests</span>
+    </div>
+  </header>
+
+  <div class="pt-page pt-scope">
+    <div class="pt-back-row">
+      <a class="pt-back-link" href="../index.html">
+        <span class="material-icons-round" style="font-size:1.05rem">arrow_back</span> Back to SAT
+      </a>
+    </div>
+
+    <div class="pt-shell" id="ptShell" data-step="1">
+      <div class="pt-hero">
+        <h1>Full-Length Practice Tests</h1>
+        <p>A real, timed SAT: two Reading &amp; Writing modules, a break, then two Math modules.</p>
+      </div>
+
+      <div class="pt-steps-indicator">
+        <span class="pt-step-dot is-active" id="ptDot1"></span>
+        <span class="pt-step-dot" id="ptDot2"></span>
+      </div>
+
+      <!-- Step 1: pick a test -->
+      <section class="pt-step is-active" id="ptStep1">
+        <h2 class="pt-step-title">Choose a practice test</h2>
+        <div class="pt-card-grid cols-2 pt-stagger" id="ptTestGrid"></div>
+        <div class="pt-hint is-hidden" id="ptHint">Pick a test to continue.</div>
+        <div class="pt-btn-row">
+          <button class="pt-btn" id="ptNextBtn" type="button">Continue</button>
+        </div>
+      </section>
+
+      <!-- Step 2: confirm the format, then start -->
+      <section class="pt-step" id="ptStep2">
+        <h2 class="pt-step-title" id="ptStep2Title">Before you begin</h2>
+
+        <div class="pt-tile-grid" id="ptTiles"></div>
+
+        <div class="pt-panel" style="margin-top:1rem">
+          <div class="pt-row">
+            <span class="pt-row-k">Reading &amp; Writing</span>
+            <span class="pt-row-v">2 modules · 54 questions · 64 min</span>
+          </div>
+          <div class="pt-row">
+            <span class="pt-row-k">Break</span>
+            <span class="pt-row-v">10 minutes between sections</span>
+          </div>
+          <div class="pt-row">
+            <span class="pt-row-k">Math</span>
+            <span class="pt-row-v">2 modules · 44 questions · 70 min</span>
+          </div>
+        </div>
+
+        <div class="pt-panel">
+          <div class="pt-panel-title">How it works</div>
+          <ul class="pt-list">
+            <li>You cannot return to a module once you finish it.</li>
+            <li>The reference sheet and the Desmos calculator are built into the Math section.</li>
+            <li>Your progress saves automatically, so you can close the tab and pick it back up.</li>
+            <li>Scoring uses the official College Board conversion table.</li>
+          </ul>
+        </div>
+
+        <div class="pt-panel" id="ptResumePanel" style="display:none">
+          <div class="pt-panel-title" id="ptResumeTitle">You have a test in progress</div>
+          <p style="font-size:.9rem; line-height:1.55; margin:0" id="ptResumeText"></p>
+        </div>
+
+        <div class="pt-btn-row" id="ptStartRow">
+          <button class="pt-btn is-green" id="ptStartBtn" type="button">Begin Test</button>
+        </div>
+        <div class="pt-mini-row">
+          <button class="pt-mini-btn" id="ptBackBtn" type="button">Choose a different test</button>
+        </div>
+      </section>
+    </div>
+
+    <!-- Most recent result. Hidden until there is a completed test to show.
+         ?preview=1 fills it with sample numbers so the UI can be styled. -->
+    <section class="pt-shell pt-perf is-hidden" id="ptPerf">
+      <h2 class="pt-step-title">
+        Your last result
+        <span class="pt-chip is-hidden" id="ptPerfSample">Sample data</span>
+      </h2>
+
+      <div class="pt-tile-grid">
+        <div class="pt-tile tone-green"><div class="pt-tile-value" id="ptPerfTotal">&mdash;</div><div class="pt-tile-label">Total</div></div>
+        <div class="pt-tile tone-pink"><div class="pt-tile-value" id="ptPerfRw">&mdash;</div><div class="pt-tile-label">Reading &amp; Writing</div></div>
+        <div class="pt-tile tone-blue"><div class="pt-tile-value" id="ptPerfMath">&mdash;</div><div class="pt-tile-label">Math</div></div>
+      </div>
+
+      <div class="pt-panel" style="margin-top:1rem">
+        <div class="pt-row">
+          <span class="pt-row-k">Completed</span>
+          <span class="pt-row-v" id="ptPerfDate">&mdash;</span>
+        </div>
+        <div class="pt-row">
+          <span class="pt-row-k">Reading &amp; Writing</span>
+          <span class="pt-row-v" id="ptPerfRawRw">&mdash;</span>
+        </div>
+        <div class="pt-row">
+          <span class="pt-row-k">Math</span>
+          <span class="pt-row-v" id="ptPerfRawMath">&mdash;</span>
+        </div>
+      </div>
+
+      <div class="pt-mini-row is-hidden" id="ptPerfPreviewLinks">
+        <a class="pt-mini-btn" href="./player.html?test=4&amp;preview=results&amp;pct=72">Results screen &middot; 72%</a>
+        <a class="pt-mini-btn" href="./player.html?test=4&amp;preview=results&amp;pct=100">Results screen &middot; 100%</a>
+        <a class="pt-mini-btn" href="./player.html?test=4&amp;preview=results&amp;pct=0">Results screen &middot; 0%</a>
+      </div>
+    </section>
+  </div>
+</main>
+</div>
+
+<!-- Restart confirmation (no native confirm) -->
+<div class="pt-overlay" id="ptConfirmOverlay"></div>
+<div class="pt-popup pt-scope" id="ptConfirmPopup" role="dialog" aria-modal="true">
+  <div class="pt-popup-head">
+    <span class="pt-popup-title">Start over?</span>
+    <button class="pt-x-btn" id="ptConfirmClose" type="button" aria-label="Close">&times;</button>
+  </div>
+  <p style="line-height:1.6; margin:.4rem 0 0" id="ptConfirmMsg"></p>
+  <div class="pt-popup-actions">
+    <button class="pt-btn is-ghost" id="ptConfirmCancel" type="button">Keep my progress</button>
+    <button class="pt-btn is-red" id="ptConfirmOk" type="button">Start over</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  // Available practice tests. Add new tests here as they are scraped.
+  // Tones just have to differ from one another, so they cycle by index.
+  var TONES = ['tone-blue', 'tone-pink', 'tone-teal', 'tone-amber', 'tone-green', 'tone-orange'];
+  var TESTS = [
+    {
+      id: 4,
+      name: 'Practice Test #4',
+      desc: 'Our first full-length paper practice test, digitized end to end.',
+      chips: ['120 questions', '2h 14m', 'Official scoring'],
+    },
+    {
+      id: 11,
+      name: 'Practice Test #11',
+      desc: 'A second full-length paper test, digitized with every figure intact.',
+      chips: ['120 questions', '2h 14m', 'Official scoring'],
+    },
+  ];
+  var toneAt = function (i) { return TONES[i % TONES.length]; };
+
+  var MODULE_LABELS = {
+    rwModule1: 'Reading & Writing, Module 1',
+    rwModule2: 'Reading & Writing, Module 2',
+    mathModule1: 'Math, Module 1',
+    mathModule2: 'Math, Module 2',
+  };
+  var MODULE_ORDER = ['rwModule1', 'rwModule2', 'mathModule1', 'mathModule2'];
+
+  var $ = function (id) { return document.getElementById(id); };
+  var shell = $('ptShell');
+  var grid = $('ptTestGrid');
+  var selected = null;
+  var step = 1;
+
+  // ── Saved progress ──────────────────────────────────────
+  // Mirrors the player's own resume check so the two never disagree.
+  function savedState(id) {
+    var raw;
+    try { raw = JSON.parse(localStorage.getItem('korahPTState:' + id)); } catch (e) { return null; }
+    if (!raw || !raw.step || raw.step === 'start') return null;
+    if (raw.currentMod === undefined || raw.currentMod > MODULE_ORDER.length) return null;
+    var started = raw.name || raw.currentMod > 0 ||
+      (raw.answers && Object.keys(raw.answers).length > 0);
+    return started ? raw : null;
+  }
+  function progressText(saved) {
+    if (saved.step === 'results') return 'You already finished this test. Starting again clears the saved run.';
+    if (saved.step === 'break') return 'You stopped during the 10-minute break, right before the Math section.';
+    var key = MODULE_ORDER[saved.currentMod];
+    var answered = saved.answers ? Object.keys(saved.answers).length : 0;
+    return 'You stopped in ' + (MODULE_LABELS[key] || 'an earlier module') +
+      ' with ' + answered + ' question' + (answered === 1 ? '' : 's') + ' answered.';
+  }
+
+  // ── Step 1: the test cards ──────────────────────────────
+  grid.innerHTML = TESTS.map(function (t, i) {
+    var chips = t.chips.map(function (c) { return '<span class="pt-chip">' + c + '</span>'; }).join('');
+    var resume = savedState(t.id) ? '<span class="pt-chip">In progress</span>' : '';
+    return '' +
+      '<button type="button" class="pt-card ' + toneAt(i) + '" data-id="' + t.id + '">' +
+        '<span class="material-icons-round pt-card-icon">assignment</span>' +
+        '<span class="pt-card-title">' + t.name + '</span>' +
+        '<span class="pt-card-desc">' + t.desc + '</span>' +
+        '<span class="pt-chips">' + chips + resume + '</span>' +
+      '</button>';
+  }).join('');
+
+  var cards = Array.prototype.slice.call(grid.querySelectorAll('.pt-card'));
+
+  // ── Memory-lights flash ─────────────────────────────────
+  // While nothing is picked, the cards light up on independent timers so
+  // several can be lit at once and the pattern never repeats.
+  var flashTimers = {};
+  function scheduleFlash(card, i, initial) {
+    var stagger = initial ? Math.random() * 900 : 0;
+    var gap = 550 + Math.random() * 1100;
+    flashTimers['on:' + i] = setTimeout(function () {
+      card.classList.add('is-lit');
+      flashTimers['off:' + i] = setTimeout(function () {
+        card.classList.remove('is-lit');
+        scheduleFlash(card, i, false);
+      }, 400 + Math.random() * 350);
+    }, stagger + gap);
+  }
+  function startFlashing() { cards.forEach(function (c, i) { scheduleFlash(c, i, true); }); }
+  function stopFlashing() {
+    Object.keys(flashTimers).forEach(function (k) { clearTimeout(flashTimers[k]); });
+    flashTimers = {};
+    cards.forEach(function (c) { c.classList.remove('is-lit'); });
+  }
+  startFlashing();
+
+  cards.forEach(function (card) {
+    card.addEventListener('click', function () {
+      stopFlashing();
+      selected = TESTS.filter(function (t) { return String(t.id) === card.dataset.id; })[0];
+      cards.forEach(function (c) { c.classList.toggle('is-selected', c === card); });
+      $('ptHint').classList.add('is-hidden');
+    });
+  });
+
+  // ── Step transitions (direction-aware) ──────────────────
+  function goToStep(next) {
+    if (next === step) return;
+    var from = $('ptStep' + step);
+    var to = $('ptStep' + next);
+    var forward = next > step;
+    from.classList.add(forward ? 'anim-out-left' : 'anim-out-right');
+    setTimeout(function () {
+      from.classList.remove('is-active', 'anim-out-left', 'anim-out-right');
+      to.classList.add('is-active', forward ? 'anim-in-right' : 'anim-in-left');
+      setTimeout(function () { to.classList.remove('anim-in-right', 'anim-in-left'); }, 400);
+      step = next;
+      shell.dataset.step = String(step);
+      $('ptDot1').classList.toggle('is-active', step === 1);
+      $('ptDot1').classList.toggle('is-done', step > 1);
+      $('ptDot2').classList.toggle('is-active', step === 2);
+      document.querySelector('.pt-page').scrollTop = 0;
+    }, 240);
+  }
+
+  // ── Step 2 ──────────────────────────────────────────────
+  function renderStep2() {
+    $('ptStep2Title').textContent = selected.name;
+    $('ptTiles').innerHTML = '' +
+      '<div class="pt-tile tone-pink"><div class="pt-tile-value">64</div><div class="pt-tile-label">Min · Reading &amp; Writing</div></div>' +
+      '<div class="pt-tile tone-blue"><div class="pt-tile-value">70</div><div class="pt-tile-label">Min · Math</div></div>' +
+      '<div class="pt-tile tone-teal"><div class="pt-tile-value">120</div><div class="pt-tile-label">Questions</div></div>';
+
+    var saved = savedState(selected.id);
+    var panel = $('ptResumePanel');
+    var startRow = $('ptStartRow');
+    if (saved) {
+      panel.style.display = '';
+      $('ptResumeText').textContent = progressText(saved);
+      startRow.classList.add('cols-2');
+      startRow.innerHTML =
+        '<button class="pt-btn is-ghost" id="ptRestartBtn" type="button">Start over</button>' +
+        '<button class="pt-btn is-green" id="ptStartBtn" type="button">Resume Test</button>';
+      $('ptRestartBtn').addEventListener('click', function () {
+        $('ptConfirmMsg').textContent =
+          'Starting over erases your saved answers for ' + selected.name + '. This cannot be undone.';
+        $('ptConfirmOverlay').classList.add('open');
+        $('ptConfirmPopup').classList.add('open');
+      });
+    } else {
+      panel.style.display = 'none';
+      startRow.classList.remove('cols-2');
+      startRow.innerHTML = '<button class="pt-btn is-green" id="ptStartBtn" type="button">Begin Test</button>';
+    }
+    $('ptStartBtn').addEventListener('click', launch);
+  }
+
+  function launch() {
+    window.location.href = './player.html?test=' + encodeURIComponent(selected.id);
+  }
+
+  $('ptNextBtn').addEventListener('click', function () {
+    if (!selected) { $('ptHint').classList.remove('is-hidden'); return; }
+    renderStep2();
+    goToStep(2);
+  });
+  $('ptBackBtn').addEventListener('click', function () { goToStep(1); });
+
+  // Restart confirmation
+  function closeConfirm() {
+    $('ptConfirmOverlay').classList.remove('open');
+    $('ptConfirmPopup').classList.remove('open');
+  }
+  $('ptConfirmCancel').addEventListener('click', closeConfirm);
+  $('ptConfirmClose').addEventListener('click', closeConfirm);
+  $('ptConfirmOverlay').addEventListener('click', closeConfirm);
+  $('ptConfirmOk').addEventListener('click', function () {
+    try { localStorage.removeItem('korahPTState:' + selected.id); } catch (e) {}
+    closeConfirm();
+    launch();
+  });
+
+  // ── Most recent result ──────────────────────────────────
+  // Written by the player when a test is finished. ?preview=1 substitutes
+  // sample numbers so the block can be styled without sitting a full test.
+  var SAMPLE_RESULT = {
+    total: 1240, rwScale: 620, mthScale: 620,
+    rwCorrect: 51, rwTotal: 66, mthCorrect: 41, mthTotal: 54,
+    finishedAt: Date.now() - 26 * 60 * 60 * 1000,
+  };
+
+  function renderLastResult() {
+    var preview = new URLSearchParams(location.search).get('preview') === '1';
+    var last = null;
+    try { last = JSON.parse(localStorage.getItem('korahLastPTResult') || 'null'); } catch (e) {}
+    if (!last && preview) last = SAMPLE_RESULT;
+    if (!last) return;
+
+    $('ptPerfTotal').textContent = last.total != null ? last.total : '—';
+    $('ptPerfRw').textContent = last.rwScale != null ? last.rwScale : '—';
+    $('ptPerfMath').textContent = last.mthScale != null ? last.mthScale : '—';
+    $('ptPerfRawRw').textContent = last.rwCorrect + ' of ' + last.rwTotal + ' correct';
+    $('ptPerfRawMath').textContent = last.mthCorrect + ' of ' + last.mthTotal + ' correct';
+    if (last.finishedAt) {
+      var d = new Date(last.finishedAt);
+      $('ptPerfDate').textContent =
+        d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' at ' +
+        d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    }
+    if (preview) {
+      $('ptPerfSample').classList.remove('is-hidden');
+      $('ptPerfPreviewLinks').classList.remove('is-hidden');
+    }
+    $('ptPerf').classList.remove('is-hidden');
+  }
+  renderLastResult();
+})();
+</script>
+</body>
+</html>

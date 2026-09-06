@@ -156,38 +156,6 @@
         <img src="../logo-images/newlogo3.png" class="sat-bank-header-deco" alt=""/>
       </section>
 
-      <a class="sat-full-length-card" href="./test-select.html">
-        <div class="sat-full-length-icon" aria-hidden="true">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-          </svg>
-        </div>
-        <div class="sat-full-length-text">
-          <span class="sat-full-length-title">Full-Length Practice Test</span>
-          <span class="sat-full-length-desc">Timed digital SAT practice test — Reading &amp; Writing and Math, with a 10-minute break.</span>
-        </div>
-        <span class="sat-full-length-cta">Start →</span>
-      </a>
-
-      <!-- Full-length practice test widgets (resume + most recent score) -->
-      <div class="sat-pt-widget-row" id="pt-widgets">
-        <div class="sat-pt-card sat-pt-continue is-hidden" id="pt-continue-card">
-          <div class="sat-pt-card-title">Resume Your Practice Test</div>
-          <div class="sat-pt-card-sub" id="pt-continue-detail">Pick up right where you left off.</div>
-          <a class="sat-pt-btn" id="pt-continue-link" href="./test-select.html">Continue Test →</a>
-        </div>
-        <div class="sat-pt-card sat-pt-continue is-hidden" id="pt-result-card">
-          <div class="sat-pt-card-title">Most Recent Score</div>
-          <div class="sat-pt-card-sub" id="pt-result-date">Your last full-length practice test.</div>
-          <div class="sat-pt-scores">
-            <span><b id="pt-result-total">—</b><small>Total</small></span>
-            <span><b id="pt-result-rw">—</b><small>R&amp;W</small></span>
-            <span><b id="pt-result-math">—</b><small>Math</small></span>
-          </div>
-          <a class="sat-pt-btn" href="./test-select.html">Start New Test →</a>
-        </div>
-      </div>
-
       <section class="sat-bank-controls">
         <div class="sat-session-bar">
           <div class="sat-limit-dd" id="limitDropdown">
@@ -421,66 +389,6 @@
 <script src="./js/sat-shared.js"></script>
 <script src="./js/sat-bank.js"></script>
 
-<script>
-  // Full-length practice test widgets — reads device-local state, no network needed.
-  (function () {
-    function hydrate() {
-      const continued = document.getElementById('pt-continue-card');
-      const resultCard = document.getElementById('pt-result-card');
-      if (!continued && !resultCard) return;
-
-      const MOD = ['Reading & Writing · Module 1', 'Reading & Writing · Module 2', 'Math · Module 1', 'Math · Module 2'];
-      // Progress is stored per test under `korahPTState:<id>`, so scan for any
-      // in-progress test rather than assuming a single shared key.
-      let inProgress = false, modIdx = 0, testId = null;
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (!k || k.indexOf('korahPTState:') !== 0) continue;
-        try {
-          const s = JSON.parse(localStorage.getItem(k) || 'null');
-          if (!s || !s.name || !(s.currentMod < 4)) continue;
-          if (s.step !== 'module' && s.step !== 'break' && s.step !== 'review') continue;
-          inProgress = true; modIdx = s.currentMod; testId = k.slice('korahPTState:'.length);
-          break;
-        } catch (e) {}
-      }
-
-      if (inProgress && continued) {
-        continued.classList.remove('is-hidden');
-        const d = document.getElementById('pt-continue-detail');
-        if (d) d.textContent = `Pick up where you left off: Test ${testId} · ${MOD[modIdx] || 'your test'}.`;
-        const link = document.getElementById('pt-continue-link');
-        if (link) link.href = `./questions.html?mode=full&test=${encodeURIComponent(testId)}`;
-      } else if (continued) {
-        continued.classList.add('is-hidden');
-      }
-
-      let last = null;
-      try { last = JSON.parse(localStorage.getItem('korahLastPTResult') || 'null'); } catch (e) {}
-
-      if (last && resultCard) {
-        resultCard.classList.remove('is-hidden');
-        const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-        set('pt-result-total', last.total ?? '—');
-        set('pt-result-rw', last.rwScale ?? '—');
-        set('pt-result-math', last.mthScale ?? '—');
-        const dateEl = document.getElementById('pt-result-date');
-        if (dateEl && last.finishedAt) {
-          const dt = new Date(last.finishedAt);
-          dateEl.textContent = `Last completed ${dt.toLocaleDateString([], { month: 'short', day: 'numeric' })} at ${dt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}.`;
-        }
-      } else if (resultCard) {
-        resultCard.classList.add('is-hidden');
-      }
-    }
-
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', hydrate);
-    } else {
-      hydrate();
-    }
-  })();
-</script>
 
 </body>
 </html>

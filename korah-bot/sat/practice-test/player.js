@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────
-// Korah Full-Length Practice Test — Player logic
+// Korah Full-Length Practice Test: Player logic
 // One-way state machine: RW M1 → RW M2 → break → Math M1 → Math M2 → results.
 // LocalStorage for in-progress state; Firestore (KorahSATAnalytics) for final results.
 // ─────────────────────────────────────────────────────────────
@@ -9,9 +9,9 @@ const testId = new URLSearchParams(location.search).get("test") || "4";
 const LS_KEY = `korahPTState:${testId}`;
 const RESULT_KEY = "korahLastPTResult";
 const testSlug = `test-${testId}`;
-const DATA_URL = `../docs/practice-tests/${testSlug}/${testSlug}.json`;
+const DATA_URL = `../../docs/practice-tests/${testSlug}/${testSlug}.json`;
 
-// Inferred display name — resolved from account data (same heuristic the rest of
+// Inferred display name: resolved from account data (same heuristic the rest of
 // the app uses) and used to personalize the confirmation screen.
 function resolveDisplayName(user) {
   const first =
@@ -41,7 +41,7 @@ let K = null; // window.KorahSATAnalytics (set after auth)
     onAuthStateChanged(auth, async (user) => {
       if (!user) return; // play locally; Firestore save skipped
       try {
-        const { initSatAnalytics } = await import("../sat/js/sat-analytics.js");
+        const { initSatAnalytics } = await import("../js/sat-analytics.js");
         K = await initSatAnalytics(app, user.uid);
       } catch (e) { console.warn("[PT] analytics init failed", e); }
       // Resolve the user's first name for the confirmation screen.
@@ -117,7 +117,19 @@ document.addEventListener("DOMContentLoaded", () => {
   $("alertOverlay")?.addEventListener("click", closeAlert);
 });
 
-function persist() { try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (e) {} }
+// ── Preview mode (dev only) ──────────────────────
+// ?preview=results jumps straight to a finished test with seeded answers so the
+// results and answer-review screens can be styled without sitting a 2.5h exam.
+// Optional &pct=NN sets roughly what share of questions are answered correctly.
+// Nothing is written: no localStorage, no Firestore, no korahLastPTResult.
+const PREVIEW = new URLSearchParams(location.search).get("preview");
+const PREVIEW_PCT = Math.min(100, Math.max(0,
+  Number(new URLSearchParams(location.search).get("pct")) || 72));
+
+function persist() {
+  if (PREVIEW) return; // preview sessions never touch stored progress
+  try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (e) {}
+}
 function loadPersisted() { try { return JSON.parse(localStorage.getItem(LS_KEY)); } catch (e) { return null; } }
 
 init();
@@ -138,6 +150,13 @@ async function init() {
   wireUI();
   renderConfirmScreen();
 
+  if (PREVIEW === "results") {
+    if (loadOk) { seedPreviewResults(); return; }
+    uiAlert("Preview needs the test data", "The preview couldn't load " + DATA_URL + ". Serve the site over http:// and try again.");
+    freshState();
+    return;
+  }
+
   // Resume an in-progress session if present.
   const saved = loadPersisted();
   const inProgress = saved && saved.step && saved.step !== "start"
@@ -150,12 +169,12 @@ async function init() {
   } else {
     // No usable in-progress session (missing, stale "start", or completed):
     // clear any leftover so it can never be mistaken for real progress, and
-    // don't persist a bare "start" state — progress only counts once a test begins.
+    // don't persist a bare "start" state: progress only counts once a test begins.
     try { localStorage.removeItem(LS_KEY); } catch (e) {}
     freshState(); // step: "start"
   }
   if (!loadOk) {
-    uiAlert("Couldn't load the test", "Could not load the practice test data. If you're opening this file directly (file://), please serve it over http:// — the browser blocks local data fetches.");
+    uiAlert("Couldn't load the test", "Could not load the practice test data. If you're opening this file directly (file://), please serve it over http:// so the browser stops blocking local data fetches.");
   }
 }
 
@@ -175,6 +194,47 @@ function freshState() {
   };
 }
 
+// Builds a completed session with plausible answers. Deterministic: the same
+// URL always produces the same score, so you can compare styling across reloads.
+function seedPreviewResults() {
+  freshState();
+  state.name = "Alex";
+  state.currentMod = MODULES.length;
+  state.finished = MODULES.map((m, i) => i);
+  state.step = "results";
+  state.finishedAt = Date.now();
+  state.resultsSaved = true;   // belt and braces: never save a preview
+  state.firestoreSaved = true;
+
+  // Cheap deterministic hash so "which ones did they miss" is stable per test.
+  let seed = 0;
+  for (const ch of testSlug) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
+
+  MODULES.forEach((m, mi) => {
+    (test[m.key] || []).forEach((q, qi) => {
+      seed = (seed * 1103515245 + 12345 + mi * 7 + qi) >>> 0;
+      const roll = (seed >>> 8) % 100;
+      const key = `${m.key}:${q.n}`;
+      if (roll < PREVIEW_PCT) {
+        state.answers[key] = q.correct;                 // correct
+      } else if (q.type === "spr") {
+        const n = Number(q.correct);
+        state.answers[key] = isNaN(n) ? "0" : String(n + 1);
+      } else {
+        const letters = (q.options || []).map((_, i) => String.fromCharCode(65 + i));
+        const wrong = letters.filter((l) => l !== q.correct);
+        state.answers[key] = wrong.length ? wrong[roll % wrong.length] : q.correct;
+      }
+      // Leave a few marked for review so that styling has something to show.
+      if (roll % 17 === 0) state.reviewed[key] = true;
+    });
+  });
+
+  renderResults();
+  showScreen("results");
+  console.log(`[PT] preview: results for ${testSlug} at ~${PREVIEW_PCT}% correct. Nothing was saved.`);
+}
+
 function setStep(s) { state.step = s; persist(); }
 
 // ── Screen router ────────────────────────────────
@@ -189,11 +249,16 @@ function showScreen(which) {
 
 function updateTopBar() {
   const m = MODULES[state.currentMod];
-  let label = "—";
-  if (state.step === "module") label = `${m.label} · ${m.module}`;
-  else if (state.step === "break") label = "Break";
-  else if (state.step === "results") label = "Complete";
-  $("moduleIndicator").innerHTML = `<strong>${label}</strong>`;
+  let label = "Not started";
+  let tone = "";
+  if (state.step === "module") {
+    label = `${m.label} · ${m.module}`;
+    tone = m.section === "math" ? "tone-blue" : "tone-pink";
+  } else if (state.step === "break") { label = "Break"; tone = "tone-amber"; }
+  else if (state.step === "results") { label = "Complete"; tone = "tone-green"; }
+  const badge = $("moduleIndicator");
+  badge.className = `module-badge ${tone}`.trim();
+  badge.textContent = label;
   const calcBtn = $("calcBtn");
   if (calcBtn) calcBtn.style.display = (state.step === "module" && m && m.section === "math") ? "" : "none";
 }
@@ -350,7 +415,7 @@ function onResume() {
   if (state.step === "break") { showScreen("break"); startBreak(); }
   else if (state.step === "results") { renderResults(); showScreen("results"); }
   else if (state.step === "review") {
-    // showScreen() alone reveals an empty #reviewList — the markup is built by
+    // showScreen() alone reveals an empty #reviewList: the markup is built by
     // openReview(). Rebuild it, in whichever of the two review modes we left in.
     const answersMode = state.reviewMode === "answers" || state.currentMod >= MODULES.length;
     if (answersMode) openReview(true);
@@ -376,7 +441,7 @@ function beginModule(resuming) {
 }
 
 function finishModule(auto) {
-  // Unanswered questions are simply omitted — they award no points. Always
+  // Unanswered questions are simply omitted: they award no points. Always
   // let the player continue to the next module without being blocked.
   doFinishModule();
 }
@@ -420,10 +485,10 @@ function startBreak() {
     state.breakRemaining = left;
     $("breakTimer").textContent = fmt(left);
     // The text redraws 4x/second, but re-stringifying the whole state that
-    // often is wasteful — only save when the displayed second actually changes.
+    // often is wasteful: only save when the displayed second actually changes.
     const whole = Math.ceil(left);
     if (whole !== lastWhole) { lastWhole = whole; persist(); }
-    // Informational only — never auto-start the next subject. The student must
+    // Informational only: never auto-start the next subject. The student must
     // click "Resume Testing Now" (spec requirement).
   };
   draw();
@@ -463,7 +528,7 @@ function renderQuestion() {
   $("prevQBtn").disabled = qIdx === 0;
   const isLast = qIdx === total - 1;
   $("nextQBtn").disabled = false;
-  // Hide "Next" on the last question — "Finish Module & Continue" replaces it.
+  // Hide "Next" on the last question: "Finish Module & Continue" replaces it.
   $("nextQBtn").style.display = isLast ? "none" : "";
   $("finishModuleBtn").style.display = isLast ? "inline-block" : "none";
 
@@ -481,21 +546,26 @@ function renderQuestion() {
 
 function renderStem(q) {
   if (q.stemImg) {
-    return `<div class="stem stem-img-only"><img src="../docs/practice-tests/${testSlug}/question-imgs/${encPath(q.stemImg)}" alt="question ${q.n} stem"/></div>`;
+    return `<div class="stem stem-img-only"><img src="../../docs/practice-tests/${testSlug}/question-imgs/${encPath(q.stemImg)}" alt="question ${q.n} stem"/></div>`;
   }
   return `<div class="stem">${esc(q.stem)}</div>`;
 }
+
+// Answer choices differ by tone rather than by meaning, so the list just
+// cycles: A blue, B pink, C teal, D amber.
+const OPTION_TONES = ["tone-blue", "tone-pink", "tone-teal", "tone-amber"];
 
 function renderMcq(selected, key, q) {
   return `<div class="options">
     ${(q.options || []).map((opt, i) => {
       const letter = String.fromCharCode(65 + i); // A, B, C, D
+      const tone = OPTION_TONES[i % OPTION_TONES.length];
       const text = opt.replace(/^[A-D]\)\s*/, ""); // strip leading letter if present
       const sel = selected === letter;
       const optImg = q.optionImgs && q.optionImgs[i]
-        ? `<div class="opt-img-wrap"><img class="opt-img" src="../docs/practice-tests/${testSlug}/question-imgs/${encPath(q.optionImgs[i])}" alt="option ${letter}"/></div>`
+        ? `<div class="opt-img-wrap"><img class="opt-img" src="../../docs/practice-tests/${testSlug}/question-imgs/${encPath(q.optionImgs[i])}" alt="option ${letter}"/></div>`
         : `<span>${esc(text)}</span>`;
-      return `<div class="option${sel ? " is-selected" : ""}" data-letter="${letter}" role="button" tabindex="0">
+      return `<div class="option ${tone}${sel ? " is-selected" : ""}" data-letter="${letter}" role="button" tabindex="0">
         <span class="opt-key">${letter}</span>${optImg}
       </div>`;
     }).join("")}
@@ -504,7 +574,7 @@ function renderMcq(selected, key, q) {
 
 function renderSpr(selected, key) {
   return `<div class="spr-wrap">
-    <label style="color:var(--tx2); font-size:.85rem; display:block; margin-bottom:8px">Enter your answer</label>
+    <label style="font-size:.9rem; font-weight:800; display:block; margin-bottom:.5rem">Enter your answer</label>
     <input class="spr-input" id="qSprInput" type="text" placeholder="Type a number or expression"
       autocomplete="off" spellcheck="false" value="${esc(selected || "")}"/>
   </div>`;
@@ -517,7 +587,7 @@ document.addEventListener("click", (e) => {
   const key = qKey();
   state.answers[key] = opt.dataset.letter;
   persist();
-  // Move the "is-selected" class in place — that class is the only thing a full
+  // Move the "is-selected" class in place: that class is the only thing a full
   // renderQuestion() would change here, and rebuilding #qCard reloads the images.
   opt.parentElement.querySelectorAll(".option").forEach((el) => el.classList.toggle("is-selected", el === opt));
 });
@@ -600,7 +670,7 @@ function openReview(showAnswers) {
     return `<div class="q-dot${qStatus(q)}" data-n="${q.n}" title="Question ${q.n}">${q.n}</div>`;
   }).join("");
   $("reviewList").innerHTML =
-    `<div style="display:flex; gap:16px; font-size:.82rem; color:var(--tx2); margin-bottom:12px; flex-wrap:wrap">` +
+    `<div style="display:flex; gap:1rem; font-size:.85rem; font-weight:700; margin-bottom:.75rem; flex-wrap:wrap">` +
       `<span>${answered}/${qs.length} answered</span>` +
       `<span>${reviewed} marked for review</span>` +
     `</div>` +
@@ -618,7 +688,7 @@ function openReview(showAnswers) {
     });
   });
   // Keep the module timer running while on the review page (matches the real
-  // test — the clock keeps counting down as you review).
+  // test: the clock keeps counting down as you review).
   state.step = "review";
   state.reviewMode = "module";
   persist();
@@ -741,22 +811,28 @@ function computeResults() {
     });
   });
 
-  const rows = test.meta.conversionTable;
-  // R&W raw -> row.rw range; Math raw -> row.math range
-  const rwRow = rows[String(rwCorrect)] || { rw: [400, 400] };
-  const mthRow = (rows[String(mthCorrect)] && rows[String(mthCorrect)].math)
-    ? rows[String(mthCorrect)].math : [400, 400];
-  const midpoint = (a) => a ? Math.round((a[0] + a[1]) / 2) : 400;
+  // The table ships as { test, rows: { "<raw>": { rw: [lo,hi], math: [lo,hi] } } }.
+  // Tolerate a flat map too, in case a future test file omits the wrapper.
+  const ct = test.meta.conversionTable || {};
+  const rows = ct.rows || ct;
+  const range = (raw, section) => {
+    const row = rows[String(raw)];
+    const r = row && row[section];
+    return Array.isArray(r) && r.length === 2 ? r : [400, 400];
+  };
+  const midpoint = (a) => Math.round((a[0] + a[1]) / 2);
 
-  const rwScale = midpoint(rwRow.rw);
-  const mthScale = midpoint(mthRow);
+  const rwRange = range(rwCorrect, "rw");
+  const mathRange = range(mthCorrect, "math");
+  const rwScale = midpoint(rwRange);
+  const mthScale = midpoint(mathRange);
   const total = rwScale + mthScale;
 
   return { total, rwScale, mthScale, rwCorrect, rwTotal, mthCorrect, mthTotal,
-           rwRange: rwRow.rw, mathRange: mthRow };
+           rwRange, mathRange };
 }
 
-// Display only — no writes. Called on every visit to the results screen.
+// Display only: no writes. Called on every visit to the results screen.
 function renderResults() {
   const r = computeResults();
   $("resTotal").textContent = r.total;
@@ -768,7 +844,7 @@ function renderResults() {
     `R&amp;W scaled 200–800: ${r.rwRange[0]}–${r.rwRange[1]} · Math scaled: ${r.mathRange[0]}–${r.mathRange[1]}`;
 }
 
-// Writes — runs exactly once per completed test, so a refresh or a trip back
+// Writes: runs exactly once per completed test, so a refresh or a trip back
 // from "Review Answers" can never log a duplicate attempt to analytics.
 function saveResultsOnce() {
   const { total, rwScale, mthScale, rwCorrect, rwTotal, mthCorrect, mthTotal } = computeResults();
@@ -793,14 +869,14 @@ function saveResultsOnce() {
 }
 
 async function saveResultsFirestore(rwScale, mthScale, rwCorrect, mthCorrect) {
-  if (!K || state.firestoreSaved) return;
+  if (PREVIEW || !K || state.firestoreSaved) return;
   try {
     await K.saveProfile({ mathScore: mthScale, englishScore: rwScale, currentScore: rwScale + mthScale });
     // log each attempt
     const DIFF = "M";
     // Deliberately serial. K.recordAttempt() read-modify-writes totalXP/level on
     // a shared totals doc outside a transaction (sat-analytics.js:138-183), so
-    // concurrent calls all read the same value and the last write wins — running
+    // concurrent calls all read the same value and the last write wins: running
     // these in parallel silently drops nearly all the XP.
     for (const [mk, q] of allQuestionsWithModule()) {
       const sel = state.answers[`${mk}:${q.n}`];
@@ -836,25 +912,8 @@ function exitTest() {
       stopTimer();
       persist();
       closeMenus();
-      // The full-test view lives in an iframe on questions.html. Ask the parent
-      // to navigate itself back to the Question Bank (sat/index.html). We post a
-      // message first (works even across origins / file://), then, after a short
-      // delay, fall back to a direct same-origin top-navigation write so exit
-      // works even if the parent's message listener never fires.
-      if (window.self !== window.top) {
-        const parent = window.parent;
-        parent.postMessage({ type: "korah-pt-exit" }, "*");
-        setTimeout(() => {
-          try {
-            const base = parent.location.pathname.replace(/\/[^/]*$/, "");
-            parent.location.href = base + "/index.html";
-          } catch (e) { /* cross-origin write blocked; message path is the fallback */ }
-        }, 250);
-      } else {
-        // Fallback if the player is ever opened as the top document.
-        const base = window.location.pathname.replace(/\/[^/]*$/, "");
-        window.location.href = base + "/index.html";
-      }
+      // Back to the test picker, which sits next to this file in the folder.
+      window.location.href = "./index.html";
     },
   });
 }
