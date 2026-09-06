@@ -7,7 +7,9 @@
 const testId = new URLSearchParams(location.search).get("test") || "4";
 // Namespaced per test so Test 4 and Test 11 keep independent progress.
 const LS_KEY = `korahPTState:${testId}`;
-const RESULT_KEY = "korahLastPTResult";
+const RESULT_KEY = "korahLastPTResult";   // most recent only; the home page reads this
+const HISTORY_KEY = "korahPTHistory";     // every completed attempt, newest first
+const HISTORY_MAX = 20;
 const testSlug = `test-${testId}`;
 const DATA_URL = `../../docs/practice-tests/${testSlug}/${testSlug}.json`;
 
@@ -74,6 +76,8 @@ let test = null;         // parsed test-4.json
 let state = null;        // runtime session state
 let qIdx = 0;            // question index within current module
 let timerHandle = null;  // module countdown
+let qShownAt = 0;        // epoch ms the current question came on screen
+let qTimingKey = null;   // answers-key the running stopwatch belongs to
 let moduleDeadline = 0;  // epoch ms
 let breakHandle = null;
 
@@ -117,17 +121,8 @@ document.addEventListener("DOMContentLoaded", () => {
   $("alertOverlay")?.addEventListener("click", closeAlert);
 });
 
-// ── Preview mode (dev only) ──────────────────────
-// ?preview=results jumps straight to a finished test with seeded answers so the
-// results and answer-review screens can be styled without sitting a 2.5h exam.
-// Optional &pct=NN sets roughly what share of questions are answered correctly.
-// Nothing is written: no localStorage, no Firestore, no korahLastPTResult.
-const PREVIEW = new URLSearchParams(location.search).get("preview");
-const PREVIEW_PCT = Math.min(100, Math.max(0,
-  Number(new URLSearchParams(location.search).get("pct")) || 72));
-
 function persist() {
-  if (PREVIEW) return; // preview sessions never touch stored progress
+  if (state && state.done) return; // finished: the hub owns the record now
   try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (e) {}
 }
 function loadPersisted() { try { return JSON.parse(localStorage.getItem(LS_KEY)); } catch (e) { return null; } }
@@ -149,13 +144,6 @@ async function init() {
   // never left with dead buttons (e.g. fetch blocked under file:// / CORS).
   wireUI();
   renderConfirmScreen();
-
-  if (PREVIEW === "results") {
-    if (loadOk) { seedPreviewResults(); return; }
-    uiAlert("Preview needs the test data", "The preview couldn't load " + DATA_URL + ". Serve the site over http:// and try again.");
-    freshState();
-    return;
-  }
 
   // Resume an in-progress session if present.
   const saved = loadPersisted();
@@ -186,6 +174,7 @@ function freshState() {
     qIdx: 0,         // last-viewed question index within the current module
     finished: [],    // module indexes completed (one-way)
     answers: {},     // `${modKey}:${n}` -> selected (mcq letter) or text (spr)
+    times: {},       // `${modKey}:${n}` -> seconds spent on that question
     reviewed: {},    // `${modKey}:${n}` -> true
     moduleStartedAt: {},
     moduleRemaining: {},  // seconds left when last paused/left
@@ -194,52 +183,11 @@ function freshState() {
   };
 }
 
-// Builds a completed session with plausible answers. Deterministic: the same
-// URL always produces the same score, so you can compare styling across reloads.
-function seedPreviewResults() {
-  freshState();
-  state.name = "Alex";
-  state.currentMod = MODULES.length;
-  state.finished = MODULES.map((m, i) => i);
-  state.step = "results";
-  state.finishedAt = Date.now();
-  state.resultsSaved = true;   // belt and braces: never save a preview
-  state.firestoreSaved = true;
-
-  // Cheap deterministic hash so "which ones did they miss" is stable per test.
-  let seed = 0;
-  for (const ch of testSlug) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
-
-  MODULES.forEach((m, mi) => {
-    (test[m.key] || []).forEach((q, qi) => {
-      seed = (seed * 1103515245 + 12345 + mi * 7 + qi) >>> 0;
-      const roll = (seed >>> 8) % 100;
-      const key = `${m.key}:${q.n}`;
-      if (roll < PREVIEW_PCT) {
-        state.answers[key] = q.correct;                 // correct
-      } else if (q.type === "spr") {
-        const n = Number(q.correct);
-        state.answers[key] = isNaN(n) ? "0" : String(n + 1);
-      } else {
-        const letters = (q.options || []).map((_, i) => String.fromCharCode(65 + i));
-        const wrong = letters.filter((l) => l !== q.correct);
-        state.answers[key] = wrong.length ? wrong[roll % wrong.length] : q.correct;
-      }
-      // Leave a few marked for review so that styling has something to show.
-      if (roll % 17 === 0) state.reviewed[key] = true;
-    });
-  });
-
-  renderResults();
-  showScreen("results");
-  console.log(`[PT] preview: results for ${testSlug} at ~${PREVIEW_PCT}% correct. Nothing was saved.`);
-}
-
 function setStep(s) { state.step = s; persist(); }
 
 // ── Screen router ────────────────────────────────
 function showScreen(which) {
-  ["start", "break", "module", "review", "results"].forEach((id) => shown("screen-" + id, id === which));
+  ["start", "break", "module", "review"].forEach((id) => shown("screen-" + id, id === which));
   updateTopBar();
   updateBottomBar();
   const inQuestion = which === "module";
@@ -320,11 +268,22 @@ function tick() {
   persist();
 }
 
+// Per-question stopwatch. Banked whenever the student leaves a question, so
+// the review list on the hub can show how long each one actually took.
+function startQTimer(key) { qTimingKey = key; qShownAt = Date.now(); }
+function commitQTime() {
+  if (!qTimingKey || !qShownAt) return;
+  const secs = (Date.now() - qShownAt) / 1000;
+  if (secs > 0) state.times[qTimingKey] = (state.times[qTimingKey] || 0) + secs;
+  qShownAt = 0;
+}
+
 function stopTimer() {
   if (timerHandle) { clearInterval(timerHandle); timerHandle = null; }
 }
 
 function pauseModule() {
+  commitQTime();
   if (timerHandle) {
     state.moduleRemaining[state.currentMod] = Math.max(0, (moduleDeadline - Date.now()) / 1000);
     stopTimer();
@@ -342,10 +301,10 @@ function wireUI() {
     beginModule();
   });
 
-  $("prevQBtn").addEventListener("click", () => { if (qIdx > 0) { qIdx--; state.qIdx = qIdx; persist(); renderQuestion(); } });
+  $("prevQBtn").addEventListener("click", () => { if (qIdx > 0) { commitQTime(); qIdx--; state.qIdx = qIdx; persist(); renderQuestion(); } });
   $("nextQBtn").addEventListener("click", () => {
     const qs = currentQuestions();
-    if (qIdx < qs.length - 1) { qIdx++; state.qIdx = qIdx; persist(); renderQuestion(); }
+    if (qIdx < qs.length - 1) { commitQTime(); qIdx++; state.qIdx = qIdx; persist(); renderQuestion(); }
   });
   $("finishModuleBtn").addEventListener("click", () => finishModule(false));
 
@@ -382,12 +341,6 @@ function wireUI() {
     if (state.step === "review") { setStep("module"); showScreen("module"); startModuleTimer(); renderQuestion(); }
   });
 
-  // Results
-  $("resultsReviewBtn").addEventListener("click", () => openReview(true));
-  $("resultsExitBtn").addEventListener("click", () => {
-    resetAll(); shown("screen-results", false); setStep("start"); showScreen("start");
-  });
-
   // Reference / accessibility
   $("refClose").addEventListener("click", closeRef);
   $("refOverlay").addEventListener("click", closeRef);
@@ -413,13 +366,11 @@ function wireUI() {
 // ── Resume ───────────────────────────────────────
 function onResume() {
   if (state.step === "break") { showScreen("break"); startBreak(); }
-  else if (state.step === "results") { renderResults(); showScreen("results"); }
+  else if (state.step === "results") { goToHub(); }
   else if (state.step === "review") {
-    // showScreen() alone reveals an empty #reviewList: the markup is built by
-    // openReview(). Rebuild it, in whichever of the two review modes we left in.
-    const answersMode = state.reviewMode === "answers" || state.currentMod >= MODULES.length;
-    if (answersMode) openReview(true);
-    else { openReview(); startModuleTimer(); }
+    // showScreen() alone reveals an empty #reviewList: openReview() builds it.
+    openReview();
+    startModuleTimer();
   }
   else beginModule(true);
 }
@@ -447,6 +398,7 @@ function finishModule(auto) {
 }
 
 function doFinishModule() {
+  commitQTime();
   stopTimer();
   delete state.moduleRemaining[state.currentMod]; // reset for next time
   state.finished.push(state.currentMod);
@@ -523,6 +475,7 @@ function renderQuestion() {
       ${isSpr ? renderSpr(selected, key) : renderMcq(selected, key, q)}
     </div>
   `;
+  startQTimer(key);
   $("reviewToggleBtn").classList.toggle("is-active", reviewed);
   $("reviewToggleBtn").textContent = reviewed ? "Reviewed ✓" : "Mark for Review";
   $("prevQBtn").disabled = qIdx === 0;
@@ -618,6 +571,7 @@ function renderQGrid() {
   ).join("");
   document.querySelectorAll("#qGrid .q-dot").forEach((d) => {
     d.addEventListener("click", () => {
+      commitQTime();
       qIdx = currentQuestions().findIndex((q) => q.n === Number(d.dataset.n));
       closeQMenu();
       renderQuestion();
@@ -638,24 +592,8 @@ function updateQMenuCounts() {
 }
 
 // ── Review page ──────────────────────────────────
-function openReview(showAnswers) {
-  const prevStep = state.step;
-
-  if (showAnswers) {
-    // Post-test review: full breakdown of every question. Shows what the
-    // student answered and, only when they got it wrong, the correct answer.
-    buildAnswerReview();
-    state.step = "review";
-    state.reviewMode = "answers";
-    persist();
-    $("reviewBackBtn").onclick = () => {
-      setStep("results");
-      renderResults();
-      showScreen("results");
-    };
-    showScreen("review");
-    return;
-  }
+function openReview() {
+  commitQTime();
 
   const m = MODULES[state.currentMod];
   const qs = currentQuestions();
@@ -690,78 +628,12 @@ function openReview(showAnswers) {
   // Keep the module timer running while on the review page (matches the real
   // test: the clock keeps counting down as you review).
   state.step = "review";
-  state.reviewMode = "module";
   persist();
   $("reviewBackBtn").onclick = () => {
-    setStep(prevStep === "results" ? "results" : "module");
-    if (prevStep === "results") { renderResults(); showScreen("results"); }
-    else { showScreen("module"); startModuleTimer(); renderQuestion(); }
+    setStep("module");
+    showScreen("module"); startModuleTimer(); renderQuestion();
   };
   showScreen("review");
-}
-
-// Renders the full post-test answer breakdown across every module, grouped by
-// section/module. For each question it shows the student's answer and, only if
-// they got it wrong, the correct answer.
-function buildAnswerReview() {
-  let totalRight = 0, totalSeen = 0;
-  const sections = MODULES.map((m, mi) => {
-    const qs = test[m.key] || [];
-    if (!qs.length) return "";
-    let right = 0;
-    const rows = qs.map((q) => {
-      const sel = state.answers[`${m.key}:${q.n}`];
-      const ok = isCorrect(q, sel);
-      if (ok) right++;
-      totalSeen++;
-      if (ok) totalRight++;
-      return reviewRow(q, sel, ok, m.key);
-    }).join("");
-    return (
-      `<div class="review-sec">` +
-        `<div class="review-sec-head">${m.label} · ${m.module} <span>${right}/${qs.length} correct</span></div>` +
-        `<div class="review-rows">${rows}</div>` +
-      `</div>`
-    );
-  }).join("");
-
-  $("reviewTitle").textContent = "Answer Review";
-  $("reviewList").innerHTML =
-    `<div class="review-summary">You answered ${totalRight} of ${totalSeen} questions correctly.</div>` +
-    sections;
-}
-
-// One row of the post-test answer review.
-function reviewRow(q, sel, ok, modKey) {
-  const answeredText = answerLabel(q, sel) || "Not answered";
-  const correctText = answerLabel(q, q.correct);
-  const mark = ok
-    ? `<span class="rev-mark rev-ok">✓</span>`
-    : `<span class="rev-mark rev-bad">✗</span>`;
-  const correctLine = ok
-    ? ""
-    : `<div class="rev-correct">Correct answer: <b>${esc(correctText)}</b></div>`;
-  return (
-    `<div class="rev-row${ok ? " is-right" : " is-wrong"}">` +
-      `<div class="rev-q">Q${q.n}${mark}</div>` +
-      `<div class="rev-detail">` +
-        `<div class="rev-answered">Your answer: <b>${esc(answeredText)}</b></div>` +
-        correctLine +
-      `</div>` +
-    `</div>`
-  );
-}
-
-// Human-readable answer label. For multiple-choice, resolves the letter to its
-// option text; for student-produced response, returns the raw text.
-function answerLabel(q, val) {
-  if (val == null || val === "") return null;
-  if (q.type === "mcq") {
-    const opt = (q.options || []).find((o, i) => String.fromCharCode(65 + i) === String(val).trim().toUpperCase());
-    if (opt) return opt.replace(/^[A-D]\)\s*/, "");
-    return String(val).toUpperCase();
-  }
-  return String(val);
 }
 
 // ── Results & scoring ────────────────────────────
@@ -786,12 +658,20 @@ function normalizeSpr(v) {
   return isNaN(num) ? s : String(Number(num.toPrecision(6)));
 }
 
+// Results live on the practice-test hub, not in the player: it owns the score
+// tiles and the per-question review list. Save, then hand off.
 function finishTest() {
+  commitQTime();
   stopTimer();
-  setStep("results");
+  state.step = "results";
   saveResultsOnce();
-  renderResults();
-  showScreen("results");
+  state.done = true;
+  try { localStorage.removeItem(LS_KEY); } catch (e) {}
+  goToHub();
+}
+
+function goToHub() {
+  window.location.href = "./index.html";
 }
 
 // Pure: recomputes the score from `state.answers`. Safe to call repeatedly.
@@ -832,18 +712,6 @@ function computeResults() {
            rwRange, mathRange };
 }
 
-// Display only: no writes. Called on every visit to the results screen.
-function renderResults() {
-  const r = computeResults();
-  $("resTotal").textContent = r.total;
-  $("resEnglish").textContent = r.rwScale;
-  $("resMath").textContent = r.mthScale;
-  $("resultsStudent").textContent = `Great work, ${state.name || "student"}!`;
-  $("resSummary").innerHTML =
-    `Reading &amp; Writing: ${r.rwCorrect}/${r.rwTotal} · Math: ${r.mthCorrect}/${r.mthTotal}<br/>` +
-    `R&amp;W scaled 200–800: ${r.rwRange[0]}–${r.rwRange[1]} · Math scaled: ${r.mathRange[0]}–${r.mathRange[1]}`;
-}
-
 // Writes: runs exactly once per completed test, so a refresh or a trip back
 // from "Review Answers" can never log a duplicate attempt to analytics.
 function saveResultsOnce() {
@@ -852,14 +720,28 @@ function saveResultsOnce() {
     state.resultsSaved = true;
     state.finishedAt = Date.now();
     state.final = { total, rwScale, mthScale, rwCorrect, rwTotal, mthCorrect, mthTotal };
-    // Persist the most recent result so the home dashboard can surface it.
+    // The hub re-fetches the test JSON for stems and choices, so only the
+    // student's own data goes in here: answers, per-question seconds, flags.
+    const record = {
+      total, rwScale, mthScale, rwCorrect, rwTotal, mthCorrect, mthTotal,
+      finishedAt: state.finishedAt,
+      testId,
+      name: state.name || "Student",
+      answers: state.answers,
+      times: state.times || {},
+      reviewed: state.reviewed || {},
+    };
+    // Append to the attempt history the hub lists, newest first, and keep the
+    // single-result key the home page still reads.
     try {
-      localStorage.setItem(RESULT_KEY, JSON.stringify({
-        total, rwScale, mthScale, rwCorrect, rwTotal, mthCorrect, mthTotal,
-        finishedAt: state.finishedAt,
-        testId,
-        name: state.name || "Student",
-      }));
+      let hist = [];
+      try { hist = JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; } catch (e) {}
+      if (!Array.isArray(hist)) hist = [];
+      hist.unshift(record);
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(hist.slice(0, HISTORY_MAX)));
+    } catch (e) { console.warn("[PT] history persist failed", e); }
+    try {
+      localStorage.setItem(RESULT_KEY, JSON.stringify(record));
     } catch (e) { console.warn("[PT] last-result persist failed", e); }
   }
   persist();
@@ -869,7 +751,7 @@ function saveResultsOnce() {
 }
 
 async function saveResultsFirestore(rwScale, mthScale, rwCorrect, mthCorrect) {
-  if (PREVIEW || !K || state.firestoreSaved) return;
+  if (!K || state.firestoreSaved) return;
   try {
     await K.saveProfile({ mathScore: mthScale, englishScore: rwScale, currentScore: rwScale + mthScale });
     // log each attempt
@@ -916,10 +798,6 @@ function exitTest() {
       window.location.href = "./index.html";
     },
   });
-}
-function resetAll() {
-  try { localStorage.removeItem(LS_KEY); } catch (e) {}
-  freshState();
 }
 function closeMenus() {
   $("menuItems")?.classList.remove("open");
