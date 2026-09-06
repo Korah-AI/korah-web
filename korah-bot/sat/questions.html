@@ -115,6 +115,15 @@ html[data-theme="light"] {
     --tone-amber:  #f59e0b; --tone-amber-fill:  #b45309;
     --tone-blue:   #3b82f6; --tone-blue-fill:   #1d4ed8;
     --tone-teal:   #14b8a6; --tone-teal-fill:   #0f766e;
+    /* Sky marks the choice you are on. It is the only color the answer list
+       carries before grading, and it is a border, never a fill. */
+    --tone-sky:    #22b8e6; --tone-sky-fill:    #0ea5e9;
+    --pl-card: var(--pl-sf);    /* answer cards, panes  */
+    --pl-bar:  var(--pl-sf2);   /* question header bar  */
+    --pl-line: var(--pl-bd);    /* card outlines        */
+    /* The passage and the question read as a document, so they are set in a
+       serif; the chrome around them stays in the app's sans. */
+    --pl-serif: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
     background: var(--pl-page) !important;
   }
   html[data-theme="light"] body.sat-player-grey {
@@ -123,6 +132,9 @@ html[data-theme="light"] {
     --pl-sf2:  #eceef2;
     --pl-sf3:  #ffffff;
     --pl-bd:   #c3c8d2;
+    --pl-card: #ffffff;
+    --pl-bar:  #f4f4f5;
+    --pl-line: #d4d4d8;
   }
   /* Flat page — the starfield sits behind opaque surfaces anyway */
   body.sat-player-grey #bg-canvas { display: none; }
@@ -212,21 +224,121 @@ html[data-theme="light"] {
   body.sat-player-grey .more-dropdown-check { color: var(--tone-purple); }
 
   /* ── Question panel ─────────────────────────────────────────────────────── */
+  /* ── Question pane ────────────────────────────────────────────────────────
+     Bluebook geometry: the question is a plain pane, not a card. The only
+     drawn boxes are the header bar, the answer cards and the divider to the
+     passage, so nothing competes with the text. */
+  body.sat-player-grey .sat-player-content-panel,
+  body.sat-player-grey .sat-player-passage-panel { background: var(--pl-card); }
   body.sat-player-grey .sat-question-panel {
-    background: var(--pl-sf);
-    border: 0.0625rem solid var(--pl-bd);
+    background: transparent;
+    border: none;
     box-shadow: none;
+    padding: 0;
+    gap: 1.25rem;
   }
   body.sat-player-grey .sat-question-panel:hover { box-shadow: none; }
-  /* The question number is Korah's mark on the card: solid pink, not a wash */
-  body.sat-player-grey .sat-question-number {
-    background: var(--tone-pink-fill) !important;
-    border: 0.0625rem solid var(--tone-pink-fill) !important;
-    color: #3b0a24 !important;
+
+  /* Passage pane: its own scroll, divided from the question by one line */
+  .sat-player-passage-panel {
+    display: none;               /* setPassage() opens it per question */
+    min-width: 0; min-height: 0;
+    flex-direction: column;
+    overflow: hidden;
   }
+  .sat-player-split.has-passage:not(.has-desmos) {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 100%;
+  }
+  .sat-player-split.has-desmos .sat-player-passage-panel { display: none !important; }
+  /* Narrow screens stack: passage above the question, same as Desmos does */
+  @media (max-width: 56.25rem) {
+    .sat-player-split.has-passage:not(.has-desmos) {
+      display: flex;
+      flex-direction: column;
+      grid-template-columns: unset;
+      grid-template-rows: unset;
+    }
+    .sat-player-split.has-passage .sat-player-passage-panel { flex: 0 0 40%; }
+    body.sat-player-grey .sat-player-passage-panel {
+      border-right: none;
+      border-bottom: 0.0625rem solid var(--pl-line);
+    }
+  }
+  .sat-player-passage-scroll {
+    flex: 1 1 0; overflow-y: auto; overflow-x: hidden;
+    padding: 1.75rem 2rem; box-sizing: border-box; min-height: 0;
+  }
+  body.sat-player-grey .sat-player-passage-panel {
+    border-right: 0.0625rem solid var(--pl-line);
+  }
+  body.sat-player-grey .sat-passage-card {
+    background: transparent;
+    border: none;
+    padding: 0;
+    box-shadow: none;
+  }
+  body.sat-player-grey .sat-passage-text,
+  body.sat-player-grey .sat-question-stem,
+  body.sat-player-grey .sat-answer-choice,
+  body.sat-player-grey .sat-question-title {
+    font-family: var(--pl-serif);
+    color: var(--tx) !important;
+    font-size: 1.0625rem;
+    line-height: 1.6;
+  }
+  body.sat-player-grey .sat-question-stem {
+    margin: 0; padding: 0; font-weight: 400;
+  }
+
+  /* ── Header bar ───────────────────────────────────────────────────────────
+     One full-width grey strip: black number badge, Mark for Review, and the
+     question's identity chips pushed to the right end. */
+  body.sat-player-grey .sat-question-head {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    flex-wrap: nowrap;
+    background: var(--pl-bar);
+    border-radius: 0.5rem;
+    padding: 0.3125rem;
+    min-height: 2.875rem;
+  }
+  body.sat-player-grey .sat-question-number {
+    background: #e4e4e7 !important;
+    border: none !important;
+    color: #27272a !important;
+    width: 2.25rem; min-width: 2.25rem; height: 2.25rem;
+    border-radius: 0.375rem;
+    font-size: 1rem; font-weight: 700;
+  }
+  /* Mark for Review is text + icon, no button box; it fills in when set */
+  body.sat-player-grey .sat-inline-review-btn {
+    background: transparent;
+    border: none;
+    color: var(--tx);
+    font-size: 0.875rem;
+    font-weight: 700;
+    padding: 0.25rem 0.375rem;
+    border-radius: 0.375rem;
+    transition: transform .18s ease, color .18s ease, background .18s ease;
+  }
+  body.sat-player-grey .sat-inline-review-btn:hover {
+    background: transparent; color: var(--tone-amber); transform: scale(1.03);
+  }
+  body.sat-player-grey .sat-inline-review-btn.is-active {
+    background: transparent;
+    border: none;
+    color: var(--tone-amber);
+  }
+  body.sat-player-grey .sat-domain-label,
+  body.sat-player-grey .sat-filter-chip-row { margin-left: auto; }
+  body.sat-player-grey .sat-domain-label { flex-shrink: 0; }
+  body.sat-player-grey .sat-filter-chip-row:not(:empty) { margin-left: 0.375rem; }
   body.sat-player-grey .sat-filter-chip {
-    background: var(--pl-sf2);
-    border: 0.0625rem solid var(--pl-bd);
+    background: var(--pl-card);
+    border: 0.0625rem solid var(--pl-line);
     color: var(--tx);
   }
   /* The domain label carries the question's identity, so it is filled in a
@@ -250,90 +362,89 @@ html[data-theme="light"] {
   body.sat-player-grey .sat-domain-label[data-domain="advanced-math"]                  { --acc-fill: var(--tone-red-fill); }
   body.sat-player-grey .sat-domain-label[data-domain="problem-solving-and-data-analysis"] { --acc-fill: #0369a1; }
   body.sat-player-grey .sat-domain-label[data-domain="geometry-and-trigonometry"]      { --acc-fill: #7e22ce; }
-  body.sat-player-grey .sat-question-title,
-  body.sat-player-grey .sat-passage-text,
-  body.sat-player-grey .sat-question-stem { color: var(--tx) !important; }
-  body.sat-player-grey .sat-passage-card {
-    background: var(--pl-sf2);
-    border: 0.0625rem solid var(--pl-bd);
-    box-shadow: none;
-  }
 
-  /* Mark for review: grey at rest, filled amber when set */
-  body.sat-player-grey .sat-inline-review-btn {
-    background: var(--pl-sf2);
-    border: 0.0625rem solid var(--pl-bd);
-    color: var(--tx);
-    transition: transform .18s ease, background .18s ease, border-color .18s ease;
-  }
-  body.sat-player-grey .sat-inline-review-btn:hover {
-    background: var(--pl-bd); color: var(--tx); border-color: var(--pl-bd);
-    transform: scale(1.03);
-  }
-  body.sat-player-grey .sat-inline-review-btn.is-active {
-    background: var(--tone-amber-fill);
-    border-color: var(--tone-amber-fill);
-    color: #ffffff;
-  }
-
-  /* ── Answer choices ─────────────────────────────────────────────────────────
-     Grey card at rest with its letter in a grey bubble; selected/graded means
-     filled, not outlined, and the letter bubble flips white-on-accent. */
+  /* ── Answer choices ───────────────────────────────────────────────────────
+     Outlined cards, never filled: the letter sits in a ring on the left and
+     the row keeps its own surface. Selection is the border turning sky blue,
+     which is why a graded answer can still be read at a glance — green and
+     red are the only fills the list ever takes, and only after Check. */
+  body.sat-player-grey .sat-answer-list { gap: 0.75rem; }
+  body.sat-player-grey .sat-answer-row { gap: 0.875rem; }
   body.sat-player-grey .sat-answer-choice {
-    --acc: var(--tone-purple); --acc-fill: var(--tone-purple-fill);
-    display: flex; align-items: center;
-    background: var(--pl-sf2);
-    border: 0.0625rem solid var(--pl-bd);
+    --acc: var(--tone-sky);
+    display: flex; align-items: center; gap: 0.75rem;
+    background: var(--pl-card);
+    border: 0.09375rem solid var(--pl-line);
     color: var(--tx);
     border-radius: 0.75rem;
-    padding: 0.875rem 1rem;
-    transition: transform .18s ease, background .18s ease, border-color .18s ease;
+    padding: 0.8125rem 1rem;
+    min-height: 3.5rem;
+    transition: border-color .18s ease, background .18s ease;
   }
   body.sat-player-grey .sat-answer-choice:hover {
-    background: var(--pl-sf3);
+    background: var(--pl-card);
     border-color: var(--acc);
-    transform: scale(1.01);
+    transform: none;
   }
-  body.sat-player-grey .sat-answer-choice.is-selected,
-  body.sat-player-grey .sat-answer-choice.is-correct,
-  body.sat-player-grey .sat-answer-choice.is-incorrect {
-    background: var(--acc-fill);
-    border-color: var(--acc-fill);
-    color: #ffffff;
-    transform: scale(1.01);
-  }
-  body.sat-player-grey .sat-answer-choice.is-correct   { --acc: var(--tone-green); --acc-fill: var(--tone-green-fill); }
-  body.sat-player-grey .sat-answer-choice.is-incorrect { --acc: var(--tone-red);   --acc-fill: var(--tone-red-fill); }
-
-  body.sat-player-grey .sat-answer-key {
-    background: var(--pl-sf);
-    border: 0.125rem solid var(--pl-bd);
+  /* Selected: the border alone, plus the letter ring filling in */
+  body.sat-player-grey .sat-answer-choice.is-selected {
+    background: var(--pl-card);
+    border-color: var(--tone-sky);
     color: var(--tx);
-    width: 2rem; height: 2rem;
+  }
+  /* Graded: the grade colour is worth a fill */
+  body.sat-player-grey .sat-answer-choice.is-correct {
+    --acc: var(--tone-green);
+    background: color-mix(in srgb, var(--tone-green) 14%, var(--pl-card));
+    border-color: var(--tone-green);
+  }
+  body.sat-player-grey .sat-answer-choice.is-incorrect {
+    --acc: var(--tone-red);
+    background: color-mix(in srgb, var(--tone-red) 14%, var(--pl-card));
+    border-color: var(--tone-red);
+  }
+
+  /* Letter ring */
+  body.sat-player-grey .sat-answer-key {
+    background: transparent;
+    border: 0.09375rem solid var(--tx);
+    color: var(--tx);
+    width: 1.875rem; height: 1.875rem;
+    margin-right: 0;
+    flex-shrink: 0;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-size: 0.8125rem;
     transition: background .18s ease, border-color .18s ease, color .18s ease;
   }
-  body.sat-player-grey .sat-answer-choice.is-selected .sat-answer-key,
-  body.sat-player-grey .sat-answer-choice.is-correct .sat-answer-key,
+  body.sat-player-grey .sat-answer-choice.is-selected .sat-answer-key {
+    background: var(--tone-sky); border-color: var(--tone-sky); color: #ffffff;
+  }
+  body.sat-player-grey .sat-answer-choice.is-correct .sat-answer-key {
+    background: var(--tone-green); border-color: var(--tone-green); color: #ffffff;
+  }
   body.sat-player-grey .sat-answer-choice.is-incorrect .sat-answer-key {
-    background: #ffffff;
-    border-color: #ffffff;
-    color: var(--acc-fill);
+    background: var(--tone-red); border-color: var(--tone-red); color: #ffffff;
   }
-  body.sat-player-grey .sat-answer-choice.is-eliminated { opacity: 0.55; }
+  body.sat-player-grey .sat-answer-choice.is-eliminated { opacity: 0.5; }
 
-  /* Eliminate button: grey circle, filled when the choice is struck out */
+  /* Eliminate button: sits outside the card, and always draws the strike so
+     the affordance reads before you click it. Active darkens it. */
   body.sat-player-grey .sat-elim-btn {
-    background: var(--pl-sf2);
-    border: 0.125rem solid var(--pl-bd);
+    background: transparent;
+    border: 0.09375rem solid var(--tx);
     color: var(--tx);
-    transition: transform .18s ease, background .18s ease, border-color .18s ease;
+    width: 1.75rem; height: 1.75rem;
+    opacity: .65;
+    transition: transform .18s ease, opacity .18s ease, background .18s ease;
   }
+  body.sat-player-grey .sat-elim-btn::after { opacity: 1; }
   body.sat-player-grey .sat-elim-btn:hover {
-    background: var(--pl-bd); border-color: var(--pl-bd); color: var(--tx);
-    transform: scale(1.06);
+    background: transparent; border-color: var(--tx); color: var(--tx);
+    opacity: 1; transform: scale(1.08);
   }
   body.sat-player-grey .sat-elim-btn.is-active {
-    background: var(--tone-red-fill); border-color: var(--tone-red-fill); color: #ffffff;
+    background: var(--tx); border-color: var(--tx); color: var(--pl-card);
+    opacity: 1;
   }
 
   /* Student-response input */
@@ -406,6 +517,33 @@ html[data-theme="light"] {
      choice, so grading reads as the end of the question rather than a footer
      control. Light pink — the one grading action on the card. */
   .sat-check-row { display: flex; justify-content: flex-end; }
+  .sat-check-row:empty { display: none; }
+  /* When an answer is picked, sat-player.js moves this button into that row
+     (a move, not a re-render, so its click handler survives) and it becomes a
+     pill at the right end of the card, the way Bluebook does it. */
+  body.sat-player-grey .sat-answer-row { position: relative; }
+  body.sat-player-grey #checkAnswerBtn.is-inline {
+    /* The choice itself is a <button>, so Check cannot nest inside it. It is
+       laid over the card's right end instead, clear of the eliminate circle
+       (1.75rem) and the row gap (0.875rem). */
+    position: absolute;
+    right: 3.375rem;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 2rem !important;
+    padding: 0 0.9375rem !important;
+    border-radius: 62.4375rem !important;
+    font-size: 0.875rem;
+    box-shadow: none !important;
+    z-index: 2;
+  }
+  body.sat-player-grey #checkAnswerBtn.is-inline:hover:not(:disabled) {
+    transform: translateY(-50%) scale(1.05) !important;
+  }
+  /* Reserve the space it covers so long choices do not run under it */
+  body.sat-player-grey .sat-answer-choice.is-selected:not(.is-correct):not(.is-incorrect) {
+    padding-right: 6.5rem;
+  }
   body.sat-player-grey #checkAnswerBtn,
   body.sat-player-grey .sat-button-primary {
     background: linear-gradient(180deg, var(--tone-pink), var(--tone-pink-fill)) !important;
@@ -756,13 +894,23 @@ html[data-theme="light"] {
     <!-- Resize handle (hidden by default) -->
     <div class="sat-player-resize-handle" id="resize-handle"></div>
 
+    <!-- Panel A2: passage pane — only for questions that carry one, so Math
+         (which has no passage but does have Desmos) never competes for it -->
+    <div class="sat-player-passage-panel" id="passagePanel">
+      <div class="sat-player-passage-scroll">
+        <article class="sat-passage-card">
+          <p id="questionParagraph" class="sat-passage-text"></p>
+        </article>
+      </div>
+    </div>
+
     <!-- Panel B: SAT question content (always visible) -->
     <div class="sat-player-content-panel" id="contentWrapper">
       <div class="sat-player-scroll" id="playerScroll">
 
         <!-- question panel card -->
         <section class="sat-question-panel" id="satQuestionPanel">
-          <div class="sat-question-head" style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+          <div class="sat-question-head">
             <span id="questionNumber" class="sat-question-number"></span>
             <button id="inlineReviewBtn" class="sat-inline-review-btn" type="button" title="Mark for review">
               <svg id="inlineReviewIcon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -772,16 +920,11 @@ html[data-theme="light"] {
             </button>
             <span id="questionDomain" class="sat-domain-label"></span>
             <span id="sessionFilterChips" class="sat-filter-chip-row" aria-label="Active filters" style="display:inline-flex; gap:0.375rem;"></span>
-            <h2 id="questionStemTitle" class="sat-question-title is-hidden" style="margin:0; width:100%; font-size:1rem;"></h2>
           </div>
-          <article class="sat-passage-card">
-            <p id="questionParagraph" class="sat-passage-text"></p>
-            <p id="questionStem" class="sat-question-stem"></p>
-          </article>
+          <h2 id="questionStemTitle" class="sat-question-title is-hidden" style="margin:0; width:100%; font-size:1rem;"></h2>
+          <p id="questionStem" class="sat-question-stem"></p>
           <div id="answerChoices" class="sat-answer-list"></div>
-          <div class="sat-check-row">
-            <button id="checkAnswerBtn" class="sat-button sat-button-primary" type="button" data-requires-auth>Check</button>
-          </div>
+          <div class="sat-check-row"><button id="checkAnswerBtn" class="sat-button sat-button-primary" type="button" data-requires-auth>Check</button></div>
           <section id="feedbackPanel" class="sat-feedback-panel is-hidden"></section>
         </section>
 
@@ -1234,7 +1377,7 @@ html[data-theme="light"] {
   }
 
   function collectQuestionSvgs() {
-    const nodes = document.querySelectorAll('.sat-passage-card svg, #answerChoices svg');
+    const nodes = document.querySelectorAll('.sat-passage-card svg, #questionStem svg, #answerChoices svg');
     const out = [];
     nodes.forEach(svg => {
       // Skip tiny decorative icons; only forward figure-sized SVGs.

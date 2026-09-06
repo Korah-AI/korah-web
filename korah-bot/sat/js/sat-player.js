@@ -453,6 +453,18 @@
     }
   }
 
+  // The passage lives in its own pane to the left of the question (Bluebook
+  // layout). Only questions that carry one open it; Math has no passage, so
+  // the pane and the Desmos pane never compete for the same half.
+  const passagePanel = document.getElementById("passagePanel");
+  function setPassage(html) {
+    const has = !!html;
+    questionParagraph.innerHTML = has ? html : "";
+    questionParagraph.classList.toggle("is-hidden", !has);
+    if (passagePanel) passagePanel.style.display = has ? "flex" : "none";
+    if (playerSplit) playerSplit.classList.toggle("has-passage", has);
+  }
+
   function renderQuestion() {
     const current = getCurrentQuestion();
 
@@ -464,9 +476,8 @@
         questionStemTitle.textContent = "Loading questions…";
         questionStemTitle.classList.remove("is-hidden");
       }
-      questionParagraph.textContent = "Fetching your session from the Official College Board Question Bank.";
-      questionParagraph.classList.remove("is-hidden");
-      questionStem.textContent = "";
+      setPassage("");
+      questionStem.textContent = "Fetching your session from the Official College Board Question Bank.";
       answerChoices.innerHTML = "";
       feedbackPanel.className = "sat-feedback-panel is-hidden";
       feedbackPanel.innerHTML = "";
@@ -489,9 +500,8 @@
         questionStemTitle.textContent = "College Board connection issue";
         questionStemTitle.classList.remove("is-hidden");
       }
-      questionParagraph.textContent = loadError || "Something went wrong while loading questions.";
-      questionParagraph.classList.remove("is-hidden");
-      questionStem.textContent = "";
+      setPassage("");
+      questionStem.textContent = loadError || "Something went wrong while loading questions.";
       answerChoices.innerHTML = `
         <button class="sat-button sat-button-primary" type="button" id="retryLoadBtn">Retry</button>
         <a class="sat-button sat-button-ghost" href="./index.html">Back to bank</a>
@@ -517,9 +527,8 @@
         questionStemTitle.textContent = "No questions matched this selection";
         questionStemTitle.classList.remove("is-hidden");
       }
-      questionParagraph.textContent = "Try another domain or lower the question limit.";
-      questionParagraph.classList.remove("is-hidden");
-      questionStem.textContent = "";
+      setPassage("");
+      questionStem.textContent = "Try another domain or lower the question limit.";
       answerChoices.innerHTML = `<a class="sat-button sat-button-primary" href="./index.html">Back to bank</a>`;
       feedbackPanel.className = "sat-feedback-panel is-hidden";
       feedbackPanel.innerHTML = "";
@@ -551,11 +560,10 @@
         questionStemTitle.textContent = current._loadError ? "Could not load question" : "Loading question…";
         questionStemTitle.classList.remove("is-hidden");
       }
-      questionParagraph.textContent = current._loadError
+      setPassage("");
+      questionStem.textContent = current._loadError
         ? "Skip to the next one, or try again."
         : "Fetching question from the College Board question bank.";
-      questionParagraph.classList.remove("is-hidden");
-      questionStem.textContent = "";
       answerChoices.innerHTML = current._loadError
         ? `<button class="sat-button sat-button-primary" type="button" id="retryDetailBtn">Retry</button>`
         : "";
@@ -596,13 +604,7 @@
       questionStemTitle.textContent = "";
       questionStemTitle.classList.add("is-hidden");
     }
-    if (current.paragraph) {
-      questionParagraph.innerHTML = sanitizeHtml(current.paragraph);
-      questionParagraph.classList.remove("is-hidden");
-    } else {
-      questionParagraph.innerHTML = "";
-      questionParagraph.classList.add("is-hidden");
-    }
+    setPassage(current.paragraph ? sanitizeHtml(current.paragraph) : "");
     questionStem.innerHTML = sanitizeHtml(current.stem);
     syncReviewState(!!state.reviewed[current.id]);
 
@@ -677,6 +679,17 @@
           `;
         })
         .join("");
+    }
+
+    // Move (not re-create) the Check button so its click handler survives:
+    // it sits inside the selected answer row until the answer is graded.
+    if (checkAnswerBtn) {
+      const selectedRow = !checked && !isSpr && selectedAnswer
+        ? answerChoices.querySelector(".sat-answer-choice.is-selected")?.closest(".sat-answer-row")
+        : null;
+      const home = selectedRow || document.querySelector(".sat-check-row");
+      if (home && checkAnswerBtn.parentElement !== home) home.appendChild(checkAnswerBtn);
+      checkAnswerBtn.classList.toggle("is-inline", !!selectedRow);
     }
 
     if (showExplanation) {
