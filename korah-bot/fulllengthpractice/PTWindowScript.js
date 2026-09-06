@@ -799,12 +799,13 @@ async function saveResultsFirestore(rwScale, mthScale, rwCorrect, mthCorrect) {
     await K.saveProfile({ mathScore: mthScale, englishScore: rwScale, currentScore: rwScale + mthScale });
     // log each attempt
     const DIFF = "M";
-    // Sent in chunks rather than one round trip at a time; a rejection anywhere
-    // still propagates to the catch below and leaves firestoreSaved unset.
-    let batch = [];
+    // Deliberately serial. K.recordAttempt() read-modify-writes totalXP/level on
+    // a shared totals doc outside a transaction (sat-analytics.js:138-183), so
+    // concurrent calls all read the same value and the last write wins — running
+    // these in parallel silently drops nearly all the XP.
     for (const [mk, q] of allQuestionsWithModule()) {
       const sel = state.answers[`${mk}:${q.n}`];
-      batch.push(K.recordAttempt({
+      await K.recordAttempt({
         questionId: `pt${testId}-${mk}-${q.n}`,
         type: q.type || "mcq",
         skillCd: q.skill || q.domain || "_unknown",
@@ -815,10 +816,8 @@ async function saveResultsFirestore(rwScale, mthScale, rwCorrect, mthCorrect) {
         correct: isCorrect(q, sel),
         timeSpent: 0,
         mode: "fullpractice",
-      }));
-      if (batch.length === 20) { await Promise.all(batch); batch = []; }
+      });
     }
-    if (batch.length) await Promise.all(batch);
     state.firestoreSaved = true;
     persist();
     console.log("[PT] results saved to Firestore");
