@@ -46,15 +46,20 @@
   --kg-sf2: #31313c;
   --kg-bd:  #454553;
   /* Each tone carries two values: --acc, the bright mark used for borders,
-     icons and hover, and --acc-fill, the deeper shade a filled surface takes
-     (white text stays readable on it). See docs/WIZARD-UI-PATTERNS.md §2. */
-  --tone-red: #ef4444;    --tone-red-fill: #b91c1c;
-  --tone-orange: #f97316; --tone-orange-fill: #c2410c;
-  --tone-amber: #f59e0b;  --tone-amber-fill: #b45309;
-  --tone-green: #22c55e;  --tone-green-fill: #15803d;
-  --tone-teal: #14b8a6;   --tone-teal-fill: #0f766e;
-  --tone-blue: #3b82f6;   --tone-blue-fill: #1d4ed8;
-  --tone-pink: #ec4899;   --tone-pink-fill: #be185d;
+     icons and hover, and --acc-fill, the shade a filled surface takes (white
+     text stays readable on it). See docs/WIZARD-UI-PATTERNS.md §2.
+
+     --acc-fill is the tone at 88% against black, which is the flat equivalent
+     of the fill sat-rush.css ramps across on .rush-card.is-selected and
+     .rush-stat. The 700-weight shades this used to carry came out much darker
+     than the reference and the grid read as muddy. */
+  --tone-red: #ef4444;    --tone-red-fill: #d23c3c;
+  --tone-orange: #f97316; --tone-orange-fill: #db6513;
+  --tone-amber: #f59e0b;  --tone-amber-fill: #d88b0a;
+  --tone-green: #22c55e;  --tone-green-fill: #1ead53;
+  --tone-teal: #14b8a6;   --tone-teal-fill: #12a292;
+  --tone-blue: #3b82f6;   --tone-blue-fill: #3472d9;
+  --tone-pink: #ec4899;   --tone-pink-fill: #d03f87;
   --acc: var(--tone-blue);
   --acc-fill: var(--tone-blue-fill);
 }
@@ -160,9 +165,18 @@ html[data-theme="light"] .korah-grey {
 .korah-grey .create-type-card:nth-child(7n+7),
 .korah-grey .card-list > *:nth-child(7n+7) { --acc: var(--tone-red); --acc-fill: var(--tone-red-fill); }
 
-/* A feed card is filled in its type's tone, set as data-tone by renderCards in
-   feed.html: flashcards blue, study guides green, practice tests amber. That is
-   a real distinction, so it beats cycling by position. */
+/* data-tone on the element itself, for anything whose tone is a fact about the
+   item rather than its position: a feed card is filled in its type's tone
+   (flashcards blue, study guides green, practice tests amber, set by
+   renderCards in feed.html), and a chosen dropdown option fills its trigger. */
+.korah-grey [data-tone="red"]    { --acc: var(--tone-red);    --acc-fill: var(--tone-red-fill); }
+.korah-grey [data-tone="orange"] { --acc: var(--tone-orange); --acc-fill: var(--tone-orange-fill); }
+.korah-grey [data-tone="amber"]  { --acc: var(--tone-amber);  --acc-fill: var(--tone-amber-fill); }
+.korah-grey [data-tone="green"]  { --acc: var(--tone-green);  --acc-fill: var(--tone-green-fill); }
+.korah-grey [data-tone="teal"]   { --acc: var(--tone-teal);   --acc-fill: var(--tone-teal-fill); }
+.korah-grey [data-tone="blue"]   { --acc: var(--tone-blue);   --acc-fill: var(--tone-blue-fill); }
+.korah-grey [data-tone="pink"]   { --acc: var(--tone-pink);   --acc-fill: var(--tone-pink-fill); }
+
 
 /* Manual vs AI is a real distinction, so it gets two real colours — and
    neither is indigo or violet, which read as the purple we are leaving. */
@@ -186,7 +200,7 @@ html[data-theme="light"] .korah-grey {
 /* ── Filled cards ───────────────────────────────────────────────────────────
    Bright fill for content and choice cards. Re-pointing --tx/--tx2/--tx3 at
    white is what turns every label inside the card white in one move. */
-.korah-grey .study-modern .feed-card,
+.korah-grey.study-modern .feed-card,
 .korah-grey .create-type-card,
 .korah-grey .method-card,
 .korah-grey .import-source-card,
@@ -203,7 +217,7 @@ html[data-theme="light"] .korah-grey {
 .korah-grey .upload-file,
 .korah-grey .doc-upload-item,
 .korah-grey .test-score,
-html[data-theme="light"] .korah-grey .study-modern .feed-card,
+html[data-theme="light"] .korah-grey.study-modern .feed-card,
 html[data-theme="light"] .korah-grey .method-card,
 html[data-theme="light"] .korah-grey .import-source-card {
   --tx: #fff; --tx2: #fff; --tx3: #fff;
@@ -252,20 +266,20 @@ html[data-theme="light"] .korah-grey .glass-card {
    The hero, the toolbar and the empty state frame the feed rather than being
    items in it, so they stay on the neutral grey. Colour on this page belongs
    to the cards. */
-.korah-grey .study-modern .feed-hero,
-.korah-grey .study-modern .study-feed-toolbar,
-.korah-grey .study-modern .feed-empty,
+.korah-grey.study-modern .feed-hero,
+.korah-grey.study-modern .study-feed-toolbar,
+.korah-grey.study-modern .feed-empty,
 .korah-grey .feed-empty-hero,
-html[data-theme="light"] .korah-grey .study-modern .feed-hero,
-html[data-theme="light"] .korah-grey .study-modern .study-feed-toolbar {
+html[data-theme="light"] .korah-grey.study-modern .feed-hero,
+html[data-theme="light"] .korah-grey.study-modern .study-feed-toolbar {
   background: var(--kg-sf);
   border: 1px solid var(--kg-bd);
   color: var(--tx);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
-.korah-grey .study-modern .feed-hero-title,
-.korah-grey .study-modern .feed-hero-sub,
+.korah-grey.study-modern .feed-hero-title,
+.korah-grey.study-modern .feed-hero-sub,
 .korah-grey .feed-empty-hero .empty-title-new,
 .korah-grey .feed-empty-hero .empty-sub-new { color: var(--tx); }
 
@@ -274,8 +288,8 @@ html[data-theme="light"] .korah-grey .study-modern .study-feed-toolbar {
 .korah-grey .player-stage .player-content-card,
 .korah-grey .player-stage .player-list-item { box-shadow: none; }
 
-.korah-grey .study-modern .feed-card.is-clickable:hover,
-.korah-grey .study-modern .feed-card.is-clickable:focus-visible,
+.korah-grey.study-modern .feed-card.is-clickable:hover,
+.korah-grey.study-modern .feed-card.is-clickable:focus-visible,
 .korah-grey .import-source-card:hover,
 .korah-grey .method-card:hover,
 .korah-grey .player-list-item:hover,
@@ -320,16 +334,16 @@ html[data-theme="light"] .korah-grey .method-card:hover {
 .korah-grey .test-summary-val,
 .korah-grey .test-summary-lbl,
 .korah-grey .test-pool-title,
-.korah-grey .study-modern .feed-card-open-hint,
+.korah-grey.study-modern .feed-card-open-hint,
 html[data-theme="light"] .korah-grey .import-source-icon {
   color: #fff;
   filter: none;
 }
 /* Labels the pages dim with opacity rather than with --tx2 */
 .korah-grey .dropdown-item-desc,
-.korah-grey .study-modern .feed-card-open-hint,
+.korah-grey.study-modern .feed-card-open-hint,
 .korah-grey .create-type-desc,
-.korah-grey .study-modern .create-form .create-label,
+.korah-grey .create-form .create-label,
 .korah-grey .import-chip-remove { opacity: 1; }
 
 /* Anything sitting on top of a filled card goes translucent white */
@@ -369,11 +383,11 @@ html[data-theme="light"] .korah-grey .import-source-icon {
 .korah-grey .import-source-panel,
 .korah-grey .import-target-type-trigger,
 .korah-grey .doc-thumb,
-.korah-grey .study-modern .feed-search,
-.korah-grey .study-modern .feed-filter-trigger,
+.korah-grey.study-modern .feed-search,
+.korah-grey.study-modern .feed-filter-trigger,
 html[data-theme="light"] .korah-grey .import-input-row input,
 html[data-theme="light"] .korah-grey .import-input-row textarea,
-html[data-theme="light"] .korah-grey .study-modern .feed-filter-trigger {
+html[data-theme="light"] .korah-grey.study-modern .feed-filter-trigger {
   background-color: var(--kg-sf);
   border: 1px solid var(--kg-bd);
   color: var(--tx);
@@ -398,15 +412,15 @@ html[data-theme="light"] .korah-grey .study-modern .feed-filter-trigger {
   box-shadow: 0 0 0 0.1875rem rgba(255,255,255,.28);
   animation: none;
 }
-.korah-grey .study-modern .feed-search:focus,
-.korah-grey .study-modern .feed-filter-trigger:focus-visible {
+.korah-grey.study-modern .feed-search:focus,
+.korah-grey.study-modern .feed-filter-trigger:focus-visible {
   border-color: var(--acc);
   box-shadow: 0 0 0 0.1875rem color-mix(in srgb, var(--acc) 30%, transparent);
   animation: none;
   outline: none;
 }
-.korah-grey .study-modern .feed-search:hover,
-.korah-grey .study-modern .feed-filter-trigger:hover {
+.korah-grey.study-modern .feed-search:hover,
+.korah-grey.study-modern .feed-filter-trigger:hover {
   background-color: var(--kg-sf2);
   border-color: var(--acc);
   box-shadow: none;
@@ -472,7 +486,7 @@ html[data-theme="light"] .korah-grey .method-pill {
 .korah-grey .test-btn-primary,
 .korah-grey .guide-open-btn,
 .korah-grey .import-url-input-group button,
-.korah-grey .study-modern .feed-card-btn,
+.korah-grey.study-modern .feed-card-btn,
 .korah-grey .ghost-action,
 .korah-grey .test-btn-outline,
 .korah-grey .player-nav-btn,
@@ -493,7 +507,7 @@ html[data-theme="light"] .korah-grey .ghost-action {
 .korah-grey .test-btn-primary:hover,
 .korah-grey .guide-open-btn:hover,
 .korah-grey .import-url-input-group button:hover,
-.korah-grey .study-modern .feed-card-btn:hover,
+.korah-grey.study-modern .feed-card-btn:hover,
 .korah-grey .ghost-action:hover,
 .korah-grey .test-btn-outline:hover,
 .korah-grey .player-nav-btn:hover:not(:disabled),
@@ -564,16 +578,8 @@ html[data-theme="light"] .korah-grey .create-dropdown-item::before { background:
    opening the menu; the "All types" / "All sources" rows carry no tone and
    leave it grey. custom-select.js copies data-tone from the row onto the
    trigger. */
-.korah-grey [data-tone="red"]    { --acc: var(--tone-red);    --acc-fill: var(--tone-red-fill); }
-.korah-grey [data-tone="orange"] { --acc: var(--tone-orange); --acc-fill: var(--tone-orange-fill); }
-.korah-grey [data-tone="amber"]  { --acc: var(--tone-amber);  --acc-fill: var(--tone-amber-fill); }
-.korah-grey [data-tone="green"]  { --acc: var(--tone-green);  --acc-fill: var(--tone-green-fill); }
-.korah-grey [data-tone="teal"]   { --acc: var(--tone-teal);   --acc-fill: var(--tone-teal-fill); }
-.korah-grey [data-tone="blue"]   { --acc: var(--tone-blue);   --acc-fill: var(--tone-blue-fill); }
-.korah-grey [data-tone="pink"]   { --acc: var(--tone-pink);   --acc-fill: var(--tone-pink-fill); }
-
 .korah-grey .ks-trigger[data-tone],
-.korah-grey .study-modern .feed-filter-trigger[data-tone],
+.korah-grey.study-modern .feed-filter-trigger[data-tone],
 .korah-grey .test-setup-select[data-tone],
 .korah-grey .input-field[data-tone] {
   background-color: var(--acc-fill);
@@ -581,7 +587,7 @@ html[data-theme="light"] .korah-grey .create-dropdown-item::before { background:
   color: #fff;
 }
 .korah-grey .ks-trigger[data-tone]:hover,
-.korah-grey .study-modern .feed-filter-trigger[data-tone]:hover {
+.korah-grey.study-modern .feed-filter-trigger[data-tone]:hover {
   background-color: color-mix(in srgb, var(--acc-fill) 84%, #fff);
   border-color: var(--acc);
 }

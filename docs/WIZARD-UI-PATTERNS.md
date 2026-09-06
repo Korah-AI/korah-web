@@ -45,17 +45,20 @@ border, selected fill, hover glow, icon, spotlight color — reads from `--acc`,
 class colors the whole element.
 
 Each tone carries two values: `--acc`, the bright mark used for borders, dots and
-icons, and `--acc-fill`, the deeper shade used for the opaque filled state (white
-text stays readable on it).
+icons, and `--acc-fill`, the shade used for the opaque filled state (white text
+stays readable on it). `--acc-fill` is the tone at 88% against black, which is the
+flat equivalent of the fill `sat-rush.css` ramps across on `.rush-card.is-selected`
+and `.rush-stat`. Going deeper than this (the 700-weight shades) makes a grid of
+filled cards read as muddy rather than as color blocks.
 
 ```css
-.tone-red   { --acc: #ef4444; --acc-fill: #b91c1c; }
-.tone-orange{ --acc: #f97316; --acc-fill: #c2410c; }
-.tone-amber { --acc: #f59e0b; --acc-fill: #b45309; }
-.tone-green { --acc: #22c55e; --acc-fill: #15803d; }
-.tone-teal  { --acc: #14b8a6; --acc-fill: #0f766e; }
-.tone-blue  { --acc: #3b82f6; --acc-fill: #1d4ed8; }
-.tone-pink  { --acc: #ec4899; --acc-fill: #be185d; }
+.tone-red   { --acc: #ef4444; --acc-fill: #d23c3c; }
+.tone-orange{ --acc: #f97316; --acc-fill: #db6513; }
+.tone-amber { --acc: #f59e0b; --acc-fill: #d88b0a; }
+.tone-green { --acc: #22c55e; --acc-fill: #1ead53; }
+.tone-teal  { --acc: #14b8a6; --acc-fill: #12a292; }
+.tone-blue  { --acc: #3b82f6; --acc-fill: #3472d9; }
+.tone-pink  { --acc: #ec4899; --acc-fill: #d03f87; }
 
 .rush-card:hover:not(.is-selected), .rush-diff:hover:not(.is-selected) {
   border-color: var(--acc);
