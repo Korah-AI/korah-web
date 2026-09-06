@@ -154,147 +154,8 @@
     </div>
   </div>
 
-  <!-- ═══ FLASHCARD MODE ═══ -->
-  <div class="vocab-learn vocab-card-view" x-show="dataStatus === 'ready' && !showAll" x-cloak>
-
-    <div class="vocab-card-hero">
-      <h1 class="vocab-title">Learn Vocabulary</h1>
-      <p class="vocab-card-meta" x-show="card">
-        <span>Card <span x-text="cardIndex + 1"></span> of <span x-text="deck.length"></span></span>
-        <span class="vocab-card-sep">•</span>
-        <span class="vocab-card-viewing">Viewing: “<span x-text="card ? card.word : ''"></span>”</span>
-      </p>
-      <div class="vocab-count-pill">
-        <span class="material-icons-round">library_books</span>
-        <span class="vocab-count-num" x-text="learntWords.length">0</span>
-        <span class="vocab-count-label">saved</span>
-      </div>
-    </div>
-
-    <!-- deck filters -->
-    <div class="vocab-card-controls">
-      <div class="vocab-select" x-data="{ open: false }" @click.outside="open = false">
-        <span class="vocab-select-label">Difficulty:</span>
-        <button class="vocab-select-btn t-btn" @click="open = !open" :class="{ 'is-open': open }">
-          <span x-text="diffLabel"></span>
-          <span class="material-icons-round">expand_more</span>
-        </button>
-        <div class="vocab-select-menu" x-show="open" x-transition.opacity.duration.150ms x-cloak>
-          <template x-for="opt in diffOptions" :key="opt.value">
-            <button class="vocab-select-opt t-btn" :class="[opt.tone, filterDiff === opt.value ? 'is-on' : '']"
-                    @click="setDiff(opt.value); open = false">
-              <span class="vocab-diff-dot" x-show="opt.value !== 'all'" :class="'is-' + opt.value"></span>
-              <span x-text="opt.label"></span>
-            </button>
-          </template>
-        </div>
-      </div>
-
-      <div class="vocab-select" x-data="{ open: false }" @click.outside="open = false">
-        <span class="vocab-select-label">Progress:</span>
-        <button class="vocab-select-btn t-btn" @click="open = !open" :class="{ 'is-open': open }">
-          <span x-text="progressLabel"></span>
-          <span class="material-icons-round">expand_more</span>
-        </button>
-        <div class="vocab-select-menu" x-show="open" x-transition.opacity.duration.150ms x-cloak>
-          <template x-for="opt in progressOptions" :key="opt.value">
-            <button class="vocab-select-opt t-btn" :class="[opt.tone, filterProgress === opt.value ? 'is-on' : '']"
-                    @click="setProgress(opt.value); open = false">
-              <span x-text="opt.label"></span>
-            </button>
-          </template>
-        </div>
-      </div>
-    </div>
-
-    <!-- the card itself -->
-    <template x-if="card">
-      <div class="vocab-flip" :class="[diffTone(card), flipped ? 'is-flipped' : '', isLearnt(card.word) ? 'is-added' : '']"
-           @click="flipped = !flipped" role="button" tabindex="0"
-           @keydown.enter.prevent="flipped = !flipped" @keydown.space.prevent="flipped = !flipped">
-        <div class="vocab-flip-inner">
-
-          <div class="vocab-flip-face vocab-flip-front">
-            <button class="vocab-add-btn vocab-flip-add t-btn"
-                    :class="{ 'is-added': isLearnt(card.word) }"
-                    @click.stop="toggleWord(card.word)"
-                    :aria-label="isLearnt(card.word) ? 'Remove from word bank' : 'Add to word bank'">
-              <span class="material-icons-round" x-text="isLearnt(card.word) ? 'check' : 'add'"></span>
-            </button>
-            <div class="vocab-flip-word" x-text="card.word"></div>
-            <div class="vocab-flip-chips">
-              <span class="vocab-pos-chip" :data-pos="card.part_of_speech" x-text="card.part_of_speech"></span>
-              <span class="vocab-diff-chip" :class="'is-' + card.difficulty" x-text="card.difficulty"></span>
-            </div>
-            <span class="vocab-etym-chip" x-show="hasEtymology(card)" x-text="card.etymology"></span>
-            <div class="vocab-flip-hint">Click to see definition</div>
-          </div>
-
-          <div class="vocab-flip-face vocab-flip-back">
-            <div class="vocab-flip-back-word" x-text="card.word"></div>
-            <p class="vocab-flip-def" x-text="card.definition"></p>
-            <p class="vocab-flip-ex" x-show="card.example">“<span x-text="card.example"></span>”</p>
-            <p class="vocab-flip-origin" x-show="hasEtymology(card)">
-              <span class="vocab-word-detail-label">Origin</span><span x-text="card.etymology"></span>
-            </p>
-            <div class="vocab-flip-hint">Click to flip back</div>
-          </div>
-
-        </div>
-      </div>
-    </template>
-
-    <div class="vocab-empty-state" x-show="!card" x-cloak>
-      <span class="material-icons-round vocab-empty-icon">search_off</span>
-      <p class="vocab-empty-title">No words match these filters</p>
-      <p class="vocab-empty-sub">Widen the difficulty or progress filter to get your deck back.</p>
-    </div>
-
-    <!-- use it in a sentence -->
-    <div class="vocab-card-sentence" x-show="card">
-      <div class="vocab-sentence-row">
-        <input class="vocab-sentence-input" type="text"
-               x-model="sentenceInput"
-               :disabled="sentenceState === 'checking'"
-               @keydown.enter="checkSentence()"
-               placeholder="Use this word in a sentence" />
-        <button class="vocab-start-btn is-green t-btn" @click="checkSentence()"
-                :disabled="sentenceState === 'checking' || !sentenceInput.trim()">
-          <span x-text="sentenceState === 'checking' ? 'Checking…' : 'Submit'"></span>
-        </button>
-      </div>
-      <div class="vocab-sentence-feedback" x-show="sentenceFeedback" x-cloak
-           :class="{ 'is-correct': sentenceState === 'good', 'is-incorrect': sentenceState === 'bad', 'is-error': sentenceState === 'error' }"
-           x-text="sentenceFeedback"></div>
-    </div>
-
-    <!-- nav -->
-    <div class="vocab-card-nav">
-      <button class="vocab-ghost-btn t-btn" @click="prevCard()" :disabled="cardIndex === 0">
-        <span class="material-icons-round">chevron_left</span><span>Previous</span>
-      </button>
-      <button class="vocab-ghost-btn t-btn" @click="showAll = true">
-        <span class="material-icons-round">grid_view</span><span>View All Words</span>
-      </button>
-      <button class="vocab-ghost-btn t-btn" @click="nextCard()" :disabled="cardIndex >= deck.length - 1">
-        <span>Next</span><span class="material-icons-round">chevron_right</span>
-      </button>
-    </div>
-
-    <div class="vocab-card-cta">
-      <a href="./practice.html"
-         class="vocab-practice-cta t-btn"
-         :class="learntWords.length >= 5 ? '' : 'is-disabled'"
-         :data-hint="learntWords.length >= 5 ? 'Start practicing' : 'Add at least 5 words to unlock practice'">
-        <span class="material-icons-round">play_arrow</span>
-        <span>Practice these words</span>
-      </a>
-    </div>
-
-  </div>
-
   <!-- ═══ ALL WORDS MODE ═══ -->
-  <div class="vocab-learn vocab-learn-wide" x-show="dataStatus === 'ready' && showAll" x-cloak>
+  <div class="vocab-learn vocab-learn-wide" x-show="dataStatus === 'ready'" x-cloak>
 
     <div class="vocab-learn-cols">
 
@@ -417,20 +278,17 @@
             <p class="vocab-sub">Search 988 SAT words and save the ones you want to master. Add at least 5 to unlock practice.</p>
           </div>
           <div class="vocab-learn-hero-actions">
-            <button class="vocab-start-btn is-green is-sm t-btn" @click="showAll = false">
-              <span class="material-icons-round">style</span><span>Back to cards</span>
-            </button>
+            <a href="./practice.html?source=set" class="vocab-ghost-btn is-sm t-btn">
+              <span class="material-icons-round">bookmarks</span><span>Practice a set</span>
+            </a>
             <div class="vocab-count-pill">
               <span class="material-icons-round">library_books</span>
               <span class="vocab-count-num" x-text="learntWords.length">0</span>
               <span class="vocab-count-label">saved</span>
             </div>
-            <a href="./practice.html"
-               class="vocab-practice-cta t-btn"
-               :class="learntWords.length >= 5 ? '' : 'is-disabled'"
-               :data-hint="learntWords.length >= 5 ? 'Start practicing' : 'Add at least 5 words to unlock practice'">
+            <a :href="practiceHref" class="vocab-practice-cta is-pink t-btn">
               <span class="material-icons-round">play_arrow</span>
-              <span>Practice these words</span>
+              <span>Start Practice</span>
             </a>
           </div>
         </div>
@@ -457,10 +315,10 @@
           <div class="vocab-filter-group">
             <span class="vocab-filter-label">Difficulty</span>
             <div class="vocab-filter-chips">
-              <button class="vocab-filter-chip t-btn tone-blue" :class="{ 'is-on': filterDiff === 'all' }" @click="setDiff('all')">All</button>
-              <button class="vocab-filter-chip t-btn tone-green" :class="{ 'is-on': filterDiff === 'easy' }" @click="setDiff('easy')"><span class="vocab-diff-dot is-easy"></span>Easy</button>
-              <button class="vocab-filter-chip t-btn tone-amber" :class="{ 'is-on': filterDiff === 'medium' }" @click="setDiff('medium')"><span class="vocab-diff-dot is-medium"></span>Medium</button>
-              <button class="vocab-filter-chip t-btn tone-red" :class="{ 'is-on': filterDiff === 'hard' }" @click="setDiff('hard')"><span class="vocab-diff-dot is-hard"></span>Hard</button>
+              <button class="vocab-filter-chip t-btn tone-blue" :class="{ 'is-on': filterDiff === 'all' }" @click="filterDiff = 'all'">All</button>
+              <button class="vocab-filter-chip t-btn tone-green" :class="{ 'is-on': filterDiff === 'easy' }" @click="filterDiff = 'easy'"><span class="vocab-diff-dot is-easy"></span>Easy</button>
+              <button class="vocab-filter-chip t-btn tone-amber" :class="{ 'is-on': filterDiff === 'medium' }" @click="filterDiff = 'medium'"><span class="vocab-diff-dot is-medium"></span>Medium</button>
+              <button class="vocab-filter-chip t-btn tone-red" :class="{ 'is-on': filterDiff === 'hard' }" @click="filterDiff = 'hard'"><span class="vocab-diff-dot is-hard"></span>Hard</button>
             </div>
           </div>
           <button class="vocab-filter-clear t-btn" @click="clearFilters" x-show="hasActiveFilters">Clear filters</button>
@@ -676,7 +534,6 @@
       expanded: new Set(),
       filterPos: 'all',
       filterDiff: 'all',
-      filterProgress: 'all',
       browseQuery: '',
       pool: [],
       /* bumped whenever the stats' underlying storage changes, so the
@@ -689,25 +546,6 @@
       nudgedSet: null,  // set showing its "needs 5 words" hint
       shakeSet: null,
 
-      /* flashcard deck — a refresh always lands on the word-bank view */
-      showAll: true,
-      cardIndex: 0,
-      flipped: false,
-      sentenceInput: '',
-      sentenceFeedback: '',
-      sentenceState: 'idle',   // idle | checking | good | bad | error
-
-      diffOptions: [
-        { value: 'all', label: 'All', tone: 'tone-blue' },
-        { value: 'easy', label: 'Easy', tone: 'tone-green' },
-        { value: 'medium', label: 'Medium', tone: 'tone-amber' },
-        { value: 'hard', label: 'Hard', tone: 'tone-red' },
-      ],
-      progressOptions: [
-        { value: 'all', label: 'All Words', tone: 'tone-blue' },
-        { value: 'saved', label: 'Saved', tone: 'tone-green' },
-        { value: 'unsaved', label: 'Not saved', tone: 'tone-teal' },
-      ],
 
       init() {
         this.resetLearnt();
@@ -717,7 +555,6 @@
           if (VocabData.status === 'ready') {
             this.pool = VocabData.all.slice();
             this.dataStatus = 'ready';
-            this.loadSentence();
           } else {
             this.dataStatus = 'error';
           }
@@ -729,7 +566,6 @@
           if (VocabData.status === 'ready') {
             this.pool = VocabData.all.slice();
             this.dataStatus = 'ready';
-            this.loadSentence();
           } else {
             this.dataStatus = 'error';
           }
@@ -752,6 +588,16 @@
       },
       get hasActiveFilters() {
         return this.filterPos !== 'all' || this.filterDiff !== 'all';
+      },
+
+      /* Practice starts from whatever the page is showing: an active filter
+         hands practice.html the same slice, otherwise it drills the bank. */
+      get practiceHref() {
+        if (!this.hasActiveFilters) return './practice.html';
+        const p = new URLSearchParams({ source: 'filter' });
+        if (this.filterPos !== 'all') p.set('pos', this.filterPos);
+        if (this.filterDiff !== 'all') p.set('diff', this.filterDiff);
+        return './practice.html?' + p.toString();
       },
 
       /* ── Study sets ─────────────────────────────────── */
@@ -857,91 +703,6 @@
         };
       },
 
-      /* ── Flashcard deck ─────────────────────────────── */
-      get deck() {
-        return this.pool.filter(w => {
-          if (this.filterDiff !== 'all' && w.difficulty !== this.filterDiff) return false;
-          if (this.filterProgress === 'saved' && !this.isLearnt(w.word)) return false;
-          if (this.filterProgress === 'unsaved' && this.isLearnt(w.word)) return false;
-          return true;
-        });
-      },
-      get card() {
-        return this.deck[this.cardIndex] || null;
-      },
-      get diffLabel() {
-        return (this.diffOptions.find(o => o.value === this.filterDiff) || this.diffOptions[0]).label;
-      },
-      get progressLabel() {
-        return (this.progressOptions.find(o => o.value === this.filterProgress) || this.progressOptions[0]).label;
-      },
-      /* a filter change reshuffles the deck, so start it from the top */
-      setDiff(value) {
-        this.filterDiff = value;
-        this.resetCard();
-      },
-      setProgress(value) {
-        this.filterProgress = value;
-        this.resetCard();
-      },
-      resetCard() {
-        this.cardIndex = 0;
-        this.flipped = false;
-        this.loadSentence();
-      },
-      nextCard() {
-        if (this.cardIndex >= this.deck.length - 1) return;
-        this.cardIndex++;
-        this.flipped = false;
-        this.loadSentence();
-      },
-      prevCard() {
-        if (this.cardIndex === 0) return;
-        this.cardIndex--;
-        this.flipped = false;
-        this.loadSentence();
-      },
-      loadSentence() {
-        const w = this.card;
-        this.sentenceInput = w ? VocabStore.getSentence(w.word) : '';
-        this.sentenceFeedback = '';
-        this.sentenceState = 'idle';
-      },
-      async checkSentence() {
-        const w = this.card;
-        const sentence = this.sentenceInput.trim();
-        if (!w || !sentence || this.sentenceState === 'checking') return;
-        this.sentenceState = 'checking';
-        this.sentenceFeedback = '';
-        VocabStore.saveSentence(w.word, sentence);
-        this.perfVersion++;
-        try {
-          const res = await fetch('/api/r', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              model: 'gemini-2.5-flash',
-              temperature: 0.2,
-              messages: [
-                { role: 'system', content: 'You check whether a student used an SAT vocabulary word correctly. Reply with ONLY a single JSON object and no markdown, in this exact shape: { "correct": true, "explanation": "one or two sentences" }. Judge meaning and context only, not spelling or style.' },
-                { role: 'user', content: 'Word: ' + w.word + '\nMeaning: ' + w.definition + '\nStudent sentence: ' + sentence },
-              ],
-            }),
-          });
-          const data = await res.json().catch(() => ({}));
-          if (!res.ok) throw new Error('HTTP ' + res.status);
-          const raw = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-          if (!raw) throw new Error('Empty response');
-          const parsed = JSON.parse(String(raw).replace(/^```(?:json)?/, '').replace(/```$/, '').trim());
-          if (typeof parsed.correct !== 'boolean') throw new Error('Bad response shape');
-          this.sentenceState = parsed.correct ? 'good' : 'bad';
-          this.sentenceFeedback = (parsed.correct ? 'Good usage. ' : 'Not quite. ') + (parsed.explanation || '');
-        } catch (e) {
-          this.sentenceState = 'error';
-          this.sentenceFeedback = 'Could not check that sentence right now. It is saved — try again later.';
-        }
-      },
-
       get suggestions() {
         // read this.pool so Alpine re-evaluates once the word DB finishes loading
         return this.pool.length ? VocabData.dailyPicks(20) : [];
@@ -976,7 +737,7 @@
       },
       clearFilters() {
         this.filterPos = 'all';
-        this.setDiff('all');
+        this.filterDiff = 'all';
       },
       isLearnt(word) { return this.learntWords.includes(VocabData.normalize(word)); },
       toggleWord(word) {

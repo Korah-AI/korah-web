@@ -119,6 +119,7 @@
   window.VocabQuiz = {
     QUESTIONS_PER_SESSION,
     useWords,
+    resolveWords,
     buildSession,
     buildFromIncorrect,
     adaptOrder: adaptiveOrder,
