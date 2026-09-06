@@ -3,7 +3,9 @@
    Keys mirror SETUP.md §3:
      korah_vocab_data        → { learntVocabs: string[], userSentences: {} }
      korah_vocab_performance → PracticePerformanceData
-   Swap these two read/write helpers to migrate to KorahDB later.
+   localStorage is the synchronous source the Alpine components read from.
+   vocab-sync.js registers a remote via setRemote() after auth and every write
+   below is then mirrored to Firestore.
    ═══════════════════════════════════════════════════ */
 (function () {
   const DATA_KEY = 'korah_vocab_data';
@@ -20,12 +22,16 @@
     masteryLevel: 'not-practiced',
   };
 
+  /* Set by vocab-sync.js once Firebase auth resolves. Null when signed out,
+     which is the whole local-only path. */
+  let remote = null;
+
   function normalize(word) {
     return String(word == null ? '' : word).trim().toLowerCase();
   }
 
   function defaultData() {
-    return { learntVocabs: [], userSentences: {} };
+    return { learntVocabs: [], userSentences: {}, studySets: [] };
   }
 
   function defaultPerf() {
@@ -46,6 +52,7 @@
       return {
         learntVocabs: Array.isArray(parsed.learntVocabs) ? parsed.learntVocabs : [],
         userSentences: parsed.userSentences && typeof parsed.userSentences === 'object' ? parsed.userSentences : {},
+        studySets: Array.isArray(parsed.studySets) ? parsed.studySets : [],
       };
     } catch (e) {
       localStorage.removeItem(DATA_KEY);
@@ -53,13 +60,14 @@
     }
   }
 
-  function writeData(data) {
+  function writeData(data, mirror) {
     try {
       localStorage.setItem(DATA_KEY, JSON.stringify(data));
-      return true;
     } catch (e) {
       return false;
     }
+    if (remote && mirror !== false) remote.pushBank(data);
+    return true;
   }
 
   function readPerf() {
@@ -146,6 +154,51 @@
     return learnt().length;
   }
 
+  /* ── study sets ───────────────────────────────────── */
+
+  /* A study set is a named snapshot of words — saving one never changes the
+     wordbank, and loading one adds back to it. Kept in the bank document so
+     vocab-sync mirrors it with everything else. */
+  function studySets() {
+    return readData().studySets;
+  }
+
+  function saveStudySet(name, words) {
+    const label = String(name == null ? '' : name).trim();
+    const list = [...new Set((words || []).map(normalize).filter(Boolean))];
+    if (!label || !list.length) return null;
+    const data = readData();
+    const set = {
+      id: 'set_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      name: label,
+      words: list,
+      createdAt: new Date().toISOString(),
+    };
+    data.studySets.push(set);
+    return writeData(data) ? set : null;
+  }
+
+  /* Adding the same word twice is a no-op, so the kebab menu can stay a plain
+     toggle-free "Add to set". */
+  function addWordToSet(id, word) {
+    const n = normalize(word);
+    const data = readData();
+    const set = data.studySets.find(s => s.id === id);
+    if (!set || !n) return false;
+    if (!Array.isArray(set.words)) set.words = [];
+    if (set.words.includes(n)) return false;
+    set.words.push(n);
+    return writeData(data);
+  }
+
+  function deleteStudySet(id) {
+    const data = readData();
+    const i = data.studySets.findIndex(s => s.id === id);
+    if (i === -1) return false;
+    data.studySets.splice(i, 1);
+    return writeData(data);
+  }
+
   /* ── user sentences (Form-a-Sentence practice) ────── */
 
   function saveSentence(word, sentence) {
@@ -222,7 +275,7 @@
     p.masteryLevel = deriveMastery(p);
     perf.wordPerformance[n] = p;
 
-    perf.attempts.push({
+    const attempt = {
       word: n,
       questionType,
       isCorrect: !!isCorrect,
@@ -230,10 +283,17 @@
       correctAnswer,
       timeSpent: timeSpent || 0,
       timestamp: new Date().toISOString(),
-    });
+    };
+    perf.attempts.push(attempt);
 
     recomputeRollups(perf);
     writePerf(perf);
+    if (remote) {
+      // The whole perf object cannot be mirrored as one doc because attempts[]
+      // grows without bound. Word aggregate and attempt log go up separately.
+      remote.pushWord(n, p);
+      remote.pushAttempt(attempt);
+    }
     return p;
   }
 
@@ -246,11 +306,36 @@
     return readPerf();
   }
 
+  function data() {
+    return readData();
+  }
+
+  /* ── sync plumbing (vocab-sync.js) ────────────────── */
+
+  function setRemote(r) {
+    remote = r;
+  }
+
+  /* Replace the local copy with the reconciled one. Does not mirror back.
+     attempts[] stays a local log; the merged per-word aggregates are the
+     authoritative part, so rollups are recomputed from them. */
+  function hydrate(next) {
+    if (next && next.data) writeData(next.data, false);
+    if (next && next.perf) {
+      recomputeRollups(next.perf);
+      writePerf(next.perf);
+    }
+  }
+
   window.VocabStore = {
     addWord,
     addWords,
     removeWord,
     hasWord,
+    studySets,
+    saveStudySet,
+    addWordToSet,
+    deleteStudySet,
     saveSentence,
     getSentence,
     learnt,
@@ -261,5 +346,9 @@
     totalAttempts,
     deriveMastery,
     normalize,
+    // sync
+    data,
+    setRemote,
+    hydrate,
   };
 })();

@@ -30,13 +30,25 @@ Vocabs Match, Fill in the Blank, Define (AI), Form a Sentence (AI) — the other
 
 ## 3 · Data model
 
-Everything persists in `localStorage` (matches "pure local logic"; also keeps us inside UI-UX.md Rule 5 — no `KorahDB`/Firestore access without permission). Tradeoff: progress is per-browser, not synced across devices. Migration path to KorahDB later = swap the two store functions in `vocab-store.js`, nothing else.
+`localStorage` is the synchronous read path the Alpine components use, so the getters stay sync. Firestore is the source of truth once the user is signed in: `vocab-sync.js` reconciles the two on sign-in and mirrors every later write. Signed out, the pages still work entirely from `localStorage`.
+
+Firestore layout, all under `users/{uid}/` so the existing security rules apply, mirroring `sat-analytics.js`:
+
+| Path | Shape |
+|---|---|
+| `users/{uid}/vocabBank/main` | `{ learntVocabs, userSentences, createdAt, updatedAt }` |
+| `users/{uid}/vocabWords/{word}` | one `wordPerformance` entry |
+| `users/{uid}/vocabAttempts/{auto}` | append-only attempt log |
+
+`attempts[]` cannot live in one document because it grows without bound, which is why the log is its own collection and the per-word aggregates are separate docs.
+
+Sign-in reconciliation is non-destructive: wordbanks are unioned and per word the side with more `totalAttempts` wins. Every write after that replaces the array, so a later removal still propagates. Local sentences win over remote.
 
 Two keys, mirroring SETUP.md §3:
 
 | Key | Shape | Written by |
 |---|---|---|
-| `korah_vocab_data` | `{ learntVocabs: string[], userSentences: {} }` | Learn view (add/remove); reserved for future sentence mode |
+| `korah_vocab_data` | `{ learntVocabs: string[], userSentences: {} }` | Learn view (add/remove); sentence practice on `practice.html` |
 | `korah_vocab_performance` | `PracticePerformanceData` (below) | Quiz submissions |
 
 ```js
@@ -94,11 +106,14 @@ vocab/
 └── js/
     ├── vocab-data.js               # Loads + indexes the word JSON (window.VocabData)
     ├── vocab-store.js              # localStorage CRUD + mastery math (window.VocabStore)
-    └── vocab-quiz.js               # Shared quiz engine + Alpine component (window.VocabQuiz)
+    ├── vocab-quiz.js               # Shared quiz engine + Alpine component (window.VocabQuiz)
+    └── vocab-sync.js               # Firestore reconcile + write mirror (initVocabSync)
 ```
 
 Touched files:
 - `sidebar.html` — add one nav link: `/vocab/practice.html`, label "Vocab", material icon `menu_book` (place near Study / Question Bank group).
+
+Both pages carry `sat/rush.html`'s Firebase bootstrap verbatim (initializeApp, onAuthStateChanged, `setupKorahDB`, `startAuthGuard`, logout wiring), with `initVocabSync` in the slot `initSatAnalytics` occupies there. Unauthenticated visitors are redirected to `../../landing/index.html`, same as every other signed-in page.
 
 Page boilerplate copies `sat/rush.html`'s head exactly (page-transitions pair, fonts, Alpine defer, sidebar-loader defer, Tailwind CDN, `../app/korah-chat.css`, then `./css/vocab.css`). Body uses `sidebar-root` injection. Navigation between pages only via `KorahTransitions.go()`.
 

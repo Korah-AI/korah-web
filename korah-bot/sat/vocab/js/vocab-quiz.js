@@ -31,8 +31,16 @@
     return pool;
   }
 
+  /* Set by practice.html when a study set is being drilled instead of the
+     whole wordbank. Null means "use the wordbank". */
+  let wordSource = null;
+
+  function useWords(words) {
+    wordSource = words && words.length ? words.slice() : null;
+  }
+
   function poolForSession() {
-    return resolveWords(VocabStore.learnt());
+    return resolveWords(wordSource || VocabStore.learnt());
   }
 
   /* Adaptive ordering: bucket by mastery, notPracticed → mastered, shuffle within */
@@ -110,6 +118,7 @@
 
   window.VocabQuiz = {
     QUESTIONS_PER_SESSION,
+    useWords,
     buildSession,
     buildFromIncorrect,
     adaptOrder: adaptiveOrder,
