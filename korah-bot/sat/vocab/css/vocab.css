@@ -75,7 +75,6 @@ html[data-theme="light"] {
 .vocab-ghost-btn,
 .vocab-nav-btn,
 .vocab-back-btn,
-.vocab-bank-edit,
 .vocab-filter-clear,
 .vocab-start-btn,
 .vocab-practice-cta {
@@ -640,7 +639,8 @@ html[data-theme="light"] * { scrollbar-color: rgba(28, 30, 38, 0.35) transparent
               border-color 0.18s ease, color 0.18s ease;
 }
 .vocab-sets-btn .material-icons-round { font-size: 1.05rem; }
-.vocab-sets-btn.is-danger:hover { transform: scale(1.08); color: #fff; background: var(--v-red-fill); border-color: var(--v-red-fill); }
+.vocab-sets-btn:hover,
+.vocab-sets-btn.is-open { transform: scale(1.08); color: var(--tx); border-color: var(--v-blue); }
 .vocab-sets-empty { margin: 0; font-size: 0.82rem; color: var(--v-tx3); }
 
 /* ── Per-word kebab menu ───────────────────────────── */
@@ -730,6 +730,32 @@ html[data-theme="light"] * { scrollbar-color: rgba(28, 30, 38, 0.35) transparent
   color: var(--v-blue);
 }
 .vocab-kebab-empty { margin: 0; padding: 0.35rem 0.5rem; font-size: 0.78rem; color: var(--v-tx3); }
+.vocab-kebab-opt.is-danger { color: var(--v-red); }
+.vocab-kebab-opt { text-decoration: none; }
+.vocab-kebab-opt-note { font-size: 0.72rem; font-weight: 600; color: var(--v-tx3); flex: none; }
+/* a set under the 5-word floor stays listed, but reads as unavailable */
+.vocab-kebab-opt.is-locked { color: var(--v-tx3); cursor: default; }
+.vocab-kebab-opt.is-locked:hover { background: transparent; border-color: transparent; }
+.vocab-kebab-opt.is-locked .vocab-kebab-opt-note,
+.vocab-kebab-opt.is-locked .material-icons-round { color: var(--v-amber); }
+/* menus under a left-edge button open along that edge instead of the right */
+.vocab-kebab-menu.is-left { left: 0; right: auto; }
+.vocab-kebab-opt:disabled { opacity: 0.5; cursor: default; }
+/* x-if needs one root, and the menu is a flex column, so the branch wrapper
+   has to carry the same stacking. */
+.vocab-kebab-stack { display: flex; flex-direction: column; gap: 0.2rem; }
+.vocab-rename-input {
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  border-radius: 0.5rem;
+  background: var(--v-sf2);
+  border: 1px solid var(--v-bd);
+  color: var(--tx);
+  font: inherit;
+  font-size: 0.85rem;
+  outline: none;
+}
+.vocab-rename-input:focus { border-color: var(--v-blue); }
 
 /* ═══ Word cards, rows, browse ═════════════════════════ */
 .vocab-card-grid {
@@ -1053,6 +1079,7 @@ html[data-theme="light"] * { scrollbar-color: rgba(28, 30, 38, 0.35) transparent
   font-weight: 700;
   font-size: 0.9rem;
   text-decoration: none;
+  cursor: pointer;
 }
 .vocab-practice-cta:hover { transform: scale(1.03); filter: brightness(1.1); }
 /* the page's primary action is the filled pink one; everything beside it
@@ -1061,11 +1088,20 @@ html[data-theme="light"] * { scrollbar-color: rgba(28, 30, 38, 0.35) transparent
   background: var(--v-pink-fill);
   border-color: var(--v-pink-fill);
 }
+/* under the 5-word floor the CTA greys out, explains itself on hover and
+   wobbles when clicked — same treatment a too-small study set gets */
+.vocab-practice-cta.is-locked {
+  background: var(--v-sf2);
+  border-color: var(--v-bd);
+  color: var(--v-tx3);
+  cursor: pointer;
+}
+.vocab-practice-cta.is-locked:hover { transform: none; filter: none; }
+.vocab-practice-cta.is-shaking { animation: vocabNudge 0.45s ease; }
 /* with words selected the CTA changes meaning, so it changes colour too */
 .vocab-ghost-btn,
 .vocab-nav-btn,
-.vocab-back-btn,
-.vocab-bank-edit {
+.vocab-back-btn {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
@@ -1080,16 +1116,13 @@ html[data-theme="light"] * { scrollbar-color: rgba(28, 30, 38, 0.35) transparent
   cursor: pointer;
 }
 .vocab-nav-btn,
-.vocab-back-btn,
-.vocab-bank-edit { padding: 0.6rem 1rem; font-size: 0.86rem; }
+.vocab-back-btn { padding: 0.6rem 1rem; font-size: 0.86rem; }
 .vocab-ghost-btn .material-icons-round,
 .vocab-nav-btn .material-icons-round,
-.vocab-back-btn .material-icons-round,
-.vocab-bank-edit .material-icons-round { font-size: 1.1rem; }
+.vocab-back-btn .material-icons-round { font-size: 1.1rem; }
 .vocab-ghost-btn:hover:not(:disabled),
 .vocab-nav-btn:hover:not(:disabled),
-.vocab-back-btn:hover,
-.vocab-bank-edit:hover {
+.vocab-back-btn:hover {
   transform: scale(1.03);
   border-color: var(--v-blue);
   background: var(--v-sf3);
@@ -1128,34 +1161,20 @@ html[data-theme="light"] * { scrollbar-color: rgba(28, 30, 38, 0.35) transparent
   width: 100%;
 }
 
+/* what the wizard resolved to, read as one line of prose under Start */
 .vocab-bank-summary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.6rem;
-  padding: 0.7rem 1rem;
-  border-radius: 0.8rem;
-  background: var(--v-sf);
-  border: 1px solid var(--v-bd);
+  margin: 0.9rem auto 0;
+  text-align: center;
   color: var(--v-tx2);
   font-size: 0.88rem;
-  margin: 0 auto;
 }
-.vocab-bank-summary .material-icons-round { color: var(--v-blue); font-size: 1.25rem; }
-.vocab-bank-summary .vocab-bank-edit .material-icons-round { color: #fff; }
-.vocab-bank-summary-count { font-weight: 800; color: var(--tx); }
-.vocab-bank-summary-text { color: var(--v-tx2); }
 .vocab-bank-edit {
-  margin-left: 0.4rem;
-  background: var(--v-blue-fill);
-  border-color: var(--v-blue-fill);
-  color: #fff;
+  color: var(--v-blue);
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
 }
-.vocab-bank-edit:hover {
-  background: var(--v-blue-fill);
-  border-color: #fff;
-  color: #fff;
-}
+.vocab-bank-edit:hover { text-decoration: underline; }
 
 /* mode cards */
 .vocab-mode-grid {
@@ -1495,8 +1514,18 @@ html[data-theme="light"] * { scrollbar-color: rgba(28, 30, 38, 0.35) transparent
   font-size: 0.88rem;
   line-height: 1.55;
 }
-.vocab-sentence-feedback.is-correct { border-color: var(--v-green); }
-.vocab-sentence-feedback.is-incorrect { border-color: var(--v-red); }
+/* the verdict is the point of this box, so it fills solid rather than
+   sitting grey with a coloured hairline */
+.vocab-sentence-feedback.is-correct {
+  background: var(--v-green-fill);
+  border-color: var(--v-green-fill);
+  color: #fff;
+}
+.vocab-sentence-feedback.is-incorrect {
+  background: var(--v-red-fill);
+  border-color: var(--v-red-fill);
+  color: #fff;
+}
 /* a service hiccup is not a wrong answer — lighter grey, no state colour */
 .vocab-sentence-feedback.is-error {
   background: var(--v-sf3);
@@ -1693,40 +1722,6 @@ html[data-theme="light"] * { scrollbar-color: rgba(28, 30, 38, 0.35) transparent
 
 /* ═══ New-set popover + bottom saved pill ══════════════ */
 .vocab-newset-wrap { position: relative; }
-.vocab-newset-menu {
-  position: absolute;
-  top: calc(100% + 0.35rem);
-  left: 0;
-  z-index: 30;
-  width: 16rem;
-  padding: 0.7rem;
-  border-radius: 0.7rem;
-  background: var(--v-sf);
-  border: 1px solid var(--v-bd);
-  box-shadow: 0 0.75rem 1.75rem rgba(0, 0, 0, 0.35);
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-.vocab-newset-head {
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: var(--v-tx2);
-}
-.vocab-newset-input {
-  width: 100%;
-  padding: 0.55rem 0.7rem;
-  border-radius: 0.6rem;
-  background: var(--v-sf2);
-  border: 1px solid var(--v-bd);
-  color: var(--tx);
-  font: inherit;
-  font-size: 0.88rem;
-  outline: none;
-}
-.vocab-newset-input:focus { border-color: var(--v-blue); }
-.vocab-newset-menu .vocab-start-btn { width: 100%; }
-
 .vocab-saved-pill {
   position: fixed;
   left: 50%;

@@ -200,6 +200,15 @@
     return writeData(data);
   }
 
+  function renameStudySet(id, name) {
+    const label = String(name == null ? '' : name).trim();
+    const data = readData();
+    const set = data.studySets.find(s => s.id === id);
+    if (!set || !label || set.name === label) return false;
+    set.name = label;
+    return writeData(data);
+  }
+
   function deleteStudySet(id) {
     const data = readData();
     const i = data.studySets.findIndex(s => s.id === id);
@@ -345,6 +354,7 @@
     studySets,
     saveStudySet,
     addWordToSet,
+    renameStudySet,
     deleteStudySet,
     saveSentence,
     getSentence,

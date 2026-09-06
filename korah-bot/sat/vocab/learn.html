@@ -259,9 +259,37 @@
                     </span>
                   </template>
                 </a>
-                <button class="vocab-sets-btn is-danger t-btn" @click="deleteSet(set.id)" title="Delete this set">
-                  <span class="material-icons-round">delete_outline</span>
-                </button>
+                <div class="vocab-kebab-wrap" @click.outside="if (menuSet === set.id) closeSetMenu()">
+                  <button class="vocab-sets-btn t-btn" :class="{ 'is-open': menuSet === set.id }"
+                          @click="toggleSetMenu(set.id)" aria-label="Set options">
+                    <span class="material-icons-round">more_vert</span>
+                  </button>
+                  <div class="vocab-kebab-menu" x-show="menuSet === set.id" x-transition.opacity.duration.150ms x-cloak>
+                    <template x-if="renameId !== set.id">
+                      <div class="vocab-kebab-stack">
+                        <div class="vocab-kebab-head">Set options</div>
+                        <button class="vocab-kebab-opt t-btn" @click="startRename(set)">
+                          <span class="material-icons-round">edit</span><span>Rename</span>
+                        </button>
+                        <button class="vocab-kebab-opt is-danger t-btn" @click="deleteSet(set.id)">
+                          <span class="material-icons-round">delete_outline</span><span>Delete</span>
+                        </button>
+                      </div>
+                    </template>
+                    <template x-if="renameId === set.id">
+                      <div class="vocab-kebab-stack">
+                        <div class="vocab-kebab-head">Rename set</div>
+                        <input class="vocab-rename-input" type="text" x-model="renameName"
+                               x-init="$nextTick(() => $el.focus())"
+                               @keydown.enter="commitRename()" @keydown.escape="closeSetMenu()" />
+                        <button class="vocab-kebab-opt is-new t-btn" @click="commitRename()"
+                                :disabled="!renameName.trim()">
+                          <span class="material-icons-round">check</span><span>Save name</span>
+                        </button>
+                      </div>
+                    </template>
+                  </div>
+                </div>
               </div>
             </template>
             <p class="vocab-sets-empty" x-show="studySets.length === 0" x-cloak>No Study Sets Yet</p>
@@ -278,27 +306,59 @@
             <p class="vocab-sub">Search 988 SAT words and save the ones you want to master. Add at least 5 to unlock practice.</p>
           </div>
           <div class="vocab-learn-hero-actions">
-            <a href="./practice.html?source=set" class="vocab-practice-cta t-btn">
-              <span class="material-icons-round">bookmarks</span><span>Practice a set</span>
-            </a>
-            <div class="vocab-newset-wrap" x-show="learntWords.length > 0" x-cloak
-                 @click.outside="newSetOpen = false">
-              <button class="vocab-start-btn is-green is-sm t-btn" @click="toggleNewSet()" :class="{ 'is-open': newSetOpen }">
-                <span class="material-icons-round">playlist_add</span><span>Add selected words to a set</span>
+            <div class="vocab-newset-wrap" @click.outside="practiceSetOpen = false">
+              <button class="vocab-practice-cta t-btn" @click="practiceSetOpen = !practiceSetOpen">
+                <span class="material-icons-round">bookmarks</span><span>Practice a set</span>
               </button>
-              <div class="vocab-newset-menu" x-show="newSetOpen" x-transition.opacity.duration.150ms x-cloak>
-                <div class="vocab-newset-head"
-                     x-text="`New set from ${learntWords.length} saved word${learntWords.length === 1 ? '' : 's'}`"></div>
-                <input class="vocab-newset-input" type="text" x-model="newSetName"
-                       @keydown.enter="createSetFromSaved()" placeholder="Set name" />
-                <button class="vocab-start-btn is-green is-sm t-btn"
-                        @click="createSetFromSaved()" :disabled="!newSetName.trim()">Create set</button>
+              <!-- the same menu the kebabs use: pick a set and go straight to it -->
+              <div class="vocab-kebab-menu is-left" x-show="practiceSetOpen" x-transition.opacity.duration.150ms x-cloak>
+                <div class="vocab-kebab-head">Practice a set</div>
+                <template x-for="set in studySets" :key="set.id">
+                  <a class="vocab-kebab-opt t-btn" :class="{ 'is-locked': !canPractice(set) }"
+                     :href="canPractice(set) ? './practice.html?set=' + set.id : null"
+                     @click="if (!canPractice(set)) $event.preventDefault()">
+                    <span class="vocab-kebab-opt-name" x-text="set.name"></span>
+                    <span class="vocab-kebab-opt-note"
+                          x-text="canPractice(set) ? `${set.words.length} words` : 'needs 5 words'"></span>
+                    <span class="material-icons-round" x-show="!canPractice(set)">lock</span>
+                  </a>
+                </template>
+                <p class="vocab-kebab-empty" x-show="studySets.length === 0">No sets yet</p>
               </div>
             </div>
-            <a :href="practiceHref" class="vocab-practice-cta is-pink t-btn">
-              <span class="material-icons-round">play_arrow</span>
-              <span x-text="learntWords.length > 0 ? 'Practice Selected Words' : 'Start Practice'">Start Practice</span>
-            </a>
+            <div class="vocab-newset-wrap" x-show="learntWords.length > 0" x-cloak
+                 @click.outside="newSetOpen = false">
+              <button class="vocab-start-btn is-green is-sm t-btn" @click="newSetOpen = !newSetOpen" :class="{ 'is-open': newSetOpen }">
+                <span class="material-icons-round">playlist_add</span><span>Add selected words to a set</span>
+              </button>
+              <!-- same menu the per-word kebabs use, applied to the whole selection -->
+              <div class="vocab-kebab-menu" x-show="newSetOpen" x-transition.opacity.duration.150ms x-cloak @click.stop>
+                <div class="vocab-kebab-head"
+                     x-text="`Add ${learntWords.length} selected word${learntWords.length === 1 ? '' : 's'} to`"></div>
+                <template x-for="set in studySets" :key="set.id">
+                  <button class="vocab-kebab-opt t-btn" @click="addSelectedToSet(set.id)">
+                    <span class="vocab-kebab-opt-name" x-text="set.name"></span>
+                    <span class="material-icons-round vocab-kebab-check" x-show="setHasAllSelected(set)">check</span>
+                  </button>
+                </template>
+                <p class="vocab-kebab-empty" x-show="studySets.length === 0">No sets yet</p>
+                <button class="vocab-kebab-opt is-new t-btn" @click="addSelectedToNewSet()">
+                  <span class="material-icons-round">add</span><span>New set</span>
+                </button>
+              </div>
+            </div>
+            <div class="vocab-lock-wrap" :class="{ 'is-nudged': practiceNudged }">
+              <a :href="canPracticeSelection ? practiceHref : null" class="vocab-practice-cta is-pink t-btn"
+                 :class="{ 'is-locked': !canPracticeSelection, 'is-shaking': practiceShaking }"
+                 @click="if (!canPracticeSelection) { $event.preventDefault(); nudgePractice(); }">
+                <span class="material-icons-round">play_arrow</span>
+                <span x-text="learntWords.length > 0 ? 'Practice Selected Words' : 'Start Practice'">Start Practice</span>
+              </a>
+              <span class="vocab-lock-hint" x-show="!canPracticeSelection" x-cloak>
+                <span class="material-icons-round">lock</span>
+                <span>Select at least 5 words to practice!</span>
+              </span>
+            </div>
           </div>
         </div>
 
@@ -565,8 +625,13 @@
       menuWord: null,   // word whose kebab menu is open
       nudgedSet: null,  // set showing its "needs 5 words" hint
       shakeSet: null,
+      menuSet: null,    // set whose kebab menu is open
+      renameId: null,   // set being renamed inside that menu
+      renameName: '',
       newSetOpen: false,
-      newSetName: '',
+      practiceSetOpen: false,
+      practiceNudged: false,
+      practiceShaking: false,
 
 
       init() {
@@ -649,19 +714,38 @@
         this.refreshSets();
         this.menuWord = null;
       },
-      /* Bulk-add: one set holding every saved word. Sets are not renameable
-         yet, so the name is asked for up front rather than auto-generated. */
-      toggleNewSet() {
-        this.newSetOpen = !this.newSetOpen;
-        if (this.newSetOpen && !this.newSetName.trim()) {
-          this.newSetName = `Set ${this.studySets.length + 1}`;
-        }
+      /* Bulk-add: the hero button reuses the per-word kebab menu, so the
+         selection can join an existing set or start an unnamed new one. */
+      setHasAllSelected(set) {
+        return this.learntWords.length > 0 && this.learntWords.every(w => this.setHasWord(set, w));
       },
-      createSetFromSaved() {
-        if (!VocabStore.saveStudySet(this.newSetName, this.learntWords)) return;
+      addSelectedToSet(id) {
+        for (const w of this.learntWords) VocabStore.addWordToSet(id, w);
         this.refreshSets();
         this.newSetOpen = false;
-        this.newSetName = '';
+      },
+      addSelectedToNewSet() {
+        const taken = new Set(this.studySets.map(s => s.name));
+        let name = 'Untitled set';
+        for (let i = 2; taken.has(name); i++) name = `Untitled set ${i}`;
+        VocabStore.saveStudySet(name, this.learntWords);
+        this.refreshSets();
+        this.newSetOpen = false;
+      },
+      /* The selection CTA carries the same 5-word floor as a study set:
+         hovering explains it, clicking wobbles and holds the hint open. */
+      get canPracticeSelection() {
+        return this.learntWords.length === 0 || this.learntWords.length >= 5;
+      },
+      nudgePractice() {
+        this.practiceNudged = true;
+        this.practiceShaking = false;
+        requestAnimationFrame(() => { this.practiceShaking = true; });
+        clearTimeout(this._practiceNudgeTimer);
+        this._practiceNudgeTimer = setTimeout(() => {
+          this.practiceNudged = false;
+          this.practiceShaking = false;
+        }, 2500);
       },
       /* Practice needs 5 words, same floor the wordbank CTA uses. */
       canPractice(set) {
@@ -679,9 +763,29 @@
           if (this.shakeSet === id) this.shakeSet = null;
         }, 2500);
       },
+      /* Each set's kebab holds its own rename/delete, so the row itself stays a
+         single tap target for practice. */
+      toggleSetMenu(id) {
+        this.menuSet = this.menuSet === id ? null : id;
+        this.renameId = null;
+      },
+      closeSetMenu() {
+        this.menuSet = null;
+        this.renameId = null;
+      },
+      startRename(set) {
+        this.renameId = set.id;
+        this.renameName = set.name;
+      },
+      commitRename() {
+        VocabStore.renameStudySet(this.renameId, this.renameName);
+        this.refreshSets();
+        this.closeSetMenu();
+      },
       deleteSet(id) {
         VocabStore.deleteStudySet(id);
         this.refreshSets();
+        this.closeSetMenu();
       },
 
       /* ── Progress panel ─────────────────────────────── */

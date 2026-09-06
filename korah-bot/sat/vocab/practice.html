@@ -202,16 +202,6 @@
         </button>
       </div>
 
-      <!-- with the source already decided, step 1 shows what it resolved to -->
-      <div class="vocab-bank-summary" x-show="skipSource" x-cloak>
-        <span class="material-icons-round">playlist_add_check</span>
-        <span class="vocab-bank-summary-count" x-text="sourceWords.length"></span>
-        <span class="vocab-bank-summary-text" x-text="sourceLabel"></span>
-        <a href="./learn.html" class="vocab-bank-edit t-btn">
-          <span class="material-icons-round">edit</span><span>Edit</span>
-        </a>
-      </div>
-
       <div class="vocab-practice-actions">
         <template x-if="!skipSource">
           <button class="vocab-start-btn t-btn" @click="goStep(2)">
@@ -233,6 +223,10 @@
           </div>
         </template>
       </div>
+      <!-- with the source already decided, step 1 says what it resolved to -->
+      <p class="vocab-bank-summary" x-show="skipSource" x-cloak>
+        <span x-text="sourceSentence"></span> — <a href="./learn.html" class="vocab-bank-edit">edit your words</a>.
+      </p>
       <div class="vocab-mini-row">
         <a href="./learn.html" class="vocab-mini-btn t-btn">Cancel</a>
       </div>
@@ -337,16 +331,6 @@
         </div>
       </div>
 
-      <!-- what the wizard resolved to -->
-      <div class="vocab-bank-summary">
-        <span class="material-icons-round">playlist_add_check</span>
-        <span class="vocab-bank-summary-count" x-text="sourceWords.length"></span>
-        <span class="vocab-bank-summary-text" x-text="sourceLabel"></span>
-        <a href="./learn.html" class="vocab-bank-edit t-btn">
-          <span class="material-icons-round">edit</span><span>Edit</span>
-        </a>
-      </div>
-
       <div class="vocab-practice-actions">
         <button class="vocab-ghost-btn t-btn" @click="goStep(1)">
           <span class="material-icons-round">chevron_left</span><span>Back</span>
@@ -364,6 +348,10 @@
           </span>
         </div>
       </div>
+      <!-- what the wizard resolved to -->
+      <p class="vocab-bank-summary">
+        <span x-text="sourceSentence"></span> — <a href="./learn.html" class="vocab-bank-edit">edit your words</a>.
+      </p>
       <div class="vocab-mini-row">
         <a href="./learn.html" class="vocab-mini-btn t-btn">Cancel</a>
       </div>
@@ -563,7 +551,7 @@
       <button class="vocab-ghost-btn t-btn" @click="stage = 'select'">
         <span class="material-icons-round">tune</span><span>Back to modes</span>
       </button>
-      <button class="vocab-ghost-btn t-btn" @click="nextCard()" :disabled="cardIndex >= deck.length - 1">
+      <button class="vocab-start-btn is-sm t-btn" @click="nextCard()" :disabled="cardIndex >= deck.length - 1">
         <span>Next</span><span class="material-icons-round">chevron_right</span>
       </button>
     </div>
@@ -794,6 +782,19 @@
         const pos = this.filterPos === 'all' ? 'any word' : this.filterPos;
         const diff = this.filterDiff === 'all' ? '' : `, ${this.filterDiff}`;
         return pos + diff;
+      },
+      /* the summary under Start reads as a sentence, so it carries its own
+         phrasing rather than reusing the bare sourceLabel fragment */
+      get sourceSentence() {
+        const n = this.sourceWords.length;
+        const words = `${n} word${n === 1 ? '' : 's'}`;
+        if (this.source === 'set') {
+          return this.selectedSet
+            ? `Practicing ${words} from “${this.selectedSet.name}”`
+            : 'No study set picked yet';
+        }
+        if (this.source === 'filter') return `Practicing ${words} that match this filter`;
+        return `Practicing ${words} you selected`;
       },
       get sourceLabel() {
         if (this.source === 'set') return this.selectedSet ? `words in “${this.selectedSet.name}”` : 'words — pick a set';
