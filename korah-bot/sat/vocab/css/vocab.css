@@ -97,6 +97,15 @@ html[data-theme="light"] {
 
 [x-cloak] { display: none !important; }
 
+/* The app's purple scrollbar (korah-chat.css) is the last purple thing on
+   these grey pages — repaint it neutral for the pages that load this file. */
+::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.5) !important; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.75) !important; }
+* { scrollbar-color: rgba(255, 255, 255, 0.5) transparent; }
+html[data-theme="light"] ::-webkit-scrollbar-thumb { background: rgba(28, 30, 38, 0.35) !important; }
+html[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: rgba(28, 30, 38, 0.55) !important; }
+html[data-theme="light"] * { scrollbar-color: rgba(28, 30, 38, 0.35) transparent; }
+
 /* ═══ Page shells ══════════════════════════════════════ */
 .vocab-learn,
 .vocab-practice {
@@ -410,10 +419,6 @@ html[data-theme="light"] {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  position: sticky;
-  top: 0;
-  max-height: calc(100vh - 9rem);
-  overflow-y: auto;
 }
 
 .vocab-progress-panel,
@@ -538,7 +543,7 @@ html[data-theme="light"] {
 .vocab-progress-mnum { color: #fff; font-weight: 800; }
 /* "Not practiced" is the absence of a level, so it stays neutral grey. */
 .vocab-progress-mchip.is-muted {
-  background: var(--v-sf2);
+  background: var(--v-sf3);
   border-color: var(--v-bd);
 }
 .vocab-progress-mchip.is-muted .vocab-progress-mdot { background: var(--v-tx3); }
@@ -572,7 +577,7 @@ html[data-theme="light"] {
   flex: 1;
   padding: 0.6rem 0.7rem;
   border-radius: 0.7rem;
-  background: var(--v-sf2);
+  background: var(--v-sf3);
   border: 1px solid var(--v-bd);
   text-decoration: none;
   cursor: pointer;
@@ -1056,7 +1061,7 @@ html[data-theme="light"] {
   background: var(--v-pink-fill);
   border-color: var(--v-pink-fill);
 }
-
+/* with words selected the CTA changes meaning, so it changes colour too */
 .vocab-ghost-btn,
 .vocab-nav-btn,
 .vocab-back-btn,
@@ -1115,6 +1120,13 @@ html[data-theme="light"] {
 .vocab-practice-select .vocab-practice-hero { margin: 0; }
 .vocab-practice-select .vocab-sub { margin: 0 auto; }
 .vocab-practice-hero { margin-bottom: 1.5rem; }
+.vocab-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  width: 100%;
+}
 
 .vocab-bank-summary {
   display: inline-flex;
@@ -1152,6 +1164,16 @@ html[data-theme="light"] {
   gap: 1rem;
   width: 100%;
   max-width: 44rem;
+}
+/* Three options wrap to a 2+1 grid, so the odd one out is centred rather than
+   left-hanging under the first column. */
+@media (min-width: 40rem) {
+  .vocab-mode-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .vocab-mode-grid > :last-child:nth-child(3) {
+    grid-column: 1 / -1;
+    width: calc(50% - 0.5rem);
+    justify-self: center;
+  }
 }
 .vocab-mode-card {
   display: flex;
@@ -1214,7 +1236,6 @@ html[data-theme="light"] {
 .vocab-source-panel {
   width: 100%;
   max-width: 44rem;
-  margin-top: 1.1rem;
   padding: 1rem 1.1rem;
   border-radius: 0.8rem;
   background: var(--v-sf);
@@ -1260,22 +1281,45 @@ html[data-theme="light"] {
 .vocab-set-tile.is-active .vocab-set-tile-count { color: rgba(255, 255, 255, 0.85); }
 .vocab-source-empty { margin: 0; font-size: 0.85rem; color: var(--v-tx3); }
 
-/* validation reads as a banner, not grey helper text */
-.vocab-hint {
-  width: 100%;
-  max-width: 44rem;
-  margin-top: 1rem;
-  padding: 0.7rem 0.9rem;
-  border-radius: 0.7rem;
+/* A locked primary action explains itself on hover and wobbles when clicked,
+   instead of a banner stretched across the step. */
+.vocab-lock-wrap { position: relative; display: inline-flex; }
+.vocab-start-btn.is-locked {
+  background: var(--v-sf2);
+  border-color: var(--v-bd);
+  color: var(--v-tx3);
+}
+.vocab-start-btn.is-locked:hover { transform: none; filter: none; }
+.vocab-start-btn.is-shaking { animation: vocabNudge 0.45s ease; }
+.vocab-lock-hint {
+  position: absolute;
+  bottom: calc(100% + 0.5rem);
+  left: 50%;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.75rem;
+  border-radius: 0.6rem;
   background: var(--v-amber-fill);
   border: 1px solid var(--v-amber-fill);
   color: #fff;
-  font-size: 0.85rem;
-  font-weight: 600;
-  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(-50%) scale(0.92);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.vocab-lock-hint .material-icons-round { font-size: 0.95rem; color: #fff; }
+.vocab-lock-wrap:hover .vocab-lock-hint,
+.vocab-lock-wrap.is-nudged .vocab-lock-hint {
+  opacity: 1;
+  transform: translateX(-50%) scale(1);
 }
 
-.vocab-practice-actions { display: flex; justify-content: center; gap: 0.75rem; flex-wrap: wrap; }
+.vocab-practice-actions { display: flex; align-items: center; justify-content: center; gap: 0.75rem; flex-wrap: wrap; }
 .vocab-mini-row { display: flex; justify-content: center; }
 .vocab-mini-btn {
   display: inline-flex;
@@ -1632,7 +1676,6 @@ html[data-theme="light"] {
 @media (max-width: 1024px) {
   /* the rail stops being a rail — progress rides above the word list */
   .vocab-learn-cols { grid-template-columns: minmax(0, 1fr); }
-  .vocab-side { position: static; max-height: none; overflow: visible; }
 }
 @media (max-width: 768px) {
   .vocab-learn, .vocab-practice { padding: 1.75rem 1rem 4rem; }
@@ -1647,3 +1690,196 @@ html[data-theme="light"] {
   .vocab-review-row { flex-wrap: wrap; }
   .vocab-review-answer { max-width: none; text-align: left; }
 }
+
+/* ═══ New-set popover + bottom saved pill ══════════════ */
+.vocab-newset-wrap { position: relative; }
+.vocab-newset-menu {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  left: 0;
+  z-index: 30;
+  width: 16rem;
+  padding: 0.7rem;
+  border-radius: 0.7rem;
+  background: var(--v-sf);
+  border: 1px solid var(--v-bd);
+  box-shadow: 0 0.75rem 1.75rem rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.vocab-newset-head {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--v-tx2);
+}
+.vocab-newset-input {
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border-radius: 0.6rem;
+  background: var(--v-sf2);
+  border: 1px solid var(--v-bd);
+  color: var(--tx);
+  font: inherit;
+  font-size: 0.88rem;
+  outline: none;
+}
+.vocab-newset-input:focus { border-color: var(--v-blue); }
+.vocab-newset-menu .vocab-start-btn { width: 100%; }
+
+.vocab-saved-pill {
+  position: fixed;
+  left: 50%;
+  bottom: 1.75rem;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.85rem 1.6rem;
+  border-radius: 999px;
+  background: var(--v-pink-fill);
+  border: 1px solid var(--v-pink-fill);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+  box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.45);
+  animation: vocabPillIn 0.28s cubic-bezier(.23, 1, .32, 1) both;
+}
+.vocab-saved-pill .material-icons-round { font-size: 1.4rem; color: #fff; }
+.vocab-saved-pill .vocab-count-num { color: #fff; font-size: 1.25rem; }
+.vocab-saved-pill .vocab-count-label { font-size: 0.95rem; }
+.vocab-saved-pill-x {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  margin-left: 0.2rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid transparent;
+  color: #fff;
+  cursor: pointer;
+  transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+}
+.vocab-saved-pill-x .material-icons-round { font-size: 1rem; color: #fff; }
+.vocab-saved-pill-x:hover {
+  transform: scale(1.08);
+  background: rgba(255, 255, 255, 0.32);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+@keyframes vocabPillIn {
+  from { opacity: 0; transform: translate(-50%, 1rem); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* ═══ Wizard motion ════════════════════════════════════
+   Direction-aware step transitions, ported from the rush wizard: the old
+   step slides out before the new one is laid out, so the page never shows
+   both at once and stops jumping. Entrances use `backwards` fill rather
+   than `forwards` — a forwards fill would pin `transform: none` and kill
+   the cards' hover/selected scale. */
+@keyframes vocabStepInRight  { from { opacity: 0; transform: translateX(2.5rem); }  to { opacity: 1; transform: none; } }
+@keyframes vocabStepInLeft   { from { opacity: 0; transform: translateX(-2.5rem); } to { opacity: 1; transform: none; } }
+@keyframes vocabStepOutLeft  { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateX(-2.5rem); } }
+@keyframes vocabStepOutRight { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateX(2.5rem); } }
+.vocab-step.anim-in-right  { animation: vocabStepInRight 0.4s cubic-bezier(0.22, 1, 0.36, 1); }
+.vocab-step.anim-in-left   { animation: vocabStepInLeft 0.4s cubic-bezier(0.22, 1, 0.36, 1); }
+.vocab-step.anim-out-left  { animation: vocabStepOutLeft 0.25s ease forwards; }
+.vocab-step.anim-out-right { animation: vocabStepOutRight 0.25s ease forwards; }
+
+@keyframes vocabCardIn { from { opacity: 0; transform: translateY(1rem); } to { opacity: 1; transform: none; } }
+.vocab-stagger > * { animation: vocabCardIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) backwards; }
+.vocab-stagger > *:nth-child(1) { animation-delay: 0.03s; }
+.vocab-stagger > *:nth-child(2) { animation-delay: 0.09s; }
+.vocab-stagger > *:nth-child(3) { animation-delay: 0.15s; }
+.vocab-stagger > *:nth-child(4) { animation-delay: 0.21s; }
+.vocab-stagger > *:nth-child(5) { animation-delay: 0.27s; }
+.vocab-stagger > *:nth-child(6) { animation-delay: 0.33s; }
+.vocab-stagger > *:nth-child(7) { animation-delay: 0.39s; }
+.vocab-stagger > *:nth-child(8) { animation-delay: 0.45s; }
+
+/* Source panels open downward instead of blinking into place */
+@keyframes vocabPanelIn { from { opacity: 0; transform: translateY(-0.6rem); } to { opacity: 1; transform: none; } }
+.vocab-source-panel { animation: vocabPanelIn 0.3s cubic-bezier(0.22, 1, 0.36, 1); }
+
+@media (prefers-reduced-motion: reduce) {
+  .vocab-step, .vocab-stagger > *, .vocab-source-panel, .vocab-saved-pill { animation: none !important; }
+}
+
+/* ═══ Study-set dropdown (practice step 2) ═════════════
+   The set list hangs off its own mode card so choosing a source never
+   pushes the rest of the step down the page. */
+.vocab-mode-drop { position: relative; display: flex; }
+.vocab-mode-drop > .vocab-mode-card { width: 100%; }
+.vocab-set-menu {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  right: 0;
+  z-index: 40;
+  max-height: 17rem;
+  overflow-y: auto;
+  padding: 0.6rem;
+  border-radius: 0.8rem;
+  background: var(--v-sf);
+  border: 1px solid var(--v-bd);
+  box-shadow: 0 0.75rem 1.75rem rgba(0, 0, 0, 0.35);
+  animation: vocabPanelIn 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.vocab-set-menu-head {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--v-tx3);
+  padding: 0 0.2rem 0.45rem;
+}
+.vocab-set-menu-list { display: flex; flex-direction: column; gap: 0.4rem; }
+.vocab-set-menu .vocab-source-empty { padding: 0.2rem; }
+/* the filter chips need more room than a card's width */
+.vocab-set-menu.is-wide {
+  left: auto;
+  right: 0;          /* grows leftward — this card sits at the grid's right edge */
+  min-width: 100%;
+  width: max-content;
+  max-width: 24rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  padding: 0.9rem;
+}
+.vocab-set-menu .vocab-filter-group { margin: 0; }
+
+/* dropdown copy sits on a solid panel, so it reads at full text colour
+   rather than the muted greys used inline on the page */
+.vocab-set-menu .vocab-set-menu-head,
+.vocab-set-menu .vocab-word-chip,
+.vocab-set-menu .vocab-source-empty,
+.vocab-set-menu .vocab-filter-label,
+.vocab-set-menu .vocab-set-tile-count { color: var(--tx); }
+
+/* selected-word preview */
+.vocab-word-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.vocab-word-chip {
+  padding: 0.25rem 0.55rem;
+  border-radius: 0.45rem;
+  background: var(--v-sf2);
+  border: 1px solid var(--v-bd);
+  color: var(--v-tx2);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+/* A set that is too short to practice explains itself on the tile, the same
+   way the sidebar rows do on learn.html. */
+.vocab-set-tile .vocab-sets-lock { color: var(--v-amber); }
+.vocab-set-tile.is-locked:hover .vocab-sets-lock,
+.vocab-set-tile.is-nudged .vocab-sets-lock {
+  max-height: 2.5rem;
+  margin-top: 0.2rem;
+  opacity: 1;
+}
+.vocab-set-tile.is-locked:hover { transform: none; border-color: var(--v-amber); }
+.vocab-set-tile.is-shaking { animation: vocabNudge 0.45s ease; }

@@ -166,14 +166,14 @@
         : 'Drill your whole word bank, one study set, or a slice of the word database.'"></p>
     </div>
 
-    <div class="vocab-steps">
+    <div class="vocab-steps" x-show="!skipSource">
       <span class="vocab-step-dot tone-blue" :class="{ 'is-on': step >= 1 }"></span>
       <span class="vocab-step-dot tone-teal" :class="{ 'is-on': step >= 2 }"></span>
     </div>
 
     <!-- ── step 1: mode ── -->
-    <div x-show="step === 1" x-transition.opacity.duration.200ms>
-      <div class="vocab-mode-grid">
+    <div class="vocab-step" :class="stepAnim" x-show="step === 1">
+      <div class="vocab-mode-grid vocab-stagger">
         <button class="vocab-mode-card t-btn tone-blue" :class="{ 'is-active': selectedMode === 'definition-quiz' }" @click="selectedMode = 'definition-quiz'">
           <span class="vocab-mode-icon"><span class="material-icons-round">menu_book</span></span>
           <span class="vocab-mode-body">
@@ -202,10 +202,36 @@
         </button>
       </div>
 
+      <!-- with the source already decided, step 1 shows what it resolved to -->
+      <div class="vocab-bank-summary" x-show="skipSource" x-cloak>
+        <span class="material-icons-round">playlist_add_check</span>
+        <span class="vocab-bank-summary-count" x-text="sourceWords.length"></span>
+        <span class="vocab-bank-summary-text" x-text="sourceLabel"></span>
+        <a href="./learn.html" class="vocab-bank-edit t-btn">
+          <span class="material-icons-round">edit</span><span>Edit</span>
+        </a>
+      </div>
+
       <div class="vocab-practice-actions">
-        <button class="vocab-start-btn t-btn" @click="step = 2">
-          <span>Continue</span><span class="material-icons-round">chevron_right</span>
-        </button>
+        <template x-if="!skipSource">
+          <button class="vocab-start-btn t-btn" @click="goStep(2)">
+            <span>Continue</span><span class="material-icons-round">chevron_right</span>
+          </button>
+        </template>
+        <template x-if="skipSource">
+          <div class="vocab-lock-wrap" :class="{ 'is-nudged': startNudged }">
+            <button class="vocab-start-btn is-green t-btn"
+                    :class="{ 'is-locked': !canStart, 'is-shaking': startShaking }"
+                    @click="canStart ? startPractice() : nudgeStart()">
+              <span class="material-icons-round">play_arrow</span>
+              <span x-text="startLabel"></span>
+            </button>
+            <span class="vocab-lock-hint" x-show="!canStart" x-cloak>
+              <span class="material-icons-round">lock</span>
+              <span x-text="startBlockedReason"></span>
+            </span>
+          </div>
+        </template>
       </div>
       <div class="vocab-mini-row">
         <a href="./learn.html" class="vocab-mini-btn t-btn">Cancel</a>
@@ -213,72 +239,100 @@
     </div>
 
     <!-- ── step 2: word source ── -->
-    <div x-show="step === 2" x-transition.opacity.duration.200ms x-cloak>
-      <div class="vocab-mode-grid">
-        <button class="vocab-mode-card t-btn tone-blue" :class="{ 'is-active': source === 'bank' }" @click="source = 'bank'">
-          <span class="vocab-mode-icon"><span class="material-icons-round">library_books</span></span>
-          <span class="vocab-mode-body">
-            <span class="vocab-mode-name">My word bank</span>
-            <span class="vocab-mode-desc" x-text="`${bankWords.length} saved word${bankWords.length === 1 ? '' : 's'}`"></span>
-          </span>
-          <span class="vocab-mode-check material-icons-round">check_circle</span>
-        </button>
+    <div class="vocab-step" :class="stepAnim" x-show="step === 2" x-cloak>
+      <div class="vocab-mode-grid vocab-stagger">
+        <!-- Each source owns its own dropdown, so choosing one never pushes the
+             rest of the step down the page. -->
+        <div class="vocab-mode-drop" @click.outside="if (openMenu === 'bank') openMenu = null">
+          <button class="vocab-mode-card t-btn tone-blue" :class="{ 'is-active': source === 'bank' }" @click="pickSource('bank')">
+            <span class="vocab-mode-icon"><span class="material-icons-round">library_books</span></span>
+            <span class="vocab-mode-body">
+              <span class="vocab-mode-name">My selected words</span>
+              <span class="vocab-mode-desc" x-text="`${bankWords.length} word${bankWords.length === 1 ? '' : 's'} selected`"></span>
+            </span>
+            <span class="vocab-mode-check material-icons-round">check_circle</span>
+          </button>
 
-        <button class="vocab-mode-card t-btn tone-teal" :class="{ 'is-active': source === 'set' }" @click="source = 'set'">
-          <span class="vocab-mode-icon"><span class="material-icons-round">bookmarks</span></span>
-          <span class="vocab-mode-body">
-            <span class="vocab-mode-name">A study set</span>
-            <span class="vocab-mode-desc" x-text="`${studySets.length} set${studySets.length === 1 ? '' : 's'} saved`"></span>
-          </span>
-          <span class="vocab-mode-check material-icons-round">check_circle</span>
-        </button>
-
-        <button class="vocab-mode-card t-btn tone-amber" :class="{ 'is-active': source === 'filter' }" @click="source = 'filter'">
-          <span class="vocab-mode-icon"><span class="material-icons-round">tune</span></span>
-          <span class="vocab-mode-body">
-            <span class="vocab-mode-name">Filter the database</span>
-            <span class="vocab-mode-desc">Pick a part of speech and difficulty</span>
-          </span>
-          <span class="vocab-mode-check material-icons-round">check_circle</span>
-        </button>
-      </div>
-
-      <!-- set picker -->
-      <div class="vocab-source-panel" x-show="source === 'set'" x-transition.opacity.duration.200ms x-cloak>
-        <span class="vocab-filter-label">Study set</span>
-        <div class="vocab-set-grid" x-show="studySets.length">
-          <template x-for="(set, i) in studySets" :key="set.id">
-            <button class="vocab-set-tile t-btn" :class="[toneAt(i), selectedSetId === set.id ? 'is-active' : '']"
-                    @click="selectedSetId = set.id">
-              <span class="vocab-set-tile-name" x-text="set.name"></span>
-              <span class="vocab-set-tile-count" x-text="`${set.words.length} word${set.words.length === 1 ? '' : 's'}`"></span>
-            </button>
-          </template>
-        </div>
-        <p class="vocab-source-empty" x-show="!studySets.length">
-          No study sets yet. Save one from the word bank first.
-        </p>
-      </div>
-
-      <!-- database filter -->
-      <div class="vocab-source-panel" x-show="source === 'filter'" x-transition.opacity.duration.200ms x-cloak>
-        <div class="vocab-filter-group">
-          <span class="vocab-filter-label">Part of speech</span>
-          <div class="vocab-filter-chips">
-            <button class="vocab-filter-chip t-btn tone-blue" :class="{ 'is-on': filterPos === 'all' }" @click="filterPos = 'all'">All</button>
-            <button class="vocab-filter-chip t-btn tone-teal" :class="{ 'is-on': filterPos === 'noun' }" @click="filterPos = 'noun'">Noun</button>
-            <button class="vocab-filter-chip t-btn tone-green" :class="{ 'is-on': filterPos === 'verb' }" @click="filterPos = 'verb'">Verb</button>
-            <button class="vocab-filter-chip t-btn tone-amber" :class="{ 'is-on': filterPos === 'adjective' }" @click="filterPos = 'adjective'">Adjective</button>
-            <button class="vocab-filter-chip t-btn tone-pink" :class="{ 'is-on': filterPos === 'adverb' }" @click="filterPos = 'adverb'">Adverb</button>
+          <div class="vocab-set-menu" x-show="openMenu === 'bank'" x-transition.opacity.duration.150ms x-cloak @click.stop>
+            <div class="vocab-set-menu-head" x-text="`${bankWords.length} selected word${bankWords.length === 1 ? '' : 's'}`"></div>
+            <div class="vocab-word-chips" x-show="bankWords.length">
+              <template x-for="w in bankWords" :key="w">
+                <span class="vocab-word-chip" x-text="w"></span>
+              </template>
+            </div>
+            <p class="vocab-source-empty" x-show="!bankWords.length">
+              No words selected yet. Save some from the word bank first.
+            </p>
           </div>
         </div>
-        <div class="vocab-filter-group">
-          <span class="vocab-filter-label">Difficulty</span>
-          <div class="vocab-filter-chips">
-            <button class="vocab-filter-chip t-btn tone-blue" :class="{ 'is-on': filterDiff === 'all' }" @click="filterDiff = 'all'">All</button>
-            <button class="vocab-filter-chip t-btn tone-green" :class="{ 'is-on': filterDiff === 'easy' }" @click="filterDiff = 'easy'"><span class="vocab-diff-dot is-easy"></span>Easy</button>
-            <button class="vocab-filter-chip t-btn tone-amber" :class="{ 'is-on': filterDiff === 'medium' }" @click="filterDiff = 'medium'"><span class="vocab-diff-dot is-medium"></span>Medium</button>
-            <button class="vocab-filter-chip t-btn tone-red" :class="{ 'is-on': filterDiff === 'hard' }" @click="filterDiff = 'hard'"><span class="vocab-diff-dot is-hard"></span>Hard</button>
+
+        <div class="vocab-mode-drop" @click.outside="if (openMenu === 'set') openMenu = null">
+          <button class="vocab-mode-card t-btn tone-teal" :class="{ 'is-active': source === 'set' }" @click="pickSource('set')">
+            <span class="vocab-mode-icon"><span class="material-icons-round">bookmarks</span></span>
+            <span class="vocab-mode-body">
+              <span class="vocab-mode-name">A study set</span>
+              <span class="vocab-mode-desc" x-text="selectedSet ? selectedSet.name : `${studySets.length} set${studySets.length === 1 ? '' : 's'} saved`"></span>
+            </span>
+            <span class="vocab-mode-check material-icons-round">check_circle</span>
+          </button>
+
+          <div class="vocab-set-menu" x-show="openMenu === 'set'" x-transition.opacity.duration.150ms x-cloak @click.stop>
+            <div class="vocab-set-menu-head">Study set</div>
+            <div class="vocab-set-menu-list" x-show="studySets.length">
+              <template x-for="(set, i) in studySets" :key="set.id">
+                <button class="vocab-set-tile t-btn"
+                        :class="[toneAt(i), selectedSetId === set.id ? 'is-active' : '',
+                                 setTooSmall(set) ? 'is-locked' : '',
+                                 nudgedSet === set.id ? 'is-nudged' : '',
+                                 shakeSet === set.id ? 'is-shaking' : '']"
+                        @click="chooseSet(set)">
+                  <span class="vocab-set-tile-name" x-text="set.name"></span>
+                  <span class="vocab-set-tile-count" x-text="`${set.words.length} word${set.words.length === 1 ? '' : 's'}`"></span>
+                  <template x-if="setTooSmall(set)">
+                    <span class="vocab-sets-lock">
+                      <span class="material-icons-round">lock</span>
+                      <span x-text="`Add at least ${minWords} words to practice!`"></span>
+                    </span>
+                  </template>
+                </button>
+              </template>
+            </div>
+            <p class="vocab-source-empty" x-show="!studySets.length">
+              No study sets yet. Save one from the word bank first.
+            </p>
+          </div>
+        </div>
+
+        <div class="vocab-mode-drop" @click.outside="if (openMenu === 'filter') openMenu = null">
+          <button class="vocab-mode-card t-btn tone-amber" :class="{ 'is-active': source === 'filter' }" @click="pickSource('filter')">
+            <span class="vocab-mode-icon"><span class="material-icons-round">tune</span></span>
+            <span class="vocab-mode-body">
+              <span class="vocab-mode-name">Filter Words</span>
+              <span class="vocab-mode-desc" x-text="filterLabel"></span>
+            </span>
+            <span class="vocab-mode-check material-icons-round">check_circle</span>
+          </button>
+
+          <div class="vocab-set-menu is-wide" x-show="openMenu === 'filter'" x-transition.opacity.duration.150ms x-cloak @click.stop>
+            <div class="vocab-filter-group">
+              <span class="vocab-filter-label">Part of speech</span>
+              <div class="vocab-filter-chips">
+                <button class="vocab-filter-chip t-btn tone-blue" :class="{ 'is-on': filterPos === 'all' }" @click="filterPos = 'all'">All</button>
+                <button class="vocab-filter-chip t-btn tone-teal" :class="{ 'is-on': filterPos === 'noun' }" @click="filterPos = 'noun'">Noun</button>
+                <button class="vocab-filter-chip t-btn tone-green" :class="{ 'is-on': filterPos === 'verb' }" @click="filterPos = 'verb'">Verb</button>
+                <button class="vocab-filter-chip t-btn tone-amber" :class="{ 'is-on': filterPos === 'adjective' }" @click="filterPos = 'adjective'">Adjective</button>
+                <button class="vocab-filter-chip t-btn tone-pink" :class="{ 'is-on': filterPos === 'adverb' }" @click="filterPos = 'adverb'">Adverb</button>
+              </div>
+            </div>
+            <div class="vocab-filter-group">
+              <span class="vocab-filter-label">Difficulty</span>
+              <div class="vocab-filter-chips">
+                <button class="vocab-filter-chip t-btn tone-blue" :class="{ 'is-on': filterDiff === 'all' }" @click="filterDiff = 'all'">All</button>
+                <button class="vocab-filter-chip t-btn tone-green" :class="{ 'is-on': filterDiff === 'easy' }" @click="filterDiff = 'easy'"><span class="vocab-diff-dot is-easy"></span>Easy</button>
+                <button class="vocab-filter-chip t-btn tone-amber" :class="{ 'is-on': filterDiff === 'medium' }" @click="filterDiff = 'medium'"><span class="vocab-diff-dot is-medium"></span>Medium</button>
+                <button class="vocab-filter-chip t-btn tone-red" :class="{ 'is-on': filterDiff === 'hard' }" @click="filterDiff = 'hard'"><span class="vocab-diff-dot is-hard"></span>Hard</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -293,16 +347,22 @@
         </a>
       </div>
 
-      <div class="vocab-hint" x-show="!canStart" x-cloak x-text="startBlockedReason"></div>
-
       <div class="vocab-practice-actions">
-        <button class="vocab-ghost-btn t-btn" @click="step = 1">
+        <button class="vocab-ghost-btn t-btn" @click="goStep(1)">
           <span class="material-icons-round">chevron_left</span><span>Back</span>
         </button>
-        <button class="vocab-start-btn is-green t-btn" @click="startPractice()" :disabled="!canStart">
-          <span class="material-icons-round">play_arrow</span>
-          <span x-text="startLabel"></span>
-        </button>
+        <div class="vocab-lock-wrap" :class="{ 'is-nudged': startNudged }">
+          <button class="vocab-start-btn is-green t-btn"
+                  :class="{ 'is-locked': !canStart, 'is-shaking': startShaking }"
+                  @click="canStart ? startPractice() : nudgeStart()">
+            <span class="material-icons-round">play_arrow</span>
+            <span x-text="startLabel"></span>
+          </button>
+          <span class="vocab-lock-hint" x-show="!canStart" x-cloak>
+            <span class="material-icons-round">lock</span>
+            <span x-text="startBlockedReason"></span>
+          </span>
+        </div>
       </div>
       <div class="vocab-mini-row">
         <a href="./learn.html" class="vocab-mini-btn t-btn">Cancel</a>
@@ -580,16 +640,25 @@
       dataStatus: 'loading',
       stage: 'select',       // select | quiz | cards | results
       step: 1,               // setup wizard: 1 mode, 2 word source
+      stepAnim: '',          // direction-aware enter/exit class on the live step
+      stepping: false,
+      openMenu: null,        // 'bank' | 'set' | 'filter' — dropdown hanging off that card
+      nudgedSet: null,       // set holding its "needs N words" hint open
+      shakeSet: null,
       selectedMode: 'definition-quiz',
       showExitConfirm: false,
 
       /* word source */
       source: 'bank',        // bank | set | filter
+      skipSource: false,     // arrived with the source already decided
       studySets: [],
       selectedSetId: null,
       filterPos: 'all',
       filterDiff: 'all',
       learntWords: [],
+
+      startNudged: false,
+      startShaking: false,
 
       /* flashcard deck */
       deck: [],
@@ -632,12 +701,17 @@
         if (set) {
           this.source = 'set';
           this.selectedSetId = set.id;
+          this.skipSource = true;
         } else if (p.get('source') === 'set') {
           this.source = 'set';
         } else if (p.get('source') === 'filter' || p.get('pos') || p.get('diff')) {
           this.source = 'filter';
           this.filterPos = p.get('pos') || 'all';
           this.filterDiff = p.get('diff') || 'all';
+          this.skipSource = true;
+        } else if (p.get('source') === 'bank') {
+          this.source = 'bank';
+          this.skipSource = true;
         }
       },
       /* The wordbank and the study sets change under us when Firestore
@@ -648,10 +722,54 @@
         window.addEventListener('korahVocabReady', apply);
       },
 
+      /* Steps slide out before the next one slides in, so the two are never
+         laid out at once — that overlap is what made the page jump. Mirrors
+         the rush wizard's timing (240ms out, 400ms in). */
+      goStep(target) {
+        if (target === this.step || this.stepping) return;
+        const dir = target > this.step ? 1 : -1;
+        this.stepping = true;
+        this.stepAnim = dir > 0 ? 'anim-out-left' : 'anim-out-right';
+        setTimeout(() => {
+          this.step = target;
+          this.stepAnim = dir > 0 ? 'anim-in-right' : 'anim-in-left';
+          this.stepping = false;
+          setTimeout(() => { this.stepAnim = ''; }, 400);
+        }, 240);
+      },
+
       /* ── Word source ────────────────────────────────── */
       /* tones here only need to be distinct, so cycle them by index */
       toneAt(i) {
         return 'tone-' + ['blue', 'teal', 'green', 'amber', 'pink', 'red'][i % 6];
+      },
+      /* Each source card doubles as the toggle for its own dropdown: the first
+         click selects the source and opens it, a second click closes it. */
+      pickSource(key) {
+        if (this.source !== key) {
+          this.source = key;
+          this.openMenu = key;
+          return;
+        }
+        this.openMenu = this.openMenu === key ? null : key;
+      },
+      setTooSmall(set) { return set.words.length < this.minWords; },
+      /* A set too small to practice can't be selected at all — it says so on
+         itself rather than letting Start explain later. */
+      chooseSet(set) {
+        if (this.setTooSmall(set)) { this.nudgeSet(set.id); return; }
+        this.selectedSetId = set.id;
+        this.openMenu = null;
+      },
+      nudgeSet(id) {
+        this.nudgedSet = id;
+        this.shakeSet = null;
+        requestAnimationFrame(() => { this.shakeSet = id; });
+        clearTimeout(this._setNudgeTimer);
+        this._setNudgeTimer = setTimeout(() => {
+          if (this.nudgedSet === id) this.nudgedSet = null;
+          if (this.shakeSet === id) this.shakeSet = null;
+        }, 2500);
       },
       get bankWords() { return this.learntWords; },
       get selectedSet() {
@@ -669,10 +787,18 @@
         if (this.source === 'filter') return this.filteredWords;
         return this.bankWords;
       },
+      /* The filter card's subtitle carries the current filter, so the choice
+         still reads at a glance once the dropdown is shut. */
+      get filterLabel() {
+        if (this.filterPos === 'all' && this.filterDiff === 'all') return 'Pick a part of speech and difficulty';
+        const pos = this.filterPos === 'all' ? 'any word' : this.filterPos;
+        const diff = this.filterDiff === 'all' ? '' : `, ${this.filterDiff}`;
+        return pos + diff;
+      },
       get sourceLabel() {
         if (this.source === 'set') return this.selectedSet ? `words in “${this.selectedSet.name}”` : 'words — pick a set';
         if (this.source === 'filter') return 'words match this filter';
-        return 'words in your bank';
+        return 'words selected';
       },
       /* Quizzes need four distractors' worth of words to feel like a quiz;
          flashcards only need something to flip. */
@@ -680,12 +806,24 @@
       get canStart() { return this.sourceWords.length >= this.minWords; },
       get startBlockedReason() {
         if (this.source === 'set' && !this.selectedSet) return 'Pick a study set to practice.';
-        const short = this.minWords - this.sourceWords.length;
-        return `Add at least ${this.minWords} words to practice — this selection is ${short} short.`;
+        return `Add at least ${this.minWords} words to practice!`;
       },
       get startLabel() {
         if (this.selectedMode === 'flashcards') return 'Start Flashcards';
         return this.selectedMode === 'definition-quiz' ? 'Start Definition Quiz' : 'Start Vocab Quiz';
+      },
+
+      /* A locked Start says why on hover; clicking wobbles it and holds the
+         reason open, same as a study set that is too small to practice. */
+      nudgeStart() {
+        this.startNudged = true;
+        this.startShaking = false;
+        requestAnimationFrame(() => { this.startShaking = true; });
+        clearTimeout(this._nudgeTimer);
+        this._nudgeTimer = setTimeout(() => {
+          this.startNudged = false;
+          this.startShaking = false;
+        }, 2500);
       },
 
       /* ── Flashcards ─────────────────────────────────── */

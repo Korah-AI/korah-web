@@ -278,17 +278,26 @@
             <p class="vocab-sub">Search 988 SAT words and save the ones you want to master. Add at least 5 to unlock practice.</p>
           </div>
           <div class="vocab-learn-hero-actions">
-            <a href="./practice.html?source=set" class="vocab-ghost-btn is-sm t-btn">
+            <a href="./practice.html?source=set" class="vocab-practice-cta t-btn">
               <span class="material-icons-round">bookmarks</span><span>Practice a set</span>
             </a>
-            <div class="vocab-count-pill">
-              <span class="material-icons-round">library_books</span>
-              <span class="vocab-count-num" x-text="learntWords.length">0</span>
-              <span class="vocab-count-label">saved</span>
+            <div class="vocab-newset-wrap" x-show="learntWords.length > 0" x-cloak
+                 @click.outside="newSetOpen = false">
+              <button class="vocab-start-btn is-green is-sm t-btn" @click="toggleNewSet()" :class="{ 'is-open': newSetOpen }">
+                <span class="material-icons-round">playlist_add</span><span>Add selected words to a set</span>
+              </button>
+              <div class="vocab-newset-menu" x-show="newSetOpen" x-transition.opacity.duration.150ms x-cloak>
+                <div class="vocab-newset-head"
+                     x-text="`New set from ${learntWords.length} saved word${learntWords.length === 1 ? '' : 's'}`"></div>
+                <input class="vocab-newset-input" type="text" x-model="newSetName"
+                       @keydown.enter="createSetFromSaved()" placeholder="Set name" />
+                <button class="vocab-start-btn is-green is-sm t-btn"
+                        @click="createSetFromSaved()" :disabled="!newSetName.trim()">Create set</button>
+              </div>
             </div>
             <a :href="practiceHref" class="vocab-practice-cta is-pink t-btn">
               <span class="material-icons-round">play_arrow</span>
-              <span>Start Practice</span>
+              <span x-text="learntWords.length > 0 ? 'Practice Selected Words' : 'Start Practice'">Start Practice</span>
             </a>
           </div>
         </div>
@@ -522,6 +531,17 @@
 
   </div>
 
+  <!-- Saved-word count, pinned to the bottom of the screen -->
+  <div class="vocab-saved-pill" x-show="dataStatus === 'ready' && learntWords.length > 0" x-cloak>
+    <span class="material-icons-round">library_books</span>
+    <span class="vocab-count-num" x-text="learntWords.length">0</span>
+    <span class="vocab-count-label" x-text="learntWords.length === 1 ? 'word selected' : 'words selected'"></span>
+    <button class="vocab-saved-pill-x t-btn" @click="clearSelection()"
+            aria-label="Unselect all words" title="Unselect all words">
+      <span class="material-icons-round">close</span>
+    </button>
+  </div>
+
 </main>
 </div>
 
@@ -545,6 +565,8 @@
       menuWord: null,   // word whose kebab menu is open
       nudgedSet: null,  // set showing its "needs 5 words" hint
       shakeSet: null,
+      newSetOpen: false,
+      newSetName: '',
 
 
       init() {
@@ -593,7 +615,12 @@
       /* Practice starts from whatever the page is showing: an active filter
          hands practice.html the same slice, otherwise it drills the bank. */
       get practiceHref() {
-        if (!this.hasActiveFilters) return './practice.html';
+        /* A decided source (the bank, or the filter the page is showing) skips
+           the wizard's second step; an empty bank still gets the full wizard so
+           there is a way to reach the other sources. */
+        if (!this.hasActiveFilters) {
+          return this.learntWords.length ? './practice.html?source=bank' : './practice.html';
+        }
         const p = new URLSearchParams({ source: 'filter' });
         if (this.filterPos !== 'all') p.set('pos', this.filterPos);
         if (this.filterDiff !== 'all') p.set('diff', this.filterDiff);
@@ -621,6 +648,20 @@
         VocabStore.saveStudySet(name, [word]);
         this.refreshSets();
         this.menuWord = null;
+      },
+      /* Bulk-add: one set holding every saved word. Sets are not renameable
+         yet, so the name is asked for up front rather than auto-generated. */
+      toggleNewSet() {
+        this.newSetOpen = !this.newSetOpen;
+        if (this.newSetOpen && !this.newSetName.trim()) {
+          this.newSetName = `Set ${this.studySets.length + 1}`;
+        }
+      },
+      createSetFromSaved() {
+        if (!VocabStore.saveStudySet(this.newSetName, this.learntWords)) return;
+        this.refreshSets();
+        this.newSetOpen = false;
+        this.newSetName = '';
       },
       /* Practice needs 5 words, same floor the wordbank CTA uses. */
       canPractice(set) {
@@ -750,6 +791,11 @@
           VocabStore.addWord(n);
           this.learntWords.push(n);
         }
+      },
+      /* the pill's X empties the bank; the study sets keep their own copies */
+      clearSelection() {
+        VocabStore.clearWords();
+        this.learntWords = [];
       },
       addAllShown() {
         const added = VocabStore.addWords(this.browseWords.map(w => w.word));

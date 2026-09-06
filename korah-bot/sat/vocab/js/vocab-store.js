@@ -142,6 +142,15 @@
     return writeData(data);
   }
 
+  /* One write instead of N: the pill's clear button drops the whole bank,
+     and per-word removal would re-serialize (and re-push) it every time. */
+  function clearWords() {
+    const data = readData();
+    if (!data.learntVocabs.length) return false;
+    data.learntVocabs = [];
+    return writeData(data);
+  }
+
   function hasWord(word) {
     return readData().learntVocabs.includes(normalize(word));
   }
@@ -331,6 +340,7 @@
     addWord,
     addWords,
     removeWord,
+    clearWords,
     hasWord,
     studySets,
     saveStudySet,
