@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="en" x-data="{
+  theme: localStorage.getItem('korah_theme') || 'dark',
+  sidebarCollapsed: window.innerWidth <= 768 ? false : localStorage.getItem('korah_sidebar_collapsed') === 'true',
+  mobileOpen: false,
+  getEffectiveTheme() {
+    if (this.theme === 'system') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return this.theme;
+  },
+  toggleSidebar() {
+    if (window.innerWidth <= 768) {
+      this.mobileOpen = !this.mobileOpen;
+      const overlay = document.querySelector('.sidebar-overlay');
+      if (overlay) overlay.classList.toggle('show', this.mobileOpen);
+    } else {
+      this.sidebarCollapsed = !this.sidebarCollapsed;
+      localStorage.setItem('korah_sidebar_collapsed', this.sidebarCollapsed);
+    }
+  }
+}" :data-theme="getEffectiveTheme()" x-cloak>
+<head>
+<link rel="stylesheet" href="../../transitions/page-transitions.css"/>
+<script src="../../transitions/page-transitions.js"></script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Korah AI · Practice Tests</title>
+<link rel="icon" type="image/png" href="../../logo-images/newlogo0.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script src="../../sidebar-loader.js" defer></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="../../study/js/sidebar.js"></script>
+<link rel="stylesheet" href="../../app/korah-chat.css"/>
+<link rel="stylesheet" href="./practice-test.css"/>
+<style>
+  html:not(.korah-page-ready) { background: #17171d !important; }
+  html[data-theme="light"]:not(.korah-page-ready) { background: #f4f5f8 !important; }
+  html:not(.korah-page-ready) body { opacity: 0 !important; }
+
+  .pt-page {
+    overflow-y: auto;
+    height: calc(100vh - 3.5rem);
+    max-height: calc(100vh - 3.5rem);
+    box-sizing: border-box;
+    padding: 1.5rem 1.25rem 4rem;
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  .pt-step { display: none; }
+  .pt-step.is-active { display: block; }
+
+  /* practice-test.css only scopes .is-hidden to .pt-hint, so the result block
+     needs a generic rule of its own. */
+  .is-hidden { display: none !important; }
+  .pt-perf { margin-top: 1.25rem; position: relative; z-index: 1; }
+  /* .pt-shell[data-step="1"] is min-height:100vh so step 1 sits centred. With
+     attempts below, that centring strands them a screen further down. */
+  .pt-page.has-attempts .pt-shell[data-step="1"] {
+    min-height: 0;
+    justify-content: flex-start;
+  }
+  /* .pt-page is a fixed-height flex column, so its children shrink before it
+     scrolls. Without this the wizard collapses and its position:relative cards
+     spill over the attempts below. */
+  .pt-page > .pt-shell { flex: 0 0 auto; }
+  .pt-perf .pt-step-title { display: flex; align-items: center; gap: 0.6rem; }
+  .pt-perf .pt-mini-row { gap: 0.5rem; flex-wrap: wrap; }
+
+  /* ── Attempt rows ── */
+  .pt-attempts { display: flex; flex-direction: column; gap: 0.6rem; }
+  .pt-attempt { border: 0.125rem solid var(--pt-bd); border-radius: 1rem; background: var(--pt-sf2); overflow: hidden; }
+  .pt-attempt-head {
+    display: grid; grid-template-columns: 1fr auto auto;
+    align-items: center; gap: 1rem; width: 100%; text-align: left;
+    padding: 0.95rem 1.1rem; border: 0; background: none;
+    color: var(--pt-tx); font-family: inherit; cursor: pointer;
+    transition: background 0.18s ease;
+  }
+  .pt-attempt-head:hover { background: var(--pt-sf); }
+  /* Both halves stack; as inline spans they ran together on one line. */
+  .pt-attempt-main { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; }
+  .pt-attempt-scorebox { display: flex; flex-direction: column; align-items: flex-end; gap: 0.1rem; }
+  .pt-attempt-name {
+    font-size: 0.98rem; font-weight: 800; line-height: 1.25;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .pt-attempt-date { font-size: 0.78rem; opacity: 0.7; line-height: 1.25; }
+  .pt-attempt-score { font-size: 1.35rem; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .pt-attempt-split { font-size: 0.72rem; opacity: 0.7; line-height: 1.25; white-space: nowrap; }
+  .pt-attempt-caret {
+    width: 1.4rem; height: 1.4rem; display: grid; place-items: center;
+    transition: transform 0.32s cubic-bezier(0.2, 0.8, 0.3, 1);
+  }
+  .pt-attempt.is-open .pt-attempt-caret { transform: rotate(180deg); }
+  .pt-attempt-panel {
+    height: 0; overflow: hidden;
+    /* duration is set per-open in JS, scaled to how far it actually travels */
+    transition: height 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .pt-attempt-inner {
+    padding: 0.25rem 1.1rem 1.1rem;
+    opacity: 0; transform: translateY(-0.4rem);
+    transition: opacity 0.22s ease, transform 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .pt-attempt.is-open .pt-attempt-inner { opacity: 1; transform: none; }
+  .pt-attempt.is-open .pt-attempt-head { background: var(--pt-sf); }
+
+  /* ── Per-question review list ── */
+  .pt-rev-section { font-size: 0.9rem; font-weight: 800; margin: 1.1rem 0 0.35rem; }
+  .pt-rev-group:first-child .pt-rev-section { margin-top: 0.5rem; }
+  .pt-rev-domain {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 1rem;
+    font-size: 0.78rem; font-weight: 700; opacity: 0.75; margin: 0.75rem 0 0.35rem;
+  }
+  .pt-rev-rows { display: flex; flex-direction: column; gap: 0.3rem; }
+  .pt-rev-row {
+    display: grid; grid-template-columns: 2.6rem 1fr auto auto auto auto;
+    align-items: center; gap: 0.6rem; width: 100%; text-align: left;
+    padding: 0.55rem 0.75rem; border-radius: 0.7rem;
+    border: 0.125rem solid var(--pt-bd); background: var(--pt-sf);
+    color: var(--pt-tx); font-family: inherit; font-size: 0.83rem; cursor: pointer;
+    opacity: 0; transform: translateY(0.35rem);
+    animation: ptRowIn 0.28s ease forwards;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+  }
+  @keyframes ptRowIn { to { opacity: 1; transform: none; } }
+  .pt-rev-row:hover { transform: translateX(0.15rem); border-color: var(--pt-tx); }
+  .pt-attempt.is-open { border-color: var(--pt-tx); }
+  .pt-rev-n { font-weight: 800; font-variant-numeric: tabular-nums; }
+  .pt-rev-stem { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; opacity: 0.85; }
+  .pt-rev-mod, .pt-rev-type {
+    font-size: 0.66rem; font-weight: 800; letter-spacing: 0.03em;
+    padding: 0.15rem 0.45rem; border-radius: 62.4375rem;
+    border: 0.0625rem solid var(--pt-bd); opacity: 0.85; white-space: nowrap;
+  }
+  .pt-rev-time { font-variant-numeric: tabular-nums; opacity: 0.7; min-width: 3rem; text-align: right; }
+  .pt-rev-mark { font-weight: 900; font-size: 1rem; width: 1.2rem; text-align: center; }
+  .pt-rev-row.is-right .pt-rev-mark { color: #1f8a5f; }
+  .pt-rev-row.is-wrong .pt-rev-mark { color: #c2453f; }
+  .pt-rev-row.is-wrong { border-color: rgba(194, 69, 63, 0.5); }
+  @media (max-width: 40rem) {
+    .pt-rev-row { grid-template-columns: 2.2rem 1fr auto auto auto; }
+    .pt-rev-stem { display: none; }
+  }
+
+  /* ── Question popup ── */
+  .pt-qpopup { width: min(42rem, 94vw); }
+  .pt-qmeta { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.85rem; }
+  .pt-qbody { font-size: 0.92rem; line-height: 1.6; }
+  .pt-qstem { white-space: pre-wrap; margin-bottom: 0.85rem; }
+  .pt-qimg { width: 100%; border-radius: 0.6rem; background: #fff; margin-bottom: 0.85rem; }
+  .pt-qopt {
+    display: flex; gap: 0.6rem; align-items: flex-start;
+    padding: 0.6rem 0.8rem; border-radius: 0.7rem; margin-bottom: 0.4rem;
+    border: 0.125rem solid var(--pt-bd); background: var(--pt-sf2);
+  }
+  .pt-qopt-key { font-weight: 800; min-width: 1.1rem; }
+  /* Opaque fills: these read as verdicts, not tints. */
+  .pt-qopt.is-correct { background: #1f8a5f; border-color: #1f8a5f; color: #fff; }
+  .pt-qopt.is-chosen-wrong { background: #c2453f; border-color: #c2453f; color: #fff; }
+  .pt-qopt-tag { margin-left: auto; font-size: 0.7rem; font-weight: 800; opacity: 0.9; white-space: nowrap; }
+  .pt-qspr { display: flex; flex-direction: column; gap: 0.4rem; }
+  .pt-qnote { font-size: 0.8rem; opacity: 0.7; margin-top: 0.6rem; }
+  @media (prefers-reduced-motion: reduce) {
+    .pt-attempt-panel, .pt-attempt-caret, .pt-attempt-inner { transition: none; }
+    .pt-attempt-inner { opacity: 1; transform: none; }
+    .pt-rev-row { animation: none; opacity: 1; transform: none; }
+  }
+</style>
+</head>
+
+<body>
+<script>
+  (function () {
+    var t = localStorage.getItem('korah_theme') || 'dark';
+    if (t === 'light' || (t === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  })();
+</script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+  import { startAuthGuard } from '../../auth-guard.js';
+
+  const app = initializeApp({
+    apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
+    authDomain: "korah-app.firebaseapp.com",
+    projectId: "korah-app",
+    storageBucket: "korah-app.firebasestorage.app",
+    messagingSenderId: "226169460321",
+    appId: "1:226169460321:web:b166fc8260107c55dafc20"
+  });
+  const auth = getAuth(app);
+
+  onAuthStateChanged(auth, (user) => {
+    if (!user) {
+      window.KorahTransitions.go('../../landing/index.html');
+      return;
+    }
+    const detail = { uid: user.uid };
+    window._korahReadyFired = detail;
+    window.dispatchEvent(new CustomEvent('korahReady', { detail }));
+    startAuthGuard(auth, '../../landing/index.html');
+  });
+
+  document.getElementById('logout-btn')?.addEventListener('click', () => {
+    window.confirmLogout(async () => {
+      await signOut(auth);
+      localStorage.removeItem('korah_first_name');
+      window.KorahTransitions.go('../../login.html');
+    });
+  });
+</script>
+
+<canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
+<div id="sidebar-root"></div>
+
+<div id="main-area-wrapper" class="main-area-wrapper">
+<main id="main-content" class="main-content">
+
+  <header class="chat-topbar bg-sf glass-sm t-theme bd" style="opacity: 0.95;">
+    <button id="sidebar-toggle" @click="toggleSidebar()" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+    <div class="chat-title-area">
+      <div class="korah-status-dot"></div>
+      <span class="font-semibold tx text-sm">Practice Tests</span>
+    </div>
+  </header>
+
+  <div class="pt-page pt-scope">
+    <div class="pt-shell" id="ptShell" data-step="1">
+      <div class="pt-hero">
+        <h1>Full-Length Practice Tests</h1>
+        <p>A real, timed SAT: two Reading &amp; Writing modules, a break, then two Math modules.</p>
+      </div>
+
+      <div class="pt-steps-indicator">
+        <span class="pt-step-dot is-active" id="ptDot1"></span>
+        <span class="pt-step-dot" id="ptDot2"></span>
+      </div>
+
+      <!-- Step 1: pick a test -->
+      <section class="pt-step is-active" id="ptStep1">
+        <h2 class="pt-step-title">Choose a practice test</h2>
+        <div class="pt-card-grid cols-2 pt-stagger" id="ptTestGrid"></div>
+        <div class="pt-hint is-hidden" id="ptHint">Pick a test to continue.</div>
+        <div class="pt-btn-row">
+          <button class="pt-btn" id="ptNextBtn" type="button">Continue</button>
+        </div>
+      </section>
+
+      <!-- Step 2: confirm the format, then start -->
+      <section class="pt-step" id="ptStep2">
+        <h2 class="pt-step-title" id="ptStep2Title">Before you begin</h2>
+
+        <div class="pt-tile-grid" id="ptTiles"></div>
+
+        <div class="pt-panel" style="margin-top:1rem">
+          <div class="pt-row">
+            <span class="pt-row-k">Reading &amp; Writing</span>
+            <span class="pt-row-v">2 modules · 54 questions · 64 min</span>
+          </div>
+          <div class="pt-row">
+            <span class="pt-row-k">Break</span>
+            <span class="pt-row-v">10 minutes between sections</span>
+          </div>
+          <div class="pt-row">
+            <span class="pt-row-k">Math</span>
+            <span class="pt-row-v">2 modules · 44 questions · 70 min</span>
+          </div>
+        </div>
+
+        <div class="pt-panel">
+          <div class="pt-panel-title">How it works</div>
+          <ul class="pt-list">
+            <li>You cannot return to a module once you finish it.</li>
+            <li>The reference sheet and the Desmos calculator are built into the Math section.</li>
+            <li>Your progress saves automatically, so you can close the tab and pick it back up.</li>
+            <li>Scoring uses the official College Board conversion table.</li>
+          </ul>
+        </div>
+
+        <div class="pt-panel" id="ptResumePanel" style="display:none">
+          <div class="pt-panel-title" id="ptResumeTitle">You have a test in progress</div>
+          <p style="font-size:.9rem; line-height:1.55; margin:0" id="ptResumeText"></p>
+        </div>
+
+        <div class="pt-btn-row" id="ptStartRow">
+          <button class="pt-btn is-green" id="ptStartBtn" type="button">Begin Test</button>
+        </div>
+        <div class="pt-mini-row">
+          <button class="pt-mini-btn" id="ptBackBtn" type="button">Choose a different test</button>
+        </div>
+      </section>
+    </div>
+
+    <!-- Completed attempts. Each row expands into its own question review.
+         Hidden until there is something to show; on localhost a sample stands in. -->
+    <section class="pt-shell pt-perf is-hidden" id="ptPerf">
+      <h2 class="pt-step-title">
+        Your practice tests
+        <span class="pt-chip is-hidden" id="ptPerfSample">Sample data</span>
+      </h2>
+      <div class="pt-attempts" id="ptAttempts"></div>
+    </section>
+
+    <!-- Single question, opened from the review list -->
+    <div class="pt-overlay" id="ptQOverlay"></div>
+    <div class="pt-popup pt-scope pt-qpopup" id="ptQPopup" role="dialog" aria-modal="true" aria-labelledby="ptQTitle">
+      <div class="pt-popup-head">
+        <span class="pt-popup-title" id="ptQTitle">Question</span>
+        <button class="pt-x-btn" id="ptQClose" type="button" aria-label="Close">&times;</button>
+      </div>
+      <div class="pt-qmeta" id="ptQMeta"></div>
+      <div class="pt-qbody" id="ptQBody"></div>
+      <div class="pt-popup-actions">
+        <button class="pt-btn is-ghost" id="ptQCloseBtn" type="button">Close</button>
+        <button class="pt-btn" id="ptQAskBtn" type="button">Ask Korah about this</button>
+      </div>
+    </div>
+  </div>
+</main>
+</div>
+
+<!-- Restart confirmation (no native confirm) -->
+<div class="pt-overlay" id="ptConfirmOverlay"></div>
+<div class="pt-popup pt-scope" id="ptConfirmPopup" role="dialog" aria-modal="true">
+  <div class="pt-popup-head">
+    <span class="pt-popup-title">Start over?</span>
+    <button class="pt-x-btn" id="ptConfirmClose" type="button" aria-label="Close">&times;</button>
+  </div>
+  <p style="line-height:1.6; margin:.4rem 0 0" id="ptConfirmMsg"></p>
+  <div class="pt-popup-actions">
+    <button class="pt-btn is-ghost" id="ptConfirmCancel" type="button">Keep my progress</button>
+    <button class="pt-btn is-red" id="ptConfirmOk" type="button">Start over</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  // Available practice tests. Add new tests here as they are scraped.
+  // Tones just have to differ from one another, so they cycle by index.
+  var TONES = ['tone-blue', 'tone-pink', 'tone-teal', 'tone-amber', 'tone-green', 'tone-orange'];
+  var TESTS = [
+    {
+      id: 4,
+      name: 'Practice Test #4',
+      desc: 'Our first full-length paper practice test, digitized end to end.',
+      chips: ['120 questions', '2h 14m', 'Official scoring'],
+    },
+    {
+      id: 11,
+      name: 'Practice Test #11',
+      desc: 'A second full-length paper test, digitized with every figure intact.',
+      chips: ['120 questions', '2h 14m', 'Official scoring'],
+    },
+  ];
+  var toneAt = function (i) { return TONES[i % TONES.length]; };
+
+  var MODULE_LABELS = {
+    rwModule1: 'Reading & Writing, Module 1',
+    rwModule2: 'Reading & Writing, Module 2',
+    mathModule1: 'Math, Module 1',
+    mathModule2: 'Math, Module 2',
+  };
+  var MODULE_ORDER = ['rwModule1', 'rwModule2', 'mathModule1', 'mathModule2'];
+
+  var $ = function (id) { return document.getElementById(id); };
+  var shell = $('ptShell');
+  var grid = $('ptTestGrid');
+  var selected = null;
+  var step = 1;
+
+  // ── Saved progress ──────────────────────────────────────
+  // Mirrors the player's own resume check so the two never disagree.
+  function savedState(id) {
+    var raw;
+    try { raw = JSON.parse(localStorage.getItem('korahPTState:' + id)); } catch (e) { return null; }
+    if (!raw || !raw.step || raw.step === 'start') return null;
+    if (raw.currentMod === undefined || raw.currentMod > MODULE_ORDER.length) return null;
+    var started = raw.name || raw.currentMod > 0 ||
+      (raw.answers && Object.keys(raw.answers).length > 0);
+    return started ? raw : null;
+  }
+  function progressText(saved) {
+    if (saved.step === 'results') return 'You already finished this test. Starting again clears the saved run.';
+    if (saved.step === 'break') return 'You stopped during the 10-minute break, right before the Math section.';
+    var key = MODULE_ORDER[saved.currentMod];
+    var answered = saved.answers ? Object.keys(saved.answers).length : 0;
+    return 'You stopped in ' + (MODULE_LABELS[key] || 'an earlier module') +
+      ' with ' + answered + ' question' + (answered === 1 ? '' : 's') + ' answered.';
+  }
+
+  // ── Step 1: the test cards ──────────────────────────────
+  grid.innerHTML = TESTS.map(function (t, i) {
+    var chips = t.chips.map(function (c) { return '<span class="pt-chip">' + c + '</span>'; }).join('');
+    var resume = savedState(t.id) ? '<span class="pt-chip">In progress</span>' : '';
+    return '' +
+      '<button type="button" class="pt-card ' + toneAt(i) + '" data-id="' + t.id + '">' +
+        '<span class="material-icons-round pt-card-icon">assignment</span>' +
+        '<span class="pt-card-title">' + t.name + '</span>' +
+        '<span class="pt-card-desc">' + t.desc + '</span>' +
+        '<span class="pt-chips">' + chips + resume + '</span>' +
+      '</button>';
+  }).join('');
+
+  var cards = Array.prototype.slice.call(grid.querySelectorAll('.pt-card'));
+
+  // ── Memory-lights flash ─────────────────────────────────
+  // While nothing is picked, the cards light up on independent timers so
+  // several can be lit at once and the pattern never repeats.
+  var flashTimers = {};
+  function scheduleFlash(card, i, initial) {
+    var stagger = initial ? Math.random() * 900 : 0;
+    var gap = 550 + Math.random() * 1100;
+    flashTimers['on:' + i] = setTimeout(function () {
+      card.classList.add('is-lit');
+      flashTimers['off:' + i] = setTimeout(function () {
+        card.classList.remove('is-lit');
+        scheduleFlash(card, i, false);
+      }, 400 + Math.random() * 350);
+    }, stagger + gap);
+  }
+  function startFlashing() { cards.forEach(function (c, i) { scheduleFlash(c, i, true); }); }
+  function stopFlashing() {
+    Object.keys(flashTimers).forEach(function (k) { clearTimeout(flashTimers[k]); });
+    flashTimers = {};
+    cards.forEach(function (c) { c.classList.remove('is-lit'); });
+  }
+  startFlashing();
+
+  cards.forEach(function (card) {
+    card.addEventListener('click', function () {
+      stopFlashing();
+      selected = TESTS.filter(function (t) { return String(t.id) === card.dataset.id; })[0];
+      cards.forEach(function (c) { c.classList.toggle('is-selected', c === card); });
+      $('ptHint').classList.add('is-hidden');
+    });
+  });
+
+  // ── Step transitions (direction-aware) ──────────────────
+  function goToStep(next) {
+    if (next === step) return;
+    var from = $('ptStep' + step);
+    var to = $('ptStep' + next);
+    var forward = next > step;
+    from.classList.add(forward ? 'anim-out-left' : 'anim-out-right');
+    setTimeout(function () {
+      from.classList.remove('is-active', 'anim-out-left', 'anim-out-right');
+      to.classList.add('is-active', forward ? 'anim-in-right' : 'anim-in-left');
+      setTimeout(function () { to.classList.remove('anim-in-right', 'anim-in-left'); }, 400);
+      step = next;
+      shell.dataset.step = String(step);
+      $('ptDot1').classList.toggle('is-active', step === 1);
+      $('ptDot1').classList.toggle('is-done', step > 1);
+      $('ptDot2').classList.toggle('is-active', step === 2);
+      document.querySelector('.pt-page').scrollTop = 0;
+    }, 240);
+  }
+
+  // ── Step 2 ──────────────────────────────────────────────
+  function renderStep2() {
+    $('ptStep2Title').textContent = selected.name;
+    $('ptTiles').innerHTML = '' +
+      '<div class="pt-tile tone-pink"><div class="pt-tile-value">64</div><div class="pt-tile-label">Min · Reading &amp; Writing</div></div>' +
+      '<div class="pt-tile tone-blue"><div class="pt-tile-value">70</div><div class="pt-tile-label">Min · Math</div></div>' +
+      '<div class="pt-tile tone-teal"><div class="pt-tile-value">120</div><div class="pt-tile-label">Questions</div></div>';
+
+    var saved = savedState(selected.id);
+    var panel = $('ptResumePanel');
+    var startRow = $('ptStartRow');
+    if (saved) {
+      panel.style.display = '';
+      $('ptResumeText').textContent = progressText(saved);
+      startRow.classList.add('cols-2');
+      startRow.innerHTML =
+        '<button class="pt-btn is-ghost" id="ptRestartBtn" type="button">Start over</button>' +
+        '<button class="pt-btn is-green" id="ptStartBtn" type="button">Resume Test</button>';
+      $('ptRestartBtn').addEventListener('click', function () {
+        $('ptConfirmMsg').textContent =
+          'Starting over erases your saved answers for ' + selected.name + '. This cannot be undone.';
+        $('ptConfirmOverlay').classList.add('open');
+        $('ptConfirmPopup').classList.add('open');
+      });
+    } else {
+      panel.style.display = 'none';
+      startRow.classList.remove('cols-2');
+      startRow.innerHTML = '<button class="pt-btn is-green" id="ptStartBtn" type="button">Begin Test</button>';
+    }
+    $('ptStartBtn').addEventListener('click', launch);
+  }
+
+  function launch() {
+    window.location.href = './player.html?test=' + encodeURIComponent(selected.id);
+  }
+
+  $('ptNextBtn').addEventListener('click', function () {
+    if (!selected) { $('ptHint').classList.remove('is-hidden'); return; }
+    renderStep2();
+    goToStep(2);
+  });
+  $('ptBackBtn').addEventListener('click', function () { goToStep(1); });
+
+  // Restart confirmation
+  function closeConfirm() {
+    $('ptConfirmOverlay').classList.remove('open');
+    $('ptConfirmPopup').classList.remove('open');
+  }
+  $('ptConfirmCancel').addEventListener('click', closeConfirm);
+  $('ptConfirmClose').addEventListener('click', closeConfirm);
+  $('ptConfirmOverlay').addEventListener('click', closeConfirm);
+  $('ptConfirmOk').addEventListener('click', function () {
+    try { localStorage.removeItem('korahPTState:' + selected.id); } catch (e) {}
+    closeConfirm();
+    launch();
+  });
+
+  // ── Completed attempts ──────────────────────────────────
+  // The player appends one record per finished test to korahPTHistory (newest
+  // first). Each record holds only the student's own data; stems and choices
+  // come back from the test JSON, fetched once per attempt when it is opened.
+  var HISTORY_KEY = 'korahPTHistory';
+  var IS_LOCAL = ['localhost', '127.0.0.1', '0.0.0.0', '[::1]', '::1']
+    .indexOf(location.hostname) >= 0 || location.protocol === 'file:';
+
+  var MODULE_SECTION = { rwModule1: 'english', rwModule2: 'english', mathModule1: 'math', mathModule2: 'math' };
+  var MODULE_NUM = { rwModule1: 1, rwModule2: 2, mathModule1: 1, mathModule2: 2 };
+  var SECTION_LABEL = { english: 'Reading & Writing', math: 'Math' };
+
+  function esc(v) {
+    return String(v == null ? '' : v)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+  function fmtSecs(sec) {
+    if (sec == null) return '—';
+    var t = Math.round(sec);
+    return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0');
+  }
+  function fmtWhen(ms) {
+    var d = new Date(ms);
+    return d.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) +
+      ' · ' + d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  }
+  function encPath(pth) { return String(pth).split('/').map(encodeURIComponent).join('/'); }
+
+  function normalizeSpr(v) {
+    if (v == null) return null;
+    var t = String(v).trim().toLowerCase().replace(/\s+/g, '');
+    if (t === '') return null;
+    var frac = t.match(/^([-+]?(?:\d+\.?\d*|\.\d+))\/([-+]?(?:\d+\.?\d*|\.\d+))$/);
+    var num = NaN;
+    if (frac) { var den = parseFloat(frac[2]); if (den !== 0) num = parseFloat(frac[1]) / den; }
+    else if (/^[-+]?(?:\d+\.?\d*|\.\d+)$/.test(t)) { num = parseFloat(t); }
+    return isNaN(num) ? t : String(Number(num.toPrecision(6)));
+  }
+  function isCorrect(q, sel) {
+    if (sel == null || sel === '') return false;
+    if (q.type === 'spr') return normalizeSpr(sel) === normalizeSpr(q.correct);
+    return sel === q.correct;
+  }
+
+  function loadHistory() {
+    var hist = [];
+    try { hist = JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; } catch (e) {}
+    if (!Array.isArray(hist)) hist = [];
+    if (!hist.length) {
+      // Attempts finished before the history key existed still live here.
+      try {
+        var solo = JSON.parse(localStorage.getItem('korahLastPTResult') || 'null');
+        if (solo) hist = [solo];
+      } catch (e) {}
+    }
+    return hist.filter(Boolean).sort(function (a, b) { return (b.finishedAt || 0) - (a.finishedAt || 0); });
+  }
+
+  // Deterministic stand-ins so the whole flow is styleable with no completed
+  // test. Only used when there is no real history.
+  function sampleHistory() {
+    return [
+      { testId: 11, finishedAt: Date.now() - 2 * 864e5, total: 1310, rwScale: 660, mthScale: 650,
+        rwCorrect: 54, rwTotal: 66, mthCorrect: 43, mthTotal: 54, _pct: 80 },
+      { testId: 4, finishedAt: Date.now() - 13 * 864e5, total: 1155, rwScale: 610, mthScale: 545,
+        rwCorrect: 49, rwTotal: 66, mthCorrect: 35, mthTotal: 54, _pct: 72 },
+    ];
+  }
+  function sampleAttempt(test, pct) {
+    var answers = {}, times = {}, seed = 12345 + pct;
+    MODULE_ORDER.forEach(function (mk, mi) {
+      (test[mk] || []).forEach(function (q, qi) {
+        seed = (seed * 1103515245 + 12345 + mi * 7 + qi) >>> 0;
+        var roll = (seed >>> 8) % 100;
+        var key = mk + ':' + q.n;
+        times[key] = 20 + (roll % 95);
+        if (roll < pct) { answers[key] = q.correct; return; }
+        if (q.type === 'spr') {
+          var n = Number(q.correct);
+          answers[key] = isNaN(n) ? '0' : String(n + 1);
+        } else {
+          var wrong = (q.options || []).map(function (_, i) { return String.fromCharCode(65 + i); })
+            .filter(function (l) { return l !== q.correct; });
+          answers[key] = wrong.length ? wrong[roll % wrong.length] : q.correct;
+        }
+      });
+    });
+    return { answers: answers, times: times };
+  }
+
+  var attempts = [];
+  var reviewIndex = {};   // rowId -> everything the popup needs
+
+  function testName(id) {
+    var t = TESTS.filter(function (x) { return String(x.id) === String(id); })[0];
+    return t ? t.name : 'Practice Test #' + id;
+  }
+
+  function renderAttempts() {
+    var real = loadHistory();
+    var usingSample = false;
+    if (!real.length && IS_LOCAL) { real = sampleHistory(); usingSample = true; }
+    if (!real.length) return;
+    attempts = real;
+
+    $('ptAttempts').innerHTML = attempts.map(function (a, i) {
+      return '' +
+        '<div class="pt-attempt" data-i="' + i + '">' +
+          '<button type="button" class="pt-attempt-head">' +
+            '<span class="pt-attempt-main">' +
+              '<span class="pt-attempt-name">' + esc(testName(a.testId)) + '</span>' +
+              '<span class="pt-attempt-date">' + esc(fmtWhen(a.finishedAt)) + '</span>' +
+            '</span>' +
+            '<span class="pt-attempt-scorebox">' +
+              '<span class="pt-attempt-score">' + (a.total != null ? a.total : '—') + '</span>' +
+              '<span class="pt-attempt-split">R&amp;W ' + a.rwScale + ' · Math ' + a.mthScale + '</span>' +
+            '</span>' +
+            '<span class="pt-attempt-caret material-icons-round">expand_more</span>' +
+          '</button>' +
+          '<div class="pt-attempt-panel"><div class="pt-attempt-inner"></div></div>' +
+        '</div>';
+    }).join('');
+
+    Array.prototype.forEach.call($('ptAttempts').querySelectorAll('.pt-attempt'), function (card) {
+      card.querySelector('.pt-attempt-head').addEventListener('click', function () { toggleAttempt(card); });
+    });
+
+    if (usingSample) $('ptPerfSample').classList.remove('is-hidden');
+    $('ptPerf').classList.remove('is-hidden');
+    document.querySelector('.pt-page').classList.add('has-attempts');
+  }
+
+  // ── Accordion ───────────────────────────────────────────
+  // Animates on an explicit height so it can transition, then releases to auto
+  // so a late-loading review list is never clipped.
+  // A 120-question panel is thousands of pixels tall; a fixed duration makes
+  // that read as a snap while a short list crawls. Scale, then clamp.
+  function durationFor(px) {
+    return Math.max(200, Math.min(460, 180 + px * 0.045)) + 'ms';
+  }
+  // height:auto cannot be interpolated, so pin the current pixel height with
+  // the transition disabled, force a reflow, then animate to the target.
+  function pin(panel) {
+    panel.style.transitionDuration = '0ms';
+    panel.style.height = panel.offsetHeight + 'px';
+    void panel.offsetHeight;
+  }
+  function settleToAuto(card, panel) {
+    var done = function (e) {
+      if (e.target !== panel || e.propertyName !== 'height') return;
+      panel.removeEventListener('transitionend', done);
+      if (card.classList.contains('is-open')) panel.style.height = 'auto';
+    };
+    panel.addEventListener('transitionend', done);
+  }
+  function collapse(card) {
+    var panel = card.querySelector('.pt-attempt-panel');
+    pin(panel);
+    card.classList.remove('is-open');
+    panel.style.transitionDuration = durationFor(panel.offsetHeight);
+    panel.style.height = '0px';
+  }
+  function expand(card) {
+    var panel = card.querySelector('.pt-attempt-panel');
+    card.classList.add('is-open');
+    var from = panel.offsetHeight;
+    var target = panel.scrollHeight;
+    panel.style.transitionDuration = durationFor(Math.abs(target - from));
+    panel.style.height = target + 'px';
+    settleToAuto(card, panel);   // release so a taller re-render is never clipped
+  }
+  // Grow to fit content that arrived after the open animation, without a jump.
+  function relayout(card) {
+    var panel = card.querySelector('.pt-attempt-panel');
+    if (!card.classList.contains('is-open')) return;
+    pin(panel);
+    var from = panel.offsetHeight;
+    var target = panel.scrollHeight;
+    if (target === from) { panel.style.height = 'auto'; return; }
+    panel.style.transitionDuration = durationFor(Math.abs(target - from));
+    panel.style.height = target + 'px';
+    settleToAuto(card, panel);
+  }
+
+  function toggleAttempt(card) {
+    var open = card.classList.contains('is-open');
+    Array.prototype.forEach.call($('ptAttempts').querySelectorAll('.pt-attempt.is-open'), collapse);
+    if (open) return;
+    var i = Number(card.dataset.i);
+    var inner = card.querySelector('.pt-attempt-inner');
+    if (inner.dataset.loaded) { expand(card); return; }
+    inner.innerHTML = '<div class="pt-rev-domain"><span>Loading questions…</span></div>';
+    expand(card);
+    loadReview(attempts[i]).then(function (html) {
+      inner.dataset.loaded = '1';
+      inner.innerHTML = html;
+      wireRows(inner);
+      relayout(card);
+    }).catch(function (e) {
+      console.warn('[PT] review data load failed', e);
+      inner.innerHTML = '<div class="pt-hint">Couldn\'t load the question data for this test.</div>';
+      relayout(card);
+    });
+  }
+
+  // ── One attempt's question list ─────────────────────────
+  function loadReview(a) {
+    var url = '../../docs/practice-tests/test-' + a.testId + '/test-' + a.testId + '.json';
+    return fetch(url).then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    }).then(function (test) {
+      var data = a.answers ? { answers: a.answers, times: a.times || {} }
+                           : sampleAttempt(test, a._pct || 72);
+      return buildReviewHtml(test, data, a.testId);
+    });
+  }
+
+  function buildReviewHtml(test, data, testId) {
+    var html = '', delay = 0;
+    ['english', 'math'].forEach(function (section) {
+      var mods = MODULE_ORDER.filter(function (mk) { return MODULE_SECTION[mk] === section; });
+      var byDomain = {}, order = [];
+      mods.forEach(function (mk) {
+        (test[mk] || []).forEach(function (q) {
+          var dom = q.domain || 'Other';
+          if (!byDomain[dom]) { byDomain[dom] = []; order.push(dom); }
+          byDomain[dom].push({ q: q, mk: mk });
+        });
+      });
+      if (!order.length) return;
+
+      html += '<div class="pt-rev-group"><div class="pt-rev-section">' + esc(SECTION_LABEL[section]) + '</div>';
+      order.forEach(function (dom) {
+        var items = byDomain[dom], right = 0, rows = '';
+        items.forEach(function (it) {
+          var key = it.mk + ':' + it.q.n;
+          var sel = data.answers[key];
+          var ok = isCorrect(it.q, sel);
+          if (ok) right++;
+          var rowId = 'r' + Object.keys(reviewIndex).length;
+          reviewIndex[rowId] = { q: it.q, modKey: it.mk, sel: sel, ok: ok, secs: data.times[key], testId: testId };
+          delay = Math.min(delay + 6, 240);
+          rows += '<button type="button" class="pt-rev-row ' + (ok ? 'is-right' : 'is-wrong') + '"' +
+            ' data-row="' + rowId + '" style="animation-delay:' + delay + 'ms">' +
+            '<span class="pt-rev-n">Q' + it.q.n + '</span>' +
+            '<span class="pt-rev-stem">' + esc(String(it.q.stem || '').slice(0, 90)) + '</span>' +
+            '<span class="pt-rev-mod">Mod ' + MODULE_NUM[it.mk] + '</span>' +
+            '<span class="pt-rev-type">' + (it.q.type === 'spr' ? 'SPR' : 'MCQ') + '</span>' +
+            '<span class="pt-rev-time">' + fmtSecs(data.times[key]) + '</span>' +
+            '<span class="pt-rev-mark">' + (ok ? '✓' : '✗') + '</span>' +
+            '</button>';
+        });
+        html += '<div class="pt-rev-domain"><span>' + esc(dom) + '</span>' +
+          '<span>' + right + '/' + items.length + '</span></div>' +
+          '<div class="pt-rev-rows">' + rows + '</div>';
+      });
+      html += '</div>';
+    });
+    return html;
+  }
+
+  function wireRows(root) {
+    Array.prototype.forEach.call(root.querySelectorAll('.pt-rev-row'), function (btn) {
+      btn.addEventListener('click', function () { openQuestion(btn.dataset.row); });
+    });
+  }
+
+  // ── Question popup ──────────────────────────────────────
+  var openRow = null;
+
+  function openQuestion(rowId) {
+    var it = reviewIndex[rowId];
+    if (!it) return;
+    openRow = it;
+    var q = it.q;
+
+    $('ptQTitle').textContent = 'Question ' + q.n;
+    $('ptQMeta').innerHTML =
+      '<span class="pt-chip">' + esc(SECTION_LABEL[MODULE_SECTION[it.modKey]] || '') + '</span>' +
+      '<span class="pt-chip">Module ' + MODULE_NUM[it.modKey] + '</span>' +
+      '<span class="pt-chip">' + esc(q.domain || '') + '</span>' +
+      '<span class="pt-chip">' + (q.type === 'spr' ? 'Student-produced response' : 'Multiple choice') + '</span>' +
+      '<span class="pt-chip">' + fmtSecs(it.secs) + '</span>' +
+      '<span class="pt-chip">' + (it.ok ? '✓ Correct' : '✗ Incorrect') + '</span>';
+
+    var body = '';
+    if (q.passage) body += '<div class="pt-qstem">' + esc(q.passage) + '</div>';
+    if (q.stemImg) {
+      body += '<img class="pt-qimg" alt="Question ' + q.n + '" src="../../docs/practice-tests/test-' +
+        it.testId + '/question-imgs/' + encPath(q.stemImg) + '"/>';
+    }
+    body += '<div class="pt-qstem">' + esc(q.stem) + '</div>';
+
+    if (q.type === 'spr') {
+      body += '<div class="pt-qspr">' +
+        '<div class="pt-qopt ' + (it.ok ? 'is-correct' : 'is-chosen-wrong') + '">' +
+          '<span class="pt-qopt-key">You</span><span>' + esc(it.sel || 'No answer') + '</span></div>';
+      if (!it.ok) {
+        body += '<div class="pt-qopt is-correct"><span class="pt-qopt-key">Ans</span>' +
+          '<span>' + esc(q.correct) + '</span></div>';
+      }
+      body += '</div>';
+    } else {
+      (q.options || []).forEach(function (opt, i) {
+        var letter = String.fromCharCode(65 + i);
+        var chosen = it.sel === letter;
+        var right = q.correct === letter;
+        var cls = right ? 'is-correct' : (chosen ? 'is-chosen-wrong' : '');
+        var tag = right && chosen ? 'Your answer · correct'
+                : right ? 'Correct answer'
+                : chosen ? 'Your answer' : '';
+        body += '<div class="pt-qopt ' + cls + '">' +
+          '<span class="pt-qopt-key">' + letter + '</span>' +
+          '<span>' + esc(String(opt).replace(/^[A-D]\)\s*/, '')) + '</span>' +
+          (tag ? '<span class="pt-qopt-tag">' + esc(tag) + '</span>' : '') +
+          '</div>';
+      });
+      if (!it.sel) body += '<div class="pt-qnote">You left this one blank.</div>';
+    }
+
+    $('ptQBody').innerHTML = body;
+    $('ptQOverlay').classList.add('open');
+    $('ptQPopup').classList.add('open');
+  }
+
+  function closeQuestion() {
+    $('ptQOverlay').classList.remove('open');
+    $('ptQPopup').classList.remove('open');
+    openRow = null;
+  }
+  $('ptQClose').addEventListener('click', closeQuestion);
+  $('ptQCloseBtn').addEventListener('click', closeQuestion);
+  $('ptQOverlay').addEventListener('click', closeQuestion);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeQuestion(); });
+
+  // ── Hand the question to Desmos Chat ────────────────────
+  // math-chat.html reads sessionStorage.korahSatHandoff on load and sends
+  // `contextBlock` as the first message.
+  $('ptQAskBtn').addEventListener('click', function () {
+    if (!openRow) return;
+    var q = openRow.q;
+    var lines = ['Practice Test #' + openRow.testId + ', Question ' + q.n + ' (' +
+      (SECTION_LABEL[MODULE_SECTION[openRow.modKey]] || '') + ', Module ' + MODULE_NUM[openRow.modKey] +
+      ' — ' + (q.domain || '') + ')', ''];
+    if (q.passage) lines.push(q.passage, '');
+    lines.push(q.stem);
+    if (q.options && q.options.length) {
+      lines.push('');
+      q.options.forEach(function (opt, i) {
+        lines.push(String.fromCharCode(65 + i) + ') ' + String(opt).replace(/^[A-D]\)\s*/, ''));
+      });
+    }
+    lines.push('', 'My answer: ' + (openRow.sel || 'left blank') + (openRow.ok ? ' (correct)' : ' (incorrect)'));
+    lines.push('Correct answer: ' + q.correct);
+    if (q.stemImg) lines.push('', 'Note: this question had a figure that I cannot paste here.');
+    try {
+      sessionStorage.setItem('korahSatHandoff', JSON.stringify({
+        contextBlock: lines.join('\n'),
+        stem: q.stem,
+      }));
+    } catch (e) { console.warn('[PT] handoff write failed', e); }
+    window.location.href = '../math-chat.html';
+  });
+
+  renderAttempts();
+})();
+</script>
+
+<script>
+  // initSidebar() also starts the shooting-star canvas (initBackground in
+  // study/js/sidebar.js). Same wiring the other SAT pages use.
+  window.addEventListener('korahReady', function () {
+    if (!window.KorahSidebar) return;
+    window.KorahSidebar.initSidebar({
+      chatBaseUrl: '../../chat.html',
+      itemPageUrl: '../../study/item.html',
+    });
+  }, { once: true });
+</script>
+</body>
+</html>

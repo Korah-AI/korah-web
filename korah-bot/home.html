@@ -252,6 +252,70 @@
   }
   @media (max-width: 55rem) { .two-col-grid { grid-template-columns: 1fr; } }
 
+  /* Full-Length Practice Test widgets */
+  .pt-widget-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;
+    align-items: stretch; margin-bottom: 2.5rem;
+  }
+  @media (max-width: 55rem) { .pt-widget-grid { grid-template-columns: 1fr; } }
+  .pt-card {
+    border-radius: 1.125rem; padding: 1.5rem 1.625rem;
+    display: flex; flex-direction: column; justify-content: space-between; gap: 1rem;
+    backdrop-filter: blur(0.875rem);
+    transition: border-color .2s, box-shadow .2s, transform .2s;
+  }
+  .pt-card:hover { box-shadow: 0 0.375rem 1.375rem rgba(139,92,246,.12); transform: translateY(-0.125rem); }
+  .pt-card.is-hidden { display: none; }
+  .pt-continue {
+    background: linear-gradient(135deg, rgba(139,92,246,.16), rgba(139,92,246,.04));
+    border: 1px solid rgba(139,92,246,.32);
+  }
+  .pt-result {
+    background: linear-gradient(135deg, rgba(139,92,246,.16), rgba(139,92,246,.04));
+    border: 1px solid rgba(139,92,246,.32);
+  }
+  .pt-card-top { display: flex; align-items: center; gap: 0.875rem; }
+  .pt-card-icon {
+    width: 3rem; height: 3rem; flex: 0 0 3rem; border-radius: 0.875rem;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(139,92,246,.18); color: var(--p5); font-size: 1.5rem;
+  }
+  .pt-result .pt-card-icon { background: rgba(139,92,246,.18); color: #8b5cf6; }
+  .pt-card-title { font-size: 1.125rem; font-weight: 800; color: var(--tx); letter-spacing: -0.01em; }
+  .pt-card-sub { font-size: 0.8125rem; color: var(--tx2); margin-top: 0.25rem; }
+  .pt-result-scores { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+  .pt-score-block { text-align: center; padding: 0.75rem 0.5rem; border-radius: 0.875rem; background: rgba(255,255,255,.04); border: 1px solid rgba(139,92,246,.16); }
+  .pt-score-value { font-size: 1.75rem; font-weight: 800; color: var(--tx); font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .pt-score-label { font-size: 0.6875rem; color: var(--tx2); margin-top: 0.25rem; }
+
+  .pt-empty {
+    grid-column: 1 / -1;
+    background: linear-gradient(135deg, rgba(139,92,246,.16), rgba(56,189,248,.05));
+    border: 1px dashed rgba(139,92,246,.45);
+  }
+  .pt-empty .pt-card-icon { background: rgba(139,92,246,.2); color: var(--p5); }
+  /* Full-length practice test card buttons (Continue / Start New Test) */
+  .pt-card-btn {
+    display: inline-flex; align-items: center; gap: 0.375rem;
+    background: #8b5cf6;
+    color: #fff; font-weight: 700; font-size: 0.8125rem;
+    padding: 0.625rem 1.25rem; border-radius: 62.4375rem; border: none;
+    cursor: pointer; text-decoration: none; align-self: flex-start;
+    box-shadow: 0 0.25rem 0.875rem rgba(139,92,246,.3);
+    transition: box-shadow .2s, transform .15s;
+  }
+  .pt-card-btn:hover { box-shadow: 0 0.375rem 1.25rem rgba(139,92,246,.4); transform: translateY(-1px); }
+  .cta-btn {
+    display: inline-flex; align-items: center; gap: 0.375rem; align-self: flex-start;
+    background: linear-gradient(135deg, #7c3aed, #a78bfa);
+    color: #fff; font-weight: 700; font-size: 0.875rem;
+    padding: 0.75rem 1.375rem; border-radius: 62.4375rem; border: none;
+    cursor: pointer; text-decoration: none;
+    box-shadow: 0 0.25rem 0.875rem rgba(139,92,246,.35);
+    transition: box-shadow .2s, transform .15s;
+  }
+  .cta-btn:hover { box-shadow: 0 0.375rem 1.375rem rgba(139,92,246,.5); transform: translateY(-1px); }
+
   /* Weakness Card */
   .weakness-card {
     background: linear-gradient(135deg, rgba(239,68,68,.14), rgba(239,68,68,.04));
@@ -938,6 +1002,63 @@
       </div>
     </section>
 
+    <!-- Full-Length Practice Test -->
+    <h2 class="home-section-head" style="margin-top: 2.5rem"><span class="material-icons-round">timer</span> Full-Length Practice Test</h2>
+    <section class="pt-widget-grid" id="pt-widgets">
+
+      <!-- Continue Practice Test (shown when a test is in progress) -->
+      <div class="pt-card pt-continue is-hidden" id="pt-continue-card">
+        <div class="pt-card-top">
+          <div class="pt-card-icon"><span class="material-icons-round">play_circle</span></div>
+          <div>
+            <div class="pt-card-title">Resume Your Practice Test</div>
+            <div class="pt-card-sub" id="pt-continue-detail">Pick up right where you left off.</div>
+          </div>
+        </div>
+        <a class="pt-card-btn" id="pt-continue-link" href="sat/practice-test/index.html">Continue Test →</a>
+      </div>
+
+      <!-- Most Recent Performance (shown after finishing a test) -->
+      <div class="pt-card pt-result is-hidden" id="pt-result-card">
+        <div class="pt-card-top">
+          <div class="pt-card-icon"><span class="material-icons-round">insights</span></div>
+          <div>
+            <div class="pt-card-title">Most Recent Score</div>
+            <div class="pt-card-sub" id="pt-result-date">Your last full-length practice test.</div>
+          </div>
+        </div>
+        <div class="pt-result-scores" id="pt-result-scores">
+          <div class="pt-score-block">
+            <div class="pt-score-value" id="pt-result-total">—</div>
+            <div class="pt-score-label">Total</div>
+          </div>
+          <div class="pt-score-block">
+            <div class="pt-score-value" id="pt-result-rw">—</div>
+            <div class="pt-score-label">Reading &amp; Writing</div>
+          </div>
+          <div class="pt-score-block">
+            <div class="pt-score-value" id="pt-result-math">—</div>
+            <div class="pt-score-label">Math</div>
+          </div>
+        </div>
+        <a class="pt-card-btn" href="sat/practice-test/index.html">Start New Test →</a>
+      </div>
+
+      <!-- Empty state (shown when no test has ever been started) -->
+      <div class="pt-card pt-empty is-hidden" id="pt-empty-card">
+        <div class="pt-card-top">
+          <div class="pt-card-icon"><span class="material-icons-round">flag</span></div>
+          <div>
+            <div class="pt-card-title">Ready to take your first practice test?</div>
+            <div class="pt-card-sub">Looks like you haven't taken a practice test yet — it's the best way to eliminate mistakes!</div>
+          </div>
+        </div>
+        <a class="cta-btn" href="sat/practice-test/index.html">Choose a Practice Test →</a>
+      </div>
+
+    </section>
+
+
 
 
 <section class="study-plan-grid">
@@ -1423,6 +1544,65 @@
     }
   }
 
+  // Full-Length Practice Test widgets (reads device-local state — no network needed)
+  function hydratePTWidgets() {
+    const continued = document.getElementById('pt-continue-card');
+    const resultCard = document.getElementById('pt-result-card');
+    const emptyCard = document.getElementById('pt-empty-card');
+
+    // 1) In-progress test → Resume widget. Progress is stored per test under
+    // `korahPTState:<id>`, so scan for any in-progress test rather than
+    // assuming a single shared key.
+    let inProgress = false, mIdx = 0, testId = null;
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k || k.indexOf('korahPTState:') !== 0) continue;
+      try {
+        const s = JSON.parse(localStorage.getItem(k) || 'null');
+        if (!s || !s.name || !(s.currentMod < 4)) continue;
+        if (s.step !== 'module' && s.step !== 'break' && s.step !== 'review') continue;
+        inProgress = true; mIdx = s.currentMod; testId = k.slice('korahPTState:'.length);
+        break;
+      } catch (e) {}
+    }
+
+    if (inProgress && continued) {
+      continued.classList.remove('is-hidden');
+      const MOD = ['Reading & Writing · Module 1', 'Reading & Writing · Module 2', 'Math · Module 1', 'Math · Module 2'][mIdx] || 'your test';
+      const detail = document.getElementById('pt-continue-detail');
+      if (detail) detail.textContent = `Pick up where you left off — Test ${testId} · ${MOD}.`;
+      const link = document.getElementById('pt-continue-link');
+      if (link) link.href = `sat/practice-test/player.html?test=${encodeURIComponent(testId)}`;
+    } else if (continued) {
+      continued.classList.add('is-hidden');
+    }
+
+    // 2) Most recent result → Performance widget
+    let last = null;
+    try { last = JSON.parse(localStorage.getItem('korahLastPTResult') || 'null'); } catch (e) {}
+
+    if (last && resultCard) {
+      resultCard.classList.remove('is-hidden');
+      const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+      set('pt-result-total', last.total ?? '—');
+      set('pt-result-rw', last.rwScale ?? '—');
+      set('pt-result-math', last.mthScale ?? '—');
+      const dateEl = document.getElementById('pt-result-date');
+      if (dateEl && last.finishedAt) {
+        const d = new Date(last.finishedAt);
+        dateEl.textContent = `Last completed ${d.toLocaleDateString([], { month: 'short', day: 'numeric' })} at ${d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}.`;
+      }
+    } else if (resultCard) {
+      resultCard.classList.add('is-hidden');
+    }
+
+    // 3) Empty state → shown only when there's no in-progress test AND no prior result
+    if (emptyCard) {
+      const showEmpty = !inProgress && !last;
+      emptyCard.classList.toggle('is-hidden', !showEmpty);
+    }
+  }
+
   // Initialize sidebar (recent chats / study items)
   window.addEventListener('korahReady', () => {
     if (window.KorahSidebar?.initSidebar) {
@@ -1435,6 +1615,8 @@
       window.addEventListener('korahSATAnalyticsReady', hydrateStats, { once: true });
     }
   });
+
+  hydratePTWidgets();
 </script>
 
 <script>
