@@ -520,7 +520,6 @@ document.addEventListener("click", (e) => {
   // Move the "is-selected" class in place — that class is the only thing a full
   // renderQuestion() would change here, and rebuilding #qCard reloads the images.
   opt.parentElement.querySelectorAll(".option").forEach((el) => el.classList.toggle("is-selected", el === opt));
-  updateQMenuCounts();
 });
 
 // ── Question menu ────────────────────────────────
