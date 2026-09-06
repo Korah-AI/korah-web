@@ -72,7 +72,13 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
 
-    onAuthStateChanged(auth, async (user) => {
+    // Localhost renders the page against ./js/tailored-mock.js placeholder data
+    // so the UI can be inspected without an account or real practice history.
+    const LOCAL_PREVIEW = ["localhost", "127.0.0.1", "[::1]", ""].includes(location.hostname);
+
+    if (LOCAL_PREVIEW) {
+      startGuestSession();
+    } else onAuthStateChanged(auth, async (user) => {
       if (!user) {
         startGuestSession();
         showAuthWall('../');
@@ -273,6 +279,7 @@
     }, { once: true });
   </script>
   <script src="./js/sat-shared.js"></script>
+  <script src="./js/tailored-mock.js"></script>
   <script src="./js/sat-tailored.js"></script>
 </body>
 </html>

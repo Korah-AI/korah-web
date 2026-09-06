@@ -21,10 +21,17 @@
   --tone-green: #22c55e;
   --tone-blue: #3b82f6;
   --tone-pink: #ec4899;
+  --tone-purple: #8b5cf6;
 
   /* Page default accent */
   --acc: var(--tone-blue);
   --acc-fill: #3472d9;
+
+  /* Flat neutral fill for badges that carry no state or identity. */
+  --t-fill-muted: #55555f;
+
+  /* Scrollbars: white on the dark page, a neutral grey when it is light. */
+  --t-scroll: rgba(255, 255, 255, 0.6);
 
   /* No dimmed text: --tx2/--tx3 vanish against the grey surfaces. */
   --tx2: var(--tx);
@@ -50,6 +57,8 @@ html[data-theme="light"] .tailored-grey {
   --t-sf: #eceef2;
   --t-sf2: #e0e3ea;
   --t-bd: #c3c8d2;
+  --t-fill-muted: #6b7180;
+  --t-scroll: rgba(70, 76, 90, 0.55);
 }
 
 /* Each tone carries --acc (the bright mark: borders, icons, rules) and
@@ -59,11 +68,20 @@ html[data-theme="light"] .tailored-grey {
 .tailored-grey .tone-green { --acc: var(--tone-green); --acc-fill: #1ead53; }
 .tailored-grey .tone-blue { --acc: var(--tone-blue); --acc-fill: #3472d9; }
 .tailored-grey .tone-pink { --acc: var(--tone-pink); --acc-fill: #d03f87; }
+.tailored-grey .tone-purple { --acc: var(--tone-purple); --acc-fill: #7c4ddb; }
 
 /* Section identity: Math → blue, Reading and Writing → pink. The renderers
    already emit .is-math / .is-english on priority and limited rows. */
 .tailored-grey .is-math { --acc: var(--tone-blue); --acc-fill: #3472d9; }
 .tailored-grey .is-english { --acc: var(--tone-pink); --acc-fill: #d03f87; }
+
+/* Priority cards are ranked, not sectioned: each position carries its own
+   tone so the list reads as an ordered ladder. Declared after the section
+   rules so it wins on the priority cards while the limited rows keep theirs. */
+.tailored-grey .rank-1 { --acc: var(--tone-red); --acc-fill: #d23c3c; }
+.tailored-grey .rank-2 { --acc: var(--tone-amber); --acc-fill: #d88b0a; }
+.tailored-grey .rank-3 { --acc: var(--tone-pink); --acc-fill: #d03f87; }
+.tailored-grey .rank-4 { --acc: var(--tone-purple); --acc-fill: #7c4ddb; }
 
 /* ── Page shell ─────────────────────────────────────────────────────────── */
 
@@ -77,6 +95,29 @@ html[data-theme="light"] .tailored-grey {
   overflow-y: auto;
   position: relative;
   z-index: 1;
+}
+
+/* korah-chat.css paints every scrollbar purple with !important; this page's
+   scroll areas stay neutral so nothing competes with the tone system. */
+.tailored-scroll,
+.tailored-scroll * {
+  scrollbar-color: var(--t-scroll) transparent;
+}
+
+.tailored-scroll::-webkit-scrollbar-track,
+.tailored-scroll *::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tailored-scroll::-webkit-scrollbar-thumb,
+.tailored-scroll *::-webkit-scrollbar-thumb {
+  background: var(--t-scroll) !important;
+  border-radius: 999rem;
+}
+
+.tailored-scroll::-webkit-scrollbar-thumb:hover,
+.tailored-scroll *::-webkit-scrollbar-thumb:hover {
+  background: #fff !important;
 }
 
 .tailored-page {
@@ -163,7 +204,7 @@ html[data-theme="light"] .tailored-grey {
 .tailored-limited-row {
   padding: 1rem;
   background: var(--t-sf);
-  border: 0.0625rem solid var(--t-bd);
+  border: 0.125rem solid var(--acc);
   border-radius: var(--t-radius);
   transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
 }
@@ -245,13 +286,19 @@ html[data-theme="light"] .tailored-grey {
   font-variant-numeric: tabular-nums;
 }
 
+/* Badges are filled and opaque: accuracy carries a state tone, the score
+   carries the card's section identity, and the date stays neutral. */
 .tailored-result-line span {
-  color: var(--tx);
-  background: var(--t-sf2);
-  border: 0.0625rem solid var(--t-bd);
+  color: #fff;
+  background: var(--acc-fill);
+  border: 0.0625rem solid transparent;
   border-radius: 999rem;
   padding: 0.1875rem 0.5rem;
   font-weight: 700;
+}
+
+.tailored-result-line .is-muted {
+  background: var(--t-fill-muted);
 }
 
 .tailored-explanation {
@@ -259,6 +306,150 @@ html[data-theme="light"] .tailored-grey {
   font-size: var(--t-fs-sm);
   line-height: 1.5;
   margin: 0.5rem 0 0 var(--t-indent);
+}
+
+/* ── Per-card practice menu ─────────────────────────────────────────────── */
+
+.tailored-card-actions {
+  position: relative;
+  margin: 0.75rem 0 0 var(--t-indent);
+}
+
+/* Always filled — this is the card's own call to action, not a state. */
+.tailored-skill-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4375rem;
+  padding: 0.375rem 0.625rem;
+  color: #fff;
+  background: var(--acc-fill);
+  border: 0.0625rem solid var(--acc-fill);
+  border-radius: var(--t-radius-sm);
+  font: inherit;
+  font-size: var(--t-fs-xs);
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 0.18s ease, border-color 0.18s ease;
+}
+
+.tailored-skill-toggle:hover {
+  background: var(--acc);
+  border-color: var(--acc);
+}
+
+.tailored-skill-toggle:focus-visible {
+  outline: 0.125rem solid var(--tx);
+  outline-offset: 0.125rem;
+}
+
+/* Drawn with borders rather than an icon font, so the button carries no glyph. */
+.tailored-caret {
+  width: 0;
+  height: 0;
+  border-left: 0.25rem solid transparent;
+  border-right: 0.25rem solid transparent;
+  border-top: 0.3125rem solid currentColor;
+  transition: transform 0.2s ease;
+}
+
+.tailored-skill-toggle[aria-expanded="true"] .tailored-caret {
+  transform: rotate(180deg);
+}
+
+/* A real dropdown: a floating panel anchored under the toggle, so opening it
+   never reflows the card or the list below it. */
+.tailored-skill-menu {
+  position: absolute;
+  top: calc(100% + 0.375rem);
+  left: 0;
+  z-index: 20;
+  display: grid;
+  gap: 0.375rem;
+  width: max-content;
+  max-width: min(20rem, 100%);
+  padding: 0.375rem;
+  background: var(--t-sf);
+  border: 0.0625rem solid var(--t-bd);
+  border-radius: var(--t-radius);
+  box-shadow: 0 0.75rem 1.75rem rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-0.375rem) scale(0.98);
+  transform-origin: top left;
+  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0s linear 0.18s;
+}
+
+.tailored-skill-menu.is-open {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition-delay: 0s;
+}
+
+/* The open card floats above its neighbours so the panel is never clipped. */
+.tailored-priority-card:has(.tailored-skill-menu.is-open) {
+  position: relative;
+  z-index: 5;
+}
+
+/* The two options carry fixed, distinct tones — green and blue, the two the
+   rank ladder never uses, so an option never matches the card it sits in. */
+.tailored-skill-option {
+  display: grid;
+  gap: 0.125rem;
+  width: 100%;
+  padding: 0.5rem 0.625rem;
+  color: #fff;
+  background: var(--acc-fill);
+  border: 0.0625rem solid transparent;
+  border-radius: var(--t-radius-sm);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.18s ease, transform 0.18s ease;
+}
+
+.tailored-skill-option:hover:not(:disabled) {
+  background: var(--acc);
+  transform: translateX(0.125rem);
+}
+
+.tailored-skill-option:focus-visible {
+  outline: 0.125rem solid var(--tx);
+  outline-offset: 0.125rem;
+}
+
+.tailored-skill-option:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.tailored-skill-option strong {
+  font-size: var(--t-fs-sm);
+  font-weight: 700;
+}
+
+.tailored-skill-option > span {
+  font-size: var(--t-fs-xs);
+  opacity: 0.9;
+}
+
+.tailored-skill-note {
+  margin: 0;
+  padding: 0.5rem 0.625rem;
+  color: var(--tx);
+  background: var(--t-sf2);
+  border: 0.0625rem solid var(--t-bd);
+  border-radius: var(--t-radius-sm);
+  font-size: var(--t-fs-xs);
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.tailored-skill-note.is-error {
+  background: color-mix(in srgb, var(--tone-red) 18%, var(--t-sf));
+  border-color: color-mix(in srgb, var(--tone-red) 55%, transparent);
 }
 
 /* ── Limited evidence list ──────────────────────────────────────────────── */
@@ -331,23 +522,29 @@ html[data-theme="light"] .tailored-grey {
 
 .tailored-set-skills {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.375rem;
 }
 
+/* Filled in the matching priority's tone, so the set card reads as the same
+   ladder as the list beside it. */
 .tailored-set-skill {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 0.75rem;
-  color: var(--tx);
-  background: var(--t-sf2);
-  border: 0.0625rem solid var(--t-bd);
+  min-width: 0;
+  color: #fff;
+  background: var(--acc-fill);
+  border: 0.0625rem solid transparent;
   border-radius: var(--t-radius-sm);
   padding: 0.4375rem 0.625rem;
   font-size: var(--t-fs-xs);
 }
 
 .tailored-set-skill strong {
+  flex: 1 1 auto;
+  min-width: 0;
   font-weight: 700;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -754,14 +951,19 @@ html[data-theme="light"] .tailored-grey {
   .tailored-btn,
   .tailored-manual-link,
   .tailored-priority-card,
-  .tailored-limited-row {
+  .tailored-limited-row,
+  .tailored-skill-toggle,
+  .tailored-caret,
+  .tailored-skill-menu,
+  .tailored-skill-option {
     transition: none;
   }
 
   .tailored-btn:hover:not(:disabled),
   .tailored-manual-link:hover,
   .tailored-priority-card:hover,
-  .tailored-limited-row:hover {
+  .tailored-limited-row:hover,
+  .tailored-skill-option:hover:not(:disabled) {
     transform: none;
   }
 }

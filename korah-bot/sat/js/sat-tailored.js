@@ -4,6 +4,7 @@
   const MIN_RANKABLE_ATTEMPTS = 3;
   const MAX_PRIORITIES = 4;
   const RECENT_ATTEMPT_LIMIT = 50;
+  const SIMILAR_SET_SIZE = 10;
   const DIFFICULTIES = ["E", "M", "H"];
   const DIFFICULTY_LABELS = { E: "Easy", M: "Medium", H: "Hard" };
   // Difficulty is meaningful state, so the chips carry the house tones.
@@ -196,13 +197,22 @@
     return `You missed ${skill.incorrect} of ${skill.attempts} questions, so this is ${index === 0 ? "the first skill to practice" : `priority ${index + 1}`}.`;
   }
 
+  // Accuracy is state, so its chip carries a meaningful tone rather than the
+  // section's identity fill.
+  function accuracyTone(accuracy) {
+    if (accuracy < 0.5) return "tone-red";
+    if (accuracy < 0.7) return "tone-amber";
+    return "tone-green";
+  }
+
   function renderPriorityCards() {
     byId("tailoredPriorityList").innerHTML = state.selected.map((skill, index) => {
       const allocation = state.allocations.find((item) => item.skill.skillCd === skill.skillCd);
       const accuracy = Math.round(skill.accuracy * 100);
       const lastSeen = formatLastSeen(skill.lastSeen);
+      const menuId = `tailoredSkillMenu${index}`;
       return `
-        <li class="tailored-priority-card is-${escapeHtml(skill.section)}">
+        <li class="tailored-priority-card is-${escapeHtml(skill.section)} rank-${index + 1}" data-skill="${escapeHtml(skill.skillCd)}">
           <div class="tailored-card-top">
             <span class="tailored-rank">${index + 1}</span>
             <div class="tailored-card-title">
@@ -212,11 +222,28 @@
             <div class="tailored-plan"><strong>${allocation.count}</strong><span>questions | ${DIFFICULTY_LABELS[allocation.target]}</span></div>
           </div>
           <div class="tailored-result-line">
-            <span>${accuracy}% accuracy</span>
-            <span>${skill.correct} of ${skill.attempts} correct</span>
-            ${lastSeen ? `<span>Last practiced ${escapeHtml(lastSeen)}</span>` : ""}
+            <span class="${accuracyTone(skill.accuracy)}">${accuracy}% accuracy</span>
+            <span class="is-section">${skill.correct} of ${skill.attempts} correct</span>
+            ${lastSeen ? `<span class="is-muted">Last practiced ${escapeHtml(lastSeen)}</span>` : ""}
           </div>
           <p class="tailored-explanation">${escapeHtml(recommendationText(skill, index))}</p>
+          <div class="tailored-card-actions">
+            <button class="tailored-skill-toggle" type="button" data-menu-toggle="${menuId}" aria-expanded="false" aria-controls="${menuId}">
+              <span>Practice this skill only</span>
+              <i class="tailored-caret" aria-hidden="true"></i>
+            </button>
+            <div class="tailored-skill-menu" id="${menuId}" role="group" aria-label="Practice options for ${escapeHtml(skill.skillName)}">
+              <button class="tailored-skill-option tone-green" type="button" data-action="missed" data-skill="${escapeHtml(skill.skillCd)}">
+                <strong>Practice missed problems</strong>
+                <span>The questions you got wrong in this skill</span>
+              </button>
+              <button class="tailored-skill-option tone-blue" type="button" data-action="similar" data-skill="${escapeHtml(skill.skillCd)}">
+                <strong>Get similar problems</strong>
+                <span>10 new ${DIFFICULTY_LABELS[allocation.target].toLowerCase()}-weighted questions</span>
+              </button>
+              <p class="tailored-skill-note" role="status" hidden></p>
+            </div>
+          </div>
         </li>`;
     }).join("");
   }
@@ -237,8 +264,9 @@
 
   function renderSetSummary() {
     byId("tailoredSetTotal").textContent = state.totalQuestions;
-    byId("tailoredSetSkills").innerHTML = state.allocations.map((item) => `
-      <div class="tailored-set-skill"><strong>${escapeHtml(item.skill.skillName)}</strong><span>${item.count}</span></div>
+    // Same order as the priority list, so each row carries that rank's tone.
+    byId("tailoredSetSkills").innerHTML = state.allocations.map((item, index) => `
+      <div class="tailored-set-skill rank-${index + 1}"><strong>${escapeHtml(item.skill.skillName)}</strong><span>${item.count}</span></div>
     `).join("");
     const totals = difficultyTotals(state.allocations);
     byId("tailoredSetDifficulty").innerHTML = DIFFICULTIES
@@ -366,13 +394,13 @@
     return ["M", "E", "H"];
   }
 
-  function selectQuestions(questions) {
+  function selectQuestions(questions, allocations = state.allocations, total = state.totalQuestions) {
     const seed = `${state.uid}|${statsFingerprint()}`;
     const selected = [];
     const selectedIds = new Set();
     const pools = new Map();
 
-    for (const allocation of state.allocations) {
+    for (const allocation of allocations) {
       for (const difficulty of DIFFICULTIES) {
         const key = `${allocation.skill.skillCd}|${difficulty}`;
         const matching = questions.filter((question) => question.skillCd === allocation.skill.skillCd && question.difficulty === difficulty && candidateId(question));
@@ -396,41 +424,40 @@
       return false;
     }
 
-    for (const allocation of state.allocations) {
+    for (const allocation of allocations) {
       for (const difficulty of DIFFICULTIES) {
         for (let index = 0; index < allocation.mix[difficulty]; index += 1) take(allocation.skill.skillCd, difficulty);
       }
     }
 
-    if (selected.length < state.totalQuestions) {
+    if (selected.length < total) {
       const remaining = sortedCandidates(
-        questions.filter((question) => state.selected.some((skill) => skill.skillCd === question.skillCd) && !selectedIds.has(candidateId(question))),
+        questions.filter((question) => allocations.some((item) => item.skill.skillCd === question.skillCd) && !selectedIds.has(candidateId(question))),
         seed
       );
       for (const question of remaining) {
-        if (selected.length >= state.totalQuestions) break;
+        if (selected.length >= total) break;
         const id = candidateId(question);
         if (!id || selectedIds.has(id)) continue;
         selectedIds.add(id);
         selected.push(question);
       }
     }
-    return selected.slice(0, state.totalQuestions);
+    return selected.slice(0, total);
   }
 
-  function candidateUrl() {
+  function candidateUrl(skills = state.selected) {
     const params = new URLSearchParams();
-    params.set("sections", [...new Set(state.selected.map((skill) => skill.section))].join(","));
-    params.set("domains", [...new Set(state.selected.map((skill) => skill.domainCode))].join(","));
-    params.set("skills", state.selected.map((skill) => skill.skillCd).join(","));
+    params.set("sections", [...new Set(skills.map((skill) => skill.section))].join(","));
+    params.set("domains", [...new Set(skills.map((skill) => skill.domainCode))].join(","));
+    params.set("skills", skills.map((skill) => skill.skillCd).join(","));
     params.set("difficulties", DIFFICULTIES.join(","));
     params.set("assessment", "SAT");
     params.set("limit", "none");
     return `/api/sat/q?${params.toString()}`;
   }
 
-  function launchSet(selected) {
-    const questionIds = selected.map(candidateId);
+  function launchIds(questionIds) {
     const url = window.KorahSAT.buildOpenSatV1QuestionUrl({
       questionIds,
       assessment: "SAT",
@@ -441,6 +468,10 @@
     announce(`Opening ${questionIds.length} tailored questions.`);
     if (window.KorahTransitions) window.KorahTransitions.go(url);
     else window.location.href = url;
+  }
+
+  function launchSet(selected) {
+    launchIds(selected.map(candidateId));
   }
 
   function applyActualCounts(selected) {
@@ -507,11 +538,115 @@
     }
   }
 
+  /* ── Per-skill practice menu ─────────────────────────────────────────── */
+
+  function closeSkillMenus(except) {
+    document.querySelectorAll(".tailored-skill-menu.is-open").forEach((menu) => {
+      if (menu === except) return;
+      menu.classList.remove("is-open");
+      document.querySelector(`[data-menu-toggle="${menu.id}"]`)?.setAttribute("aria-expanded", "false");
+    });
+  }
+
+  function toggleSkillMenu(button) {
+    const menu = byId(button.dataset.menuToggle);
+    if (!menu) return;
+    const open = !menu.classList.contains("is-open");
+    closeSkillMenus(menu);
+    menu.classList.toggle("is-open", open);
+    button.setAttribute("aria-expanded", String(open));
+  }
+
+  function setSkillNote(card, message, isError) {
+    const note = card.querySelector(".tailored-skill-note");
+    note.textContent = message || "";
+    note.classList.toggle("is-error", Boolean(isError));
+    note.hidden = !message;
+    if (message) announce(message);
+  }
+
+  function cardOf(element) {
+    return element.closest(".tailored-priority-card");
+  }
+
+  function setOptionBusy(button, busy) {
+    const card = cardOf(button);
+    card.querySelectorAll(".tailored-skill-option").forEach((option) => { option.disabled = busy; });
+    if (busy) setSkillNote(card, "Choosing your questions...");
+  }
+
+  async function practiceMissedQuestions(skill) {
+    const analytics = window.KorahSATAnalytics;
+    if (!analytics?.getAllAttempts) throw new Error("Your attempt history is not available right now.");
+    const attempts = await analytics.getAllAttempts();
+    const latest = new Map();
+    // getAllAttempts is newest-first, so the first row per id is the latest one.
+    for (const attempt of attempts || []) {
+      const id = attempt?.detailKey || attempt?.questionId;
+      if (!id || latest.has(id)) continue;
+      latest.set(id, attempt);
+    }
+    const missed = [...latest.entries()]
+      .filter(([, attempt]) => attempt.skillCd === skill.skillCd && !attempt.correct)
+      .map(([id]) => id);
+    if (!missed.length) throw new Error("You have not missed any questions in this skill yet.");
+    launchIds(missed);
+  }
+
+  async function practiceSimilarQuestions(skill) {
+    const response = await fetch(candidateUrl([skill]), { headers: { Accept: "application/json" } });
+    if (!response.ok) throw new Error(`Question request failed with status ${response.status}`);
+    const payload = await response.json();
+    const target = targetDifficulty(skill);
+    const allocation = { skill, target, count: SIMILAR_SET_SIZE, mix: allocateByRatio(SIMILAR_SET_SIZE, target) };
+    const selected = selectQuestions(
+      Array.isArray(payload?.questions) ? payload.questions : [],
+      [allocation],
+      SIMILAR_SET_SIZE
+    );
+    if (!selected.length) throw new Error("No questions are available for this skill right now.");
+    launchSet(selected);
+  }
+
+  async function runSkillAction(button) {
+    const card = cardOf(button);
+    const skill = state.selected.find((item) => item.skillCd === button.dataset.skill);
+    if (!skill) return;
+    setOptionBusy(button, true);
+    try {
+      if (button.dataset.action === "missed") await practiceMissedQuestions(skill);
+      else await practiceSimilarQuestions(skill);
+    } catch (error) {
+      console.error("[Tailored] skill action failed", error);
+      setSkillNote(card, error.message || "That did not work. Try again.", true);
+    } finally {
+      setOptionBusy(button, false);
+    }
+  }
+
   function bindEvents() {
     if (state.eventsBound) return;
     state.eventsBound = true;
     byId("tailoredBuild").addEventListener("click", buildPracticeSet);
     byId("tailoredRetry").addEventListener("click", loadData);
+
+    byId("tailoredPriorityList").addEventListener("click", (event) => {
+      const toggle = event.target.closest("[data-menu-toggle]");
+      if (toggle) {
+        toggleSkillMenu(toggle);
+        return;
+      }
+      const option = event.target.closest(".tailored-skill-option");
+      if (option && !option.disabled) runSkillAction(option);
+    });
+
+    document.addEventListener("click", (event) => {
+      if (!event.target.closest(".tailored-card-actions")) closeSkillMenus();
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") closeSkillMenus();
+    });
   }
 
   function showInitializationError() {
