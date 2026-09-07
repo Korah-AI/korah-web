@@ -69,3 +69,13 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 ## Project Notes
 
 See `../README.md` for the API route map.
+
+### UI conventions
+
+- **Hover and selected states scale, they never translate.** Use
+  `transform: scale(1.01–1.08)` (bigger scale for smaller elements) with a
+  ~0.18s ease transition. No `translateY` lifts or `translateX` nudges — sliding
+  drags neighbouring alignment and reads as a jump. `translate` is still fine for
+  positioning (e.g. `translateY(-50%)` centering).
+- Multi-step wizard and grey-colour-blocking rules live in
+  `docs/WIZARD-UI-PATTERNS.md`.
