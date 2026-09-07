@@ -89,8 +89,10 @@ html[data-theme="light"] .korah-grey {
    that uses the classes as well as the markup that uses the vars.
 
    .main-content is the page body on all eight pages; the modals and dropdowns
-   sit outside it at body level, so they are listed too. The sidebar and topbar
-   are not on the list and keep the app's own surfaces. */
+   sit outside it at body level, so they are listed too. The sidebar sits
+   outside .main-content and keeps the app's own surfaces. The topbar sits
+   inside .main-content, so its purple surfaces are restored by the block
+   further below to match home/chat. */
 .korah-grey .main-content,
 .korah-grey .study-feed-body,
 .korah-grey .create-page-scroll,
@@ -116,10 +118,9 @@ html[data-theme="light"] .korah-grey {
 }
 
 /* The glass utilities are the last translucent surfaces in the markup: .glass
-   and .glass-sm carry a blur plus the see-through --sf, and the topbars add an
-   inline opacity on top of it. Opaque grey, no blur, full opacity. (.glass-card
-   is a different class and keeps its tone fill below.) */
-.korah-grey .chat-topbar,
+   and .glass-sm carry a blur plus the see-through --sf. Opaque grey, no blur,
+   full opacity. (.glass-card is a different class and keeps its tone fill
+   below. .chat-topbar is shared chrome and is excluded here — see below.) */
 .korah-grey .glass,
 .korah-grey .glass-sm,
 .korah-grey .bg-sf,
@@ -128,9 +129,91 @@ html[data-theme="light"] .korah-grey {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
-.korah-grey .chat-topbar {
-  border-color: var(--kg-bd);
-  opacity: 1;
+
+/* Shared purple chrome: the topbar, hero and toolbar live inside
+   .main-content, so without this they inherit the grey rescope above. These
+   restore the app's purple theme surfaces to match home/chat. Values mirror
+   the [data-theme] blocks in app/korah-chat.css — update both if those ever
+   change. Covers the feed header region only; cards, dropdowns and everything
+   else keep the grey system. */
+html[data-theme="dark"] .korah-grey .main-content .chat-topbar,
+html[data-theme="dark"] .korah-grey .main-content .feed-hero,
+html[data-theme="dark"] .korah-grey .main-content .study-feed-toolbar {
+  --tx2: #a89dc0; --tx3: #6b5f88;
+  --sf: rgba(18,12,40,.7); --sf2: rgba(30,18,60,.6);
+  --bd: rgba(139,92,246,.2); --bd2: rgba(139,92,246,.1);
+  --nb: rgba(6,4,15,.85); --cb: rgba(15,9,35,.82); --ca: rgba(18,12,40,.9);
+  --cu: rgba(91,33,182,.25);
+}
+html[data-theme="light"] .korah-grey .main-content .chat-topbar,
+html[data-theme="light"] .korah-grey .main-content .feed-hero,
+html[data-theme="light"] .korah-grey .main-content .study-feed-toolbar {
+  --tx2: #5a4a7a; --tx3: #9080aa;
+  --sf: rgba(255,255,255,.85); --sf2: rgba(243,239,255,.9);
+  --bd: rgba(109,40,217,.18); --bd2: rgba(109,40,217,.1);
+  --nb: rgba(250,248,255,.9); --cb: rgba(255,255,255,.92); --ca: rgba(243,239,255,.95);
+  --cu: rgba(109,40,217,.12);
+}
+/* The elements above also match literal-grey background rules (the .bg-sf /
+   .glass-sm rule, the feed-chrome block, the field block), which beat
+   restored variables — and some of those rules sit later in this file, so
+   this block leads with body. to outrank them by specificity, not order.
+   Hover on the fields keeps its accent border and glow; only the fill is
+   re-pointed. */
+body.korah-grey .main-content .chat-topbar,
+body.korah-grey .main-content .feed-hero,
+body.korah-grey .main-content .study-feed-toolbar {
+  background: var(--sf);
+  border-color: var(--bd);
+  backdrop-filter: blur(0.9375rem);
+  -webkit-backdrop-filter: blur(0.9375rem);
+}
+body.korah-grey .main-content .study-feed-toolbar .feed-search,
+body.korah-grey .main-content .study-feed-toolbar .feed-filter-trigger {
+  background-color: var(--sf2);
+  border-color: var(--bd2);
+}
+body.korah-grey .main-content .study-feed-toolbar .feed-search:hover,
+body.korah-grey .main-content .study-feed-toolbar .feed-filter-trigger:hover {
+  background-color: var(--sf2);
+}
+
+/* Purple sidebar buttons (study pages only): resting nav buttons use the
+   app's purple surfaces instead of the neutral grey blocking, so the whole
+   sidebar reads purple like the panel and topbar. :not(.active) guards the
+   purple-gradient selected state; accent text and tab pills are untouched.
+   Scoped to tone-* bodies, which only the eight study pages set. */
+body.korah-grey.tone-red .sidebar .sidebar-nav-link:not(.active),
+body.korah-grey.tone-orange .sidebar .sidebar-nav-link:not(.active),
+body.korah-grey.tone-amber .sidebar .sidebar-nav-link:not(.active),
+body.korah-grey.tone-green .sidebar .sidebar-nav-link:not(.active),
+body.korah-grey.tone-teal .sidebar .sidebar-nav-link:not(.active),
+body.korah-grey.tone-blue .sidebar .sidebar-nav-link:not(.active),
+body.korah-grey.tone-pink .sidebar .sidebar-nav-link:not(.active) {
+  background: var(--sf2);
+  border-color: var(--bd2);
+}
+body.korah-grey.tone-red .sidebar .sidebar-nav-link:not(.active):hover,
+body.korah-grey.tone-orange .sidebar .sidebar-nav-link:not(.active):hover,
+body.korah-grey.tone-amber .sidebar .sidebar-nav-link:not(.active):hover,
+body.korah-grey.tone-green .sidebar .sidebar-nav-link:not(.active):hover,
+body.korah-grey.tone-teal .sidebar .sidebar-nav-link:not(.active):hover,
+body.korah-grey.tone-blue .sidebar .sidebar-nav-link:not(.active):hover,
+body.korah-grey.tone-pink .sidebar .sidebar-nav-link:not(.active):hover {
+  background: var(--cu);
+}
+
+/* Purple sidebar panel (study pages only): the sidebar sits outside .main-content
+   so the grey rescope above doesn't reach it, but the --sf/--bd values from the
+   theme are translucent and read nearly black. Restore opaque purple surfaces to
+   match the restored topbar. */
+html[data-theme="dark"] body.korah-grey .sidebar {
+  background: rgba(18,12,40,.92);
+  border-color: rgba(139,92,246,.2);
+}
+html[data-theme="light"] body.korah-grey .sidebar {
+  background: rgba(255,255,255,.95);
+  border-color: rgba(109,40,217,.18);
 }
 
 /* ── Identity ───────────────────────────────────────────────────────────────

@@ -21,10 +21,17 @@
     el.setAttribute('data-base-url', base + el.getAttribute('data-base-url'));
   });
 
-  // Also rewrite hrefs inside template x-if blocks (querySelectorAll can't see them)
+  // Also rewrite hrefs inside template x-if blocks (querySelectorAll can't see them).
+  // Mark the current page's link active there too, so e.g. SAT sub-pages highlight
+  // their button purple instead of leaving the whole section grey.
   root.querySelectorAll('template').forEach(tpl => {
     tpl.content.querySelectorAll('[href^="/"]').forEach(el => {
       el.setAttribute('href', base + el.getAttribute('href'));
+    });
+    tpl.content.querySelectorAll('.sidebar-nav-link').forEach(a => {
+      try {
+        a.classList.toggle('active', new URL(a.getAttribute('href'), window.location.href).pathname === window.location.pathname);
+      } catch {}
     });
   });
 
