@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en" x-data="{
+  theme: localStorage.getItem('korah_theme') || 'dark',
+  sidebarCollapsed: window.innerWidth <= 768 ? false : localStorage.getItem('korah_sidebar_collapsed') === 'true',
+  mobileOpen: false,
+  getEffectiveTheme() {
+    if (this.theme === 'system') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return this.theme;
+  },
+  toggleSidebar() {
+    if (window.innerWidth <= 768) {
+      this.mobileOpen = !this.mobileOpen;
+      const overlay = document.querySelector('.sidebar-overlay');
+      if (overlay) overlay.classList.toggle('show', this.mobileOpen);
+    } else {
+      this.sidebarCollapsed = !this.sidebarCollapsed;
+      localStorage.setItem('korah_sidebar_collapsed', this.sidebarCollapsed);
+    }
+  }
+}" :data-theme="getEffectiveTheme()" x-cloak>
+<head>
+<link rel="stylesheet" href="../transitions/page-transitions.css"/>
+<script src="../transitions/page-transitions.js"></script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Korah AI — AP Progress</title>
+<link rel="icon" type="image/png" href="../logo-images/newlogo0.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script src="../sidebar-loader.js" defer></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="../study/js/sidebar.js"></script>
+<link rel="stylesheet" href="../app/korah-chat.css"/>
+<link rel="stylesheet" href="../sat/sat.css"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css"/>
+<link rel="stylesheet" href="./ap.css"/>
+</head>
+
+<body class="sat-grey">
+<style>
+  html:not(.korah-page-ready) { background: #06040f !important; }
+  html[data-theme="light"]:not(.korah-page-ready) { background: #d2d2d2 !important; }
+  html:not(.korah-page-ready) body { opacity: 0 !important; }
+</style>
+
+<script>
+  (function() {
+    const t = localStorage.getItem('korah_theme') || 'dark';
+    if (t === 'light' || (t === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  })();
+</script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+  import { setupKorahDB } from "../app/data/firestore-store.js";
+  import { initAPProgress } from "./js/ap-progress.js";
+  import { startAuthGuard } from '../auth-guard.js';
+  import { initGuestGate, startGuestSession, showGuestToastOnce } from '../guest-gate.js';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
+    authDomain: "korah-app.firebaseapp.com",
+    projectId: "korah-app",
+    storageBucket: "korah-app.firebasestorage.app",
+    messagingSenderId: "226169460321",
+    appId: "1:226169460321:web:b166fc8260107c55dafc20"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      // Progress is user data; guests see the placeholder demo set instead.
+      startGuestSession();
+      initGuestGate('../');
+      showGuestToastOnce();
+      return;
+    }
+    await setupKorahDB(app, user.uid);
+    await initAPProgress(app, user.uid);
+    const detail = { uid: user.uid };
+    window._korahReadyFired = detail;
+    window.dispatchEvent(new CustomEvent('korahReady', { detail }));
+    startAuthGuard(auth, '../index.html');
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#logout-btn')) return;
+    window.confirmLogout(async () => {
+      await signOut(auth);
+      localStorage.removeItem('korah_first_name');
+      window.KorahTransitions.go('../login.html');
+    });
+  });
+</script>
+
+<canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
+<div id="sidebar-root"></div>
+
+<!-- ═══ MAIN AREA WRAPPER ═══ -->
+<div id="main-area-wrapper" class="main-area-wrapper">
+
+<main id="main-content" class="main-content">
+
+  <!-- Top bar -->
+  <header class="chat-topbar bg-sf glass-sm t-theme bd" style="opacity: 0.95;">
+    <button id="sidebar-toggle" @click="toggleSidebar()" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+
+    <div class="chat-title-area">
+      <div class="korah-status-dot"></div>
+      <span class="font-semibold tx text-sm" id="chat-title">AP Progress</span>
+    </div>
+  </header>
+
+  <!-- AP Content -->
+  <div class="ap-page" style="padding: 1.25rem;">
+    <div class="ap-page-inner">
+
+      <a class="ap-back-link" href="./index.html"><span class="material-icons-round" style="font-size:1rem;">arrow_back</span> All courses</a>
+
+      <div class="ap-eyebrow-row">
+        <img src="../logo-images/newlogo12.png" class="ap-eyebrow-logo" alt="Korah logo"/>
+        <p class="ap-eyebrow">Korah AP Prep</p>
+      </div>
+      <h1 class="ap-page-title" id="progress-course-title">AP Progress</h1>
+      <p class="ap-page-desc" id="progress-course-desc">
+        Every past attempt, your score trend, and the rubric categories you keep losing points on.
+      </p>
+
+      <!-- Course switcher -->
+      <div class="ap-meta-chips" id="progress-course-chips">
+        <span class="ap-chip"><span class="material-icons-round" style="font-size:1rem;">pending</span> Loading...</span>
+      </div>
+
+      <div id="progress-demo-note" class="ap-answer-box-note" hidden>Demo data. Live progress shows when your account is connected and you have completed attempts.</div>
+
+      <!-- Summary cards -->
+      <div class="ap-summary-cards" id="progress-summary">
+        <div class="ap-loading"><div class="ap-spinner"></div><div class="ap-loading-text">Loading progress...</div></div>
+      </div>
+
+      <!-- Score trend -->
+      <div class="ap-panel">
+        <h2 class="ap-panel-title">Score trend</h2>
+        <div id="progress-trend" class="ap-panel-empty">No attempts yet.</div>
+      </div>
+
+      <!-- Weakness view -->
+      <div class="ap-panel">
+        <h2 class="ap-panel-title">Rubric category weakness</h2>
+        <div id="progress-weak" class="ap-panel-empty">No data yet.</div>
+      </div>
+
+      <!-- Attempt list -->
+      <div class="ap-panel">
+        <h2 class="ap-panel-title">Attempts</h2>
+        <div id="progress-attempts" class="ap-panel-empty">No attempts yet.</div>
+      </div>
+
+    </div>
+  </div>
+
+</main>
+
+</div><!-- end .main-area-wrapper -->
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
+<script src="../app/timer-manager.js"></script>
+<script src="../study/js/sidebar.js"></script>
+<script src="../app/korah-chat.js"></script>
+
+<script>
+  // Initialize sidebar with chat-specific callbacks
+  window.addEventListener('korahReady', () => {
+    if (window.KorahSidebar) {
+      window.KorahSidebar.initSidebar({
+        chatBaseUrl: "../chat.html",
+        itemPageUrl: "../study/item.html"
+      });
+    }
+  }, { once: true });
+</script>
+
+<script src="./js/ap-bank.js"></script>
+
+<script>
+  (function () {
+    if (!window.KorahAP) return;
+
+    const params = new URLSearchParams(location.search);
+
+    const $ = (id) => document.getElementById(id);
+
+    function courseSlugFromUrl() {
+      const p = params.get('course');
+      return window.KorahAP.getCourse(p) ? p : 'ap-calculus-ab';
+    }
+
+    function esc(text) {
+      return String(text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function dateLabel(iso) {
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return '';
+      return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    function mmss(sec) {
+      const s = Math.max(0, Math.round(sec || 0));
+      return Math.floor(s / 60) + ':' + (s % 60).toString().padStart(2, '0');
+    }
+
+    let courseSlug = courseSlugFromUrl();
+    let attempts = [];
+    let usingPlaceholders = false;
+    let rubricById = new Map(); // rubricPointId -> { partLabel, criterion }
+
+    function renderChips() {
+      const chips = $('progress-course-chips');
+      chips.innerHTML = window.KorahAP.getCourses().map((c) => `
+        <a class="ap-chip" href="./progress.html?course=${encodeURIComponent(c.slug)}"
+           style="text-decoration:none;${c.slug === courseSlug ? 'border-color:var(--p4);color:var(--p4);' : ''}">
+          <span class="material-icons-round" style="font-size:1rem;">${c.icon}</span> ${esc(c.shortName)}
+        </a>`).join('');
+    }
+
+    function renderSummary() {
+      const el = $('progress-summary');
+      if (!attempts.length) {
+        el.innerHTML = '<div class="ap-summary-card"><div class="ap-summary-label">Attempts</div><div class="ap-summary-value">0</div><div class="ap-summary-sub">No FRQs graded yet</div></div>';
+        return;
+      }
+      const n = attempts.length;
+      const sumScore = attempts.reduce((s, a) => s + (a.score || 0), 0);
+      const sumTotal = attempts.reduce((s, a) => s + (a.totalPoints || 0), 0);
+      const avg = sumTotal ? Math.round((sumScore / sumTotal) * 100) : 0;
+      const best = attempts.reduce((m, a) => (!m || a.score / Math.max(1, a.totalPoints) > m.score / Math.max(1, m.totalPoints)) ? a : m, null);
+      const hrs = attempts.reduce((s, a) => s + (a.timeSpentSec || 0), 0) / 3600;
+      el.innerHTML = `
+        <div class="ap-summary-card"><div class="ap-summary-label">Attempts</div><div class="ap-summary-value">${n}</div><div class="ap-summary-sub">${usingPlaceholders ? 'demo set' : 'graded FRQs'}</div></div>
+        <div class="ap-summary-card"><div class="ap-summary-label">Average points</div><div class="ap-summary-value">${sumScore}<span style="color:var(--tx3);font-size:1rem;"> /${sumTotal}</span></div><div class="ap-summary-sub">${avg}% earned overall</div></div>
+        <div class="ap-summary-card"><div class="ap-summary-label">Best score</div><div class="ap-summary-value">${best ? best.score + '<span style="color:var(--tx3);font-size:1rem;"> /' + best.totalPoints + '</span>' : '0'}</div><div class="ap-summary-sub">${best ? esc(best.frqId) : ''}</div></div>
+        <div class="ap-summary-card"><div class="ap-summary-label">Time practised</div><div class="ap-summary-value">${hrs.toFixed(1)}<span style="color:var(--tx3);font-size:1rem;">h</span></div><div class="ap-summary-sub">across ${n} attempts</div></div>`;
+    }
+
+    let openedIndex = -1;
+
+    function renderTrend() {
+      const el = $('progress-trend');
+      if (!attempts.length) {
+        el.innerHTML = 'No attempts yet. <a href="./frqs.html?course=' + encodeURIComponent(courseSlug) + '">Pick an FRQ</a> to start.';
+        return;
+      }
+      const sorted = attempts.slice().sort((a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
+      const colFor = (a, i) => {
+        const total = Math.max(1, a.totalPoints || 1);
+        const pct = Math.max(8, Math.round(((a.score || 0) / total) * 100));
+        return `
+          <div class="ap-trend-col" data-attempt="${i}" title="${esc(a.frqId)} · ${dateLabel(a.createdAt)} · ${a.score}/${a.totalPoints}">
+            <span class="ap-trend-value">${a.score}/${a.totalPoints}</span>
+            <div class="ap-trend-bar" style="height:${pct}%"></div>
+            <span class="ap-trend-label">${dateLabel(a.createdAt)}</span>
+          </div>`;
+      };
+      el.className = 'ap-trend';
+      el.innerHTML = sorted.map((a, i) => colFor(a, i)).join('');
+    }
+
+    function weaknessClass(acc) {
+      if (acc < 0.6) return 'low';
+      if (acc < 0.8) return 'decent';
+      return 'good';
+    }
+
+    function renderWeakness() {
+      const el = $('progress-weak');
+      if (!attempts.length || !window.KorahAPProgress || !window.KorahAPProgress.computeWeakness) {
+        el.className = 'ap-panel-empty';
+        el.innerHTML = 'No rubric data yet. Grade an attempt to see your categories.';
+        return;
+      }
+      window.KorahAPProgress.computeWeakness(attempts, courseSlug).then((rows) => {
+        if (!rows.length) {
+          el.className = 'ap-panel-empty';
+          el.innerHTML = 'No rubric data yet. Grade an attempt to see your categories.';
+          return;
+        }
+        el.className = 'ap-weak-list';
+        el.innerHTML = rows.map((r) => {
+          const pct = Math.round(r.accuracy * 100);
+          return `
+            <div class="ap-weak-row">
+              <div class="ap-weak-head">
+                <span class="ap-weak-name">${esc(r.label)}</span>
+                <span class="ap-weak-nums">${r.earned}/${r.available} points · ${pct}%</span>
+              </div>
+              <div class="ap-weak-bar-track"><div class="ap-weak-bar-fill ${weaknessClass(r.accuracy)}" style="width:${Math.max(4, pct)}%"></div></div>
+            </div>`;
+        }).join('');
+      }).catch(() => {
+        el.className = 'ap-panel-empty';
+        el.innerHTML = 'Could not aggregate rubric categories right now.';
+      });
+    }
+
+    function verdictLabel(pointId) {
+      const known = rubricById.get(pointId);
+      return known ? (known.partLabel ? known.partLabel + ' · ' : '') + known.criterion : pointId;
+    }
+
+    function renderAttempts() {
+      const el = $('progress-attempts');
+      if (!attempts.length) {
+        el.className = 'ap-panel-empty';
+        el.innerHTML = 'No attempts yet. <a href="./frqs.html?course=' + encodeURIComponent(courseSlug) + '">Pick an FRQ</a> and grade your first question.';
+        return;
+      }
+      const sorted = attempts.slice().sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+      el.className = '';
+      el.innerHTML = sorted.map((a, i) => {
+        const pct = a.totalPoints ? Math.round((a.score / a.totalPoints) * 100) : 0;
+        const pace = (a.timeSpentSec || 0) > (a.timeAllottedSec || 0) ? 'over time' : 'within time';
+        const disputed = (a.disputedPoints || []).length ? `<span class="ap-badge" style="color:var(--gold);border-color:rgba(251,191,36,.35);background:rgba(251,191,36,.1);"><span class="material-icons-round" style="font-size:0.6875rem;">flag</span>${(a.disputedPoints || []).length} disputed</span>` : '';
+        const verdicts = (a.rubricVerdicts || []).map((v) => {
+          const got = v.earned;
+          return `
+            <div class="ap-detail-verdict ${got ? 'got' : 'lost'}">
+              <span class="material-icons-round">${got ? 'check_circle' : 'cancel'}</span>
+              <span>${esc(verdictLabel(v.rubricPointId))}${got ? '' : ' — <b>Missing:</b> ' + esc(v.feedback || 'no feedback')}</span>
+            </div>`;
+        }).join('');
+        return `
+          <div class="ap-attempt-row-wrap" data-attempt="${i}">
+            <button type="button" class="ap-attempt-row">
+              <span class="ap-attempt-score">${a.score}<span style="color:var(--tx3);font-size:0.875rem;">/${a.totalPoints}</span></span>
+              <span class="ap-attempt-main">
+                <span class="ap-attempt-name">${esc(a.frqId || 'Unknown FRQ')} · ${pct}%</span>
+                <span class="ap-attempt-sub">${dateLabel(a.createdAt)} · ${mmss(a.timeSpentSec)} spent (${pace}) ${esc(a.timeAllottedSec ? 'of ' + mmss(a.timeAllottedSec) : '')}</span>
+              </span>
+              ${disputed}
+              <span class="ap-attempt-carot"><span class="material-icons-round">expand_more</span></span>
+            </button>
+            <div class="ap-attempt-detail">
+              ${verdicts ? '<div class="ap-detail-label">Rubric verdicts</div><div class="ap-detail-verdicts">' + verdicts + '</div>' : '<div class="ap-detail-label">Rubric verdicts</div><p style="color:var(--tx3);font-size:0.8125rem;">No verdicts recorded for this attempt.</p>'}
+              <div class="ap-detail-label">Your response</div>
+              <div class="ap-detail-transcript">${esc(a.confirmedTranscript || 'No transcript stored.')}</div>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    function applyCourseMeta() {
+      const course = window.KorahAP.getCourse(courseSlug);
+      $('progress-course-title').textContent = course.name + ' Progress';
+      $('progress-course-desc').textContent = course.description;
+      document.title = 'Korah AI — ' + course.name + ' Progress';
+      renderChips();
+    }
+
+    async function loadRubric() {
+      rubricById = new Map();
+      try {
+        const frqs = await window.KorahAP.loadFrqs(courseSlug);
+        (frqs || []).forEach((f) => {
+          (f.parts || []).forEach((p) => {
+            (p.rubricPoints || []).forEach((rp) => {
+              rubricById.set(rp.id, { partLabel: p.label || '', criterion: rp.criterion || rp.id });
+            });
+          });
+        });
+      } catch (e) {}
+    }
+
+    async function gatherAttempts() {
+      // Firestore when the account api is live; otherwise the demo placeholders.
+      if (window.KorahAPProgress && window.KorahAPProgress.getAttempts) {
+        try {
+          const real = await window.KorahAPProgress.getAttempts(courseSlug);
+          if (Array.isArray(real) && real.length) {
+            attempts = real;
+            usingPlaceholders = false;
+            return;
+          }
+          // Real account with zero attempts: show a true empty state, not demo rows.
+          attempts = [];
+          usingPlaceholders = false;
+          return;
+        } catch (e) {
+          // Fall through to placeholders below.
+        }
+      }
+      if (window.KorahAPProgress && window.KorahAPProgress.loadPlaceholderAttempts) {
+        attempts = await window.KorahAPProgress.loadPlaceholderAttempts(courseSlug).catch(() => []);
+        usingPlaceholders = true;
+      }
+    }
+
+    async function render() {
+      applyCourseMeta();
+      await loadRubric();
+      await gatherAttempts();
+      $('progress-demo-note').hidden = !usingPlaceholders;
+      renderSummary();
+      renderTrend();
+      renderWeakness();
+      renderAttempts();
+    }
+
+    // Wait for korahReady so initAPProgress (or the guest session) has run.
+    function bindOnce() {
+      const trend = $('progress-trend');
+      trend.addEventListener('click', (e) => {
+        const col = e.target.closest('[data-attempt]');
+        if (!col) return;
+        const idx = Number(col.getAttribute('data-attempt'));
+        const rows = document.querySelectorAll('#progress-attempts .ap-attempt-row-wrap');
+        const target = rows[idx];
+        if (!target) return;
+        target.classList.toggle('open');
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+      const list = $('progress-attempts');
+      list.addEventListener('click', (e) => {
+        const row = e.target.closest('.ap-attempt-row');
+        if (!row) return;
+        row.closest('.ap-attempt-row-wrap').classList.toggle('open');
+      });
+    }
+
+    function boot() {
+      bindOnce();
+      if (window._korahReadyFired) { render(); return; }
+      window.addEventListener('korahReady', render, { once: true });
+      // Offline safety net. If korahReady fires on top of this, the real data
+      // render wins; both paths are idempotent and share the same listeners.
+      setTimeout(render, 4000);
+    }
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+    else boot();
+  })();
+</script>
+
+</body>
+</html>

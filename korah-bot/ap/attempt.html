@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en" x-data="{
+  theme: localStorage.getItem('korah_theme') || 'dark',
+  sidebarCollapsed: window.innerWidth <= 768 ? false : localStorage.getItem('korah_sidebar_collapsed') === 'true',
+  mobileOpen: false,
+  getEffectiveTheme() {
+    if (this.theme === 'system') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return this.theme;
+  },
+  toggleSidebar() {
+    if (window.innerWidth <= 768) {
+      this.mobileOpen = !this.mobileOpen;
+      const overlay = document.querySelector('.sidebar-overlay');
+      if (overlay) overlay.classList.toggle('show', this.mobileOpen);
+    } else {
+      this.sidebarCollapsed = !this.sidebarCollapsed;
+      localStorage.setItem('korah_sidebar_collapsed', this.sidebarCollapsed);
+    }
+  }
+}" :data-theme="getEffectiveTheme()" x-cloak>
+<head>
+<link rel="stylesheet" href="../transitions/page-transitions.css"/>
+<script src="../transitions/page-transitions.js"></script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Korah AI — AP FRQ Attempt</title>
+<link rel="icon" type="image/png" href="../logo-images/newlogo0.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script src="../sidebar-loader.js" defer></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="../study/js/sidebar.js"></script>
+<link rel="stylesheet" href="../app/korah-chat.css"/>
+<link rel="stylesheet" href="../sat/sat.css"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css"/>
+<link rel="stylesheet" href="./ap.css"/>
+</head>
+
+<body class="sat-grey">
+<style>
+  html:not(.korah-page-ready) { background: #06040f !important; }
+  html[data-theme="light"]:not(.korah-page-ready) { background: #d2d2d2 !important; }
+  html:not(.korah-page-ready) body { opacity: 0 !important; }
+</style>
+
+<script>
+  (function() {
+    const t = localStorage.getItem('korah_theme') || 'dark';
+    if (t === 'light' || (t === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  })();
+</script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+  import { setupKorahDB } from "../app/data/firestore-store.js";
+  import { initAPProgress } from "./js/ap-progress.js";
+  import { startAuthGuard } from '../auth-guard.js';
+  import { initGuestGate, startGuestSession, showGuestToastOnce } from '../guest-gate.js';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
+    authDomain: "korah-app.firebaseapp.com",
+    projectId: "korah-app",
+    storageBucket: "korah-app.firebasestorage.app",
+    messagingSenderId: "226169460321",
+    appId: "1:226169460321:web:b166fc8260107c55dafc20"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      // Guests can run a full attempt with the canned (offline) grader and
+      // transcript. Nothing is saved to Firestore for them.
+      startGuestSession();
+      initGuestGate('../');
+      showGuestToastOnce();
+      return;
+    }
+    await setupKorahDB(app, user.uid);
+    await initAPProgress(app, user.uid);
+    const detail = { uid: user.uid };
+    window._korahReadyFired = detail;
+    window.dispatchEvent(new CustomEvent('korahReady', { detail }));
+    startAuthGuard(auth, '../index.html');
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#logout-btn')) return;
+    window.confirmLogout(async () => {
+      await signOut(auth);
+      localStorage.removeItem('korah_first_name');
+      window.KorahTransitions.go('../login.html');
+    });
+  });
+</script>
+
+<canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
+<div id="sidebar-root"></div>
+
+<!-- ═══ MAIN AREA WRAPPER ═══ -->
+<div id="main-area-wrapper" class="main-area-wrapper">
+
+<main id="main-content" class="main-content">
+
+  <!-- Top bar -->
+  <header class="chat-topbar bg-sf glass-sm t-theme bd" style="opacity: 0.95;">
+    <button id="sidebar-toggle" @click="toggleSidebar()" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+
+    <div class="chat-title-area">
+      <div class="korah-status-dot"></div>
+      <span class="font-semibold tx text-sm" id="chat-title">AP FRQ Attempt</span>
+    </div>
+  </header>
+
+  <!-- AP Content -->
+  <div class="ap-page" id="ap-app-root" style="padding: 1.25rem;">
+    <div class="ap-page-inner">
+
+      <a class="ap-back-link" href="./index.html" id="btn-back-frqs" hidden><span class="material-icons-round" style="font-size:1rem;">arrow_back</span> Back to questions</a>
+
+      <div class="ap-eyebrow-row">
+        <img src="../logo-images/newlogo12.png" class="ap-eyebrow-logo" alt="Korah logo"/>
+        <p class="ap-eyebrow" id="ap-frq-breadcrumb">Loading course...</p>
+      </div>
+      <h1 class="ap-page-title" id="ap-page-title">Loading question...</h1>
+
+      <!-- ═══ STATE 1: PRE-ATTEMPT ═══ -->
+      <div id="view-pre">
+        <div class="ap-meta-chips" id="frq-meta-chips"></div>
+        <div class="ap-prompt-card">
+          <div class="ap-prompt-label">Question prompt</div>
+          <div class="ap-prompt-text" id="frq-static-prompt"></div>
+        </div>
+        <div class="ap-meta-chips">
+          <span class="ap-chip"><span class="material-icons-round" style="font-size:1rem;">fact_check</span> <span id="pre-total-points">Official-style rubric</span></span>
+          <span class="ap-chip"><span class="material-icons-round" style="font-size:1rem;">flag</span> You can disagree with any rubric point after grading</span>
+        </div>
+        <p class="ap-answer-box-note">When you start, the timer counts down from the allotted time and keeps running past zero so you can finish your thoughts.</p>
+        <div class="ap-actions-row">
+          <button id="btn-start" class="ap-primary-btn"><span class="material-icons-round" style="font-size:1.125rem;">play_arrow</span> Start attempt</button>
+        </div>
+      </div>
+
+      <!-- ═══ STATE 2: ACTIVE ATTEMPT ═══ -->
+      <div id="view-active" hidden>
+        <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem;" id="active-timer-bar" hidden>
+          <span class="ap-timer-pill" id="timer-pill"><span class="material-icons-round">timer</span>00:00</span>
+          <span id="timer-spare" style="font-size:0.75rem;color:var(--mr);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;"></span>
+        </div>
+        <div class="ap-meta-chips" id="frq-meta-chips-2"></div>
+        <div class="ap-prompt-card">
+          <div class="ap-prompt-label">Question prompt</div>
+          <div class="ap-prompt-text" id="frq-active-prompt"></div>
+        </div>
+        <div class="ap-prompt-card">
+          <div class="ap-prompt-label">Your response</div>
+          <textarea id="answer-box" class="ap-answer-box" placeholder="Type your answer here, or photograph your handwritten work below."></textarea>
+          <div class="ap-answer-box-note" id="answer-box-note"></div>
+        </div>
+        <button type="button" id="photo-drop-btn" class="ap-ghost-btn"><span class="material-icons-round" style="font-size:1.125rem;">add_a_photo</span> Add photos of your work</button>
+        <div id="photo-drop" class="ap-photo-drop" style="margin-top:0.5rem;">
+          <div class="ap-photo-drop-icon"><span class="material-icons-round">photo_camera</span></div>
+          <div class="ap-photo-drop-title">Photograph your handwritten work</div>
+          <div class="ap-photo-drop-sub">Multiple pages supported. Your photos are read into text you can correct before grading.</div>
+        </div>
+        <input type="file" id="photo-input" accept="image/*" multiple hidden/>
+        <div id="photo-grid" class="ap-photo-grid"></div>
+        <div id="photo-warning" class="ap-photo-warning" hidden></div>
+        <div class="ap-actions-row">
+          <button id="btn-submit" class="ap-primary-btn">Submit for grading <span class="material-icons-round" style="font-size:1.125rem;">send</span></button>
+        </div>
+      </div>
+
+      <!-- ═══ STATE 3+4: TRANSCRIPTION REVIEW ═══ -->
+      <div id="view-transcribe" hidden>
+        <div class="ap-prompt-card">
+          <div class="ap-prompt-label">Review what was read</div>
+          <div id="transcribe-thumbs" class="ap-thumb-strip"></div>
+          <p class="ap-answer-box-note" id="transcribe-note"></p>
+          <textarea id="transcript-box" class="ap-transcript-box"></textarea>
+          <div class="ap-actions-row">
+            <button id="btn-retranscribe" class="ap-ghost-btn"><span class="material-icons-round" style="font-size:1.125rem;">refresh</span> Reset to read text</button>
+            <button id="btn-confirm-transcript" class="ap-primary-btn"><span class="material-icons-round" style="font-size:1.125rem;">grading</span> Confirm and grade</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ STATE 5: GRADING ═══ -->
+      <div id="view-grading" hidden>
+        <div class="ap-loading">
+          <div class="ap-spinner"></div>
+          <div class="ap-loading-text">Grading your response...</div>
+          <div class="ap-loading-sub">Your answer is being read against every rubric point, one at a time. This usually takes 20 to 40 seconds.</div>
+        </div>
+      </div>
+
+      <!-- ═══ STATE 6: FEEDBACK ═══ -->
+      <div id="view-feedback" hidden>
+        <div id="feedback-head" class="ap-score-head"></div>
+
+        <div class="ap-feedback-section">
+          <h2 class="ap-feedback-title">Rubric ledger</h2>
+          <div id="feedback-ledger"></div>
+        </div>
+
+        <div class="ap-feedback-section">
+          <h2 class="ap-feedback-title">The one thing to fix next</h2>
+          <div class="ap-fix-card">
+            <div class="ap-fix-label"><span class="material-icons-round" style="font-size:1rem;">track_changes</span> Priority fix</div>
+            <p class="ap-fix-text" id="fix-text"></p>
+          </div>
+        </div>
+
+        <div class="ap-feedback-section">
+          <h2 class="ap-feedback-title">Sample response comparison</h2>
+          <div class="ap-compare">
+            <div class="ap-compare-col">
+              <div class="ap-compare-title">Your response</div>
+              <p class="ap-compare-text" id="compare-student"></p>
+            </div>
+            <div class="ap-compare-col">
+              <div class="ap-compare-title sample">Official sample response</div>
+              <p class="ap-compare-text" id="compare-sample"></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="ap-feedback-foot">
+          <p style="margin:0;font-size:0.75rem;color:var(--tx3);">Flagged points are stored on this attempt as "disputed" and show up in your Progress page.</p>
+          <div class="ap-actions-row" style="margin-top:0;">
+            <a id="btn-try-another" class="ap-ghost-btn" href="./frqs.html" style="text-decoration:none;">Try another FRQ</a>
+            <a id="btn-view-progress" class="ap-primary-btn" href="./progress.html" style="text-decoration:none;">View in Progress</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Page-level status lines (visible across all states) -->
+      <div id="submit-panel" class="ap-status-line" style="margin-top:1rem;color:var(--tx3);font-size:0.8125rem;"></div>
+      <div id="photo-feedback" class="ap-status-line" style="margin-top:0.75rem;padding:0.625rem 0.875rem;border-radius:0.75rem;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.35);color:var(--red);font-size:0.8125rem;line-height:1.5;"></div>
+
+    </div>
+  </div>
+
+</main>
+
+</div><!-- end .main-area-wrapper -->
+
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
+<script src="../app/timer-manager.js"></script>
+<script src="../study/js/sidebar.js"></script>
+<script src="../app/korah-chat.js"></script>
+
+<script>
+  // Initialize sidebar with chat-specific callbacks
+  window.addEventListener('korahReady', () => {
+    if (window.KorahSidebar) {
+      window.KorahSidebar.initSidebar({
+        chatBaseUrl: "../chat.html",
+        itemPageUrl: "../study/item.html"
+      });
+    }
+  }, { once: true });
+</script>
+
+<script src="./js/ap-bank.js"></script>
+<script src="./js/ap-grader.js"></script>
+<script src="./js/ap-attempt.js"></script>
+
+<script>
+  (function () {
+    const p = new URLSearchParams(location.search);
+    const back = document.getElementById('btn-back-frqs');
+    if (back && p.get('course')) {
+      back.href = './frqs.html?course=' + encodeURIComponent(p.get('course'));
+      back.hidden = false;
+    }
+  })();
+</script>
+
+</body>
+</html>
