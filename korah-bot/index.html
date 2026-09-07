@@ -1246,42 +1246,107 @@
   renderTip(0);
   setInterval(nextTip, 9000);
 
-  // Word Flashcards
-  const FLASHCARDS = [
-    { word: 'Pragmatic', pos: 'adjective', def: 'Dealing with things realistically, based on practical rather than theoretical considerations.', ex: '"A pragmatic approach helped solve the budget crisis quickly."' },
-    { word: 'Perfidious', pos: 'adjective', def: 'Deceitful and untrustworthy; guilty of betrayal or breaking faith.', ex: '"The perfidious advisor secretly undermined the king\'s plans."' },
-    { word: 'Laconic', pos: 'adjective', def: 'Using very few words; brief and concise in speech or expression.', ex: '"Her laconic reply — just \'no\' — left everyone stunned."' },
-    { word: 'Obsequious', pos: 'adjective', def: 'Excessively eager to serve, please, or obey; fawning.', ex: '"The obsequious assistant agreed with every suggestion the boss made."' },
-    { word: 'Ephemeral', pos: 'adjective', def: 'Lasting for a very short time; quickly fading or disappearing.', ex: '"The ephemeral beauty of cherry blossoms lasts only a few days."' },
-    { word: 'Equivocal', pos: 'adjective', def: 'Open to more than one interpretation; ambiguous, often intentionally so.', ex: '"His equivocal answer satisfied neither side of the debate."' },
-  ];
-
   // Redirect SAT Math button to SAT Math chat page
   document.getElementById('sat-math-btn').addEventListener('click', () => {
     window.KorahTransitions.go('sat/math-chat.html');
   });
 
-  let fcIdx = 0;
+  // Word of the Day (data + rotation via sat/vocab/js/vocab-data.js)
+  // fcPos: 0 = today, 1 = yesterday, 2 = two days ago, … ; -1 = "next word" card
+  const FC_MAX_BACK = 14;
+  let fcPos = 0;
   let fcFlipped = false;
+  let fcReady = false;
+  let countdownTimer = null;
+
+  function displayWord(word) {
+    return word.charAt(0).toUpperCase() + word.slice(1);
+  }
+
+  // JSON examples have stray spaces before punctuation ("abased , the deposed")
+  function cleanExample(s) {
+    return s.replace(/\s+([,.;:!?])/g, '$1').replace(/\s{2,}/g, ' ').trim();
+  }
+
+  function formatCountdown(ms) {
+    const s = Math.floor(ms / 1000);
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    if (h > 0) return `${h}h ${m}m ${sec}s`;
+    if (m > 0) return `${m}m ${sec}s`;
+    return `${sec}s`;
+  }
+
+  function dayLabel(offset) {
+    const d = new Date();
+    d.setDate(d.getDate() - offset);
+    const date = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    if (offset === 0) return `Today · ${date}`;
+    if (offset === 1) return `Yesterday · ${date}`;
+    return date;
+  }
+
+  function stopCountdown() {
+    if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+  }
+  function startCountdown() {
+    stopCountdown();
+    const tick = () => {
+      const estMs = Date.now() - 5 * 3600000;
+      const tillNext = 86400000 - (estMs % 86400000);
+      document.getElementById('fc-counter').textContent =
+        'Next word in ' + formatCountdown(tillNext);
+    };
+    tick();
+    countdownTimer = setInterval(tick, 1000);
+  }
 
   function renderCard() {
-    const c = FLASHCARDS[fcIdx];
     const card = document.getElementById('flashcard');
     card.classList.remove('flipped');
     fcFlipped = false;
-    document.getElementById('fc-word').textContent = c.word;
-    document.getElementById('fc-pos').textContent = c.pos;
-    document.getElementById('fc-def').textContent = c.def;
-    document.getElementById('fc-ex').textContent = c.ex;
-    document.getElementById('fc-counter').textContent = `${fcIdx + 1} / ${FLASHCARDS.length}`;
+    stopCountdown();
+
+    if (fcPos === -1) {
+      document.getElementById('fc-word').textContent = 'Next word';
+      document.getElementById('fc-pos').textContent = 'releases at 12:00 AM EST';
+      document.getElementById('fc-def').textContent =
+        'A new SAT word drops every day at midnight (EST). Check back tomorrow!';
+      document.getElementById('fc-ex').textContent = '';
+      startCountdown();
+      return;
+    }
+
+    const c = VocabData.dailyWord(fcPos);
+    if (!c) {
+      document.getElementById('fc-word').textContent = '—';
+      document.getElementById('fc-counter').textContent = 'New word at midnight';
+      return;
+    }
+    document.getElementById('fc-word').textContent = displayWord(c.word);
+    document.getElementById('fc-pos').textContent = c.part_of_speech || '';
+    document.getElementById('fc-def').textContent = c.definition || '';
+    document.getElementById('fc-ex').textContent =
+      c.example ? `"${cleanExample(c.example)}"` : '';
+    document.getElementById('fc-counter').textContent = dayLabel(fcPos);
   }
   function flipCard() {
     fcFlipped = !fcFlipped;
     document.getElementById('flashcard').classList.toggle('flipped', fcFlipped);
   }
-  function nextCard() { fcIdx = (fcIdx + 1) % FLASHCARDS.length; renderCard(); }
-  function prevCard() { fcIdx = (fcIdx - 1 + FLASHCARDS.length) % FLASHCARDS.length; renderCard(); }
-  renderCard();
+  function prevCard() { if (!fcReady) return; fcPos = Math.min(fcPos + 1, FC_MAX_BACK); renderCard(); }
+  function nextCard() { if (!fcReady) return; fcPos = Math.max(fcPos - 1, -1); renderCard(); }
+
+  VocabData.ready().then(() => {
+    if (VocabData.status === 'error') {
+      document.getElementById('fc-word').textContent = 'Word unavailable';
+      document.getElementById('fc-counter').textContent = '';
+      return;
+    }
+    fcReady = true;
+    renderCard();
+  });
 </script>
 
 <script>

@@ -1,10 +1,17 @@
 /* ═══════════════════════════════════════════════════
-   VOCAB DATA — word DB loader + index (window.VocabData)
-   Fetches ../../vocab/cleaned_sat_vocabulary.json once.
+   VOCAB DATA — shared word DB loader + index (window.VocabData)
+   Fetches cleaned_sat_vocabulary.json once.
    No backend, no auth — pure static JSON.
+   Shared by: vocab learn/practice (sat/vocab/*.html) and the
+   home page "Word of the Day" card (index.html) — both read the
+   same JSON through this one loader, never their own fetch.
    ═══════════════════════════════════════════════════ */
 (function () {
-  const DATA_URL = '../../vocab/cleaned_sat_vocabulary.json';
+  const script = document.currentScript;
+  const scriptDir = script && script.src
+    ? script.src.slice(0, script.src.lastIndexOf('/') + 1)
+    : '';
+  const DATA_URL = scriptDir + '../../../vocab/cleaned_sat_vocabulary.json';
 
   let status = 'loading';        // loading | ready | error
   let errorObj = null;
@@ -97,6 +104,16 @@
     suggestions() {
       const pool = all.filter(r => r.difficulty === 'easy' || r.difficulty === 'medium');
       return shuffle(pool).slice(0, 20);
+    },
+    /* daily "word of the day". index = whole EST days since epoch (EST = UTC-5,
+       fixed, no DST), minus the offset (0 = today, -1 = yesterday, …) →
+       deterministic, same word for everyone, stable across refreshes,
+       changes at EST midnight (5:00 AM UTC). */
+    dailyWord(offset = 0) {
+      if (!all.length) return null;
+      const estMs = Date.now() - 5 * 3600000;
+      const day = Math.floor(estMs / 86400000) - offset;
+      return all[((day % all.length) + all.length) % all.length];
     },
     /* pick N random records of a POS, excluding given words (quiz distractors) */
     samplesOf(pos, excludeWords, count) {
