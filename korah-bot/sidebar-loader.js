@@ -21,6 +21,13 @@
     el.setAttribute('data-base-url', base + el.getAttribute('data-base-url'));
   });
 
+  // Also rewrite hrefs inside template x-if blocks (querySelectorAll can't see them)
+  root.querySelectorAll('template').forEach(tpl => {
+    tpl.content.querySelectorAll('[href^="/"]').forEach(el => {
+      el.setAttribute('href', base + el.getAttribute('href'));
+    });
+  });
+
   // Mark active nav link by comparing resolved pathnames
   root.querySelectorAll('.sidebar-nav-link').forEach(a => {
     try {

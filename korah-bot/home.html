@@ -2027,5 +2027,29 @@
   }, 1200);
 }());
 </script>
+<script>
+// Read ?tab= query parameter and set active tab
+(function() {
+  var params = new URLSearchParams(window.location.search);
+  var tab = params.get('tab');
+  var validTabs = ['sat', 'act', 'ap', 'college-prep'];
+  if (tab && validTabs.indexOf(tab) !== -1) {
+    // Wait for Alpine to be ready
+    function setTab() {
+      var el = document.querySelector('[x-data]');
+      if (el && el.__x) {
+        el.__x.$data.activeTab = tab;
+      } else {
+        setTimeout(setTab, 50);
+      }
+    }
+    setTab();
+    // Clean up URL without reload
+    if (window.history.replaceState) {
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }
+})();
+</script>
 </body>
 </html>
