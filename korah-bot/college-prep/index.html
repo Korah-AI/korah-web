@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en" x-data="{
+  theme: localStorage.getItem('korah_theme') || 'dark',
+  activeTab: 'college-prep',
+  sidebarCollapsed: window.innerWidth <= 768 ? false : localStorage.getItem('korah_sidebar_collapsed') === 'true',
+  mobileOpen: false,
+  getEffectiveTheme() {
+    if (this.theme === 'system') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return this.theme;
+  },
+  toggleSidebar() {
+    if (window.innerWidth <= 768) {
+      this.mobileOpen = !this.mobileOpen;
+      const overlay = document.querySelector('.sidebar-overlay');
+      if (overlay) overlay.classList.toggle('show', this.mobileOpen);
+    } else {
+      this.sidebarCollapsed = !this.sidebarCollapsed;
+      localStorage.setItem('korah_sidebar_collapsed', this.sidebarCollapsed);
+    }
+  }
+}" :data-theme="getEffectiveTheme()" x-cloak>
+<head>
+<link rel="stylesheet" href="../transitions/page-transitions.css"/>
+<script src="../transitions/page-transitions.js"></script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Korah AI — Essays</title>
+<script>document.documentElement.setAttribute('data-theme', localStorage.getItem('korah_theme') || 'dark');</script>
+<link rel="icon" type="image/png" href="../logo-images/newlogo0.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script src="../sidebar-loader.js" defer></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="../app/korah-chat.css"/>
+<style>
+  .feed-scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; }
+  .feed-page { padding: 1.75rem 2.25rem 3.75rem; max-width: 77.5rem; margin: 0 auto; }
+
+  .feed-hero {
+    background: linear-gradient(135deg, rgba(139,92,246,.08), rgba(139,92,246,.02));
+    border: 0.0625rem solid var(--bd);
+    border-radius: 1.125rem;
+    padding: 2rem 2.25rem;
+    margin-bottom: 1.5rem;
+  }
+  .feed-hero-title {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-size: clamp(1.5rem, 3vw, 2.25rem);
+    font-weight: 800;
+    color: var(--tx);
+    margin: 0 0 0.5rem;
+  }
+  .feed-hero-sub { color: var(--tx2); font-size: 0.9375rem; margin: 0; line-height: 1.6; }
+
+  .essay-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(18.75rem, 1fr));
+    gap: 1rem;
+  }
+  .essay-card {
+    background: var(--sf2);
+    border: 0.0625rem solid var(--bd);
+    border-radius: 0.875rem;
+    padding: 1.25rem;
+    cursor: pointer;
+    transition: transform 0.18s ease, border-color 0.18s ease;
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    position: relative;
+  }
+  .essay-card:hover {
+    transform: scale(1.02);
+    border-color: var(--p4);
+  }
+  .essay-card-type {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.625rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--p5);
+    background: var(--cu);
+    padding: 0.25rem 0.625rem;
+    border-radius: 999px;
+    width: fit-content;
+  }
+  .essay-card-title {
+    font-weight: 700;
+    font-size: 0.9375rem;
+    color: var(--tx);
+    margin: 0;
+    line-height: 1.3;
+  }
+  .essay-card-meta {
+    font-size: 0.75rem;
+    color: var(--tx2);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .essay-card-score {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-weight: 700;
+    color: var(--grn);
+  }
+  .essay-card-actions {
+    margin-top: auto;
+    display: flex;
+    gap: 0.5rem;
+  }
+  .essay-card-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    border: 0.0625rem solid var(--bd);
+    background: var(--sf);
+    color: var(--tx);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s ease;
+  }
+  .essay-card-btn:hover { border-color: var(--p4); background: var(--cu); }
+  .essay-card-btn.primary {
+    background: linear-gradient(135deg, #7c3aed, #a78bfa);
+    border: none;
+    color: #fff;
+  }
+  .essay-card-delete {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    width: 1.5rem;
+    height: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.375rem;
+    border: none;
+    background: transparent;
+    color: var(--tx3);
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s, color 0.15s;
+    font-size: 1rem;
+  }
+  .essay-card:hover .essay-card-delete { opacity: 1; }
+  .essay-card-delete:hover { color: var(--red); }
+
+  .feed-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    text-align: center;
+    gap: 1rem;
+  }
+  .feed-empty-icon {
+    width: 4rem;
+    height: 4rem;
+    border-radius: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--cu);
+  }
+  .feed-empty-title {
+    font-weight: 700;
+    font-size: 1.125rem;
+    color: var(--tx);
+    margin: 0;
+  }
+  .feed-empty-sub {
+    color: var(--tx2);
+    font-size: 0.875rem;
+    margin: 0;
+    max-width: 24rem;
+    line-height: 1.5;
+  }
+  .new-essay-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: linear-gradient(135deg, #7c3aed, #a78bfa);
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.875rem;
+    padding: 0.75rem 1.375rem;
+    border-radius: 62.4375rem;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    box-shadow: 0 0.375rem 1.375rem rgba(124,58,237,.32);
+    transition: transform .15s, box-shadow .2s;
+  }
+  .new-essay-btn:hover { transform: translateY(-1px); box-shadow: 0 0.625rem 1.75rem rgba(124,58,237,.4); }
+</style>
+</head>
+<body class="korah-grey">
+
+<div id="sidebar-root"></div>
+
+<div id="main-area-wrapper" class="main-area-wrapper">
+<main id="main-content" class="main-content">
+  <header class="chat-topbar bg-sf glass-sm t-theme bd" style="opacity: 0.95;">
+    <button id="sidebar-toggle" @click="toggleSidebar()" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+    <div class="chat-title-area">
+      <div class="korah-status-dot"></div>
+      <span class="font-semibold tx text-sm">Essays</span>
+    </div>
+    <div class="topbar-actions">
+      <a href="editor.html" class="new-essay-btn">+ New Essay</a>
+    </div>
+  </header>
+
+  <div class="feed-scroll">
+    <div class="feed-page">
+
+      <section class="feed-hero">
+        <h1 class="feed-hero-title">Your Essays</h1>
+        <p class="feed-hero-sub">Write, review, and polish your college essays with AI-powered feedback. Never AI-generated prose, always constructive annotation.</p>
+      </section>
+
+      <!-- Essay grid (populated by JS, hidden when empty) -->
+      <div id="essay-grid" class="essay-grid" style="display: none;"></div>
+
+      <!-- Empty state -->
+      <div id="essay-empty" class="feed-empty">
+        <div class="feed-empty-icon">
+          <span class="material-icons-round" style="font-size: 2rem; color: var(--p5);">edit_note</span>
+        </div>
+        <h2 class="feed-empty-title">No essays yet</h2>
+        <p class="feed-empty-sub">Start your first essay to get AI-powered feedback on your writing. Personal statements, supplemental essays, and more.</p>
+        <a href="editor.html" class="new-essay-btn">+ New Essay</a>
+      </div>
+
+    </div>
+  </div>
+</main>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+  import { setupKorahDB } from "../app/data/firestore-store.js";
+  import { startGuestSession, initGuestGate } from "../guest-gate.js";
+  import { startAuthGuard } from "../auth-guard.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
+    authDomain: "korah-app.firebaseapp.com",
+    projectId: "korah-app",
+    storageBucket: "korah-app.firebasestorage.app",
+    messagingSenderId: "226169460321",
+    appId: "1:226169460321:web:b166fc8260107c55dafc20"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      startGuestSession();
+      initGuestGate('../');
+      renderEssays([]);
+      return;
+    }
+    await setupKorahDB(app, user.uid);
+    window.dispatchEvent(new CustomEvent('korahReady', { detail: { uid: user.uid } }));
+    startAuthGuard(auth, '../index.html');
+    loadEssays(user.uid);
+  });
+
+  async function loadEssays(uid) {
+    try {
+      const { getFirestore, collection, query, orderBy, onSnapshot } = await import("https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js");
+      const db = getFirestore(app);
+      const essaysRef = collection(db, `users/${uid}/essays`);
+      const q = query(essaysRef, orderBy("updatedAt", "desc"));
+      onSnapshot(q, (snap) => {
+        const essays = [];
+        snap.docs.forEach(d => essays.push({ id: d.id, ...d.data() }));
+        renderEssays(essays);
+      });
+    } catch (e) {
+      console.warn("Firestore unavailable, showing empty state");
+      renderEssays([]);
+    }
+  }
+
+  function renderEssays(essays) {
+    const grid = document.getElementById('essay-grid');
+    const empty = document.getElementById('essay-empty');
+    if (!essays.length) {
+      grid.style.display = 'none';
+      empty.style.display = 'flex';
+      return;
+    }
+    empty.style.display = 'none';
+    grid.style.display = 'grid';
+    grid.innerHTML = essays.map(e => {
+      const typeLabel = e.type === 'supplemental' ? 'Supplemental' : 'Personal Statement';
+      const school = e.school ? e.school.charAt(0).toUpperCase() + e.school.slice(1) : '';
+      const score = e.scores && e.scores.average ? e.scores.average.toFixed(1) : '--';
+      const date = e.updatedAt ? new Date(e.updatedAt).toLocaleDateString() : '';
+      const wordCount = e.content ? e.content.split(/\s+/).length : 0;
+      return `
+        <div class="essay-card" onclick="window.location.href='editor.html?id=${e.id}'">
+          <button class="essay-card-delete" onclick="event.stopPropagation(); deleteEssay('${e.id}')" title="Delete">&times;</button>
+          <span class="essay-card-type">${typeLabel}</span>
+          <h3 class="essay-card-title">${school ? school + ' - ' : ''}${typeLabel}</h3>
+          <div class="essay-card-meta">
+            <span>${wordCount} words</span>
+            <span>${date}</span>
+          </div>
+          <div class="essay-card-meta">
+            <span class="essay-card-score"><span class="material-icons-round" style="font-size: 0.875rem;">star</span> ${score}</span>
+          </div>
+          <div class="essay-card-actions">
+            <a href="editor.html?id=${e.id}" class="essay-card-btn primary" onclick="event.stopPropagation()">Open</a>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  window.deleteEssay = async function(id) {
+    if (!confirm('Delete this essay?')) return;
+    try {
+      const { getFirestore, doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js");
+      const db = getFirestore(app);
+      await deleteDoc(doc(db, `users/${auth.currentUser.uid}/essays`, id));
+    } catch (e) {
+      console.error('Delete failed:', e);
+    }
+  };
+</script>
+</body>
+</html>

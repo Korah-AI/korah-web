@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en" x-data="{
   theme: localStorage.getItem('korah_theme') || 'dark',
+  activeTab: 'sat',
   sidebarCollapsed: window.innerWidth <= 768 ? false : localStorage.getItem('korah_sidebar_collapsed') === 'true',
   mobileOpen: false,
   getEffectiveTheme() {
@@ -944,7 +945,9 @@
   </header>
 
   <div class="home-scroll">
-  <div class="home-page">
+
+  <!-- SAT Tab Content -->
+  <div class="home-page" x-show="activeTab === 'sat'">
 
     <!-- Hero -->
     <section class="home-hero">
@@ -1174,8 +1177,71 @@
       </div>
     </section>
 
+  </div><!-- end home-page (SAT) -->
+
+  <!-- College Prep Tab Content -->
+  <div class="home-page" x-show="activeTab === 'college-prep'">
+    <section class="home-hero" style="margin-bottom: 2rem;">
+      <div>
+        <h1 class="greeting-title">College Prep</h1>
+        <p class="greeting-sub">Tools to help you craft standout college applications.</p>
+      </div>
+    </section>
+
+    <h2 class="home-section-head"><span class="material-icons-round">article</span> Essay Annotator</h2>
+    <section class="two-col-grid">
+      <div class="tip-card" style="cursor: pointer;" onclick="window.location.href='college-prep/index.html'">
+        <div class="tip-icon"><span class="material-icons-round" style="color: var(--p4); font-size: 1.25rem;">edit_note</span></div>
+        <div class="tip-label">Essay Annotator</div>
+        <div class="tip-text">Get AI-powered feedback on your college essays. Highlights weak spots, scores your writing, and helps you polish your personal statement and supplemental essays.</div>
+        <div class="tip-nav">
+          <a href="college-prep/index.html" class="cta-primary" style="text-decoration: none;">Open Essay Annotator &rarr;</a>
+        </div>
+      </div>
+
+      <div class="tip-card" style="opacity: 0.5;">
+        <div class="tip-icon"><span class="material-icons-round" style="color: var(--tx2); font-size: 1.25rem;">construction</span></div>
+        <div class="tip-label">More Tools Coming Soon</div>
+        <div class="tip-text">College list builders, deadline trackers, and recommendation letter helpers are on the way.</div>
+      </div>
+    </section>
   </div>
+
+  <!-- ACT Tab Content -->
+  <div class="home-page" x-show="activeTab === 'act'">
+    <section class="home-hero" style="margin-bottom: 2rem;">
+      <div>
+        <h1 class="greeting-title">ACT Practice</h1>
+        <p class="greeting-sub">ACT prep tools are on the way.</p>
+      </div>
+    </section>
+    <div style="display: flex; align-items: center; justify-content: center; min-height: 20rem;">
+      <div class="tip-card" style="text-align: center; max-width: 28rem;">
+        <div class="tip-icon" style="justify-content: center;"><span class="material-icons-round" style="color: var(--tx2); font-size: 2.5rem;">school</span></div>
+        <div class="tip-label" style="font-size: 1.125rem;">Coming Soon</div>
+        <div class="tip-text">ACT practice questions, full-length tests, and personalized study plans are under development. Stay tuned.</div>
+      </div>
+    </div>
   </div>
+
+  <!-- AP Tab Content -->
+  <div class="home-page" x-show="activeTab === 'ap'">
+    <section class="home-hero" style="margin-bottom: 2rem;">
+      <div>
+        <h1 class="greeting-title">AP Practice</h1>
+        <p class="greeting-sub">AP exam prep tools are on the way.</p>
+      </div>
+    </section>
+    <div style="display: flex; align-items: center; justify-content: center; min-height: 20rem;">
+      <div class="tip-card" style="text-align: center; max-width: 28rem;">
+        <div class="tip-icon" style="justify-content: center;"><span class="material-icons-round" style="color: var(--tx2); font-size: 2.5rem;">school</span></div>
+        <div class="tip-label" style="font-size: 1.125rem;">Coming Soon</div>
+        <div class="tip-text">AP subject practice, exam simulations, and topic-specific drills are under development. Stay tuned.</div>
+      </div>
+    </div>
+  </div>
+
+  </div><!-- end home-scroll -->
 
   <!-- Drag & Drop Overlay -->
   <div id="drag-overlay" class="drag-overlay">

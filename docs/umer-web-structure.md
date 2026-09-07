@@ -10,10 +10,10 @@ Korah Web is a single-page-application-style static site (no React, no build ste
 ```
 korah-bot/
 ├── index.html                 # Public landing page (site root)
-├── home.html                  # Signed-in home dashboard
+├── home.html                  # Signed-in home dashboard (tabbed: SAT/ACT/AP/College Prep)
 ├── login.html                 # Authentication page
 ├── chat.html                  # Ask Korah (general chat)
-├── sidebar.html               # Shared sidebar (loaded via sidebar-loader.js)
+├── sidebar.html               # Shared sidebar (tab selector + nav, loaded via sidebar-loader.js)
 ├── sidebar-loader.js          # Fetches & injects sidebar.html
 ├── auth-guard.js              # Polls auth, raises the auth wall if logged out
 ├── guest-gate.js              # Signed-out handling (browse-and-gate / auth wall)
@@ -21,6 +21,7 @@ korah-bot/
 ├── korah.css                  # Global design system (CSS variables, components)
 ├── transitions/               # Page transition animations
 ├── app/
+│   ├── korah-chat.css         # Shared CSS (includes sidebar tab selector styles)
 │   ├── korah-chat.js          # Chat engine (sessions, streaming, Desmos)
 │   ├── timer-manager.js       # Practice timers
 │   └── data/
@@ -44,6 +45,25 @@ korah-bot/
 │   │   ├── sat-analytics.js   # Dashboard analytics (Firestore)
 │   │   └── study-plan.js      # Study planner data module (Firestore CRUD, AI calls)
 │   └── desmos-json/           # Desmos templates
+├── act/
+│   └── index.html             # ACT Practice (coming soon page)
+├── ap/
+│   └── index.html             # AP Practice (coming soon page)
+├── college-prep/
+│   ├── index.html             # Essay list (saved essays, New Essay button)
+│   ├── editor.html            # Setup screen + two-column editor/review (Tiptap)
+│   ├── college-prep.css       # Essay annotator styles (highlights, cards, scores)
+│   ├── js/
+│   │   ├── editor.js          # Tiptap setup, decoration plugin, selection handling
+│   │   ├── annotations.js     # Quote anchoring, card positioning, click-to-focus
+│   │   ├── api.js             # AI prompts, /api/r calls, JSON parsing
+│   │   ├── scoring.js         # 6-dimension rubric, score rendering, deltas
+│   │   └── store.js           # Firestore CRUD under users/{uid}/essays
+│   └── data/
+│       ├── schools.json       # School values with weights and sources
+│       ├── prompt-archetypes.json  # Archetype definitions + value reweighting
+│       ├── sample-essay.json  # Placeholder essay for local dev
+│       └── canned-feedback.json  # Saved response blob for local dev
 ├── study/
 │   ├── new.html               # Create study items (flashcards, guides, tests)
 │   ├── item.html              # Study item detail
@@ -101,7 +121,24 @@ Every authenticated page follows this pattern (see `dashboard.html:587-634`):
 - Highlights active link by comparing `pathname`
 - Alpine.js manages collapse/mobile state (shared via `x-data` on `<html>`)
 
-### 2.3 Page Transitions
+### 2.3 Sidebar Tab Selector
+- Four tabs: **SAT**, **ACT**, **AP**, **College Prep** in the sidebar under the Korah AI logo
+- Alpine.js `activeTab` state on `<html>` `x-data` (default: `'sat'`)
+- Tab-specific nav sections use `<template x-if>` to show/hide
+- SAT tab: shows existing SAT Practice nav links
+- ACT/AP tabs: link to their own coming soon pages (`/act/index.html`, `/ap/index.html`)
+- College Prep tab: shows "Essays" nav link to `/college-prep/index.html`
+- HOME section (Home, Ask Korah, Study) visible for all tabs
+- Selector persists across pages because it lives in `sidebar.html`
+- Styles in `app/korah-chat.css` (`.sidebar-tab-selector`, `.sidebar-tab-pill`)
+
+### 2.4 Home Page Tab Content
+- `home.html` wraps content in `x-show="activeTab === 'sat'"` / `'college-prep'` / `'act'` / `'ap'`
+- SAT tab: existing home content (stats, practice test, cards)
+- College Prep tab: Essay Annotator card linking to `/college-prep/index.html`
+- ACT/AP tabs: "Coming Soon" placeholder cards
+
+### 2.5 Page Transitions
 - `transitions/page-transitions.js` + CSS: fade/slide between pages
 - `window.KorahTransitions.go(url)` used instead of `location.href`
 - Prevents flash of unstyled content (`korah-page-ready` class)
@@ -280,6 +317,24 @@ const content = data.choices?.[0]?.message?.content;
 - Streaming responses with markdown/KaTeX
 - File attachments, code blocks
 - Session management (rename, delete, search)
+
+### 5.8 College Prep - Essay Annotator (`college-prep/`)
+- **Index page** (`college-prep/index.html`): Lists saved essays, "New Essay" button, card grid
+- **Editor** (`college-prep/editor.html`): Setup wizard + two-column editor/review screen
+- **Tiptap/ProseMirror** (`college-prep/js/editor.js`): Rich text editor with annotation decorations
+- **AI Pipeline** (`college-prep/js/api.js`): Three `/api/r` calls (annotation, scoring, focus note)
+- **Anchoring** (`college-prep/js/annotations.js`): Exact string match anchoring, card positioning
+- **Scoring** (`college-prep/js/scoring.js`): 6-dimension rubric (writing, detail, voice, reflection, curiosity, contribution)
+- **Firestore** (`college-prep/js/store.js`): CRUD under `users/{uid}/essays`
+- **School data** (`college-prep/data/schools.json`): 5 schools with weighted values
+- **Archetypes** (`college-prep/data/prompt-archetypes.json`): Prompt classification + value reweighting
+- **Local dev** (`college-prep/data/sample-essay.json`, `canned-feedback.json`): Placeholder data
+- Three comment types only: Socratic, Diagnostic, Structural. Never generates replacement prose.
+- Highlights are ProseMirror decorations (outside document text), survive typing automatically
+
+### 5.9 ACT / AP Practice (Coming Soon)
+- `act/index.html` and `ap/index.html`: Full Korah-layout pages with "Coming Soon" content
+- Sidebar tab selector links to these pages when ACT/AP tabs are active
 
 ---
 

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en" x-data="{
+  theme: localStorage.getItem('korah_theme') || 'dark',
+  activeTab: 'act',
+  sidebarCollapsed: window.innerWidth <= 768 ? false : localStorage.getItem('korah_sidebar_collapsed') === 'true',
+  mobileOpen: false,
+  getEffectiveTheme() {
+    if (this.theme === 'system') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return this.theme;
+  },
+  toggleSidebar() {
+    if (window.innerWidth <= 768) {
+      this.mobileOpen = !this.mobileOpen;
+      const overlay = document.querySelector('.sidebar-overlay');
+      if (overlay) overlay.classList.toggle('show', this.mobileOpen);
+    } else {
+      this.sidebarCollapsed = !this.sidebarCollapsed;
+      localStorage.setItem('korah_sidebar_collapsed', this.sidebarCollapsed);
+    }
+  }
+}" :data-theme="getEffectiveTheme()" x-cloak>
+<head>
+<link rel="stylesheet" href="../transitions/page-transitions.css"/>
+<script src="../transitions/page-transitions.js"></script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Korah AI — ACT Practice</title>
+<script>document.documentElement.setAttribute('data-theme', localStorage.getItem('korah_theme') || 'dark');</script>
+<link rel="icon" type="image/png" href="../logo-images/newlogo0.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script src="../sidebar-loader.js" defer></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="../app/korah-chat.css"/>
+<style>
+  .coming-soon-page {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100dvh - 4rem);
+    padding: 2rem;
+  }
+  .coming-soon-card {
+    text-align: center;
+    max-width: 28rem;
+    background: var(--sf2);
+    border: 0.0625rem solid var(--bd);
+    border-radius: 1.125rem;
+    padding: 3rem 2rem;
+  }
+  .coming-soon-icon {
+    width: 4rem;
+    height: 4rem;
+    border-radius: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.25rem;
+    background: var(--cu);
+  }
+  .coming-soon-title {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--tx);
+    margin: 0 0 0.5rem;
+  }
+  .coming-soon-sub {
+    color: var(--tx2);
+    font-size: 0.9375rem;
+    margin: 0;
+    line-height: 1.6;
+  }
+</style>
+</head>
+<body class="korah-grey">
+
+<div id="sidebar-root"></div>
+
+<div id="main-area-wrapper" class="main-area-wrapper">
+<main id="main-content" class="main-content">
+  <header class="chat-topbar bg-sf glass-sm t-theme bd" style="opacity: 0.95;">
+    <button id="sidebar-toggle" @click="toggleSidebar()" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+    <div class="chat-title-area">
+      <div class="korah-status-dot"></div>
+      <span class="font-semibold tx text-sm">ACT Practice</span>
+    </div>
+  </header>
+
+  <div class="home-scroll">
+    <div class="coming-soon-page">
+      <div class="coming-soon-card">
+        <div class="coming-soon-icon">
+          <span class="material-icons-round" style="font-size: 2rem; color: var(--p5);">school</span>
+        </div>
+        <h1 class="coming-soon-title">ACT Practice</h1>
+        <p class="coming-soon-sub">Full-length ACT tests, section drills, and personalized study plans are under development. Check back soon.</p>
+      </div>
+    </div>
+  </div>
+</main>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+  import { setupKorahDB } from "../app/data/firestore-store.js";
+  import { startGuestSession, initGuestGate } from "../guest-gate.js";
+  import { startAuthGuard } from "../auth-guard.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
+    authDomain: "korah-app.firebaseapp.com",
+    projectId: "korah-app",
+    storageBucket: "korah-app.firebasestorage.app",
+    messagingSenderId: "226169460321",
+    appId: "1:226169460321:web:b166fc8260107c55dafc20"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      startGuestSession();
+      initGuestGate('../');
+      return;
+    }
+    await setupKorahDB(app, user.uid);
+    window.dispatchEvent(new CustomEvent('korahReady', { detail: { uid: user.uid } }));
+    startAuthGuard(auth, '../index.html');
+  });
+</script>
+</body>
+</html>

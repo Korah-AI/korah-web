@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en" x-data="{
+  theme: localStorage.getItem('korah_theme') || 'dark',
+  activeTab: 'college-prep',
+  sidebarCollapsed: window.innerWidth <= 768 ? false : localStorage.getItem('korah_sidebar_collapsed') === 'true',
+  mobileOpen: false,
+  screen: 'setup',
+  essayType: 'personal_statement',
+  school: '',
+  prompt: '',
+  wordLimit: 650,
+  focusNote: '',
+  getEffectiveTheme() {
+    if (this.theme === 'system') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return this.theme;
+  },
+  toggleSidebar() {
+    if (window.innerWidth <= 768) {
+      this.mobileOpen = !this.mobileOpen;
+      const overlay = document.querySelector('.sidebar-overlay');
+      if (overlay) overlay.classList.toggle('show', this.mobileOpen);
+    } else {
+      this.sidebarCollapsed = !this.sidebarCollapsed;
+      localStorage.setItem('korah_sidebar_collapsed', this.sidebarCollapsed);
+    }
+  }
+}" :data-theme="getEffectiveTheme()" x-cloak>
+<head>
+<link rel="stylesheet" href="../transitions/page-transitions.css"/>
+<script src="../transitions/page-transitions.js"></script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Korah AI — Essay Editor</title>
+<script>document.documentElement.setAttribute('data-theme', localStorage.getItem('korah_theme') || 'dark');</script>
+<link rel="icon" type="image/png" href="../logo-images/newlogo0.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script src="../sidebar-loader.js" defer></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="../app/korah-chat.css"/>
+<link rel="stylesheet" href="college-prep.css"/>
+<script type="importmap">
+{
+  "imports": {
+    "prosemirror-view": "https://esm.sh/prosemirror-view@1.37.1",
+    "prosemirror-state": "https://esm.sh/prosemirror-state@1.4.3",
+    "prosemirror-model": "https://esm.sh/prosemirror-model@1.24.1",
+    "prosemirror-commands": "https://esm.sh/prosemirror-commands@1.6.0",
+    "prosemirror-inputrules": "https://esm.sh/prosemirror-inputrules@1.4.0",
+    "prosemirror-keymap": "https://esm.sh/prosemirror-keymap@1.2.2",
+    "prosemirror-history": "https://esm.sh/prosemirror-history@1.4.1",
+    "prosemirror-schema-basic": "https://esm.sh/prosemirror-schema-basic@1.2.3",
+    "tiptap-core": "https://esm.sh/@tiptap/core@2.11.5",
+    "tiptap-starter-kit": "https://esm.sh/@tiptap/starter-kit@2.11.5",
+    "tiptap-placeholder": "https://esm.sh/@tiptap/extension-placeholder@2.11.5"
+  }
+}
+</script>
+</head>
+<body class="korah-grey">
+
+<div id="sidebar-root"></div>
+
+<div id="main-area-wrapper" class="main-area-wrapper">
+<main id="main-content" class="main-content">
+  <header class="chat-topbar bg-sf glass-sm t-theme bd" style="opacity: 0.95;">
+    <button id="sidebar-toggle" @click="toggleSidebar()" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+    <div class="chat-title-area">
+      <div class="korah-status-dot"></div>
+      <span class="font-semibold tx text-sm" x-text="screen === 'setup' ? 'New Essay' : 'Essay Editor'">New Essay</span>
+    </div>
+    <div class="topbar-actions" x-show="screen === 'editor'">
+      <button class="essay-topbar-btn" onclick="window.location.href='index.html'" title="Back to essays">
+        <span class="material-icons-round" style="font-size: 1.125rem;">arrow_back</span>
+        <span class="nav-text" style="font-size: 0.75rem;">Back</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- SETUP SCREEN -->
+  <div class="feed-scroll" x-show="screen === 'setup'">
+    <div class="feed-page">
+      <div class="essay-setup-card">
+        <h2 class="essay-setup-title">Start a New Essay</h2>
+        <p class="essay-setup-sub">Choose your essay type and provide details for tailored feedback.</p>
+
+        <!-- Essay Type -->
+        <div class="essay-setup-field">
+          <label class="essay-setup-label">Essay Type</label>
+          <div class="essay-type-switch">
+            <button class="type-pill" :class="{ active: essayType === 'personal_statement' }" @click="essayType = 'personal_statement'">Personal Statement</button>
+            <button class="type-pill" :class="{ active: essayType === 'supplemental' }" @click="essayType = 'supplemental'">Supplemental</button>
+          </div>
+        </div>
+
+        <!-- Supplemental-only fields -->
+        <template x-if="essayType === 'supplemental'">
+          <div>
+            <div class="essay-setup-field">
+              <label class="essay-setup-label">Target School</label>
+              <select class="essay-setup-select" x-model="school">
+                <option value="">Select a school...</option>
+                <option value="harvard">Harvard University</option>
+                <option value="mit">MIT</option>
+                <option value="stanford">Stanford University</option>
+                <option value="yale">Yale University</option>
+                <option value="princeton">Princeton University</option>
+              </select>
+            </div>
+            <div class="essay-setup-field">
+              <label class="essay-setup-label">Prompt</label>
+              <textarea class="essay-setup-textarea" x-model="prompt" placeholder="Paste the supplemental prompt here..." rows="3"></textarea>
+            </div>
+          </div>
+        </template>
+
+        <!-- Word Limit -->
+        <div class="essay-setup-field">
+          <label class="essay-setup-label">Word Limit</label>
+          <input type="number" class="essay-setup-input" x-model.number="wordLimit" min="50" max="2000" placeholder="650">
+        </div>
+
+        <!-- Essay Content -->
+        <div class="essay-setup-field">
+          <label class="essay-setup-label">Your Essay</label>
+          <textarea id="essay-input" class="essay-setup-textarea essay-textarea-large" placeholder="Write or paste your essay here..." rows="12"></textarea>
+          <div class="essay-word-count">
+            <span id="essay-word-count">0</span> / <span x-text="wordLimit">650</span> words
+          </div>
+        </div>
+
+        <!-- Focus Note -->
+        <div class="essay-setup-field">
+          <label class="essay-setup-label">Focus Note <span style="color: var(--tx3); font-weight: 400;">(optional)</span></label>
+          <textarea class="essay-setup-textarea" x-model="focusNote" placeholder="Anything specific you want feedback on? e.g. 'I feel like I spend too long on X instead of Y'" rows="2"></textarea>
+        </div>
+
+        <!-- Analyze Button -->
+        <button class="essay-analyze-btn" onclick="startAnalysis()">
+          <span class="material-icons-round" style="font-size: 1.125rem;">auto_awesome</span>
+          Analyze Essay
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDITOR SCREEN -->
+  <div class="essay-editor-layout" x-show="screen === 'editor'" style="display: none;">
+    <!-- Left: Editor -->
+    <div class="essay-editor-panel">
+      <div id="editor-container" class="essay-editor-container"></div>
+      <div class="essay-editor-footer">
+        <span id="editor-word-count">0</span> words
+      </div>
+    </div>
+
+    <!-- Right: Review -->
+    <div class="essay-review-panel">
+      <!-- Score Panel -->
+      <div id="score-panel" class="essay-score-panel" style="display: none;">
+        <h3 class="essay-score-title">Scores</h3>
+        <div class="essay-score-average">
+          <span id="score-average" class="essay-average-num">--</span>
+          <span class="essay-average-label">Average</span>
+        </div>
+        <div id="score-dims" class="essay-score-dims"></div>
+      </div>
+
+      <!-- Annotation Cards -->
+      <div id="annotation-list" class="essay-annotation-list">
+        <div class="essay-annotation-empty">
+          <span class="material-icons-round" style="font-size: 1.5rem; color: var(--tx3);">chat_bubble_outline</span>
+          <p style="color: var(--tx3); font-size: 0.8125rem; margin: 0;">Annotations will appear here after analysis.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div id="analysis-loading" class="essay-loading-overlay" style="display: none;">
+    <div class="essay-loading-card">
+      <div class="essay-loading-spinner"></div>
+      <h3 class="essay-loading-title">Analyzing your essay...</h3>
+      <p class="essay-loading-sub" id="loading-status">Running annotation pass...</p>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<script type="module" src="js/editor.js"></script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+  import { setupKorahDB } from "../app/data/firestore-store.js";
+  import { startGuestSession, initGuestGate } from "../guest-gate.js";
+  import { startAuthGuard } from "../auth-guard.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
+    authDomain: "korah-app.firebaseapp.com",
+    projectId: "korah-app",
+    storageBucket: "korah-app.firebasestorage.app",
+    messagingSenderId: "226169460321",
+    appId: "1:226169460321:web:b166fc8260107c55dafc20"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  let currentUser = null;
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      startGuestSession();
+      initGuestGate('../');
+      return;
+    }
+    currentUser = user;
+    await setupKorahDB(app, user.uid);
+    window.dispatchEvent(new CustomEvent('korahReady', { detail: { uid: user.uid } }));
+    startAuthGuard(auth, '../index.html');
+
+    const params = new URLSearchParams(window.location.search);
+    const essayId = params.get('id');
+    if (essayId) loadEssay(essayId);
+  });
+
+  async function loadEssay(id) {
+    try {
+      const { getFirestore, doc, getDoc } = await import("https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js");
+      const db = getFirestore(app);
+      const snap = await getDoc(doc(db, `users/${currentUser.uid}/essays`, id));
+      if (snap.exists()) {
+        const data = snap.data();
+        const alpine = document.querySelector('[x-data]').__x;
+        if (alpine) {
+          alpine.$data.essayType = data.type || 'personal_statement';
+          alpine.$data.school = data.school || '';
+          alpine.$data.prompt = data.prompt || '';
+          alpine.$data.wordLimit = data.wordLimit || 650;
+          alpine.$data.focusNote = data.focusNote || '';
+        }
+        const input = document.getElementById('essay-input');
+        if (input && data.content) {
+          input.value = data.content;
+          input.dispatchEvent(new Event('input'));
+        }
+        if (data.scores && data.annotations) {
+          switchToEditor();
+          window.dispatchEvent(new CustomEvent('essay-loaded', { detail: data }));
+        }
+      }
+    } catch (e) {
+      console.warn("Could not load essay:", e);
+    }
+  }
+
+  function switchToEditor() {
+    const alpine = document.querySelector('[x-data]').__x;
+    if (alpine) alpine.$data.screen = 'editor';
+  }
+
+  window.startAnalysis = async function() {
+    const alpine = document.querySelector('[x-data]').__x;
+    if (!alpine) return;
+    const d = alpine.$data;
+    const content = document.getElementById('essay-input').value.trim();
+    if (!content) { alert('Please write or paste your essay first.'); return; }
+
+    switchToEditor();
+    const loading = document.getElementById('analysis-loading');
+    const status = document.getElementById('loading-status');
+    loading.style.display = 'flex';
+
+    try {
+      const { default: EssayAPI } = await import('./js/api.js');
+      const { default: EssayAnnotations } = await import('./js/annotations.js');
+      const { default: EssayScoring } = await import('./js/scoring.js');
+
+      status.textContent = 'Running annotation pass...';
+      const annotations = await EssayAPI.annotate(content, d.essayType, d.school, d.prompt, d.wordLimit);
+
+      status.textContent = 'Running scoring pass...';
+      const scores = await EssayAPI.score(content, d.essayType, d.school, d.prompt, d.wordLimit);
+
+      status.textContent = 'Anchoring highlights...';
+      const anchored = EssayAnnotations.anchor(annotations, content);
+
+      EssayAnnotations.render(anchored);
+      EssayScoring.render(scores);
+
+      if (d.focusNote) {
+        status.textContent = 'Running focus pass...';
+        const focusResults = await EssayAPI.focusNote(content, d.focusNote, d.essayType, d.school, d.prompt, d.wordLimit);
+        if (focusResults && focusResults.length) {
+          EssayAnnotations.renderFocus(focusResults);
+        }
+      }
+
+      loading.style.display = 'none';
+    } catch (e) {
+      console.error('Analysis failed:', e);
+      status.textContent = 'Analysis failed. Using canned data...';
+      try {
+        const { default: EssayAnnotations } = await import('./js/annotations.js');
+        const { default: EssayScoring } = await import('./js/scoring.js');
+        const canned = await fetch('data/canned-feedback.json').then(r => r.json());
+        const anchored = EssayAnnotations.anchor(canned.annotations, content);
+        EssayAnnotations.render(anchored);
+        EssayScoring.render(canned.scores);
+      } catch (e2) {
+        console.error('Canned data load failed:', e2);
+      }
+      loading.style.display = 'none';
+    }
+  };
+
+  // Word count for setup textarea
+  document.addEventListener('DOMContentLoaded', () => {
+    const input = document.getElementById('essay-input');
+    if (input) {
+      input.addEventListener('input', () => {
+        const words = input.value.trim() ? input.value.trim().split(/\s+/).length : 0;
+        const el = document.getElementById('essay-word-count');
+        if (el) el.textContent = words;
+      });
+    }
+  });
+</script>
+</body>
+</html>
