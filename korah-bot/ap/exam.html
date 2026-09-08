@@ -18,7 +18,7 @@
 </head>
 <body class="ap-body ap-exam-body">
   <main class="ap-player-shell">
-    <section id="loading-view" class="ap-center-card"><p class="ap-muted">Loading exam…</p></section>
+    <section id="loading-view" class="ap-center-card ap-loading-card"><span class="ap-spinner" aria-hidden="true"></span><p>Preparing your exam…</p></section>
 
     <section id="preexam-view" class="ap-center-card" hidden>
       <a class="ap-back-link" href="./index.html"><i class="material-icons-round">arrow_back</i> All AP exams</a>
@@ -32,16 +32,18 @@
 
     <section id="player-view" class="ap-player" hidden>
       <header class="ap-player-topbar">
-        <div><p id="part-label" class="ap-eyebrow"></p><strong id="question-position"></strong></div>
-        <div id="timer" class="ap-timer" role="timer" aria-live="off">00:00</div>
+        <div class="ap-player-identity"><span class="ap-mini-mark"><i class="material-icons-round">functions</i></span><div><p id="part-label" class="ap-eyebrow"></p><strong id="question-position"></strong></div></div>
+        <div id="timer" class="ap-timer" role="timer" aria-live="off"><i class="material-icons-round">schedule</i><span>00:00</span></div>
         <button id="submit-part" class="ap-submit-button">Submit part</button>
       </header>
+      <div class="ap-progress-track" aria-hidden="true"><span id="part-progress"></span></div>
       <div class="ap-player-layout">
         <aside class="ap-navigator" aria-label="Question navigator">
+          <div class="ap-navigator-heading"><div><p class="ap-eyebrow">Your progress</p><strong>Question map</strong></div><i class="material-icons-round">apps</i></div>
           <div class="ap-nav-key"><span><i class="ap-dot answered"></i>Answered</span><span><i class="ap-dot marked"></i>Marked</span></div>
           <div id="question-nav" class="ap-question-nav"></div>
         </aside>
-        <article class="ap-question-card">
+        <article id="question-card" class="ap-question-card">
           <div class="ap-question-actions"><button id="mark-review" class="ap-mark-button"><i class="material-icons-round">bookmark_border</i><span>Mark for review</span></button></div>
           <div id="question-stem" class="ap-question-stem"></div>
           <div id="question-assets" class="ap-question-assets"></div>
@@ -55,7 +57,7 @@
     </section>
 
     <section id="complete-view" class="ap-center-card" hidden>
-      <span class="material-icons-round ap-complete-icon">check_circle</span>
+      <span class="ap-complete-icon"><i class="material-icons-round">check</i></span>
       <p class="ap-eyebrow">Submission complete</p><h1>Your exam was submitted.</h1>
       <p class="ap-lead">Milestone 2 logs the raw score to the browser console. The full results screen comes next.</p>
       <a class="ap-primary-button" href="./index.html">Return to AP exams</a>

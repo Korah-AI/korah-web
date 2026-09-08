@@ -55,7 +55,7 @@
   function renderTimer() {
     const minutes = Math.floor(Math.max(0, state.remaining) / 60);
     const seconds = Math.max(0, state.remaining) % 60;
-    $("timer").textContent = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+    $("timer").querySelector("span").textContent = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
     $("timer").classList.toggle("warning", state.remaining <= 300);
   }
 
@@ -84,6 +84,11 @@
     const marked = state.reviewed.has(question.id);
     $("mark-review").classList.toggle("is-marked", marked);
     $("mark-review").innerHTML = `<i class="material-icons-round">${marked ? "bookmark" : "bookmark_border"}</i><span>${marked ? "Marked for review" : "Mark for review"}</span>`;
+    $("part-progress").style.width = `${((state.questionIndex + 1) / part.questions.length) * 100}%`;
+    const card = $("question-card");
+    card.classList.remove("is-entering");
+    void card.offsetWidth;
+    card.classList.add("is-entering");
     updateNavigator();
   }
 
