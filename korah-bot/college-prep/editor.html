@@ -44,6 +44,10 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="../app/korah-chat.css"/>
 <link rel="stylesheet" href="college-prep.css"/>
+<style>
+  .feed-scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; }
+  .feed-page { padding: 1.75rem 2.25rem 3.75rem; max-width: 77.5rem; margin: 0 auto; }
+</style>
 <script type="importmap">
 {
   "imports": {
@@ -235,6 +239,12 @@
     if (essayId) loadEssay(essayId);
   });
 
+  function getAlpineData() {
+    const el = document.querySelector('[x-data]');
+    if (!el || !el._x_dataStack) return null;
+    return el._x_dataStack[0];
+  }
+
   async function loadEssay(id) {
     try {
       const { getFirestore, doc, getDoc } = await import("https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js");
@@ -242,13 +252,13 @@
       const snap = await getDoc(doc(db, `users/${currentUser.uid}/essays`, id));
       if (snap.exists()) {
         const data = snap.data();
-        const alpine = document.querySelector('[x-data]').__x;
-        if (alpine) {
-          alpine.$data.essayType = data.type || 'personal_statement';
-          alpine.$data.school = data.school || '';
-          alpine.$data.prompt = data.prompt || '';
-          alpine.$data.wordLimit = data.wordLimit || 650;
-          alpine.$data.focusNote = data.focusNote || '';
+        const d = getAlpineData();
+        if (d) {
+          d.essayType = data.type || 'personal_statement';
+          d.school = data.school || '';
+          d.prompt = data.prompt || '';
+          d.wordLimit = data.wordLimit || 650;
+          d.focusNote = data.focusNote || '';
         }
         const input = document.getElementById('essay-input');
         if (input && data.content) {
@@ -266,18 +276,18 @@
   }
 
   function switchToEditor() {
-    const alpine = document.querySelector('[x-data]').__x;
-    if (alpine) alpine.$data.screen = 'editor';
+    const d = getAlpineData();
+    if (d) d.screen = 'editor';
   }
 
   window.startAnalysis = async function() {
-    const alpine = document.querySelector('[x-data]').__x;
-    if (!alpine) return;
-    const d = alpine.$data;
+    const d = getAlpineData();
+    if (!d) return;
     const content = document.getElementById('essay-input').value.trim();
     if (!content) { alert('Please write or paste your essay first.'); return; }
 
     switchToEditor();
+    window.dispatchEvent(new CustomEvent('analysis-ready'));
     const loading = document.getElementById('analysis-loading');
     const status = document.getElementById('loading-status');
     loading.style.display = 'flex';
