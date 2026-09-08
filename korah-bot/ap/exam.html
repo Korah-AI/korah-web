@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>AP Mock Exam | Korah</title>
+  <link rel="icon" href="../logo-images/newlogo0.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <link rel="stylesheet" href="../sat/sat.css">
+  <link rel="stylesheet" href="../sat/sat-player-theme.css">
+  <link rel="stylesheet" href="./ap.css">
+  <script src="./js/ap-shared.js" defer></script>
+  <script src="./js/ap-core.js" defer></script>
+  <script src="./js/ap-exam.js" defer></script>
+</head>
+<body class="ap-body ap-exam-body">
+  <main class="ap-player-shell">
+    <section id="loading-view" class="ap-center-card"><p class="ap-muted">Loading exam…</p></section>
+
+    <section id="preexam-view" class="ap-center-card" hidden>
+      <a class="ap-back-link" href="./index.html"><i class="material-icons-round">arrow_back</i> All AP exams</a>
+      <span class="ap-course-badge" id="pre-course"></span>
+      <h1 id="pre-title"></h1>
+      <p class="ap-lead">This is a timed mock exam. You cannot pause after starting, and no answers or explanations appear until submission.</p>
+      <div id="pre-parts" class="ap-part-list"></div>
+      <div class="ap-warning"><i class="material-icons-round">warning_amber</i><span>The timer hard-stops each part. Unanswered questions remain unanswered.</span></div>
+      <button id="start-exam" class="ap-primary-button ap-large-button">Start exam <i class="material-icons-round">arrow_forward</i></button>
+    </section>
+
+    <section id="player-view" class="ap-player" hidden>
+      <header class="ap-player-topbar">
+        <div><p id="part-label" class="ap-eyebrow"></p><strong id="question-position"></strong></div>
+        <div id="timer" class="ap-timer" role="timer" aria-live="off">00:00</div>
+        <button id="submit-part" class="ap-submit-button">Submit part</button>
+      </header>
+      <div class="ap-player-layout">
+        <aside class="ap-navigator" aria-label="Question navigator">
+          <div class="ap-nav-key"><span><i class="ap-dot answered"></i>Answered</span><span><i class="ap-dot marked"></i>Marked</span></div>
+          <div id="question-nav" class="ap-question-nav"></div>
+        </aside>
+        <article class="ap-question-card">
+          <div class="ap-question-actions"><button id="mark-review" class="ap-mark-button"><i class="material-icons-round">bookmark_border</i><span>Mark for review</span></button></div>
+          <div id="question-stem" class="ap-question-stem"></div>
+          <div id="question-assets" class="ap-question-assets"></div>
+          <fieldset id="answer-list" class="ap-answer-list"><legend class="sr-only">Answer choices</legend></fieldset>
+          <footer class="ap-question-footer">
+            <button id="previous-question" class="ap-secondary-button"><i class="material-icons-round">arrow_back</i> Previous</button>
+            <button id="next-question" class="ap-primary-button">Next <i class="material-icons-round">arrow_forward</i></button>
+          </footer>
+        </article>
+      </div>
+    </section>
+
+    <section id="complete-view" class="ap-center-card" hidden>
+      <span class="material-icons-round ap-complete-icon">check_circle</span>
+      <p class="ap-eyebrow">Submission complete</p><h1>Your exam was submitted.</h1>
+      <p class="ap-lead">Milestone 2 logs the raw score to the browser console. The full results screen comes next.</p>
+      <a class="ap-primary-button" href="./index.html">Return to AP exams</a>
+    </section>
+  </main>
+
+  <dialog id="submit-dialog" class="ap-dialog">
+    <form method="dialog"><h2 id="dialog-title">Submit this part?</h2><p id="dialog-copy"></p><div class="ap-dialog-actions"><button value="cancel" class="ap-secondary-button">Keep working</button><button id="confirm-submit" value="confirm" class="ap-primary-button">Submit</button></div></form>
+  </dialog>
+  <dialog id="transition-dialog" class="ap-dialog"><form method="dialog"><p class="ap-eyebrow">Part A complete</p><h2>Calculator section next</h2><p>Your Part A answers are locked. Part B has 15 questions and allows a graphing calculator.</p><button id="start-next-part" value="next" class="ap-primary-button">Start Part B</button></form></dialog>
+</body>
+</html>
