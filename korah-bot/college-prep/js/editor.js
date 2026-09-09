@@ -1,15 +1,12 @@
 /**
- * editor.js - Tiptap editor + DOM-based highlight overlay
+ * editor.js - Tiptap editor + static highlighted render
  *
- * Highlights are applied by walking ProseMirror's DOM tree and wrapping
- * matched text ranges in <mark> elements.  We do NOT use a ProseMirror
- * decoration plugin because Tiptap bundles its own PM instance and the
- * import-map copy is a different object.
- *
- * The overlay is re-applied after every editor transaction via onUpdate
- * so highlights survive typing / editing.
+ * After analysis, the Tiptap editor is destroyed and replaced with a plain
+ * <div> containing the essay text with <mark> highlights baked in as HTML.
+ * This avoids ProseMirror re-rendering wiping out DOM modifications.
  */
 let editor = null;
+let rawContent = '';
 
 const DIM_COLORS = {
   writing:      '#8b5cf6',
@@ -29,13 +26,11 @@ async function initEditor(content) {
 
   const container = document.getElementById('editor-container');
   if (!container) return editor;
-  if (editor) {
-    reapplyHighlights();
-    return editor;
-  }
+  if (editor) return editor;
 
-  const html = content
-    ? `<p>${content.split('\n\n').map(p => p.trim()).filter(Boolean).join('</p><p>')}</p>`
+  rawContent = content || '';
+  const html = rawContent
+    ? `<p>${rawContent.split('\n\n').map(p => p.trim()).filter(Boolean).join('</p><p>')}</p>`
     : '';
 
   editor = new Editor({
@@ -48,10 +43,7 @@ async function initEditor(content) {
     editorProps: {
       attributes: { class: 'essay-editor-content' },
     },
-    onUpdate: ({ editor }) => {
-      updateWordCount(editor);
-      reapplyHighlights();
-    },
+    onUpdate: ({ editor }) => updateWordCount(editor),
   });
 
   updateWordCount(editor);
@@ -67,127 +59,70 @@ function updateWordCount(ed) {
 
 function getEditor() { return editor; }
 
-/* ---- DOM highlight overlay ---- */
+/* ---- Static highlighted render ---- */
 
-function getProseMirrorEl() {
-  if (!editor) return null;
-  return editor.view.dom.querySelector('.ProseMirror');
-}
-
-function removeHighlights() {
-  const pm = getProseMirrorEl();
-  if (!pm) return;
-  pm.querySelectorAll('mark.essay-dim-highlight').forEach(el => {
-    const parent = el.parentNode;
-    while (el.firstChild) parent.insertBefore(el.firstChild, el);
-    parent.removeChild(el);
-  });
-  pm.normalize();
-}
-
-function findTextInDOM(searchText, dimKey) {
-  const pm = getProseMirrorEl();
-  if (!pm) return false;
-
-  const walker = document.createTreeWalker(pm, NodeFilter.SHOW_TEXT);
-  const textNodes = [];
-  while (walker.nextNode()) textNodes.push(walker.currentNode);
-
-  const fullText = textNodes.map(n => n.textContent).join('');
-  const idx = fullText.indexOf(searchText);
-  if (idx === -1) return false;
-
-  let charIdx = 0;
-  for (const textNode of textNodes) {
-    const nodeStart = charIdx;
-    const nodeEnd = charIdx + textNode.textContent.length;
-
-    if (idx >= nodeStart && idx < nodeEnd) {
-      const localFrom = idx - nodeStart;
-      const localTo = Math.min(localFrom + searchText.length, textNode.textContent.length);
-      const text = textNode.textContent;
-      const before = text.slice(0, localFrom);
-      const match = text.slice(localFrom, localTo);
-      const after = text.slice(localTo);
-
-      const parent = textNode.parentNode;
-      const frag = document.createDocumentFragment();
-      if (before) frag.appendChild(document.createTextNode(before));
-      const mark = document.createElement('mark');
-      mark.className = `essay-dim-highlight dim-${dimKey}`;
-      mark.textContent = match;
-      frag.appendChild(mark);
-      if (after) frag.appendChild(document.createTextNode(after));
-      parent.replaceChild(frag, textNode);
-      return true;
-    }
-    charIdx = nodeEnd;
+function destroyEditor() {
+  if (editor) {
+    editor.destroy();
+    editor = null;
   }
-  return false;
 }
 
-function applyHighlightsToDOM(scores) {
-  if (!scores) return;
-  removeHighlights();
+function escapeHtml(str) {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
 
-  const dimKeys = Object.keys(DIM_COLORS);
+function renderHighlightedEssay(content, scores, activeDims) {
+  destroyEditor();
 
+  const container = document.getElementById('editor-container');
+  if (!container) return;
+
+  const paragraphs = content.split('\n\n').map(p => p.trim()).filter(Boolean);
+  const plainParagraphs = paragraphs.map(p => escapeHtml(p));
+
+  const dimKeys = [...activeDims];
+
+  const ranges = [];
   for (const key of dimKeys) {
     const data = scores[key];
     if (!data) continue;
     const items = data.items || (data.evidence ? [{ evidence: data.evidence }] : []);
-
     for (const item of items) {
       let evidence = (item.evidence || '').replace(/\s+/g, ' ').trim();
       if (!evidence) continue;
-
-      const variants = [evidence];
-      if (evidence.length > 50) variants.push(evidence.slice(0, 50));
-      const words = evidence.split(/\s+/).slice(0, 8).join(' ');
-      if (words.length > 3) variants.push(words);
-
-      for (const variant of variants) {
-        if (findTextInDOM(variant, key)) break;
+      const escaped = escapeHtml(evidence);
+      const idx = plainParagraphs.join('\n').indexOf(escaped);
+      if (idx !== -1) {
+        ranges.push({ start: idx, end: idx + escaped.length, key });
       }
     }
   }
+
+  ranges.sort((a, b) => b.start - a.start);
+
+  let fullText = plainParagraphs.join('\n');
+  for (const r of ranges) {
+    const before = fullText.slice(0, r.start);
+    const match = fullText.slice(r.start, r.end);
+    const after = fullText.slice(r.end);
+    fullText = before + `<mark class="essay-dim-highlight dim-${r.key}">${match}</mark>` + after;
+  }
+
+  const html = fullText.split('\n').map(p => `<p>${p || '&nbsp;'}</p>`).join('');
+
+  container.innerHTML = `<div class="essay-editor-content essay-static-view">${html}</div>`;
+
+  const words = content.trim() ? content.trim().split(/\s+/).length : 0;
+  const wcEl = document.getElementById('editor-word-count');
+  if (wcEl) wcEl.textContent = words;
 }
 
 function reapplyHighlights() {
   const scores = window._lastScores;
-  if (!scores || !editor) return;
+  if (!scores || !rawContent) return;
   const activeDims = window._activeDims || new Set(Object.keys(DIM_COLORS));
-
-  removeHighlights();
-
-  const dimKeys = [...activeDims];
-
-  for (const key of dimKeys) {
-    const data = scores[key];
-    if (!data) continue;
-    const items = data.items || (data.evidence ? [{ evidence: data.evidence }] : []);
-
-    for (const item of items) {
-      let evidence = (item.evidence || '').replace(/\s+/g, ' ').trim();
-      if (!evidence) continue;
-
-      const variants = [evidence];
-      if (evidence.length > 50) variants.push(evidence.slice(0, 50));
-      const words = evidence.split(/\s+/).slice(0, 8).join(' ');
-      if (words.length > 3) variants.push(words);
-
-      for (const variant of variants) {
-        if (findTextInDOM(variant, key)) break;
-      }
-    }
-  }
-}
-
-function applyPendingHighlights() {
-  if (!editor || !window._pendingHighlights) return;
-  const scores = window._pendingHighlights;
-  window._pendingHighlights = null;
-  applyHighlightsToDOM(scores);
+  renderHighlightedEssay(rawContent, scores, activeDims);
 }
 
 function syncHighlights() {
@@ -197,13 +132,14 @@ function syncHighlights() {
 function highlightAllDimensions() {
   const scores = window._lastScores;
   if (!scores) return Promise.resolve();
-  if (!editor) {
+  if (!rawContent) {
     window._pendingHighlights = scores;
     return Promise.resolve();
   }
   return new Promise(resolve => {
     requestAnimationFrame(() => {
-      applyHighlightsToDOM(scores);
+      const activeDims = window._activeDims || new Set(Object.keys(DIM_COLORS));
+      renderHighlightedEssay(rawContent, scores, activeDims);
       resolve();
     });
   });
@@ -214,7 +150,11 @@ function highlightDimension(key) {
 }
 
 function clearHighlights() {
-  removeHighlights();
+  const container = document.getElementById('editor-container');
+  if (container && !editor) {
+    const plain = rawContent.split('\n\n').map(p => `<p>${escapeHtml(p) || '&nbsp;'}</p>`).join('');
+    container.innerHTML = `<div class="essay-editor-content essay-static-view">${plain}</div>`;
+  }
 }
 
 /* ---- globals ---- */
@@ -228,13 +168,19 @@ window.highlightDimension = highlightDimension;
 document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('essay-loaded', (e) => {
     const data = e.detail;
-    if (data.content) initEditor(data.content);
+    if (data.content) {
+      rawContent = data.content;
+      initEditor(data.content);
+    }
   });
 
   window.addEventListener('analysis-ready', () => {
     if (!editor) {
       const input = document.getElementById('essay-input');
-      if (input) initEditor(input.value);
+      if (input) {
+        rawContent = input.value.trim();
+        initEditor(rawContent);
+      }
     }
   });
 });
