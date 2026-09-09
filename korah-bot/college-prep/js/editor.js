@@ -1,10 +1,37 @@
 /**
  * editor.js - Tiptap setup, decoration plugin, selection handling
  */
+import { Decoration, DecorationSet } from 'prosemirror-view';
+import { Plugin, PluginKey } from 'prosemirror-state';
 
 let editor = null;
-let decorationPlugin = null;
-let activeHighlights = new Map();
+const decoKey = new PluginKey('essayHighlights');
+
+const DIM_COLORS = {
+  writing: '#8b5cf6',
+  detail: '#3b82f6',
+  voice: '#f0abfc',
+  reflection: '#fbbf24',
+  curiosity: '#34d399',
+  contribution: '#f87171',
+};
+
+function highlightPlugin() {
+  return new Plugin({
+    key: decoKey,
+    state: {
+      init() { return DecorationSet.empty; },
+      apply(tr, old) {
+        const meta = tr.getMeta(decoKey);
+        if (meta) return meta;
+        return old.map(tr.mapping, tr.doc);
+      },
+    },
+    props: {
+      decorations(state) { return this.getState(state); },
+    },
+  });
+}
 
 async function initEditor(content) {
   const { Editor } = await import('tiptap-core');
@@ -28,6 +55,7 @@ async function initEditor(content) {
         class: 'essay-editor-content',
       },
     },
+    plugins: [highlightPlugin()],
     onUpdate: ({ editor }) => {
       updateWordCount(editor);
     },
@@ -64,21 +92,64 @@ function getParagraphs() {
   return paragraphs;
 }
 
-async function createHighlightDecoration(from, to, type, id) {
+function findTextInDoc(text) {
   if (!editor) return null;
-  const { Decoration } = await import('prosemirror-view');
-  const deco = Decoration.inline(from, to, {
-    class: `essay-highlight ${type}`,
-    'data-annotation-id': id,
+  const doc = editor.state.doc;
+  let found = null;
+  doc.descendants((node, pos) => {
+    if (found) return false;
+    if (node.isText) {
+      const idx = node.text.indexOf(text);
+      if (idx !== -1) {
+        found = { from: pos + idx, to: pos + idx + text.length };
+        return false;
+      }
+    }
   });
-  return deco;
+  return found;
+}
+
+function setDecorations(decorations) {
+  if (!editor) return;
+  const { state, dispatch } = editor.view;
+  const decSet = DecorationSet.create(state.doc, decorations);
+  dispatch(state.tr.setMeta(decoKey, decSet));
 }
 
 function clearHighlights() {
-  activeHighlights.clear();
-  if (editor) {
-    editor.chain().focus().run();
+  setDecorations([]);
+  document.querySelectorAll('.essay-rec-card.active').forEach(c => c.classList.remove('active'));
+}
+
+function highlightDimension(key) {
+  if (!editor) return;
+  const scores = window._lastScores;
+  if (!scores || !scores[key]) return;
+
+  const data = scores[key];
+  const evidence = data.evidence || '';
+  if (!evidence) return;
+
+  const range = findTextInDoc(evidence);
+  if (!range) {
+    const shorter = evidence.length > 40 ? evidence.slice(0, 40) : evidence;
+    const range2 = findTextInDoc(shorter);
+    if (range2) {
+      applyDimensionHighlight(key, range2.from, range2.to);
+    }
+    return;
   }
+  applyDimensionHighlight(key, range.from, range.to);
+}
+
+function applyDimensionHighlight(key, from, to) {
+  const color = DIM_COLORS[key] || '#8b5cf6';
+  const deco = Decoration.inline(from, to, {
+    class: `essay-dim-highlight dim-${key}`,
+    style: `background: ${color}22; border-bottom: 2px solid ${color};`,
+  });
+  setDecorations([deco]);
+  editor.chain().focus('none').setNodeSelection(from - 1).run();
 }
 
 function highlightAnnotation(id) {
@@ -105,6 +176,7 @@ window.getParagraphs = getParagraphs;
 window.clearHighlights = clearHighlights;
 window.highlightAnnotation = highlightAnnotation;
 window.highlightCard = highlightCard;
+window.highlightDimension = highlightDimension;
 
 document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('essay-loaded', (e) => {
@@ -114,7 +186,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  window.addEventListener('analysis-ready', (e) => {
+  window.addEventListener('analysis-ready', () => {
     if (!editor) {
       const input = document.getElementById('essay-input');
       if (input) initEditor(input.value);

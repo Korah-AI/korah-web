@@ -1,5 +1,5 @@
 /**
- * scoring.js - 6-dimension rubric, score rendering, deltas
+ * scoring.js - 6-dimension rubric, score rendering, recommendation cards
  */
 
 const DIMENSIONS = [
@@ -10,6 +10,11 @@ const DIMENSIONS = [
   { key: 'curiosity', label: 'Curiosity', color: '#34d399' },
   { key: 'contribution', label: 'Contribution', color: '#f87171' },
 ];
+
+function getDimColor(key) {
+  const dim = DIMENSIONS.find(d => d.key === key);
+  return dim ? dim.color : '#8b5cf6';
+}
 
 function render(scores, previousScores) {
   if (!scores) return;
@@ -47,23 +52,64 @@ function render(scores, previousScores) {
   }).join('');
 }
 
+function renderRecommendations(scores) {
+  const list = document.getElementById('annotation-list');
+  if (!list || !scores) return;
+
+  const emptyState = list.querySelector('.essay-annotation-empty');
+  if (emptyState) emptyState.remove();
+
+  const cards = DIMENSIONS.map(d => {
+    const data = scores[d.key];
+    if (!data) return '';
+    const evidence = data.evidence || '';
+    const feedback = data.feedback || '';
+    const score = data.score || 0;
+    const evidenceShort = evidence.length > 120 ? evidence.slice(0, 120) + '...' : evidence;
+
+    return `
+      <div class="essay-rec-card" data-dim="${d.key}"
+           onclick="window.selectRecommendation('${d.key}')"
+           style="--rec-color: ${d.color};">
+        <div class="rec-header">
+          <span class="rec-dot" style="background: ${d.color};"></span>
+          <span class="rec-label">${d.label}</span>
+          <span class="rec-score" style="color: ${d.color};">${score}/10</span>
+        </div>
+        <div class="rec-evidence" style="border-color: ${d.color};">
+          "${evidenceShort}"
+        </div>
+        <div class="rec-feedback">${feedback}</div>
+      </div>`;
+  }).join('');
+
+  list.insertAdjacentHTML('afterbegin', cards);
+}
+
 function filterByDimension(key) {
   document.querySelectorAll('.essay-score-dim').forEach(el => {
     el.classList.toggle('active', el.dataset.dim === key);
   });
-
-  const cards = document.querySelectorAll('.essay-annotation-card');
-  cards.forEach(card => {
+  document.querySelectorAll('.essay-rec-card').forEach(card => {
     if (!key) {
       card.style.display = '';
       return;
     }
-    const badge = card.querySelector('.ann-type-badge');
-    card.style.display = '';
+    card.style.display = card.dataset.dim === key ? '' : 'none';
   });
 }
 
-const EssayScoring = { render, filterByDimension };
+window.selectRecommendation = function(key) {
+  document.querySelectorAll('.essay-rec-card').forEach(c => c.classList.remove('active'));
+  const card = document.querySelector(`.essay-rec-card[data-dim="${key}"]`);
+  if (card) {
+    card.classList.add('active');
+    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+  if (window.highlightDimension) window.highlightDimension(key);
+};
+
+const EssayScoring = { render, renderRecommendations, filterByDimension, getDimColor, DIMENSIONS };
 export default EssayScoring;
 
 window.filterByDimension = filterByDimension;

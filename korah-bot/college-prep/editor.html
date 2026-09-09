@@ -180,6 +180,9 @@
       </div>
 
       <!-- Annotation Cards -->
+      <div class="essay-rec-header">
+        <span class="essay-rec-header-label">Recommendations</span>
+      </div>
       <div id="annotation-list" class="essay-annotation-list">
         <div class="essay-annotation-empty">
           <span class="material-icons-round" style="font-size: 1.5rem; color: var(--tx3);">chat_bubble_outline</span>
@@ -306,8 +309,10 @@
       status.textContent = 'Anchoring highlights...';
       const anchored = EssayAnnotations.anchor(annotations, content);
 
+      window._lastScores = scores;
       EssayAnnotations.render(anchored);
       EssayScoring.render(scores);
+      EssayScoring.renderRecommendations(scores);
 
       if (d.focusNote) {
         status.textContent = 'Running focus pass...';
@@ -326,8 +331,10 @@
         const { default: EssayScoring } = await import('./js/scoring.js');
         const canned = await fetch('data/canned-feedback.json').then(r => r.json());
         const anchored = EssayAnnotations.anchor(canned.annotations, content);
+        window._lastScores = canned.scores;
         EssayAnnotations.render(anchored);
         EssayScoring.render(canned.scores);
+        EssayScoring.renderRecommendations(canned.scores);
       } catch (e2) {
         console.error('Canned data load failed:', e2);
       }
