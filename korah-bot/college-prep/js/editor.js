@@ -40,7 +40,18 @@ async function initEditor(content) {
   const { Placeholder } = await import('tiptap-placeholder');
 
   const container = document.getElementById('editor-container');
-  if (!container || editor) return;
+  if (!container || editor) {
+    if (editor && window._pendingHighlights) {
+      const scores = window._pendingHighlights;
+      window._pendingHighlights = null;
+      const decs = buildDecsForDims(
+        ['writing', 'detail', 'voice', 'reflection', 'curiosity', 'contribution'],
+        scores
+      );
+      setDecorations(decs);
+    }
+    return editor;
+  }
 
   editor = new Editor({
     element: container,
@@ -63,6 +74,17 @@ async function initEditor(content) {
   });
 
   updateWordCount(editor);
+
+  if (window._pendingHighlights) {
+    const scores = window._pendingHighlights;
+    window._pendingHighlights = null;
+    const decs = buildDecsForDims(
+      ['writing', 'detail', 'voice', 'reflection', 'curiosity', 'contribution'],
+      scores
+    );
+    setDecorations(decs);
+  }
+
   return editor;
 }
 
@@ -119,21 +141,26 @@ function findFuzzy(text) {
   if (!editor || !text) return null;
 
   let range = findTextInDoc(text);
-  if (range) return range;
+  if (range) { console.log('[highlight] exact match:', text.slice(0, 40)); return range; }
 
   const trimmed = text.length > 50 ? text.slice(0, 50) : text;
   range = findTextInDoc(trimmed);
-  if (range) return range;
+  if (range) { console.log('[highlight] 50-char match:', trimmed.slice(0, 40)); return range; }
 
   const words = text.split(/\s+/).slice(0, 6);
   const short = words.join(' ');
-  return findTextInDoc(short);
+  range = findTextInDoc(short);
+  if (range) { console.log('[highlight] 6-word match:', short); return range; }
+
+  console.log('[highlight] NO match for:', text.slice(0, 60));
+  return null;
 }
 
 function setDecorations(decorations) {
   if (!editor) return;
   const { state, dispatch } = editor.view;
   const decSet = DecorationSet.create(state.doc, decorations);
+  console.log('[highlight] dispatching', decorations.length, 'decorations');
   dispatch(state.tr.setMeta(decoKey, decSet));
 }
 
@@ -147,13 +174,12 @@ function buildDecsForDims(dimKeys, scores) {
     const data = scores[key];
     if (!data) continue;
     const items = data.items || (data.evidence ? [{ evidence: data.evidence }] : []);
+    console.log(`[highlight] ${key}: ${items.length} items`);
     for (const item of items) {
       const range = findFuzzy(item.evidence);
       if (range) {
-        const color = DIM_COLORS[key] || '#8b5cf6';
         decs.push(Decoration.inline(range.from, range.to, {
           class: `essay-dim-highlight dim-${key}`,
-          style: `background: ${color}22; border-bottom: 2px solid ${color};`,
         }));
       }
     }
@@ -163,27 +189,21 @@ function buildDecsForDims(dimKeys, scores) {
 
 function highlightAllDimensions() {
   const scores = window._lastScores;
+  console.log('[highlight] scores:', scores);
   if (!scores) return;
 
-  function tryApply() {
-    if (!editor) return false;
-    const decs = buildDecsForDims(
-      ['writing', 'detail', 'voice', 'reflection', 'curiosity', 'contribution'],
-      scores
-    );
-    setDecorations(decs);
-    return true;
+  if (!editor) {
+    console.log('[highlight] editor not ready, storing pending');
+    window._pendingHighlights = scores;
+    return;
   }
 
-  if (tryApply()) return;
-
-  let attempts = 0;
-  const wait = setInterval(() => {
-    attempts++;
-    if (tryApply() || attempts > 60) {
-      clearInterval(wait);
-    }
-  }, 100);
+  const decs = buildDecsForDims(
+    ['writing', 'detail', 'voice', 'reflection', 'curiosity', 'contribution'],
+    scores
+  );
+  console.log('[highlight] decorations created:', decs.length);
+  setDecorations(decs);
 }
 
 function syncHighlights() {
@@ -192,6 +212,7 @@ function syncHighlights() {
 
   const activeDims = window._activeDims || new Set(Object.keys(DIM_COLORS));
   const decs = buildDecsForDims([...activeDims], scores);
+  console.log('[highlight] sync:', decs.length, 'decorations for', [...activeDims].join(','));
   setDecorations(decs);
 }
 
