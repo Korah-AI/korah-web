@@ -1,5 +1,5 @@
 /**
- * editor.js - Tiptap setup, decoration plugin, selection handling
+ * editor.js - Tiptap setup, decoration plugin, multi-dim highlighting
  */
 import { Decoration, DecorationSet } from 'prosemirror-view';
 import { Plugin, PluginKey } from 'prosemirror-state';
@@ -14,6 +14,7 @@ const DIM_COLORS = {
   reflection: '#fbbf24',
   curiosity: '#34d399',
   contribution: '#f87171',
+  focus: '#fbbf24',
 };
 
 function highlightPlugin() {
@@ -76,24 +77,8 @@ function getEditor() {
   return editor;
 }
 
-function getParagraphs() {
-  if (!editor) return [];
-  const doc = editor.state.doc;
-  const paragraphs = [];
-  doc.forEach((node, offset) => {
-    if (node.type.name === 'paragraph') {
-      paragraphs.push({
-        text: node.textContent,
-        from: offset + 1,
-        to: offset + node.nodeSize,
-      });
-    }
-  });
-  return paragraphs;
-}
-
 function findTextInDoc(text) {
-  if (!editor) return null;
+  if (!editor || !text) return null;
   const doc = editor.state.doc;
   let found = null;
   doc.descendants((node, pos) => {
@@ -109,6 +94,15 @@ function findTextInDoc(text) {
   return found;
 }
 
+function findFuzzy(text) {
+  if (!editor || !text) return null;
+  const range = findTextInDoc(text);
+  if (range) return range;
+
+  const trimmed = text.length > 40 ? text.slice(0, 40) : text;
+  return findTextInDoc(trimmed);
+}
+
 function setDecorations(decorations) {
   if (!editor) return;
   const { state, dispatch } = editor.view;
@@ -118,38 +112,96 @@ function setDecorations(decorations) {
 
 function clearHighlights() {
   setDecorations([]);
-  document.querySelectorAll('.essay-rec-card.active').forEach(c => c.classList.remove('active'));
+}
+
+function highlightAllDimensions() {
+  const scores = window._lastScores;
+  if (!scores) return;
+
+  if (!editor) {
+    let attempts = 0;
+    const wait = setInterval(() => {
+      attempts++;
+      if (editor || attempts > 30) {
+        clearInterval(wait);
+        if (editor) applyAllHighlights(scores);
+      }
+    }, 100);
+    return;
+  }
+  applyAllHighlights(scores);
+}
+
+function applyAllHighlights(scores) {
+  const decs = [];
+  const dimKeys = ['writing', 'detail', 'voice', 'reflection', 'curiosity', 'contribution'];
+
+  for (const key of dimKeys) {
+    const data = scores[key];
+    if (!data) continue;
+    const items = data.items || (data.evidence ? [{ evidence: data.evidence }] : []);
+    for (const item of items) {
+      const range = findFuzzy(item.evidence);
+      if (range) {
+        const color = DIM_COLORS[key] || '#8b5cf6';
+        decs.push(Decoration.inline(range.from, range.to, {
+          class: `essay-dim-highlight dim-${key}`,
+          style: `background: ${color}22; border-bottom: 2px solid ${color};`,
+        }));
+      }
+    }
+  }
+
+  setDecorations(decs);
+}
+
+function syncHighlights() {
+  const scores = window._lastScores;
+  if (!scores || !editor) return;
+
+  const activeDims = window._activeDims || new Set(Object.keys(DIM_COLORS));
+
+  const decs = [];
+
+  for (const key of activeDims) {
+    const data = scores[key];
+    if (!data) continue;
+    const items = data.items || (data.evidence ? [{ evidence: data.evidence }] : []);
+    for (const item of items) {
+      const range = findFuzzy(item.evidence);
+      if (range) {
+        const color = DIM_COLORS[key] || '#8b5cf6';
+        decs.push(Decoration.inline(range.from, range.to, {
+          class: `essay-dim-highlight dim-${key}`,
+          style: `background: ${color}22; border-bottom: 2px solid ${color};`,
+        }));
+      }
+    }
+  }
+
+  setDecorations(decs);
 }
 
 function highlightDimension(key) {
-  if (!editor) return;
   const scores = window._lastScores;
-  if (!scores || !scores[key]) return;
+  if (!scores || !scores[key] || !editor) return;
 
   const data = scores[key];
-  const evidence = data.evidence || '';
-  if (!evidence) return;
-
-  const range = findTextInDoc(evidence);
-  if (!range) {
-    const shorter = evidence.length > 40 ? evidence.slice(0, 40) : evidence;
-    const range2 = findTextInDoc(shorter);
-    if (range2) {
-      applyDimensionHighlight(key, range2.from, range2.to);
-    }
-    return;
-  }
-  applyDimensionHighlight(key, range.from, range.to);
-}
-
-function applyDimensionHighlight(key, from, to) {
+  const items = data.items || (data.evidence ? [{ evidence: data.evidence }] : []);
+  const decs = [];
   const color = DIM_COLORS[key] || '#8b5cf6';
-  const deco = Decoration.inline(from, to, {
-    class: `essay-dim-highlight dim-${key}`,
-    style: `background: ${color}22; border-bottom: 2px solid ${color};`,
-  });
-  setDecorations([deco]);
-  editor.chain().focus('none').setNodeSelection(from - 1).run();
+
+  for (const item of items) {
+    const range = findFuzzy(item.evidence);
+    if (range) {
+      decs.push(Decoration.inline(range.from, range.to, {
+        class: `essay-dim-highlight dim-${key}`,
+        style: `background: ${color}22; border-bottom: 2px solid ${color};`,
+      }));
+    }
+  }
+
+  setDecorations(decs);
 }
 
 function highlightAnnotation(id) {
@@ -172,11 +224,12 @@ function highlightCard(id) {
 
 window.initEditor = initEditor;
 window.getEditor = getEditor;
-window.getParagraphs = getParagraphs;
 window.clearHighlights = clearHighlights;
+window.highlightAllDimensions = highlightAllDimensions;
+window.syncHighlights = syncHighlights;
+window.highlightDimension = highlightDimension;
 window.highlightAnnotation = highlightAnnotation;
 window.highlightCard = highlightCard;
-window.highlightDimension = highlightDimension;
 
 document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('essay-loaded', (e) => {

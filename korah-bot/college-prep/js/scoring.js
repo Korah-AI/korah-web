@@ -11,6 +11,9 @@ const DIMENSIONS = [
   { key: 'contribution', label: 'Contribution', color: '#f87171' },
 ];
 
+const activeDims = new Set(DIMENSIONS.map(d => d.key));
+window._activeDims = activeDims;
+
 function getDimColor(key) {
   const dim = DIMENSIONS.find(d => d.key === key);
   return dim ? dim.color : '#8b5cf6';
@@ -56,60 +59,96 @@ function renderRecommendations(scores) {
   const list = document.getElementById('annotation-list');
   if (!list || !scores) return;
 
-  const emptyState = list.querySelector('.essay-annotation-empty');
-  if (emptyState) emptyState.remove();
+  list.innerHTML = '';
 
-  const cards = DIMENSIONS.map(d => {
+  const allCards = [];
+
+  for (const d of DIMENSIONS) {
     const data = scores[d.key];
-    if (!data) return '';
-    const evidence = data.evidence || '';
-    const feedback = data.feedback || '';
+    if (!data) continue;
+
     const score = data.score || 0;
+    const items = data.items || (data.evidence ? [{ evidence: data.evidence, feedback: data.feedback }] : []);
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      const evidence = item.evidence || '';
+      const feedback = item.feedback || '';
+      const evidenceShort = evidence.length > 120 ? evidence.slice(0, 120) + '...' : evidence;
+      const cardId = `rec-${d.key}-${i}`;
+
+      allCards.push(`
+        <div class="essay-rec-card active" data-dim="${d.key}" data-card-id="${cardId}"
+             onclick="window.toggleRecommendation(this, '${d.key}')"
+             style="--rec-color: ${d.color};">
+          <div class="rec-header">
+            <span class="rec-dot" style="background: ${d.color};"></span>
+            <span class="rec-label">${d.label}</span>
+            <span class="rec-score" style="color: ${d.color};">${score}/10</span>
+          </div>
+          <div class="rec-evidence" style="border-color: ${d.color};">
+            "${evidenceShort}"
+          </div>
+          <div class="rec-feedback">${feedback}</div>
+        </div>`);
+    }
+  }
+
+  list.innerHTML = allCards.join('');
+}
+
+function renderFocusCards(focusAnnotations) {
+  const list = document.getElementById('annotation-list');
+  if (!list || !focusAnnotations.length) return;
+
+  const focusHtml = focusAnnotations.map((ann, i) => {
+    const evidence = ann.quotedText || '';
+    const feedback = ann.comment || '';
     const evidenceShort = evidence.length > 120 ? evidence.slice(0, 120) + '...' : evidence;
+    const cardId = `focus-${i}`;
 
     return `
-      <div class="essay-rec-card" data-dim="${d.key}"
-           onclick="window.selectRecommendation('${d.key}')"
-           style="--rec-color: ${d.color};">
+      <div class="essay-rec-card focus-card" data-dim="focus" data-card-id="${cardId}"
+           onclick="window.toggleRecommendation(this, 'focus')"
+           style="--rec-color: #fbbf24;">
         <div class="rec-header">
-          <span class="rec-dot" style="background: ${d.color};"></span>
-          <span class="rec-label">${d.label}</span>
-          <span class="rec-score" style="color: ${d.color};">${score}/10</span>
+          <span class="rec-dot" style="background: #fbbf24;"></span>
+          <span class="rec-label">Focus</span>
+          <span class="rec-badge">${ann.commentType || 'socratic'}</span>
         </div>
-        <div class="rec-evidence" style="border-color: ${d.color};">
+        <div class="rec-evidence" style="border-color: #fbbf24;">
           "${evidenceShort}"
         </div>
         <div class="rec-feedback">${feedback}</div>
       </div>`;
   }).join('');
 
-  list.insertAdjacentHTML('afterbegin', cards);
+  list.insertAdjacentHTML('beforeend', focusHtml);
 }
 
 function filterByDimension(key) {
   document.querySelectorAll('.essay-score-dim').forEach(el => {
     el.classList.toggle('active', el.dataset.dim === key);
   });
-  document.querySelectorAll('.essay-rec-card').forEach(card => {
-    if (!key) {
-      card.style.display = '';
-      return;
-    }
-    card.style.display = card.dataset.dim === key ? '' : 'none';
-  });
 }
 
-window.selectRecommendation = function(key) {
-  document.querySelectorAll('.essay-rec-card').forEach(c => c.classList.remove('active'));
-  const card = document.querySelector(`.essay-rec-card[data-dim="${key}"]`);
-  if (card) {
-    card.classList.add('active');
-    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+window.toggleRecommendation = function(el, key) {
+  el.classList.toggle('active');
+
+  if (activeDims.has(key)) {
+    activeDims.delete(key);
+  } else {
+    activeDims.add(key);
   }
-  if (window.highlightDimension) window.highlightDimension(key);
+
+  if (window.syncHighlights) window.syncHighlights();
 };
 
-const EssayScoring = { render, renderRecommendations, filterByDimension, getDimColor, DIMENSIONS };
+function getActiveDims() {
+  return activeDims;
+}
+
+const EssayScoring = { render, renderRecommendations, renderFocusCards, filterByDimension, getDimColor, getActiveDims, DIMENSIONS };
 export default EssayScoring;
 
 window.filterByDimension = filterByDimension;

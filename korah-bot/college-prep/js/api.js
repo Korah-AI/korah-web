@@ -34,12 +34,48 @@ const SCORING_PROMPT = `You are a college essay scoring rubric. Score the essay 
 You MUST return ONLY a valid JSON object with this exact structure:
 {
   "scores": {
-    "writing": { "score": 7, "evidence": "exact quote from the essay justifying this score", "feedback": "one actionable suggestion for improvement, no replacement prose" },
-    "detail": { "score": 6, "evidence": "exact quote from the essay justifying this score", "feedback": "one actionable suggestion for improvement, no replacement prose" },
-    "voice": { "score": 8, "evidence": "exact quote from the essay justifying this score", "feedback": "one actionable suggestion for improvement, no replacement prose" },
-    "reflection": { "score": 5, "evidence": "exact quote from the essay justifying this score", "feedback": "one actionable suggestion for improvement, no replacement prose" },
-    "curiosity": { "score": 7, "evidence": "exact quote from the essay justifying this score", "feedback": "one actionable suggestion for improvement, no replacement prose" },
-    "contribution": { "score": 6, "evidence": "exact quote from the essay justifying this score", "feedback": "one actionable suggestion for improvement, no replacement prose" }
+    "writing": {
+      "score": 7,
+      "items": [
+        { "evidence": "exact quote from the essay", "feedback": "one actionable suggestion, no replacement prose" },
+        { "evidence": "exact quote from the essay", "feedback": "one actionable suggestion, no replacement prose" }
+      ]
+    },
+    "detail": {
+      "score": 6,
+      "items": [
+        { "evidence": "exact quote from the essay", "feedback": "one actionable suggestion, no replacement prose" },
+        { "evidence": "exact quote from the essay", "feedback": "one actionable suggestion, no replacement prose" }
+      ]
+    },
+    "voice": {
+      "score": 8,
+      "items": [
+        { "evidence": "exact quote from the essay", "feedback": "one actionable suggestion, no replacement prose" },
+        { "evidence": "exact quote from the essay", "feedback": "one actionable suggestion, no replacement prose" }
+      ]
+    },
+    "reflection": {
+      "score": 5,
+      "items": [
+        { "evidence": "exact quote from the essay", "feedback": "one actionable suggestion, no replacement prose" },
+        { "evidence": "exact quote from the essay", "feedback": "one actionable suggestion, no replacement prose" }
+      ]
+    },
+    "curiosity": {
+      "score": 7,
+      "items": [
+        { "evidence": "exact quote from the essay", "feedback": "one actionable suggestion, no replacement prose" },
+        { "evidence": "exact quote from the essay", "feedback": "one actionable suggestion, no replacement prose" }
+      ]
+    },
+    "contribution": {
+      "score": 6,
+      "items": [
+        { "evidence": "exact quote from the essay", "feedback": "one actionable suggestion, no replacement prose" },
+        { "evidence": "exact quote from the essay", "feedback": "one actionable suggestion, no replacement prose" }
+      ]
+    }
   }
 }
 
@@ -53,8 +89,9 @@ SCORING RUBRIC (each dimension 1-10):
 
 RULES:
 - Temperature must be 0 for consistent scoring.
-- Each score MUST include a direct quote from the essay as evidence. The evidence MUST be exact text from the essay, not paraphrased.
-- Each score MUST include a feedback field: one specific, actionable suggestion tied to the evidence quote. Never write replacement prose. Never suggest specific rewording.
+- Each dimension MUST have 2-3 items in its items array. Each item MUST include a different exact quote from the essay as evidence.
+- Each feedback MUST be one specific, actionable suggestion tied to its evidence quote. Never write replacement prose. Never suggest specific rewording.
+- Each item's evidence MUST be unique — do not reuse the same quote across items or dimensions.
 - Factor in the word limit: a 100-word supplemental should not be graded on reflection depth the same as a 650-word personal statement.`;
 
 const FOCUS_PROMPT = `You are a college essay coach. The student has a specific concern about their essay.

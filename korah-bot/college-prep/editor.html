@@ -297,44 +297,37 @@
 
     try {
       const { default: EssayAPI } = await import('./js/api.js');
-      const { default: EssayAnnotations } = await import('./js/annotations.js');
       const { default: EssayScoring } = await import('./js/scoring.js');
 
-      status.textContent = 'Running annotation pass...';
-      const annotations = await EssayAPI.annotate(content, d.essayType, d.school, d.prompt, d.wordLimit);
-
-      status.textContent = 'Running scoring pass...';
+      status.textContent = 'Scoring essay...';
       const scores = await EssayAPI.score(content, d.essayType, d.school, d.prompt, d.wordLimit);
 
-      status.textContent = 'Anchoring highlights...';
-      const anchored = EssayAnnotations.anchor(annotations, content);
-
       window._lastScores = scores;
-      EssayAnnotations.render(anchored);
       EssayScoring.render(scores);
       EssayScoring.renderRecommendations(scores);
 
       if (d.focusNote) {
         status.textContent = 'Running focus pass...';
-        const focusResults = await EssayAPI.focusNote(content, d.focusNote, d.essayType, d.school, d.prompt, d.wordLimit);
+        const { default: EssayAnnotations } = await import('./js/annotations.js');
+        const focusResults = await EssayAPI.focusNote(content, d.focusNote, d.essayType, d.school, d.wordLimit);
         if (focusResults && focusResults.length) {
-          EssayAnnotations.renderFocus(focusResults);
+          EssayScoring.renderFocusCards(focusResults);
         }
       }
 
+      status.textContent = 'Highlighting essay...';
+      if (window.highlightAllDimensions) window.highlightAllDimensions();
       loading.style.display = 'none';
     } catch (e) {
       console.error('Analysis failed:', e);
       status.textContent = 'Analysis failed. Using canned data...';
       try {
-        const { default: EssayAnnotations } = await import('./js/annotations.js');
         const { default: EssayScoring } = await import('./js/scoring.js');
         const canned = await fetch('data/canned-feedback.json').then(r => r.json());
-        const anchored = EssayAnnotations.anchor(canned.annotations, content);
         window._lastScores = canned.scores;
-        EssayAnnotations.render(anchored);
         EssayScoring.render(canned.scores);
         EssayScoring.renderRecommendations(canned.scores);
+        if (window.highlightAllDimensions) window.highlightAllDimensions();
       } catch (e2) {
         console.error('Canned data load failed:', e2);
       }
