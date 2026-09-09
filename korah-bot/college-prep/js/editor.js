@@ -77,30 +77,57 @@ function getEditor() {
   return editor;
 }
 
-function findTextInDoc(text) {
-  if (!editor || !text) return null;
+/**
+ * Build full plain text from the doc and map character offsets to
+ * ProseMirror positions. Returns { fullText, posMap } where posMap[i]
+ * is the ProseMirror position for character index i in fullText.
+ */
+function buildFullText() {
+  if (!editor) return null;
   const doc = editor.state.doc;
-  let found = null;
+  let fullText = '';
+  const posMap = [];
+
   doc.descendants((node, pos) => {
-    if (found) return false;
     if (node.isText) {
-      const idx = node.text.indexOf(text);
-      if (idx !== -1) {
-        found = { from: pos + idx, to: pos + idx + text.length };
-        return false;
+      for (let i = 0; i < node.text.length; i++) {
+        posMap.push(pos + i);
       }
+      fullText += node.text;
     }
   });
-  return found;
+
+  return { fullText, posMap };
+}
+
+function findTextInDoc(text) {
+  if (!editor || !text) return null;
+  const built = buildFullText();
+  if (!built) return null;
+  const { fullText, posMap } = built;
+
+  const idx = fullText.indexOf(text);
+  if (idx === -1) return null;
+
+  return {
+    from: posMap[idx],
+    to: posMap[idx + text.length - 1] + 1,
+  };
 }
 
 function findFuzzy(text) {
   if (!editor || !text) return null;
-  const range = findTextInDoc(text);
+
+  let range = findTextInDoc(text);
   if (range) return range;
 
-  const trimmed = text.length > 40 ? text.slice(0, 40) : text;
-  return findTextInDoc(trimmed);
+  const trimmed = text.length > 50 ? text.slice(0, 50) : text;
+  range = findTextInDoc(trimmed);
+  if (range) return range;
+
+  const words = text.split(/\s+/).slice(0, 6);
+  const short = words.join(' ');
+  return findTextInDoc(short);
 }
 
 function setDecorations(decorations) {
@@ -114,28 +141,8 @@ function clearHighlights() {
   setDecorations([]);
 }
 
-function highlightAllDimensions() {
-  const scores = window._lastScores;
-  if (!scores) return;
-
-  if (!editor) {
-    let attempts = 0;
-    const wait = setInterval(() => {
-      attempts++;
-      if (editor || attempts > 30) {
-        clearInterval(wait);
-        if (editor) applyAllHighlights(scores);
-      }
-    }, 100);
-    return;
-  }
-  applyAllHighlights(scores);
-}
-
-function applyAllHighlights(scores) {
+function buildDecsForDims(dimKeys, scores) {
   const decs = [];
-  const dimKeys = ['writing', 'detail', 'voice', 'reflection', 'curiosity', 'contribution'];
-
   for (const key of dimKeys) {
     const data = scores[key];
     if (!data) continue;
@@ -151,8 +158,32 @@ function applyAllHighlights(scores) {
       }
     }
   }
+  return decs;
+}
 
-  setDecorations(decs);
+function highlightAllDimensions() {
+  const scores = window._lastScores;
+  if (!scores) return;
+
+  function tryApply() {
+    if (!editor) return false;
+    const decs = buildDecsForDims(
+      ['writing', 'detail', 'voice', 'reflection', 'curiosity', 'contribution'],
+      scores
+    );
+    setDecorations(decs);
+    return true;
+  }
+
+  if (tryApply()) return;
+
+  let attempts = 0;
+  const wait = setInterval(() => {
+    attempts++;
+    if (tryApply() || attempts > 60) {
+      clearInterval(wait);
+    }
+  }, 100);
 }
 
 function syncHighlights() {
@@ -160,47 +191,14 @@ function syncHighlights() {
   if (!scores || !editor) return;
 
   const activeDims = window._activeDims || new Set(Object.keys(DIM_COLORS));
-
-  const decs = [];
-
-  for (const key of activeDims) {
-    const data = scores[key];
-    if (!data) continue;
-    const items = data.items || (data.evidence ? [{ evidence: data.evidence }] : []);
-    for (const item of items) {
-      const range = findFuzzy(item.evidence);
-      if (range) {
-        const color = DIM_COLORS[key] || '#8b5cf6';
-        decs.push(Decoration.inline(range.from, range.to, {
-          class: `essay-dim-highlight dim-${key}`,
-          style: `background: ${color}22; border-bottom: 2px solid ${color};`,
-        }));
-      }
-    }
-  }
-
+  const decs = buildDecsForDims([...activeDims], scores);
   setDecorations(decs);
 }
 
 function highlightDimension(key) {
   const scores = window._lastScores;
   if (!scores || !scores[key] || !editor) return;
-
-  const data = scores[key];
-  const items = data.items || (data.evidence ? [{ evidence: data.evidence }] : []);
-  const decs = [];
-  const color = DIM_COLORS[key] || '#8b5cf6';
-
-  for (const item of items) {
-    const range = findFuzzy(item.evidence);
-    if (range) {
-      decs.push(Decoration.inline(range.from, range.to, {
-        class: `essay-dim-highlight dim-${key}`,
-        style: `background: ${color}22; border-bottom: 2px solid ${color};`,
-      }));
-    }
-  }
-
+  const decs = buildDecsForDims([key], scores);
   setDecorations(decs);
 }
 
