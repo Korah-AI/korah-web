@@ -59,9 +59,9 @@
     "prosemirror-keymap": "https://esm.sh/prosemirror-keymap@1.2.2",
     "prosemirror-history": "https://esm.sh/prosemirror-history@1.4.1",
     "prosemirror-schema-basic": "https://esm.sh/prosemirror-schema-basic@1.2.3",
-    "tiptap-core": "https://esm.sh/@tiptap/core@2.11.5?external=prosemirror-state,prosemirror-view,prosemirror-model",
-    "tiptap-starter-kit": "https://esm.sh/@tiptap/starter-kit@2.11.5?external=prosemirror-state,prosemirror-view,prosemirror-model,prosemirror-commands,prosemirror-keymap,prosemirror-history,prosemirror-inputrules,prosemirror-schema-basic",
-    "tiptap-placeholder": "https://esm.sh/@tiptap/extension-placeholder@2.11.5?external=prosemirror-state,prosemirror-view,prosemirror-model"
+    "tiptap-core": "https://esm.sh/@tiptap/core@2.11.5",
+    "tiptap-starter-kit": "https://esm.sh/@tiptap/starter-kit@2.11.5",
+    "tiptap-placeholder": "https://esm.sh/@tiptap/extension-placeholder@2.11.5"
   }
 }
 </script>
@@ -317,7 +317,7 @@
       }
 
       status.textContent = 'Highlighting essay...';
-      if (window.highlightAllDimensions) window.highlightAllDimensions();
+      if (window.highlightAllDimensions) await window.highlightAllDimensions();
       loading.style.display = 'none';
     } catch (e) {
       console.error('Analysis failed:', e);
@@ -328,7 +328,7 @@
         window._lastScores = canned.scores;
         EssayScoring.render(canned.scores);
         EssayScoring.renderRecommendations(canned.scores);
-        if (window.highlightAllDimensions) window.highlightAllDimensions();
+        if (window.highlightAllDimensions) await window.highlightAllDimensions();
       } catch (e2) {
         console.error('Canned data load failed:', e2);
       }

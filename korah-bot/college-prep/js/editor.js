@@ -1,48 +1,36 @@
 /**
- * editor.js - Tiptap setup + ProseMirror Decoration-based highlighting
+ * editor.js - Tiptap editor + DOM-based highlight overlay
+ *
+ * Highlights are applied by walking ProseMirror's DOM tree and wrapping
+ * matched text ranges in <mark> elements.  We do NOT use a ProseMirror
+ * decoration plugin because Tiptap bundles its own PM instance and the
+ * import-map copy is a different object.
+ *
+ * The overlay is re-applied after every editor transaction via onUpdate
+ * so highlights survive typing / editing.
  */
 let editor = null;
-let decorationPlugin = null;
-let PMDecoration = null;
-let PMDecorationSet = null;
 
 const DIM_COLORS = {
-  writing:    '#8b5cf6',
-  detail:     '#3b82f6',
-  voice:      '#f0abfc',
-  reflection: '#fbbf24',
-  curiosity:  '#34d399',
-  contribution: '#f87171',
+  writing:      '#8b5cf6',
+  detail:       '#3b82f6',
+  voice:        '#ec4899',
+  reflection:   '#f59e0b',
+  curiosity:    '#22c55e',
+  contribution: '#ef4444',
 };
+
+/* ---- editor init ---- */
 
 async function initEditor(content) {
   const { Editor } = await import('tiptap-core');
   const { StarterKit } = await import('tiptap-starter-kit');
   const { Placeholder } = await import('tiptap-placeholder');
-  const { Plugin, PluginKey } = await import('prosemirror-state');
-  const pmv = await import('prosemirror-view');
-  PMDecoration = pmv.Decoration;
-  PMDecorationSet = pmv.DecorationSet;
-
-  const pk = new PluginKey('essayHighlights');
-  decorationPlugin = new Plugin({
-    key: pk,
-    state: {
-      init() { return PMDecorationSet.empty; },
-      apply(tr, old) {
-        const meta = tr.getMeta(pk);
-        if (meta && meta.set !== undefined) return meta.set;
-        return old.map(tr.mapping, tr.doc);
-      },
-    },
-    props: {
-      decorations(state) { return this.getState(state); },
-    },
-  });
 
   const container = document.getElementById('editor-container');
-  if (!container || editor) {
-    applyPendingHighlights();
+  if (!container) return editor;
+  if (editor) {
+    reapplyHighlights();
     return editor;
   }
 
@@ -60,20 +48,14 @@ async function initEditor(content) {
     editorProps: {
       attributes: { class: 'essay-editor-content' },
     },
-    plugins: [decorationPlugin],
-    onUpdate: ({ editor }) => updateWordCount(editor),
+    onUpdate: ({ editor }) => {
+      updateWordCount(editor);
+      reapplyHighlights();
+    },
   });
 
   updateWordCount(editor);
-  applyPendingHighlights();
   return editor;
-}
-
-function applyPendingHighlights() {
-  if (!editor || !window._pendingHighlights) return;
-  const scores = window._pendingHighlights;
-  window._pendingHighlights = null;
-  applyHighlights(scores);
 }
 
 function updateWordCount(ed) {
@@ -85,51 +67,70 @@ function updateWordCount(ed) {
 
 function getEditor() { return editor; }
 
-function setDecorations(decoSet) {
-  if (!editor || !decorationPlugin) return;
-  const pk = decorationPlugin.key;
-  editor.chain().command(({ tr, dispatch }) => {
-    tr.setMeta(pk, { set: decoSet });
-    if (dispatch) dispatch(tr);
-    return true;
-  }).run();
+/* ---- DOM highlight overlay ---- */
+
+function getProseMirrorEl() {
+  if (!editor) return null;
+  return editor.view.dom.querySelector('.ProseMirror');
 }
 
-function clearDecorations() {
-  if (PMDecorationSet) setDecorations(PMDecorationSet.empty);
-}
-
-function findTextInDoc(doc, searchText) {
-  const textNodes = [];
-  doc.descendants((node, pos) => {
-    if (node.isText) {
-      textNodes.push({ text: node.text, pos });
-    }
+function removeHighlights() {
+  const pm = getProseMirrorEl();
+  if (!pm) return;
+  pm.querySelectorAll('mark.essay-dim-highlight').forEach(el => {
+    const parent = el.parentNode;
+    while (el.firstChild) parent.insertBefore(el.firstChild, el);
+    parent.removeChild(el);
   });
+  pm.normalize();
+}
 
-  const fullText = textNodes.map(n => n.text).join('');
+function findTextInDOM(searchText, dimKey) {
+  const pm = getProseMirrorEl();
+  if (!pm) return false;
+
+  const walker = document.createTreeWalker(pm, NodeFilter.SHOW_TEXT);
+  const textNodes = [];
+  while (walker.nextNode()) textNodes.push(walker.currentNode);
+
+  const fullText = textNodes.map(n => n.textContent).join('');
   const idx = fullText.indexOf(searchText);
-  if (idx === -1) return null;
+  if (idx === -1) return false;
 
   let charIdx = 0;
-  for (const tn of textNodes) {
+  for (const textNode of textNodes) {
     const nodeStart = charIdx;
-    const nodeEnd = charIdx + tn.text.length;
+    const nodeEnd = charIdx + textNode.textContent.length;
+
     if (idx >= nodeStart && idx < nodeEnd) {
       const localFrom = idx - nodeStart;
-      const localTo = Math.min(localFrom + searchText.length, tn.text.length);
-      return { from: tn.pos + localFrom, to: tn.pos + localTo };
+      const localTo = Math.min(localFrom + searchText.length, textNode.textContent.length);
+      const text = textNode.textContent;
+      const before = text.slice(0, localFrom);
+      const match = text.slice(localFrom, localTo);
+      const after = text.slice(localTo);
+
+      const parent = textNode.parentNode;
+      const frag = document.createDocumentFragment();
+      if (before) frag.appendChild(document.createTextNode(before));
+      const mark = document.createElement('mark');
+      mark.className = `essay-dim-highlight dim-${dimKey}`;
+      mark.textContent = match;
+      frag.appendChild(mark);
+      if (after) frag.appendChild(document.createTextNode(after));
+      parent.replaceChild(frag, textNode);
+      return true;
     }
     charIdx = nodeEnd;
   }
-  return null;
+  return false;
 }
 
-function buildHighlightDecos(scores, dimKeys) {
-  if (!editor || !PMDecoration) return PMDecorationSet.empty;
+function applyHighlightsToDOM(scores) {
+  if (!scores) return;
+  removeHighlights();
 
-  const doc = editor.state.doc;
-  const decos = [];
+  const dimKeys = Object.keys(DIM_COLORS);
 
   for (const key of dimKeys) {
     const data = scores[key];
@@ -146,55 +147,77 @@ function buildHighlightDecos(scores, dimKeys) {
       if (words.length > 3) variants.push(words);
 
       for (const variant of variants) {
-        const found = findTextInDoc(doc, variant);
-        if (found) {
-          decos.push(PMDecoration.inline(found.from, found.to, {
-            class: `essay-dim-highlight dim-${key}`,
-          }));
-          break;
-        }
+        if (findTextInDOM(variant, key)) break;
       }
     }
   }
-
-  return PMDecorationSet.create(doc, decos);
 }
 
-function applyHighlights(scores) {
-  if (!editor || !scores) return;
-  const dimKeys = Object.keys(DIM_COLORS);
-  const decoSet = buildHighlightDecos(scores, dimKeys);
-  setDecorations(decoSet);
-}
-
-function syncHighlights() {
+function reapplyHighlights() {
   const scores = window._lastScores;
   if (!scores || !editor) return;
   const activeDims = window._activeDims || new Set(Object.keys(DIM_COLORS));
+
+  removeHighlights();
+
   const dimKeys = [...activeDims];
-  const decoSet = buildHighlightDecos(scores, dimKeys);
-  setDecorations(decoSet);
+
+  for (const key of dimKeys) {
+    const data = scores[key];
+    if (!data) continue;
+    const items = data.items || (data.evidence ? [{ evidence: data.evidence }] : []);
+
+    for (const item of items) {
+      let evidence = (item.evidence || '').replace(/\s+/g, ' ').trim();
+      if (!evidence) continue;
+
+      const variants = [evidence];
+      if (evidence.length > 50) variants.push(evidence.slice(0, 50));
+      const words = evidence.split(/\s+/).slice(0, 8).join(' ');
+      if (words.length > 3) variants.push(words);
+
+      for (const variant of variants) {
+        if (findTextInDOM(variant, key)) break;
+      }
+    }
+  }
+}
+
+function applyPendingHighlights() {
+  if (!editor || !window._pendingHighlights) return;
+  const scores = window._pendingHighlights;
+  window._pendingHighlights = null;
+  applyHighlightsToDOM(scores);
+}
+
+function syncHighlights() {
+  reapplyHighlights();
 }
 
 function highlightAllDimensions() {
   const scores = window._lastScores;
-  if (!scores) return;
+  if (!scores) return Promise.resolve();
   if (!editor) {
     window._pendingHighlights = scores;
-    return;
+    return Promise.resolve();
   }
-  applyHighlights(scores);
+  return new Promise(resolve => {
+    requestAnimationFrame(() => {
+      applyHighlightsToDOM(scores);
+      resolve();
+    });
+  });
 }
 
 function highlightDimension(key) {
-  const scores = window._lastScores;
-  if (!scores || !editor) return;
-  clearDecorations();
-  applyHighlights(scores);
+  reapplyHighlights();
 }
 
-function clearHighlights() { clearDecorations(); }
+function clearHighlights() {
+  removeHighlights();
+}
 
+/* ---- globals ---- */
 window.initEditor = initEditor;
 window.getEditor = getEditor;
 window.clearHighlights = clearHighlights;
