@@ -221,8 +221,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!editor) {
       const input = document.getElementById('essay-input');
       if (input) initEditor(input.value);
-    } else {
-      applyPendingHighlights();
     }
   });
 });

@@ -290,7 +290,8 @@
     if (!content) { alert('Please write or paste your essay first.'); return; }
 
     switchToEditor();
-    window.dispatchEvent(new CustomEvent('analysis-ready'));
+    await new Promise(r => setTimeout(r, 100));
+    if (window.initEditor) await window.initEditor(content);
     const loading = document.getElementById('analysis-loading');
     const status = document.getElementById('loading-status');
     loading.style.display = 'flex';
