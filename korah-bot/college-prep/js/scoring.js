@@ -14,6 +14,9 @@ const DIMENSIONS = [
 const activeDims = new Set(DIMENSIONS.map(d => d.key));
 window._activeDims = activeDims;
 
+const activeCards = new Set();
+window._activeCards = activeCards;
+
 function getDimColor(key) {
   const dim = DIMENSIONS.find(d => d.key === key);
   return dim ? dim.color : '#8b5cf6';
@@ -60,6 +63,7 @@ function renderRecommendations(scores) {
   if (!list || !scores) return;
 
   list.innerHTML = '';
+  activeCards.clear();
 
   const allCards = [];
 
@@ -76,10 +80,11 @@ function renderRecommendations(scores) {
       const feedback = item.feedback || '';
       const evidenceShort = evidence.length > 120 ? evidence.slice(0, 120) + '...' : evidence;
       const cardId = `rec-${d.key}-${i}`;
+      activeCards.add(cardId);
 
       allCards.push(`
-        <div class="essay-rec-card active" data-dim="${d.key}" data-card-id="${cardId}"
-             onclick="window.toggleRecommendation(this, '${d.key}')"
+        <div class="essay-rec-card active" data-dim="${d.key}" data-card-id="${cardId}" data-evidence="${evidence.replace(/"/g, '&quot;')}"
+             onclick="window.toggleRecommendation(this)"
              style="--rec-color: ${d.color};">
           <div class="rec-header">
             <span class="rec-dot" style="background: ${d.color};"></span>
@@ -106,10 +111,11 @@ function renderFocusCards(focusAnnotations) {
     const feedback = ann.comment || '';
     const evidenceShort = evidence.length > 120 ? evidence.slice(0, 120) + '...' : evidence;
     const cardId = `focus-${i}`;
+    activeCards.add(cardId);
 
     return `
-      <div class="essay-rec-card focus-card" data-dim="focus" data-card-id="${cardId}"
-           onclick="window.toggleRecommendation(this, 'focus')"
+      <div class="essay-rec-card focus-card" data-dim="focus" data-card-id="${cardId}" data-evidence="${evidence.replace(/"/g, '&quot;')}"
+           onclick="window.toggleRecommendation(this)"
            style="--rec-color: #fbbf24;">
         <div class="rec-header">
           <span class="rec-dot" style="background: #fbbf24;"></span>
@@ -132,13 +138,15 @@ function filterByDimension(key) {
   });
 }
 
-window.toggleRecommendation = function(el, key) {
+window.toggleRecommendation = function(el) {
   el.classList.toggle('active');
+  const cardId = el.dataset.cardId;
+  if (!cardId) return;
 
-  if (activeDims.has(key)) {
-    activeDims.delete(key);
+  if (activeCards.has(cardId)) {
+    activeCards.delete(cardId);
   } else {
-    activeDims.add(key);
+    activeCards.add(cardId);
   }
 
   if (window.syncHighlights) window.syncHighlights();

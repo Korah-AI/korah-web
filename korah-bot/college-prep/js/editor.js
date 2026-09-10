@@ -72,7 +72,7 @@ function escapeHtml(str) {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-function renderHighlightedEssay(content, scores, activeDims) {
+function renderHighlightedEssay(content, scores, activeCardsSet) {
   destroyEditor();
 
   const container = document.getElementById('editor-container');
@@ -81,21 +81,36 @@ function renderHighlightedEssay(content, scores, activeDims) {
   const paragraphs = content.split('\n\n').map(p => p.trim()).filter(Boolean);
   const plainParagraphs = paragraphs.map(p => escapeHtml(p));
 
-  const dimKeys = [...activeDims];
-
   const ranges = [];
-  for (const key of dimKeys) {
-    const data = scores[key];
+  let cardIdx = 0;
+  for (const d of Object.keys(DIM_COLORS)) {
+    const data = scores[d];
     if (!data) continue;
     const items = data.items || (data.evidence ? [{ evidence: data.evidence }] : []);
-    for (const item of items) {
-      let evidence = (item.evidence || '').replace(/\s+/g, ' ').trim();
+    for (let i = 0; i < items.length; i++) {
+      const cardId = `rec-${d}-${i}`;
+      if (!activeCardsSet.has(cardId)) continue;
+      let evidence = (items[i].evidence || '').replace(/\s+/g, ' ').trim();
       if (!evidence) continue;
       const escaped = escapeHtml(evidence);
-      const idx = plainParagraphs.join('\n').indexOf(escaped);
+      const fullText = plainParagraphs.join('\n');
+      const idx = fullText.indexOf(escaped);
       if (idx !== -1) {
-        ranges.push({ start: idx, end: idx + escaped.length, key });
+        ranges.push({ start: idx, end: idx + escaped.length, key: d });
       }
+    }
+  }
+
+  for (const annCard of document.querySelectorAll('.essay-rec-card.focus-card')) {
+    const cardId = annCard.dataset.cardId;
+    if (!activeCardsSet.has(cardId)) continue;
+    let evidence = (annCard.dataset.evidence || '').replace(/\s+/g, ' ').trim();
+    if (!evidence) continue;
+    const escaped = escapeHtml(evidence);
+    const fullText = plainParagraphs.join('\n');
+    const idx = fullText.indexOf(escaped);
+    if (idx !== -1) {
+      ranges.push({ start: idx, end: idx + escaped.length, key: 'reflection' });
     }
   }
 
@@ -121,8 +136,8 @@ function renderHighlightedEssay(content, scores, activeDims) {
 function reapplyHighlights() {
   const scores = window._lastScores;
   if (!scores || !rawContent) return;
-  const activeDims = window._activeDims || new Set(Object.keys(DIM_COLORS));
-  renderHighlightedEssay(rawContent, scores, activeDims);
+  const ac = window._activeCards || new Set();
+  renderHighlightedEssay(rawContent, scores, ac);
 }
 
 function syncHighlights() {
@@ -138,8 +153,8 @@ function highlightAllDimensions() {
   }
   return new Promise(resolve => {
     requestAnimationFrame(() => {
-      const activeDims = window._activeDims || new Set(Object.keys(DIM_COLORS));
-      renderHighlightedEssay(rawContent, scores, activeDims);
+      const ac = window._activeCards || new Set();
+      renderHighlightedEssay(rawContent, scores, ac);
       resolve();
     });
   });
