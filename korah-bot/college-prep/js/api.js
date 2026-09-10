@@ -89,9 +89,10 @@ SCORING RUBRIC (each dimension 1-10):
 
 RULES:
 - Temperature must be 0 for consistent scoring.
-- Each dimension MUST have 2-3 items in its items array. Each item MUST include a different exact quote from the essay as evidence.
+- Each dimension MUST have at least 2 items in its items array, but include as many as needed to cover significant portions of the essay. Each item MUST include a different exact quote from the essay as evidence.
 - Each feedback MUST be one specific, actionable suggestion tied to its evidence quote. Never write replacement prose. Never suggest specific rewording.
 - Each item's evidence MUST be unique — do not reuse the same quote across items or dimensions.
+- Aim to highlight as much of the essay as possible. Include items for strong passages, weak passages, and passages that could be improved. The goal is comprehensive coverage.
 - Factor in the word limit: a 100-word supplemental should not be graded on reflection depth the same as a 650-word personal statement.`;
 
 const FOCUS_PROMPT = `You are a college essay coach. The student has a specific concern about their essay.
