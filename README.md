@@ -32,8 +32,9 @@ Endpoint names are intentionally short to avoid leaking provider/source info in 
 | `GET /api/sat/q` | `api/sat/q.js` | SAT question list (filtered stubs + first batch detailed) |
 | `GET /api/sat/qi` | `api/sat/qi.js` | Single SAT question detail (lazy-loaded on navigation) |
 | `GET /api/sat/s` | `api/sat/s.js` | Question bank stats (counts by domain/difficulty) |
+| `GET /api/college/c` | `api/college/c.js` | College list (Phase 1 hardcoded → Phase 2 colleges.json) |
 
-Client files that call these routes: `app/korah-chat.js`, `sat/math-chat.js`, `study/js/study-api.js`, `sat/questions.html`, `sat/js/sat-player.js`, `sat/js/sat-bank.js`.
+Client files that call these routes: `app/korah-chat.js`, `sat/math-chat.js`, `study/js/study-api.js`, `sat/questions.html`, `sat/js/sat-player.js`, `sat/js/sat-bank.js`, `sat/college match/js/college-page.js`.
 
 > Do NOT rename these back to descriptive names (e.g. `gem-proxy`, `sat/questions`). The short names are intentional.
 
