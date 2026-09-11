@@ -93,7 +93,8 @@ RULES:
 - Each feedback MUST be one specific, actionable suggestion tied to its evidence quote. Never write replacement prose. Never suggest specific rewording.
 - Each item's evidence MUST be unique — do not reuse the same quote across items or dimensions.
 - Aim to highlight as much of the essay as possible. Include items for strong passages, weak passages, and passages that could be improved. The goal is comprehensive coverage.
-- Factor in the word limit: a 100-word supplemental should not be graded on reflection depth the same as a 650-word personal statement.`;
+- Factor in the word limit: a 100-word supplemental should not be graded on reflection depth the same as a 650-word personal statement.
+- If a prompt is provided, evaluate how well the essay addresses that specific prompt. Use the prompt as context for scoring — an essay that strongly answers its prompt should score higher on relevance and focus.`;
 
 const FOCUS_PROMPT = `You are a college essay coach. The student has a specific concern about their essay.
 

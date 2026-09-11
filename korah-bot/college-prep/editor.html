@@ -9,6 +9,9 @@
   school: '',
   prompt: '',
   wordLimit: 650,
+  applicationWebsite: '',
+  applicationPrompt: '',
+  customPrompt: '',
   focusNote: '',
   getEffectiveTheme() {
     if (this.theme === 'system') {
@@ -132,6 +135,55 @@
           <label class="essay-setup-label">Word Limit</label>
           <input type="number" class="essay-setup-input" x-model.number="wordLimit" min="50" max="2000" placeholder="650">
         </div>
+
+        <!-- Application Website -->
+        <div class="essay-setup-field">
+          <label class="essay-setup-label">Application Website</label>
+          <select class="essay-setup-select" x-model="applicationWebsite">
+            <option value="">None — General Essay</option>
+            <option value="common_app">Common App</option>
+            <option value="questbridge">QuestBridge</option>
+          </select>
+        </div>
+
+        <!-- Custom Prompt (when no application selected) -->
+        <template x-if="applicationWebsite === ''">
+          <div class="essay-setup-field">
+            <label class="essay-setup-label">Prompt <span style="color: var(--tx3); font-weight: 400;">(optional)</span></label>
+            <textarea class="essay-setup-textarea" x-model="customPrompt" placeholder="Paste or type the essay prompt here to get tailored feedback..." rows="3"></textarea>
+          </div>
+        </template>
+
+        <!-- Common App Prompts -->
+        <template x-if="applicationWebsite === 'common_app'">
+          <div class="essay-setup-field">
+            <label class="essay-setup-label">Prompt</label>
+            <select class="essay-setup-select" x-model="applicationPrompt">
+              <option value="">Select a prompt...</option>
+              <option value="Some students have a background, identity, interest, or talent that is so meaningful they believe their application would be incomplete without it. If this sounds like you, then please share your story.">1 — Background, identity, interest, or talent</option>
+              <option value="The lessons we take from obstacles we encounter can be fundamental to later success. Recount a time when you faced a challenge, setback, or failure. How did it affect you, and what did you learn from the experience?">2 — Challenge, setback, or failure</option>
+              <option value="Reflect on a time when you questioned or challenged a belief or idea. What prompted your thinking? What was the outcome?">3 — Questioned or challenged a belief</option>
+              <option value="Reflect on something that someone has done for you that has made you happy or thankful in a surprising way. How has this gratitude affected or motivated you?">4 — Gratitude</option>
+              <option value="Discuss an accomplishment, event, or realization that sparked a period of personal growth and a new understanding of yourself or others.">5 — Personal growth</option>
+              <option value="Describe a topic, idea, or concept you find so engaging that it makes you lose all track of time. Why does it captivate you? What or who do you turn to when you want to learn more?">6 — Intellectual curiosity</option>
+              <option value="Share an essay on any topic of your choice. It can be one you've already written, one that responds to a different prompt, or one of your own design.">7 — Topic of your choice</option>
+            </select>
+          </div>
+        </template>
+
+        <!-- QuestBridge Prompts -->
+        <template x-if="applicationWebsite === 'questbridge'">
+          <div class="essay-setup-field">
+            <label class="essay-setup-label">Prompt</label>
+            <select class="essay-setup-select" x-model="applicationPrompt">
+              <option value="">Select a prompt...</option>
+              <option value="We are interested in learning more about you and the context in which you have grown up, formed your aspirations, and accomplished your academic successes. Please describe how the most influential factors and challenges in your life have shaped you into the person you are today.">Personal Essay — How factors and challenges shaped you (800 words)</option>
+              <option value="Tell us about a time you learned something new and were excited to uncover more information about that topic.">Topical Essay — Time you learned something new (400 words)</option>
+              <option value="Our behavior is often shaped by our values. Tell us about a value you hold.">Topical Essay — A value you hold (400 words)</option>
+              <option value="Tell us about a time when your perspective was different from someone else's.">Topical Essay — Different perspective (400 words)</option>
+            </select>
+          </div>
+        </template>
 
         <!-- Essay Content -->
         <div class="essay-setup-field">
@@ -301,7 +353,8 @@
       const { default: EssayScoring } = await import('./js/scoring.js');
 
       status.textContent = 'Scoring essay...';
-      const scores = await EssayAPI.score(content, d.essayType, d.school, d.prompt, d.wordLimit);
+      const effectivePrompt = d.applicationPrompt || d.customPrompt || '';
+      const scores = await EssayAPI.score(content, d.essayType, d.school, effectivePrompt, d.wordLimit);
 
       window._lastScores = scores;
       EssayScoring.render(scores);
