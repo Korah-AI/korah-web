@@ -1604,6 +1604,8 @@ html[data-theme="dark"] .sat-question-stem {
 
 /* Dark mode: keep loaded images on a white background so black content stays visible */
 html[data-theme="dark"] .sat-passage-card img,
+html[data-theme="dark"] .sat-question-stem img,
+html[data-theme="dark"] .sat-feedback-panel img,
 html[data-theme="dark"] .sat-answer-list img {
   filter: none;
   background: #ffffff;
@@ -1613,8 +1615,43 @@ html[data-theme="dark"] .sat-answer-list img {
 
 /* Inline SVG diagrams: invert so dark lines become white and are readable on dark bg */
 html[data-theme="dark"] .sat-passage-card svg,
+html[data-theme="dark"] .sat-question-stem svg,
+html[data-theme="dark"] .sat-feedback-panel svg,
 html[data-theme="dark"] .sat-answer-list svg {
   filter: invert(1) hue-rotate(180deg);
+}
+
+/* CB tables ship their own presentational classes, not ours, so borders have to
+   come from here or the table reads as loose columns of text. */
+.sat-question-stem table,
+.sat-feedback-panel table,
+.sat-passage-card table {
+  border-collapse: collapse;
+  margin: 0.75rem 0;
+}
+.sat-question-stem th,
+.sat-question-stem td,
+.sat-feedback-panel th,
+.sat-feedback-panel td,
+.sat-passage-card th,
+.sat-passage-card td {
+  border: 0.0625rem solid var(--bd2);
+  padding: 0.4rem 0.7rem;
+}
+
+/* Wide figures and tables scroll inside the question instead of overflowing it. */
+.sat-question-stem figure,
+.sat-feedback-panel figure {
+  margin: 0.75rem 0;
+  max-width: 100%;
+  overflow-x: auto;
+}
+.sat-question-stem svg,
+.sat-feedback-panel svg,
+.sat-question-stem img,
+.sat-feedback-panel img {
+  max-width: 100%;
+  height: auto;
 }
 
 .sat-passage-text,
@@ -1854,6 +1891,12 @@ html[data-theme="light"] .sat-spr-input.is-incorrect {
     padding: 1rem;
     background: var(--sf2);
     border: 0.0625rem solid var(--bd2);
+}
+
+/* The explanation body replaces the <p> wrapper the rationale used to sit in,
+   so it carries the gap that wrapper used to provide. */
+.sat-feedback-body {
+    margin-top: 0.75rem;
 }
 
 .sat-feedback-panel.is-correct {

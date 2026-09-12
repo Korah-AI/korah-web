@@ -3,7 +3,13 @@
 // NEW FEATURES: stopwatch, progress bar, reference panel, session modal, desmos calculator, question number
 // OLD FUNCTIONALITY: all original question loading/display/error handling preserved
 (() => {
-  const { parseOpenSatV1Query, buildOpenSatV1QuestionUrl, OPENSAT_CATALOG } = window.KorahSAT;
+  const {
+    parseOpenSatV1Query,
+    buildOpenSatV1QuestionUrl,
+    OPENSAT_CATALOG,
+    acceptedAnswersFor,
+    isAnswerCorrect,
+  } = window.KorahSAT;
   const query = parseOpenSatV1Query();
 
   // CollegeBoard matplotlib SVGs draw axis labels via <use xlink:href="#glyphId"/>.
@@ -322,12 +328,6 @@
   let desmosInstance = null;
   let resizeHandleInitialized = false;
 
-  // Normalize SPR answers for comparison: trim, lowercase, fix leading decimal (e.g. ".75" → "0.75")
-  function normalizeSprAnswer(val) {
-    if (!val) return "";
-    return String(val).trim().toLowerCase().replace(/^(-?)\./, "$10.");
-  }
-
   // Helper — always call this instead of setting playerCounter.textContent directly
   function setCounterText(text) {
     const el = document.getElementById('qNavCounterText');
@@ -604,8 +604,12 @@
       questionStemTitle.textContent = "";
       questionStemTitle.classList.add("is-hidden");
     }
-    setPassage(current.paragraph ? sanitizeHtml(current.paragraph) : "");
-    questionStem.innerHTML = sanitizeHtml(current.stem);
+    // CB's math "stimulus" is the figure or data table the question is about, not
+    // a reading passage, so it renders inline above the stem. The passage pane
+    // stays English-only — on math it would fight Desmos for the same half.
+    const stimulus = current.paragraph ? sanitizeHtml(current.paragraph) : "";
+    setPassage(isMath ? "" : stimulus);
+    questionStem.innerHTML = (isMath ? stimulus : "") + sanitizeHtml(current.stem);
     syncReviewState(!!state.reviewed[current.id]);
 
     // Toggle calc button text + visibility
@@ -629,9 +633,7 @@
     }
 
     const isSpr = current.type === "spr";
-    const isCorrect = isSpr
-      ? normalizeSprAnswer(selectedAnswer) === normalizeSprAnswer(current.correctAnswer)
-      : selectedAnswer === current.correctAnswer;
+    const isCorrect = isAnswerCorrect(current, selectedAnswer);
 
     if (isSpr) {
       const safeVal = selectedAnswer ? String(selectedAnswer).replace(/&/g, "&amp;").replace(/"/g, "&quot;") : "";
@@ -693,10 +695,13 @@
     }
 
     if (showExplanation) {
+      // SPR questions can have several accepted forms of the same value, and
+      // sometimes several different valid answers — show them all.
+      const answerText = acceptedAnswersFor(current).filter(Boolean).join(" or ");
       feedbackPanel.className = `sat-feedback-panel ${isCorrect ? "is-correct" : "is-incorrect"}`;
       feedbackPanel.innerHTML = `
-        <strong>${checked ? (isCorrect ? "Correct." : `Correct answer: ${current.correctAnswer}.`) : "Explanation preview."}</strong>
-        <p>${current.explanation}</p>
+        <strong>${checked ? (isCorrect ? "Correct." : `Correct answer: ${answerText}.`) : "Explanation preview."}</strong>
+        <div class="sat-feedback-body">${sanitizeHtml(current.explanation || "")}</div>
       `;
       feedbackPanel.classList.remove("is-hidden");
     } else {
@@ -828,6 +833,7 @@
           stem: body.stem || "",
           options: Array.isArray(body.options) ? body.options : [],
           correctAnswer: body.correctAnswer || "",
+          correctAnswers: Array.isArray(body.correctAnswers) ? body.correctAnswers : [],
           explanation: body.explanation || "",
           loaded: true,
         });
@@ -1104,10 +1110,7 @@
     // in this session, so refreshing/re-clicking doesn't double-count.
     if (!wasChecked && window.KorahSATAnalytics) {
       const selected = state.answers[current.id];
-      const isSpr = current.type === "spr";
-      const isCorrect = isSpr
-        ? normalizeSprAnswer(selected) === normalizeSprAnswer(current.correctAnswer)
-        : selected === current.correctAnswer;
+      const isCorrect = isAnswerCorrect(current, selected);
       window.KorahSATAnalytics.recordAttempt({
         questionId: current.detailKey || current.id,
         legacyQuestionId: current.id,
@@ -1657,9 +1660,7 @@
       } else if (!checked) {
         status = 'attempted';
       } else {
-        const isCorrect = q.type === 'spr'
-          ? normalizeSprAnswer(answered) === normalizeSprAnswer(q.correctAnswer)
-          : answered === q.correctAnswer;
+        const isCorrect = isAnswerCorrect(q, answered);
         status = isCorrect ? 'correct' : 'incorrect';
       }
 

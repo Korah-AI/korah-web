@@ -50,6 +50,7 @@ GET /api/sat/q
         { "key": "B", "text": "..." }
       ],
       "correctAnswer": "B",
+      "correctAnswers": ["B"],
       "explanation": "<p>...HTML rationale...</p>",
       "type": "mcq",
       "loaded": true
@@ -65,6 +66,7 @@ GET /api/sat/q
       "stem": "",
       "options": [],
       "correctAnswer": "",
+      "correctAnswers": [],
       "explanation": "",
       "type": "mcq",
       "loaded": false
@@ -76,6 +78,7 @@ GET /api/sat/q
 **Notes:**
 - `stem`, `options[].text`, `paragraph`, and `explanation` contain HTML (including MathML for math questions).
 - `type` is `"mcq"` (multiple choice) or `"spr"` (student-produced response). SPR questions have no `options`.
+- `correctAnswers` is every form College Board accepts. SPR answers routinely have more than one (`["25/4", "6.25"]`, or `["7", "8", "13"]` when several different values are valid); `correctAnswer` is just the first and is kept for display. Grade against the whole list.
 - `paragraph` contains the passage/stimulus HTML (used in reading questions). Empty string when there is no stimulus.
 - `loaded: false` means the question is a **stub** — `stem`, `options`, `correctAnswer`, and `explanation` are empty. The frontend hydrates stubs on demand via `/api/sat/qi?id=…` as the user navigates.
 - `batchSize` tells the frontend how many questions at the start of the array are fully loaded.
@@ -114,6 +117,10 @@ GET https://saic.collegeboard.org/disclosed/{questionId}.json
 ```
 
 Returns the actual question content: `stem`, `stimulus`, `answerOptions`, `correct_answer`, `rationale`, `type`. Detail responses are cached in-process for 24 hours.
+
+Disclosed questions carry no machine-readable answer for SPR items — the value is only stated in the rationale prose ("The correct answer is 25.4.") with fractions drawn as `<img alt="three halves">`. `extractDisclosedCorrectAnswer` flattens the rationale to text with alt text spliced in, then reads every value off that sentence.
+
+Both detail paths also rewrite two MathML elements that MathML Core dropped, so browsers render them: `<mfenced>` becomes `<mrow><mo>(</mo>…</mrow>`, and `<menclose notation="top">` becomes `<mover>` with an overbar (the segment/repeating bar).
 
 Only the first **20 questions** (`INITIAL_BATCH`) are fully detailed in the initial response (with concurrency capped at 5 simultaneous CB requests). The rest are returned as stubs.
 

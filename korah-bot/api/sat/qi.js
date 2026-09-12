@@ -1,4 +1,4 @@
-import { fetchQuestionDetail } from "../_lib/collegeboard.js";
+import { acceptedAnswers, fetchQuestionDetail } from "../_lib/collegeboard.js";
 
 export const config = {
   maxDuration: 30,
@@ -50,11 +50,8 @@ export default async function handler(req, res) {
             .filter((k) => detail.answerOptions[k] != null && detail.answerOptions[k] !== "")
             .map((k) => ({ key: k, text: detail.answerOptions[k] }))
         : [],
-      correctAnswer: Array.isArray(detail.correct_answer)
-        ? detail.correct_answer[0] ?? ""
-        : typeof detail.correct_answer === "string"
-          ? detail.correct_answer
-          : "",
+      correctAnswer: acceptedAnswers(detail.correct_answer)[0] ?? "",
+      correctAnswers: acceptedAnswers(detail.correct_answer),
       explanation: typeof detail.rationale === "string" ? detail.rationale : "",
     });
   } catch (err) {

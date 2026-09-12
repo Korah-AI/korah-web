@@ -159,37 +159,76 @@ async function fetchDisclosedQuestion(questionId, signal) {
   return null;
 }
 
-// Disclosed SPR rationales sometimes encode the correct answer in the
-// "<img alt=...>" alt text using written fractions; translate them numerically.
+// Disclosed questions state the answer in prose ("The correct answer is 25.4.")
+// and render fractions as <img alt="three halves">, so the answer has to be read
+// off the rationale text with the alt text spliced back in.
 const NUMERATOR_WORDS = {
-  one: 1, two: 2, three: 3, four: 4, five: 5,
-  six: 6, seven: 7, eight: 8, nine: 9, ten: 10,
+  one: 1, two: 2, three: 3, four: 4, five: 5, six: 6,
+  seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12,
 };
 const DENOMINATOR_WORDS = {
   half: 2, halves: 2, third: 3, thirds: 3, quarter: 4, quarters: 4,
-  fifth: 5, fifths: 5, sixth: 6, sixths: 6, seventh: 7, sevenths: 7,
-  eighth: 8, eighths: 8, ninth: 9, ninths: 9, tenth: 10, tenths: 10,
+  fourth: 4, fourths: 4, fifth: 5, fifths: 5, sixth: 6, sixths: 6,
+  seventh: 7, sevenths: 7, eighth: 8, eighths: 8, ninth: 9, ninths: 9,
+  tenth: 10, tenths: 10, eleventh: 11, elevenths: 11, twelfth: 12, twelfths: 12,
 };
-function translateFractionWords(word) {
-  if (!word) return "";
-  const m = word.toLowerCase().trim().match(/^(\w+)\s+(\w+)$/);
-  if (!m) return word;
-  const n = NUMERATOR_WORDS[m[1]];
-  const d = DENOMINATOR_WORDS[m[2]];
-  return n != null && d != null ? `${n}/${d}` : word;
+
+function flattenRationale(html) {
+  return String(html || "")
+    .replace(/<img[^>]*\balt="([^"]*)"[^>]*>/gi, " $1 ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/\s+/g, " ")
+    // "3,540" is one number; "7, 8, or 13" is a list. Only the separator-free
+    // thousands comma is dropped so the two cases stay distinguishable.
+    .replace(/(\d),(?=\d{3}\b)/g, "$1");
+}
+
+// One accepted value at the head of `text`, in any of the forms CB writes:
+// "25.4", "10/3", "the fraction 10 over 3", "three halves". Leading list
+// separators are skipped so "either 7, 8, or 13" reads as three values.
+const ANSWER_TOKEN =
+  /^(?:\s*(?:,|or|and)\s*)*\s*(?:(?:the\s+)?fraction\s+(-?[\d.]+)\s+over\s+(-?[\d.]+)|(-?[\d.]+)\s*\/\s*(-?[\d.]+)|([a-z]+)\s+([a-z]+)|(-?\d*\.?\d+))/i;
+
+function readAnswerToken(text) {
+  const m = ANSWER_TOKEN.exec(text);
+  if (!m) return null;
+  const [, fracN, fracD, slashN, slashD, word1, word2, plain] = m;
+  if (fracN) return { value: `${fracN}/${fracD}`, length: m[0].length };
+  if (slashN) return { value: `${slashN}/${slashD}`, length: m[0].length };
+  if (word1) {
+    const n = NUMERATOR_WORDS[word1.toLowerCase()];
+    const d = DENOMINATOR_WORDS[word2.toLowerCase()];
+    return n != null && d != null
+      ? { value: `${n}/${d}`, length: m[0].length }
+      : null;
+  }
+  if (plain) return { value: plain, length: m[0].length };
+  return null;
 }
 
 function extractDisclosedCorrectAnswer(q) {
-  if (q.answer?.style === "Multiple Choice" && q.answer.correct_choice) {
-    return [String(q.answer.correct_choice).toUpperCase()];
+  if (q.answer?.style === "Multiple Choice") {
+    if (q.answer.correct_choice) {
+      return [String(q.answer.correct_choice).toUpperCase()];
+    }
+    const m = /The correct answer is ([A-D])\.|Choice ([A-D]) is correct\./i.exec(
+      q.answer?.rationale || ""
+    );
+    return m ? [(m[1] || m[2]).toUpperCase()] : [];
   }
-  const rationale = q.answer?.rationale || "";
-  const m = rationale.match(
-    /The correct answer is ([A-D])\.|Choice ([A-D]) is correct\.|alt="([^"]*)"/i
-  );
-  if (!m) return [];
-  if (m[3]) return [translateFractionWords(m[3]).toUpperCase()];
-  return [(m[1] || m[2] || "").toUpperCase()];
+  const text = flattenRationale(q.answer?.rationale);
+  const intro = /the correct answer is\s*(?:either\s*)?/i.exec(text);
+  if (!intro) return [];
+  let rest = text.slice(intro.index + intro[0].length, intro.index + intro[0].length + 200);
+  const answers = [];
+  while (answers.length < 6) {
+    const hit = readAnswerToken(rest);
+    if (!hit) break;
+    answers.push(hit.value);
+    rest = rest.slice(hit.length);
+  }
+  return answers;
 }
 
 async function fetchRegularQuestion(externalId, signal) {
@@ -273,15 +312,33 @@ export function expandMfenced(html) {
   });
 }
 
+// ── MathML <menclose> expansion ────────────────────────────────────────
+// <menclose notation="top"> is how CB draws the segment bar in "line segment AB"
+// and the repeating bar in "0.3 repeating". MathML Core dropped <menclose>, so
+// browsers render the children and lose the bar — which changes the meaning.
+// <mover> with a combining overbar is the Core equivalent.
+export function expandMenclose(html) {
+  if (typeof html !== "string" || !html.includes("<menclose")) return html;
+  // Only notation="top" is rewritten; any other notation is left alone so its
+  // children still render rather than being silently restructured.
+  return html.replace(
+    /<menclose\b([^>]*)>([\s\S]*?)<\/menclose>/gi,
+    (whole, attrs, inner) =>
+      /\bnotation\s*=\s*"top"/i.test(attrs)
+        ? `<mover accent="true"><mrow>${inner}</mrow><mo>&#175;</mo></mover>`
+        : whole
+  );
+}
+
 // Every question's HTML passes through here on its way to the API routes.
 function expandDetailMfenced(detail) {
   if (!detail) return detail;
   for (const field of ["stem", "stimulus", "rationale"]) {
-    detail[field] = expandMfenced(detail[field]);
+    detail[field] = expandMenclose(expandMfenced(detail[field]));
   }
   if (detail.answerOptions) {
     for (const key of Object.keys(detail.answerOptions)) {
-      detail.answerOptions[key] = expandMfenced(detail.answerOptions[key]);
+      detail.answerOptions[key] = expandMenclose(expandMfenced(detail.answerOptions[key]));
     }
   }
   return detail;
@@ -329,6 +386,13 @@ export function findCachedQuestionMeta(id) {
   return null;
 }
 
+// CB ships every accepted form of an SPR answer ("25/4" and "6.25" both grade
+// as correct), so the whole list travels to the frontend, not just the first.
+export function acceptedAnswers(raw) {
+  const list = Array.isArray(raw) ? raw : typeof raw === "string" ? [raw] : [];
+  return [...new Set(list.map((v) => String(v).trim()).filter(Boolean))];
+}
+
 export function normalizeQuestion(meta, detail) {
   const domainCode = meta?.primary_class_cd;
   const domainName =
@@ -341,6 +405,7 @@ export function normalizeQuestion(meta, detail) {
   // external_id / ibn are what the CB detail API accepts — use them as the
   // canonical id so that stored analytics IDs can always be re-fetched.
   const detailKey = meta?.external_id || meta?.ibn || "";
+  const accepted = loaded ? acceptedAnswers(detail.correct_answer) : [];
 
   return {
     id: meta?.external_id || meta?.ibn || meta?.questionId || "",
@@ -352,13 +417,8 @@ export function normalizeQuestion(meta, detail) {
     paragraph: loaded ? fixImageUrls(detail.stimulus) : "",
     stem: loaded ? fixImageUrls(detail.stem) : "",
     options: loaded ? optionsArray(detail.answerOptions) : [],
-    correctAnswer: loaded
-      ? Array.isArray(detail.correct_answer)
-        ? detail.correct_answer[0] ?? ""
-        : typeof detail.correct_answer === "string"
-          ? detail.correct_answer
-          : ""
-      : "",
+    correctAnswer: accepted[0] ?? "",
+    correctAnswers: accepted,
     explanation: loaded ? fixImageUrls(detail.rationale) : "",
     type: loaded ? detail.type || "mcq" : "mcq",
     loaded,

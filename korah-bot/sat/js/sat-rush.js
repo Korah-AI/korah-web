@@ -64,10 +64,6 @@
     "You nailed it!", "Superb!", "Impressive!", "You're on fire!", "Keep it up!",
   ];
 
-  function normalizeSpr(v) {
-    return String(v == null ? "" : v).trim().replace(/\s+/g, "").toLowerCase();
-  }
-
   // ── Selection state (onboarding) ──────────────────────────────────────────
   const sel = {
     subject: null,          // "math" | "english"
@@ -437,6 +433,7 @@
           stem: body.stem || "",
           options: Array.isArray(body.options) ? body.options : [],
           correctAnswer: body.correctAnswer || "",
+          correctAnswers: Array.isArray(body.correctAnswers) ? body.correctAnswers : [],
           explanation: body.explanation || "",
           loaded: true,
         });
@@ -597,9 +594,7 @@
     stopTimer();
 
     const isSpr = q.type === "spr";
-    const correct = isSpr
-      ? normalizeSpr(rush.selected) === normalizeSpr(q.correctAnswer)
-      : rush.selected === q.correctAnswer;
+    const correct = window.KorahSAT.isAnswerCorrect(q, rush.selected);
 
     // Visual feedback
     if (isSpr) {
@@ -616,7 +611,10 @@
     // Explanation
     const exp = $("rushExplanation");
     exp.className = `rush-explanation ${correct ? "is-correct" : "is-wrong"}`;
-    setHtml(exp, `<strong>${correct ? "Correct." : `Correct answer: ${q.correctAnswer}`}</strong>${q.explanation || ""}`);
+    // SPR questions can have several accepted forms of the same value, and
+    // sometimes several different valid answers — show them all.
+    const answerText = window.KorahSAT.acceptedAnswersFor(q).filter(Boolean).join(" or ");
+    setHtml(exp, `<strong>${correct ? "Correct." : `Correct answer: ${answerText}`}</strong>${q.explanation || ""}`);
 
     // Stats
     rush.stats.answered++;

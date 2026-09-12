@@ -212,6 +212,83 @@
   }
 
 
+  // ── SPR grading ───────────────────────────────────────────────────────────
+  // Normalize SPR answers for comparison: trim, lowercase, fix leading decimal (e.g. ".75" → "0.75")
+  function normalizeSprAnswer(val) {
+    if (!val) return "";
+    return String(val).trim().toLowerCase().replace(/^(-?)\./, "$10.");
+  }
+
+  // SPR answers are graded by value, not by spelling: College Board accepts any
+  // form that evaluates to the right number, so 1/4, 0.25 and .25 all count.
+  // Returns null for anything that isn't a plain number or a simple fraction.
+  function parseSprNumber(val) {
+    const cleaned = String(val ?? "")
+      .trim()
+      .replace(/[\u2212\u2013\u2014]/g, "-") // unicode minus / en / em dash
+      .replace(/[\s,$]/g, "");
+    if (!cleaned) return null;
+    const frac = /^(-?\d*\.?\d+)\/(-?\d*\.?\d+)$/.exec(cleaned);
+    if (frac) {
+      const n = Number(frac[1]);
+      const d = Number(frac[2]);
+      return Number.isFinite(n) && Number.isFinite(d) && d !== 0 ? n / d : null;
+    }
+    if (!/^-?\d*\.?\d+$/.test(cleaned)) return null;
+    const n = Number(cleaned);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  // Digits the student actually typed after the decimal point, or null if they
+  // did not enter a plain decimal (fractions are exact, so precision is moot).
+  function typedDecimals(val) {
+    const m = /^-?\d*\.(\d+)$/.exec(String(val ?? "").trim().replace(/[\s,$]/g, ""));
+    return m ? m[1].length : null;
+  }
+
+  // Leading zeros carry no precision, so ".0714" is three significant digits.
+  function significantDigits(val) {
+    const digits = String(val ?? "").replace(/[^0-9]/g, "").replace(/^0+/, "");
+    return digits.length;
+  }
+
+  function sprAnswerMatches(input, expected) {
+    if (!input) return false;
+    if (normalizeSprAnswer(input) === normalizeSprAnswer(expected)) return true;
+    const typed = parseSprNumber(input);
+    const target = parseSprNumber(expected);
+    if (typed === null || target === null) return false;
+    if (Math.abs(typed - target) < 1e-9) return true;
+    // A non-terminating value may be truncated or rounded, as long as the entry
+    // fills the grid — CB's bar is three significant digits, which is what makes
+    // .0714 a correct entry for 1/14. Either side may be the rounded one, since
+    // CB sometimes publishes the rounded decimal as the accepted answer.
+    return roundsTo(input, typed, target) || roundsTo(expected, target, typed);
+  }
+
+  function roundsTo(text, value, exact) {
+    const places = typedDecimals(text);
+    if (places === null || significantDigits(text) < 3) return false;
+    const scale = Math.pow(10, places);
+    return (
+      Math.abs(value - Math.trunc(exact * scale) / scale) < 1e-9 ||
+      Math.abs(value - Math.round(exact * scale) / scale) < 1e-9
+    );
+  }
+
+  // CB ships every accepted form (e.g. ["25/4", "6.25"]); older cached payloads
+  // only carry the single correctAnswer field.
+  function acceptedAnswersFor(question) {
+    const list = Array.isArray(question?.correctAnswers) ? question.correctAnswers : [];
+    return list.length ? list : [question?.correctAnswer ?? ""];
+  }
+
+  function isAnswerCorrect(question, answer) {
+    if (!question) return false;
+    if (question.type !== "spr") return answer === question.correctAnswer;
+    return acceptedAnswersFor(question).some((a) => sprAnswerMatches(answer, a));
+  }
+
   function getOpenSatDomainsBySection(sectionKey) {
     const section = OPENSAT_CATALOG.sections.find((s) => s.key === sectionKey);
     return section ? section.domains : [];
@@ -227,5 +304,7 @@
     buildOpenSatV1QuestionUrl,
     getOpenSatSection,
     getOpenSatDomainsBySection,
+    acceptedAnswersFor,
+    isAnswerCorrect,
   };
 })();
