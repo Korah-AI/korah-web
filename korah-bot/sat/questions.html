@@ -2162,6 +2162,110 @@ RULES:
 </div>
 <!-- END QUESTION NAVIGATOR PANEL -->
 
+<!-- ═══ BUG-FIX TOAST ═══ -->
+<style>
+  /* Solid light grey, not a translucent panel: it sits over the question and
+     must stay readable against both themes. */
+  .fix-toast {
+    position: fixed;
+    left: 1.25rem;
+    /* .sat-player-footer is fixed at bottom:0 with z-index 1000, so the toast
+       clears its band and outranks it instead of sliding under it. */
+    bottom: calc(var(--player-footer-h, 4rem) + 1rem);
+    z-index: 1100;
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    max-width: 26rem;
+    padding: 0.875rem 1rem;
+    border-radius: 0.875rem;
+    background: #6e6e73;
+    border: 0.0625rem solid #85858a;
+    box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.28);
+    color: #ffffff;
+    opacity: 0;
+    transform: translateY(0.75rem);
+    transition: opacity 0.32s ease, transform 0.32s ease;
+    pointer-events: none;
+  }
+  .fix-toast.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+  .fix-toast-text {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: #ffffff;
+  }
+  .fix-toast-text strong {
+    font-weight: 700;
+    color: #ffffff;
+  }
+  .fix-toast-logo {
+    flex-shrink: 0;
+    width: 2rem;
+    height: 2rem;
+    object-fit: contain;
+  }
+  .fix-toast-close {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.375rem;
+    height: 1.375rem;
+    padding: 0;
+    border: none;
+    border-radius: 62.4375rem;
+    background: transparent;
+    color: #ffffff;
+    cursor: pointer;
+    transition: transform 0.18s ease, background 0.18s ease;
+  }
+  .fix-toast-close:hover {
+    transform: scale(1.08);
+    background: rgba(255, 255, 255, 0.16);
+  }
+
+  @media (max-width: 480px) {
+    .fix-toast {
+      left: 0.75rem;
+      right: 0.75rem;
+      bottom: calc(var(--player-footer-h, 4rem) + 0.75rem);
+      max-width: none;
+    }
+  }
+</style>
+
+<div class="fix-toast" id="fixToast" role="status" aria-live="polite">
+  <span class="fix-toast-text">
+    <strong>Bug Fixes:</strong> Math problems now show all figures/graphs, accept alternate answers, and output correctly formatted explanations.
+  </span>
+  <img class="fix-toast-logo" src="../logo-images/newlogo10.png" alt="" width="32" height="32"/>
+  <button class="fix-toast-close" id="fixToastClose" type="button" aria-label="Dismiss">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+    </svg>
+  </button>
+</div>
+
+<script>
+  (function () {
+    const toast = document.getElementById('fixToast');
+    const close = document.getElementById('fixToastClose');
+    if (!toast || !close) return;
+    // Next frame, so the transition has a starting state to animate from.
+    requestAnimationFrame(() => toast.classList.add('is-visible'));
+    close.addEventListener('click', () => {
+      toast.classList.remove('is-visible');
+      toast.addEventListener('transitionend', () => toast.remove(), { once: true });
+    });
+  })();
+</script>
+
 <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
 <script src="https://www.desmos.com/api/v1.12/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
