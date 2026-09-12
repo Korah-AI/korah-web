@@ -80,9 +80,9 @@ function renderHighlightedEssay(content, scores, activeCardsSet) {
 
   const paragraphs = content.split('\n\n').map(p => p.trim()).filter(Boolean);
   const plainParagraphs = paragraphs.map(p => escapeHtml(p));
+  const fullText = plainParagraphs.join('\n');
 
   const ranges = [];
-  let cardIdx = 0;
   for (const d of Object.keys(DIM_COLORS)) {
     const data = scores[d];
     if (!data) continue;
@@ -93,10 +93,9 @@ function renderHighlightedEssay(content, scores, activeCardsSet) {
       let evidence = (items[i].evidence || '').replace(/\s+/g, ' ').trim();
       if (!evidence) continue;
       const escaped = escapeHtml(evidence);
-      const fullText = plainParagraphs.join('\n');
       const idx = fullText.indexOf(escaped);
       if (idx !== -1) {
-        ranges.push({ start: idx, end: idx + escaped.length, key: d });
+        ranges.push({ start: idx, end: idx + escaped.length, key: d, len: escaped.length });
       }
     }
   }
@@ -107,24 +106,31 @@ function renderHighlightedEssay(content, scores, activeCardsSet) {
     let evidence = (annCard.dataset.evidence || '').replace(/\s+/g, ' ').trim();
     if (!evidence) continue;
     const escaped = escapeHtml(evidence);
-    const fullText = plainParagraphs.join('\n');
     const idx = fullText.indexOf(escaped);
     if (idx !== -1) {
-      ranges.push({ start: idx, end: idx + escaped.length, key: 'reflection' });
+      ranges.push({ start: idx, end: idx + escaped.length, key: 'reflection', len: escaped.length });
     }
   }
 
-  ranges.sort((a, b) => b.start - a.start);
+  ranges.sort((a, b) => a.start - b.start || b.len - a.len);
 
-  let fullText = plainParagraphs.join('\n');
+  const filtered = [];
   for (const r of ranges) {
-    const before = fullText.slice(0, r.start);
-    const match = fullText.slice(r.start, r.end);
-    const after = fullText.slice(r.end);
-    fullText = before + `<mark class="essay-dim-highlight dim-${r.key}">${match}</mark>` + after;
+    const insideAnother = filtered.some(f => r.start >= f.start && r.end <= f.end);
+    if (!insideAnother) filtered.push(r);
   }
 
-  const html = fullText.split('\n').map(p => `<p>${p || '&nbsp;'}</p>`).join('');
+  filtered.sort((a, b) => b.start - a.start);
+
+  let result = fullText;
+  for (const r of filtered) {
+    const before = result.slice(0, r.start);
+    const match = result.slice(r.start, r.end);
+    const after = result.slice(r.end);
+    result = before + `<mark class="essay-dim-highlight dim-${r.key}">${match}</mark>` + after;
+  }
+
+  const html = result.split('\n').map(p => `<p>${p || '&nbsp;'}</p>`).join('');
 
   container.innerHTML = `<div class="essay-editor-content essay-static-view">${html}</div>`;
 
