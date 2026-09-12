@@ -116,10 +116,9 @@ html[data-theme="light"] .korah-grey {
 }
 
 /* The glass utilities are the last translucent surfaces in the markup: .glass
-   and .glass-sm carry a blur plus the see-through --sf, and the topbars add an
-   inline opacity on top of it. Opaque grey, no blur, full opacity. (.glass-card
-   is a different class and keeps its tone fill below.) */
-.korah-grey .chat-topbar,
+   and .glass-sm carry a blur plus the see-through --sf. Opaque grey, no blur.
+   (.glass-card is a different class and keeps its tone fill below. .chat-topbar
+   is chrome, not page body, so it keeps the app's purple --sf.) */
 .korah-grey .glass,
 .korah-grey .glass-sm,
 .korah-grey .bg-sf,
@@ -128,9 +127,14 @@ html[data-theme="light"] .korah-grey {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
+
+/* The topbar is chrome, not page body, so it keeps the app's purple --sf and
+   its blur. It carries .bg-sf and .glass-sm in the markup, so it has to be
+   named back out of the rule above. */
 .korah-grey .chat-topbar {
-  border-color: var(--kg-bd);
-  opacity: 1;
+  background: var(--sf);
+  backdrop-filter: blur(0.9375rem);
+  -webkit-backdrop-filter: blur(0.9375rem);
 }
 
 /* ── Identity ───────────────────────────────────────────────────────────────
