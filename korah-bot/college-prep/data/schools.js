@@ -136,7 +136,7 @@ const SCHOOLS = {
     ],
     values: 'Vanderbilt values academic excellence, collaboration, and a commitment to service. They seek students who are intellectually curious, resilient, and committed to making a difference. They value the ability to engage with complex ideas, work with diverse people, and contribute to a close-knit community.',
   },
-  notre dame: {
+  notre_dame: {
     name: 'University of Notre Dame',
     prompts: [
       { value: 'What is one thing you want the Notre Dame admissions committee to know about you?', label: 'What you want Notre Dame to know' },
