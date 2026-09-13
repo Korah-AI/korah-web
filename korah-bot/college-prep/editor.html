@@ -13,6 +13,7 @@
   applicationPrompt: '',
   customPrompt: '',
   focusNote: '',
+  schoolList: window.getSchoolList ? window.getSchoolList() : [],
   getEffectiveTheme() {
     if (this.theme === 'system') {
       return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
@@ -47,6 +48,7 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="../app/korah-chat.css"/>
 <link rel="stylesheet" href="college-prep.css"/>
+<script src="data/schools.js"></script>
 <style>
   .feed-scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; }
   .feed-page { padding: 1.75rem 2.25rem 3.75rem; max-width: 77.5rem; margin: 0 auto; }
@@ -110,31 +112,29 @@
         </div>
 
         <!-- Supplemental-only fields -->
-        <template x-if="essayType === 'supplemental'">
-          <div>
-            <div class="essay-setup-field">
-              <label class="essay-setup-label">Target School</label>
-              <select class="essay-setup-select" x-model="school" @change="schoolPrompt = ''">
-                <option value="">Select a school...</option>
-                <template x-for="s in Object.keys(window.SCHOOLS || {})" :key="s">
-                  <option :value="s" x-text="window.SCHOOLS[s].name"></option>
-                </template>
-              </select>
-            </div>
-            <div class="essay-setup-field" x-show="school" x-cloak>
-              <label class="essay-setup-label">Prompt</label>
-              <select class="essay-setup-select" x-model="schoolPrompt">
-                <option value="">Select a prompt...</option>
-                <template x-for="p in (window.getSchoolPrompts ? window.getSchoolPrompts(school) : [])" :key="p.value">
-                  <option :value="p.value" x-text="p.label"></option>
-                </template>
-              </select>
-            </div>
+        <div x-show="essayType === 'supplemental'" x-cloak>
+          <div class="essay-setup-field">
+            <label class="essay-setup-label">Target School</label>
+            <select class="essay-setup-select" x-model="school" @change="schoolPrompt = ''">
+              <option value="">Select a school...</option>
+              <template x-for="s in schoolList" :key="s.key">
+                <option :value="s.key" x-text="s.name"></option>
+              </template>
+            </select>
           </div>
-        </template>
+          <div class="essay-setup-field" x-show="school">
+            <label class="essay-setup-label">Prompt</label>
+            <select class="essay-setup-select" x-model="schoolPrompt">
+              <option value="">Select a prompt...</option>
+              <template x-for="p in (window.getSchoolPrompts(school) || [])" :key="p.value">
+                <option :value="p.value" x-text="p.label"></option>
+              </template>
+            </select>
+          </div>
+        </div>
 
         <!-- Personal Statement-only fields -->
-        <template x-if="essayType === 'personal_statement'">
+        <div x-show="essayType === 'personal_statement'" x-cloak>
           <div>
             <!-- Application Website -->
             <div class="essay-setup-field">
@@ -185,7 +185,7 @@
               </div>
             </template>
           </div>
-        </template>
+        </div>
 
         <!-- Word Limit -->
         <div class="essay-setup-field">
@@ -270,7 +270,6 @@
 </div>
 
 <script type="module" src="js/editor.js"></script>
-<script src="data/schools.js"></script>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
   import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
