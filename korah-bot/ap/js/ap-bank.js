@@ -24,6 +24,7 @@
       format: 'math',
       icon: 'calculate',
       frqLabel: 'FRQs',
+      frqUnit: 'FRQ',
     },
     {
       slug: 'ap-us-history',
@@ -34,6 +35,7 @@
       format: 'prose',
       icon: 'history_edu',
       frqLabel: 'SAQs',
+      frqUnit: 'SAQ',
     },
   ];
 
@@ -127,9 +129,10 @@
     return found ? found.label : key;
   }
 
-  /** Human label for an FRQ's part + year, e.g. "2023 FRQ 1". */
+  /** Human label for an FRQ's part + year, e.g. "2023 FRQ 1" / "2023 SAQ 2". */
   function frqLabel(frq) {
-    const q = frq.questionNumber != null ? ` FRQ ${frq.questionNumber}` : '';
+    const unit = (getCourse(frq && frq.course) || {}).frqUnit || 'FRQ';
+    const q = frq.questionNumber != null ? ` ${unit} ${frq.questionNumber}` : '';
     return `${frq.year}${q}`;
   }
 

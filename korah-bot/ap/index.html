@@ -29,7 +29,7 @@
 <link rel="icon" type="image/png" href="../logo-images/newlogo0.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <script src="../sidebar-loader.js" defer></script>
@@ -112,7 +112,7 @@
 
   <!-- Top bar -->
   <header class="chat-topbar bg-sf glass-sm t-theme bd" style="opacity: 0.95;">
-    <button id="sidebar-toggle" @click="toggleSidebar()" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
+    <button id="sidebar-toggle" @click="toggleSidebar()" class="sidebar-toggle-btn t-btn tx" aria-label="Toggle sidebar">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
       </svg>
@@ -143,8 +143,8 @@
         <div class="ap-loading"><div class="ap-spinner"></div><div class="ap-loading-text">Loading courses...</div></div>
       </div>
 
-      <div style="margin-top:2.25rem;padding:1.25rem 1.375rem;border-radius:1.125rem;background:var(--sf);border:1px solid var(--bd);">
-        <div class="ap-fix-label" style="color:var(--p5);"><span class="material-icons-round" style="font-size:1rem;">lightbulb</span> How it works</div>
+      <div style="margin-top:2.25rem;padding:1.25rem 1.375rem;border-radius:1.125rem;background:var(--ap-sf);border:1px solid var(--ap-bd);">
+        <div class="ap-fix-label" style="color:var(--acc);"><span class="material-icons-round" style="font-size:1rem;">lightbulb</span> How it works</div>
         <ol style="margin:0;padding-left:1.25rem;display:grid;gap:0.5rem;color:var(--tx2);font-size:0.875rem;line-height:1.6;">
           <li>Work the question under its real time limit. Type your answer or photograph your handwritten work.</li>
           <li>Review the transcription, fix any misread math, then confirm.</li>
@@ -187,6 +187,9 @@
 
     const grid = document.getElementById('course-grid');
 
+    // One accent per course, so the picker is never a single flat color.
+    const courseTones = { 'ap-calculus-ab': 'tone-blue', 'ap-us-history': 'tone-pink' };
+
     async function attemptedMap(source) {
       if (!window.KorahAPProgress || !window.KorahAPProgress.latestPerFrq) return null;
       const out = {};
@@ -227,7 +230,7 @@
       }));
 
       grid.innerHTML = rows.map(({ c, n, rubricPoints }) => `
-        <a class="ap-course-card" href="./frqs.html?course=${encodeURIComponent(c.slug)}">
+        <a class="ap-course-card ${courseTones[c.slug] || 'tone-blue'}" href="./frqs.html?course=${encodeURIComponent(c.slug)}">
           <div class="ap-course-card-top">
             <div class="ap-course-icon"><span class="material-icons-round">${c.icon}</span></div>
             <span class="ap-badge ap-badge-timer">${n} ${c.frqLabel.toLowerCase()}</span>

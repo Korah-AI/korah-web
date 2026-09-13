@@ -2,7 +2,7 @@
  * AP attempt — the state machine behind ap/attempt.html.
  *
  * States (single page, sections toggled):
- *   pre        -> the FRQ and its meta, Start button
+ *   pre        -> time/pacing info + meta chips, Start button (no question yet)
  *   active     -> timer running, prompt stays on screen, typed box + photo upload
  *   transcribe -> thumbnails + editable transcription, Confirm and grade
  *   grading    -> spinner while KorahAPGrader works
@@ -95,13 +95,12 @@
   /* ── Prompt rendering ──────────────────────────────────────────────────── */
 
   function renderPrompt(frq) {
-    const staticPrompt = el('frq-static-prompt');
     const activePrompt = el('frq-active-prompt');
     const title = `${frq.year} | ${frq.title}`;
     document.title = `Korah AI — ${title} · AP FRQ` ;
 
     $('ap-page-title').textContent = frq.title;
-    $('ap-frq-breadcrumb').textContent = `${state.course.name} · ${frq.year} FRQ ${frq.questionNumber}`;
+    $('ap-frq-breadcrumb').textContent = `${state.course.name} · ${window.KorahAP.frqLabel(frq)}`;
 
     const body = (p) => `
       ${safeHtml(p.prompt || '')}
@@ -112,9 +111,7 @@
         </div>`).join('')}
     `;
 
-    staticPrompt.innerHTML = body(frq);
     activePrompt.innerHTML = body(frq);
-    renderMath(staticPrompt);
     renderMath(activePrompt);
 
     const chips = el('frq-meta-chips');
@@ -132,6 +129,7 @@
     el('answer-box-note').textContent = `You can ${qType} The timer keeps running past zero; use the time to finish your thoughts.`;
 
     el('pre-total-points').textContent = `${countPoints(frq)} points · official-style rubric`;
+    el('pre-allotted-time').textContent = `${frq.timeAllottedMin} minute${frq.timeAllottedMin === 1 ? '' : 's'}`;
   }
 
   function countPoints(frq) {
@@ -454,13 +452,13 @@
     }
 
     if (!state.course) {
-      $('ap-app-root').innerHTML = '<div class="ap-page" style="padding:1.25rem"><p>Unknown course. <a href="./index.html" style="color:var(--p4)">Back to courses</a>.</p></div>';
+      $('ap-app-root').innerHTML = '<div class="ap-page" style="padding:1.25rem"><p>Unknown course. <a href="./index.html" style="color:var(--tone-blue)">Back to courses</a>.</p></div>';
       return;
     }
 
     const frq = await window.KorahAP.getFrq(courseSlug, frqId);
     if (!frq) {
-      $('ap-app-root').innerHTML = `<div class="ap-page" style="padding:1.25rem"><p>FRQ not found. <a href="./frqs.html?course=${encodeURIComponent(courseSlug)}" style="color:var(--p4)">Back to ${esc(state.course.name)}</a>.</p></div>`;
+      $('ap-app-root').innerHTML = `<div class="ap-page" style="padding:1.25rem"><p>FRQ not found. <a href="./frqs.html?course=${encodeURIComponent(courseSlug)}" style="color:var(--tone-blue)">Back to ${esc(state.course.name)}</a>.</p></div>`;
       return;
     }
     state.frq = frq;
