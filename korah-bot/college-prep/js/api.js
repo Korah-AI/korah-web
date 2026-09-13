@@ -94,7 +94,8 @@ RULES:
 - Each item's evidence MUST be unique — do not reuse the same quote across items or dimensions.
 - Aim to highlight as much of the essay as possible. Include items for strong passages, weak passages, and passages that could be improved. The goal is comprehensive coverage.
 - Factor in the word limit: a 100-word supplemental should not be graded on reflection depth the same as a 650-word personal statement.
-- If a prompt is provided, evaluate how well the essay addresses that specific prompt. Use the prompt as context for scoring — an essay that strongly answers its prompt should score higher on relevance and focus.`;
+- If a prompt is provided, evaluate how well the essay addresses that specific prompt. Use the prompt as context for scoring — an essay that strongly answers its prompt should score higher on relevance and focus.
+- For supplemental essays, evaluate how well the essay aligns with the specific school's values and mission. Consider what the school looks for in its students and how the essay demonstrates those qualities.`;
 
 const FOCUS_PROMPT = `You are a college essay coach. The student has a specific concern about their essay.
 
@@ -170,15 +171,23 @@ async function callApi(systemPrompt, userContent) {
 }
 
 async function annotate(essayText, essayType, school, prompt, wordLimit) {
+  let schoolValues = '';
+  if (school && essayType === 'supplemental' && window.getSchoolValues) {
+    schoolValues = window.getSchoolValues(school);
+  }
   const paragraphs = essayText.split(/\n\n+/).filter(p => p.trim());
   const numbered = paragraphs.map((p, i) => `[Paragraph ${i}]: ${p}`).join('\n\n');
-  const userMsg = `Essay type: ${essayType === 'supplemental' ? 'Supplemental' : 'Personal Statement'}\nWord limit: ${wordLimit}\n${school ? `Target school: ${school}` : ''}\n${prompt ? `Prompt: ${prompt}` : ''}\n\nEssay:\n${numbered}`;
+  const userMsg = `Essay type: ${essayType === 'supplemental' ? 'Supplemental' : 'Personal Statement'}\nWord limit: ${wordLimit}\n${school ? `Target school: ${school}` : ''}${schoolValues ? `\nSchool values: ${schoolValues}` : ''}\n${prompt ? `Prompt: ${prompt}` : ''}\n\nEssay:\n${numbered}`;
   const result = await callApi(ANNOTATION_PROMPT, userMsg);
   return result?.annotations || [];
 }
 
 async function score(essayText, essayType, school, prompt, wordLimit) {
-  const userMsg = `Essay type: ${essayType === 'supplemental' ? 'Supplemental' : 'Personal Statement'}\nWord limit: ${wordLimit}\n${school ? `Target school: ${school}` : ''}\n${prompt ? `Prompt: ${prompt}` : ''}\n\nEssay:\n${essayText}`;
+  let schoolValues = '';
+  if (school && essayType === 'supplemental' && window.getSchoolValues) {
+    schoolValues = window.getSchoolValues(school);
+  }
+  const userMsg = `Essay type: ${essayType === 'supplemental' ? 'Supplemental' : 'Personal Statement'}\nWord limit: ${wordLimit}\n${school ? `Target school: ${school}` : ''}${schoolValues ? `\nSchool values: ${schoolValues}` : ''}\n${prompt ? `Prompt: ${prompt}` : ''}\n\nEssay:\n${essayText}`;
   const result = await callApi(SCORING_PROMPT, userMsg);
   return result?.scores || null;
 }
