@@ -160,3 +160,9 @@ const EssayScoring = { render, renderRecommendations, renderFocusCards, filterBy
 export default EssayScoring;
 
 window.filterByDimension = filterByDimension;
+
+function toggleScoreCollapse() {
+  const panel = document.getElementById('score-panel');
+  if (panel) panel.classList.toggle('collapsed');
+}
+window.toggleScoreCollapse = toggleScoreCollapse;
