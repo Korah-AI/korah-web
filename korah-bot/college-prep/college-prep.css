@@ -141,25 +141,110 @@
   min-width: 0;
   border-right: 0.0625rem solid var(--bd);
 }
-.essay-editor-container {
+/* The scroller is the workspace the page sits on, not the page itself. It also
+   carries the document header, so the title scrolls with the paper. */
+.essay-doc-scroll {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
-  padding: 2rem 2.5rem;
-  font-family: 'Georgia', serif;
-  font-size: 0.9375rem;
-  line-height: 1.8;
+  padding: 1.75rem 2rem 4rem;
+  background: var(--bg2);
+}
+.essay-editor-container {
+  background: transparent;
+}
+
+/* Document header: title on the left, prompt picker on the right, both lined
+   up with the edges of the sheet below. */
+.essay-doc-head {
+  max-width: 48rem;
+  margin: 0 auto 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.essay-doc-title {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-size: 1.5rem;
+  font-weight: 800;
   color: var(--tx);
+  padding: 0.25rem 0.5rem;
+  margin-left: -0.5rem;
+  border-radius: 0.5rem;
+  transition: background 0.18s ease;
+}
+.essay-doc-title:hover,
+.essay-doc-title:focus { background: var(--cp-sf2, var(--sf2)); }
+.essay-doc-title::placeholder { color: var(--tx); opacity: 0.55; }
+.essay-prompt-btn {
+  flex-shrink: 0;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 0.625rem;
+  background: #1ead53;
+  box-shadow: 0 0.1875rem 0 0 #157a3b;
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.18s ease;
+}
+.essay-prompt-btn:hover { transform: scale(1.04); }
+
+/* The chosen prompt sits above the sheet on its own card, white like the paper
+   so the two read as one document. */
+.essay-prompt-card {
+  max-width: 48rem;
+  margin: 0 auto 1.25rem;
+  background: #ffffff;
+  border-left: 0.25rem solid #2f6bdb;
+  border-radius: 0.375rem;
+  padding: 0.875rem 1.125rem;
+  box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.22);
+}
+.essay-prompt-card-title {
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #2f6bdb;
+  margin-bottom: 0.25rem;
+}
+.essay-prompt-card-text {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: #55596b;
+}
+/* The essay itself is a sheet of paper: fixed width, letter proportions,
+   centred in the workspace, the way a document editor shows one. Both the
+   Tiptap editor node and the static highlighted render carry this class. */
+.essay-editor-content {
+  max-width: 48rem;
+  min-height: 62rem;
+  margin: 0 auto;
+  padding: 4.5rem 4rem;
+  background: #ffffff;
+  color: #1a1a1a;
+  border-radius: 0.125rem;
+  box-shadow: 0 0.125rem 0.75rem rgba(0, 0, 0, 0.28);
+  font-family: 'Georgia', serif;
+  font-size: 1.0625rem;
+  line-height: 1.8;
 }
 .essay-editor-container .ProseMirror {
   outline: none;
-  min-height: 100%;
 }
 .essay-editor-container .ProseMirror p {
   margin: 0 0 0.75rem;
 }
 .essay-static-view {
   outline: none;
-  min-height: 100%;
 }
 .essay-static-view p {
   margin: 0 0 0.75rem;
@@ -167,7 +252,7 @@
 .essay-editor-container .ProseMirror p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
   float: left;
-  color: var(--tx3);
+  color: #9a9aa5;
   pointer-events: none;
   height: 0;
 }
@@ -211,10 +296,8 @@
   margin-bottom: 0.75rem;
 }
 .essay-score-title {
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
   color: var(--tx2);
   margin: 0;
 }
@@ -321,21 +404,10 @@
 
 /* Annotation Cards */
 .essay-annotation-list {
-  flex: 1;
-  overflow-y: auto;
   padding: 0.75rem;
   display: flex;
   flex-direction: column;
   gap: 0.625rem;
-}
-.essay-annotation-list::-webkit-scrollbar { width: 0.375rem; }
-.essay-annotation-list::-webkit-scrollbar-track { background: transparent; }
-.essay-annotation-list::-webkit-scrollbar-thumb {
-  background: var(--bd);
-  border-radius: 999px;
-}
-.essay-annotation-list::-webkit-scrollbar-thumb:hover {
-  background: var(--tx3);
 }
 .essay-annotation-empty {
   display: flex;
@@ -382,10 +454,8 @@
 .ann-type-badge {
   display: inline-flex;
   align-items: center;
-  font-size: 0.5625rem;
+  font-size: 0.6875rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
   padding: 0.1875rem 0.5rem;
   border-radius: 999px;
   margin-bottom: 0.375rem;
@@ -413,16 +483,13 @@
   padding: 0.75rem 1rem 0;
 }
 .essay-rec-header-label {
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
   color: var(--tx2);
 }
 .essay-rec-card {
   background: var(--sf2);
   border: 0.0625rem solid var(--bd);
-  border-left: 0.25rem solid var(--rec-color, var(--p4));
   border-radius: 0.75rem;
   padding: 0.875rem;
   cursor: pointer;
@@ -442,23 +509,11 @@
   gap: 0.5rem;
   margin-bottom: 0.5rem;
 }
-.rec-dot {
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
 .rec-label {
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
   color: var(--tx);
   flex: 1;
-}
-.rec-score {
-  font-size: 0.8125rem;
-  font-weight: 800;
 }
 .rec-evidence {
   font-family: 'Georgia', serif;
@@ -478,10 +533,8 @@
 .rec-badge {
   display: inline-flex;
   align-items: center;
-  font-size: 0.5625rem;
+  font-size: 0.6875rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
   padding: 0.1875rem 0.5rem;
   border-radius: 999px;
   background: rgba(251,191,36,.15);
@@ -491,26 +544,51 @@
   border-left-color: var(--gold);
 }
 
-/* Dimension highlights in editor — tone colors from WIZARD-UI-PATTERNS */
+/* Dimension highlights in editor — tone colors from WIZARD-UI-PATTERNS.
+   A mark rests as a faint tint so a page full of them stays readable, and
+   fills in only while its recommendation is selected. Both layers are
+   gradients so either can be swept across the text like a pen: the tint on
+   load, the fill on selection. */
 .essay-dim-highlight {
+  --hl: #8b5cf6;
+  --tint: color-mix(in srgb, var(--hl) 16%, transparent);
+  --fill: color-mix(in srgb, var(--hl) 70%, transparent);
+  background-color: transparent;
+  background-image:
+    linear-gradient(to right, var(--fill), var(--fill)),
+    linear-gradient(to right, var(--tint), var(--tint));
+  background-repeat: no-repeat;
+  background-size: 0% 100%, 100% 100%;
+  border-bottom: 0.125rem solid color-mix(in srgb, var(--hl) 40%, transparent);
   border-radius: 0.125rem;
   cursor: pointer;
-  transition: background 0.15s, box-shadow 0.15s;
+  transition: border-color 0.18s ease;
   padding: 0.0625rem 0.125rem;
-  color: #fff;
+  color: inherit;
+  animation: hlLoad 0.55s ease-out;
 }
-.essay-dim-highlight.dim-writing    { background: rgba(139, 92, 246, 0.35); border-bottom: 2.5px solid #8b5cf6; }
-.essay-dim-highlight.dim-detail     { background: rgba(59, 130, 246, 0.35); border-bottom: 2.5px solid #3b82f6; }
-.essay-dim-highlight.dim-voice      { background: rgba(236, 72, 153, 0.35); border-bottom: 2.5px solid #ec4899; }
-.essay-dim-highlight.dim-reflection { background: rgba(245, 158, 11, 0.35); border-bottom: 2.5px solid #f59e0b; }
-.essay-dim-highlight.dim-curiosity  { background: rgba(34, 197, 94, 0.35); border-bottom: 2.5px solid #22c55e; }
-.essay-dim-highlight.dim-contribution { background: rgba(239, 68, 68, 0.35); border-bottom: 2.5px solid #ef4444; }
-.essay-dim-highlight.dim-writing:hover    { background: rgba(139, 92, 246, 0.50); }
-.essay-dim-highlight.dim-detail:hover     { background: rgba(59, 130, 246, 0.50); }
-.essay-dim-highlight.dim-voice:hover      { background: rgba(236, 72, 153, 0.50); }
-.essay-dim-highlight.dim-reflection:hover { background: rgba(245, 158, 11, 0.50); }
-.essay-dim-highlight.dim-curiosity:hover  { background: rgba(34, 197, 94, 0.50); }
-.essay-dim-highlight.dim-contribution:hover { background: rgba(239, 68, 68, 0.50); }
+.essay-dim-highlight:hover { --tint: color-mix(in srgb, var(--hl) 34%, transparent); }
+.essay-dim-highlight.is-on {
+  background-size: 100% 100%, 100% 100%;
+  border-bottom-color: var(--hl);
+  animation: hlSweep 0.4s ease-out;
+}
+/* The tint wipes in behind an empty fill layer; the fill wipes in over a tint
+   that is already there. */
+@keyframes hlLoad {
+  from { background-size: 0% 100%, 0% 100%; }
+  to   { background-size: 0% 100%, 100% 100%; }
+}
+@keyframes hlSweep {
+  from { background-size: 0% 100%, 100% 100%; }
+  to   { background-size: 100% 100%, 100% 100%; }
+}
+.essay-dim-highlight.dim-writing      { --hl: #8b5cf6; }
+.essay-dim-highlight.dim-detail       { --hl: #3b82f6; }
+.essay-dim-highlight.dim-voice        { --hl: #ec4899; }
+.essay-dim-highlight.dim-reflection   { --hl: #f59e0b; }
+.essay-dim-highlight.dim-curiosity    { --hl: #22c55e; }
+.essay-dim-highlight.dim-contribution { --hl: #ef4444; }
 
 /* Highlight decorations in editor */
 .essay-highlight {
@@ -621,7 +699,524 @@
   .essay-setup-card {
     padding: 1.25rem;
   }
-  .essay-editor-container {
-    padding: 1.25rem;
+  .essay-doc-scroll {
+    padding: 1.25rem 0.75rem 2rem;
   }
+  .essay-doc-title { font-size: 1.375rem; }
+  .essay-editor-content {
+    min-height: 40rem;
+    padding: 2rem 1.5rem;
+  }
+}
+
+/* ══ Grey color blocking ════════════════════════════════════════════════════
+   Same system as the Study Plan wizard and the chat pages — see
+   docs/WIZARD-UI-PATTERNS.md. Resting surfaces are neutral, opaque grey (the
+   app's --sf/--sf2/--bd are translucent and purple-tinted, so a card wearing
+   them reads as "the same colour as the background"), and colour appears only
+   to mark identity or state.
+
+   Scoped to .cp-grey on <body> so it loads after everything else and wins over
+   the purple rules above. Fills are flat: a solid --acc-fill reads as one
+   deliberate block, a gradient reads as decoration. */
+.cp-grey {
+  --cp-sf:  #26262e;   /* cards, inputs, panels          */
+  --cp-sf2: #31313c;   /* chips, ghost buttons, frames   */
+  --cp-sf3: #43434f;   /* one step up, for inner tiles   */
+  --cp-bd:  #454553;   /* borders + 3D shadow            */
+  --tone-red: #ef4444;    --tone-orange: #f97316;
+  --tone-amber: #f59e0b;  --tone-green: #22c55e;
+  --tone-teal: #14b8a6;   --tone-blue: #3b82f6;
+  --tone-pink: #ec4899;
+  --acc: var(--tone-blue);
+  --acc-fill: #3472d9;
+}
+html[data-theme="light"] .cp-grey {
+  --cp-sf: #eceef2; --cp-sf2: #e0e3ea; --cp-sf3: #f6f7fa; --cp-bd: #c3c8d2;
+}
+
+/* --acc-fill is the tone at 88% against black: white text stays readable and a
+   grid of filled cards reads as colour blocks rather than as mud. */
+.cp-grey .tone-red    { --acc: var(--tone-red);    --acc-fill: #d23c3c; }
+.cp-grey .tone-orange { --acc: var(--tone-orange); --acc-fill: #db6513; }
+.cp-grey .tone-amber  { --acc: var(--tone-amber);  --acc-fill: #d88b0a; }
+.cp-grey .tone-green  { --acc: var(--tone-green);  --acc-fill: #1ead53; }
+.cp-grey .tone-teal   { --acc: var(--tone-teal);   --acc-fill: #12a292; }
+.cp-grey .tone-blue   { --acc: var(--tone-blue);   --acc-fill: #3472d9; }
+.cp-grey .tone-pink   { --acc: var(--tone-pink);   --acc-fill: #d03f87; }
+
+/* No dimmed text — --tx2/--tx3 vanish against the grey surfaces. */
+.cp-grey { --tx2: var(--tx); --tx3: var(--tx); }
+.cp-grey .tx2, .cp-grey .tx3 { color: var(--tx); }
+
+/* ── Entrance animations ─────────────────────────────────────────────────── */
+@keyframes cpCardIn { from { opacity: 0; transform: translateY(1rem); } to { opacity: 1; transform: none; } }
+@keyframes cpFadeIn { from { opacity: 0; } to { opacity: 1; } }
+.cp-stagger > * { opacity: 0; animation: cpCardIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+.cp-stagger > *:nth-child(1) { animation-delay: 0.03s; }
+.cp-stagger > *:nth-child(2) { animation-delay: 0.09s; }
+.cp-stagger > *:nth-child(3) { animation-delay: 0.15s; }
+.cp-stagger > *:nth-child(4) { animation-delay: 0.21s; }
+.cp-stagger > *:nth-child(5) { animation-delay: 0.27s; }
+.cp-stagger > *:nth-child(6) { animation-delay: 0.33s; }
+.cp-stagger > *:nth-child(7) { animation-delay: 0.39s; }
+.cp-stagger > *:nth-child(8) { animation-delay: 0.45s; }
+
+/* ── Essays dashboard ────────────────────────────────────────────────────── */
+.cp-scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; position: relative; z-index: 1; }
+.cp-page { padding: 1.75rem 2.25rem 3.75rem; max-width: 77.5rem; margin: 0 auto; }
+
+.cp-head h1 {
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 800;
+  color: var(--tx);
+  margin: 0;
+}
+.cp-actions { display: flex; align-items: center; gap: 0.75rem; margin: 1.25rem 0 2.5rem; }
+
+.cp-search {
+  flex: 1;
+  min-width: 10rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 1rem;
+  height: 2.75rem;
+  border-radius: 62.4375rem;
+  background: var(--cp-sf);
+  border: 0.0625rem solid var(--cp-bd);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+.cp-search:focus-within {
+  border-color: var(--tone-blue);
+  box-shadow: 0 0 0 0.1875rem color-mix(in srgb, var(--tone-blue) 22%, transparent);
+}
+.cp-search .material-icons-round { font-size: 1.125rem; color: var(--tx); opacity: 0.6; }
+.cp-search input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--tx);
+  font-family: inherit;
+  font-size: 0.9375rem;
+}
+.cp-search input::placeholder { color: var(--tx); opacity: 0.55; }
+@media (max-width: 40rem) { .cp-actions { flex-wrap: wrap; } .cp-search { flex-basis: 100%; } }
+
+.cp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0 1.125rem;
+  height: 2.75rem;
+  border: none;
+  border-radius: 0.75rem;
+  font-family: inherit;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  text-decoration: none;
+  background: var(--acc-fill);
+  box-shadow: 0 0.25rem 0 0 color-mix(in srgb, var(--acc-fill) 60%, #000);
+  transition: transform 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+}
+.cp-btn:hover { transform: scale(1.03); }
+
+
+/* Essay cards — a document card with a preview of the essay itself */
+.cp-grey .essay-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16.5rem, 1fr));
+  gap: 1rem;
+}
+.cp-grey .essay-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: var(--cp-sf);
+  border: 0.0625rem solid var(--cp-bd);
+  border-radius: 1rem;
+  box-shadow: 0 0.25rem 0 0 var(--cp-bd);
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+.cp-grey .essay-card:hover {
+  transform: scale(1.02);
+  border-color: var(--acc);
+  box-shadow: 0 0.6rem 1.6rem color-mix(in srgb, var(--acc) 30%, transparent),
+              0 0.25rem 0 0 color-mix(in srgb, var(--acc) 45%, var(--cp-bd));
+}
+.essay-card-head { display: flex; align-items: center; gap: 0.5rem; }
+.essay-card-icon { width: 1.25rem; height: 1.25rem; flex-shrink: 0; object-fit: contain; }
+.cp-grey .essay-card-title {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--tx);
+  margin: 0;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cp-grey .essay-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  font-size: 0.75rem;
+  color: var(--tx);
+}
+
+/* The preview: a sheet of paper inside a frame, showing the opening of the
+   essay at document scale and fading out at the bottom. */
+.essay-card-preview {
+  background: var(--cp-sf2);
+  border-radius: 0.75rem;
+  padding: 0.75rem 1.125rem;
+  margin-top: 0.125rem;
+}
+.essay-card-page {
+  height: 12rem;
+  overflow: hidden;
+  padding: 0.75rem 0.875rem;
+  border-radius: 0.375rem;
+  background: #ffffff;
+  color: #1a1a1a;
+  font-family: 'Georgia', serif;
+  font-size: 0.5rem;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+  -webkit-mask-image: linear-gradient(180deg, #000 60%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 60%, transparent 100%);
+}
+.essay-card-page.is-blank {
+  display: grid;
+  place-items: center;
+  font-family: inherit;
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+html[data-theme="light"] .cp-grey .essay-card { background: #ffffff; border-color: #e3e8f3; box-shadow: 0 0.25rem 0 0 #e3e8f3; }
+html[data-theme="light"] .cp-grey .essay-card-preview { background: #eaf0fb; }
+
+.cp-grey .essay-card-delete {
+  position: absolute;
+  top: 0.625rem;
+  right: 0.625rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 0.5rem;
+  background: var(--cp-sf2);
+  color: var(--tx);
+  font-size: 1rem;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease, background 0.15s ease, transform 0.15s ease;
+}
+.cp-grey .essay-card:hover .essay-card-delete { opacity: 1; }
+.cp-grey .essay-card-delete:hover { background: var(--tone-red); color: #fff; transform: scale(1.08); }
+
+/* Empty state */
+.cp-empty {
+  padding: 3.5rem 1rem;
+  text-align: center;
+  color: var(--tx);
+  font-size: 0.9375rem;
+  animation: cpFadeIn 0.4s ease;
+}
+
+/* ── Editor: opaque grey repaint ─────────────────────────────────────────── */
+.cp-grey .essay-setup-card,
+.cp-grey .essay-loading-card,
+.cp-grey .essay-annotation-card,
+.cp-grey .essay-rec-card {
+  background: var(--cp-sf);
+  border-color: var(--cp-bd);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.cp-grey .essay-setup-card { box-shadow: 0 0.25rem 0 0 var(--cp-bd); }
+.cp-grey .essay-setup-input,
+.cp-grey .essay-setup-select,
+.cp-grey .essay-setup-textarea,
+.cp-grey .type-pill {
+  background: var(--cp-sf2);
+  border-color: var(--cp-bd);
+  color: var(--tx);
+}
+.cp-grey .essay-setup-input::placeholder,
+.cp-grey .essay-setup-textarea::placeholder { color: var(--tx); opacity: 0.6; }
+.cp-grey .essay-setup-input:focus,
+.cp-grey .essay-setup-select:focus,
+.cp-grey .essay-setup-textarea:focus {
+  border-color: var(--acc);
+  box-shadow: 0 0 0 0.1875rem color-mix(in srgb, var(--acc) 25%, transparent);
+}
+/* Selected means filled: the pill takes its own tone, not a tinted border. */
+.cp-grey .type-pill { transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease; }
+.cp-grey .type-pill:hover:not(.active) { transform: scale(1.02); border-color: var(--acc); color: var(--tx); }
+.cp-grey .type-pill.active {
+  transform: scale(1.02);
+  background: var(--acc-fill);
+  border-color: var(--acc-fill);
+  color: #fff;
+}
+/* The analyze button is the finish action, so it is green and flat. */
+.cp-grey .essay-analyze-btn {
+  background: #1ead53;
+  border-radius: 0.875rem;
+  box-shadow: 0 0.25rem 0 0 #157a3b;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.cp-grey .essay-analyze-btn:hover { transform: scale(1.03); box-shadow: 0 0.25rem 0 0 #157a3b; }
+
+.cp-grey .essay-editor-panel,
+.cp-grey .essay-editor-footer,
+.cp-grey .essay-score-panel { border-color: var(--cp-bd); }
+.cp-grey .essay-review-panel { background: var(--cp-sf2); border-left: 0.0625rem solid var(--cp-bd); }
+.cp-grey .essay-review-panel::-webkit-scrollbar-thumb,
+.cp-grey .essay-annotation-list::-webkit-scrollbar-thumb { background: var(--cp-bd); }
+.cp-grey .essay-dim-bar-track { background: var(--cp-sf3); }
+.cp-grey .essay-score-dim { transition: transform 0.18s ease, background 0.18s ease; }
+.cp-grey .essay-score-dim:hover { background: var(--cp-sf3); transform: scale(1.01); }
+.cp-grey .essay-score-dim.active { background: var(--cp-sf3); box-shadow: inset 0.1875rem 0 0 0 var(--acc); }
+
+.cp-grey .essay-annotation-card,
+.cp-grey .essay-rec-card { transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease; }
+.cp-grey .essay-annotation-card:hover,
+.cp-grey .essay-rec-card:hover { transform: scale(1.02); border-color: var(--rec-color, var(--acc)); }
+.cp-grey .essay-annotation-card.focus-card { background: color-mix(in srgb, var(--tone-amber) 16%, var(--cp-sf)); border-color: var(--tone-amber); }
+.cp-grey .ann-type-badge.socratic   { background: color-mix(in srgb, var(--tone-blue) 24%, var(--cp-sf2)); color: var(--tx); }
+.cp-grey .ann-type-badge.diagnostic { background: color-mix(in srgb, var(--tone-amber) 24%, var(--cp-sf2)); color: var(--tx); }
+.cp-grey .ann-type-badge.structural { background: color-mix(in srgb, var(--tone-green) 24%, var(--cp-sf2)); color: var(--tx); }
+.cp-grey .rec-badge { background: color-mix(in srgb, var(--tone-amber) 24%, var(--cp-sf2)); color: var(--tx); }
+.cp-grey .ann-quote, .cp-grey .rec-evidence { color: var(--tx); }
+
+/* Highlights sit on the white sheet in both themes, so they keep the tints
+   from the base rules; only the card that owns one is repainted here. */
+.cp-grey .essay-rec-card.active {
+  background: #4e4e5c;
+  border-color: var(--rec-color, var(--acc));
+  box-shadow: none;
+}
+html[data-theme="light"] .cp-grey .essay-rec-card.active { background: #ffffff; }
+.cp-grey .essay-highlight.socratic   { background: color-mix(in srgb, var(--tone-blue) 22%, var(--cp-sf)); }
+.cp-grey .essay-highlight.diagnostic { background: color-mix(in srgb, var(--tone-amber) 22%, var(--cp-sf)); }
+.cp-grey .essay-highlight.structural { background: color-mix(in srgb, var(--tone-green) 22%, var(--cp-sf)); }
+.cp-grey .essay-highlight.socratic:hover, .cp-grey .essay-highlight.socratic.active     { background: color-mix(in srgb, var(--tone-blue) 40%, var(--cp-sf)); }
+.cp-grey .essay-highlight.diagnostic:hover, .cp-grey .essay-highlight.diagnostic.active { background: color-mix(in srgb, var(--tone-amber) 40%, var(--cp-sf)); }
+.cp-grey .essay-highlight.structural:hover, .cp-grey .essay-highlight.structural.active { background: color-mix(in srgb, var(--tone-green) 40%, var(--cp-sf)); }
+
+/* The scrim stays translucent — it is a scrim — but the card on it is solid. */
+.cp-grey .essay-loading-overlay { background: rgba(0, 0, 0, 0.45); }
+.cp-grey .essay-loading-card { box-shadow: 0 0.25rem 0 0 var(--cp-bd); }
+.cp-grey .essay-loading-spinner { border-color: var(--cp-bd); border-top-color: var(--tone-blue); }
+
+.cp-grey .essay-topbar-btn {
+  background: var(--cp-sf2);
+  border-color: var(--cp-bd);
+  color: var(--tx);
+  transition: transform 0.18s ease, background 0.18s ease;
+}
+.cp-grey .essay-topbar-btn:hover { background: var(--cp-bd); color: var(--tx); transform: scale(1.04); }
+
+/* The essay panels sit above the starfield canvas and are solid, so the prose
+   never has stars running through it. */
+.cp-grey .essay-editor-layout { position: relative; z-index: 1; }
+.cp-grey .essay-editor-panel { background: var(--cp-sf); }
+
+/* ── Popups ──────────────────────────────────────────────────────────────── */
+.cp-grey .delete-modal { --tx2: var(--tx); --tx3: var(--tx); }
+.cp-grey .delete-modal-content {
+  background: var(--cp-sf);
+  border-color: var(--cp-bd);
+  box-shadow: 0 0.25rem 0 0 var(--cp-bd);
+}
+.cp-grey .delete-modal-btn {
+  background: var(--cp-sf2);
+  border-color: var(--cp-bd);
+  color: var(--tx);
+  transition: transform 0.18s ease, background 0.18s ease;
+}
+.cp-grey .delete-modal-btn.cancel:hover { background: var(--cp-bd); color: var(--tx); transform: scale(1.03); }
+/* The confirm inherits a washed-out tint, so fill it solid — red where it
+   destroys something, blue where it just dismisses an alert. */
+.cp-grey .delete-modal-btn.confirm {
+  background: #d23c3c;
+  border-color: #d23c3c;
+  color: #fff;
+}
+.cp-grey .delete-modal.is-alert .delete-modal-btn.confirm {
+  background: var(--tone-blue);
+  border-color: var(--tone-blue);
+}
+.cp-grey .delete-modal-btn.confirm:hover { transform: scale(1.03); }
+
+/* ── Editor: the paper ───────────────────────────────────────────────────── */
+/* The workspace is the panel's own grey; the sheet is white paper in both
+   themes, like the preview sheet on a dashboard card. */
+.cp-grey .essay-doc-scroll, .cp-grey .essay-editor-container { background: transparent; }
+.cp-grey .essay-editor-content {
+  background: #ffffff;
+  color: #1a1a1a;
+  border: 0.0625rem solid var(--cp-bd);
+  box-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.35);
+}
+
+/* ── Scrollbars ──────────────────────────────────────────────────────────── */
+/* The global thumb in korah-chat.css is 0.3125rem of purple --p4 with
+   !important, which is loud on a page built out of grey. Same treatment the
+   sidebar gets: a hairline in the border grey. */
+.cp-grey ::-webkit-scrollbar { width: 0.1875rem; height: 0.1875rem; }
+.cp-grey ::-webkit-scrollbar-track { background: transparent; }
+.cp-grey ::-webkit-scrollbar-thumb {
+  background: var(--cp-bd) !important;
+  border-radius: 62.4375rem;
+}
+.cp-grey ::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--cp-bd) 70%, var(--tx)) !important;
+}
+.cp-grey *, .cp-grey { scrollbar-color: var(--cp-bd) transparent; scrollbar-width: thin; }
+
+/* ── Setup screen: prompt picker ─────────────────────────────────────────── */
+.essay-setup-req {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--tone-red);
+  margin-left: 0.375rem;
+}
+.essay-prompt-picker {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  text-align: left;
+  padding: 0.625rem 0.875rem;
+  border-radius: 0.625rem;
+  border: 0.0625rem solid var(--cp-bd, var(--bd));
+  background: var(--cp-sf2, var(--sf));
+  color: var(--tx);
+  font-family: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: transform 0.18s ease, border-color 0.18s ease;
+}
+.essay-prompt-picker:hover { transform: scale(1.01); border-color: var(--acc); }
+.essay-prompt-picker.is-set { border-color: var(--acc); }
+.essay-prompt-picker-label { flex: 1; min-width: 0; }
+.essay-fixed-limit {
+  padding: 0.625rem 0.875rem;
+  border-radius: 0.625rem;
+  background: var(--cp-sf2, var(--sf));
+  border: 0.0625rem solid var(--cp-bd, var(--bd));
+  color: var(--tx);
+  font-size: 0.875rem;
+}
+
+/* ── Prompt picker popup ─────────────────────────────────────────────────── */
+.prompt-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.45);
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+.prompt-modal.show { display: flex; }
+.prompt-modal-card {
+  width: 100%;
+  max-width: 40rem;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--cp-sf);
+  border: 0.0625rem solid var(--cp-bd);
+  border-radius: 1.125rem;
+  box-shadow: 0 0.25rem 0 0 var(--cp-bd);
+  padding: 1.25rem;
+}
+.prompt-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.prompt-modal-title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: var(--tx);
+}
+.prompt-modal-close {
+  background: none;
+  border: none;
+  color: var(--tx);
+  cursor: pointer;
+  display: flex;
+  padding: 0.25rem;
+  transition: transform 0.18s ease;
+}
+.prompt-modal-close:hover { transform: scale(1.12); }
+.prompt-modal-sub {
+  margin: 0.25rem 0 1rem;
+  font-size: 0.8125rem;
+  color: var(--tx);
+  opacity: 0.8;
+}
+.prompt-modal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  overflow-y: auto;
+  min-height: 0;
+}
+.prompt-option {
+  text-align: left;
+  padding: 0.75rem 0.875rem;
+  border-radius: 0.75rem;
+  border: 0.0625rem solid var(--cp-bd);
+  background: var(--cp-sf2);
+  color: var(--tx);
+  font-family: inherit;
+  cursor: pointer;
+  transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+}
+.prompt-option:hover { transform: scale(1.01); border-color: var(--acc); }
+/* Selected means filled, per docs/WIZARD-UI-PATTERNS.md. */
+.prompt-option.is-selected {
+  background: var(--acc-fill);
+  border-color: var(--acc-fill);
+  color: #fff;
+}
+.prompt-option-n {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--acc);
+}
+.prompt-option.is-selected .prompt-option-n { color: #fff; }
+.prompt-option-short {
+  display: block;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+.prompt-option-text {
+  display: block;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  opacity: 0.85;
 }

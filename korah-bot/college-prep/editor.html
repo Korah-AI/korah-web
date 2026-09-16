@@ -9,11 +9,26 @@
   school: '',
   schoolPrompt: '',
   wordLimit: 650,
-  applicationWebsite: '',
+  applicationWebsite: 'common_app',
   applicationPrompt: '',
-  customPrompt: '',
   focusNote: '',
+  title: '',
+  promptModal: false,
   schoolList: window.getSchoolList ? window.getSchoolList() : [],
+  promptList: window.COMMON_APP_PROMPTS || [],
+  commonAppLimit: window.COMMON_APP_WORD_LIMIT || 650,
+  isCommonApp() {
+    return this.essayType === 'personal_statement' && this.applicationWebsite === 'common_app';
+  },
+  promptMeta() {
+    return window.getCommonAppPrompt ? window.getCommonAppPrompt(this.applicationPrompt) : null;
+  },
+  choosePrompt(p) {
+    this.applicationPrompt = p.text;
+    this.wordLimit = this.commonAppLimit;
+    this.promptModal = false;
+    if (window.saveEssayMeta) window.saveEssayMeta();
+  },
   getEffectiveTheme() {
     if (this.theme === 'system') {
       return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
@@ -41,16 +56,21 @@
 <link rel="icon" type="image/png" href="../logo-images/newlogo0.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <script src="../sidebar-loader.js" defer></script>
+<script src="../study/js/sidebar.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="../app/korah-chat.css"/>
 <link rel="stylesheet" href="college-prep.css"/>
 <script src="data/schools.js"></script>
+<script src="data/common-app-prompts.js"></script>
 <style>
-  .feed-scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; }
+  /* Scoped to body, not the root: the <html> tag carries x-cloak too, and a
+     global rule would blank the page if Alpine ever failed to boot. */
+  body [x-cloak] { display: none !important; }
+  .feed-scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; position: relative; z-index: 1; }
   .feed-page { padding: 1.75rem 2.25rem 3.75rem; max-width: 77.5rem; margin: 0 auto; }
 </style>
 <script type="importmap">
@@ -71,13 +91,31 @@
 }
 </script>
 </head>
-<body class="korah-grey">
+<body class="korah-grey cp-grey">
+
+<canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
+<script>
+  /* The starfield/shooting stars live in sidebar.js. korahReady only fires once
+     the Firestore bootstrap below resolves, and never at all for a signed-out
+     visitor, so kick it off on whichever of korahReady / load lands first. */
+  (function () {
+    let started = false;
+    function startBackground() {
+      if (started || !window.KorahSidebar || !window.KorahSidebar.initBackground) return;
+      started = true;
+      window.KorahSidebar.initBackground();
+    }
+    window.addEventListener('korahReady', startBackground, { once: true });
+    window.addEventListener('load', startBackground, { once: true });
+    if (document.readyState === 'complete') startBackground();
+  })();
+</script>
 
 <div id="sidebar-root"></div>
 
 <div id="main-area-wrapper" class="main-area-wrapper">
 <main id="main-content" class="main-content">
-  <header class="chat-topbar bg-sf glass-sm t-theme bd" style="opacity: 0.95;">
+  <header class="chat-topbar bg-sf glass-sm t-theme bd">
     <button id="sidebar-toggle" @click="toggleSidebar()" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
@@ -135,62 +173,54 @@
 
         <!-- Personal Statement-only fields -->
         <div x-show="essayType === 'personal_statement'" x-cloak>
-          <div>
-            <!-- Application Website -->
+          <div class="essay-setup-field">
+            <label class="essay-setup-label">Application Website</label>
+            <select class="essay-setup-select" x-model="applicationWebsite" @change="applicationPrompt = ''">
+              <option value="common_app">Common App</option>
+              <option value="questbridge">QuestBridge</option>
+            </select>
+          </div>
+
+          <!-- Common App prompts are picked from the official seven, never typed -->
+          <template x-if="applicationWebsite === 'common_app'">
             <div class="essay-setup-field">
-              <label class="essay-setup-label">Application Website</label>
-              <select class="essay-setup-select" x-model="applicationWebsite">
-                <option value="">None   General Essay</option>
-                <option value="common_app">Common App</option>
-                <option value="questbridge">QuestBridge</option>
+              <label class="essay-setup-label">Prompt <span class="essay-setup-req">Required</span></label>
+              <button type="button" class="essay-prompt-picker" :class="{ 'is-set': applicationPrompt }" @click="promptModal = true">
+                <span class="essay-prompt-picker-label" x-show="!applicationPrompt">Select prompt</span>
+                <template x-if="promptMeta()">
+                  <span class="essay-prompt-picker-label">
+                    <strong x-text="'Prompt ' + promptMeta().n + ' \u00b7 '"></strong><span x-text="promptMeta().short"></span>
+                  </span>
+                </template>
+                <span class="material-icons-round" style="font-size: 1.125rem;">expand_more</span>
+              </button>
+            </div>
+          </template>
+
+          <!-- QuestBridge Prompts -->
+          <template x-if="applicationWebsite === 'questbridge'">
+            <div class="essay-setup-field">
+              <label class="essay-setup-label">Prompt</label>
+              <select class="essay-setup-select" x-model="applicationPrompt">
+                <option value="">Select a prompt...</option>
+                <option value="We are interested in learning more about you and the context in which you have grown up, formed your aspirations, and accomplished your academic successes. Please describe how the most influential factors and challenges in your life have shaped you into the person you are today.">Personal Essay   How factors and challenges shaped you (800 words)</option>
+                <option value="Tell us about a time you learned something new and were excited to uncover more information about that topic.">Topical Essay   Time you learned something new (400 words)</option>
+                <option value="Our behavior is often shaped by our values. Tell us about a value you hold.">Topical Essay   A value you hold (400 words)</option>
+                <option value="Tell us about a time when your perspective was different from someone else's.">Topical Essay   Different perspective (400 words)</option>
               </select>
             </div>
-
-            <!-- Custom Prompt (when no application selected) -->
-            <template x-if="applicationWebsite === ''">
-              <div class="essay-setup-field">
-                <label class="essay-setup-label">Prompt <span style="color: var(--tx3); font-weight: 400;">(optional)</span></label>
-                <textarea class="essay-setup-textarea" x-model="customPrompt" placeholder="Paste or type the essay prompt here to get tailored feedback..." rows="3"></textarea>
-              </div>
-            </template>
-
-            <!-- Common App Prompts -->
-            <template x-if="applicationWebsite === 'common_app'">
-              <div class="essay-setup-field">
-                <label class="essay-setup-label">Prompt</label>
-                <select class="essay-setup-select" x-model="applicationPrompt">
-                  <option value="">Select a prompt...</option>
-                  <option value="Some students have a background, identity, interest, or talent that is so meaningful they believe their application would be incomplete without it. If this sounds like you, then please share your story.">1   Background, identity, interest, or talent</option>
-                  <option value="The lessons we take from obstacles we encounter can be fundamental to later success. Recount a time when you faced a challenge, setback, or failure. How did it affect you, and what did you learn from the experience?">2   Challenge, setback, or failure</option>
-                  <option value="Reflect on a time when you questioned or challenged a belief or idea. What prompted your thinking? What was the outcome?">3   Questioned or challenged a belief</option>
-                  <option value="Reflect on something that someone has done for you that has made you happy or thankful in a surprising way. How has this gratitude affected or motivated you?">4   Gratitude</option>
-                  <option value="Discuss an accomplishment, event, or realization that sparked a period of personal growth and a new understanding of yourself or others.">5   Personal growth</option>
-                  <option value="Describe a topic, idea, or concept you find so engaging that it makes you lose all track of time. Why does it captivate you? What or who do you turn to when you want to learn more?">6   Intellectual curiosity</option>
-                  <option value="Share an essay on any topic of your choice. It can be one you've already written, one that responds to a different prompt, or one of your own design.">7   Topic of your choice</option>
-                </select>
-              </div>
-            </template>
-
-            <!-- QuestBridge Prompts -->
-            <template x-if="applicationWebsite === 'questbridge'">
-              <div class="essay-setup-field">
-                <label class="essay-setup-label">Prompt</label>
-                <select class="essay-setup-select" x-model="applicationPrompt">
-                  <option value="">Select a prompt...</option>
-                  <option value="We are interested in learning more about you and the context in which you have grown up, formed your aspirations, and accomplished your academic successes. Please describe how the most influential factors and challenges in your life have shaped you into the person you are today.">Personal Essay   How factors and challenges shaped you (800 words)</option>
-                  <option value="Tell us about a time you learned something new and were excited to uncover more information about that topic.">Topical Essay   Time you learned something new (400 words)</option>
-                  <option value="Our behavior is often shaped by our values. Tell us about a value you hold.">Topical Essay   A value you hold (400 words)</option>
-                  <option value="Tell us about a time when your perspective was different from someone else's.">Topical Essay   Different perspective (400 words)</option>
-                </select>
-              </div>
-            </template>
-          </div>
+          </template>
         </div>
 
         <!-- Word Limit -->
         <div class="essay-setup-field">
           <label class="essay-setup-label">Word Limit</label>
-          <input type="number" class="essay-setup-input" x-model.number="wordLimit" min="50" max="2000" placeholder="650">
+          <template x-if="isCommonApp()">
+            <div class="essay-fixed-limit"><span x-text="commonAppLimit"></span> words, set by Common App</div>
+          </template>
+          <template x-if="!isCommonApp()">
+            <input type="number" class="essay-setup-input" x-model.number="wordLimit" min="50" max="2000" placeholder="650">
+          </template>
         </div>
 
         <!-- Essay Content -->
@@ -221,7 +251,24 @@
   <div class="essay-editor-layout" x-show="screen === 'editor'" style="display: none;">
     <!-- Left: Editor -->
     <div class="essay-editor-panel">
-      <div id="editor-container" class="essay-editor-container"></div>
+      <!-- The scroller wraps the header and the paper; #editor-container holds
+           nothing but the sheet, since editor.js owns its innerHTML. -->
+      <div class="essay-doc-scroll">
+        <div class="essay-doc-head">
+          <input class="essay-doc-title" x-model="title" placeholder="Untitled Essay"
+                 @change="window.saveEssayMeta && window.saveEssayMeta()"
+                 @blur="window.saveEssayMeta && window.saveEssayMeta()"/>
+          <button class="essay-prompt-btn" x-show="isCommonApp()" @click="promptModal = true"
+                  x-text="applicationPrompt ? 'Change prompt' : 'Select prompt'">Select prompt</button>
+        </div>
+        <template x-if="promptMeta()">
+          <div class="essay-prompt-card">
+            <div class="essay-prompt-card-title" x-text="'Common App Prompt ' + promptMeta().n"></div>
+            <p class="essay-prompt-card-text" x-text="promptMeta().text"></p>
+          </div>
+        </template>
+        <div id="editor-container" class="essay-editor-container"></div>
+      </div>
       <div class="essay-editor-footer">
         <span id="editor-word-count">0</span> words
       </div>
@@ -269,6 +316,64 @@
 </main>
 </div>
 
+<!-- Common App prompt picker — used by the setup screen and the editor header -->
+<div class="prompt-modal" :class="{ show: promptModal }" @click.self="promptModal = false" x-cloak>
+  <div class="prompt-modal-card">
+    <div class="prompt-modal-head">
+      <h3 class="prompt-modal-title">Choose a Common App prompt</h3>
+      <button class="prompt-modal-close" @click="promptModal = false" aria-label="Close">
+        <span class="material-icons-round">close</span>
+      </button>
+    </div>
+    <p class="prompt-modal-sub">Every prompt has the same 650-word limit.</p>
+    <div class="prompt-modal-list">
+      <template x-for="p in promptList" :key="p.n">
+        <button class="prompt-option" :class="{ 'is-selected': applicationPrompt === p.text }" @click="choosePrompt(p)">
+          <span class="prompt-option-n" x-text="'Prompt ' + p.n"></span>
+          <span class="prompt-option-short" x-text="p.short"></span>
+          <span class="prompt-option-text" x-text="p.text"></span>
+        </button>
+      </template>
+    </div>
+  </div>
+</div>
+
+<!-- Alert popup — reuses the app's modal styling from korah-chat.css -->
+<div id="essay-modal" class="delete-modal is-alert">
+  <div class="delete-modal-content">
+    <div class="delete-modal-icon"><span class="material-icons-round" style="font-size:2.25rem;color:var(--red,#ef4444);">error_outline</span></div>
+    <h3 class="delete-modal-title">Nothing to analyze yet</h3>
+    <p class="delete-modal-desc" id="essay-modal-desc"></p>
+    <div class="delete-modal-actions">
+      <button id="essay-modal-confirm" class="delete-modal-btn confirm t-btn">OK</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Replaces alert() so failures show in the app's own modal, not a browser dialog.
+  (function () {
+    const modal = document.getElementById("essay-modal");
+    const descEl = document.getElementById("essay-modal-desc");
+    const confirmBtn = document.getElementById("essay-modal-confirm");
+
+    function close() { modal.classList.remove("show"); }
+
+    window.showEssayAlert = function (message) {
+      descEl.textContent = message;
+      modal.classList.add("show");
+      confirmBtn.focus();
+    };
+
+    confirmBtn.addEventListener("click", close);
+    modal.addEventListener("click", (e) => { if (e.target === modal) close(); });
+    document.addEventListener("keydown", (e) => {
+      if (!modal.classList.contains("show")) return;
+      if (e.key === "Escape" || e.key === "Enter") close();
+    });
+  })();
+</script>
+
 <script type="module" src="js/editor.js"></script>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
@@ -276,6 +381,7 @@
   import { setupKorahDB } from "../app/data/firestore-store.js";
   import { startGuestSession, initGuestGate } from "../guest-gate.js";
   import { startAuthGuard } from "../auth-guard.js";
+  import { getDemoEssay, DEMO_ESSAY_ID } from "./js/demo-data.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
@@ -290,6 +396,36 @@
   const auth = getAuth(app);
 
   let currentUser = null;
+  let currentEssayId = null;
+
+  async function persistEssay(extra) {
+    if (!currentUser || currentEssayId === DEMO_ESSAY_ID) return;
+    const d = getAlpineData();
+    if (!d) return;
+    try {
+      const { getFirestore, doc, setDoc } = await import("https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js");
+      const db = getFirestore(app);
+      if (!currentEssayId) {
+        currentEssayId = (crypto.randomUUID && crypto.randomUUID()) || String(Date.now());
+        history.replaceState(null, '', `editor.html?id=${currentEssayId}`);
+      }
+      await setDoc(doc(db, `users/${currentUser.uid}/essays`, currentEssayId), {
+        type: d.essayType,
+        title: d.title,
+        school: d.school,
+        schoolPrompt: d.schoolPrompt,
+        wordLimit: d.wordLimit,
+        applicationWebsite: d.applicationWebsite,
+        applicationPrompt: d.applicationPrompt,
+        focusNote: d.focusNote,
+        content: document.getElementById('essay-input').value.trim(),
+        updatedAt: new Date().toISOString(),
+        ...extra,
+      }, { merge: true });
+    } catch (e) {
+      console.warn('Could not save essay:', e);
+    }
+  }
 
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
@@ -304,7 +440,10 @@
 
     const params = new URLSearchParams(window.location.search);
     const essayId = params.get('id');
-    if (essayId) loadEssay(essayId);
+    if (essayId && essayId !== DEMO_ESSAY_ID) {
+      currentEssayId = essayId;
+      loadEssay(essayId);
+    }
   });
 
   function getAlpineData() {
@@ -315,34 +454,45 @@
 
   async function loadEssay(id) {
     try {
+      if (id === DEMO_ESSAY_ID) {
+        const demo = await getDemoEssay();
+        if (demo) await applyEssay(demo);
+        return;
+      }
       const { getFirestore, doc, getDoc } = await import("https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js");
       const db = getFirestore(app);
       const snap = await getDoc(doc(db, `users/${currentUser.uid}/essays`, id));
-      if (snap.exists()) {
-        const data = snap.data();
-        const d = getAlpineData();
-        if (d) {
-          d.essayType = data.type || 'personal_statement';
-          d.school = data.school || '';
-          d.schoolPrompt = data.schoolPrompt || data.prompt || '';
-          d.wordLimit = data.wordLimit || 650;
-          d.applicationWebsite = data.applicationWebsite || '';
-          d.applicationPrompt = data.applicationPrompt || '';
-          d.customPrompt = data.customPrompt || '';
-          d.focusNote = data.focusNote || '';
-        }
-        const input = document.getElementById('essay-input');
-        if (input && data.content) {
-          input.value = data.content;
-          input.dispatchEvent(new Event('input'));
-        }
-        if (data.scores && data.annotations) {
-          switchToEditor();
-          window.dispatchEvent(new CustomEvent('essay-loaded', { detail: data }));
-        }
-      }
+      if (snap.exists()) await applyEssay(snap.data());
     } catch (e) {
       console.warn("Could not load essay:", e);
+    }
+  }
+
+  async function applyEssay(data) {
+    const d = getAlpineData();
+    if (d) {
+      d.essayType = data.type || 'personal_statement';
+      d.school = data.school || '';
+      d.schoolPrompt = data.schoolPrompt || data.prompt || '';
+      d.wordLimit = data.wordLimit || 650;
+      d.applicationWebsite = data.applicationWebsite || 'common_app';
+      d.applicationPrompt = data.applicationPrompt || '';
+      d.focusNote = data.focusNote || '';
+      d.title = data.title || '';
+    }
+    const input = document.getElementById('essay-input');
+    if (input && data.content) {
+      input.value = data.content;
+      input.dispatchEvent(new Event('input'));
+    }
+    if (data.scores) {
+      switchToEditor();
+      window.dispatchEvent(new CustomEvent('essay-loaded', { detail: data }));
+      const { default: EssayScoring } = await import('./js/scoring.js');
+      window._lastScores = data.scores;
+      EssayScoring.render(data.scores);
+      EssayScoring.renderRecommendations(data.scores);
+      if (window.highlightAllDimensions) await window.highlightAllDimensions();
     }
   }
 
@@ -351,13 +501,21 @@
     if (d) d.screen = 'editor';
   }
 
+  // Title edits and prompt changes in the editor header save on the spot.
+  window.saveEssayMeta = function () { persistEssay(); };
+
   window.startAnalysis = async function() {
     const d = getAlpineData();
     if (!d) return;
     const content = document.getElementById('essay-input').value.trim();
-    if (!content) { alert('Please write or paste your essay first.'); return; }
+    if (!content) { showEssayAlert('Write or paste your essay first, then run the analysis.'); return; }
+    if (d.isCommonApp() && !d.applicationPrompt) {
+      showEssayAlert('Pick one of the seven Common App prompts before running the analysis.');
+      return;
+    }
 
     switchToEditor();
+    persistEssay();
     await new Promise(r => setTimeout(r, 100));
     if (window.initEditor) await window.initEditor(content);
     const loading = document.getElementById('analysis-loading');
@@ -369,10 +527,11 @@
       const { default: EssayScoring } = await import('./js/scoring.js');
 
       status.textContent = 'Scoring essay...';
-      const effectivePrompt = d.essayType === 'supplemental' ? d.schoolPrompt : (d.applicationPrompt || d.customPrompt || '');
+      const effectivePrompt = d.essayType === 'supplemental' ? d.schoolPrompt : (d.applicationPrompt || '');
       const scores = await EssayAPI.score(content, d.essayType, d.school, effectivePrompt, d.wordLimit);
 
       window._lastScores = scores;
+      persistEssay({ scores });
       EssayScoring.render(scores);
       EssayScoring.renderRecommendations(scores);
 
@@ -404,6 +563,24 @@
       loading.style.display = 'none';
     }
   };
+
+  // The dashboard's wizard choice arrives as ?type=
+  document.addEventListener('alpine:initialized', () => {
+    const type = new URLSearchParams(window.location.search).get('type');
+    const d = getAlpineData();
+    if (d && (type === 'personal_statement' || type === 'supplemental')) d.essayType = type;
+  });
+
+  // The localhost placeholder needs no account, so it loads outside the auth
+  // handler. editor.js registers its essay-loaded listener on DOMContentLoaded,
+  // so wait for that before dispatching.
+  document.addEventListener('DOMContentLoaded', () => {
+    const id = new URLSearchParams(window.location.search).get('id');
+    if (id === DEMO_ESSAY_ID) {
+      currentEssayId = id;
+      loadEssay(id);
+    }
+  });
 
   // Word count for setup textarea
   document.addEventListener('DOMContentLoaded', () => {

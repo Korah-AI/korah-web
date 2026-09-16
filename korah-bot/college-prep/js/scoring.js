@@ -58,6 +58,15 @@ function render(scores, previousScores) {
   }).join('');
 }
 
+/* Cards are ordered by where their quote sits in the essay, so reading the
+   column top to bottom follows the page. Quotes that no longer match any text
+   fall to the end. */
+function evidencePosition(evidence, essay) {
+  if (!essay || !evidence) return Number.MAX_SAFE_INTEGER;
+  const idx = essay.indexOf(evidence.replace(/\s+/g, ' ').trim());
+  return idx === -1 ? Number.MAX_SAFE_INTEGER : idx;
+}
+
 function renderRecommendations(scores) {
   const list = document.getElementById('annotation-list');
   if (!list || !scores) return;
@@ -65,13 +74,15 @@ function renderRecommendations(scores) {
   list.innerHTML = '';
   activeCards.clear();
 
-  const allCards = [];
+  const input = document.getElementById('essay-input');
+  const essay = (input ? input.value : '').replace(/\s+/g, ' ').trim();
+
+  const cards = [];
 
   for (const d of DIMENSIONS) {
     const data = scores[d.key];
     if (!data) continue;
 
-    const score = data.score || 0;
     const items = data.items || (data.evidence ? [{ evidence: data.evidence, feedback: data.feedback }] : []);
 
     for (let i = 0; i < items.length; i++) {
@@ -80,26 +91,27 @@ function renderRecommendations(scores) {
       const feedback = item.feedback || '';
       const evidenceShort = evidence.length > 120 ? evidence.slice(0, 120) + '...' : evidence;
       const cardId = `rec-${d.key}-${i}`;
-      activeCards.add(cardId);
 
-      allCards.push(`
-        <div class="essay-rec-card active" data-dim="${d.key}" data-card-id="${cardId}" data-evidence="${evidence.replace(/"/g, '&quot;')}"
+      cards.push({
+        pos: evidencePosition(evidence, essay),
+        html: `
+        <div class="essay-rec-card" data-dim="${d.key}" data-card-id="${cardId}" data-evidence="${evidence.replace(/"/g, '&quot;')}"
              onclick="window.toggleRecommendation(this)"
              style="--rec-color: ${d.color};">
           <div class="rec-header">
-            <span class="rec-dot" style="background: ${d.color};"></span>
             <span class="rec-label">${d.label}</span>
-            <span class="rec-score" style="color: ${d.color};">${score}/10</span>
           </div>
           <div class="rec-evidence" style="border-color: ${d.color};">
             "${evidenceShort}"
           </div>
           <div class="rec-feedback">${feedback}</div>
-        </div>`);
+        </div>`,
+      });
     }
   }
 
-  list.innerHTML = allCards.join('');
+  cards.sort((a, b) => a.pos - b.pos);
+  list.innerHTML = cards.map(c => c.html).join('');
 }
 
 function renderFocusCards(focusAnnotations) {
@@ -111,14 +123,12 @@ function renderFocusCards(focusAnnotations) {
     const feedback = ann.comment || '';
     const evidenceShort = evidence.length > 120 ? evidence.slice(0, 120) + '...' : evidence;
     const cardId = `focus-${i}`;
-    activeCards.add(cardId);
 
     return `
       <div class="essay-rec-card focus-card" data-dim="focus" data-card-id="${cardId}" data-evidence="${evidence.replace(/"/g, '&quot;')}"
            onclick="window.toggleRecommendation(this)"
            style="--rec-color: #fbbf24;">
         <div class="rec-header">
-          <span class="rec-dot" style="background: #fbbf24;"></span>
           <span class="rec-label">Focus</span>
           <span class="rec-badge">${ann.commentType || 'socratic'}</span>
         </div>
@@ -138,18 +148,24 @@ function filterByDimension(key) {
   });
 }
 
+/* One piece of feedback at a time: selecting a card clears whatever was
+   selected before. Pass null to clear. Class-only repaint, because
+   re-rendering the essay would drop the caret mid-edit. */
+function selectRecommendation(cardId) {
+  activeCards.clear();
+  if (cardId) activeCards.add(cardId);
+  document.querySelectorAll('.essay-rec-card').forEach(el => {
+    el.classList.toggle('active', el.dataset.cardId === cardId);
+  });
+  if (window.syncHighlightState) window.syncHighlightState();
+}
+
+window.selectRecommendation = selectRecommendation;
+
 window.toggleRecommendation = function(el) {
-  el.classList.toggle('active');
   const cardId = el.dataset.cardId;
   if (!cardId) return;
-
-  if (activeCards.has(cardId)) {
-    activeCards.delete(cardId);
-  } else {
-    activeCards.add(cardId);
-  }
-
-  if (window.syncHighlights) window.syncHighlights();
+  selectRecommendation(activeCards.has(cardId) ? null : cardId);
 };
 
 function getActiveDims() {

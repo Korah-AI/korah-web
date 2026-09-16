@@ -31,196 +31,40 @@
 <link rel="icon" type="image/png" href="../logo-images/newlogo0.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <script src="../sidebar-loader.js" defer></script>
+<script src="../study/js/sidebar.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="../app/korah-chat.css"/>
-<style>
-  .feed-scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; }
-  .feed-page { padding: 1.75rem 2.25rem 3.75rem; max-width: 77.5rem; margin: 0 auto; }
-
-  .feed-hero {
-    background: linear-gradient(135deg, rgba(139,92,246,.08), rgba(139,92,246,.02));
-    border: 0.0625rem solid var(--bd);
-    border-radius: 1.125rem;
-    padding: 2rem 2.25rem;
-    margin-bottom: 1.5rem;
-  }
-  .feed-hero-title {
-    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
-    font-size: clamp(1.5rem, 3vw, 2.25rem);
-    font-weight: 800;
-    color: var(--tx);
-    margin: 0 0 0.5rem;
-  }
-  .feed-hero-sub { color: var(--tx2); font-size: 0.9375rem; margin: 0; line-height: 1.6; }
-
-  .essay-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(18.75rem, 1fr));
-    gap: 1rem;
-  }
-  .essay-card {
-    background: var(--sf2);
-    border: 0.0625rem solid var(--bd);
-    border-radius: 0.875rem;
-    padding: 1.25rem;
-    cursor: pointer;
-    transition: transform 0.18s ease, border-color 0.18s ease;
-    text-decoration: none;
-    display: flex;
-    flex-direction: column;
-    gap: 0.625rem;
-    position: relative;
-  }
-  .essay-card:hover {
-    transform: scale(1.02);
-    border-color: var(--p4);
-  }
-  .essay-card-type {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    font-size: 0.625rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--p5);
-    background: var(--cu);
-    padding: 0.25rem 0.625rem;
-    border-radius: 999px;
-    width: fit-content;
-  }
-  .essay-card-title {
-    font-weight: 700;
-    font-size: 0.9375rem;
-    color: var(--tx);
-    margin: 0;
-    line-height: 1.3;
-  }
-  .essay-card-meta {
-    font-size: 0.75rem;
-    color: var(--tx2);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-  }
-  .essay-card-score {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    font-weight: 700;
-    color: var(--grn);
-  }
-  .essay-card-actions {
-    margin-top: auto;
-    display: flex;
-    gap: 0.5rem;
-  }
-  .essay-card-btn {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.375rem;
-    padding: 0.5rem;
-    border-radius: 0.5rem;
-    border: 0.0625rem solid var(--bd);
-    background: var(--sf);
-    color: var(--tx);
-    font-size: 0.75rem;
-    font-weight: 600;
-    cursor: pointer;
-    text-decoration: none;
-    transition: all 0.15s ease;
-  }
-  .essay-card-btn:hover { border-color: var(--p4); background: var(--cu); }
-  .essay-card-btn.primary {
-    background: linear-gradient(135deg, #7c3aed, #a78bfa);
-    border: none;
-    color: #fff;
-  }
-  .essay-card-delete {
-    position: absolute;
-    top: 0.75rem;
-    right: 0.75rem;
-    width: 1.5rem;
-    height: 1.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 0.375rem;
-    border: none;
-    background: transparent;
-    color: var(--tx3);
-    cursor: pointer;
-    opacity: 0;
-    transition: opacity 0.15s, color 0.15s;
-    font-size: 1rem;
-  }
-  .essay-card:hover .essay-card-delete { opacity: 1; }
-  .essay-card-delete:hover { color: var(--red); }
-
-  .feed-empty {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 4rem 2rem;
-    text-align: center;
-    gap: 1rem;
-  }
-  .feed-empty-icon {
-    width: 4rem;
-    height: 4rem;
-    border-radius: 1rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--cu);
-  }
-  .feed-empty-title {
-    font-weight: 700;
-    font-size: 1.125rem;
-    color: var(--tx);
-    margin: 0;
-  }
-  .feed-empty-sub {
-    color: var(--tx2);
-    font-size: 0.875rem;
-    margin: 0;
-    max-width: 24rem;
-    line-height: 1.5;
-  }
-  .new-essay-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    background: linear-gradient(135deg, #7c3aed, #a78bfa);
-    color: #fff;
-    font-weight: 700;
-    font-size: 0.875rem;
-    padding: 0.75rem 1.375rem;
-    border-radius: 62.4375rem;
-    border: none;
-    cursor: pointer;
-    text-decoration: none;
-    box-shadow: 0 0.375rem 1.375rem rgba(124,58,237,.32);
-    transition: transform .15s, box-shadow .2s;
-  }
-  .new-essay-btn:hover { transform: translateY(-1px); box-shadow: 0 0.625rem 1.75rem rgba(124,58,237,.4); }
-</style>
+<link rel="stylesheet" href="college-prep.css"/>
 </head>
-<body class="korah-grey">
+<body class="korah-grey cp-grey">
+
+<canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
+<script>
+  /* The starfield/shooting stars live in sidebar.js. korahReady only fires once
+     the Firestore bootstrap below resolves, and never at all for a signed-out
+     visitor, so kick it off on whichever of korahReady / load lands first. */
+  (function () {
+    let started = false;
+    function startBackground() {
+      if (started || !window.KorahSidebar || !window.KorahSidebar.initBackground) return;
+      started = true;
+      window.KorahSidebar.initBackground();
+    }
+    window.addEventListener('korahReady', startBackground, { once: true });
+    window.addEventListener('load', startBackground, { once: true });
+    if (document.readyState === 'complete') startBackground();
+  })();
+</script>
 
 <div id="sidebar-root"></div>
 
 <div id="main-area-wrapper" class="main-area-wrapper">
 <main id="main-content" class="main-content">
-  <header class="chat-topbar bg-sf glass-sm t-theme bd" style="opacity: 0.95;">
+  <header class="chat-topbar bg-sf glass-sm t-theme bd">
     <button id="sidebar-toggle" @click="toggleSidebar()" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
@@ -230,36 +74,76 @@
       <div class="korah-status-dot"></div>
       <span class="font-semibold tx text-sm">Essays</span>
     </div>
-    <div class="topbar-actions">
-      <a href="editor.html" class="new-essay-btn">+ New Essay</a>
-    </div>
   </header>
 
-  <div class="feed-scroll">
-    <div class="feed-page">
+  <div class="cp-scroll">
+    <div class="cp-page">
 
-      <section class="feed-hero">
-        <h1 class="feed-hero-title">Your Essays</h1>
-        <p class="feed-hero-sub">Write, review, and polish your college essays with AI-powered feedback. Never AI-generated prose, always constructive annotation.</p>
-      </section>
-
-      <!-- Essay grid (populated by JS, hidden when empty) -->
-      <div id="essay-grid" class="essay-grid" style="display: none;"></div>
-
-      <!-- Empty state -->
-      <div id="essay-empty" class="feed-empty">
-        <div class="feed-empty-icon">
-          <span class="material-icons-round" style="font-size: 2rem; color: var(--p5);">edit_note</span>
-        </div>
-        <h2 class="feed-empty-title">No essays yet</h2>
-        <p class="feed-empty-sub">Start your first essay to get AI-powered feedback on your writing. Personal statements, supplemental essays, and more.</p>
-        <a href="editor.html" class="new-essay-btn">+ New Essay</a>
+      <div class="cp-head">
+        <h1>My Essays</h1>
       </div>
+
+      <div class="cp-actions">
+        <a href="editor.html" class="cp-btn tone-blue">
+          <span class="material-icons-round" style="font-size: 1.125rem;">add</span>
+          New Essay
+        </a>
+        <label class="cp-search">
+          <span class="material-icons-round">search</span>
+          <input type="search" id="essay-search" placeholder="Search essays" autocomplete="off"/>
+        </label>
+      </div>
+
+      <div id="essay-grid" class="essay-grid cp-stagger"></div>
+      <div id="essay-empty" class="cp-empty" style="display: none;"></div>
 
     </div>
   </div>
 </main>
 </div>
+
+<!-- Delete confirm — reuses the app's modal styling from korah-chat.css -->
+<div id="essay-modal" class="delete-modal">
+  <div class="delete-modal-content">
+    <div class="delete-modal-icon"><span class="material-icons-round" style="font-size:2.25rem;color:var(--red,#ef4444);">delete_outline</span></div>
+    <h3 class="delete-modal-title">Delete this essay?</h3>
+    <p class="delete-modal-desc" id="essay-modal-desc"></p>
+    <div class="delete-modal-actions">
+      <button id="essay-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
+      <button id="essay-modal-confirm" class="delete-modal-btn confirm t-btn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Replaces confirm() so the delete prompt shows in the app's own modal
+  // instead of a browser dialog.
+  (function () {
+    const modal = document.getElementById("essay-modal");
+    const descEl = document.getElementById("essay-modal-desc");
+    const cancelBtn = document.getElementById("essay-modal-cancel");
+    const confirmBtn = document.getElementById("essay-modal-confirm");
+    let onConfirm = null;
+
+    function close() { modal.classList.remove("show"); onConfirm = null; }
+
+    window.showEssayConfirm = function (message, cb) {
+      descEl.textContent = message;
+      onConfirm = cb;
+      modal.classList.add("show");
+      confirmBtn.focus();
+    };
+
+    cancelBtn.addEventListener("click", close);
+    confirmBtn.addEventListener("click", () => { const cb = onConfirm; close(); if (cb) cb(); });
+    modal.addEventListener("click", (e) => { if (e.target === modal) close(); });
+    document.addEventListener("keydown", (e) => {
+      if (!modal.classList.contains("show")) return;
+      if (e.key === "Escape") close();
+      if (e.key === "Enter") confirmBtn.click();
+    });
+  })();
+</script>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
@@ -267,6 +151,11 @@
   import { setupKorahDB } from "../app/data/firestore-store.js";
   import { startGuestSession, initGuestGate } from "../guest-gate.js";
   import { startAuthGuard } from "../auth-guard.js";
+  import { getDemoEssay, DEMO_ESSAY_ID } from "./js/demo-data.js";
+
+  // On localhost the list is seeded with one placeholder essay so the UI has
+  // something to show. getDemoEssay() returns null anywhere else.
+  const demoEssay = await getDemoEssay();
 
   const firebaseConfig = {
     apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
@@ -310,50 +199,81 @@
     }
   }
 
+  // Cards in a list carry no meaning of their own, so the tones just differ.
+  const TONES = ['tone-blue', 'tone-pink', 'tone-amber', 'tone-green', 'tone-teal', 'tone-orange', 'tone-red'];
+  const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  let allEssays = [];
+
+  // Edited today reads as a time, anything older as a date.
+  function lastEdited(ts) {
+    if (!ts) return 'Not edited yet';
+    const d = new Date(ts);
+    const sameDay = d.toDateString() === new Date().toDateString();
+    return 'Last edited ' + (sameDay
+      ? d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+      : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }));
+  }
+
+  function essayTitle(e) {
+    if (e.title) return e.title;
+    const typeLabel = e.type === 'supplemental' ? 'Supplemental' : 'Personal Statement';
+    const school = e.school ? e.school.charAt(0).toUpperCase() + e.school.slice(1) : '';
+    return school ? `${school} — ${typeLabel}` : typeLabel;
+  }
+
   function renderEssays(essays) {
+    allEssays = demoEssay ? [demoEssay, ...essays] : essays;
+    paint();
+  }
+
+  function paint() {
     const grid = document.getElementById('essay-grid');
     const empty = document.getElementById('essay-empty');
-    if (!essays.length) {
-      grid.style.display = 'none';
-      empty.style.display = 'flex';
+    const term = (document.getElementById('essay-search').value || '').trim().toLowerCase();
+    const list = term
+      ? allEssays.filter(e => (essayTitle(e) + ' ' + (e.content || '')).toLowerCase().includes(term))
+      : allEssays;
+
+    if (!list.length) {
+      grid.innerHTML = '';
+      empty.style.display = 'block';
+      empty.textContent = allEssays.length
+        ? 'No essays match that search.'
+        : 'No essays yet. Start one with New Essay.';
       return;
     }
     empty.style.display = 'none';
-    grid.style.display = 'grid';
-    grid.innerHTML = essays.map(e => {
-      const typeLabel = e.type === 'supplemental' ? 'Supplemental' : 'Personal Statement';
-      const school = e.school ? e.school.charAt(0).toUpperCase() + e.school.slice(1) : '';
-      const score = e.scores && e.scores.average ? e.scores.average.toFixed(1) : '--';
-      const date = e.updatedAt ? new Date(e.updatedAt).toLocaleDateString() : '';
-      const wordCount = e.content ? e.content.split(/\s+/).length : 0;
+    grid.innerHTML = list.map((e, i) => {
+      const text = (e.content || '').trim();
+      const preview = text
+        ? `<div class="essay-card-page">${esc(text.slice(0, 900))}</div>`
+        : `<div class="essay-card-page is-blank">Nothing written yet</div>`;
       return `
-        <div class="essay-card" onclick="window.location.href='editor.html?id=${e.id}'">
-          <button class="essay-card-delete" onclick="event.stopPropagation(); deleteEssay('${e.id}')" title="Delete">&times;</button>
-          <span class="essay-card-type">${typeLabel}</span>
-          <h3 class="essay-card-title">${school ? school + ' - ' : ''}${typeLabel}</h3>
-          <div class="essay-card-meta">
-            <span>${wordCount} words</span>
-            <span>${date}</span>
+        <div class="essay-card ${TONES[i % TONES.length]}" onclick="window.location.href='editor.html?id=${e.id}'">
+          ${e.id === DEMO_ESSAY_ID ? '' : `<button class="essay-card-delete" onclick="event.stopPropagation(); deleteEssay('${e.id}')" title="Delete">&times;</button>`}
+          <div class="essay-card-head">
+            <img class="essay-card-icon" src="../logo-images/newlogo0.png" alt=""/>
+            <h3 class="essay-card-title">${esc(essayTitle(e))}</h3>
           </div>
-          <div class="essay-card-meta">
-            <span class="essay-card-score"><span class="material-icons-round" style="font-size: 0.875rem;">star</span> ${score}</span>
-          </div>
-          <div class="essay-card-actions">
-            <a href="editor.html?id=${e.id}" class="essay-card-btn primary" onclick="event.stopPropagation()">Open</a>
-          </div>
+          <div class="essay-card-meta">${lastEdited(e.updatedAt)}</div>
+          <div class="essay-card-preview">${preview}</div>
         </div>`;
     }).join('');
   }
 
-  window.deleteEssay = async function(id) {
-    if (!confirm('Delete this essay?')) return;
-    try {
-      const { getFirestore, doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js");
-      const db = getFirestore(app);
-      await deleteDoc(doc(db, `users/${auth.currentUser.uid}/essays`, id));
-    } catch (e) {
-      console.error('Delete failed:', e);
-    }
+  document.getElementById('essay-search').addEventListener('input', paint);
+
+  window.deleteEssay = function(id) {
+    showEssayConfirm("This removes the essay and its feedback. You can't undo this.", async () => {
+      try {
+        const { getFirestore, doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js");
+        const db = getFirestore(app);
+        await deleteDoc(doc(db, `users/${auth.currentUser.uid}/essays`, id));
+      } catch (e) {
+        console.error('Delete failed:', e);
+      }
+    });
   };
 </script>
 </body>

@@ -68,6 +68,57 @@ function destroyEditor() {
   }
 }
 
+/* The highlighted view replaces the Tiptap editor, so it has to stay writable
+   or the essay becomes read-only after an analysis. Edits flow back into
+   rawContent and #essay-input, which is what a re-highlight and a save read. */
+function onStaticEdit(e) {
+  const view = e.currentTarget;
+  rawContent = Array.from(view.querySelectorAll('p'))
+    .map(p => p.textContent.replace(/\u00a0/g, ' ').trim())
+    .filter(Boolean)
+    .join('\n\n');
+  const input = document.getElementById('essay-input');
+  if (input) input.value = rawContent;
+  updateStaticWordCount(rawContent);
+}
+
+function updateStaticWordCount(text) {
+  const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+  const wcEl = document.getElementById('editor-word-count');
+  if (wcEl) wcEl.textContent = words;
+}
+
+function mountStaticView(container, html) {
+  container.innerHTML = `<div class="essay-editor-content essay-static-view" contenteditable="true" spellcheck="true">${html}</div>`;
+  const view = container.firstElementChild;
+  view.addEventListener('input', onStaticEdit);
+  view.addEventListener('click', onHighlightClick);
+}
+
+/* A highlight and its card are two views of one selection. Both handlers move
+   window._activeCards and then repaint with classes only. */
+function syncHighlightState() {
+  const selected = window._activeCards || new Set();
+  document.querySelectorAll('.essay-dim-highlight').forEach(mark => {
+    mark.classList.toggle('is-on', selected.has(mark.dataset.cardId));
+  });
+}
+
+function onHighlightClick(e) {
+  const mark = e.target.closest('.essay-dim-highlight');
+  if (!mark) return;
+  const cardId = mark.dataset.cardId;
+  if (!cardId) return;
+
+  const selected = window._activeCards || new Set();
+  const nowOn = !selected.has(cardId);
+  if (window.selectRecommendation) window.selectRecommendation(nowOn ? cardId : null);
+
+  if (!nowOn) return;
+  const card = document.querySelector(`.essay-rec-card[data-card-id="${cardId}"]`);
+  if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
 function escapeHtml(str) {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
@@ -89,26 +140,24 @@ function renderHighlightedEssay(content, scores, activeCardsSet) {
     const items = data.items || (data.evidence ? [{ evidence: data.evidence }] : []);
     for (let i = 0; i < items.length; i++) {
       const cardId = `rec-${d}-${i}`;
-      if (!activeCardsSet.has(cardId)) continue;
       let evidence = (items[i].evidence || '').replace(/\s+/g, ' ').trim();
       if (!evidence) continue;
       const escaped = escapeHtml(evidence);
       const idx = fullText.indexOf(escaped);
       if (idx !== -1) {
-        ranges.push({ start: idx, end: idx + escaped.length, key: d, len: escaped.length });
+        ranges.push({ start: idx, end: idx + escaped.length, key: d, len: escaped.length, cardId });
       }
     }
   }
 
   for (const annCard of document.querySelectorAll('.essay-rec-card.focus-card')) {
     const cardId = annCard.dataset.cardId;
-    if (!activeCardsSet.has(cardId)) continue;
     let evidence = (annCard.dataset.evidence || '').replace(/\s+/g, ' ').trim();
     if (!evidence) continue;
     const escaped = escapeHtml(evidence);
     const idx = fullText.indexOf(escaped);
     if (idx !== -1) {
-      ranges.push({ start: idx, end: idx + escaped.length, key: 'reflection', len: escaped.length });
+      ranges.push({ start: idx, end: idx + escaped.length, key: 'reflection', len: escaped.length, cardId });
     }
   }
 
@@ -127,16 +176,14 @@ function renderHighlightedEssay(content, scores, activeCardsSet) {
     const before = result.slice(0, r.start);
     const match = result.slice(r.start, r.end);
     const after = result.slice(r.end);
-    result = before + `<mark class="essay-dim-highlight dim-${r.key}">${match}</mark>` + after;
+    const on = activeCardsSet.has(r.cardId) ? ' is-on' : '';
+    result = before + `<mark class="essay-dim-highlight dim-${r.key}${on}" data-card-id="${r.cardId}">${match}</mark>` + after;
   }
 
   const html = result.split('\n').map(p => `<p>${p || '&nbsp;'}</p>`).join('');
 
-  container.innerHTML = `<div class="essay-editor-content essay-static-view">${html}</div>`;
-
-  const words = content.trim() ? content.trim().split(/\s+/).length : 0;
-  const wcEl = document.getElementById('editor-word-count');
-  if (wcEl) wcEl.textContent = words;
+  mountStaticView(container, html);
+  updateStaticWordCount(content);
 }
 
 function reapplyHighlights() {
@@ -174,7 +221,7 @@ function clearHighlights() {
   const container = document.getElementById('editor-container');
   if (container && !editor) {
     const plain = rawContent.split('\n\n').map(p => `<p>${escapeHtml(p) || '&nbsp;'}</p>`).join('');
-    container.innerHTML = `<div class="essay-editor-content essay-static-view">${plain}</div>`;
+    mountStaticView(container, plain);
   }
 }
 
@@ -184,6 +231,7 @@ window.getEditor = getEditor;
 window.clearHighlights = clearHighlights;
 window.highlightAllDimensions = highlightAllDimensions;
 window.syncHighlights = syncHighlights;
+window.syncHighlightState = syncHighlightState;
 window.highlightDimension = highlightDimension;
 
 document.addEventListener('DOMContentLoaded', () => {

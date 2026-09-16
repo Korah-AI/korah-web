@@ -83,6 +83,21 @@ pattern is written up in `docs/WIZARD-UI-PATTERNS.md`.
 * web_fetch tool for the most up-to-date indo
 * sat_question fetch tool (chatbot to output SAT problems, JSON formatted)
 
+## Essay annotator (korah-bot/college-prep)
+The editor works, but a lot of the system around it still needs to be built:
+* More prompts. Common App is wired up; supplementals, QuestBridge and the rest
+  of the school list need the same treatment.
+* Example essays to show alongside the feedback, and to feed the model as
+  reference for what a strong response looks like.
+* A constant feedback loop. When new text is written, call the model again to
+  review just what changed instead of waiting for a full re-analysis.
+* Ask for feedback in place: a small window near the cursor that answers right
+  there, plus a "Submit for feedback" button on the screen.
+* School-specific feedback. Prompt the model with what a given school says it
+  looks for, plus example essays that got in.
+* Highlight a passage to get a dropdown for feedback on that selection, with an
+  optional question typed in, similar to suggestions mode in Google Docs.
+
 # Potential Updates
 * Find API's for AP classes and make a page regarding AP prep.
 * Remake korah landing page to be a 3d scroll interative website that explains the app and introduces it (Maybe using figma or something else). When the users enter, everything like dark (but still a bit visible) with "Korah A.I" lightened up and as they keep scrolling, everything listens up and there are 3d very well animated iphone with korah explaining features.
