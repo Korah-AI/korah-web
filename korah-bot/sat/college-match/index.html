@@ -79,7 +79,7 @@
   import { setupKorahDB } from "../../app/data/firestore-store.js";
   import { initSatAnalytics } from "../js/sat-analytics.js";
   import { startAuthGuard } from '../../auth-guard.js';
-  import { startGuestSession, initAuthWallOnUse } from '../../guest-gate.js';
+  import { startGuestSession, initGuestGate } from '../../guest-gate.js';
 
   const firebaseConfig = {
     apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
@@ -95,12 +95,11 @@
 
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
-      // No redirect: render the shell and let the guest look. The auth wall goes
-        // up when they try to use something.
-      // Match runs off the saved score under users/{uid}, so there is nothing to
-      // browse signed out.
+      // No redirect: render the shell and let the guest look. initGuestGate
+      // neutralises [data-requires-auth] controls and prompts for signup when
+      // one is used.
       startGuestSession();
-      initAuthWallOnUse('../../');
+      initGuestGate('../../');
       return;
     }
     await setupKorahDB(app, user.uid);
