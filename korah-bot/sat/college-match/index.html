@@ -79,7 +79,7 @@
   import { setupKorahDB } from "../../app/data/firestore-store.js";
   import { initSatAnalytics } from "../js/sat-analytics.js";
   import { startAuthGuard } from '../../auth-guard.js';
-  import { startGuestSession, showAuthWall } from '../../guest-gate.js';
+  import { startGuestSession, initAuthWallOnUse } from '../../guest-gate.js';
 
   const firebaseConfig = {
     apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
@@ -95,11 +95,12 @@
 
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
-      // No redirect: render the empty shell, then hard-block with the auth wall.
+      // No redirect: render the shell and let the guest look. The auth wall goes
+        // up when they try to use something.
       // Match runs off the saved score under users/{uid}, so there is nothing to
       // browse signed out.
       startGuestSession();
-      showAuthWall('../../');
+      initAuthWallOnUse('../../');
       return;
     }
     await setupKorahDB(app, user.uid);
@@ -458,32 +459,59 @@
     <div class="cm-intro-slides">
       <div class="cm-intro-slide is-active" data-slide="0">
         <img src="../../logo-images/newlogo10.png" class="cm-intro-icon" alt=""/>
-        <h2 class="cm-intro-title">Your score against real admitted classes</h2>
+        <h2 class="cm-intro-title">Welcome to College Match</h2>
         <p class="cm-intro-desc">
-          Every school here is sorted by where your SAT score falls in the middle 50
-          percent of the students it admitted, using College Scorecard data from the
-          Department of Education.
+          New here: see how your SAT score lines up with the schools you are thinking
+          about. Here is a quick look at how it works.
         </p>
       </div>
 
       <div class="cm-intro-slide" data-slide="1">
-        <img src="../../logo-images/newlogo5.png" class="cm-intro-icon" alt=""/>
-        <h2 class="cm-intro-title">Try other scores without losing yours</h2>
+        <h2 class="cm-intro-title">Your score against the admitted class</h2>
         <p class="cm-intro-desc">
-          Drag the math and reading and writing sliders to see what a different score
-          would open up. Your saved score stays put, marked on the track, and one
-          button brings you back to it.
+          Each school shows the middle 50 percent of the scores it admitted, and where
+          yours falls on that band.
         </p>
+        <div class="cm-demo cm-demo-band" aria-hidden="true">
+          <div class="cm-demo-school"><span>Example University</span><span class="cm-demo-rate">18%</span></div>
+          <div class="cm-demo-track">
+            <span class="cm-demo-range"></span>
+            <span class="cm-demo-marker"></span>
+          </div>
+          <div class="cm-demo-ends"><span>1180</span><span>1400</span></div>
+        </div>
       </div>
 
       <div class="cm-intro-slide" data-slide="2">
-        <img src="../../logo-images/newlogo11.png" class="cm-intro-icon" alt=""/>
+        <h2 class="cm-intro-title">Try other scores, keep yours</h2>
+        <p class="cm-intro-desc">
+          Drag the two section sliders to see what a different score opens up. Your
+          saved score stays marked on the track.
+        </p>
+        <div class="cm-demo cm-demo-sliders" aria-hidden="true">
+          <div class="cm-demo-row">
+            <span class="cm-demo-label">Math</span>
+            <span class="cm-demo-slider"><i class="cm-demo-tick"></i><i class="cm-demo-thumb"></i></span>
+          </div>
+          <div class="cm-demo-row is-second">
+            <span class="cm-demo-label">Reading</span>
+            <span class="cm-demo-slider"><i class="cm-demo-tick"></i><i class="cm-demo-thumb"></i></span>
+          </div>
+          <span class="cm-demo-badge">Previewing, saved score stays put</span>
+        </div>
+      </div>
+
+      <div class="cm-intro-slide" data-slide="3">
         <h2 class="cm-intro-title">Safety, match and reach</h2>
         <p class="cm-intro-desc">
-          Filter by state, size and type, then open any card for the section ranges and
-          what would help. These buckets use test scores and admission rate only, so
-          treat them as a starting point, not a prediction.
+          Schools sort into three columns you can filter by state, size and type. Test
+          scores and admission rate only, so treat it as a starting point.
         </p>
+        <div class="cm-demo cm-demo-cols" aria-hidden="true">
+          <div class="cm-demo-col is-safety"><span class="cm-demo-col-head">Safety</span><i></i><i></i></div>
+          <div class="cm-demo-col is-match"><span class="cm-demo-col-head">Match</span><i></i><i></i><i></i></div>
+          <div class="cm-demo-col is-reach"><span class="cm-demo-col-head">Reach</span><i></i></div>
+        </div>
       </div>
     </div>
 
@@ -491,6 +519,7 @@
       <span class="cm-intro-dot is-active" data-dot="0"></span>
       <span class="cm-intro-dot" data-dot="1"></span>
       <span class="cm-intro-dot" data-dot="2"></span>
+      <span class="cm-intro-dot" data-dot="3"></span>
     </div>
 
     <div class="cm-intro-actions">

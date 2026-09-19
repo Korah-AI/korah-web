@@ -1658,7 +1658,7 @@ html[data-theme="light"] .cp-intro-content { box-shadow: 0 1.5rem 4rem rgba(0, 0
 
 .cp-intro-slides {
   position: relative;
-  min-height: 17rem;
+  min-height: 19rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1737,3 +1737,147 @@ html[data-theme="light"] .cp-intro-content { box-shadow: 0 1.5rem 4rem rgba(0, 0
   box-shadow: 0 0.25rem 0 0 #24529c;
 }
 .cp-intro-btn.is-primary:hover { background: #3472d9; filter: brightness(1.08); }
+
+/* Mini demos inside the carousel: a scaled-down, looping version of the real UI
+   so a slide shows the feature instead of only describing it. */
+.cp-demo {
+  width: 100%;
+  max-width: 22rem;
+  margin-top: 0.25rem;
+  padding: 0.875rem;
+  border-radius: 0.875rem;
+  border: 0.0625rem solid var(--cp-bd);
+  background: var(--cp-sf2);
+  text-align: left;
+}
+
+/* Setup: the type pills flip between each other while the prompt types in. */
+.cp-demo-pills { display: flex; gap: 0.375rem; }
+.cp-demo-pill {
+  flex: 1;
+  text-align: center;
+  padding: 0.3125rem 0;
+  border-radius: 0.5rem;
+  border: 0.0625rem solid var(--cp-bd);
+  background: var(--cp-sf);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--tx);
+  animation: cpDemoPill 4s ease-in-out infinite;
+}
+.cp-demo-pill.is-second { animation-delay: 2s; }
+@keyframes cpDemoPill {
+  0%, 42%   { background: #3472d9; border-color: #3472d9; color: #fff; }
+  50%, 100% { background: var(--cp-sf); border-color: var(--cp-bd); color: var(--tx); }
+}
+.cp-demo-field {
+  margin-top: 0.625rem;
+  padding: 0.5rem;
+  height: 1.375rem;
+  box-sizing: content-box;
+  border-radius: 0.5rem;
+  border: 0.0625rem solid var(--cp-bd);
+  background: var(--cp-sf);
+  overflow: hidden;
+}
+.cp-demo-typing {
+  display: block;
+  height: 0.375rem;
+  border-radius: 62.4375rem;
+  background: var(--cp-bd);
+  animation: cpDemoType 4s ease-in-out infinite;
+}
+@keyframes cpDemoType {
+  0%        { width: 0; }
+  45%, 65%  { width: 92%; }
+  100%      { width: 0; }
+}
+.cp-demo-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--tx);
+}
+
+/* Feedback: a passage lights up, its card slides in, then resolves away. */
+.cp-demo-feedback { display: flex; align-items: center; gap: 0.625rem; }
+.cp-demo-doc {
+  flex: 1.3;
+  display: grid;
+  gap: 0.375rem;
+  padding: 0.625rem;
+  border-radius: 0.625rem;
+  background: #fff;
+}
+.cp-demo-line { height: 0.375rem; border-radius: 62.4375rem; background: #d6d8e0; }
+.cp-demo-line.is-short { width: 68%; }
+.cp-demo-line.is-marked { animation: cpDemoMark 5s ease-in-out infinite; }
+@keyframes cpDemoMark {
+  0%, 12%   { background: #d6d8e0; }
+  26%, 66%  { background: #fbbf24; }
+  82%, 100% { background: #d6d8e0; }
+}
+.cp-demo-card {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem;
+  border-radius: 0.625rem;
+  border: 0.0625rem solid var(--cp-bd);
+  background: var(--cp-sf);
+  animation: cpDemoCard 5s ease-in-out infinite;
+}
+@keyframes cpDemoCard {
+  0%, 14%   { opacity: 0; transform: translateX(0.75rem); }
+  28%, 64%  { opacity: 1; transform: none; }
+  80%, 100% { opacity: 0; transform: scale(0.92); }
+}
+.cp-demo-card-check { font-size: 0.875rem; color: #1ead53; }
+.cp-demo-card-lines { flex: 1; display: grid; gap: 0.25rem; }
+.cp-demo-card-lines i {
+  display: block;
+  height: 0.3125rem;
+  border-radius: 62.4375rem;
+  background: var(--cp-bd);
+}
+.cp-demo-card-lines i:last-child { width: 62%; }
+
+/* Scores: the six rubric bars fill in, one tone each, then reset. */
+.cp-demo-scores { display: flex; align-items: center; gap: 0.875rem; }
+.cp-demo-avg { display: grid; justify-items: center; }
+.cp-demo-avg b { font-size: 1.5rem; font-weight: 800; color: var(--tx); }
+.cp-demo-avg span { font-size: 0.625rem; font-weight: 600; color: var(--tx); }
+.cp-demo-bars { flex: 1; display: grid; gap: 0.3125rem; }
+.cp-demo-bars > span {
+  display: block;
+  height: 0.375rem;
+  border-radius: 62.4375rem;
+  background: var(--cp-sf);
+  overflow: hidden;
+}
+.cp-demo-bars > span > i {
+  display: block;
+  height: 100%;
+  width: var(--w);
+  border-radius: inherit;
+  background: var(--c);
+  transform-origin: left;
+  animation: cpDemoBar 4s ease-in-out infinite;
+}
+.cp-demo-bars > span:nth-child(2) > i { animation-delay: 0.08s; }
+.cp-demo-bars > span:nth-child(3) > i { animation-delay: 0.16s; }
+.cp-demo-bars > span:nth-child(4) > i { animation-delay: 0.24s; }
+.cp-demo-bars > span:nth-child(5) > i { animation-delay: 0.32s; }
+.cp-demo-bars > span:nth-child(6) > i { animation-delay: 0.40s; }
+@keyframes cpDemoBar {
+  0%       { transform: scaleX(0); }
+  40%, 82% { transform: scaleX(1); }
+  100%     { transform: scaleX(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cp-demo * { animation: none !important; }
+}
