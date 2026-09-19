@@ -128,10 +128,10 @@
     const bps = Math.round(rate * 100);
     const admitText =
       tier === "high"
-        ? `about ${bps}% admit, so the odds are on your side`
+        ? `About ${bps}% admit, so the odds are on your side`
         : tier === "medium"
-          ? `about ${bps}% admit, so it's competitive`
-          : `a ${bps}% admit rate — it's a genuine long shot for everyone`;
+          ? `About ${bps}% admit, so it's competitive`
+          : `A ${bps}% admit rate, and it's a genuine long shot for everyone`;
 
     const reason = `Your ${s} is ${bandText} for ${school.name}. ${admitText}. ` +
       `That makes it a ${labelWord(label)} for you.`;
