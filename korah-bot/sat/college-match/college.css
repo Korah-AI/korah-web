@@ -164,6 +164,9 @@ html[data-theme="light"] * { scrollbar-color: rgba(28, 30, 38, 0.35) transparent
 /* The section rows keep their own tone even while the combined tile is amber. */
 .cm-score.is-preview .cm-slider-row.tone-blue { --acc: var(--cm-blue); --acc-fill: var(--cm-blue-fill); }
 .cm-score.is-preview .cm-slider-row.tone-pink { --acc: var(--cm-pink); --acc-fill: var(--cm-pink-fill); }
+/* Nothing in this panel is a secondary label; it all reads at full strength. */
+.cm-score .cm-panel-label,
+.cm-score .cm-track-endlabels { color: var(--tx); }
 
 .cm-slider-row + .cm-slider-row { margin-top: 1rem; }
 .cm-slider-head {
@@ -205,47 +208,60 @@ html[data-theme="light"] * { scrollbar-color: rgba(28, 30, 38, 0.35) transparent
   transition: background 0.18s ease, border-color 0.18s ease;
 }
 
+/* Thick meter bar like the Score Journey card on home.html: a deep grey
+   channel, a tone gradient filled to --fill, and a pale grip to drag. */
 .cm-slider {
   display: block;
   width: 100%;
   margin: 0;
   appearance: none;
   -webkit-appearance: none;
-  height: 0.5rem;
-  border-radius: 999px;
+  height: 1.75rem;
+  border-radius: 0.75rem;
   background: var(--cm-sf2);
-  border: 1px solid var(--cm-bd);
   cursor: pointer;
 }
 .cm-slider:focus { outline: none; }
-.cm-slider:focus-visible { border-color: var(--acc); }
-.cm-slider::-webkit-slider-runnable-track { height: 0.5rem; border-radius: 999px; }
+.cm-slider:focus-visible { box-shadow: 0 0 0 0.125rem var(--acc); }
+.cm-slider::-webkit-slider-runnable-track {
+  height: 1.75rem;
+  border-radius: 0.75rem;
+  background: linear-gradient(90deg, var(--acc-fill), var(--acc)) no-repeat;
+  background-size: var(--fill, 0%) 100%;
+}
 .cm-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 1.25rem;
-  height: 1.25rem;
-  margin-top: -0.4375rem;
+  width: 1rem;
+  height: 1.35rem;
+  margin-top: 0.2rem;
   border-radius: 999px;
-  background: var(--acc-fill);
-  border: 0.1875rem solid var(--cm-sf);
-  transition: transform 0.18s ease, background 0.18s ease;
+  background: var(--tx);
+  border: none;
+  box-shadow: 0 0 0.35rem rgba(0, 0, 0, 0.45);
+  transition: transform 0.18s ease;
 }
 .cm-slider::-webkit-slider-thumb:hover { transform: scale(1.12); }
 .cm-slider:active::-webkit-slider-thumb { transform: scale(1.12); }
-.cm-slider::-moz-range-track { height: 0.5rem; border-radius: 999px; background: var(--cm-sf2); }
+.cm-slider::-moz-range-track { height: 1.75rem; border-radius: 0.75rem; background: var(--cm-sf2); }
+.cm-slider::-moz-range-progress {
+  height: 1.75rem;
+  border-radius: 0.75rem;
+  background: linear-gradient(90deg, var(--acc-fill), var(--acc));
+}
 .cm-slider::-moz-range-thumb {
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 1rem;
+  height: 1.35rem;
   border-radius: 999px;
-  background: var(--acc-fill);
-  border: 0.1875rem solid var(--cm-sf);
-  transition: transform 0.18s ease, background 0.18s ease;
+  background: var(--tx);
+  border: none;
+  box-shadow: 0 0 0.35rem rgba(0, 0, 0, 0.45);
+  transition: transform 0.18s ease;
 }
 .cm-slider::-moz-range-thumb:hover { transform: scale(1.12); }
 
 /* Saved-score tick under the track */
-.cm-track-ticks { position: relative; height: 1.5rem; margin: 0.3rem 0.625rem 0; }
+.cm-track-ticks { position: relative; height: 1.5rem; margin: 0.3rem 0.5rem 0; }
 .cm-saved-tick {
   position: absolute;
   top: 0;

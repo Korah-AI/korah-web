@@ -320,7 +320,8 @@
         this.resetShown();
       },
 
-      // Where a saved section tick sits on its 200–800 track, as a %.
+      // Where a section score sits on its 200–800 track, as a %.
+      // Drives both the saved tick and the slider fill.
       savedTickPct(saved) {
         if (saved == null) return 0;
         return ((saved - SECTION_MIN) / (SECTION_MAX - SECTION_MIN)) * 100;
