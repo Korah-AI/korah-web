@@ -58,9 +58,8 @@ html[data-theme="light"] {
 [x-cloak] { display: none !important; }
 
 /* Buttons and inputs don't inherit the page font by default. */
-.cm-page, #college-score-modal { font-family: 'Plus Jakarta Sans', sans-serif; }
-.cm-page button, .cm-page input, .cm-page a,
-#college-score-modal button, #college-score-modal input { font-family: inherit; }
+.cm-page { font-family: 'Plus Jakarta Sans', sans-serif; }
+.cm-page button, .cm-page input, .cm-page a { font-family: inherit; }
 .material-icons-round { font-family: 'Material Icons Round' !important; }
 
 /* The app's purple scrollbar is the last purple thing on this grey page. */
@@ -715,53 +714,6 @@ html[data-theme="light"] * { scrollbar-color: rgba(28, 30, 38, 0.35) transparent
 .cm-skeleton-cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
 .cm-skeleton-cols .cm-skeleton-block { height: 18rem; }
 
-/* ═══ Score prompt modal ═══════════════════════════════ */
-#college-score-modal { --tx2: var(--cm-tx2); --tx3: var(--cm-tx3); }
-#college-score-modal .delete-modal-content {
-  background: var(--cm-sf);
-  border: 1px solid var(--cm-bd);
-}
-#college-score-modal .delete-modal-icon .material-icons-round { color: var(--cm-blue) !important; }
-#college-score-modal .create-input {
-  background: var(--cm-sf2);
-  border: 1px solid var(--cm-bd);
-  color: var(--tx);
-}
-#college-score-modal .create-input:focus { border-color: var(--cm-blue); }
-#college-score-modal .delete-modal-btn {
-  transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
-}
-#college-score-modal .delete-modal-btn:hover { transform: scale(1.03); }
-#college-score-modal .delete-modal-btn.cancel {
-  background: var(--cm-sf2);
-  border: 1px solid var(--cm-bd);
-  color: var(--tx);
-}
-#college-score-modal .delete-modal-btn.cancel:hover { background: var(--cm-sf3); border-color: var(--cm-bd); }
-#college-score-modal .delete-modal-btn.confirm {
-  background: var(--cm-green-fill);
-  border: 1px solid var(--cm-green-fill);
-  color: #fff;
-}
-#college-score-modal .delete-modal-btn.confirm:hover { background: var(--cm-green-fill); border-color: var(--cm-green-fill); }
-.cm-prompt-label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: var(--tx);
-}
-.cm-prompt-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 0.8rem;
-  width: 100%;
-  margin-top: 0.4rem;
-  text-align: left;
-}
-.cm-prompt-error { margin: 0; font-size: 0.75rem; font-weight: 700; color: var(--cm-red); }
-
 /* ═══ Responsive ═══════════════════════════════════════ */
 @media (max-width: 64rem) {
   .cm-controls { grid-template-columns: 1fr; }
@@ -779,9 +731,7 @@ html[data-theme="light"] * { scrollbar-color: rgba(28, 30, 38, 0.35) transparent
 
 /* ── First-visit intro carousel ──────────────────────────────────────────────
    Same panel as the Problem of the Day intro (potd/potd.css) on the College
-   Match tokens. Shown once per browser, then remembered in localStorage. It
-   sits above the score prompt, so a first-time student reads this, closes it,
-   and lands on the prompt underneath. */
+   Match tokens. Shown once per browser, then remembered in localStorage. */
 .cm-intro {
   position: fixed;
   inset: 0;
@@ -1086,7 +1036,7 @@ html[data-theme="light"] .cm-intro-content { box-shadow: 0 1.5rem 4rem rgba(0, 0
 .cm-intro-btn.is-primary:hover { filter: brightness(1.08); }
 
 @media (prefers-reduced-motion: reduce) {
-  .cm-page *, #college-score-modal *, .cm-intro * {
+  .cm-page *, .cm-intro * {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }

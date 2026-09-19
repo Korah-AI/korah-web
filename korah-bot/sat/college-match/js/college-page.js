@@ -2,7 +2,7 @@
  * College Match page — Alpine component + data wiring (Issue #44).
  *
  * Renders the three safety/match/reach columns, drives the non-destructive
- * slider, filters, score prompt, and the fallback dataset for local dev.
+ * slider, filters, and the fallback dataset for local dev.
  *
  * Everything score-classification related lives in college-match.js (pure).
  * This file has no classification math; it calls window.CollegeMatch.
@@ -156,16 +156,8 @@
       // roughly a third of which report no SAT percentiles at all.
       shown: { safety: PAGE_SIZE, match: PAGE_SIZE, reach: PAGE_SIZE, noData: PAGE_SIZE },
 
-      // Score prompt
-      prompt: false,
-      promptCurrent: "",
-      promptMath: "",
-      promptEnglish: "",
-      promptError: "",
-
       async init() {
         await Promise.all([this.loadSchools(), this.loadProfile()]);
-        if (this.savedMath == null) this.prompt = true;
         this.ready = true;
       },
 
@@ -199,7 +191,7 @@
       },
 
       // Section scores win when both are present; otherwise fall back to
-      // splitting the combined score. Shared by the initial load and the prompt.
+      // splitting the combined score.
       applySaved(current, mathRaw, erwRaw) {
         const ms = Number(mathRaw);
         const es = Number(erwRaw);
@@ -359,34 +351,6 @@
       // ── Tips ──────────────────────────────────────────────────────────────
       studentTipsFor(school) {
         return CollegeMatch.studentTip({ mathScore: this.math, englishScore: this.erw }, school);
-      },
-
-      // ── Score prompt (reuses the saveProfile flow — no new storage) ──────
-      skipPrompt() {
-        this.prompt = false;
-        this.promptError = "";
-      },
-
-      async savePrompt() {
-        const cur = this.promptCurrent ? Number(this.promptCurrent) : null;
-        const math = this.promptMath ? Number(this.promptMath) : null;
-        const eng = this.promptEnglish ? Number(this.promptEnglish) : null;
-        if (cur == null && !(math && eng)) {
-          this.promptError = "Enter your current score, or both math and reading/writing scores to start.";
-          return;
-        }
-        try {
-          const saved = await window.KorahSATAnalytics?.saveProfile?.({
-            currentScore: cur || undefined,
-            mathScore: math || undefined,
-            englishScore: eng || undefined,
-          });
-          if (saved) this.applySaved(saved.currentScore, saved.mathScore, saved.englishScore);
-        } catch (e) {
-          console.warn("[College Match] saveProfile failed", e);
-        }
-        this.prompt = false;
-        this.promptError = "";
       },
     };
   }

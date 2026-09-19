@@ -272,11 +272,10 @@ Single Alpine-driven scroll page. Matches the dashboard's glass/grey-blocking vi
    - **Filters** — state (custom dropdown; the native `<select>` menu is OS-styled and banned by the wizard doc), size and public/private as tone chips. Filters re-render the columns and reset the per-column card count.
 4. **Three columns** — Safety, Match, Reach (order left→right, tones green / blue / red as flat `--acc-fill` blocks per `docs/WIZARD-UI-PATTERNS.md`). Grid that stacks to one column below the standard breakpoint. Column header = label + live count. The synced dataset runs to roughly a thousand schools, so each column renders 24 cards with a "show more" underneath.
 5. **Not enough data list** — a collapsed-by-default bottom section for `no-data` schools so they stay visible, filterable, and honest (§9.2).
-6. **No-saved-score prompt** — modal reusing the `sat/index.html` onboarding pattern (§9.1), not a blocking overlay: Skip dismisses it.
 
-### 9.1 Score prompt (no saved profile)
+### 9.1 No saved profile
 
-If `getProfile()` returns `null` (or lacks a usable `currentScore`/sections), show the score modal — same flow `sat/index.html` uses to call `saveProfile`, extended with section inputs per the dashboard (line 1844 saves `{ englishScore, mathScore }`). Fields: current combined score (400–1600, optional), math score (optional), reading & writing score (optional). Save → `KorahSATAnalytics.saveProfile({ currentScore, mathScore, englishScore })` (this already derives + persists everything — no new storage, no new Firestore writes). Skip → page continues: both sliders ride on a pleasant default (600 each, 1200 combined), no tick marks, "back to my score" hidden.
+If `getProfile()` returns `null` (or lacks a usable `currentScore`/sections), the page just comes up on the defaults: both sliders ride on 600 each (1200 combined), no tick marks, "back to my score" hidden. There is no score prompt — the student sets a score with the sliders.
 
 ### 9.2 Card anatomy
 
@@ -298,7 +297,7 @@ Each classified school renders as a glass card with:
 
 The student's recorded score stays visible as a fixed tick mark on the track the entire time the slider is modified, and there's a one-click "back to my score" that snaps to it. The failure mode to design against: student drags to 1550, walks away, comes back, thinks 1550 is their saved score.
 
-- **Never written to Firestore.** `saveProfile` is only called by the score prompt (§9.1), never by the slider.
+- **Never written to Firestore.** The page never calls `saveProfile`; the slider is preview-only.
 - **Modified state is visually distinct from resting state.** While either slider sits off its saved section score, the combined badge flips from teal to amber and a "Previewing 1550, your saved 1490 stays put" badge appears next to the back button, so a user glancing at the page can't confuse a preview with the record. The two section badges keep their own tones so the sliders stay readable.
 - On reload, the slider re-initializes from `getProfile()` — so even the "walked away" case self-heals.
 
@@ -356,7 +355,7 @@ Run through both themes × 375 / 768 / 1200px breakpoints. Build the classificat
 5. **Slider live refill:** drag Georgetown past 1530 and watch it relocate to Match mid-drag (`input`, not `change`) with the animation; drag back down and it returns to Reach.
 6. **Non-destructive:** tick mark pinned at saved score while dragging; "Previewing" treatment visible; "back to my score" snaps the slider; `KorahSATAnalytics.getProfile()` returns the unmodified saved score after all of it.
 7. **Walk-away:** reload the page → slider initialized from the saved score, not the last dragged value.
-8. **No-profile flow:** cleared profile / first visit → score prompt appears; Save writes via `saveProfile` only; Skip continues with no tick mark and no errors.
+8. **No-profile flow:** cleared profile / first visit → page comes up on the 1200 default with no tick mark and no errors.
 9. **Filters:** state / size / public-private slice the column population correctly; columns re-classify on filter change; `no-data` list filters too.
 10. **Localhost:** stop the dev server route (or leave it off) → page renders fully from `FALLBACK_SCHOOLS`, columns and slider work, sidebar + transitions fire, no console crash.
 11. **Route swap line:** identify the one marked line in `api/college/c.js`; temporarily point it at a file with 2 schools → confirm no frontend change is needed to see 2 schools. (Simulated Phase 2, proves the boundary.)
@@ -385,5 +384,5 @@ Run through both themes × 375 / 768 / 1200px breakpoints. Build the classificat
 | 1 | Folder name contains a space (`college match/`) → ugly percent-encoded URLs. Rename before first deploy? | **Resolved:** renamed to `sat/college-match/`. Sidebar href, README route map and this spec's paths updated. |
 | 2 | Combined band = `VR + MT` summed per percentile (§2, Design decision 1). Acceptable approximation for directional buckets? | Yes — standard practice, disclaimered on-page. |
 | 3 | Strict-table boundary: Georgetown at 1490 is technically "Reach" (medium × 50th–75th). OK that reason text carries the "right at the line" nuance rather than overriding the label? | Yes — labels speak the matrix; reason adds nuance. |
-| 4 | No-score default slider value when the prompt is skipped? | 1200 with no tick mark, "Back to my score" hidden. |
+| 4 | No-score default slider value? | 1200 with no tick mark, "Back to my score" hidden. |
 | 5 | School-level tips in Phase 1: hand-compute from the real numbers during data entry (matching the output of the Phase 2 rules)? | Yes — keep `tips` populated in the Phase 1 set. |
