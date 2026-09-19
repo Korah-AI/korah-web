@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en" x-data="{
+  theme: localStorage.getItem('korah_theme') || 'dark',
+  sidebarCollapsed: window.innerWidth <= 768 ? false : localStorage.getItem('korah_sidebar_collapsed') === 'true',
+  mobileOpen: false,
+  getEffectiveTheme() {
+    if (this.theme === 'system') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return this.theme;
+  },
+  toggleSidebar() {
+    if (window.innerWidth <= 768) {
+      this.mobileOpen = !this.mobileOpen;
+      const overlay = document.querySelector('.sidebar-overlay');
+      if (overlay) overlay.classList.toggle('show', this.mobileOpen);
+    } else {
+      this.sidebarCollapsed = !this.sidebarCollapsed;
+      localStorage.setItem('korah_sidebar_collapsed', this.sidebarCollapsed);
+    }
+  }
+}" :data-theme="getEffectiveTheme()" x-cloak>
+<head>
+<link rel="stylesheet" href="../../transitions/page-transitions.css"/>
+<script src="../../transitions/page-transitions.js"></script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Korah AI — College Match</title>
+<link rel="icon" type="image/png" href="../../logo-images/newlogo0.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script src="../../sidebar-loader.js" defer></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="../../study/js/sidebar.js"></script>
+<link rel="stylesheet" href="../../app/korah-chat.css"/>
+<link rel="stylesheet" href="../sat.css"/>
+<link rel="stylesheet" href="./college.css"/>
+<script src="./js/college-match.js"></script>
+<script src="./js/college-page.js"></script>
+</head>
+<body>
+<style>
+  html:not(.korah-page-ready) { background: #06040f !important; }
+  html[data-theme="light"]:not(.korah-page-ready) { background: #d2d2d2 !important; }
+  html:not(.korah-page-ready) body { opacity: 0 !important; }
+</style>
+
+<script>
+  (function() {
+    const t = localStorage.getItem('korah_theme') || 'dark';
+    if (t === 'light' || (t === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  })();
+</script>
+
+<canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
+<script>
+  (function () {
+    let started = false;
+    function startBackground() {
+      if (started || !window.KorahSidebar || !window.KorahSidebar.initBackground) return;
+      started = true;
+      window.KorahSidebar.initBackground();
+    }
+    window.addEventListener('korahReady', startBackground, { once: true });
+    window.addEventListener('load', startBackground, { once: true });
+    if (document.readyState === 'complete') startBackground();
+  })();
+</script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+  import { setupKorahDB } from "../../app/data/firestore-store.js";
+  import { initSatAnalytics } from "../js/sat-analytics.js";
+  import { startAuthGuard } from '../../auth-guard.js';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
+    authDomain: "korah-app.firebaseapp.com",
+    projectId: "korah-app",
+    storageBucket: "korah-app.firebasestorage.app",
+    messagingSenderId: "226169460321",
+    appId: "1:226169460321:web:b166fc8260107c55dafc20"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      window.KorahTransitions.go('../../landing/index.html');
+      return;
+    }
+    await setupKorahDB(app, user.uid);
+    await initSatAnalytics(app, user.uid);
+    const detail = { uid: user.uid };
+    window._korahReadyFired = detail;
+    window.dispatchEvent(new CustomEvent('korahReady', { detail }));
+    startAuthGuard(auth, '../../landing/index.html');
+  });
+
+  document.getElementById('logout-btn')?.addEventListener('click', () => {
+    window.confirmLogout(async () => {
+      await signOut(auth);
+      localStorage.removeItem('korah_first_name');
+      window.KorahTransitions.go('../../login.html');
+    });
+  });
+</script>
+
+<div id="sidebar-root"></div>
+
+<div id="main-area-wrapper" class="main-area-wrapper">
+<main id="main-content" class="main-content" x-data="collegeMatch()" x-cloak>
+
+  <!-- Top bar -->
+  <header class="chat-topbar bg-sf t-theme bd">
+    <button id="sidebar-toggle" @click="toggleSidebar()" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+    <div class="flex items-center gap-2 tx2">
+      <span class="material-icons-round" style="font-size:1.15rem;">school</span>
+      <span class="font-semibold tx text-sm">College Match</span>
+    </div>
+  </header>
+
+  <!-- ═══ LOADING SKELETON ═══ -->
+  <div class="cm-page" x-show="!ready" x-cloak>
+    <div class="cm-skeleton">
+      <div class="cm-skeleton-block is-head"></div>
+      <div class="cm-skeleton-row">
+        <div class="cm-skeleton-block"></div>
+        <div class="cm-skeleton-block"></div>
+      </div>
+      <div class="cm-skeleton-cols">
+        <div class="cm-skeleton-block"></div>
+        <div class="cm-skeleton-block"></div>
+        <div class="cm-skeleton-block"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ MAIN CONTENT ═══ -->
+  <div class="cm-page" x-show="ready" x-cloak>
+
+    <!-- Header -->
+    <header class="cm-head">
+      <span class="cm-kicker">Korah SAT Prep</span>
+      <h1 class="cm-title">College Match</h1>
+      <p class="cm-sub">
+        See how your SAT score lines up with what each school's admitted class actually shows up with, and try other
+        scores without touching your saved one.
+      </p>
+      <p class="cm-note">
+        <span class="material-icons-round">info</span>
+        <span>
+          These buckets use test scores and admission rate only. They ignore GPA, course rigor, essays, and what a school
+          happens to be looking for that year, so treat them as a starting point rather than a prediction. Based on
+          <b x-text="dataYear"></b> data from the U.S. Department of Education College Scorecard, which lags about two years.
+        </span>
+      </p>
+    </header>
+
+    <!-- Controls: slider + filters -->
+    <section class="cm-controls">
+      <div class="cm-panel cm-score" :class="{ 'is-preview': isPreviewing }">
+        <div class="cm-score-top">
+          <span class="cm-panel-label">Your score</span>
+          <span class="cm-score-val" x-text="score"></span>
+        </div>
+
+        <input
+          type="range"
+          min="400" max="1600" step="10"
+          :value="score"
+          @input="onSlider($event.target.value)"
+          class="cm-slider"
+          aria-label="Preview score"
+        />
+
+        <div class="cm-track-ticks">
+          <span class="cm-saved-tick" x-show="hasSavedScore" x-cloak :style="'left:' + savedTickPct() + '%'" title="Your saved score">
+            <span class="cm-saved-tick-dot"></span>
+            <span class="cm-saved-tick-label" x-text="savedScore"></span>
+          </span>
+        </div>
+        <div class="cm-track-endlabels"><span>400</span><span>1600</span></div>
+
+        <div class="cm-score-actions" x-show="isPreviewing" x-cloak>
+          <span class="cm-preview-badge">
+            <span class="material-icons-round">visibility</span>
+            Previewing <b x-text="score"></b>, your saved <b x-text="savedScore"></b> stays put
+          </span>
+          <button class="cm-ghost-btn t-btn" @click="backToScore()">
+            <span class="material-icons-round">undo</span> Back to my score
+          </button>
+        </div>
+      </div>
+
+      <div class="cm-panel cm-filters">
+        <div class="cm-filter">
+          <span class="cm-panel-label">State</span>
+          <div class="cm-drop" @click.outside="stateOpen = false">
+            <button class="cm-drop-btn t-btn" :class="{ 'is-open': stateOpen }" @click="stateOpen = !stateOpen">
+              <span x-text="stateFilter === 'all' ? 'All states' : stateFilter"></span>
+              <span class="material-icons-round">expand_more</span>
+            </button>
+            <div class="cm-drop-wrap" :class="{ 'is-open': stateOpen }">
+              <div class="cm-drop-clip">
+                <div class="cm-drop-list">
+                  <button class="cm-drop-opt t-btn" :class="{ 'is-on': stateFilter === 'all' }"
+                          @click="stateFilter = 'all'; stateOpen = false">All states</button>
+                  <template x-for="s in states" :key="s">
+                    <button class="cm-drop-opt t-btn" :class="{ 'is-on': stateFilter === s }"
+                            @click="stateFilter = s; stateOpen = false" x-text="s"></button>
+                  </template>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="cm-filter">
+          <span class="cm-panel-label">Size</span>
+          <div class="cm-chips">
+            <template x-for="opt in sizeOptions" :key="opt.value">
+              <button class="cm-chip t-btn" :class="{ 'is-on': sizeFilter === opt.value }"
+                      @click="sizeFilter = opt.value" x-text="opt.label"></button>
+            </template>
+          </div>
+        </div>
+
+        <div class="cm-filter">
+          <span class="cm-panel-label">Type</span>
+          <div class="cm-chips">
+            <template x-for="opt in typeOptions" :key="opt.value">
+              <button class="cm-chip t-btn" :class="{ 'is-on': typeFilter === opt.value }"
+                      @click="typeFilter = opt.value" x-text="opt.label"></button>
+            </template>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Safety / Match / Reach -->
+    <section class="cm-columns">
+      <template x-for="col in columns" :key="col.key">
+        <div class="cm-col" :class="col.tone">
+          <div class="cm-col-head">
+            <h2 class="cm-col-title" x-text="col.title"></h2>
+            <span class="cm-col-count" x-text="groups[col.key].length"></span>
+          </div>
+          <p class="cm-col-desc" x-text="col.desc"></p>
+
+          <div class="cm-col-body">
+            <template x-for="item in groups[col.key]" :key="item.school.id">
+              <article class="cm-card" :class="{ 'is-open': expandedId === item.school.id }" @click="toggleDetails(item.school.id)">
+                <div class="cm-card-top">
+                  <div class="cm-card-heading">
+                    <h3 class="cm-card-name" x-text="item.school.name"></h3>
+                    <p class="cm-card-meta" x-text="region(item.school) + ' · ' + fmtSize(item.school.size) + ' students'"></p>
+                  </div>
+                  <span class="cm-pill" x-text="col.title"></span>
+                </div>
+
+                <p class="cm-card-sub"><b x-text="fmtRate(item.school.admitRate)"></b> chance of admission</p>
+
+                <div class="cm-band">
+                  <span class="cm-band-min" x-text="item.school.sat.combined.p25"></span>
+                  <span class="cm-band-track">
+                    <span class="cm-band-marker"
+                          :class="'is-' + mark(score, item.school.sat.combined).pos"
+                          :style="'left:' + mark(score, item.school.sat.combined).pct + '%'"></span>
+                  </span>
+                  <span class="cm-band-max" x-text="item.school.sat.combined.p75"></span>
+                </div>
+
+                <div class="cm-card-foot">
+                  <p class="cm-card-hint" x-text="bandHint(score, item.school.sat.combined)"></p>
+                  <button class="cm-card-toggle t-btn" :aria-expanded="expandedId === item.school.id" aria-label="Toggle details">
+                    <span class="material-icons-round">expand_more</span>
+                  </button>
+                </div>
+
+                <!-- Expanded details -->
+                <div class="cm-detail-wrap" :class="{ 'is-open': expandedId === item.school.id }">
+                  <div class="cm-detail-clip">
+                    <div class="cm-card-detail">
+                      <p class="cm-reason" x-text="item.reason"></p>
+
+                      <div class="cm-sec-bars">
+                        <div>
+                          <div class="cm-sec-top">
+                            <span>Math</span>
+                            <span class="cm-sec-range" x-text="item.school.sat.math.p25 + '–' + item.school.sat.math.p75"></span>
+                          </div>
+                          <div class="cm-band is-mini">
+                            <span class="cm-band-marker" x-show="mathScore != null"
+                                  :class="'is-' + mark(mathScore, item.school.sat.math).pos"
+                                  :style="'left:' + mark(mathScore, item.school.sat.math).pct + '%'"></span>
+                          </div>
+                          <span class="cm-sec-note" x-show="mathScore != null" x-text="'Your math: ' + mathScore"></span>
+                        </div>
+
+                        <div>
+                          <div class="cm-sec-top">
+                            <span>Reading &amp; writing</span>
+                            <span class="cm-sec-range" x-text="item.school.sat.erw.p25 + '–' + item.school.sat.erw.p75"></span>
+                          </div>
+                          <div class="cm-band is-mini">
+                            <span class="cm-band-marker" x-show="englishScore != null"
+                                  :class="'is-' + mark(englishScore, item.school.sat.erw).pos"
+                                  :style="'left:' + mark(englishScore, item.school.sat.erw).pct + '%'"></span>
+                          </div>
+                          <span class="cm-sec-note" x-show="englishScore != null" x-text="'Your reading &amp; writing: ' + englishScore"></span>
+                        </div>
+                      </div>
+
+                      <div class="cm-tips" x-show="item.school.tips.length || studentTipsFor(item.school).length">
+                        <template x-for="tip in item.school.tips" :key="'school-' + tip.kind">
+                          <p class="cm-tip">
+                            <span class="material-icons-round">lightbulb</span>
+                            <span x-text="tip.text"></span>
+                          </p>
+                        </template>
+                        <template x-for="(tip, i) in studentTipsFor(item.school)" :key="'you-' + i">
+                          <p class="cm-tip">
+                            <span class="material-icons-round">person</span>
+                            <span x-text="tip"></span>
+                          </p>
+                        </template>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            </template>
+
+            <p class="cm-col-empty" x-show="groups[col.key].length === 0" x-cloak x-text="col.empty"></p>
+          </div>
+        </div>
+      </template>
+    </section>
+
+    <!-- Not enough data -->
+    <section class="cm-nodata" x-show="groups.noData.length" x-cloak>
+      <button class="cm-nodata-toggle t-btn" :class="{ 'is-open': showNoData }" @click="showNoData = !showNoData">
+        <span class="material-icons-round">expand_more</span>
+        <span>Not enough data</span>
+        <span class="cm-nodata-count" x-text="groups.noData.length"></span>
+      </button>
+      <div class="cm-nodata-wrap" :class="{ 'is-open': showNoData }">
+        <div class="cm-nodata-clip">
+          <div class="cm-nodata-grid">
+            <template x-for="item in groups.noData" :key="item.school.id">
+              <article class="cm-card">
+                <div class="cm-card-top">
+                  <div class="cm-card-heading">
+                    <h3 class="cm-card-name" x-text="item.school.name"></h3>
+                    <p class="cm-card-meta" x-text="region(item.school) + ' · ' + fmtSize(item.school.size) + ' students'"></p>
+                  </div>
+                  <span class="cm-pill">No data</span>
+                </div>
+                <p class="cm-card-sub"><b x-text="fmtRate(item.school.admitRate)"></b> chance of admission</p>
+                <p class="cm-nodata-note">
+                  This school doesn't report SAT percentiles. Test-optional admissions took most schools' score data
+                  offline after 2021, so we won't guess at your odds here.
+                </p>
+              </article>
+            </template>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ═══ SCORE PROMPT MODAL ═══ -->
+  <!-- Lives inside <main x-data="collegeMatch()"> so prompt / skipPrompt() /
+       savePrompt() resolve against the component. Outside the scope they'd fall
+       through to the global window.prompt (truthy → modal always visible) and
+       the handlers would be undefined. Fixed position, so placement is invisible. -->
+  <div id="college-score-modal" class="goal-modal" :class="{ show: prompt }">
+    <div class="delete-modal-content" style="max-width: 27.5rem;">
+      <div class="delete-modal-icon"><span class="material-icons-round" style="font-size: 1.25rem;" aria-label="score">gps_fixed</span></div>
+      <h3 class="delete-modal-title">What's your SAT score?</h3>
+      <p class="delete-modal-desc">We'll use it to fill in College Match. Exploring other scores later never changes what you save here.</p>
+      <div class="cm-prompt-fields">
+        <label class="cm-prompt-label">
+          Current SAT score (combined)
+          <input x-model="promptCurrent" type="number" min="400" max="1600" step="10" placeholder="e.g. 1200, or fill in both sections below" class="create-input"/>
+        </label>
+        <label class="cm-prompt-label">
+          Math section
+          <input x-model="promptMath" type="number" min="200" max="800" step="10" placeholder="e.g. 620 (optional)" class="create-input"/>
+        </label>
+        <label class="cm-prompt-label">
+          Reading &amp; writing section
+          <input x-model="promptEnglish" type="number" min="200" max="800" step="10" placeholder="e.g. 580 (optional)" class="create-input"/>
+        </label>
+        <p class="cm-prompt-error" x-show="promptError" x-text="promptError" x-cloak></p>
+      </div>
+      <div class="delete-modal-actions">
+        <button id="college-score-skip" class="delete-modal-btn cancel t-btn" @click="skipPrompt()">Skip for now</button>
+        <button id="college-score-save" class="delete-modal-btn confirm t-btn" @click="savePrompt()">Save score</button>
+      </div>
+    </div>
+  </div>
+</main>
+</div>
+</body>
+</html>
