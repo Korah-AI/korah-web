@@ -343,5 +343,95 @@
     });
   }, { once: true });
 </script>
+
+<!-- First-visit intro carousel -->
+<div id="cpIntro" class="cp-intro">
+  <div class="cp-intro-backdrop"></div>
+  <div class="cp-intro-content">
+    <button class="cp-intro-close" id="cpIntroClose" type="button" aria-label="Close">&times;</button>
+
+    <div class="cp-intro-slides">
+      <div class="cp-intro-slide is-active" data-slide="0">
+        <img src="../logo-images/newlogo3.png" class="cp-intro-icon" alt=""/>
+        <h2 class="cp-intro-title">Set the essay up first</h2>
+        <p class="cp-intro-desc">
+          Pick Common App or a school supplement, paste the prompt word for word, and
+          set the word limit. The feedback is written against that prompt, so it is
+          worth getting right.
+        </p>
+      </div>
+
+      <div class="cp-intro-slide" data-slide="1">
+        <img src="../logo-images/newlogo12.png" class="cp-intro-icon" alt=""/>
+        <h2 class="cp-intro-title">Feedback sits on the draft</h2>
+        <p class="cp-intro-desc">
+          Your draft comes back with passages highlighted, each one tied to a
+          recommendation card. Click a card to jump to the passage, and resolve it once
+          you have made the change to clear the highlight.
+        </p>
+      </div>
+
+      <div class="cp-intro-slide" data-slide="2">
+        <img src="../logo-images/newlogo2.png" class="cp-intro-icon" alt=""/>
+        <h2 class="cp-intro-title">Scores and what the reader sees</h2>
+        <p class="cp-intro-desc">
+          Six scores (writing, detail, voice, reflection, curiosity, contribution) sit
+          beside the themes a reader would take away from the essay. Rerun the analysis
+          after a revision to watch them move.
+        </p>
+      </div>
+    </div>
+
+    <div class="cp-intro-dots">
+      <span class="cp-intro-dot is-active" data-dot="0"></span>
+      <span class="cp-intro-dot" data-dot="1"></span>
+      <span class="cp-intro-dot" data-dot="2"></span>
+    </div>
+
+    <div class="cp-intro-actions">
+      <button class="cp-intro-btn" id="cpIntroPrev" type="button" style="visibility:hidden;">Back</button>
+      <button class="cp-intro-btn is-primary" id="cpIntroNext" type="button">Next</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // First-visit intro carousel
+  (function () {
+    const INTRO_KEY = 'korah_college_prep_intro_seen';
+    if (localStorage.getItem(INTRO_KEY)) return;
+
+    const modal = document.getElementById('cpIntro');
+    const slides = modal.querySelectorAll('.cp-intro-slide');
+    const dots = modal.querySelectorAll('.cp-intro-dot');
+    const prevBtn = document.getElementById('cpIntroPrev');
+    const nextBtn = document.getElementById('cpIntroNext');
+    let current = 0;
+
+    function goToSlide(idx) {
+      current = Math.max(0, Math.min(idx, slides.length - 1));
+      slides.forEach((s, i) => s.classList.toggle('is-active', i === current));
+      dots.forEach((d, i) => d.classList.toggle('is-active', i === current));
+      prevBtn.style.visibility = current === 0 ? 'hidden' : 'visible';
+      nextBtn.textContent = current === slides.length - 1 ? 'Start writing' : 'Next';
+    }
+
+    function close() {
+      modal.classList.remove('is-open');
+      localStorage.setItem(INTRO_KEY, 'true');
+    }
+
+    nextBtn.addEventListener('click', () => {
+      if (current === slides.length - 1) close();
+      else goToSlide(current + 1);
+    });
+    prevBtn.addEventListener('click', () => goToSlide(current - 1));
+    document.getElementById('cpIntroClose').addEventListener('click', close);
+    modal.querySelector('.cp-intro-backdrop').addEventListener('click', close);
+    dots.forEach(dot => dot.addEventListener('click', () => goToSlide(Number(dot.dataset.dot))));
+
+    setTimeout(() => modal.classList.add('is-open'), 600);
+  })();
+</script>
 </body>
 </html>

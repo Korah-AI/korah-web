@@ -449,6 +449,99 @@
 </main>
 </div>
 
+<!-- First-visit intro carousel -->
+<div id="cmIntro" class="cm-intro">
+  <div class="cm-intro-backdrop"></div>
+  <div class="cm-intro-content">
+    <button class="cm-intro-close" id="cmIntroClose" type="button" aria-label="Close">&times;</button>
+
+    <div class="cm-intro-slides">
+      <div class="cm-intro-slide is-active" data-slide="0">
+        <img src="../../logo-images/newlogo10.png" class="cm-intro-icon" alt=""/>
+        <h2 class="cm-intro-title">Your score against real admitted classes</h2>
+        <p class="cm-intro-desc">
+          Every school here is sorted by where your SAT score falls in the middle 50
+          percent of the students it admitted, using College Scorecard data from the
+          Department of Education.
+        </p>
+      </div>
+
+      <div class="cm-intro-slide" data-slide="1">
+        <img src="../../logo-images/newlogo5.png" class="cm-intro-icon" alt=""/>
+        <h2 class="cm-intro-title">Try other scores without losing yours</h2>
+        <p class="cm-intro-desc">
+          Drag the math and reading and writing sliders to see what a different score
+          would open up. Your saved score stays put, marked on the track, and one
+          button brings you back to it.
+        </p>
+      </div>
+
+      <div class="cm-intro-slide" data-slide="2">
+        <img src="../../logo-images/newlogo11.png" class="cm-intro-icon" alt=""/>
+        <h2 class="cm-intro-title">Safety, match and reach</h2>
+        <p class="cm-intro-desc">
+          Filter by state, size and type, then open any card for the section ranges and
+          what would help. These buckets use test scores and admission rate only, so
+          treat them as a starting point, not a prediction.
+        </p>
+      </div>
+    </div>
+
+    <div class="cm-intro-dots">
+      <span class="cm-intro-dot is-active" data-dot="0"></span>
+      <span class="cm-intro-dot" data-dot="1"></span>
+      <span class="cm-intro-dot" data-dot="2"></span>
+    </div>
+
+    <div class="cm-intro-actions">
+      <button class="cm-intro-btn" id="cmIntroPrev" type="button" style="visibility:hidden;">Back</button>
+      <button class="cm-intro-btn is-primary" id="cmIntroNext" type="button">Next</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  /* First-visit intro carousel. Waits for korahReady so it never covers the
+     auth wall a signed-out visitor gets. */
+  (function () {
+    const INTRO_KEY = 'korah_college_match_intro_seen';
+    if (localStorage.getItem(INTRO_KEY)) return;
+
+    const modal = document.getElementById('cmIntro');
+    const slides = modal.querySelectorAll('.cm-intro-slide');
+    const dots = modal.querySelectorAll('.cm-intro-dot');
+    const prevBtn = document.getElementById('cmIntroPrev');
+    const nextBtn = document.getElementById('cmIntroNext');
+    let current = 0;
+
+    function goToSlide(idx) {
+      current = Math.max(0, Math.min(idx, slides.length - 1));
+      slides.forEach((s, i) => s.classList.toggle('is-active', i === current));
+      dots.forEach((d, i) => d.classList.toggle('is-active', i === current));
+      prevBtn.style.visibility = current === 0 ? 'hidden' : 'visible';
+      nextBtn.textContent = current === slides.length - 1 ? 'Find my schools' : 'Next';
+    }
+
+    function close() {
+      modal.classList.remove('is-open');
+      localStorage.setItem(INTRO_KEY, 'true');
+    }
+
+    nextBtn.addEventListener('click', () => {
+      if (current === slides.length - 1) close();
+      else goToSlide(current + 1);
+    });
+    prevBtn.addEventListener('click', () => goToSlide(current - 1));
+    document.getElementById('cmIntroClose').addEventListener('click', close);
+    modal.querySelector('.cm-intro-backdrop').addEventListener('click', close);
+    dots.forEach(dot => dot.addEventListener('click', () => goToSlide(Number(dot.dataset.dot))));
+
+    function open() { setTimeout(() => modal.classList.add('is-open'), 600); }
+    if (window._korahReadyFired) open();
+    else window.addEventListener('korahReady', open, { once: true });
+  })();
+</script>
+
 <script>
   /* Recent Chats / Recent Study Items. initSidebar() reads #chat-history
      straight away, so wait for korahReady: by then KorahDB is up and the
