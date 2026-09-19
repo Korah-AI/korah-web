@@ -596,7 +596,7 @@
       header = document.createElement("div");
       header.className = "msg-header";
       header.innerHTML =
-        '<span class="msg-header-avatar"><img src="logo-images/newlogo0.png" alt="Korah" /></span>' +
+        '<span class="msg-header-avatar"><img src="/logo-images/newlogo0.png" alt="Korah" /></span>' +
         '<span class="msg-header-name">Korah AI</span>';
     }
 

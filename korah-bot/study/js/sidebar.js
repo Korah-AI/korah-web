@@ -256,7 +256,8 @@ function showSidebarDeleteModal(name, onConfirm) {
 
   // ── Render Chat History ──
   function _getChatLogoPath() {
-    return 'logo-images/newlogo5.png';
+    // Root-absolute: this file runs on pages at /, /sat/ and /sat/vocab/.
+    return '/logo-images/newlogo5.png';
   }
 
   function renderChatHistory(container, baseUrl) {
