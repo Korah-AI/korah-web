@@ -126,7 +126,7 @@
 </div><!-- end .main-area-wrapper -->
 
 <!-- Post a problem: codeword gate, then the upload form -->
-<button class="potd-lock-btn" id="potdLockBtn" type="button" title="Post a problem" aria-label="Post a problem">
+<button class="potd-lock-btn" id="potdLockBtn" type="button" title="Post a problem" aria-label="Post a problem" hidden>
   <span class="material-icons-round">lock</span>
 </button>
 
@@ -135,16 +135,7 @@
   <div class="potd-modal-content">
     <button class="potd-modal-close" id="potdAdminClose" type="button" aria-label="Close">&times;</button>
 
-    <div id="potdGate">
-      <h2 class="potd-modal-title">Enter the codeword</h2>
-      <input type="password" id="potdCode" class="potd-input" placeholder="Codeword" autocomplete="off"/>
-      <div class="potd-hint" id="potdGateError" hidden>That codeword is not right.</div>
-      <div class="potd-btn-row">
-        <button class="potd-btn" id="potdCodeSubmit" type="button">Unlock</button>
-      </div>
-    </div>
-
-    <form id="potdForm" hidden>
+    <form id="potdForm">
       <h2 class="potd-modal-title">Schedule a problem</h2>
 
       <div class="potd-field">
@@ -318,9 +309,9 @@
     appId: "1:226169460321:web:b166fc8260107c55dafc20"
   };
 
-  // The codeword gates the form, not the database. Firestore and Storage rules
-  // are what actually decide who may write.
-  const CODEWORD = 'korahdaily';
+  // Only these accounts see the post button. The Firestore rules carry the same
+  // two uids, which is what actually decides who may write.
+  const POSTERS = ['M3NQ6zzFRBaVZ2squxyuEu2zMpD3', 'vvywOdpJtefJ6utQRjPQn1u0l2F2'];
   const COLLECTION = 'problemOfTheDay';
 
   const app = initializeApp(firebaseConfig);
@@ -339,6 +330,7 @@
     window.dispatchEvent(new CustomEvent('korahReady', { detail }));
     startAuthGuard(auth, '../index.html');
     loadProblem();
+    if (POSTERS.includes(user.uid)) document.getElementById('potdLockBtn').hidden = false;
   });
 
   // #logout-btn lives in the sidebar, which sidebar-loader.js injects asynchronously,
@@ -473,10 +465,7 @@
 
   // Post a problem
   const adminEl = document.getElementById('potdAdmin');
-  const gateEl = document.getElementById('potdGate');
   const formEl = document.getElementById('potdForm');
-  const codeEl = document.getElementById('potdCode');
-  const gateErrorEl = document.getElementById('potdGateError');
   const formErrorEl = document.getElementById('potdFormError');
   const formStatusEl = document.getElementById('potdFormStatus');
   const publishBtn = document.getElementById('potdPublish');
@@ -515,23 +504,12 @@
     document.getElementById('potdTypedFields').hidden = v !== 'typed';
   });
 
-  function openAdmin() { adminEl.classList.add('is-open'); codeEl.focus(); }
+  function openAdmin() { adminEl.classList.add('is-open'); }
   function closeAdmin() { adminEl.classList.remove('is-open'); }
 
   document.getElementById('potdLockBtn').addEventListener('click', openAdmin);
   document.getElementById('potdAdminClose').addEventListener('click', closeAdmin);
   adminEl.querySelector('.potd-modal-backdrop').addEventListener('click', closeAdmin);
-
-  function unlock() {
-    if (codeEl.value !== CODEWORD) {
-      gateErrorEl.hidden = false;
-      return;
-    }
-    gateEl.hidden = true;
-    formEl.hidden = false;
-  }
-  document.getElementById('potdCodeSubmit').addEventListener('click', unlock);
-  codeEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') unlock(); });
 
   // youtu.be/ID, watch?v=ID, /embed/ID and /shorts/ID all reduce to the id.
   function youtubeId(url) {
