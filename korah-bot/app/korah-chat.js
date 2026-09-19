@@ -1,3 +1,13 @@
+
+// Resolve the base from this script's own URL — this file loads from
+// /chat.html and from /sat/ pages, so a page-relative logo path breaks on one
+// of them and a root-absolute path breaks if the site is not at the server
+// root. Same approach as sidebar-loader.js.
+function _logoPath() {
+  const el = document.querySelector('script[src*="app/korah-chat.js"]');
+  const base = el ? el.src.replace(/\/app\/korah-chat\.js.*$/, '') : '';
+  return base + '/logo-images/newlogo0.png';
+}
 (() => {
   const MAX_CHARS = 10000;
   const API_ENDPOINT = "/api/r";
@@ -596,7 +606,7 @@
       header = document.createElement("div");
       header.className = "msg-header";
       header.innerHTML =
-        '<span class="msg-header-avatar"><img src="/logo-images/newlogo0.png" alt="Korah" /></span>' +
+        '<span class="msg-header-avatar"><img src="' + _logoPath() + '" alt="Korah" /></span>' +
         '<span class="msg-header-name">Korah AI</span>';
     }
 

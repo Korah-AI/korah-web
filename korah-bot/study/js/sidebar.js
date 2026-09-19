@@ -256,8 +256,14 @@ function showSidebarDeleteModal(name, onConfirm) {
 
   // ── Render Chat History ──
   function _getChatLogoPath() {
-    // Root-absolute: this file runs on pages at /, /sat/ and /sat/vocab/.
-    return '/logo-images/newlogo5.png';
+    // Resolve the base from this script's own URL, the same way
+    // sidebar-loader.js does. A page-relative path breaks on /sat/ and
+    // /sat/vocab/ pages, and a root-absolute one breaks wherever the site is
+    // not served from the server root — the loader rewrites the sidebar markup
+    // for exactly that reason, but it cannot touch what we inject afterwards.
+    const el = document.querySelector('script[src*="study/js/sidebar.js"]');
+    const base = el ? el.src.replace(/\/study\/js\/sidebar\.js.*$/, '') : '';
+    return base + '/logo-images/newlogo5.png';
   }
 
   function renderChatHistory(container, baseUrl) {
