@@ -628,68 +628,55 @@ html[data-theme="light"] .collapsed-more-dropdown .more-dropdown-item.danger:hov
 }
 .new-chat-btn:hover { filter: brightness(1.15); transform: translateY(-0.0625rem); box-shadow: 0 0 1.25rem var(--glow) }
 
+/* ── Tab selector — segmented control ───────────────────────────────────────
+   One grey track that hugs its tabs, with the current tab as a lighter filled
+   chip and the rest as plain labels. The greys step up off the panel
+   (--chrome-sf panel -> --chrome-sf2 track -> lightened chip) and come from the
+   chrome set rather than --nav-sf/--nav-bd, because those flip with the theme
+   while the sidebar panel does not. */
 .sidebar-tab-selector {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
-  padding: 0 0.875rem;
-  margin-bottom: 0.5rem;
-  margin-top: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+  width: fit-content;
+  max-width: 100%;
+  padding: 0.25rem;
+  margin: 0.25rem 0.875rem 0.5rem;
+  border-radius: 0.625rem;
+  background: var(--chrome-sf2);
   flex-shrink: 0;
 }
 .sidebar-tab-pill {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 1.875rem;
-  padding: 0 0.375rem;
+  height: 1.625rem;
+  padding: 0 0.5625rem;
+  border: none;
   border-radius: 0.5rem;
-  border: 0.0625rem solid var(--nav-bd);
-  background: var(--nav-sf);
-  color: var(--acc, var(--tx));
+  background: transparent;
+  color: var(--tx2);
   font-size: 0.6875rem;
   font-weight: 600;
   font-family: 'Plus Jakarta Sans', sans-serif;
   cursor: pointer;
-  transition: border-color .15s ease, background .15s ease, box-shadow .15s ease, transform .15s ease, color .15s ease;
+  transition: background .15s ease, color .15s ease, transform .15s ease;
   text-decoration: none;
   box-sizing: border-box;
   white-space: nowrap;
 }
-/* Same grey blocking as .sidebar-nav-link: the pills rest on --nav-sf/--nav-bd
-   and each one carries its own bright --acc for the label, so the row reads as
-   distinct destinations instead of filled color chips. */
-.sidebar-tab-pill.tab-sat          { --acc: #3b82f6; }
-.sidebar-tab-pill.tab-ap           { --acc: #f0abfc; }
-.sidebar-tab-pill.tab-college-prep { --acc: #fbbf24; }
-
-/* Deeper shades in light theme — the bright set washes out on the pale grey. */
-html[data-theme="light"] .sidebar-tab-pill.tab-sat          { --acc: #2563eb; }
-html[data-theme="light"] .sidebar-tab-pill.tab-ap           { --acc: #a21caf; }
-html[data-theme="light"] .sidebar-tab-pill.tab-college-prep { --acc: #b45309; }
-
-/* Third pill in a 2-up grid: spans both columns but keeps a single column's
-   width, so it sits centered under SAT and AP at the same size as them. */
-.sidebar-tab-pill.tab-college-prep {
-  grid-column: 1 / -1;
-  justify-self: center;
-  width: calc(50% - 0.25rem);
-}
-
 .sidebar-tab-pill:hover {
-  color: var(--acc, var(--tx));
-  background: color-mix(in srgb, var(--acc, var(--tx)) 16%, var(--nav-sf));
-  border-color: var(--acc, var(--nav-bd));
+  color: var(--tx);
+  background: color-mix(in srgb, var(--chrome-tx) 9%, var(--chrome-sf2));
   transform: scale(1.03);
 }
-
-/* The tab you're on is filled Korah purple, matching the active nav button. */
+/* The tab you're on is the lighter chip resting on the track. */
 .sidebar-tab-pill.active,
 .sidebar-tab-pill.active:hover {
-  color: #fff;
-  background: linear-gradient(180deg, var(--p4), color-mix(in srgb, var(--p4) 78%, #000));
-  border-color: var(--p4);
-  box-shadow: none;
+  background: color-mix(in srgb, var(--chrome-tx) 18%, var(--chrome-sf2));
+  color: var(--tx);
+  font-weight: 700;
+  transform: none;
 }
 
 .sidebar.collapsed .sidebar-tab-selector {
