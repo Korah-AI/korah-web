@@ -83,6 +83,7 @@
   import { setupKorahDB } from "../../app/data/firestore-store.js";
   import { initVocabSync } from "./js/vocab-sync.js";
   import { startAuthGuard } from '../../auth-guard.js';
+  import { startGuestSession, showAuthWall } from '../../guest-gate.js';
 
   const firebaseConfig = {
     apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
@@ -98,7 +99,11 @@
 
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
-      window.KorahTransitions.go('../../index.html');
+      // No redirect: render the empty shell, then hard-block with the auth wall.
+      // The wordbank, study sets and progress are all users/{uid} data, so there
+      // is nothing to browse signed out.
+      startGuestSession();
+      showAuthWall('../../');
       return;
     }
     await setupKorahDB(app, user.uid);
