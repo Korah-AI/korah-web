@@ -80,6 +80,7 @@ function onStaticEdit(e) {
   const input = document.getElementById('essay-input');
   if (input) input.value = rawContent;
   updateStaticWordCount(rawContent);
+  window.dispatchEvent(new CustomEvent('essay-edited', { detail: rawContent }));
 }
 
 function updateStaticWordCount(text) {
@@ -150,14 +151,17 @@ function renderHighlightedEssay(content, scores, activeCardsSet) {
     }
   }
 
-  for (const annCard of document.querySelectorAll('.essay-rec-card.focus-card')) {
+  // Focus-pass and ask-a-question cards carry their own quote rather than a
+  // rubric dimension, so they borrow a dimension colour for the highlight.
+  for (const annCard of document.querySelectorAll('.essay-rec-card.focus-card, .essay-rec-card.ask-card')) {
     const cardId = annCard.dataset.cardId;
     let evidence = (annCard.dataset.evidence || '').replace(/\s+/g, ' ').trim();
     if (!evidence) continue;
     const escaped = escapeHtml(evidence);
     const idx = fullText.indexOf(escaped);
+    const key = annCard.classList.contains('ask-card') ? 'detail' : 'reflection';
     if (idx !== -1) {
-      ranges.push({ start: idx, end: idx + escaped.length, key: 'reflection', len: escaped.length, cardId });
+      ranges.push({ start: idx, end: idx + escaped.length, key, len: escaped.length, cardId });
     }
   }
 

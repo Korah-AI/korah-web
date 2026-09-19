@@ -57,6 +57,7 @@ korah-bot/
 │   │   ├── editor.js          # Tiptap setup, decoration plugin, selection handling
 │   │   ├── annotations.js     # Quote anchoring, card positioning, click-to-focus
 │   │   ├── api.js             # AI prompts, /api/r calls, JSON parsing
+│   │   ├── ask.js             # "Ask for feedback on this" popup over a selection
 │   │   ├── scoring.js         # 6-dimension rubric, score rendering, deltas
 │   │   └── store.js           # Firestore CRUD under users/{uid}/essays
 │   └── data/
@@ -322,12 +323,11 @@ const content = data.choices?.[0]?.message?.content;
 - **Index page** (`college-prep/index.html`): Lists saved essays, "New Essay" button, card grid
 - **Editor** (`college-prep/editor.html`): Setup wizard + two-column editor/review screen
 - **Tiptap/ProseMirror** (`college-prep/js/editor.js`): Rich text editor with annotation decorations
-- **AI Pipeline** (`college-prep/js/api.js`): Three `/api/r` calls (annotation, scoring, focus note)
+- **AI Pipeline** (`college-prep/js/api.js`): Four `/api/r` calls (annotation, scoring, focus note, selection feedback)
 - **Anchoring** (`college-prep/js/annotations.js`): Exact string match anchoring, card positioning
 - **Scoring** (`college-prep/js/scoring.js`): 6-dimension rubric (writing, detail, voice, reflection, curiosity, contribution)
 - **Firestore** (`college-prep/js/store.js`): CRUD under `users/{uid}/essays`
-- **School data** (`college-prep/data/schools.json`): 5 schools with weighted values
-- **Archetypes** (`college-prep/data/prompt-archetypes.json`): Prompt classification + value reweighting
+- **School data** (`college-prep/data/schools.js`): School list and a `values` paragraph per school, read by `getSchoolValues()`. `data/schools.json` and `data/prompt-archetypes.json` are from the original plan and are not loaded by any page.
 - **Local dev** (`college-prep/data/sample-essay.json`, `canned-feedback.json`): Placeholder data
 - Three comment types only: Socratic, Diagnostic, Structural. Never generates replacement prose.
 - Highlights are ProseMirror decorations (outside document text), survive typing automatically

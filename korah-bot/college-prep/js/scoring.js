@@ -142,6 +142,49 @@ function renderFocusCards(focusAnnotations) {
   list.insertAdjacentHTML('beforeend', focusHtml);
 }
 
+/* Answers to "ask for feedback on this" go to the top of the column, newest
+   first, and highlight their passage the way a focus card does. The card is
+   rendered empty and filled when the model answers. */
+let askSeq = 0;
+
+function escapeHtml(str) {
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function renderAskCard(question, evidence) {
+  const list = document.getElementById('annotation-list');
+  if (!list) return null;
+
+  const empty = list.querySelector('.essay-annotation-empty');
+  if (empty) empty.remove();
+
+  const cardId = `ask-${askSeq++}`;
+  const evidenceShort = evidence.length > 120 ? evidence.slice(0, 120) + '...' : evidence;
+
+  list.insertAdjacentHTML('afterbegin', `
+    <div class="essay-rec-card ask-card" data-dim="ask" data-card-id="${cardId}" data-evidence="${evidence.replace(/"/g, '&quot;')}"
+         onclick="window.toggleRecommendation(this)"
+         style="--rec-color: #3b82f6;">
+      <div class="rec-header">
+        <span class="rec-label">Your question</span>
+      </div>
+      <div class="rec-evidence" style="border-color: #3b82f6;">
+        "${escapeHtml(evidenceShort)}"
+      </div>
+      <div class="rec-question">${escapeHtml(question)}</div>
+      <div class="rec-feedback is-pending">Thinking...</div>
+    </div>`);
+
+  return cardId;
+}
+
+function fillAskCard(cardId, feedback) {
+  const el = document.querySelector(`.essay-rec-card[data-card-id="${cardId}"] .rec-feedback`);
+  if (!el) return;
+  el.classList.remove('is-pending');
+  el.textContent = feedback || 'No feedback came back. Try asking again.';
+}
+
 function filterByDimension(key) {
   document.querySelectorAll('.essay-score-dim').forEach(el => {
     el.classList.toggle('active', el.dataset.dim === key);
@@ -172,7 +215,7 @@ function getActiveDims() {
   return activeDims;
 }
 
-const EssayScoring = { render, renderRecommendations, renderFocusCards, filterByDimension, getDimColor, getActiveDims, DIMENSIONS };
+const EssayScoring = { render, renderRecommendations, renderFocusCards, renderAskCard, fillAskCard, filterByDimension, getDimColor, getActiveDims, DIMENSIONS };
 export default EssayScoring;
 
 window.filterByDimension = filterByDimension;

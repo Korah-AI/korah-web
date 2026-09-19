@@ -198,23 +198,25 @@ async function focusNote(essayText, focusNote, essayType, school, prompt, wordLi
   return Array.isArray(result) ? result : [];
 }
 
-async function feedbackOnSelection(selectedText, surroundingContext, essayType) {
-  const selectionPrompt = `You are a college essay annotator. The student selected a specific passage and wants feedback on it.
+const SELECTION_PROMPT = `You are a college essay annotator. The student highlighted one passage of their essay and asked a question about it.
 
-Return ONLY a valid JSON array:
-[
-  {
-    "quotedText": "the selected text",
-    "paragraphIndex": 0,
-    "commentType": "socratic" | "diagnostic" | "structural",
-    "comment": "feedback on this specific passage"
+Return ONLY a valid JSON object:
+{ "comment": "your feedback on the highlighted passage" }
+
+RULES:
+- NEVER write replacement prose. No suggested sentences, no "try something like this."
+- Answer the student's question about the highlighted passage, not about the essay as a whole.
+- Three to five sentences. Be direct and specific to the words they highlighted.
+- If school values are given, judge the passage against what that school looks for.`;
+
+async function feedbackOnSelection(selectedText, surroundingContext, question, essayType, school, prompt) {
+  let schoolValues = '';
+  if (school && essayType === 'supplemental' && window.getSchoolValues) {
+    schoolValues = window.getSchoolValues(school);
   }
-]
-
-Rules: Never write replacement prose. Be specific to the selected text.`;
-  const userMsg = `Selected text: "${selectedText}"\n\nSurrounding context: ${surroundingContext}`;
-  const result = await callApi(selectionPrompt, userMsg);
-  return Array.isArray(result) ? result : [];
+  const userMsg = `Essay type: ${essayType === 'supplemental' ? 'Supplemental' : 'Personal Statement'}\n${school ? `Target school: ${school}` : ''}${schoolValues ? `\nSchool values: ${schoolValues}` : ''}\n${prompt ? `Prompt: ${prompt}` : ''}\n\nStudent's question: "${question}"\n\nHighlighted passage: "${selectedText}"\n\nSurrounding paragraph: ${surroundingContext}`;
+  const result = await callApi(SELECTION_PROMPT, userMsg);
+  return result?.comment || '';
 }
 
 const EssayAPI = { annotate, score, focusNote, feedbackOnSelection };

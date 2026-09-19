@@ -153,21 +153,19 @@
         <div x-show="essayType === 'supplemental'" x-cloak>
           <div class="essay-setup-field">
             <label class="essay-setup-label">Target School</label>
-            <select class="essay-setup-select" x-model="school" @change="schoolPrompt = ''">
+            <select class="essay-setup-select" x-model="school">
               <option value="">Select a school...</option>
               <template x-for="s in schoolList" :key="s.key">
                 <option :value="s.key" x-text="s.name"></option>
               </template>
             </select>
           </div>
-          <div class="essay-setup-field" x-show="school">
-            <label class="essay-setup-label">Prompt</label>
-            <select class="essay-setup-select" x-model="schoolPrompt">
-              <option value="">Select a prompt...</option>
-              <template x-for="p in (window.getSchoolPrompts(school) || [])" :key="p.value">
-                <option :value="p.value" x-text="p.label"></option>
-              </template>
-            </select>
+          <!-- Supplemental prompts are pasted, not picked: every school words its
+               own, and the exact wording is what the model scores against. -->
+          <div class="essay-setup-field">
+            <label class="essay-setup-label">Prompt <span class="essay-setup-req">Required</span></label>
+            <textarea class="essay-setup-textarea" x-model="schoolPrompt" rows="3"
+                      placeholder="Paste the prompt here, word for word, as the school wrote it."></textarea>
           </div>
         </div>
 
@@ -304,6 +302,15 @@
     </div>
   </div>
 
+  <!-- Submit for feedback — shows once the essay differs from the analysed copy -->
+  <div id="feedbackPill" class="cp-selection-pill" hidden>
+    <span class="cp-pill-count">Essay edited</span>
+    <button id="feedbackPillSubmit" class="cp-pill-btn cp-pill-start t-btn" type="button">
+      <span>Submit for feedback</span>
+      <svg class="cp-pill-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+  </div>
+
   <!-- Loading Overlay -->
   <div id="analysis-loading" class="essay-loading-overlay" style="display: none;">
     <div class="essay-loading-card">
@@ -336,6 +343,22 @@
       </template>
     </div>
   </div>
+</div>
+
+<!-- Selection feedback — follows a highlighted passage in the essay. Lives on
+     the body so a re-render of the essay never takes it down mid-question. -->
+<div id="ask-pop" class="cp-ask-pop" hidden>
+  <button id="ask-pop-trigger" class="cp-ask-trigger t-btn" type="button">
+    <span class="material-icons-round" style="font-size: 1rem;">auto_awesome</span>
+    <span>Ask for feedback on this</span>
+  </button>
+  <form id="ask-pop-form" class="cp-ask-form" hidden>
+    <input id="ask-pop-input" class="cp-ask-input" type="text" autocomplete="off"
+           placeholder="What do you want to know about this passage?"/>
+    <button class="cp-ask-send t-btn" type="submit" aria-label="Send question">
+      <span class="material-icons-round" style="font-size: 1.125rem;">arrow_upward</span>
+    </button>
+  </form>
 </div>
 
 <!-- Alert popup — reuses the app's modal styling from korah-chat.css -->
@@ -375,6 +398,7 @@
 </script>
 
 <script type="module" src="js/editor.js"></script>
+<script type="module" src="js/ask.js"></script>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
   import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
@@ -506,6 +530,7 @@
       EssayScoring.render(data.scores);
       EssayScoring.renderRecommendations(data.scores);
       if (window.highlightAllDimensions) await window.highlightAllDimensions();
+      setBaseline(data.content || '');
     }
   }
 
@@ -517,41 +542,63 @@
   // Title edits and prompt changes in the editor header save on the spot.
   window.saveEssayMeta = function () { persistEssay(); };
 
-  window.startAnalysis = async function() {
+  /* "Submit for feedback" only makes sense once the essay drifts from the copy
+     the current annotations were built from, so every analysis records a
+     baseline and every edit compares against it. Both sides are normalised
+     because the highlighted view rebuilds the essay paragraph by paragraph. */
+  let analysedContent = '';
+  const feedbackPill = document.getElementById('feedbackPill');
+
+  function normalizeEssay(text) {
+    return (text || '').split(/\n+/).map(p => p.trim()).filter(Boolean).join('\n\n');
+  }
+
+  function syncFeedbackPill() {
+    const now = normalizeEssay(document.getElementById('essay-input').value);
+    feedbackPill.toggleAttribute('hidden', !(analysedContent && now && now !== analysedContent));
+  }
+
+  function setBaseline(content) {
+    analysedContent = normalizeEssay(content);
+    syncFeedbackPill();
+  }
+
+  // editor.js fires this from the highlighted view on every keystroke.
+  window.addEventListener('essay-edited', syncFeedbackPill);
+
+  document.getElementById('feedbackPillSubmit').addEventListener('click', () => {
+    const content = normalizeEssay(document.getElementById('essay-input').value);
+    if (!content) return;
+    feedbackPill.setAttribute('hidden', '');
+    analyze(content, window._lastScores);
+  });
+
+  /* Both the setup screen's Analyze button and the pill land here. Handing the
+     old scores back gives the score bars their +/- deltas on a re-run. */
+  async function analyze(content, previousScores) {
     const d = getAlpineData();
     if (!d) return;
-    const content = document.getElementById('essay-input').value.trim();
-    if (!content) { showEssayAlert('Write or paste your essay first, then run the analysis.'); return; }
-    if (d.isCommonApp() && !d.applicationPrompt) {
-      showEssayAlert('Pick one of the seven Common App prompts before running the analysis.');
-      return;
-    }
-
-    switchToEditor();
-    persistEssay();
-    await new Promise(r => setTimeout(r, 100));
-    if (window.initEditor) await window.initEditor(content);
     const loading = document.getElementById('analysis-loading');
     const status = document.getElementById('loading-status');
     loading.style.display = 'flex';
+    status.textContent = 'Scoring essay...';
 
     try {
       const { default: EssayAPI } = await import('./js/api.js');
       const { default: EssayScoring } = await import('./js/scoring.js');
 
-      status.textContent = 'Scoring essay...';
       const effectivePrompt = d.essayType === 'supplemental' ? d.schoolPrompt : (d.applicationPrompt || '');
       const scores = await EssayAPI.score(content, d.essayType, d.school, effectivePrompt, d.wordLimit);
+      if (!scores) throw new Error('Scoring returned no scores');
 
       window._lastScores = scores;
       persistEssay({ scores });
-      EssayScoring.render(scores);
+      EssayScoring.render(scores, previousScores);
       EssayScoring.renderRecommendations(scores);
 
       if (d.focusNote) {
         status.textContent = 'Running focus pass...';
-        const { default: EssayAnnotations } = await import('./js/annotations.js');
-        const focusResults = await EssayAPI.focusNote(content, d.focusNote, d.essayType, d.school, d.wordLimit);
+        const focusResults = await EssayAPI.focusNote(content, d.focusNote, d.essayType, d.school, effectivePrompt, d.wordLimit);
         if (focusResults && focusResults.length) {
           EssayScoring.renderFocusCards(focusResults);
         }
@@ -559,7 +606,6 @@
 
       status.textContent = 'Highlighting essay...';
       if (window.highlightAllDimensions) await window.highlightAllDimensions();
-      loading.style.display = 'none';
     } catch (e) {
       console.error('Analysis failed:', e);
       status.textContent = 'Analysis failed. Using canned data...';
@@ -573,8 +619,31 @@
       } catch (e2) {
         console.error('Canned data load failed:', e2);
       }
-      loading.style.display = 'none';
     }
+
+    loading.style.display = 'none';
+    setBaseline(content);
+  }
+
+  window.startAnalysis = async function() {
+    const d = getAlpineData();
+    if (!d) return;
+    const content = document.getElementById('essay-input').value.trim();
+    if (!content) { showEssayAlert('Write or paste your essay first, then run the analysis.'); return; }
+    if (d.isCommonApp() && !d.applicationPrompt) {
+      showEssayAlert('Pick one of the seven Common App prompts before running the analysis.');
+      return;
+    }
+    if (d.essayType === 'supplemental' && !d.schoolPrompt.trim()) {
+      showEssayAlert('Paste the supplemental prompt before running the analysis.');
+      return;
+    }
+
+    switchToEditor();
+    persistEssay();
+    await new Promise(r => setTimeout(r, 100));
+    if (window.initEditor) await window.initEditor(content);
+    await analyze(content, null);
   };
 
   // The dashboard's wizard choice arrives as ?type=
