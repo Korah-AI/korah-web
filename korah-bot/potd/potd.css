@@ -5,7 +5,8 @@
    neutral set and color only marks identity or state. */
 
 .potd-page,
-.potd-intro {
+.potd-intro,
+.potd-modal {
   --potd-sf: #26262e;
   --potd-sf2: #31313c;
   --potd-bd: #454553;
@@ -15,7 +16,13 @@
 }
 
 .potd-page {
+  height: calc(100vh - 4rem);
+  max-height: calc(100vh - 4rem);
+  overflow-y: auto;
+  box-sizing: border-box;
   padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
   /* #bg-canvas is fixed at z-index 0, so it paints over anything that is not
      positioned. Lift the whole page above it in one move. */
   position: relative;
@@ -23,22 +30,24 @@
 }
 
 html[data-theme="light"] .potd-page,
-html[data-theme="light"] .potd-intro {
+html[data-theme="light"] .potd-intro,
+html[data-theme="light"] .potd-modal {
   --potd-sf: #eceef2;
   --potd-sf2: #e0e3ea;
   --potd-bd: #c3c8d2;
 }
 
-.potd-page .tone-red   { --acc: #ef4444; --acc-fill: #d23c3c; }
-.potd-page .tone-amber { --acc: #f59e0b; --acc-fill: #d88b0a; }
-.potd-page .tone-green { --acc: #22c55e; --acc-fill: #1ead53; }
-.potd-page .tone-teal  { --acc: #14b8a6; --acc-fill: #12a292; }
-.potd-page .tone-blue  { --acc: #3b82f6; --acc-fill: #3472d9; }
-.potd-page .tone-pink  { --acc: #ec4899; --acc-fill: #d03f87; }
+.tone-red   { --acc: #ef4444; --acc-fill: #d23c3c; }
+.tone-amber { --acc: #f59e0b; --acc-fill: #d88b0a; }
+.tone-green { --acc: #22c55e; --acc-fill: #1ead53; }
+.tone-teal  { --acc: #14b8a6; --acc-fill: #12a292; }
+.tone-blue  { --acc: #3b82f6; --acc-fill: #3472d9; }
+.tone-pink  { --acc: #ec4899; --acc-fill: #d03f87; }
 
 .potd-shell {
+  width: 100%;
   max-width: 46rem;
-  margin: 0 auto;
+  margin: auto;
   display: grid;
   gap: 0.875rem;
 }
@@ -399,3 +408,155 @@ html[data-theme="light"] .potd-intro-content { box-shadow: 0 1.5rem 4rem rgba(0,
   box-shadow: 0 0.25rem 0 0 #24529c;
 }
 .potd-intro-btn.is-primary:hover { background: #3472d9; filter: brightness(1.08); }
+
+/* ── Loading and empty states ────────────────────────────────────────────── */
+.potd-state {
+  display: grid;
+  justify-items: center;
+  gap: 0.875rem;
+  padding: 2.5rem 1.25rem;
+  text-align: center;
+}
+.potd-state-icon { width: 6rem; height: 6rem; object-fit: contain; }
+.potd-state-text { margin: 0; font-size: 0.9375rem; font-weight: 600; color: var(--tx); }
+
+/* ── Text inputs ─────────────────────────────────────────────────────────── */
+.potd-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.625rem 0.75rem;
+  border-radius: 0.625rem;
+  border: 0.0625rem solid var(--potd-bd);
+  background: var(--potd-sf2);
+  color: var(--tx);
+  font-size: 0.9375rem;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.potd-input:focus { outline: none; border-color: #3b82f6; }
+.potd-input:disabled { opacity: 0.75; }
+.potd-typed { margin-top: 1rem; }
+
+/* ── Lock button: opens the codeword gate ────────────────────────────────── */
+.potd-lock-btn {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  z-index: 60;
+  width: 2.75rem;
+  height: 2.75rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 0.0625rem solid var(--potd-bd);
+  background: var(--potd-sf);
+  color: var(--tx);
+  cursor: pointer;
+  box-shadow: 0 0.25rem 0 0 var(--potd-bd);
+  transition: background .18s ease, transform .18s ease;
+}
+.potd-lock-btn:hover { background: var(--potd-sf2); transform: scale(1.06); }
+.potd-lock-btn .material-icons-round { font-size: 1.125rem; }
+
+/* ── Post a problem modal ────────────────────────────────────────────────── */
+.potd-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+.potd-modal.is-open { opacity: 1; pointer-events: auto; }
+.potd-modal-backdrop { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.6); }
+
+.potd-modal-content {
+  position: relative;
+  width: calc(100% - 2rem);
+  max-width: 30rem;
+  max-height: calc(100vh - 3rem);
+  overflow-y: auto;
+  padding: 2rem 1.75rem 1.5rem;
+  border-radius: 1.25rem;
+  border: 0.0625rem solid var(--potd-bd);
+  background: var(--potd-sf);
+  color: var(--tx);
+  box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.4);
+}
+html[data-theme="light"] .potd-modal-content { box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.15); }
+
+.potd-modal-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  border-radius: 0.5rem;
+  border: 0.0625rem solid var(--potd-bd);
+  background: var(--potd-sf2);
+  color: var(--tx);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background .18s ease, transform .18s ease;
+}
+.potd-modal-close:hover { background: var(--potd-bd); transform: scale(1.06); }
+
+.potd-modal-title {
+  margin: 0 0 1.25rem;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--tx);
+}
+
+.potd-field { display: grid; gap: 0.4375rem; margin-bottom: 1rem; }
+.potd-label { font-size: 0.8125rem; font-weight: 700; color: var(--tx); }
+
+/* ── Segmented pickers: difficulty, answer format ────────────────────────── */
+.potd-seg { display: flex; gap: 0.5rem; }
+.potd-seg-btn {
+  flex: 1;
+  padding: 0.5rem 0.625rem;
+  border-radius: 0.625rem;
+  border: 0.0625rem solid var(--potd-bd);
+  background: var(--potd-sf2);
+  color: var(--tx);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  cursor: pointer;
+  transition: transform .18s ease, background .18s ease, border-color .18s ease;
+}
+.potd-seg-btn:hover:not(.is-selected) { border-color: var(--acc); transform: scale(1.03); }
+.potd-seg-btn.is-selected {
+  background: var(--acc-fill);
+  border-color: var(--acc-fill);
+  color: #fff;
+  transform: scale(1.03);
+}
+
+/* ── Choice rows: letter marks the correct answer ────────────────────────── */
+.potd-choice-rows { display: grid; gap: 0.5rem; }
+.potd-choice-row { display: flex; align-items: center; gap: 0.5rem; }
+.potd-pick {
+  flex: 0 0 auto;
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  border-radius: 0.5rem;
+  border: 0.0625rem solid var(--acc);
+  background: var(--potd-sf2);
+  color: var(--acc);
+  font-size: 0.8125rem;
+  font-weight: 800;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  cursor: pointer;
+  transition: transform .18s ease, background .18s ease;
+}
+.potd-pick:hover:not(.is-selected) { transform: scale(1.08); }
+.potd-pick.is-selected { background: var(--acc-fill); border-color: var(--acc-fill); color: #fff; }
