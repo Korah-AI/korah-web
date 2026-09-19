@@ -115,7 +115,7 @@
       <section class="potd-card potd-video-card tone-pink" id="potdWalkthrough" hidden>
         <h2 class="potd-card-title"><span class="material-icons-round">play_circle</span> Walkthrough</h2>
         <div class="potd-video-frame">
-          <video id="potdVideo" controls playsinline preload="none"></video>
+          <iframe id="potdVideo" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen title="Walkthrough video"></iframe>
         </div>
       </section>
 
@@ -185,8 +185,8 @@
       </div>
 
       <div class="potd-field">
-        <span class="potd-label">Walkthrough video</span>
-        <input type="file" id="potdVidFile" class="potd-input" accept="video/*"/>
+        <span class="potd-label">Walkthrough video (YouTube link)</span>
+        <input type="text" id="potdVideoUrl" class="potd-input" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off"/>
       </div>
 
       <div class="potd-field">
@@ -306,8 +306,6 @@
   import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
   import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, limit, Timestamp }
     from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
-  import { getStorage, ref, uploadBytes, getDownloadURL }
-    from "https://www.gstatic.com/firebasejs/12.10.0/firebase-storage.js";
   import { startAuthGuard } from '../auth-guard.js';
   import { startGuestSession, showAuthWall } from '../guest-gate.js';
 
@@ -328,7 +326,6 @@
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
-  const storage = getStorage(app);
 
   onAuthStateChanged(auth, (user) => {
     if (!user) {
@@ -408,7 +405,7 @@
     diffEl.textContent = p.difficulty;
     diffEl.classList.add(DIFF_TONES[p.difficulty] || 'tone-amber');
     [dateEl, subjectEl, diffEl].forEach(el => { el.hidden = false; });
-    document.getElementById('potdImage').src = p.imageUrl;
+    document.getElementById('potdImage').src = p.imageData;
 
     if (p.answerType === 'typed') {
       typedEl.hidden = false;
@@ -469,7 +466,7 @@
     submitEl.disabled = true;
     submitEl.textContent = 'Answer submitted';
 
-    videoEl.src = problem.videoUrl;
+    videoEl.src = 'https://www.youtube.com/embed/' + problem.youtubeId;
     walkthroughEl.hidden = false;
     walkthroughEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   });
@@ -536,11 +533,38 @@
   document.getElementById('potdCodeSubmit').addEventListener('click', unlock);
   codeEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') unlock(); });
 
-  async function upload(file, kind) {
-    const safeName = file.name.replace(/[^\w.-]/g, '_');
-    const fileRef = ref(storage, COLLECTION + '/' + Date.now() + '-' + kind + '-' + safeName);
-    await uploadBytes(fileRef, file);
-    return getDownloadURL(fileRef);
+  // youtu.be/ID, watch?v=ID, /embed/ID and /shorts/ID all reduce to the id.
+  function youtubeId(url) {
+    const m = url.match(/(?:youtu\.be\/|v=|\/embed\/|\/shorts\/)([\w-]{11})/);
+    return m ? m[1] : null;
+  }
+
+  // The image rides along inside the Firestore document, which caps at 1MB, so
+  // it is downscaled and re-encoded until it fits with room to spare.
+  const MAX_IMAGE_CHARS = 900000;
+  function readImage(file) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('That image could not be read.'));
+      img.onload = () => {
+        const scale = Math.min(1, 1400 / img.width);
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        const ctx = canvas.getContext('2d');
+        // JPEG has no alpha, so a transparent PNG would come out on black.
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(img.src);
+        for (const quality of [0.85, 0.7, 0.5]) {
+          const data = canvas.toDataURL('image/jpeg', quality);
+          if (data.length <= MAX_IMAGE_CHARS) return resolve(data);
+        }
+        reject(new Error('That image is too large. Crop it or shrink it and try again.'));
+      };
+      img.src = URL.createObjectURL(file);
+    });
   }
 
   formEl.addEventListener('submit', async (e) => {
@@ -548,7 +572,7 @@
     formErrorEl.hidden = true;
 
     const imageFile = document.getElementById('potdImgFile').files[0];
-    const videoFile = document.getElementById('potdVidFile').files[0];
+    const videoUrl = document.getElementById('potdVideoUrl').value.trim();
     const publishAt = document.getElementById('potdPublishAt').value;
     const subject = document.getElementById('potdSubjectIn').value.trim();
     const typedAnswer = document.getElementById('potdTypedAnswer').value.trim();
@@ -556,7 +580,7 @@
 
     const fail = (msg) => { formErrorEl.textContent = msg; formErrorEl.hidden = false; };
     if (!imageFile) return fail('Pick an image of the problem.');
-    if (!videoFile) return fail('Pick the walkthrough video.');
+    if (!youtubeId(videoUrl)) return fail('Paste a YouTube link for the walkthrough.');
     if (!publishAt) return fail('Set a publish time.');
     if (!subject) return fail('Give the problem a subject.');
     if (answerType === 'typed' && !typedAnswer) return fail('Type the correct answer.');
@@ -567,18 +591,16 @@
     const status = (msg) => { formStatusEl.textContent = msg; formStatusEl.hidden = false; };
 
     try {
-      status('Uploading the image...');
-      const imageUrl = await upload(imageFile, 'image');
-      status('Uploading the video. Large files can take a minute...');
-      const videoUrl = await upload(videoFile, 'video');
+      status('Preparing the image...');
+      const imageData = await readImage(imageFile);
       status('Saving...');
 
       const record = {
         subject: subject,
         difficulty: difficulty,
         answerType: answerType,
-        imageUrl: imageUrl,
-        videoUrl: videoUrl,
+        imageData: imageData,
+        youtubeId: youtubeId(videoUrl),
         publishAt: Timestamp.fromDate(new Date(publishAt)),
         createdAt: Timestamp.now(),
         createdBy: auth.currentUser.uid
@@ -598,7 +620,7 @@
       formEl.reset();
     } catch (err) {
       console.error('[POTD] publish failed', err);
-      fail('Upload failed: ' + err.message);
+      fail(err.message || 'Could not save the problem.');
       formStatusEl.hidden = true;
     } finally {
       publishBtn.disabled = false;
