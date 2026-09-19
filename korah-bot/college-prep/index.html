@@ -276,5 +276,46 @@
     });
   };
 </script>
+
+<!-- Spotlight glow + cursor tilt on the essay cards
+     (see ../../docs/SPOTLIGHT-TILT-CARDS.md). One delegated handler so both
+     survive the grid's innerHTML re-renders. -->
+<script>
+  (function () {
+    var CARD_SELECTOR = ".essay-card";
+    var MAX_TILT = 7; // degrees
+
+    document.addEventListener("pointermove", function (e) {
+      var card = e.target.closest && e.target.closest(CARD_SELECTOR);
+      if (!card) return;
+      var rect = card.getBoundingClientRect();
+      var relX = e.clientX - rect.left;
+      var relY = e.clientY - rect.top;
+
+      card.style.setProperty("--spotlight-x", relX + "px");
+      card.style.setProperty("--spotlight-y", relY + "px");
+      card.style.setProperty("--spotlight-opacity", "0.6");
+
+      var rotY = ((relX / rect.width) - 0.5) * 2 * MAX_TILT;
+      var rotX = (0.5 - (relY / rect.height)) * 2 * MAX_TILT;
+      // transform 0s => the tilt snaps to the cursor each frame (no chase/lag).
+      // !important beats the cp-stagger entrance animation's filled transform.
+      card.style.setProperty("transition", "transform 0s, border-color .2s, box-shadow .2s", "important");
+      card.style.setProperty("transform",
+        "perspective(37.5rem) rotateX(" + rotX.toFixed(2) + "deg) rotateY(" +
+        rotY.toFixed(2) + "deg) scale(1.02)", "important");
+    }, { passive: true });
+
+    document.addEventListener("pointerout", function (e) {
+      var card = e.target.closest && e.target.closest(CARD_SELECTOR);
+      if (!card) return;
+      if (e.relatedTarget && card.contains(e.relatedTarget)) return;
+      card.style.setProperty("--spotlight-opacity", "0");
+      // Ease only the return to flat.
+      card.style.setProperty("transition", "transform .3s cubic-bezier(0.22, 1, 0.36, 1), border-color .2s, box-shadow .2s", "important");
+      card.style.removeProperty("transform");
+    }, { passive: true });
+  })();
+</script>
 </body>
 </html>

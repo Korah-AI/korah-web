@@ -845,6 +845,24 @@ html[data-theme="light"] .cp-grey {
   cursor: pointer;
   text-decoration: none;
   transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+  /* Cursor tilt is set inline per frame from JS (see index.html). This keeps
+     the card on its own compositor layer. */
+  will-change: transform;
+}
+/* Spotlight glow. The gradient center and opacity come from JS; the colour is
+   the card's own tone, so each card in the grid glows its own accent. */
+.cp-grey .essay-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;   /* rounds the glow without clipping the 3D shadow */
+  pointer-events: none;
+  z-index: 0;
+  opacity: var(--spotlight-opacity, 0);
+  transition: opacity 0.5s ease-in-out;
+  background: radial-gradient(
+    circle at var(--spotlight-x, 50%) var(--spotlight-y, 50%),
+    color-mix(in srgb, var(--acc) 30%, transparent), transparent 80%);
 }
 .cp-grey .essay-card:hover {
   transform: scale(1.02);
