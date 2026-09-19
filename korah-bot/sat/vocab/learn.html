@@ -928,5 +928,18 @@
   });
 </script>
 
+<script>
+  /* Recent Chats / Recent Study Items. initSidebar() reads #chat-history
+     straight away, so wait for korahReady: by then KorahDB is up and the
+     sidebar partial has been injected. */
+  window.addEventListener('korahReady', function () {
+    if (!window.KorahSidebar) return;
+    window.KorahSidebar.initSidebar({
+      chatBaseUrl: '../../chat.html',
+      itemPageUrl: '../../study/item.html',
+    });
+  }, { once: true });
+</script>
+
 </body>
 </html>

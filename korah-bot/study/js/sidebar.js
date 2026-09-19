@@ -481,7 +481,10 @@ function showSidebarDeleteModal(name, onConfirm) {
 
   function initBackground() {
     const canvas = document.getElementById("bg-canvas");
-    if (!canvas) return;
+    // Pages that start the canvas early also reach here through initSidebar;
+    // one animate() loop per canvas is enough.
+    if (!canvas || canvas.dataset.bgStarted) return;
+    canvas.dataset.bgStarted = "1";
     const ctx = canvas.getContext("2d");
     let w, h, stars = [], shootingStars = [], dots = [];
 
