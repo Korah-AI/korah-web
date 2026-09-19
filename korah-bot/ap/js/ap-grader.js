@@ -198,7 +198,8 @@
       '  "priorityFix": "one sentence, the single most impactful thing to fix",',
       '  "sampleResponseComparison": "a short note on how the student\'s response compares to an official full-credit sample response"',
       '}',
-      'Constraints: verdicts must contain every rubric point id and nothing else. earned must be exactly true or false. evidence quotes the student\'s own words or notation verbatim, or null. feedback is null when earned, otherwise a specific description of what was missing. score must equal the number of verdicts with earned === true, computed from your verdicts after you make them.'
+      'Constraints: verdicts must contain every rubric point id and nothing else. earned must be exactly true or false. evidence quotes the student\'s own words or notation verbatim, or null. feedback is null when earned, otherwise a specific description of what was missing. score must equal the number of verdicts with earned === true, computed from your verdicts after you make them.',
+      'Math delimiters: whenever evidence, feedback, priorityFix, or sampleResponseComparison contains math (integrals, fractions, superscripts, the student\'s LaTeX, and so on), wrap the math expression in \\( and \\) so the page renders it as proper math. Never put bare LaTeX outside those delimiters.'
 
     ].join('\n');
   }

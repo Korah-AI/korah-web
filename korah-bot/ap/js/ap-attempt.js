@@ -334,6 +334,8 @@
         </div>`;
     }).join('');
 
+    renderMath(ledger);
+
     /* Fix card */
     el('fix-text').innerHTML = safeHtml(result.priorityFix || '');
     renderMath(el('fix-text'));

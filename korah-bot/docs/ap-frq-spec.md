@@ -657,12 +657,17 @@ issue #29.
   This feeds the grader's understanding of what "not earned" looks like.
 - `exampleEarning` and `exampleFailing` are concrete descriptions of what
   each looks like. These go into the grading prompt as few-shot guidance.
+- Math notation in student-facing fields (`prompt`, part `text`,
+  `rubricPoints[].criterion`, and `sampleResponse`) must be wrapped in KaTeX
+  inline delimiters `\(` and `\)` so the attempt page renders it. Fields that
+  only feed the grading model (`commonErrors`, `exampleEarning`,
+  `exampleFailing`) stay bare LaTeX.
 - Budget 30-60 minutes per FRQ to author the rubric properly. This is the
   slow part and the part that makes the product good.
 
 ### Initial scope
 
-- AP Calculus AB: 8 FRQs (2019-2023, varying question numbers)
+- AP Calculus AB: 6 FRQs (2026 exam, user-provided; the bank holds only years that were explicitly added)
 - AP US History SAQ: 8 SAQs (2019-2023, varying question numbers)
 
 Math and science FRQs may have figures and equations. PNG is acceptable for
