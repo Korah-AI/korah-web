@@ -125,6 +125,16 @@
     suggestions() {
       return api.dailyPicks(20);
     },
+    /* daily "word of the day". index = whole EST days since epoch (EST = UTC-5,
+       fixed, no DST), minus the offset (0 = today, -1 = yesterday, …) →
+       deterministic, same word for everyone, stable across refreshes,
+       changes at EST midnight (5:00 AM UTC). */
+    dailyWord(offset = 0) {
+      if (!all.length) return null;
+      const estMs = Date.now() - 5 * 3600000;
+      const day = Math.floor(estMs / 86400000) - offset;
+      return all[((day % all.length) + all.length) % all.length];
+    },
     /* pick N random records of a POS, excluding given words (quiz distractors) */
     samplesOf(pos, excludeWords, count) {
       const words = new Set((excludeWords || []).map(normalize));
