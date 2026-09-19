@@ -658,17 +658,23 @@ html[data-theme="light"] .collapsed-more-dropdown .more-dropdown-item.danger:hov
 }
 /* Same grey blocking as .sidebar-nav-link: the pills rest on --nav-sf/--nav-bd
    and each one carries its own bright --acc for the label, so the row reads as
-   four distinct destinations instead of four filled color chips. */
+   distinct destinations instead of filled color chips. */
 .sidebar-tab-pill.tab-sat          { --acc: #3b82f6; }
-.sidebar-tab-pill.tab-act          { --acc: #34d399; }
 .sidebar-tab-pill.tab-ap           { --acc: #f0abfc; }
 .sidebar-tab-pill.tab-college-prep { --acc: #fbbf24; }
 
 /* Deeper shades in light theme — the bright set washes out on the pale grey. */
 html[data-theme="light"] .sidebar-tab-pill.tab-sat          { --acc: #2563eb; }
-html[data-theme="light"] .sidebar-tab-pill.tab-act          { --acc: #059669; }
 html[data-theme="light"] .sidebar-tab-pill.tab-ap           { --acc: #a21caf; }
 html[data-theme="light"] .sidebar-tab-pill.tab-college-prep { --acc: #b45309; }
+
+/* Third pill in a 2-up grid: spans both columns but keeps a single column's
+   width, so it sits centered under SAT and AP at the same size as them. */
+.sidebar-tab-pill.tab-college-prep {
+  grid-column: 1 / -1;
+  justify-self: center;
+  width: calc(50% - 0.25rem);
+}
 
 .sidebar-tab-pill:hover {
   color: var(--acc, var(--tx));
