@@ -122,49 +122,34 @@
   <div class="potd-page">
     <section class="potd-shell">
 
-      <section class="potd-hero">
-        <div class="potd-hero-text">
-          <div class="potd-eyebrow-row">
-            <img src="../logo-images/newlogo12.png" class="potd-eyebrow-logo" alt="Korah logo"/>
-            <p class="potd-eyebrow">Korah Daily</p>
-          </div>
-          <h1 class="potd-title">Problem of the Day</h1>
-          <p class="potd-desc">One problem a day. Take your shot, submit an answer, then watch the walkthrough.</p>
-          <div class="potd-chips">
-            <span class="potd-chip tone-blue" id="potdDate"></span>
-            <span class="potd-chip tone-pink" id="potdSubject"></span>
-            <span class="potd-chip" id="potdDifficulty"></span>
-          </div>
+      <header class="potd-head">
+        <img src="../logo-images/newlogo12.png" class="potd-head-logo" alt=""/>
+        <h1 class="potd-title">Problem of the Day</h1>
+        <div class="potd-chips">
+          <span class="potd-chip tone-blue" id="potdDate"></span>
+          <span class="potd-chip tone-pink" id="potdSubject"></span>
+          <span class="potd-chip" id="potdDifficulty"></span>
         </div>
-        <img src="../logo-images/newlogo3.png" class="potd-hero-deco" alt=""/>
+      </header>
+
+      <section class="potd-card potd-problem tone-blue">
+        <h2 class="potd-card-title"><span class="material-icons-round">quiz</span> Today's problem</h2>
+        <div class="potd-figure"><img id="potdImage" alt="Today's problem"/></div>
+        <div class="potd-choices" id="potdChoices"></div>
+        <div class="potd-hint" id="potdHint" hidden>Pick an answer first.</div>
+        <div class="potd-result" id="potdResult" hidden></div>
+        <div class="potd-btn-row">
+          <button id="potdSubmit" class="potd-btn" type="button">Submit answer</button>
+        </div>
       </section>
 
-      <div class="potd-layout">
+      <section class="potd-card potd-video-card tone-pink" id="potdWalkthrough" hidden>
+        <h2 class="potd-card-title"><span class="material-icons-round">play_circle</span> Walkthrough</h2>
+        <div class="potd-video-frame">
+          <video id="potdVideo" controls playsinline preload="none"></video>
+        </div>
+      </section>
 
-        <section class="potd-card potd-problem tone-blue">
-          <h2 class="potd-card-title"><span class="material-icons-round">quiz</span> Today's problem</h2>
-          <div class="potd-figure"><img id="potdImage" alt="Today's problem"/></div>
-          <div class="potd-choices" id="potdChoices"></div>
-          <div class="potd-hint" id="potdHint" hidden>Pick an answer first.</div>
-          <div class="potd-result" id="potdResult" hidden></div>
-          <div class="potd-btn-row">
-            <button id="potdSubmit" class="potd-btn" type="button">Submit answer</button>
-          </div>
-        </section>
-
-        <section class="potd-card potd-video-card tone-pink">
-          <h2 class="potd-card-title"><span class="material-icons-round">play_circle</span> Walkthrough</h2>
-          <div class="potd-video-frame">
-            <div class="potd-lock" id="potdLock">
-              <span class="material-icons-round">lock</span>
-              <p>Submit an answer to unlock the video.</p>
-            </div>
-            <video id="potdVideo" controls playsinline preload="none" hidden></video>
-          </div>
-          <p class="potd-video-note">Watch the full solution once you have committed to an answer. Come back tomorrow for the next problem.</p>
-        </section>
-
-      </div>
     </section>
   </div>
 
@@ -203,7 +188,7 @@
   const hintEl = document.getElementById('potdHint');
   const resultEl = document.getElementById('potdResult');
   const submitEl = document.getElementById('potdSubmit');
-  const lockEl = document.getElementById('potdLock');
+  const walkthroughEl = document.getElementById('potdWalkthrough');
   const videoEl = document.getElementById('potdVideo');
 
   let picked = null;
@@ -257,9 +242,9 @@
     submitEl.disabled = true;
     submitEl.textContent = 'Answer submitted';
 
-    lockEl.remove();
     videoEl.src = PROBLEM.video;
-    videoEl.hidden = false;
+    walkthroughEl.hidden = false;
+    walkthroughEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   });
 </script>
 
