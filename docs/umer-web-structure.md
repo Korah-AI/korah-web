@@ -323,7 +323,7 @@ const content = data.choices?.[0]?.message?.content;
 - **Index page** (`college-prep/index.html`): Lists saved essays, "New Essay" button, card grid
 - **Editor** (`college-prep/editor.html`): Setup wizard + two-column editor/review screen
 - **Tiptap/ProseMirror** (`college-prep/js/editor.js`): Rich text editor with annotation decorations
-- **AI Pipeline** (`college-prep/js/api.js`): Four `/api/r` calls (annotation, scoring, focus note, selection feedback)
+- **AI Pipeline** (`college-prep/js/api.js`): Five `/api/r` calls (annotation, scoring, themes, focus note, selection feedback)
 - **Anchoring** (`college-prep/js/annotations.js`): Exact string match anchoring, card positioning
 - **Scoring** (`college-prep/js/scoring.js`): 6-dimension rubric (writing, detail, voice, reflection, curiosity, contribution)
 - **Firestore** (`college-prep/js/store.js`): CRUD under `users/{uid}/essays`

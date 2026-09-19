@@ -95,7 +95,30 @@ RULES:
 - Aim to highlight as much of the essay as possible. Include items for strong passages, weak passages, and passages that could be improved. The goal is comprehensive coverage.
 - Factor in the word limit: a 100-word supplemental should not be graded on reflection depth the same as a 650-word personal statement.
 - If a prompt is provided, evaluate how well the essay addresses that specific prompt. Use the prompt as context for scoring — an essay that strongly answers its prompt should score higher on relevance and focus.
-- For supplemental essays, evaluate how well the essay aligns with the specific school's values and mission. Consider what the school looks for in its students and how the essay demonstrates those qualities.`;
+- For supplemental essays, evaluate how well the essay aligns with the specific school's values and mission. Consider what the school looks for in its students and how the essay demonstrates those qualities.
+- When school values are given, at least three items spread across different dimensions MUST judge their passage against those values. Name the value you are weighing the passage against and say whether the passage earns it. Those items, and only those, carry one extra field: "schoolFit": true.`;
+
+const THEMES_PROMPT = `You are an admissions reader who has just finished this essay. Describe who you met.
+
+You MUST return ONLY a valid JSON object with this exact structure:
+{
+  "portrait": "what the essay tells you about this writer, and the person it leaves you with",
+  "themes": [
+    {
+      "name": "short name for the thread",
+      "quality": "the quality it reveals, two or three words",
+      "note": "where the thread runs through the essay and what it shows about the writer"
+    }
+  ]
+}
+
+RULES:
+- NEVER write replacement prose. You are describing what is on the page, not fixing it.
+- A theme is a thread that runs through more than one paragraph. A detail that appears once is not a theme.
+- Return 3 to 5 themes.
+- "portrait" is 3 to 5 sentences, and it is about the writer, not about the writing.
+- Say only what the essay earns. If a quality is claimed but never demonstrated, say so plainly.
+- If school values are given, say which of them these qualities line up with and which the essay leaves untouched.`;
 
 const FOCUS_PROMPT = `You are a college essay coach. The student has a specific concern about their essay.
 
@@ -192,6 +215,17 @@ async function score(essayText, essayType, school, prompt, wordLimit) {
   return result?.scores || null;
 }
 
+async function themes(essayText, essayType, school, prompt, wordLimit) {
+  let schoolValues = '';
+  if (school && essayType === 'supplemental' && window.getSchoolValues) {
+    schoolValues = window.getSchoolValues(school);
+  }
+  const userMsg = `Essay type: ${essayType === 'supplemental' ? 'Supplemental' : 'Personal Statement'}\nWord limit: ${wordLimit}\n${school ? `Target school: ${school}` : ''}${schoolValues ? `\nSchool values: ${schoolValues}` : ''}\n${prompt ? `Prompt: ${prompt}` : ''}\n\nEssay:\n${essayText}`;
+  const result = await callApi(THEMES_PROMPT, userMsg);
+  if (!result || !Array.isArray(result.themes)) return null;
+  return result;
+}
+
 async function focusNote(essayText, focusNote, essayType, school, prompt, wordLimit) {
   const userMsg = `Student's concern: "${focusNote}"\nEssay type: ${essayType === 'supplemental' ? 'Supplemental' : 'Personal Statement'}\nWord limit: ${wordLimit}\n\nEssay:\n${essayText}`;
   const result = await callApi(FOCUS_PROMPT, userMsg);
@@ -219,5 +253,5 @@ async function feedbackOnSelection(selectedText, surroundingContext, question, e
   return result?.comment || '';
 }
 
-const EssayAPI = { annotate, score, focusNote, feedbackOnSelection };
+const EssayAPI = { annotate, score, themes, focusNote, feedbackOnSelection };
 export default EssayAPI;

@@ -1407,6 +1407,161 @@ html[data-theme="light"] .cp-grey .delete-modal-content {
 }
 .cp-ask-send:hover { transform: scale(1.08); filter: brightness(1.08); }
 
+/* ── Open / Resolved ─────────────────────────────────────────────────────── */
+.essay-rec-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.rec-filter {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.1875rem;
+  border-radius: 62.4375rem;
+  background: var(--cp-sf2);
+  border: 0.0625rem solid var(--cp-bd);
+}
+/* Selected means filled, per docs/WIZARD-UI-PATTERNS.md. */
+.rec-filter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3125rem;
+  padding: 0.25rem 0.625rem;
+  border: 0;
+  border-radius: 62.4375rem;
+  background: transparent;
+  color: var(--tx);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.18s ease, background 0.18s ease;
+}
+.rec-filter-pill:hover:not(.active) { transform: scale(1.04); background: var(--cp-sf3); }
+.rec-filter-pill.active { background: var(--acc-fill); color: #fff; }
+.rec-filter-count {
+  font-size: 0.6875rem;
+  font-weight: 800;
+  padding: 0 0.3125rem;
+  border-radius: 62.4375rem;
+  background: var(--cp-sf3);
+  color: var(--tx);
+}
+.rec-filter-pill.active .rec-filter-count { background: rgba(255, 255, 255, 0.25); color: #fff; }
+
+.rec-resolve {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.375rem;
+  height: 1.375rem;
+  flex-shrink: 0;
+  border: 0.0625rem solid var(--cp-bd);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--tx);
+  cursor: pointer;
+  opacity: 0.55;
+  transition: transform 0.18s ease, opacity 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+}
+.rec-resolve .material-icons-round { font-size: 0.875rem; }
+.essay-rec-card:hover .rec-resolve { opacity: 1; }
+.rec-resolve:hover { transform: scale(1.12); border-color: var(--tone-green); }
+/* Resolved: the tick fills in, and the card drops to a flat, finished state. */
+.essay-rec-card.is-resolved .rec-resolve {
+  opacity: 1;
+  background: var(--tone-green);
+  border-color: var(--tone-green);
+  color: #fff;
+}
+.essay-rec-card.is-resolved .rec-evidence,
+.essay-rec-card.is-resolved .rec-feedback { opacity: 0.75; }
+
+/* One column, two views. Filtering by class keeps the card the student is
+   reading exactly where it was. */
+.essay-annotation-list:not(.show-resolved) .essay-rec-card.is-resolved { display: none; }
+.essay-annotation-list.show-resolved .essay-rec-card:not(.is-resolved) { display: none; }
+
+.essay-rec-empty {
+  margin: 0;
+  padding: 1.5rem 1rem 2rem;
+  text-align: center;
+  font-size: 0.8125rem;
+  color: var(--tx);
+  opacity: 0.7;
+}
+.essay-rec-empty[hidden] { display: none; }
+
+/* The school this supplemental is aimed at, on items the model weighed against
+   that school's values. */
+.rec-badge-school {
+  background: color-mix(in srgb, var(--tone-blue) 24%, var(--cp-sf2));
+  color: var(--tx);
+}
+
+/* ── What the reader sees ────────────────────────────────────────────────── */
+.essay-themes-panel {
+  padding: 1rem 1.25rem;
+  border-bottom: 0.0625rem solid var(--cp-bd);
+  flex-shrink: 0;
+}
+.essay-themes-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 45rem;
+  overflow: hidden;
+  transition: max-height 0.3s ease, opacity 0.3s ease;
+  opacity: 1;
+}
+.essay-themes-panel.collapsed .essay-themes-body {
+  max-height: 0;
+  opacity: 0;
+  gap: 0;
+}
+.essay-themes-panel.collapsed .essay-score-toggle .material-icons-round {
+  transform: rotate(180deg);
+}
+.themes-portrait {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: var(--tx);
+}
+.theme-row {
+  padding: 0.625rem 0.75rem;
+  border-radius: 0.625rem;
+  background: var(--cp-sf2);
+  border: 0.0625rem solid var(--cp-bd);
+}
+.theme-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+.theme-name {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--tx);
+  flex: 1;
+}
+.theme-quality {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 0.1875rem 0.5rem;
+  border-radius: 62.4375rem;
+  background: color-mix(in srgb, var(--tone-teal) 24%, var(--cp-sf2));
+  color: var(--tx);
+}
+.theme-note {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--tx);
+}
+
 /* The question the student typed, above the model's answer. */
 .rec-question {
   font-size: 0.8125rem;

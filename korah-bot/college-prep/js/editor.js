@@ -134,6 +134,9 @@ function renderHighlightedEssay(content, scores, activeCardsSet) {
   const plainParagraphs = paragraphs.map(p => escapeHtml(p));
   const fullText = plainParagraphs.join('\n');
 
+  // A resolved card has been dealt with, so its mark comes off the page.
+  const resolved = window._resolvedCards || new Set();
+
   const ranges = [];
   for (const d of Object.keys(DIM_COLORS)) {
     const data = scores[d];
@@ -141,6 +144,7 @@ function renderHighlightedEssay(content, scores, activeCardsSet) {
     const items = data.items || (data.evidence ? [{ evidence: data.evidence }] : []);
     for (let i = 0; i < items.length; i++) {
       const cardId = `rec-${d}-${i}`;
+      if (resolved.has(cardId)) continue;
       let evidence = (items[i].evidence || '').replace(/\s+/g, ' ').trim();
       if (!evidence) continue;
       const escaped = escapeHtml(evidence);
@@ -155,6 +159,7 @@ function renderHighlightedEssay(content, scores, activeCardsSet) {
   // rubric dimension, so they borrow a dimension colour for the highlight.
   for (const annCard of document.querySelectorAll('.essay-rec-card.focus-card, .essay-rec-card.ask-card')) {
     const cardId = annCard.dataset.cardId;
+    if (resolved.has(cardId)) continue;
     let evidence = (annCard.dataset.evidence || '').replace(/\s+/g, ' ').trim();
     if (!evidence) continue;
     const escaped = escapeHtml(evidence);

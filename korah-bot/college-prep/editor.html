@@ -289,9 +289,29 @@
         <div id="score-dims" class="essay-score-dims"></div>
       </div>
 
+      <!-- What the reader sees: threads across the essay and the person they
+           add up to. Collapses the same way the score panel does. -->
+      <div id="themes-panel" class="essay-themes-panel" style="display: none;">
+        <div class="essay-score-header">
+          <h3 class="essay-score-title">What the reader sees</h3>
+          <button class="essay-score-toggle" onclick="toggleThemesCollapse()" title="Toggle themes">
+            <span class="material-icons-round">expand_less</span>
+          </button>
+        </div>
+        <div id="themes-body" class="essay-themes-body"></div>
+      </div>
+
       <!-- Annotation Cards -->
       <div class="essay-rec-header">
         <span class="essay-rec-header-label">Recommendations</span>
+        <div class="rec-filter">
+          <button class="rec-filter-pill active" data-filter="open" type="button" onclick="setRecFilter('open')">
+            Open <span class="rec-filter-count" id="rec-count-open">0</span>
+          </button>
+          <button class="rec-filter-pill" data-filter="resolved" type="button" onclick="setRecFilter('resolved')">
+            Resolved <span class="rec-filter-count" id="rec-count-resolved">0</span>
+          </button>
+        </div>
       </div>
       <div id="annotation-list" class="essay-annotation-list">
         <div class="essay-annotation-empty">
@@ -299,6 +319,7 @@
           <p style="color: var(--tx3); font-size: 0.8125rem; margin: 0;">Annotations will appear here after analysis.</p>
         </div>
       </div>
+      <p id="rec-empty-note" class="essay-rec-empty" hidden></p>
     </div>
   </div>
 
@@ -529,6 +550,8 @@
       window._lastScores = data.scores;
       EssayScoring.render(data.scores);
       EssayScoring.renderRecommendations(data.scores);
+      EssayScoring.renderThemes(data.themes);
+      EssayScoring.applyResolved(data.resolved);
       if (window.highlightAllDimensions) await window.highlightAllDimensions();
       setBaseline(data.content || '');
     }
@@ -541,6 +564,9 @@
 
   // Title edits and prompt changes in the editor header save on the spot.
   window.saveEssayMeta = function () { persistEssay(); };
+
+  // scoring.js calls this when a card is resolved or reopened.
+  window.persistResolved = function (ids) { persistEssay({ resolved: ids }); };
 
   /* "Submit for feedback" only makes sense once the essay drifts from the copy
      the current annotations were built from, so every analysis records a
@@ -592,9 +618,14 @@
       if (!scores) throw new Error('Scoring returned no scores');
 
       window._lastScores = scores;
-      persistEssay({ scores });
       EssayScoring.render(scores, previousScores);
       EssayScoring.renderRecommendations(scores);
+
+      // The overall read. A new set of cards starts with nothing resolved.
+      status.textContent = 'Reading for themes...';
+      const themes = await EssayAPI.themes(content, d.essayType, d.school, effectivePrompt, d.wordLimit);
+      EssayScoring.renderThemes(themes);
+      persistEssay({ scores, themes: themes || null, resolved: [] });
 
       if (d.focusNote) {
         status.textContent = 'Running focus pass...';
@@ -615,6 +646,7 @@
         window._lastScores = canned.scores;
         EssayScoring.render(canned.scores);
         EssayScoring.renderRecommendations(canned.scores);
+        EssayScoring.renderThemes(null);
         if (window.highlightAllDimensions) await window.highlightAllDimensions();
       } catch (e2) {
         console.error('Canned data load failed:', e2);

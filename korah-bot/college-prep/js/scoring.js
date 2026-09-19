@@ -17,6 +17,19 @@ window._activeDims = activeDims;
 const activeCards = new Set();
 window._activeCards = activeCards;
 
+/* Resolved cards drop out of the Open column and their highlight leaves the
+   essay, so the page empties as the student works through the list. editor.js
+   reads this when it rebuilds the highlights. */
+const resolved = new Set();
+window._resolvedCards = resolved;
+
+function resolveButton(cardId) {
+  return `<button class="rec-resolve" type="button" title="Resolve" aria-label="Resolve"
+             onclick="event.stopPropagation(); window.toggleResolved('${cardId}')">
+            <span class="material-icons-round">check</span>
+          </button>`;
+}
+
 function getDimColor(key) {
   const dim = DIMENSIONS.find(d => d.key === key);
   return dim ? dim.color : '#8b5cf6';
@@ -67,15 +80,28 @@ function evidencePosition(evidence, essay) {
   return idx === -1 ? Number.MAX_SAFE_INTEGER : idx;
 }
 
+/* The school the essay is aimed at, for the badge on items the model marked as
+   weighing the passage against that school's values. Empty for personal
+   statements, which carry no school context. */
+function targetSchoolName() {
+  const el = document.querySelector('[x-data]');
+  const d = el && el._x_dataStack && el._x_dataStack[0];
+  if (!d || d.essayType !== 'supplemental' || !d.school) return '';
+  const data = window.getSchoolData ? window.getSchoolData(d.school) : null;
+  return data ? data.name : '';
+}
+
 function renderRecommendations(scores) {
   const list = document.getElementById('annotation-list');
   if (!list || !scores) return;
 
   list.innerHTML = '';
   activeCards.clear();
+  resolved.clear();
 
   const input = document.getElementById('essay-input');
   const essay = (input ? input.value : '').replace(/\s+/g, ' ').trim();
+  const school = targetSchoolName();
 
   const cards = [];
 
@@ -91,6 +117,9 @@ function renderRecommendations(scores) {
       const feedback = item.feedback || '';
       const evidenceShort = evidence.length > 120 ? evidence.slice(0, 120) + '...' : evidence;
       const cardId = `rec-${d.key}-${i}`;
+      const schoolBadge = item.schoolFit && school
+        ? `<span class="rec-badge rec-badge-school">${escapeHtml(school)}</span>`
+        : '';
 
       cards.push({
         pos: evidencePosition(evidence, essay),
@@ -100,6 +129,8 @@ function renderRecommendations(scores) {
              style="--rec-color: ${d.color};">
           <div class="rec-header">
             <span class="rec-label">${d.label}</span>
+            ${schoolBadge}
+            ${resolveButton(cardId)}
           </div>
           <div class="rec-evidence" style="border-color: ${d.color};">
             "${evidenceShort}"
@@ -112,6 +143,7 @@ function renderRecommendations(scores) {
 
   cards.sort((a, b) => a.pos - b.pos);
   list.innerHTML = cards.map(c => c.html).join('');
+  updateRecCounts();
 }
 
 function renderFocusCards(focusAnnotations) {
@@ -131,6 +163,7 @@ function renderFocusCards(focusAnnotations) {
         <div class="rec-header">
           <span class="rec-label">Focus</span>
           <span class="rec-badge">${ann.commentType || 'socratic'}</span>
+          ${resolveButton(cardId)}
         </div>
         <div class="rec-evidence" style="border-color: #fbbf24;">
           "${evidenceShort}"
@@ -140,6 +173,7 @@ function renderFocusCards(focusAnnotations) {
   }).join('');
 
   list.insertAdjacentHTML('beforeend', focusHtml);
+  updateRecCounts();
 }
 
 /* Answers to "ask for feedback on this" go to the top of the column, newest
@@ -167,6 +201,7 @@ function renderAskCard(question, evidence) {
          style="--rec-color: #3b82f6;">
       <div class="rec-header">
         <span class="rec-label">Your question</span>
+        ${resolveButton(cardId)}
       </div>
       <div class="rec-evidence" style="border-color: #3b82f6;">
         "${escapeHtml(evidenceShort)}"
@@ -175,6 +210,7 @@ function renderAskCard(question, evidence) {
       <div class="rec-feedback is-pending">Thinking...</div>
     </div>`);
 
+  updateRecCounts();
   return cardId;
 }
 
@@ -183,6 +219,93 @@ function fillAskCard(cardId, feedback) {
   if (!el) return;
   el.classList.remove('is-pending');
   el.textContent = feedback || 'No feedback came back. Try asking again.';
+}
+
+/* Resolving is a class swap, not a re-render: re-rendering the column would
+   drop the card the student is reading. The essay is repainted though, because
+   a resolved card's highlight leaves the page. */
+function toggleResolved(cardId) {
+  const card = document.querySelector(`.essay-rec-card[data-card-id="${cardId}"]`);
+  if (!card) return;
+
+  const nowResolved = !resolved.has(cardId);
+  if (nowResolved) {
+    resolved.add(cardId);
+    if (activeCards.has(cardId)) selectRecommendation(null);
+  } else {
+    resolved.delete(cardId);
+  }
+  card.classList.toggle('is-resolved', nowResolved);
+
+  updateRecCounts();
+  if (window.syncHighlights) window.syncHighlights();
+  if (window.persistResolved) window.persistResolved(Array.from(resolved));
+}
+
+function setRecFilter(mode) {
+  const list = document.getElementById('annotation-list');
+  if (!list) return;
+  list.classList.toggle('show-resolved', mode === 'resolved');
+  document.querySelectorAll('.rec-filter-pill').forEach(el => {
+    el.classList.toggle('active', el.dataset.filter === mode);
+  });
+  updateRecCounts();
+}
+
+function updateRecCounts() {
+  const total = document.querySelectorAll('.essay-rec-card').length;
+  const done = document.querySelectorAll('.essay-rec-card.is-resolved').length;
+  const openEl = document.getElementById('rec-count-open');
+  const doneEl = document.getElementById('rec-count-resolved');
+  if (openEl) openEl.textContent = total - done;
+  if (doneEl) doneEl.textContent = done;
+
+  const list = document.getElementById('annotation-list');
+  const note = document.getElementById('rec-empty-note');
+  if (!list || !note) return;
+  const showingResolved = list.classList.contains('show-resolved');
+  const visible = showingResolved ? done : total - done;
+  note.textContent = showingResolved ? 'Nothing resolved yet.' : 'Everything is resolved.';
+  note.toggleAttribute('hidden', total === 0 || visible > 0);
+}
+
+/* Restores the marks saved with the essay. Card ids come from the scores, so
+   they line up with whatever was saved next to them; a fresh analysis writes a
+   new set of cards and starts them all open. */
+function applyResolved(ids) {
+  resolved.clear();
+  (ids || []).forEach(id => {
+    const card = document.querySelector(`.essay-rec-card[data-card-id="${id}"]`);
+    if (!card) return;
+    resolved.add(id);
+    card.classList.add('is-resolved');
+  });
+  updateRecCounts();
+}
+
+/* The overall read: the threads running through the essay and the person they
+   add up to. Sits above the per-quote cards because it is about the whole. */
+function renderThemes(data) {
+  const panel = document.getElementById('themes-panel');
+  const body = document.getElementById('themes-body');
+  if (!panel || !body) return;
+
+  if (!data || !Array.isArray(data.themes) || !data.themes.length) {
+    panel.style.display = 'none';
+    return;
+  }
+
+  panel.style.display = 'block';
+  body.innerHTML = `
+    ${data.portrait ? `<p class="themes-portrait">${escapeHtml(data.portrait)}</p>` : ''}
+    ${data.themes.map(t => `
+      <div class="theme-row">
+        <div class="theme-head">
+          <span class="theme-name">${escapeHtml(t.name || '')}</span>
+          ${t.quality ? `<span class="theme-quality">${escapeHtml(t.quality)}</span>` : ''}
+        </div>
+        <p class="theme-note">${escapeHtml(t.note || '')}</p>
+      </div>`).join('')}`;
 }
 
 function filterByDimension(key) {
@@ -215,10 +338,18 @@ function getActiveDims() {
   return activeDims;
 }
 
-const EssayScoring = { render, renderRecommendations, renderFocusCards, renderAskCard, fillAskCard, filterByDimension, getDimColor, getActiveDims, DIMENSIONS };
+const EssayScoring = { render, renderRecommendations, renderFocusCards, renderAskCard, fillAskCard, renderThemes, applyResolved, filterByDimension, getDimColor, getActiveDims, DIMENSIONS };
 export default EssayScoring;
 
 window.filterByDimension = filterByDimension;
+window.toggleResolved = toggleResolved;
+window.setRecFilter = setRecFilter;
+
+function toggleThemesCollapse() {
+  const panel = document.getElementById('themes-panel');
+  if (panel) panel.classList.toggle('collapsed');
+}
+window.toggleThemesCollapse = toggleThemesCollapse;
 
 function toggleScoreCollapse() {
   const panel = document.getElementById('score-panel');
