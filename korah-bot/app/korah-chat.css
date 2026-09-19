@@ -644,38 +644,46 @@ html[data-theme="light"] .collapsed-more-dropdown .more-dropdown-item.danger:hov
   height: 1.875rem;
   padding: 0 0.375rem;
   border-radius: 0.5rem;
-  border: 0.0625rem solid var(--bd2);
-  background: var(--sf2);
-  color: var(--tx2);
+  border: 0.0625rem solid var(--nav-bd);
+  background: var(--nav-sf);
+  color: var(--acc, var(--tx));
   font-size: 0.6875rem;
   font-weight: 600;
   font-family: 'Plus Jakarta Sans', sans-serif;
   cursor: pointer;
-  transition: all 0.18s ease;
+  transition: border-color .15s ease, background .15s ease, box-shadow .15s ease, transform .15s ease, color .15s ease;
   text-decoration: none;
   box-sizing: border-box;
   white-space: nowrap;
 }
+/* Same grey blocking as .sidebar-nav-link: the pills rest on --nav-sf/--nav-bd
+   and each one carries its own bright --acc for the label, so the row reads as
+   four distinct destinations instead of four filled color chips. */
+.sidebar-tab-pill.tab-sat          { --acc: #3b82f6; }
+.sidebar-tab-pill.tab-act          { --acc: #34d399; }
+.sidebar-tab-pill.tab-ap           { --acc: #f0abfc; }
+.sidebar-tab-pill.tab-college-prep { --acc: #fbbf24; }
+
+/* Deeper shades in light theme — the bright set washes out on the pale grey. */
+html[data-theme="light"] .sidebar-tab-pill.tab-sat          { --acc: #2563eb; }
+html[data-theme="light"] .sidebar-tab-pill.tab-act          { --acc: #059669; }
+html[data-theme="light"] .sidebar-tab-pill.tab-ap           { --acc: #a21caf; }
+html[data-theme="light"] .sidebar-tab-pill.tab-college-prep { --acc: #b45309; }
+
 .sidebar-tab-pill:hover {
-  color: #fff;
-  transform: scale(1.03);
+  color: var(--acc, var(--tx));
+  background: color-mix(in srgb, var(--acc, var(--tx)) 16%, var(--nav-sf));
+  border-color: var(--acc, var(--nav-bd));
 }
-/* SAT = blue */
-.sidebar-tab-pill.tab-sat { border-color: rgba(59,130,246,.3); }
-.sidebar-tab-pill.tab-sat:hover { border-color: #3b82f6; background: rgba(59,130,246,.15); }
-.sidebar-tab-pill.tab-sat.active { background: #3b82f6; border-color: #3b82f6; color: #fff; box-shadow: 0 0 0.75rem rgba(59,130,246,.4); }
-/* ACT = green */
-.sidebar-tab-pill.tab-act { border-color: rgba(52,211,153,.3); }
-.sidebar-tab-pill.tab-act:hover { border-color: #34d399; background: rgba(52,211,153,.15); }
-.sidebar-tab-pill.tab-act.active { background: #34d399; border-color: #34d399; color: #fff; box-shadow: 0 0 0.75rem rgba(52,211,153,.4); }
-/* AP = pink */
-.sidebar-tab-pill.tab-ap { border-color: rgba(240,171,252,.3); }
-.sidebar-tab-pill.tab-ap:hover { border-color: #f0abfc; background: rgba(240,171,252,.15); }
-.sidebar-tab-pill.tab-ap.active { background: #f0abfc; border-color: #f0abfc; color: #1a0a3c; box-shadow: 0 0 0.75rem rgba(240,171,252,.4); }
-/* College Prep = yellow */
-.sidebar-tab-pill.tab-college-prep { border-color: rgba(251,191,36,.3); }
-.sidebar-tab-pill.tab-college-prep:hover { border-color: #fbbf24; background: rgba(251,191,36,.15); }
-.sidebar-tab-pill.tab-college-prep.active { background: #fbbf24; border-color: #fbbf24; color: #1a0a3c; box-shadow: 0 0 0.75rem rgba(251,191,36,.4); }
+
+/* The tab you're on is filled Korah purple, matching the active nav button. */
+.sidebar-tab-pill.active,
+.sidebar-tab-pill.active:hover {
+  color: #fff;
+  background: linear-gradient(180deg, var(--p4), color-mix(in srgb, var(--p4) 78%, #000));
+  border-color: var(--p4);
+  box-shadow: none;
+}
 
 .sidebar.collapsed .sidebar-tab-selector {
   padding: 0 0.625rem;
