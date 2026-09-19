@@ -1,0 +1,306 @@
+/* ══ Problem of the Day ══════════════════════════════════════════════════════
+   One problem, one answer, one walkthrough video. Grey resting surfaces and
+   per-option accent tones per docs/WIZARD-UI-PATTERNS.md: the app's --sf/--bd
+   are purple-tinted and read as background, so the page defines its own
+   neutral set and color only marks identity or state. */
+
+.potd-page {
+  --potd-sf: #26262e;
+  --potd-sf2: #31313c;
+  --potd-bd: #454553;
+  /* No dimmed text: the muted greys disappear against the grey surfaces. */
+  --tx2: var(--tx);
+  --tx3: var(--tx);
+  padding: 1.25rem;
+}
+html[data-theme="light"] .potd-page {
+  --potd-sf: #eceef2;
+  --potd-sf2: #e0e3ea;
+  --potd-bd: #c3c8d2;
+}
+
+.potd-page .tone-red   { --acc: #ef4444; --acc-fill: #d23c3c; }
+.potd-page .tone-amber { --acc: #f59e0b; --acc-fill: #d88b0a; }
+.potd-page .tone-green { --acc: #22c55e; --acc-fill: #1ead53; }
+.potd-page .tone-teal  { --acc: #14b8a6; --acc-fill: #12a292; }
+.potd-page .tone-blue  { --acc: #3b82f6; --acc-fill: #3472d9; }
+.potd-page .tone-pink  { --acc: #ec4899; --acc-fill: #d03f87; }
+
+.potd-shell {
+  max-width: 74rem;
+  margin: 0 auto;
+  display: grid;
+  gap: 1.125rem;
+}
+
+/* ── Hero ── */
+.potd-hero {
+  position: relative;
+  overflow: hidden;
+  padding: 2.5rem 1.5rem;
+  border-radius: 1.125rem;
+  border: 0.0625rem solid var(--potd-bd);
+  background: var(--potd-sf);
+}
+
+.potd-hero-text { position: relative; z-index: 1; }
+
+.potd-eyebrow-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.625rem;
+}
+
+.potd-eyebrow-logo { width: 2.5rem; height: 2.5rem; object-fit: contain; }
+
+.potd-eyebrow {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--tx);
+}
+
+.potd-title {
+  font-size: 1.8125rem;
+  line-height: 1.2;
+  font-weight: 700;
+  margin: 0 0 0.375rem;
+  color: var(--tx);
+}
+
+.potd-desc {
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--tx);
+  margin: 0;
+}
+
+.potd-hero-deco {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14rem;
+  height: 14rem;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.potd-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+/* Chips are pure labels, so they stay filled in their own tone. */
+.potd-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.3125rem 0.75rem;
+  border-radius: 999px;
+  border: 0.0625rem solid var(--acc-fill);
+  background: var(--acc-fill);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.potd-chip .material-icons-round { font-size: 0.9375rem; }
+
+/* ── Layout ── */
+.potd-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: 1.125rem;
+  align-items: start;
+}
+
+@media (max-width: 62rem) {
+  .potd-layout { grid-template-columns: minmax(0, 1fr); }
+  .potd-hero-deco { display: none; }
+}
+
+.potd-card {
+  padding: 1.25rem;
+  border-radius: 1.125rem;
+  border: 0.0625rem solid var(--potd-bd);
+  background: var(--potd-sf);
+  box-shadow: 0 0.25rem 0 0 var(--potd-bd);
+}
+
+.potd-card-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--tx);
+}
+.potd-card-title .material-icons-round { font-size: 1.25rem; color: var(--acc, #3b82f6); }
+
+/* ── Problem ── */
+.potd-figure {
+  padding: 1rem;
+  border-radius: 0.875rem;
+  border: 0.0625rem solid var(--potd-bd);
+  background: #fff;
+  display: flex;
+  justify-content: center;
+}
+.potd-figure img { max-width: 100%; height: auto; display: block; }
+
+.potd-choices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.625rem;
+  margin-top: 1rem;
+}
+@media (max-width: 30rem) {
+  .potd-choices { grid-template-columns: minmax(0, 1fr); }
+}
+
+.potd-choice {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.75rem 0.875rem;
+  border-radius: 0.75rem;
+  border: 0.0625rem solid var(--potd-bd);
+  background: var(--potd-sf2);
+  box-shadow: 0 0.25rem 0 0 var(--potd-bd);
+  color: var(--tx);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  text-align: left;
+  cursor: pointer;
+  transition: transform .18s ease, background .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+
+.potd-choice-letter {
+  flex: 0 0 auto;
+  width: 1.75rem;
+  height: 1.75rem;
+  display: grid;
+  place-items: center;
+  border-radius: 0.5rem;
+  border: 0.0625rem solid var(--acc);
+  color: var(--acc);
+  font-size: 0.8125rem;
+  font-weight: 800;
+}
+
+.potd-choice:hover:not(.is-selected):not(:disabled) {
+  border-color: var(--acc);
+  transform: scale(1.02);
+}
+
+.potd-choice.is-selected,
+.potd-choice.is-correct,
+.potd-choice.is-wrong {
+  color: #fff;
+  background: var(--acc-fill);
+  border-color: var(--acc-fill);
+  box-shadow: 0 0.25rem 0 0 color-mix(in srgb, var(--acc-fill) 60%, #000);
+}
+.potd-choice.is-selected { transform: scale(1.03); }
+.potd-choice.is-selected .potd-choice-letter,
+.potd-choice.is-correct .potd-choice-letter,
+.potd-choice.is-wrong .potd-choice-letter { border-color: #fff; color: #fff; }
+
+/* Graded states override the option's own tone: green is right, red is wrong. */
+.potd-choice.is-correct { --acc: #22c55e; --acc-fill: #1ead53; }
+.potd-choice.is-wrong   { --acc: #ef4444; --acc-fill: #d23c3c; }
+
+.potd-choice:disabled { cursor: default; }
+.potd-choice:disabled:not(.is-correct):not(.is-wrong) { opacity: 0.75; }
+
+/* ── Hint, result, buttons ── */
+.potd-hint {
+  margin-top: 0.875rem;
+  padding: 0.625rem 0.875rem;
+  border-radius: 0.75rem;
+  border: 0.0625rem solid #d88b0a;
+  background: color-mix(in srgb, #d88b0a 18%, var(--potd-sf));
+  color: var(--tx);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.potd-result {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.875rem;
+  padding: 0.75rem 0.875rem;
+  border-radius: 0.75rem;
+  border: 0.0625rem solid var(--acc-fill);
+  background: var(--acc-fill);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+.potd-result .material-icons-round { font-size: 1.125rem; }
+
+.potd-btn-row { margin-top: 1rem; }
+
+.potd-btn {
+  width: 100%;
+  padding: 0.8125rem 1rem;
+  border-radius: 0.75rem;
+  border: 0.0625rem solid #3472d9;
+  background: #3472d9;
+  box-shadow: 0 0.25rem 0 0 #24529c;
+  color: #fff;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  cursor: pointer;
+  transition: transform .18s ease, background .18s ease, box-shadow .18s ease;
+}
+.potd-btn:hover:not(:disabled) { transform: scale(1.02); }
+.potd-btn:active:not(:disabled) { box-shadow: 0 0.05rem 0 0 #24529c; }
+.potd-btn:disabled {
+  background: var(--potd-sf2);
+  border-color: var(--potd-bd);
+  box-shadow: 0 0.25rem 0 0 var(--potd-bd);
+  color: var(--tx);
+  cursor: default;
+}
+
+/* ── Video ── */
+.potd-video-frame {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: 0.875rem;
+  overflow: hidden;
+  border: 0.0625rem solid var(--potd-bd);
+  background: #14141a;
+  display: grid;
+  place-items: center;
+}
+.potd-video-frame video { width: 100%; height: 100%; object-fit: contain; background: #000; }
+
+.potd-lock {
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+  padding: 1.25rem;
+  text-align: center;
+  color: #fff;
+}
+.potd-lock .material-icons-round { font-size: 2rem; color: #9aa0ad; }
+.potd-lock p { margin: 0; font-size: 0.875rem; font-weight: 600; }
+
+.potd-video-note {
+  margin: 0.875rem 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: var(--tx);
+}

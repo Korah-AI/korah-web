@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en" x-data="{
+  theme: localStorage.getItem('korah_theme') || 'dark',
+  activeTab: 'sat',
+  sidebarCollapsed: window.innerWidth <= 768 ? false : localStorage.getItem('korah_sidebar_collapsed') === 'true',
+  mobileOpen: false,
+  getEffectiveTheme() {
+    if (this.theme === 'system') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return this.theme;
+  },
+  toggleSidebar() {
+    if (window.innerWidth <= 768) {
+      this.mobileOpen = !this.mobileOpen;
+      const overlay = document.querySelector('.sidebar-overlay');
+      if (overlay) overlay.classList.toggle('show', this.mobileOpen);
+    } else {
+      this.sidebarCollapsed = !this.sidebarCollapsed;
+      localStorage.setItem('korah_sidebar_collapsed', this.sidebarCollapsed);
+    }
+  }
+}" :data-theme="getEffectiveTheme()" x-cloak>
+<head>
+<link rel="stylesheet" href="../transitions/page-transitions.css"/>
+<script src="../transitions/page-transitions.js"></script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Korah AI — Problem of the Day</title>
+<link rel="icon" type="image/png" href="../logo-images/newlogo0.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script src="../sidebar-loader.js" defer></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="../app/korah-chat.css"/>
+<link rel="stylesheet" href="./potd.css"/>
+</head>
+
+<body>
+<style>
+  [x-cloak] { display: none !important; }
+  html:not(.korah-page-ready) { background: #06040f !important; }
+  html[data-theme="light"]:not(.korah-page-ready) { background: #d2d2d2 !important; }
+  html:not(.korah-page-ready) body { opacity: 0 !important; }
+</style>
+
+<script>
+  (function() {
+    const t = localStorage.getItem('korah_theme') || 'dark';
+    if (t === 'light' || (t === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  })();
+</script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+  import { startAuthGuard } from '../auth-guard.js';
+  import { startGuestSession, showAuthWall } from '../guest-gate.js';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
+    authDomain: "korah-app.firebaseapp.com",
+    projectId: "korah-app",
+    storageBucket: "korah-app.firebasestorage.app",
+    messagingSenderId: "226169460321",
+    appId: "1:226169460321:web:b166fc8260107c55dafc20"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  onAuthStateChanged(auth, (user) => {
+    if (!user) {
+      // No redirect: render the empty shell, then hard-block with the auth wall.
+      startGuestSession();
+      showAuthWall('../');
+      return;
+    }
+    const detail = { uid: user.uid };
+    window._korahReadyFired = detail;
+    window.dispatchEvent(new CustomEvent('korahReady', { detail }));
+    startAuthGuard(auth, '../index.html');
+  });
+
+  // #logout-btn lives in the sidebar, which sidebar-loader.js injects asynchronously,
+  // so it does not exist yet when this module runs. Delegate from document instead.
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#logout-btn')) return;
+    window.confirmLogout(async () => {
+      await signOut(auth);
+      localStorage.removeItem('korah_first_name');
+      window.KorahTransitions.go('../login.html');
+    });
+  });
+</script>
+
+<canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
+<div id="sidebar-root"></div>
+
+<!-- ═══ MAIN AREA WRAPPER ═══ -->
+<div id="main-area-wrapper" class="main-area-wrapper">
+<main id="main-content" class="main-content">
+
+  <!-- Top bar -->
+  <header class="chat-topbar bg-sf glass-sm t-theme bd" style="opacity: 0.95;">
+    <button id="sidebar-toggle" @click="toggleSidebar()" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+    <div class="chat-title-area">
+      <div class="korah-status-dot"></div>
+      <span class="font-semibold tx text-sm" id="chat-title">Problem of the Day</span>
+    </div>
+  </header>
+
+  <div class="potd-page">
+    <section class="potd-shell">
+
+      <section class="potd-hero">
+        <div class="potd-hero-text">
+          <div class="potd-eyebrow-row">
+            <img src="../logo-images/newlogo12.png" class="potd-eyebrow-logo" alt="Korah logo"/>
+            <p class="potd-eyebrow">Korah Daily</p>
+          </div>
+          <h1 class="potd-title">Problem of the Day</h1>
+          <p class="potd-desc">One problem a day. Take your shot, submit an answer, then watch the walkthrough.</p>
+          <div class="potd-chips">
+            <span class="potd-chip tone-blue" id="potdDate"></span>
+            <span class="potd-chip tone-pink" id="potdSubject"></span>
+            <span class="potd-chip" id="potdDifficulty"></span>
+          </div>
+        </div>
+        <img src="../logo-images/newlogo3.png" class="potd-hero-deco" alt=""/>
+      </section>
+
+      <div class="potd-layout">
+
+        <section class="potd-card potd-problem tone-blue">
+          <h2 class="potd-card-title"><span class="material-icons-round">quiz</span> Today's problem</h2>
+          <div class="potd-figure"><img id="potdImage" alt="Today's problem"/></div>
+          <div class="potd-choices" id="potdChoices"></div>
+          <div class="potd-hint" id="potdHint" hidden>Pick an answer first.</div>
+          <div class="potd-result" id="potdResult" hidden></div>
+          <div class="potd-btn-row">
+            <button id="potdSubmit" class="potd-btn" type="button">Submit answer</button>
+          </div>
+        </section>
+
+        <section class="potd-card potd-video-card tone-pink">
+          <h2 class="potd-card-title"><span class="material-icons-round">play_circle</span> Walkthrough</h2>
+          <div class="potd-video-frame">
+            <div class="potd-lock" id="potdLock">
+              <span class="material-icons-round">lock</span>
+              <p>Submit an answer to unlock the video.</p>
+            </div>
+            <video id="potdVideo" controls playsinline preload="none" hidden></video>
+          </div>
+          <p class="potd-video-note">Watch the full solution once you have committed to an answer. Come back tomorrow for the next problem.</p>
+        </section>
+
+      </div>
+    </section>
+  </div>
+
+</main>
+</div><!-- end .main-area-wrapper -->
+
+<script src="../app/timer-manager.js"></script>
+<script src="../study/js/sidebar.js"></script>
+<script src="../study/js/study-api.js"></script>
+
+<script>
+  window.addEventListener('korahReady', () => {
+    if (window.KorahSidebar) {
+      window.KorahSidebar.initSidebar({ chatBaseUrl: "../chat.html", itemPageUrl: "../study/item.html" });
+    }
+  }, { once: true });
+</script>
+
+<script>
+  // Placeholder problem so the layout can be reviewed. Step 2 swaps this for the
+  // scheduled problems uploaded from the admin page.
+  const PROBLEM = {
+    subject: 'Math',
+    difficulty: 'Medium',
+    image: '../docs/practice-tests/test-11/question-imgs/mod-1/math-m1-q1.png',
+    choices: ['156', '66', '48', '24'],
+    correct: 3,
+    video: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4'
+  };
+
+  const LETTERS = ['A', 'B', 'C', 'D'];
+  const CHOICE_TONES = ['tone-blue', 'tone-pink', 'tone-amber', 'tone-teal'];
+  const DIFF_TONES = { Easy: 'tone-green', Medium: 'tone-amber', Hard: 'tone-red' };
+
+  const choicesEl = document.getElementById('potdChoices');
+  const hintEl = document.getElementById('potdHint');
+  const resultEl = document.getElementById('potdResult');
+  const submitEl = document.getElementById('potdSubmit');
+  const lockEl = document.getElementById('potdLock');
+  const videoEl = document.getElementById('potdVideo');
+
+  let picked = null;
+  let submitted = false;
+
+  document.getElementById('potdDate').textContent =
+    new Date().toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
+  document.getElementById('potdSubject').textContent = PROBLEM.subject;
+  const diffEl = document.getElementById('potdDifficulty');
+  diffEl.textContent = PROBLEM.difficulty;
+  diffEl.classList.add(DIFF_TONES[PROBLEM.difficulty]);
+  document.getElementById('potdImage').src = PROBLEM.image;
+
+  PROBLEM.choices.forEach((text, i) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = `potd-choice ${CHOICE_TONES[i]}`;
+    btn.innerHTML = `<span class="potd-choice-letter">${LETTERS[i]}</span><span>${text}</span>`;
+    btn.addEventListener('click', () => {
+      if (submitted) return;
+      picked = i;
+      hintEl.hidden = true;
+      choicesEl.querySelectorAll('.potd-choice').forEach((el, j) => el.classList.toggle('is-selected', j === i));
+    });
+    choicesEl.appendChild(btn);
+  });
+
+  submitEl.addEventListener('click', () => {
+    if (submitted) return;
+    if (picked === null) {
+      hintEl.hidden = false;
+      return;
+    }
+
+    submitted = true;
+    const right = picked === PROBLEM.correct;
+
+    choicesEl.querySelectorAll('.potd-choice').forEach((el, i) => {
+      el.disabled = true;
+      el.classList.remove('is-selected');
+      if (i === PROBLEM.correct) el.classList.add('is-correct');
+      else if (i === picked) el.classList.add('is-wrong');
+    });
+
+    resultEl.className = `potd-result ${right ? 'tone-green' : 'tone-red'}`;
+    resultEl.innerHTML = right
+      ? '<span class="material-icons-round">check_circle</span> Correct. Watch the walkthrough to check your reasoning.'
+      : `<span class="material-icons-round">cancel</span> Not quite. The answer is ${LETTERS[PROBLEM.correct]}) ${PROBLEM.choices[PROBLEM.correct]}.`;
+    resultEl.hidden = false;
+
+    submitEl.disabled = true;
+    submitEl.textContent = 'Answer submitted';
+
+    lockEl.remove();
+    videoEl.src = PROBLEM.video;
+    videoEl.hidden = false;
+  });
+</script>
+
+</body>
+</html>
