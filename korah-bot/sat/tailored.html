@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en" x-data="{
   theme: localStorage.getItem('korah_theme') || 'dark',
+  activeTab: 'sat',
   sidebarCollapsed: window.innerWidth <= 768 ? false : localStorage.getItem('korah_sidebar_collapsed') === 'true',
   mobileOpen: false,
   getEffectiveTheme() {
@@ -274,9 +275,19 @@
   <script src="../study/js/study-api.js"></script>
   <script src="../app/korah-chat.js"></script>
   <script>
-    window.addEventListener('korahReady', () => {
-      window.KorahSidebar?.initSidebar?.({ chatBaseUrl: '../chat.html', itemPageUrl: '../study/item.html' });
-    }, { once: true });
+    // korahReady is skipped when the bootstrap above throws, and the sidebar is
+    // not part of what failed, so korahReadyError starts it too. initSidebar()
+    // falls back to the cached chat list when KorahDB never came up.
+    (function () {
+      let started = false;
+      function start() {
+        if (started || !window.KorahSidebar) return;
+        started = true;
+        window.KorahSidebar.initSidebar({ chatBaseUrl: '../chat.html', itemPageUrl: '../study/item.html' });
+      }
+      window.addEventListener('korahReady', start, { once: true });
+      window.addEventListener('korahReadyError', start, { once: true });
+    })();
   </script>
   <script src="./js/sat-shared.js"></script>
   <script src="./js/tailored-mock.js"></script>

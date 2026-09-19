@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en" x-data="{
+  theme: localStorage.getItem('korah_theme') || 'dark',
+  activeTab: 'college-prep',
+  sidebarCollapsed: window.innerWidth <= 768 ? false : localStorage.getItem('korah_sidebar_collapsed') === 'true',
+  mobileOpen: false,
+  getEffectiveTheme() {
+    if (this.theme === 'system') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return this.theme;
+  },
+  toggleSidebar() {
+    if (window.innerWidth <= 768) {
+      this.mobileOpen = !this.mobileOpen;
+      const overlay = document.querySelector('.sidebar-overlay');
+      if (overlay) overlay.classList.toggle('show', this.mobileOpen);
+    } else {
+      this.sidebarCollapsed = !this.sidebarCollapsed;
+      localStorage.setItem('korah_sidebar_collapsed', this.sidebarCollapsed);
+    }
+  }
+}" :data-theme="getEffectiveTheme()" x-cloak>
+<head>
+<link rel="stylesheet" href="../transitions/page-transitions.css"/>
+<script src="../transitions/page-transitions.js"></script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Korah AI — Essays</title>
+<script>document.documentElement.setAttribute('data-theme', localStorage.getItem('korah_theme') || 'dark');</script>
+<link rel="icon" type="image/png" href="../logo-images/newlogo0.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script src="../sidebar-loader.js" defer></script>
+<script src="../study/js/sidebar.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="../app/korah-chat.css"/>
+<link rel="stylesheet" href="college-prep.css"/>
+</head>
+<body class="korah-grey cp-grey">
+
+<canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
+<script>
+  /* The starfield/shooting stars live in sidebar.js. korahReady only fires once
+     the Firestore bootstrap below resolves, and never at all for a signed-out
+     visitor, so kick it off on whichever of korahReady / load lands first. */
+  (function () {
+    let started = false;
+    function startBackground() {
+      if (started || !window.KorahSidebar || !window.KorahSidebar.initBackground) return;
+      started = true;
+      window.KorahSidebar.initBackground();
+    }
+    window.addEventListener('korahReady', startBackground, { once: true });
+    window.addEventListener('load', startBackground, { once: true });
+    if (document.readyState === 'complete') startBackground();
+  })();
+</script>
+
+<div id="sidebar-root"></div>
+
+<div id="main-area-wrapper" class="main-area-wrapper">
+<main id="main-content" class="main-content">
+  <header class="chat-topbar bg-sf glass-sm t-theme bd">
+    <button id="sidebar-toggle" @click="toggleSidebar()" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+    <div class="chat-title-area">
+      <div class="korah-status-dot"></div>
+      <span class="font-semibold tx text-sm">Essays</span>
+    </div>
+  </header>
+
+  <div class="cp-scroll">
+    <div class="cp-page">
+
+      <div class="cp-head">
+        <h1>My Essays</h1>
+      </div>
+
+      <div class="cp-actions">
+        <a href="editor.html" class="cp-btn tone-blue">
+          <span class="material-icons-round" style="font-size: 1.125rem;">add</span>
+          New Essay
+        </a>
+        <label class="cp-search">
+          <span class="material-icons-round">search</span>
+          <input type="search" id="essay-search" placeholder="Search essays" autocomplete="off"/>
+        </label>
+      </div>
+
+      <div id="essay-grid" class="essay-grid cp-stagger"></div>
+      <div id="essay-empty" class="cp-empty" style="display: none;"></div>
+
+    </div>
+  </div>
+</main>
+</div>
+
+<!-- Delete confirm — reuses the app's modal styling from korah-chat.css -->
+<div id="essay-modal" class="delete-modal">
+  <div class="delete-modal-content">
+    <div class="delete-modal-icon"><span class="material-icons-round" style="font-size:2.25rem;color:var(--red,#ef4444);">delete_outline</span></div>
+    <h3 class="delete-modal-title">Delete this essay?</h3>
+    <p class="delete-modal-desc" id="essay-modal-desc"></p>
+    <div class="delete-modal-actions">
+      <button id="essay-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
+      <button id="essay-modal-confirm" class="delete-modal-btn confirm t-btn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Replaces confirm() so the delete prompt shows in the app's own modal
+  // instead of a browser dialog.
+  (function () {
+    const modal = document.getElementById("essay-modal");
+    const descEl = document.getElementById("essay-modal-desc");
+    const cancelBtn = document.getElementById("essay-modal-cancel");
+    const confirmBtn = document.getElementById("essay-modal-confirm");
+    let onConfirm = null;
+
+    function close() { modal.classList.remove("show"); onConfirm = null; }
+
+    window.showEssayConfirm = function (message, cb) {
+      descEl.textContent = message;
+      onConfirm = cb;
+      modal.classList.add("show");
+      confirmBtn.focus();
+    };
+
+    cancelBtn.addEventListener("click", close);
+    confirmBtn.addEventListener("click", () => { const cb = onConfirm; close(); if (cb) cb(); });
+    modal.addEventListener("click", (e) => { if (e.target === modal) close(); });
+    document.addEventListener("keydown", (e) => {
+      if (!modal.classList.contains("show")) return;
+      if (e.key === "Escape") close();
+      if (e.key === "Enter") confirmBtn.click();
+    });
+  })();
+</script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+  import { setupKorahDB } from "../app/data/firestore-store.js";
+  import { startGuestSession, initGuestGate } from "../guest-gate.js";
+  import { startAuthGuard } from "../auth-guard.js";
+  import { getDemoEssay, DEMO_ESSAY_ID } from "./js/demo-data.js";
+
+  // On localhost the list is seeded with one placeholder essay so the UI has
+  // something to show. getDemoEssay() returns null anywhere else.
+  const demoEssay = await getDemoEssay();
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
+    authDomain: "korah-app.firebaseapp.com",
+    projectId: "korah-app",
+    storageBucket: "korah-app.firebasestorage.app",
+    messagingSenderId: "226169460321",
+    appId: "1:226169460321:web:b166fc8260107c55dafc20"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      startGuestSession();
+      initGuestGate('../');
+      renderEssays([]);
+      return;
+    }
+    await setupKorahDB(app, user.uid);
+    const detail = { uid: user.uid };
+    window._korahReadyFired = detail;
+    window.dispatchEvent(new CustomEvent('korahReady', { detail }));
+    startAuthGuard(auth, '../index.html');
+    loadEssays(user.uid);
+  });
+
+  // #logout-btn lives in the sidebar, which sidebar-loader.js injects asynchronously,
+  // so it does not exist yet when this module runs. Delegate from document instead.
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#logout-btn')) return;
+    window.confirmLogout(async () => {
+      await signOut(auth);
+      localStorage.removeItem('korah_first_name');
+      window.KorahTransitions.go('../login.html');
+    });
+  });
+
+  async function loadEssays(uid) {
+    try {
+      const { getFirestore, collection, query, orderBy, onSnapshot } = await import("https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js");
+      const db = getFirestore(app);
+      const essaysRef = collection(db, `users/${uid}/essays`);
+      const q = query(essaysRef, orderBy("updatedAt", "desc"));
+      onSnapshot(q, (snap) => {
+        const essays = [];
+        snap.docs.forEach(d => essays.push({ id: d.id, ...d.data() }));
+        renderEssays(essays);
+      });
+    } catch (e) {
+      console.warn("Firestore unavailable, showing empty state");
+      renderEssays([]);
+    }
+  }
+
+  // Cards in a list carry no meaning of their own, so the tones just differ.
+  const TONES = ['tone-blue', 'tone-pink', 'tone-amber', 'tone-green', 'tone-teal', 'tone-orange', 'tone-red'];
+  const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  let allEssays = [];
+
+  // Edited today reads as a time, anything older as a date.
+  function lastEdited(ts) {
+    if (!ts) return 'Not edited yet';
+    const d = new Date(ts);
+    const sameDay = d.toDateString() === new Date().toDateString();
+    return 'Last edited ' + (sameDay
+      ? d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+      : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }));
+  }
+
+  function essayTitle(e) {
+    if (e.title) return e.title;
+    const typeLabel = e.type === 'supplemental' ? 'Supplemental' : 'Personal Statement';
+    const school = e.school ? e.school.charAt(0).toUpperCase() + e.school.slice(1) : '';
+    return school ? `${school} — ${typeLabel}` : typeLabel;
+  }
+
+  function renderEssays(essays) {
+    allEssays = demoEssay ? [demoEssay, ...essays] : essays;
+    paint();
+  }
+
+  function paint() {
+    const grid = document.getElementById('essay-grid');
+    const empty = document.getElementById('essay-empty');
+    const term = (document.getElementById('essay-search').value || '').trim().toLowerCase();
+    const list = term
+      ? allEssays.filter(e => (essayTitle(e) + ' ' + (e.content || '')).toLowerCase().includes(term))
+      : allEssays;
+
+    if (!list.length) {
+      grid.innerHTML = '';
+      empty.style.display = 'block';
+      empty.textContent = allEssays.length
+        ? 'No essays match that search.'
+        : 'No essays yet. Start one with New Essay.';
+      return;
+    }
+    empty.style.display = 'none';
+    grid.innerHTML = list.map((e, i) => {
+      const text = (e.content || '').trim();
+      const preview = text
+        ? `<div class="essay-card-page">${esc(text.slice(0, 900))}</div>`
+        : `<div class="essay-card-page is-blank">Nothing written yet</div>`;
+      return `
+        <div class="essay-card ${TONES[i % TONES.length]}" onclick="window.location.href='editor.html?id=${e.id}'">
+          ${e.id === DEMO_ESSAY_ID ? '' : `<button class="essay-card-delete" onclick="event.stopPropagation(); deleteEssay('${e.id}')" title="Delete">&times;</button>`}
+          <div class="essay-card-head">
+            <img class="essay-card-icon" src="../logo-images/newlogo0.png" alt=""/>
+            <h3 class="essay-card-title">${esc(essayTitle(e))}</h3>
+          </div>
+          <div class="essay-card-meta">${lastEdited(e.updatedAt)}</div>
+          <div class="essay-card-preview">${preview}</div>
+        </div>`;
+    }).join('');
+  }
+
+  document.getElementById('essay-search').addEventListener('input', paint);
+
+  window.deleteEssay = function(id) {
+    showEssayConfirm("This removes the essay and its feedback. You can't undo this.", async () => {
+      try {
+        const { getFirestore, doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js");
+        const db = getFirestore(app);
+        await deleteDoc(doc(db, `users/${auth.currentUser.uid}/essays`, id));
+      } catch (e) {
+        console.error('Delete failed:', e);
+      }
+    });
+  };
+</script>
+
+<!-- Spotlight glow + cursor tilt on the essay cards
+     (see ../../docs/SPOTLIGHT-TILT-CARDS.md). One delegated handler so both
+     survive the grid's innerHTML re-renders. -->
+<script>
+  (function () {
+    var CARD_SELECTOR = ".essay-card";
+    var MAX_TILT = 7; // degrees
+
+    document.addEventListener("pointermove", function (e) {
+      var card = e.target.closest && e.target.closest(CARD_SELECTOR);
+      if (!card) return;
+      var rect = card.getBoundingClientRect();
+      var relX = e.clientX - rect.left;
+      var relY = e.clientY - rect.top;
+
+      card.style.setProperty("--spotlight-x", relX + "px");
+      card.style.setProperty("--spotlight-y", relY + "px");
+      card.style.setProperty("--spotlight-opacity", "0.6");
+
+      var rotY = ((relX / rect.width) - 0.5) * 2 * MAX_TILT;
+      var rotX = (0.5 - (relY / rect.height)) * 2 * MAX_TILT;
+      // transform 0s => the tilt snaps to the cursor each frame (no chase/lag).
+      // !important beats the cp-stagger entrance animation's filled transform.
+      card.style.setProperty("transition", "transform 0s, border-color .2s, box-shadow .2s", "important");
+      card.style.setProperty("transform",
+        "perspective(37.5rem) rotateX(" + rotX.toFixed(2) + "deg) rotateY(" +
+        rotY.toFixed(2) + "deg) scale(1.02)", "important");
+    }, { passive: true });
+
+    document.addEventListener("pointerout", function (e) {
+      var card = e.target.closest && e.target.closest(CARD_SELECTOR);
+      if (!card) return;
+      if (e.relatedTarget && card.contains(e.relatedTarget)) return;
+      card.style.setProperty("--spotlight-opacity", "0");
+      // Ease only the return to flat.
+      card.style.setProperty("transition", "transform .3s cubic-bezier(0.22, 1, 0.36, 1), border-color .2s, box-shadow .2s", "important");
+      card.style.removeProperty("transform");
+    }, { passive: true });
+  })();
+</script>
+
+<script>
+  /* Recent Chats / Recent Study Items. initSidebar() reads #chat-history
+     straight away, so wait for korahReady: by then KorahDB is up and the
+     sidebar partial has been injected. */
+  window.addEventListener('korahReady', function () {
+    if (!window.KorahSidebar) return;
+    window.KorahSidebar.initSidebar({
+      chatBaseUrl: '../chat.html',
+      itemPageUrl: '../study/item.html',
+    });
+  }, { once: true });
+</script>
+
+<!-- First-visit intro carousel -->
+<div id="cpIntro" class="cp-intro">
+  <div class="cp-intro-backdrop"></div>
+  <div class="cp-intro-content">
+    <button class="cp-intro-close" id="cpIntroClose" type="button" aria-label="Close">&times;</button>
+
+    <div class="cp-intro-slides">
+      <div class="cp-intro-slide is-active" data-slide="0">
+        <img src="../logo-images/newlogo2.png" class="cp-intro-icon" alt=""/>
+        <h2 class="cp-intro-title">Welcome to Essays!</h2>
+        <p class="cp-intro-desc">
+          Here, you can upload your college essays and get instant feedback and scoring. Ready to see how it works?
+        </p>
+      </div>
+
+      <div class="cp-intro-slide" data-slide="1">
+        <h2 class="cp-intro-title">Set your essay up</h2>
+        <p class="cp-intro-desc">
+          Upload your Common App or supplemental, choose the prompt, and
+          set the word limit.
+        </p>
+        <div class="cp-demo cp-demo-setup" aria-hidden="true">
+          <div class="cp-demo-pills">
+            <span class="cp-demo-pill is-first">Common App</span>
+            <span class="cp-demo-pill is-second">Supplement</span>
+          </div>
+          <div class="cp-demo-field"><span class="cp-demo-typing"></span></div>
+          <div class="cp-demo-meta"><span>Prompt</span><span>650 words</span></div>
+        </div>
+      </div>
+
+      <div class="cp-intro-slide" data-slide="2">
+        <h2 class="cp-intro-title">Get instant feedback</h2>
+        <p class="cp-intro-desc">
+          Feedback is highlighted on your essay and shown as annotations on the right of the screen.
+        </p>
+        <div class="cp-demo cp-demo-feedback" aria-hidden="true">
+          <div class="cp-demo-doc">
+            <span class="cp-demo-line"></span>
+            <span class="cp-demo-line is-short"></span>
+            <span class="cp-demo-line is-marked"></span>
+            <span class="cp-demo-line"></span>
+          </div>
+          <div class="cp-demo-card">
+            <span class="cp-demo-card-check material-icons-round">check</span>
+            <span class="cp-demo-card-lines"><i></i><i></i></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="cp-intro-slide" data-slide="3">
+        <h2 class="cp-intro-title">Scoring</h2>
+        <p class="cp-intro-desc">
+          There's six different characteristics upon which your essay is evaluated and scored. You can see these scores as well as notes on the themes you're attempting to share!
+        </p>
+        <div class="cp-demo cp-demo-scores" aria-hidden="true">
+          <div class="cp-demo-avg"><b>8.4</b><span>average</span></div>
+          <div class="cp-demo-bars">
+            <span style="--w: 86%; --c: #8b5cf6"><i></i></span>
+            <span style="--w: 72%; --c: #3b82f6"><i></i></span>
+            <span style="--w: 91%; --c: #f0abfc"><i></i></span>
+            <span style="--w: 64%; --c: #fbbf24"><i></i></span>
+            <span style="--w: 80%; --c: #34d399"><i></i></span>
+            <span style="--w: 58%; --c: #f87171"><i></i></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cp-intro-dots">
+      <span class="cp-intro-dot is-active" data-dot="0"></span>
+      <span class="cp-intro-dot" data-dot="1"></span>
+      <span class="cp-intro-dot" data-dot="2"></span>
+      <span class="cp-intro-dot" data-dot="3"></span>
+    </div>
+
+    <div class="cp-intro-actions">
+      <button class="cp-intro-btn" id="cpIntroPrev" type="button" style="visibility:hidden;">Back</button>
+      <button class="cp-intro-btn is-primary" id="cpIntroNext" type="button">Next</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // First-visit intro carousel
+  (function () {
+    const INTRO_KEY = 'korah_college_prep_intro_seen';
+    if (localStorage.getItem(INTRO_KEY)) return;
+
+    const modal = document.getElementById('cpIntro');
+    const slides = modal.querySelectorAll('.cp-intro-slide');
+    const dots = modal.querySelectorAll('.cp-intro-dot');
+    const prevBtn = document.getElementById('cpIntroPrev');
+    const nextBtn = document.getElementById('cpIntroNext');
+    let current = 0;
+
+    function goToSlide(idx) {
+      current = Math.max(0, Math.min(idx, slides.length - 1));
+      slides.forEach((s, i) => s.classList.toggle('is-active', i === current));
+      dots.forEach((d, i) => d.classList.toggle('is-active', i === current));
+      prevBtn.style.visibility = current === 0 ? 'hidden' : 'visible';
+      nextBtn.textContent = current === slides.length - 1 ? 'Start writing' : 'Next';
+    }
+
+    function close() {
+      modal.classList.remove('is-open');
+      localStorage.setItem(INTRO_KEY, 'true');
+    }
+
+    nextBtn.addEventListener('click', () => {
+      if (current === slides.length - 1) close();
+      else goToSlide(current + 1);
+    });
+    prevBtn.addEventListener('click', () => goToSlide(current - 1));
+    document.getElementById('cpIntroClose').addEventListener('click', close);
+    modal.querySelector('.cp-intro-backdrop').addEventListener('click', close);
+    dots.forEach(dot => dot.addEventListener('click', () => goToSlide(Number(dot.dataset.dot))));
+
+    setTimeout(() => modal.classList.add('is-open'), 600);
+  })();
+</script>
+</body>
+</html>
