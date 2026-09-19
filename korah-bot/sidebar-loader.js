@@ -49,6 +49,10 @@
   }
 
   initElectricBorder(root);
+
+  // The partial is in the DOM now. initSidebar() in study/js/sidebar.js waits
+  // on this when a page's bootstrap beats the fetch above.
+  window.dispatchEvent(new CustomEvent('korahSidebarReady'));
 })();
 
 function initElectricBorder(root) {

@@ -1302,6 +1302,16 @@ function showSidebarDeleteModal(name, onConfirm) {
   function initSidebar(options) {
     const { chatHistoryId, studyItemsId, chatBaseUrl, itemPageUrl, onItemClick, activeId } = options || {};
 
+    // sidebar-loader.js fetches and injects sidebar.html asynchronously. When a
+    // page's bootstrap wins that race the markup is not here yet, so every
+    // lookup below comes back null and the chat list keeps its skeleton rows.
+    // Pages with no #sidebar-root carry their own markup and are unaffected.
+    const sidebarRoot = document.getElementById("sidebar-root");
+    if (sidebarRoot && !sidebarRoot.children.length) {
+      window.addEventListener("korahSidebarReady", () => initSidebar(options), { once: true });
+      return;
+    }
+
     // 0. Action Modals (Rename, Delete, Clear, Logout)
     initActionModals();
     

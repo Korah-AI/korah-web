@@ -177,7 +177,9 @@
       return;
     }
     await setupKorahDB(app, user.uid);
-    window.dispatchEvent(new CustomEvent('korahReady', { detail: { uid: user.uid } }));
+    const detail = { uid: user.uid };
+    window._korahReadyFired = detail;
+    window.dispatchEvent(new CustomEvent('korahReady', { detail }));
     startAuthGuard(auth, '../index.html');
     loadEssays(user.uid);
   });
