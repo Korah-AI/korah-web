@@ -221,12 +221,30 @@ function fillAskCard(cardId, feedback) {
   el.textContent = feedback || 'No feedback came back. Try asking again.';
 }
 
+/* Resolving moves the card to the other view, so it leaves on an animation
+   instead of blinking out: its height and padding collapse while it fades, and
+   the filter rule takes over once it has gone. Height has to be pinned in
+   pixels first, since a transition from auto does not run. Keep in step with
+   the .is-leaving transition in college-prep.css. */
+const LEAVE_MS = 260;
+
+function animateOut(card, done) {
+  card.style.height = `${card.offsetHeight}px`;
+  card.classList.add('is-leaving');
+  requestAnimationFrame(() => { card.style.height = '0px'; });
+  setTimeout(() => {
+    card.classList.remove('is-leaving');
+    card.style.height = '';
+    done();
+  }, LEAVE_MS);
+}
+
 /* Resolving is a class swap, not a re-render: re-rendering the column would
    drop the card the student is reading. The essay is repainted though, because
    a resolved card's highlight leaves the page. */
 function toggleResolved(cardId) {
   const card = document.querySelector(`.essay-rec-card[data-card-id="${cardId}"]`);
-  if (!card) return;
+  if (!card || card.classList.contains('is-leaving')) return;
 
   const nowResolved = !resolved.has(cardId);
   if (nowResolved) {
@@ -235,7 +253,8 @@ function toggleResolved(cardId) {
   } else {
     resolved.delete(cardId);
   }
-  card.classList.toggle('is-resolved', nowResolved);
+
+  animateOut(card, () => card.classList.toggle('is-resolved', nowResolved));
 
   updateRecCounts();
   if (window.syncHighlights) window.syncHighlights();
@@ -254,7 +273,9 @@ function setRecFilter(mode) {
 
 function updateRecCounts() {
   const total = document.querySelectorAll('.essay-rec-card').length;
-  const done = document.querySelectorAll('.essay-rec-card.is-resolved').length;
+  // The set, not the DOM: the .is-resolved class only lands once the card has
+  // finished animating out, and the counts should move the moment it is ticked.
+  const done = resolved.size;
   const openEl = document.getElementById('rec-count-open');
   const doneEl = document.getElementById('rec-count-resolved');
   if (openEl) openEl.textContent = total - done;

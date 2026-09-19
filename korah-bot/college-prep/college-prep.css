@@ -1483,6 +1483,30 @@ html[data-theme="light"] .cp-grey .delete-modal-content {
 .essay-annotation-list:not(.show-resolved) .essay-rec-card.is-resolved { display: none; }
 .essay-annotation-list.show-resolved .essay-rec-card:not(.is-resolved) { display: none; }
 
+/* The column's spacing lives on the cards rather than in the list's gap, so a
+   leaving card can collapse its own gap along with its height. */
+.essay-annotation-list { gap: 0; }
+.essay-rec-card { margin-bottom: 0.625rem; }
+
+/* Ticked: the card collapses and fades before the filter rule removes it.
+   Duration is mirrored by LEAVE_MS in js/scoring.js. */
+.essay-rec-card.is-leaving {
+  overflow: hidden;
+  opacity: 0;
+  transform: scale(0.97);
+  margin-bottom: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  border-color: transparent;
+  pointer-events: none;
+  transition: height 0.26s cubic-bezier(0.22, 1, 0.36, 1),
+              margin 0.26s cubic-bezier(0.22, 1, 0.36, 1),
+              padding 0.26s cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 0.18s ease,
+              transform 0.26s ease,
+              border-color 0.18s ease;
+}
+
 .essay-rec-empty {
   margin: 0;
   padding: 1.5rem 1rem 2rem;
