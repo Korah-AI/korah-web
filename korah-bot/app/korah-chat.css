@@ -5227,18 +5227,23 @@ html[data-theme="light"] .sidebar-nav-link[href*="/sat/study-plan.html"]        
     gap: 0.875rem;
 }
 
-/* The nav is taller now, so on short viewports the column can outgrow 100vh.
-   Let the whole sidebar scroll as one piece rather than only the chat list —
-   .sidebar sets overflow:hidden and .sidebar-middle absorbs the slack, which
-   squeezes the history to nothing instead of revealing what's cut off. */
+/* Recent Chats takes every pixel left between the nav and the footer and
+   scrolls inside itself once the list outgrows that space. The min-height is a
+   floor: the nav is tall enough that flex alone would hand the list a couple of
+   rows on a short viewport. .sidebar keeps its own overflow as the safety
+   valve — when the nav plus that floor outgrow 100vh the whole column scrolls
+   as one piece, rather than cutting the nav off out of reach. */
 .sidebar {
     overflow-y: auto;
     overflow-x: hidden;
     overscroll-behavior: contain;
 }
 .sidebar-middle {
-    flex: 0 0 auto;
-    overflow: visible;
+    flex: 1 1 auto;
+    min-height: 14rem;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
 }
 
 /* Thin grey scrollbar for the sidebar — the global thumb is 0.3125rem of --p4
@@ -5252,7 +5257,17 @@ html[data-theme="light"] .sidebar-nav-link[href*="/sat/study-plan.html"]        
 .sidebar::-webkit-scrollbar-thumb:hover {
     background: color-mix(in srgb, var(--nav-bd) 70%, var(--tx)) !important;
 }
-.sidebar { scrollbar-color: var(--nav-bd) transparent; scrollbar-width: thin; }
+.sidebar-middle::-webkit-scrollbar { width: 0.1875rem; }
+.sidebar-middle::-webkit-scrollbar-track { background: transparent; }
+.sidebar-middle::-webkit-scrollbar-thumb {
+    background: var(--nav-bd) !important;
+    border-radius: 62.4375rem;
+}
+.sidebar-middle::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in srgb, var(--nav-bd) 70%, var(--tx)) !important;
+}
+.sidebar,
+.sidebar-middle { scrollbar-color: var(--nav-bd) transparent; scrollbar-width: thin; }
 
 /* ══ Light chrome — sidebar + topbars ═══════════════════════════════════════
    The nav buttons, cards and composer are all dark grey blocks (--nav-sf /
