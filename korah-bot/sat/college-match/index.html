@@ -458,7 +458,7 @@
 
     <div class="cm-intro-slides">
       <div class="cm-intro-slide is-active" data-slide="0">
-        <img src="../../logo-images/newlogo10.png" class="cm-intro-icon" alt=""/>
+        <img src="../../logo-images/newlogo2.png" class="cm-intro-icon" alt=""/>
         <h2 class="cm-intro-title">Welcome to College Match</h2>
         <p class="cm-intro-desc">
           New here: see how your SAT score lines up with the schools you are thinking
@@ -530,8 +530,9 @@
 </div>
 
 <script>
-  /* First-visit intro carousel. Waits for korahReady so it never covers the
-     auth wall a signed-out visitor gets. */
+  /* First-visit intro carousel. A signed-out visitor gets the #auth-wall from
+     guest-gate.js, which paints over this at a far higher z-index, so opening
+     on a timer is safe and does not depend on korahReady firing. */
   (function () {
     const INTRO_KEY = 'korah_college_match_intro_seen';
     if (localStorage.getItem(INTRO_KEY)) return;
@@ -565,9 +566,7 @@
     modal.querySelector('.cm-intro-backdrop').addEventListener('click', close);
     dots.forEach(dot => dot.addEventListener('click', () => goToSlide(Number(dot.dataset.dot))));
 
-    function open() { setTimeout(() => modal.classList.add('is-open'), 600); }
-    if (window._korahReadyFired) open();
-    else window.addEventListener('korahReady', open, { once: true });
+    setTimeout(() => modal.classList.add('is-open'), 600);
   })();
 </script>
 
