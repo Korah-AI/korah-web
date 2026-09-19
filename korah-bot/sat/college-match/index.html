@@ -162,8 +162,9 @@
         <span class="material-icons-round">info</span>
         <span>
           These buckets use test scores and admission rate only. They ignore GPA, course rigor, essays, and what a school
-          happens to be looking for that year, so treat them as a starting point rather than a prediction. Based on
-          <b x-text="dataYear"></b> data from the U.S. Department of Education College Scorecard, which lags about two years.
+          happens to be looking for that year, so treat them as a starting point rather than a prediction. Built from
+          <b x-text="dataYear"></b> U.S. Department of Education College Scorecard data covering
+          <b x-text="schools.length"></b> schools, which lags about two years.
         </span>
       </p>
     </header>
@@ -172,26 +173,44 @@
     <section class="cm-controls">
       <div class="cm-panel cm-score" :class="{ 'is-preview': isPreviewing }">
         <div class="cm-score-top">
-          <span class="cm-panel-label">Your score</span>
+          <span class="cm-panel-label">Combined score</span>
           <span class="cm-score-val" x-text="score"></span>
         </div>
 
-        <input
-          type="range"
-          min="400" max="1600" step="10"
-          :value="score"
-          @input="onSlider($event.target.value)"
-          class="cm-slider"
-          aria-label="Preview score"
-        />
-
-        <div class="cm-track-ticks">
-          <span class="cm-saved-tick" x-show="hasSavedScore" x-cloak :style="'left:' + savedTickPct() + '%'" title="Your saved score">
-            <span class="cm-saved-tick-dot"></span>
-            <span class="cm-saved-tick-label" x-text="savedScore"></span>
-          </span>
+        <!-- Two section sliders; combined is always their sum, never its own input. -->
+        <div class="cm-slider-row tone-blue">
+          <div class="cm-slider-head">
+            <span class="cm-slider-name">Math</span>
+            <span class="cm-slider-val" x-text="math"></span>
+          </div>
+          <input type="range" :min="sectionMin" :max="sectionMax" step="10" :value="math"
+                 @input="onSlider('math', $event.target.value)" class="cm-slider" aria-label="Math score"/>
+          <div class="cm-track-ticks">
+            <span class="cm-saved-tick" x-show="hasSavedScore" x-cloak
+                  :style="'left:' + savedTickPct(savedMath) + '%'" title="Your saved math score">
+              <span class="cm-saved-tick-dot"></span>
+              <span class="cm-saved-tick-label" x-text="savedMath"></span>
+            </span>
+          </div>
+          <div class="cm-track-endlabels"><span x-text="sectionMin"></span><span x-text="sectionMax"></span></div>
         </div>
-        <div class="cm-track-endlabels"><span>400</span><span>1600</span></div>
+
+        <div class="cm-slider-row tone-pink">
+          <div class="cm-slider-head">
+            <span class="cm-slider-name">Reading &amp; writing</span>
+            <span class="cm-slider-val" x-text="erw"></span>
+          </div>
+          <input type="range" :min="sectionMin" :max="sectionMax" step="10" :value="erw"
+                 @input="onSlider('erw', $event.target.value)" class="cm-slider" aria-label="Reading and writing score"/>
+          <div class="cm-track-ticks">
+            <span class="cm-saved-tick" x-show="hasSavedScore" x-cloak
+                  :style="'left:' + savedTickPct(savedErw) + '%'" title="Your saved reading and writing score">
+              <span class="cm-saved-tick-dot"></span>
+              <span class="cm-saved-tick-label" x-text="savedErw"></span>
+            </span>
+          </div>
+          <div class="cm-track-endlabels"><span x-text="sectionMin"></span><span x-text="sectionMax"></span></div>
+        </div>
 
         <div class="cm-score-actions" x-show="isPreviewing" x-cloak>
           <span class="cm-preview-badge">
@@ -216,10 +235,10 @@
               <div class="cm-drop-clip">
                 <div class="cm-drop-list">
                   <button class="cm-drop-opt t-btn" :class="{ 'is-on': stateFilter === 'all' }"
-                          @click="stateFilter = 'all'; stateOpen = false">All states</button>
+                          @click="setFilter('stateFilter', 'all'); stateOpen = false">All states</button>
                   <template x-for="s in states" :key="s">
                     <button class="cm-drop-opt t-btn" :class="{ 'is-on': stateFilter === s }"
-                            @click="stateFilter = s; stateOpen = false" x-text="s"></button>
+                            @click="setFilter('stateFilter', s); stateOpen = false" x-text="s"></button>
                   </template>
                 </div>
               </div>
@@ -232,7 +251,7 @@
           <div class="cm-chips">
             <template x-for="opt in sizeOptions" :key="opt.value">
               <button class="cm-chip t-btn" :class="{ 'is-on': sizeFilter === opt.value }"
-                      @click="sizeFilter = opt.value" x-text="opt.label"></button>
+                      @click="setFilter('sizeFilter', opt.value)" x-text="opt.label"></button>
             </template>
           </div>
         </div>
@@ -242,7 +261,7 @@
           <div class="cm-chips">
             <template x-for="opt in typeOptions" :key="opt.value">
               <button class="cm-chip t-btn" :class="{ 'is-on': typeFilter === opt.value }"
-                      @click="typeFilter = opt.value" x-text="opt.label"></button>
+                      @click="setFilter('typeFilter', opt.value)" x-text="opt.label"></button>
             </template>
           </div>
         </div>
@@ -260,7 +279,7 @@
           <p class="cm-col-desc" x-text="col.desc"></p>
 
           <div class="cm-col-body">
-            <template x-for="item in groups[col.key]" :key="item.school.id">
+            <template x-for="item in cardsIn(col.key)" :key="item.school.id">
               <article class="cm-card" :class="{ 'is-open': expandedId === item.school.id }" @click="toggleDetails(item.school.id)">
                 <div class="cm-card-top">
                   <div class="cm-card-heading">
@@ -296,30 +315,30 @@
                       <p class="cm-reason" x-text="item.reason"></p>
 
                       <div class="cm-sec-bars">
-                        <div>
+                        <div class="tone-blue">
                           <div class="cm-sec-top">
                             <span>Math</span>
                             <span class="cm-sec-range" x-text="item.school.sat.math.p25 + '–' + item.school.sat.math.p75"></span>
                           </div>
                           <div class="cm-band is-mini">
-                            <span class="cm-band-marker" x-show="mathScore != null"
-                                  :class="'is-' + mark(mathScore, item.school.sat.math).pos"
-                                  :style="'left:' + mark(mathScore, item.school.sat.math).pct + '%'"></span>
+                            <span class="cm-band-marker"
+                                  :class="'is-' + mark(math, item.school.sat.math).pos"
+                                  :style="'left:' + mark(math, item.school.sat.math).pct + '%'"></span>
                           </div>
-                          <span class="cm-sec-note" x-show="mathScore != null" x-text="'Your math: ' + mathScore"></span>
+                          <span class="cm-sec-note" x-text="'Your math: ' + math"></span>
                         </div>
 
-                        <div>
+                        <div class="tone-pink">
                           <div class="cm-sec-top">
                             <span>Reading &amp; writing</span>
                             <span class="cm-sec-range" x-text="item.school.sat.erw.p25 + '–' + item.school.sat.erw.p75"></span>
                           </div>
                           <div class="cm-band is-mini">
-                            <span class="cm-band-marker" x-show="englishScore != null"
-                                  :class="'is-' + mark(englishScore, item.school.sat.erw).pos"
-                                  :style="'left:' + mark(englishScore, item.school.sat.erw).pct + '%'"></span>
+                            <span class="cm-band-marker"
+                                  :class="'is-' + mark(erw, item.school.sat.erw).pos"
+                                  :style="'left:' + mark(erw, item.school.sat.erw).pct + '%'"></span>
                           </div>
-                          <span class="cm-sec-note" x-show="englishScore != null" x-text="'Your reading &amp; writing: ' + englishScore"></span>
+                          <span class="cm-sec-note" x-text="'Your reading &amp; writing: ' + erw"></span>
                         </div>
                       </div>
 
@@ -343,6 +362,10 @@
               </article>
             </template>
 
+            <button class="cm-show-more t-btn" x-show="groups[col.key].length > shown[col.key]" x-cloak
+                    @click="showMore(col.key)"
+                    x-text="'Show more (' + (groups[col.key].length - shown[col.key]) + ' more)'"></button>
+
             <p class="cm-col-empty" x-show="groups[col.key].length === 0" x-cloak x-text="col.empty"></p>
           </div>
         </div>
@@ -359,7 +382,7 @@
       <div class="cm-nodata-wrap" :class="{ 'is-open': showNoData }">
         <div class="cm-nodata-clip">
           <div class="cm-nodata-grid">
-            <template x-for="item in groups.noData" :key="item.school.id">
+            <template x-for="item in cardsIn('noData')" :key="item.school.id">
               <article class="cm-card">
                 <div class="cm-card-top">
                   <div class="cm-card-heading">
@@ -375,6 +398,11 @@
                 </p>
               </article>
             </template>
+          </div>
+          <div class="cm-nodata-more">
+            <button class="cm-show-more t-btn" x-show="groups.noData.length > shown.noData" x-cloak
+                    @click="showMore('noData')"
+                    x-text="'Show more (' + (groups.noData.length - shown.noData) + ' more)'"></button>
           </div>
         </div>
       </div>

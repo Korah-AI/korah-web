@@ -122,6 +122,18 @@ Client files that call these routes: `app/korah-chat.js`, `sat/math-chat.js`, `s
 
 > Do NOT rename these back to descriptive names (e.g. `gem-proxy`, `sat/questions`). The short names are intentional.
 
+`/api/college/c` does not call anything external. Its dataset is built ahead of
+time from the U.S. Department of Education College Scorecard API and committed:
+
+```
+cd korah-bot
+node scripts/sync-scorecard.js                 # public DEMO_KEY, rate limited
+node scripts/sync-scorecard.js --key <key>     # https://api.data.gov/signup/
+```
+
+That writes `korah-bot/api/college/data/colleges.js`, which `c.js` imports. Rerun
+it by hand when a new Scorecard year lands; it is not scheduled.
+
 TIPS FOR DEVELOPMENT SOURCE CONTROL
 * You can't use LiveServer to preview your changes. As you go, you're gonna have to make a commit, wait a bit, then check Korah.app. 
 * If you make a mistake just use `git reset --hard HEAD~1  \n  git push --force-with-lease origin BRANCH-NAME` and it'll revert the branch to what it was before your last commit. The next time you commit, it'll update the website.

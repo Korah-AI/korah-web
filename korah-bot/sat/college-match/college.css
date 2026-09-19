@@ -25,6 +25,8 @@
   --cm-blue:  #3b82f6;  --cm-blue-fill:  #3472d9;
   --cm-amber: #f59e0b;  --cm-amber-fill: #d88b0a;
   --cm-red:   #ef4444;  --cm-red-fill:   #d23c3c;
+  --cm-teal:  #14b8a6;  --cm-teal-fill:  #12a292;
+  --cm-pink:  #ec4899;  --cm-pink-fill:  #d03f87;
 
   --acc: var(--cm-blue);
   --acc-fill: var(--cm-blue-fill);
@@ -42,12 +44,16 @@ html[data-theme="light"] {
   --cm-blue:  #2563eb;
   --cm-amber: #d97706;
   --cm-red:   #dc2626;
+  --cm-teal:  #0d9488;
+  --cm-pink:  #db2777;
 }
 
 .tone-green { --acc: var(--cm-green); --acc-fill: var(--cm-green-fill); }
 .tone-blue  { --acc: var(--cm-blue);  --acc-fill: var(--cm-blue-fill); }
 .tone-amber { --acc: var(--cm-amber); --acc-fill: var(--cm-amber-fill); }
 .tone-red   { --acc: var(--cm-red);   --acc-fill: var(--cm-red-fill); }
+.tone-teal  { --acc: var(--cm-teal);  --acc-fill: var(--cm-teal-fill); }
+.tone-pink  { --acc: var(--cm-pink);  --acc-fill: var(--cm-pink-fill); }
 
 [x-cloak] { display: none !important; }
 
@@ -153,8 +159,31 @@ html[data-theme="light"] * { scrollbar-color: rgba(28, 30, 38, 0.35) transparent
 }
 
 /* ── Score + slider ────────────────────────────────── */
-.cm-score { --acc: var(--cm-blue); --acc-fill: var(--cm-blue-fill); }
+.cm-score { --acc: var(--cm-teal); --acc-fill: var(--cm-teal-fill); }
 .cm-score.is-preview { --acc: var(--cm-amber); --acc-fill: var(--cm-amber-fill); }
+/* The section rows keep their own tone even while the combined tile is amber. */
+.cm-score.is-preview .cm-slider-row.tone-blue { --acc: var(--cm-blue); --acc-fill: var(--cm-blue-fill); }
+.cm-score.is-preview .cm-slider-row.tone-pink { --acc: var(--cm-pink); --acc-fill: var(--cm-pink-fill); }
+
+.cm-slider-row + .cm-slider-row { margin-top: 1rem; }
+.cm-slider-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+.cm-slider-name { font-size: 0.8rem; font-weight: 700; color: var(--tx); }
+.cm-slider-val {
+  padding: 0.12rem 0.5rem;
+  border-radius: 0.4rem;
+  background: var(--acc-fill);
+  border: 1px solid var(--acc-fill);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
 
 .cm-score-top {
   display: flex;
@@ -482,7 +511,8 @@ html[data-theme="light"] * { scrollbar-color: rgba(28, 30, 38, 0.35) transparent
   background: var(--acc-fill);
   border: 0.125rem solid var(--cm-sf);
   transform: translate(-50%, -50%);
-  transition: left 0.18s ease;
+  /* No transition on left: the marker is a readout of the slider, so it has to
+     track 1:1. A 0.18s ease makes it trail the thumb, which reads as lag. */
 }
 /* Off-track markers sit just outside the ends rather than clamping onto them. */
 .cm-band-marker.is-below { transform: translate(-150%, -50%); }
@@ -569,6 +599,19 @@ html[data-theme="light"] * { scrollbar-color: rgba(28, 30, 38, 0.35) transparent
 }
 .cm-tip .material-icons-round { font-size: 0.95rem; color: var(--acc); flex: none; margin-top: 0.05rem; }
 
+.cm-show-more {
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.6rem;
+  background: var(--cm-sf2);
+  border: 1px solid var(--cm-bd);
+  color: var(--tx);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+}
+.cm-show-more:hover { background: var(--cm-sf3); border-color: var(--acc); transform: scale(1.02); }
+
 .cm-col-empty {
   margin: 0;
   padding: 1.25rem 1rem;
@@ -634,6 +677,8 @@ html[data-theme="light"] * { scrollbar-color: rgba(28, 30, 38, 0.35) transparent
 .cm-nodata-grid .cm-card { cursor: default; }
 .cm-nodata-grid .cm-card:hover { transform: none; border-color: var(--cm-bd); }
 .cm-nodata-grid .cm-pill { background: var(--cm-sf2); border-color: var(--cm-bd); color: var(--tx); }
+.cm-nodata-more { padding: 0 1.1rem 1.1rem; display: flex; }
+.cm-nodata-more .cm-show-more { --acc: var(--cm-blue); }
 .cm-nodata-note { margin: 0.55rem 0 0; font-size: 0.72rem; line-height: 1.5; color: var(--cm-tx3); }
 
 /* ═══ Loading skeleton — flat grey, pulses between two greys ═══ */

@@ -11,7 +11,11 @@
   "use strict";
 
   const CollegeMatch = window.CollegeMatch;
-  const DEFAULT_SCORE = 1200; // slider value when the user has no saved score
+  // Each section slider runs 200-800 in steps of 10; combined is their sum.
+  const SECTION_MIN = 200;
+  const SECTION_MAX = 800;
+  const DEFAULT_SECTION = 600; // 1200 combined, when the user has no saved score
+  const PAGE_SIZE = 24;        // cards rendered per column before "show more"
 
   // The three result columns. Identical markup, so the page renders one
   // x-for over this list instead of three copies of the same card.
@@ -87,6 +91,17 @@
     ],
   };
 
+  const clampSection = (n) =>
+    Math.max(SECTION_MIN, Math.min(SECTION_MAX, Math.round(n / 10) * 10));
+
+  // A profile can hold a combined score with no section breakdown. Split it
+  // evenly so both sliders start somewhere real; the halves still sum to the
+  // saved total, so the combined readout never contradicts what was saved.
+  function splitCombined(total) {
+    const math = clampSection(total / 2);
+    return { math, erw: clampSection(total - math) };
+  }
+
   function sizeBucket(size) {
     if (size < 10000) return "small";
     if (size <= 30000) return "medium";
@@ -94,6 +109,19 @@
   }
 
   function collegeMatchFactory() {
+    // Memo cells for the two derived lists. The synced dataset is ~1k schools
+    // and the template reads `groups` about ten times per render pass, so
+    // recomputing on every read costs more than a frame while dragging a
+    // slider. They live in the closure rather than on the returned object:
+    // writing a reactive property from inside a getter would re-trigger the
+    // effect that just read it. Each memo also holds the schools array it was
+    // built from, so swapping the dataset invalidates it.
+    let groupsRef = null;
+    let groupsKey = null;
+    let groupsCache = null;
+    let statesRef = null;
+    let statesCache = null;
+
     return {
       // Data + identity
       ready: false,
@@ -101,13 +129,15 @@
       dataYear: null,
       schools: [],
 
-      // Saved profile (never modified by the slider)
-      savedScore: null,
-      mathScore: null,
-      englishScore: null,
+      // Saved profile (never modified by the sliders)
+      savedMath: null,
+      savedErw: null,
 
-      // Slider + preview state
-      score: DEFAULT_SCORE,
+      // The two section sliders — the only score inputs on the page
+      math: DEFAULT_SECTION,
+      erw: DEFAULT_SECTION,
+      sectionMin: SECTION_MIN,
+      sectionMax: SECTION_MAX,
 
       // Filters
       columns: COLUMNS,
@@ -122,6 +152,10 @@
       expandedId: null,
       showNoData: false,
 
+      // How many cards each list renders; the synced dataset is ~1.4k schools,
+      // roughly a third of which report no SAT percentiles at all.
+      shown: { safety: PAGE_SIZE, match: PAGE_SIZE, reach: PAGE_SIZE, noData: PAGE_SIZE },
+
       // Score prompt
       prompt: false,
       promptCurrent: "",
@@ -131,7 +165,7 @@
 
       async init() {
         await Promise.all([this.loadSchools(), this.loadProfile()]);
-        if (this.savedScore == null) this.prompt = true;
+        if (this.savedMath == null) this.prompt = true;
         this.ready = true;
       },
 
@@ -161,20 +195,42 @@
       async loadProfile() {
         const raw = await window.KorahSATAnalytics?.getProfile?.();
         if (!raw) return;
-        const cur = Number(raw.currentScore);
-        if (Number.isFinite(cur) && cur > 0) {
-          this.savedScore = cur;
-          this.score = cur;
+        this.applySaved(raw.currentScore, raw.mathScore, raw.englishScore);
+      },
+
+      // Section scores win when both are present; otherwise fall back to
+      // splitting the combined score. Shared by the initial load and the prompt.
+      applySaved(current, mathRaw, erwRaw) {
+        const ms = Number(mathRaw);
+        const es = Number(erwRaw);
+        const cur = Number(current);
+
+        if (Number.isFinite(ms) && ms > 0 && Number.isFinite(es) && es > 0) {
+          this.savedMath = clampSection(ms);
+          this.savedErw = clampSection(es);
+        } else if (Number.isFinite(cur) && cur > 0) {
+          const split = splitCombined(Math.max(400, Math.min(1600, cur)));
+          this.savedMath = split.math;
+          this.savedErw = split.erw;
+        } else {
+          return;
         }
-        const ms = Number(raw.mathScore);
-        const es = Number(raw.englishScore);
-        this.mathScore = Number.isFinite(ms) ? ms : null;
-        this.englishScore = Number.isFinite(es) ? es : null;
+        this.math = this.savedMath;
+        this.erw = this.savedErw;
       },
 
       // ── Filters / visibility ─────────────────────────────────────────────
+      setFilter(which, value) {
+        this[which] = value;
+        this.resetShown();
+      },
+
       get states() {
-        return [...new Set(this.schools.map((s) => s.state))].sort();
+        if (statesRef !== this.schools) {
+          statesCache = [...new Set(this.schools.map((s) => s.state))].filter(Boolean).sort();
+          statesRef = this.schools;
+        }
+        return statesCache;
       },
 
       visible() {
@@ -187,16 +243,42 @@
         });
       },
 
-      // Classified columns — recomputed reactively on every slider tick, so
-      // cards refill columns live while dragging.
+      // Classified columns — recomputed on every slider tick, so cards refill
+      // columns live while dragging, but only once per change rather than once
+      // per read. Reading every input to build the key is what keeps Alpine's
+      // dependency tracking correct.
       get groups() {
+        const key = [
+          this.math, this.erw, this.stateFilter, this.sizeFilter, this.typeFilter,
+        ].join("|");
+        if (groupsRef === this.schools && groupsKey === key) return groupsCache;
+
         const out = { safety: [], match: [], reach: [], noData: [] };
         for (const school of this.visible()) {
           const r = CollegeMatch.classify(this.score, school);
-          const key = r.label === "no-data" ? "noData" : r.label;
-          out[key].push({ school, ...r });
+          const bucket = r.label === "no-data" ? "noData" : r.label;
+          out[bucket].push({ school, ...r });
         }
+        groupsCache = out;
+        groupsKey = key;
+        groupsRef = this.schools;
         return out;
+      },
+
+      // Only the first `shown[key]` cards render; the rest sit behind "show more".
+      cardsIn(key) {
+        return this.groups[key].slice(0, this.shown[key]);
+      },
+
+      showMore(key) {
+        this.shown[key] += PAGE_SIZE;
+      },
+
+      // Moving a slider or a filter re-sorts every column, so the old "show
+      // more" depth no longer means anything — and keeping it would re-render
+      // hundreds of cards on every drag tick.
+      resetShown() {
+        this.shown = { safety: PAGE_SIZE, match: PAGE_SIZE, reach: PAGE_SIZE, noData: PAGE_SIZE };
       },
 
       isExpanded(id) {
@@ -207,27 +289,41 @@
         this.expandedId = this.expandedId === id ? null : id;
       },
 
-      // ── Slider ───────────────────────────────────────────────────────────
-      get isPreviewing() {
-        return this.savedScore != null && this.score !== this.savedScore;
+      // ── Sliders ──────────────────────────────────────────────────────────
+      // Combined is always the two sections added up, never its own input.
+      get score() {
+        return this.math + this.erw;
+      },
+
+      get savedScore() {
+        return this.savedMath == null ? null : this.savedMath + this.savedErw;
       },
 
       get hasSavedScore() {
-        return this.savedScore != null;
+        return this.savedMath != null;
       },
 
-      onSlider(v) {
-        this.score = Number(v);
+      get isPreviewing() {
+        return this.savedMath != null && (this.math !== this.savedMath || this.erw !== this.savedErw);
+      },
+
+      // section is "math" or "erw".
+      onSlider(section, v) {
+        this[section] = clampSection(Number(v));
+        this.resetShown();
       },
 
       backToScore() {
-        if (this.savedScore != null) this.score = this.savedScore;
+        if (this.savedMath == null) return;
+        this.math = this.savedMath;
+        this.erw = this.savedErw;
+        this.resetShown();
       },
 
-      // Where the saved-score tick sits on the 400–1600 track, as a %.
-      savedTickPct() {
-        if (this.savedScore == null) return 0;
-        return ((this.savedScore - 400) / 1200) * 100;
+      // Where a saved section tick sits on its 200–800 track, as a %.
+      savedTickPct(saved) {
+        if (saved == null) return 0;
+        return ((saved - SECTION_MIN) / (SECTION_MAX - SECTION_MIN)) * 100;
       },
 
       // ── Band-bar positioning (pure, no exports needed from CollegeMatch) ──
@@ -256,15 +352,12 @@
       },
 
       region(school) {
-        return school.city + ", " + school.state;
+        return [school.city, school.state].filter(Boolean).join(", ");
       },
 
       // ── Tips ──────────────────────────────────────────────────────────────
       studentTipsFor(school) {
-        return CollegeMatch.studentTip(
-          { mathScore: this.mathScore, englishScore: this.englishScore },
-          school
-        );
+        return CollegeMatch.studentTip({ mathScore: this.math, englishScore: this.erw }, school);
       },
 
       // ── Score prompt (reuses the saveProfile flow — no new storage) ──────
@@ -287,12 +380,7 @@
             mathScore: math || undefined,
             englishScore: eng || undefined,
           });
-          if (saved) {
-            this.savedScore = Number(saved.currentScore);
-            this.score = this.savedScore;
-            this.mathScore = saved.mathScore != null ? Number(saved.mathScore) : null;
-            this.englishScore = saved.englishScore != null ? Number(saved.englishScore) : null;
-          }
+          if (saved) this.applySaved(saved.currentScore, saved.mathScore, saved.englishScore);
         } catch (e) {
           console.warn("[College Match] saveProfile failed", e);
         }
