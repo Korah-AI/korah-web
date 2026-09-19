@@ -156,6 +156,54 @@
 </main>
 </div><!-- end .main-area-wrapper -->
 
+<!-- First-visit intro carousel -->
+<div id="potdIntro" class="potd-intro">
+  <div class="potd-intro-backdrop"></div>
+  <div class="potd-intro-content">
+    <button class="potd-intro-close" id="potdIntroClose" aria-label="Close">&times;</button>
+
+    <div class="potd-intro-slides">
+      <div class="potd-intro-slide is-active" data-slide="0">
+        <img src="../logo-images/newlogo11.png" class="potd-intro-icon" alt=""/>
+        <h2 class="potd-intro-title">One new problem every day</h2>
+        <p class="potd-intro-desc">
+          Every day you get a single SAT problem to work through. It takes a couple of
+          minutes, and it is the same problem everyone else is solving that day.
+        </p>
+      </div>
+
+      <div class="potd-intro-slide" data-slide="1">
+        <img src="../logo-images/newlogo10.png" class="potd-intro-icon" alt=""/>
+        <h2 class="potd-intro-title">Solve it yourself first</h2>
+        <p class="potd-intro-desc">
+          Work the problem out on your own, pick the answer you landed on, and hit
+          Submit. You find out right away whether you got it.
+        </p>
+      </div>
+
+      <div class="potd-intro-slide" data-slide="2">
+        <img src="../logo-images/newlogo5.png" class="potd-intro-icon" alt=""/>
+        <h2 class="potd-intro-title">Then compare with the walkthrough</h2>
+        <p class="potd-intro-desc">
+          Submitting unlocks the walkthrough video. Watch how the problem is solved and
+          compare it to your own method, whether you got it right or not.
+        </p>
+      </div>
+    </div>
+
+    <div class="potd-intro-dots" id="potdIntroDots">
+      <span class="potd-intro-dot is-active" data-dot="0"></span>
+      <span class="potd-intro-dot" data-dot="1"></span>
+      <span class="potd-intro-dot" data-dot="2"></span>
+    </div>
+
+    <div class="potd-intro-actions">
+      <button class="potd-intro-btn" id="potdIntroPrev" type="button" style="visibility:hidden;">Back</button>
+      <button class="potd-intro-btn is-primary" id="potdIntroNext" type="button">Next</button>
+    </div>
+  </div>
+</div>
+
 <script src="../app/timer-manager.js"></script>
 <script src="../study/js/sidebar.js"></script>
 <script src="../study/js/study-api.js"></script>
@@ -246,6 +294,43 @@
     walkthroughEl.hidden = false;
     walkthroughEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   });
+
+  // ── First-visit intro carousel ──
+  (function () {
+    const INTRO_KEY = 'korah_potd_intro_seen';
+    if (localStorage.getItem(INTRO_KEY)) return;
+
+    const modal = document.getElementById('potdIntro');
+    const slides = modal.querySelectorAll('.potd-intro-slide');
+    const dots = modal.querySelectorAll('.potd-intro-dot');
+    const prevBtn = document.getElementById('potdIntroPrev');
+    const nextBtn = document.getElementById('potdIntroNext');
+    let current = 0;
+
+    function goToSlide(idx) {
+      current = Math.max(0, Math.min(idx, slides.length - 1));
+      slides.forEach((s, i) => s.classList.toggle('is-active', i === current));
+      dots.forEach((d, i) => d.classList.toggle('is-active', i === current));
+      prevBtn.style.visibility = current === 0 ? 'hidden' : 'visible';
+      nextBtn.textContent = current === slides.length - 1 ? 'Start solving' : 'Next';
+    }
+
+    function close() {
+      modal.classList.remove('is-open');
+      localStorage.setItem(INTRO_KEY, 'true');
+    }
+
+    nextBtn.addEventListener('click', () => {
+      if (current === slides.length - 1) close();
+      else goToSlide(current + 1);
+    });
+    prevBtn.addEventListener('click', () => goToSlide(current - 1));
+    document.getElementById('potdIntroClose').addEventListener('click', close);
+    modal.querySelector('.potd-intro-backdrop').addEventListener('click', close);
+    dots.forEach(dot => dot.addEventListener('click', () => goToSlide(Number(dot.dataset.dot))));
+
+    setTimeout(() => modal.classList.add('is-open'), 600);
+  })();
 </script>
 
 </body>
