@@ -65,11 +65,41 @@
       </div>
     </section>
 
-    <section id="complete-view" class="ap-center-card" hidden>
-      <span class="ap-complete-icon"><i class="material-icons-round">check</i></span>
-      <p class="ap-eyebrow">Submission complete</p><h1>Your exam was submitted.</h1>
-      <p class="ap-lead">Milestone 2 logs the raw score to the browser console. The full results screen comes next.</p>
-      <a class="ap-primary-button" href="./index.html">Return to AP exams</a>
+    <section id="complete-view" class="ap-results" hidden>
+      <header class="ap-results-hero">
+        <div class="ap-results-headline">
+          <p class="ap-eyebrow">Submission complete</p>
+          <h1 id="results-title"></h1>
+          <p class="ap-lead" id="results-lead"></p>
+          <p class="ap-save-note" id="results-save-note"></p>
+        </div>
+        <div class="ap-score-dial">
+          <span class="ap-score-dial-label">Predicted AP score</span>
+          <strong id="results-ap-score">&ndash;</strong>
+          <span id="results-raw"></span>
+        </div>
+      </header>
+
+      <div class="ap-results-grid">
+        <section class="ap-results-card">
+          <h2>Performance by unit</h2>
+          <div id="results-units" class="ap-unit-list"></div>
+        </section>
+        <section class="ap-results-card">
+          <h2>Previous attempts</h2>
+          <div id="results-attempts" class="ap-attempt-list"></div>
+        </section>
+      </div>
+
+      <section class="ap-results-card">
+        <h2>Question review</h2>
+        <ol id="results-review" class="ap-review-list"></ol>
+      </section>
+
+      <div class="ap-results-actions">
+        <a class="ap-secondary-button" href="./index.html"><i class="material-icons-round">arrow_back</i> Back to AP exams</a>
+        <a class="ap-primary-button" href="" id="results-retake">Retake exam <i class="material-icons-round">refresh</i></a>
+      </div>
     </section>
   </main>
 
@@ -79,6 +109,44 @@
   <dialog id="transition-dialog" class="ap-dialog"><form method="dialog"><p class="ap-eyebrow" id="transition-eyebrow"></p><h2 id="transition-title"></h2><p id="transition-copy"></p><button id="start-next-part" value="next" class="ap-primary-button">Start next part</button></form></dialog>
   <script>
     window.KorahSidebar?.initBackground();
+  </script>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+    import { initApAnalytics } from "./js/ap-analytics.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
+      authDomain: "korah-app.firebaseapp.com",
+      projectId: "korah-app",
+      storageBucket: "korah-app.firebasestorage.app",
+      messagingSenderId: "226169460321",
+      appId: "1:226169460321:web:b166fc8260107c55dafc20"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // ap-exam.js awaits this before writing the attempt. It resolves to null
+    // for signed-out visitors, who still sit the exam and see full results —
+    // the exam is static JSON and needs no account. There is no sidebar here,
+    // so the page takes no guest gate.
+    window.KorahAPAnalyticsReady = new Promise((resolve, reject) => {
+      onAuthStateChanged(auth, async (user) => {
+        if (!user) {
+          resolve(null);
+          return;
+        }
+        try {
+          resolve(await initApAnalytics(app, user.uid));
+        } catch (error) {
+          reject(error);
+        }
+      });
+    });
+    // Mark the rejection handled here; persistAttempt still sees it when it awaits.
+    window.KorahAPAnalyticsReady.catch(() => {});
   </script>
 </body>
 </html>

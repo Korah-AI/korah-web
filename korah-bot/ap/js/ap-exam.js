@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const state = { exam: null, examPath: "", partIndex: 0, questionIndex: 0, answers: new Map(), reviewed: new Set(), remaining: 0, deadline: 0, fiveMinuteWarned: false, timerId: null, submitted: false };
+  const state = { exam: null, examPath: "", partIndex: 0, questionIndex: 0, answers: new Map(), reviewed: new Set(), remaining: 0, deadline: 0, fiveMinuteWarned: false, startedAt: 0, timerId: null, submitted: false };
   const $ = (id) => document.getElementById(id);
 
   function show(id) {
@@ -35,6 +35,7 @@
   function currentQuestion() { return currentPart().questions[state.questionIndex]; }
 
   function startPart(index) {
+    if (!state.startedAt) state.startedAt = Date.now();
     state.partIndex = index;
     state.questionIndex = 0;
     state.remaining = currentPart().durationSec;
@@ -137,9 +138,117 @@
     if (state.submitted) return;
     state.submitted = true;
     clearInterval(state.timerId);
-    const grade = window.KorahAPCore.gradeExam(state.exam, state.answers);
-    console.log("[AP exam submitted]", { examId: state.exam.id, ...grade, timedOut, answers: Object.fromEntries(state.answers) });
+    const core = window.KorahAPCore;
+    const grade = core.gradeExam(state.exam, state.answers);
+    const predicted = core.predictedScore(state.exam.curve, grade.rawScore);
+    const units = core.unitBreakdown(state.exam, state.answers);
     show("complete-view");
+    renderResults(grade, predicted, units, timedOut);
+    persistAttempt(grade, predicted, units, timedOut);
+  }
+
+  // Unit labels are only needed once the exam is over, so they are not part of
+  // the exam payload. Fall back to the raw unit id if the catalog is missing.
+  async function unitLabels() {
+    try {
+      const response = await fetch("./data/course-catalog.json", { cache: "no-store" });
+      if (!response.ok) throw new Error(`catalog returned ${response.status}`);
+      const catalog = await response.json();
+      const units = catalog.courses?.[state.exam.course]?.units || [];
+      return Object.fromEntries(units.map((unit) => [unit.id, unit.label]));
+    } catch (error) {
+      console.warn("[AP exam] unit labels unavailable", error);
+      return {};
+    }
+  }
+
+  async function renderResults(grade, predicted, units, timedOut) {
+    const esc = window.KorahAP.escapeHtml;
+    const labels = await unitLabels();
+
+    $("results-title").textContent = timedOut ? "Time expired. Exam submitted." : "Exam submitted.";
+    $("results-lead").textContent = `You answered ${grade.answered} of ${grade.total} questions and got ${grade.rawScore} right.`;
+    $("results-ap-score").textContent = predicted ?? "\u2013";
+    $("results-raw").textContent = `${grade.rawScore} / ${grade.total} raw`;
+    $("results-retake").href = window.KorahAP.examUrl(state.exam.id);
+
+    $("results-units").innerHTML = units.map((row) => {
+      const percent = Math.round((row.correct / row.total) * 100);
+      return `<div class="ap-unit-row${percent < 60 ? " is-weak" : ""}">
+        <strong>${esc(labels[row.unit] || row.unit)}</strong>
+        <span>${row.correct}/${row.total}</span>
+        <div class="ap-unit-bar"><i style="width:${percent}%"></i></div>
+      </div>`;
+    }).join("");
+
+    let number = 0;
+    $("results-review").innerHTML = state.exam.parts.flatMap((part) => part.questions.map((question) => {
+      number += 1;
+      const given = state.answers.get(question.id);
+      const correct = given === question.answer;
+      const text = (key) => question.choices.find((choice) => choice.key === key)?.text || "";
+      const yours = given
+        ? `<span class="ap-answer-chip is-missed">Your answer: ${esc(given)}. ${esc(text(given))}</span>`
+        : `<span class="ap-answer-chip is-missed">Not answered</span>`;
+      return `<li class="ap-review-row ${correct ? "is-correct" : "is-missed"}">
+        <span class="ap-review-mark"><i class="material-icons-round">${correct ? "check" : "close"}</i></span>
+        <div class="ap-review-body">
+          <div class="ap-review-meta"><span>Question ${number}</span><span>${esc(part.title)}</span><span>${esc(labels[question.unit] || question.unit)}</span></div>
+          <p class="ap-review-stem">${esc(question.stem)}</p>
+          <div class="ap-review-answers">
+            ${correct ? "" : yours}
+            <span class="ap-answer-chip is-correct">Correct: ${esc(question.answer)}. ${esc(text(question.answer))}</span>
+          </div>
+          <p class="ap-review-why">${esc(question.explanation)}</p>
+        </div>
+      </li>`;
+    })).join("");
+  }
+
+  function renderAttempts(attempts, currentId) {
+    if (!attempts.length) {
+      $("results-attempts").innerHTML = `<p class="ap-muted">This is your first attempt at this exam.</p>`;
+      return;
+    }
+    $("results-attempts").innerHTML = attempts.map((attempt) => {
+      const when = new Date(attempt.ts).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+      return `<div class="ap-attempt-row${attempt.id === currentId ? " is-current" : ""}">
+        <span>${attempt.id === currentId ? "This attempt" : when}</span>
+        <b>${attempt.rawScore}/${attempt.total}${attempt.predictedScore ? ` \u00b7 AP ${attempt.predictedScore}` : ""}</b>
+      </div>`;
+    }).join("");
+  }
+
+  async function persistAttempt(grade, predicted, units, timedOut) {
+    const note = $("results-save-note");
+    try {
+      const analytics = await (window.KorahAPAnalyticsReady || Promise.resolve(null));
+      if (!analytics) {
+        note.innerHTML = `<i class="material-icons-round">info</i>Sign in to save this attempt to your account.`;
+        $("results-attempts").innerHTML = `<p class="ap-muted">Sign in to keep a history of your attempts.</p>`;
+        return;
+      }
+      const attemptId = await analytics.recordAttempt({
+        examId: state.exam.id,
+        course: state.exam.course,
+        title: state.exam.title,
+        rawScore: grade.rawScore,
+        total: grade.total,
+        answered: grade.answered,
+        predictedScore: predicted,
+        units: Object.fromEntries(units.map((row) => [row.unit, { correct: row.correct, total: row.total }])),
+        answers: Object.fromEntries(state.answers),
+        timedOut,
+        elapsedSec: state.startedAt ? Math.round((Date.now() - state.startedAt) / 1000) : 0,
+      });
+      note.innerHTML = `<i class="material-icons-round">cloud_done</i>Saved to your account.`;
+      renderAttempts(await analytics.getAttempts(state.exam.id), attemptId);
+    } catch (error) {
+      console.error("[AP exam] could not save attempt", error);
+      note.classList.add("is-error");
+      note.innerHTML = `<i class="material-icons-round">cloud_off</i>Your score could not be saved. The results below are still complete.`;
+      $("results-attempts").innerHTML = `<p class="ap-muted">Attempt history is unavailable.</p>`;
+    }
   }
 
   $("start-exam").addEventListener("click", () => startPart(0));
