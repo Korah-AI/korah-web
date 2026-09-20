@@ -188,14 +188,18 @@ protection for serverless handlers.
 
 `login.html` supports email-based account access and Google sign-in through
 `GoogleAuthProvider`. Authenticated pages observe the session with
-`onAuthStateChanged`; pages can redirect unauthenticated visitors to login and
-provide sign-out actions for active users.
+`onAuthStateChanged`. Signed-out visitors are not redirected: pages call
+`startGuestSession()` and `initGuestGate()` from `guest-gate.js` to browse
+read-only, and `startAuthGuard()` raises an auth wall in place if a session
+drops mid-visit. Only `study/*` still redirects, because those pages render
+nothing but `users/{uid}` data.
 
 ### Cloud Firestore
 
 User data is stored below the authenticated user's document namespace. The
 central adapter in `app/data/firestore-store.js` handles the main application
-records, while `sat/js/sat-analytics.js` owns SAT-specific analytics.
+records, while `sat/js/sat-analytics.js` and `ap/js/ap-analytics.js` own the
+SAT and AP analytics respectively.
 
 Representative paths include:
 
@@ -209,6 +213,8 @@ users/{uid}/satTotals/summary
 users/{uid}/satSkills/{skillCode}
 users/{uid}/satAttempts/{attemptId}
 users/{uid}/satBookmarks/{questionId}
+users/{uid}/apAttempts/{attemptId}
+users/{uid}/apTotals/summary
 satExplanations/{questionId}
 ```
 
