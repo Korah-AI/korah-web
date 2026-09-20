@@ -619,42 +619,48 @@
   background: rgba(52,211,153,.32);
 }
 
-/* Loading Overlay */
+/* Analysis loader — a popup, not a gate. The layer passes clicks through, only
+   the card itself takes them, and a click anywhere else dismisses it while the
+   passes keep running behind the review-panel skeleton. */
 .essay-loading-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(6,4,15,.7);
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
+  padding: 0 1rem 1.75rem;
+  pointer-events: none;
   z-index: 100;
 }
 .essay-loading-card {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
   background: var(--sf2);
   border: 0.0625rem solid var(--bd);
   border-radius: 1.125rem;
-  padding: 2.5rem;
-  text-align: center;
-  max-width: 20rem;
+  padding: 0.875rem 1.125rem;
+  max-width: 22rem;
 }
 .essay-loading-spinner {
-  width: 2.5rem;
-  height: 2.5rem;
-  border: 0.1875rem solid var(--bd);
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 0.125rem solid var(--bd);
   border-top-color: var(--p4);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
-  margin: 0 auto 1rem;
+  flex-shrink: 0;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 .essay-loading-title {
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 0.8125rem;
   color: var(--tx);
-  margin: 0 0 0.375rem;
+  margin: 0 0 0.125rem;
 }
 .essay-loading-sub {
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   color: var(--tx2);
   margin: 0;
 }
@@ -1035,8 +1041,6 @@ html[data-theme="light"] .cp-grey .essay-rec-card.active { background: #ffffff; 
 .cp-grey .essay-highlight.diagnostic:hover, .cp-grey .essay-highlight.diagnostic.active { background: color-mix(in srgb, var(--tone-amber) 40%, var(--cp-sf)); }
 .cp-grey .essay-highlight.structural:hover, .cp-grey .essay-highlight.structural.active { background: color-mix(in srgb, var(--tone-green) 40%, var(--cp-sf)); }
 
-/* The scrim stays translucent — it is a scrim — but the card on it is solid. */
-.cp-grey .essay-loading-overlay { background: rgba(0, 0, 0, 0.45); }
 .cp-grey .essay-loading-card { box-shadow: 0 0.25rem 0 0 var(--cp-bd); }
 .cp-grey .essay-loading-spinner { border-color: var(--cp-bd); border-top-color: var(--tone-blue); }
 
@@ -1530,19 +1534,24 @@ html[data-theme="light"] .cp-grey .delete-modal-content {
   border-bottom: 0.0625rem solid var(--cp-bd);
   flex-shrink: 0;
 }
+/* Collapses on grid rows rather than a max-height cap, so however many themes
+   come back they all render; a fixed cap clipped the last row. */
 .essay-themes-body {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 0.3s ease, opacity 0.3s ease;
+  opacity: 1;
+}
+.essay-themes-inner {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  max-height: 45rem;
+  min-height: 0;
   overflow: hidden;
-  transition: max-height 0.3s ease, opacity 0.3s ease;
-  opacity: 1;
 }
 .essay-themes-panel.collapsed .essay-themes-body {
-  max-height: 0;
+  grid-template-rows: 0fr;
   opacity: 0;
-  gap: 0;
 }
 .essay-themes-panel.collapsed .essay-score-toggle .material-icons-round {
   transform: rotate(180deg);
@@ -1585,6 +1594,43 @@ html[data-theme="light"] .cp-grey .delete-modal-content {
   line-height: 1.5;
   color: var(--tx);
 }
+
+/* ── Review-panel skeleton ───────────────────────────────────────────────────
+   Holds the shape of the scores, themes and recommendation cards while the
+   passes run, so the panel reads as loading rather than as empty. */
+.essay-review-skeleton {
+  display: none;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1rem 1.25rem;
+  flex-shrink: 0;
+}
+.essay-review-panel.is-loading > *:not(.essay-review-skeleton) { display: none !important; }
+.essay-review-panel.is-loading .essay-review-skeleton { display: flex; }
+.sk-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+.sk-bar,
+.sk-card {
+  background: var(--cp-sf2);
+  animation: skPulse 1.4s ease-in-out infinite;
+}
+.sk-bar {
+  height: 0.75rem;
+  border-radius: 62.4375rem;
+}
+.sk-card {
+  height: 4.5rem;
+  border-radius: 0.625rem;
+  border: 0.0625rem solid var(--cp-bd);
+}
+.sk-card.is-short { height: 3.25rem; }
+.sk-block > *:nth-child(2) { animation-delay: 0.15s; }
+.sk-block > *:nth-child(3) { animation-delay: 0.3s; }
+.sk-block > *:nth-child(4) { animation-delay: 0.45s; }
+@keyframes skPulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.85; } }
 
 /* The question the student typed, above the model's answer. */
 .rec-question {

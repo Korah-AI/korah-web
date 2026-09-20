@@ -317,16 +317,19 @@ function renderThemes(data) {
   }
 
   panel.style.display = 'block';
+  // The inner wrapper is what the collapse animation shrinks; see .essay-themes-inner.
   body.innerHTML = `
-    ${data.portrait ? `<p class="themes-portrait">${escapeHtml(data.portrait)}</p>` : ''}
-    ${data.themes.map(t => `
-      <div class="theme-row">
-        <div class="theme-head">
-          <span class="theme-name">${escapeHtml(t.name || '')}</span>
-          ${t.quality ? `<span class="theme-quality">${escapeHtml(t.quality)}</span>` : ''}
-        </div>
-        <p class="theme-note">${escapeHtml(t.note || '')}</p>
-      </div>`).join('')}`;
+    <div class="essay-themes-inner">
+      ${data.portrait ? `<p class="themes-portrait">${escapeHtml(data.portrait)}</p>` : ''}
+      ${data.themes.map(t => `
+        <div class="theme-row">
+          <div class="theme-head">
+            <span class="theme-name">${escapeHtml(t.name || '')}</span>
+            ${t.quality ? `<span class="theme-quality">${escapeHtml(t.quality)}</span>` : ''}
+          </div>
+          <p class="theme-note">${escapeHtml(t.note || '')}</p>
+        </div>`).join('')}
+    </div>`;
 }
 
 function filterByDimension(key) {

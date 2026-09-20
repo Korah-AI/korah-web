@@ -274,6 +274,27 @@
 
     <!-- Right: Review -->
     <div class="essay-review-panel">
+      <!-- Stands in for the panel while the analysis passes run -->
+      <div class="essay-review-skeleton" aria-hidden="true">
+        <div class="sk-block">
+          <div class="sk-bar" style="width: 35%;"></div>
+          <div class="sk-bar" style="width: 60%; height: 1.5rem;"></div>
+          <div class="sk-bar"></div>
+          <div class="sk-bar"></div>
+        </div>
+        <div class="sk-block">
+          <div class="sk-bar" style="width: 50%;"></div>
+          <div class="sk-card"></div>
+          <div class="sk-card"></div>
+        </div>
+        <div class="sk-block">
+          <div class="sk-bar" style="width: 45%;"></div>
+          <div class="sk-card is-short"></div>
+          <div class="sk-card is-short"></div>
+          <div class="sk-card is-short"></div>
+        </div>
+      </div>
+
       <!-- Score Panel -->
       <div id="score-panel" class="essay-score-panel" style="display: none;">
         <div class="essay-score-header">
@@ -332,12 +353,15 @@
     </button>
   </div>
 
-  <!-- Loading Overlay -->
+  <!-- Analysis loader. Floats over the page and dismisses on an outside click;
+       the work carries on and the review panel keeps its skeleton. -->
   <div id="analysis-loading" class="essay-loading-overlay" style="display: none;">
     <div class="essay-loading-card">
       <div class="essay-loading-spinner"></div>
-      <h3 class="essay-loading-title">Analyzing your essay...</h3>
-      <p class="essay-loading-sub" id="loading-status">Running annotation pass...</p>
+      <div>
+        <h3 class="essay-loading-title">Analyzing your essay...</h3>
+        <p class="essay-loading-sub" id="loading-status">Running annotation pass...</p>
+      </div>
     </div>
   </div>
 
@@ -599,14 +623,37 @@
     analyze(content, window._lastScores);
   });
 
+  /* The loader is advisory: clicking anywhere outside its card puts it away and
+     the analysis keeps going. Each run starts it over. */
+  const loaderEl = document.getElementById('analysis-loading');
+
+  function showLoader() {
+    loaderEl.style.display = 'flex';
+  }
+
+  function hideLoader() {
+    loaderEl.style.display = 'none';
+  }
+
+  document.addEventListener('pointerdown', (e) => {
+    if (loaderEl.style.display === 'none') return;
+    if (e.target.closest('.essay-loading-card')) return;
+    hideLoader();
+  });
+
+  function setReviewLoading(on) {
+    const panel = document.querySelector('.essay-review-panel');
+    if (panel) panel.classList.toggle('is-loading', on);
+  }
+
   /* Both the setup screen's Analyze button and the pill land here. Handing the
      old scores back gives the score bars their +/- deltas on a re-run. */
   async function analyze(content, previousScores) {
     const d = getAlpineData();
     if (!d) return;
-    const loading = document.getElementById('analysis-loading');
     const status = document.getElementById('loading-status');
-    loading.style.display = 'flex';
+    showLoader();
+    setReviewLoading(true);
     status.textContent = 'Scoring essay...';
 
     try {
@@ -620,6 +667,7 @@
       window._lastScores = scores;
       EssayScoring.render(scores, previousScores);
       EssayScoring.renderRecommendations(scores);
+      setReviewLoading(false);
 
       // The overall read. A new set of cards starts with nothing resolved.
       status.textContent = 'Reading for themes...';
@@ -653,7 +701,8 @@
       }
     }
 
-    loading.style.display = 'none';
+    hideLoader();
+    setReviewLoading(false);
     setBaseline(content);
   }
 
