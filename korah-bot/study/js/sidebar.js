@@ -481,7 +481,10 @@ function showSidebarDeleteModal(name, onConfirm) {
 
   function initBackground() {
     const canvas = document.getElementById("bg-canvas");
-    if (!canvas) return;
+    // Pages may start the background early and still call initSidebar() later;
+    // a second call would leave two requestAnimationFrame loops running.
+    if (!canvas || canvas.dataset.bgInit) return;
+    canvas.dataset.bgInit = "1";
     const ctx = canvas.getContext("2d");
     let w, h, stars = [], shootingStars = [], dots = [];
 
