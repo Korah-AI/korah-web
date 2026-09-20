@@ -4,6 +4,9 @@
 > issue. PR #46 review requires the current 45-question format, original
 > AP-style questions informed by credited topic references, representative
 > visual assets, and a documented AP score prediction curve.
+>
+> The picker, player, results screen, and Firestore persistence named below as
+> later milestones have since shipped under `ap/`. AP US History has not.
 
 ## 1. Goal
 
