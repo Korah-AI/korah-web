@@ -82,11 +82,11 @@
     const question = currentQuestion();
     $("part-label").textContent = `${part.title} · Calculator ${part.calculator}`;
     $("question-position").textContent = `Question ${state.questionIndex + 1} of ${part.questions.length}`;
-    $("question-stem").innerHTML = window.KorahAP.renderInlineMath(question.stem);
+    $("question-stem").innerHTML = window.KorahAP.escapeHtml(question.stem);
     const examUrl = new URL(state.examPath, location.href);
-    $("question-assets").innerHTML = (question.assets || []).map((asset) => `<img src="${new URL(asset.path, examUrl).href}" alt="${asset.alt}">`).join("");
+    $("question-assets").innerHTML = (question.assets || []).map((asset) => `<img src="${new URL(asset.path, examUrl).href}" alt="${window.KorahAP.escapeHtml(asset.alt)}">`).join("");
     $("answer-list").innerHTML = `<legend class="sr-only">Answer choices</legend>` + question.choices.map((choice) => `
-      <label class="ap-choice"><input type="radio" name="answer" value="${choice.key}" ${state.answers.get(question.id) === choice.key ? "checked" : ""}><span class="ap-choice-key">${choice.key}</span><span>${window.KorahAP.renderInlineMath(choice.text)}</span></label>`).join("");
+      <label class="ap-choice"><input type="radio" name="answer" value="${choice.key}" ${state.answers.get(question.id) === choice.key ? "checked" : ""}><span class="ap-choice-key">${choice.key}</span><span>${window.KorahAP.escapeHtml(choice.text)}</span></label>`).join("");
     $("answer-list").querySelectorAll("input").forEach((input) => input.addEventListener("change", () => { state.answers.set(question.id, input.value); updateNavigator(); }));
     $("previous-question").disabled = state.questionIndex === 0;
     $("next-question").innerHTML = state.questionIndex === part.questions.length - 1 ? `Review part <i class="material-icons-round">fact_check</i>` : `Next <i class="material-icons-round">arrow_forward</i>`;
