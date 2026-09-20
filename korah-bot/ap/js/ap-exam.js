@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const state = { exam: null, partIndex: 0, questionIndex: 0, answers: new Map(), reviewed: new Set(), remaining: 0, timerId: null, submitted: false };
+  const state = { exam: null, examPath: "", partIndex: 0, questionIndex: 0, answers: new Map(), reviewed: new Set(), remaining: 0, timerId: null, submitted: false };
   const $ = (id) => document.getElementById(id);
 
   function show(id) {
@@ -18,6 +18,7 @@
     const examResponse = await fetch(entry.path, { cache: "no-store" });
     if (!examResponse.ok) throw new Error(`exam returned ${examResponse.status}`);
     state.exam = await examResponse.json();
+    state.examPath = entry.path;
     renderPreExam(entry);
   }
 
@@ -75,7 +76,8 @@
     $("part-label").textContent = `${part.title} · Calculator ${part.calculator}`;
     $("question-position").textContent = `Question ${state.questionIndex + 1} of ${part.questions.length}`;
     $("question-stem").innerHTML = window.KorahAP.renderInlineMath(question.stem);
-    $("question-assets").innerHTML = (question.assets || []).map((asset) => `<img src="${new URL(asset.path, new URL(`./data/calc-ab/mock-1.json`, location.href)).href}" alt="${asset.alt}">`).join("");
+    const examUrl = new URL(state.examPath, location.href);
+    $("question-assets").innerHTML = (question.assets || []).map((asset) => `<img src="${new URL(asset.path, examUrl).href}" alt="${asset.alt}">`).join("");
     $("answer-list").innerHTML = `<legend class="sr-only">Answer choices</legend>` + question.choices.map((choice) => `
       <label class="ap-choice"><input type="radio" name="answer" value="${choice.key}" ${state.answers.get(question.id) === choice.key ? "checked" : ""}><span class="ap-choice-key">${choice.key}</span><span>${window.KorahAP.renderInlineMath(choice.text)}</span></label>`).join("");
     $("answer-list").querySelectorAll("input").forEach((input) => input.addEventListener("change", () => { state.answers.set(question.id, input.value); updateNavigator(); }));
