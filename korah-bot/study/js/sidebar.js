@@ -1638,7 +1638,7 @@ function showSidebarDeleteModal(name, onConfirm) {
   window.KorahSidebar = {
     getSessions, getStudyItems, getTypeEmoji, getModeIconHtml, getTypeIconHtml,
     renderChatHistory, renderStudyItemsHistory, updateActiveItem, initSidebar,
-    initTimerWidget, updateTimerWidget,
+    initTimerWidget, updateTimerWidget, initBackground,
     onCollapseChange: null,
   };
 })();
