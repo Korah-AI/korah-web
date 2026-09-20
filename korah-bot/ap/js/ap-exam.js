@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const state = { exam: null, examPath: "", partIndex: 0, questionIndex: 0, answers: new Map(), reviewed: new Set(), remaining: 0, timerId: null, submitted: false };
+  const state = { exam: null, examPath: "", partIndex: 0, questionIndex: 0, answers: new Map(), reviewed: new Set(), remaining: 0, deadline: 0, fiveMinuteWarned: false, timerId: null, submitted: false };
   const $ = (id) => document.getElementById(id);
 
   function show(id) {
@@ -38,6 +38,8 @@
     state.partIndex = index;
     state.questionIndex = 0;
     state.remaining = currentPart().durationSec;
+    state.deadline = Date.now() + state.remaining * 1000;
+    state.fiveMinuteWarned = false;
     clearInterval(state.timerId);
     state.timerId = setInterval(tick, 1000);
     renderNavigator();
@@ -47,9 +49,14 @@
   }
 
   function tick() {
-    state.remaining = window.KorahAPCore.nextRemaining(state.remaining);
+    state.remaining = window.KorahAPCore.remainingSeconds(state.deadline, Date.now());
     renderTimer();
-    if (state.remaining === 300) announceFiveMinutes();
+    // Latched, not an equality check: a throttled background tab can skip
+    // straight past the 300 second mark.
+    if (state.remaining <= 300 && !state.fiveMinuteWarned) {
+      state.fiveMinuteWarned = true;
+      announceFiveMinutes();
+    }
     if (state.remaining <= 0) finishPart(true);
   }
 

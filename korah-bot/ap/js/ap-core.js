@@ -16,9 +16,9 @@
     };
   }
 
-  function nextRemaining(seconds) {
-    return Math.max(0, seconds - 1);
+  function remainingSeconds(deadlineMs, nowMs) {
+    return Math.max(0, Math.ceil((deadlineMs - nowMs) / 1000));
   }
 
-  return { gradeExam, nextRemaining };
+  return { gradeExam, remainingSeconds };
 });
