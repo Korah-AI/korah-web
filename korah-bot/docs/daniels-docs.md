@@ -278,6 +278,10 @@ korah-bot/
 |   `-- js/                  Shared study API, Firebase, and sidebar modules
 |-- sat/                     Question bank, player, Rush, math chat, dashboard
 |   `-- js/                  SAT selection, player, analytics, and shared logic
+|-- ap/                      AP mock exam picker and timed exam player
+|   |-- js/                  AP picker, player, grading, and shared helpers
+|   |-- data/                Exam manifest and per-course exam JSON
+|   `-- assets/              Per-question figures referenced by the exam JSON
 |-- app/
 |   |-- korah-chat.js        Main chat controller
 |   |-- timer-manager.js     Productivity timer behavior
@@ -289,6 +293,7 @@ korah-bot/
 |   `-- _lib/                Shared backend helpers
 |-- sidebar.html             Shared application navigation
 |-- sidebar-loader.js        Sidebar loading behavior
+|-- guest-gate.js            Guest browsing, auth wall, and read-only DB stub
 `-- auth-guard.js            Shared authentication guard
 ```
 
