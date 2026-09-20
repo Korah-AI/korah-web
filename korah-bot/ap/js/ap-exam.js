@@ -119,12 +119,18 @@
   function finishPart(timedOut) {
     clearInterval(state.timerId);
     state.timerId = null;
-    if (state.partIndex === 0) {
-      $("transition-dialog").querySelector("h2").textContent = timedOut ? "Time expired. Calculator section next" : "Calculator section next";
-      $("transition-dialog").showModal();
+    const next = state.exam.parts[state.partIndex + 1];
+    if (!next) {
+      submitExam(timedOut);
       return;
     }
-    submitExam(timedOut);
+    const done = currentPart();
+    const count = next.questions.length;
+    $("transition-eyebrow").textContent = `${done.title} complete`;
+    $("transition-title").textContent = timedOut ? `Time expired. ${next.title} next` : `${next.title} next`;
+    $("transition-copy").textContent = `Your ${done.title} answers are locked. ${next.title} has ${count} question${count === 1 ? "" : "s"} and calculator use is ${next.calculator}.`;
+    $("start-next-part").textContent = `Start ${next.title}`;
+    $("transition-dialog").showModal();
   }
 
   function submitExam(timedOut) {
@@ -142,7 +148,7 @@
   $("mark-review").addEventListener("click", () => { const id = currentQuestion().id; state.reviewed.has(id) ? state.reviewed.delete(id) : state.reviewed.add(id); renderQuestion(); });
   $("submit-part").addEventListener("click", requestSubmit);
   $("confirm-submit").addEventListener("click", (event) => { event.preventDefault(); $("submit-dialog").close(); finishPart(false); });
-  $("start-next-part").addEventListener("click", () => startPart(1));
+  $("start-next-part").addEventListener("click", () => startPart(state.partIndex + 1));
   window.addEventListener("beforeunload", (event) => { if (state.timerId && !state.submitted) { event.preventDefault(); event.returnValue = ""; } });
 
   loadExam().catch((error) => { console.error("[AP exam]", error); $("loading-view").innerHTML = `<div class="ap-error"><strong>The exam could not be loaded.</strong><span>Use Live Server and try again.</span></div>`; });
