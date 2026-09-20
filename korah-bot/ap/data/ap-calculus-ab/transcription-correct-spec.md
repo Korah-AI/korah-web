@@ -185,9 +185,10 @@ graded as today; delimiters only add renderability.
   `el('compare-student').innerHTML = safeHtml(transcript)` + `renderMath(...)`.
   KaTeX + DOMPurify are already loaded on this page.
 - **Progress detail** (`ap/progress.html:365`, `ap/js/ap-progress.js:138`):
-  Phase 2 — the progress page doesn't include KaTeX today; add
-  `katex.min.js` + `auto-render.min.js` + DOMPurify there, then the same
-  innerHTML + renderMath change.
+  Phase 2 — the progress page already ships `katex.min.js` +
+  `auto-render.min.js` (and the KaTeX CSS); add DOMPurify there, then run the
+  same renderMath pass over the freshly injected transcript and verdict HTML
+  (see §10).
 
 ---
 
@@ -269,12 +270,12 @@ KorahMathEditor.TOKENS                     // the data-driven token catalog
 
 ## 8. Testing & canned mode
 
-- **Fixtures:** create `ap/data/ap-calculus-ab/canned-transcript.json`
-  (`loadCannedTranscript`, `ap/js/ap-grader.js:127`; file currently absent for
-  this course). Include a transcript with several `\(...\)` math sections and at
-  least one deliberate mis-transcription (e.g. wrong superscript) so the
-  correction flow is exercisable offline. The `?canned=1` / localhost route
-  already feeds this state with zero API calls.
+- **Fixtures:** `ap/data/ap-calculus-ab/canned-transcript.json` now ships with
+  several `\(...\)` math sections and one deliberate mis-transcription in part
+  (d) (previously absent for this course). `canned-grading.json` ships alongside
+  it (9 verdicts against `calc-ab-2025-q1`) so the `?canned=1` route feeds both
+  the transcription review step and the full feedback screen with zero API
+  calls.
 - **Round-trip test:** `setValue(raw)` → DOM → `getValue()` must return `raw`
   byte-for-byte for a library of inputs (balanced/unbalanced, plain text with
   no math, math with `\\n` line breaks, multiline).
@@ -314,7 +315,25 @@ KorahMathEditor.TOKENS                     // the data-driven token catalog
       with a located message.
 - [ ] Feedback *Your response* column renders math.
 
-**Phase 2:** Progress page transcript math; optional per-course canned fixtures.
+**Phase 2 (progress page + canned fixtures):**
+- [x] `ap/progress.html` renders `\(...\)`/`$$...$$` in the attempt-detail
+      transcript, verdict feedback, and verdict criterion labels via a
+      `renderMath()` helper (same delimiters as `ap-attempt.js`); content is
+      still `esc()`'d before injection, then KaTeX runs on the text nodes.
+- [x] DOMPurify added to `progress.html` (KaTeX + auto-render were already
+      loaded there, contrary to the §4.5 draft assumption).
+- [x] `ap/data/ap-calculus-ab/canned-grading.json` added — 9 verdicts against
+      `calc-ab-2025-q1` so the `?canned=1` route feeds the whole feedback
+      screen offline (previously missing for this course).
+- [x] `ap/data/ap-calculus-ab/canned-transcript.json` rewritten to be a
+      coherent student response to `calc-ab-2025-q1` (was a generic tank
+      problem matching no real FRQ), including a deliberate mis-transcription
+      in part (d).
+- [x] `ap/data/ap-calculus-ab/placeholder-attempts.json` added — six demo
+      attempts (real `frqId`s + rubric point ids, math-laden transcripts, one
+      disputed point) so the guest/offline Progress view has data to render
+      (the demo for this course was previously empty).
+
 **Phase 3:** Reuse the editor/palette for the typed answer box (`#answer-box`).
 
 ---

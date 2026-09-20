@@ -177,6 +177,7 @@
 
 </div><!-- end .main-area-wrapper -->
 
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
@@ -213,6 +214,25 @@
 
     function esc(text) {
       return String(text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // Render \(...\) and $$...$$ (house convention) inside a container with KaTeX.
+    // The container's HTML is esc()'d before insertion, so this is a pure
+    // text-node transform — same delimiters as ap/js/ap-attempt.js renderMath().
+    function renderMath(container) {
+      if (container && typeof renderMathInElement === 'function') {
+        try {
+          renderMathInElement(container, {
+            delimiters: [
+              { left: '\\(', right: '\\)', display: false },
+              { left: '$$', right: '$$', display: true },
+            ],
+            throwOnError: false,
+          });
+        } catch (e) {
+          console.warn('[KorahAP] katex render failed', e);
+        }
+      }
     }
 
     function dateLabel(iso) {
@@ -366,6 +386,8 @@
             </div>
           </div>`;
       }).join('');
+      // Phase 2: render LaTeX inside the freshly-injected transcript/verdict HTML.
+      el.querySelectorAll('.ap-detail-transcript, .ap-detail-verdict').forEach(renderMath);
     }
 
     function applyCourseMeta() {
