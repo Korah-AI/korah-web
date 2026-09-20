@@ -54,10 +54,15 @@
   function el(id) { return $(id); }
 
   let editor = null;
+  let answerEditor = null;
 
   function updateTranscriptCount() {
     const c = el('transcript-count');
     if (c) c.textContent = (editor ? editor.getValue().length : 0).toLocaleString() + ' / 20,000';
+  }
+  function updateAnswerCount() {
+    const c = el('answer-count');
+    if (c) c.textContent = (answerEditor ? answerEditor.getValue().length : 0).toLocaleString() + ' / 20,000';
   }
   function showView(name) {
     Object.keys(views).forEach((k) => { $(views[k]).hidden = k !== name; });
@@ -478,6 +483,20 @@
       updateTranscriptCount();
     }
 
+    // Phase 3: same editor/palette backs the typed answer box (typing state).
+    // wrapMath wraps palette inserts in \(...\) so typed math renders as chips.
+    const answerHost = el('answer-box');
+    if (answerHost && window.KorahMathEditor) {
+      answerEditor = window.KorahMathEditor.attach(answerHost, {
+        value: state.typed,
+        wrapMath: true,
+        noun: 'answer',
+        onInput: (s) => { state.typed = s; updateAnswerCount(); },
+      });
+      window.KorahMathEditor.attachPalette(el('answer-palette-host'), answerEditor);
+      updateAnswerCount();
+    }
+
     const frq = await window.KorahAP.getFrq(courseSlug, frqId);
     if (!frq) {
       $('ap-app-root').innerHTML = `<div class="ap-page" style="padding:1.25rem"><p>FRQ not found. <a href="./frqs.html?course=${encodeURIComponent(courseSlug)}" style="color:var(--tone-blue)">Back to ${esc(state.course.name)}</a>.</p></div>`;
@@ -504,7 +523,7 @@
       showView('active');
     });
 
-    el('answer-box').addEventListener('input', (e) => { state.typed = e.target.value; });
+    // answer-box typing is handled by the math editor's onInput (state.typed).
 
     el('photo-input').addEventListener('change', (e) => {
       addFiles(e.target.files);
@@ -536,9 +555,14 @@
           el('submit-panel').textContent = 'Could not read the photos: ' + (err && err.message ? err.message : 'unknown error');
         }
       } else {
-        const typed = el('answer-box').value.trim();
+        const typed = (answerEditor ? answerEditor.getValue() : el('answer-box').textContent || '').trim();
         if (!typed) {
           el('submit-panel').textContent = 'Type an answer or add a photo of your work first.';
+          return;
+        }
+        const check = answerEditor ? answerEditor.validate() : { ok: true };
+        if (!check.ok) {
+          el('submit-panel').textContent = check.problems[0].message;
           return;
         }
         state.transcript = typed;

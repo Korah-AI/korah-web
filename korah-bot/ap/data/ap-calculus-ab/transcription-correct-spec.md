@@ -206,9 +206,14 @@ One plain-JS IIFE exposing `window.KorahMathEditor` (matches repo style of
 `ap-grader.js` / `ap-attempt.js`):
 
 ```js
-KorahMathEditor.mount(host /* Element */, {
+KorahMathEditor.attach(host /* Element */, {
   value: string,          // initial raw LaTeX
   onInput: (source) => {},// fired (throttled) on every change
+  wrapMath: boolean,      // Phase 3 (typed answer box): wrap palette inserts in
+                          // \(...\) when the caret is in plain text so they render
+                          // as chips; inserts inside an open raw chip edit stay bare
+  noun: string,           // label for the length-limit message ("answer" for the
+                          // typed box, "transcription" by default)
 })
   → instance
 
@@ -235,6 +240,10 @@ KorahMathEditor.TOKENS                     // the data-driven token catalog
 | confirm handler `:529` `el('transcript-box').value.trim()` | `const edited = editor.getValue().trim()`; block on `!editor.validate().ok` with a located message |
 | retranscribe `:539` `el('transcript-box').value = state.transcript` | `editor.reset(state.transcript)` |
 | `attempt.html:194` `<textarea>` | `<div id="transcript-editor" ...>`, plus palette host + script tag for `transcript-editor.js` (next to the other scripts, after KaTeX) |
+| `init()` — answer editor mount (Phase 3) | `answerEditor = attach(el('answer-box'), { wrapMath: true, noun: 'answer', onInput })` + `attachPalette(el('answer-palette-host'), answerEditor)` + `#answer-count` |
+| `wireEvents()` — answer box `input` listener (Phase 3) | removed; editor `onInput` keeps `state.typed` and the counter in sync |
+| submit `:539` typed path `el('answer-box').value.trim()` (Phase 3) | `answerEditor.getValue().trim()`; on `!answerEditor.validate().ok` show `problems[0].message` and return |
+| `attempt.html:171` `<textarea id="answer-box">` (Phase 3) | contenteditable div host + `#answer-palette-host` + `#answer-count` meta line |
 
 ---
 
@@ -283,8 +292,10 @@ KorahMathEditor.TOKENS                     // the data-driven token catalog
   one chip raw → commits → `getValue()` reflects only that change.
 - **Validation tests:** unbalanced-at-confirm blocks; under-200px/mobile layout
   smoke test.
-- **Regression:** typed-response flow (no photos) unchanged; grading output +
-  Firestore write shape unchanged.
+- **Regression (Phase 3):** typed-response flow (no photos) now runs through
+  the same editor with `wrapMath: true` — palette inserts auto-wrap in
+  `\(...\)`, and submit validates with the `noun: "answer"` length message.
+  Grading output + Firestore write shape unchanged.
 
 ---
 
@@ -292,9 +303,9 @@ KorahMathEditor.TOKENS                     // the data-driven token catalog
 
 | File | Action |
 |---|---|
-| `ap/js/transcript-editor.js` | **new** — editor, palette, token catalog |
-| `ap/attempt.html` | replace textarea, add palette host + script tag, rename reset button to "Reset to transcribed text" |
-| `ap/js/ap-attempt.js` | re-bind transcribe/confirm/reset to editor API; `compare-student` renders math |
+| `ap/js/transcript-editor.js` | **new** — editor, palette, token catalog; Phase 3 adds `wrapMath` + `noun` options (auto-wrap palette inserts, configurable length-limit label) |
+| `ap/attempt.html` | replace textarea, add palette host + script tag, rename reset button to "Reset to transcribed text"; Phase 3: `#answer-box` → contenteditable host, add `#answer-palette-host` + `#answer-count` |
+| `ap/js/ap-attempt.js` | re-bind transcribe/confirm/reset to editor API; `compare-student` renders math; Phase 3: mount answer editor (wrapMath, noun), read/validate on submit |
 | `ap/js/ap-grader.js` | `TRANSCRIBE_SYSTEM` delimiter mandate |
 | `ap/ap.css` | `.katex-chip`, `.latex-edit`, `.ap-math-palette`, layout + mobile rules |
 | `ap/data/ap-calculus-ab/canned-transcript.json` | **new fixture** for canned mode |
@@ -335,6 +346,18 @@ KorahMathEditor.TOKENS                     // the data-driven token catalog
       (the demo for this course was previously empty).
 
 **Phase 3:** Reuse the editor/palette for the typed answer box (`#answer-box`).
+- [x] `#answer-box` is a contenteditable host mounted through the same
+      `KorahMathEditor.attach` + `attachPalette` as the transcript, with
+      `wrapMath: true`: palette inserts into plain text are auto-wrapped in
+      `\(...\)` so typed math renders as chips with no LaTeX knowledge.
+- [x] Submit reads `answerEditor.getValue()`, and on
+      `!answerEditor.validate().ok` blocks with `problems[0].message`
+      (`noun: "answer"` length label); a `0 / 20,000` counter sits under the
+      box.
+- [x] Inserts inside an open raw chip edit stay bare (no double-wrap);
+      transcript behavior unchanged — `wrapMath` defaults to off.
+- [x] Pending manually: live-browser smoke test of `attempt.html` typing flow
+      (see §8).
 
 ---
 
@@ -349,3 +372,7 @@ KorahMathEditor.TOKENS                     // the data-driven token catalog
    on the attempt page.
 3. **Reset button label:** `Reset to transcribed text` (renamed from
    `Reset to read text`).
+4. **Typed answer box (Phase 3):** reuses the editor/palette. Every palette
+   insert into plain text is wrapped in `\(...\)` (`wrapMath: true`) so the
+   no-LaTeX promise holds for typed responses too; wrapping is skipped when
+   the caret is inside an open raw chip edit (already delimited).

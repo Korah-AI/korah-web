@@ -1,14 +1,14 @@
 /**
  * KorahMathEditor — math-chip contenteditable editor + no-LaTeX math palette.
  *
- * Backs the "Correct my transcription" step (spec: ap/data/ap-calculus-ab/
- * transcription-correct-spec.md). The editor keeps a single underlying source
- * string — raw LaTeX with \( ... \) (and optional $$ ... $$) math — and
- * renders each balanced math segment as an atomic, KaTeX-rendered "chip".
- * Plain text stays editable; chips are read-only; a chip expands to raw-LaTeX
- * editing on double-click / Enter, and the palette inserts correctly-formed
- * tokens at the caret so a transcription can be corrected without knowing
- * LaTeX.
+ * Backs the "Correct my transcription" step and, since Phase 3, the typed
+ * answer box (spec: ap/data/ap-calculus-ab/transcription-correct-spec.md). The
+ * editor keeps a single underlying source string — raw LaTeX with \( ... \)
+ * (and optional $$ ... $$) math — and renders each balanced math segment as an
+ * atomic, KaTeX-rendered "chip". Plain text stays editable; chips are
+ * read-only; a chip expands to raw-LaTeX editing on double-click / Enter, and
+ * the palette inserts correctly-formed tokens at the caret so transcription
+ * (or answer) math can be written without knowing LaTeX.
  *
  * Serialization is exact: setValue(raw) -> DOM -> getValue() === raw.
  *
@@ -16,6 +16,10 @@
  *   const ed = KorahMathEditor.attach(document.getElementById('transcript-editor'), {
  *     value: state.transcript,        // optional initial source
  *     onInput: (source) => { ... },   // optional, fires on change
+ *     wrapMath: false,                // optional: wrap palette inserts in \(...\)
+ *                                     // when the caret is in plain text so they
+ *                                     // become math chips (Phase 3, typed box)
+ *     noun: 'transcription',          // optional label used in the length message
  *   });
  *   KorahMathEditor.attachPalette(document.getElementById('math-palette-host'), ed);
  */
@@ -343,11 +347,12 @@
 
   /* ── Validation ──────────────────────────────────────────────────────────── */
 
-  function validateSource(source) {
+  function validateSource(source, noun) {
     var problems = [];
+    var label = noun || 'transcription';
     if (source.length > MAX_LEN) {
       problems.push({
-        message: 'The transcription is longer than ' + MAX_LEN.toLocaleString() + ' characters. Shorten it before confirming.',
+        message: 'The ' + label + ' is longer than ' + MAX_LEN.toLocaleString() + ' characters. Shorten it before confirming.',
         offset: MAX_LEN,
       });
     }
@@ -385,6 +390,7 @@
 
     var instance = {
       root: root,
+      _wrapMath: opts.wrapMath === true,
       getValue: function () { return serialize(root); },
       setValue: function (s) {
         state.editingRaw = null;
@@ -393,7 +399,7 @@
         fireInput();
       },
       reset: function (s) { instance.setValue(s); },
-      validate: function () { return validateSource(instance.getValue()); },
+      validate: function () { return validateSource(instance.getValue(), opts.noun || 'transcription'); },
       focus: function () { root.focus(); },
       get lastSource() { return state.lastSource; },
       get _lastRange() { return state.lastRange; },
@@ -532,6 +538,16 @@
 
   /* ── Palette ─────────────────────────────────────────────────────────────── */
 
+  /** True when the caret range sits inside a raw-LaTeX chip edit (already delimited). */
+  function rangeInsideLatexEdit(range) {
+    if (!range) return false;
+    var n = range.startContainer;
+    if (n.nodeType === 1) {
+      return !!(n.classList && n.classList.contains('latex-edit'));
+    }
+    return !!(n.parentNode && n.parentNode.classList && n.parentNode.classList.contains('latex-edit'));
+  }
+
   function insertToken(instance, token) {
     var root = instance.root;
     var sel = global.getSelection();
@@ -541,6 +557,13 @@
     }
     var basePos = range ? sourceOffsetAtRange(root, range) : serialize(root).length;
 
+    // Phase 3 (typed answer box): with wrapMath on, palette inserts land in plain
+    // text wrapped in \(...\) so they render as math chips — the student never
+    // types delimiters. Inserts inside an open raw chip edit are left bare.
+    var wrap = instance._wrapMath && !rangeInsideLatexEdit(range) ? ['\\(', '\\)'] : null;
+    var shift = wrap ? wrap[0].length : 0;
+    var insert = wrap ? wrap[0] + token.insert + wrap[1] : token.insert;
+
     if (range) {
       sel.removeAllRanges();
       sel.addRange(range);
@@ -548,12 +571,12 @@
       placeCaret(root, serialize(root).length);
     }
 
-    var done = insertTextAtSelection(token.insert);
+    var done = insertTextAtSelection(insert);
     if (!done) {
       var r = sel.rangeCount ? sel.getRangeAt(0) : null;
       if (r) {
         r.deleteContents();
-        var tn = doc.createTextNode(token.insert);
+        var tn = doc.createTextNode(insert);
         r.insertNode(tn);
         var r2 = doc.createRange();
         r2.setStartAfter(tn);
@@ -563,8 +586,8 @@
       }
     }
 
-    var caretPos = basePos + (token.caret != null ? token.caret : token.insert.length);
-    var endPos = token.select ? basePos + token.select[1] : caretPos;
+    var caretPos = basePos + shift + (token.caret != null ? token.caret : token.insert.length);
+    var endPos = token.select ? basePos + shift + token.select[1] : caretPos;
     var cRange = placeRange(root, caretPos);
     var eRange = placeRange(root, endPos);
     if (cRange && eRange) {
