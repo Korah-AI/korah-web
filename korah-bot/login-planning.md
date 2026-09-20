@@ -1,5 +1,9 @@
 # Korah Login - Master Technical Roadmap
 
+> Status: superseded. `login.html` was rebuilt around a WebGL dot-matrix
+> background and a single Google sign-in card, so the canvases and panels
+> described below no longer exist in the page.
+
 # Before implementing any task, check in with the user to see if they want to continue. If you finish a task and then are about to go to the next one, ask the user first if they want to continue and are satisfied with the end result of that task (If they want to continue then do your best to assist them to get the end-result they want)
 
 This document provides complete context and implementation logic for UI/UX and physics improvements to `login.html`.
