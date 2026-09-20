@@ -209,11 +209,18 @@ HTML files.
 
 #### State 4: Transcription review
 
-- Vision model reads the uploaded images and produces a text transcription
-- The transcription is displayed in an editable text area
+- Vision model reads the uploaded images and produces a text transcription with
+  every equation wrapped in `\( ... \)` delimiters (mandated by the
+  transcription system prompt)
+- The transcription is shown in a math-chip editor: each `\( ... \)` segment is
+  rendered as an inline KaTeX chip, plain text stays editable, and a mini math
+  keyboard (palette) inserts correctly-formed LaTeX at the caret so students can
+  read and fix the transcription without knowing LaTeX (see
+  `ap/data/ap-calculus-ab/transcription-correct-spec.md`)
 - The original images are shown alongside so the student can compare
-- "Confirm and grade" button
-- "Edit" is always available, the student can fix any misread text
+- "Confirm and grade" button (blocks while math delimiters are unbalanced)
+- "Edit" is always available, the student can fix any misread text; double-click
+  any rendered equation to edit its raw LaTeX
 - This step exists because vision models misread math notation (subscripts,
   integrals, crossed-out work, arbitrary page layout). Showing the student
   what was read prevents the worst failure mode: losing a point because the
@@ -436,8 +443,9 @@ match the sum, the computed sum wins.
 4. System prompt instructs the model to produce a faithful text transcription,
    preserving the student's structure (paragraph breaks, part labels, equation
    layout as best as possible).
-5. Response is displayed in an editable text area for the student to confirm
-   or correct.
+5. Response is displayed in the math-chip editor for the student to confirm
+   or correct — equations render inline as KaTeX chips, and a math palette
+   provides no-LaTeX correction (see State 4).
 
 ### AI pipeline: grading
 
@@ -462,8 +470,12 @@ match the sum, the computed sum wins.
 ```
 You are reading a student's handwritten or typed response to an AP Free
 Response Question. Produce a faithful text transcription of their work.
-Preserve paragraph breaks, part labels (a), (b), (c), and mathematical
-notation using LaTeX where possible. If you cannot read a section clearly,
+Preserve paragraph breaks and part labels (a), (b), (c). Wrap every
+equation or math expression in \( and \) inline delimiters and use standard
+LaTeX inside them: \frac{}{}, ^{} for superscripts, _{} for subscripts,
+\sqrt{}, \int_{}^{}, \sum_{}^{}, \lim_{x\to}, and Greek letters such as
+\pi \theta \alpha. Do not use LaTeX outside the delimiters, so ordinary
+words and numbers stay as plain text. If you cannot read a section clearly,
 mark it with [illegible] rather than guessing. Do not interpret, correct,
 or improve the student's work. Transcribe exactly what is written.
 ```

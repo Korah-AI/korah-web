@@ -118,11 +118,13 @@
 
   const TRANSCRIBE_SYSTEM =
     'You are reading a student\'s handwritten or typed response to an AP Free Response Question. ' +
-    'Produce a faithful text transcription of their work. Preserve paragraph breaks, part labels ' +
-    '(a), (b), (c), and any equations using LaTeX notation where possible. If you cannot read a ' +
-    'section clearly, mark it with [illegible] rather than guessing. Do not interpret, correct, or ' +
-    'improve the student\'s work. Transcribe exactly what is written. Respond with plain text only, ' +
-    'no JSON, no markdown code fences.';
+    'Produce a faithful text transcription of their work. Preserve paragraph breaks and part labels (a), (b), (c). ' +
+    'Wrap every equation or math expression in \\( and \\) inline delimiters and use standard LaTeX inside them: ' +
+    '\\frac{}{} for fractions, ^{} for superscripts, _{} for subscripts, \\sqrt{}, \\int_{}^{}, \\sum_{}^{}, ' +
+    '\\lim_{x\\to}, and Greek letters such as \\pi \\theta \\alpha. Do not use LaTeX outside the delimiters, so ' +
+    'ordinary words and numbers stay as plain text. If you cannot read a section clearly, mark it with [illegible] ' +
+    'rather than guessing. Do not interpret, correct, or improve the student\'s work. Transcribe exactly what is written. ' +
+    'Respond with plain text only, no JSON, no markdown code fences, no $...$ or $$ delimiters.';
 
   async function loadCannedTranscript(courseSlug) {
     const res = await fetch(`./data/${courseSlug}/canned-transcript.json`);

@@ -301,6 +301,72 @@ html[data-theme="light"] .ap-page {
 }
 .ap-transcript-box:focus { outline: none; border-color: var(--acc); box-shadow: 0 0 0 3px color-mix(in srgb, var(--acc) 20%, transparent); }
 
+/* ── Math-chip editor + palette (correct-my-transcription) ───────────────── */
+.ap-transcript-box { white-space: pre-wrap; overflow-wrap: anywhere; }
+.ap-transcript-box:empty::before { content: attr(data-ph); color: var(--tx3); pointer-events: none; }
+
+.katex-chip {
+  display: inline-block;
+  margin: 0 0.125rem;
+  padding: 0.125rem 0.3rem;
+  border-radius: 0.375rem;
+  background: color-mix(in srgb, var(--acc) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--acc) 30%, transparent);
+  cursor: pointer;
+  vertical-align: middle;
+  user-select: none;
+  line-height: 1.5;
+}
+.katex-chip .katex { font-size: 1.08em; }
+.katex-chip.is-display { display: block; margin: 0.375rem 0; text-align: center; }
+.katex-chip:hover { border-color: var(--acc); }
+.katex-chip:focus-visible { outline: 2px solid var(--acc); outline-offset: 1px; }
+.katex-chip.no-katex {
+  background: transparent; border-style: dashed; color: var(--tx3);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8125rem; white-space: pre-wrap;
+}
+.latex-edit {
+  display: inline;
+  border-radius: 0.25rem 0.25rem 0 0;
+  background: color-mix(in srgb, #fbbf24 18%, transparent);
+  border-bottom: 2px dashed #f59e0b;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8125rem;
+}
+
+.ap-math-palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem 0.625rem;
+  align-items: center;
+  padding: 0.5rem 0.625rem;
+  margin-bottom: 0.5rem;
+  border: 1px solid var(--ap-bd);
+  border-radius: 0.75rem;
+  background: var(--ap-sf);
+}
+.ap-math-group { display: inline-flex; align-items: center; gap: 0.25rem; }
+.ap-math-group-label {
+  font-size: 0.6875rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.05em; color: var(--tx3); margin-right: 0.125rem;
+}
+.ap-math-key {
+  min-width: 2rem; height: 1.875rem; padding: 0 0.5rem;
+  border: 1px solid var(--ap-bd); border-radius: 0.5rem;
+  background: var(--ap-sf2); color: var(--tx);
+  font: inherit; font-size: 0.8125rem; line-height: 1;
+  cursor: pointer;
+  transition: border-color .2s, background .2s;
+}
+.ap-math-key:hover { border-color: var(--acc); background: color-mix(in srgb, var(--acc) 10%, transparent); }
+.ap-math-key:focus-visible { outline: 2px solid var(--acc); outline-offset: 1px; }
+.ap-transcript-meta { margin-top: 0.4rem; font-size: 0.75rem; color: var(--tx3); }
+@media (max-width: 480px) {
+  .ap-math-palette { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 0.4rem; }
+  .ap-math-group { flex-shrink: 0; }
+}
+
 /* ── Loading ────────────────────────────────────────────────────────────── */
 .ap-loading { display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 3.5rem 1rem; }
 .ap-spinner {

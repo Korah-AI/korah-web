@@ -52,6 +52,13 @@
   /* ── Render helpers ────────────────────────────────────────────────────── */
 
   function el(id) { return $(id); }
+
+  let editor = null;
+
+  function updateTranscriptCount() {
+    const c = el('transcript-count');
+    if (c) c.textContent = (editor ? editor.getValue().length : 0).toLocaleString() + ' / 20,000';
+  }
   function showView(name) {
     Object.keys(views).forEach((k) => { $(views[k]).hidden = k !== name; });
     state.view = name;
@@ -283,7 +290,8 @@
     const strip = el('transcribe-thumbs');
     strip.innerHTML = state.images.map((im, i) =>
       `<img src="${im.dataUrl}" alt="Page ${i + 1}"/>`).join('');
-    el('transcript-box').value = state.transcript;
+    if (editor) editor.setValue(state.transcript);
+    updateTranscriptCount();
     el('transcribe-note').textContent = state.images.length
       ? 'This is what the model read from your photos. Fix anything it got wrong, then confirm.'
       : 'This is your typed response. Review it before grading.';
@@ -341,7 +349,8 @@
     renderMath(el('fix-text'));
 
     /* Sample comparison */
-    el('compare-student').textContent = state.transcript || '';
+    el('compare-student').innerHTML = safeHtml(state.transcript || '');
+    renderMath(el('compare-student'));
     el('compare-sample').innerHTML = safeHtml(frq.sampleResponse || 'No sample response authored for this FRQ yet.');
     renderMath(el('compare-sample'));
 
@@ -458,6 +467,17 @@
       return;
     }
 
+    // Mount the math-chip transcript editor + palette (correct-my-transcription).
+    const editorHost = el('transcript-editor');
+    if (editorHost && window.KorahMathEditor) {
+      editor = window.KorahMathEditor.attach(editorHost, {
+        value: state.transcript,
+        onInput: updateTranscriptCount,
+      });
+      window.KorahMathEditor.attachPalette(el('math-palette-host'), editor);
+      updateTranscriptCount();
+    }
+
     const frq = await window.KorahAP.getFrq(courseSlug, frqId);
     if (!frq) {
       $('ap-app-root').innerHTML = `<div class="ap-page" style="padding:1.25rem"><p>FRQ not found. <a href="./frqs.html?course=${encodeURIComponent(courseSlug)}" style="color:var(--tone-blue)">Back to ${esc(state.course.name)}</a>.</p></div>`;
@@ -527,16 +547,22 @@
     });
 
     el('btn-confirm-transcript').addEventListener('click', () => {
-      const edited = el('transcript-box').value.trim();
+      const edited = (editor ? editor.getValue() : '').trim();
       if (!edited) {
         el('submit-panel').textContent = 'The transcription is empty. Add your work or edit it above.';
+        return;
+      }
+      const check = editor ? editor.validate() : { ok: true };
+      if (!check.ok) {
+        el('submit-panel').textContent = check.problems[0].message;
         return;
       }
       runGrade(edited);
     });
 
     el('btn-retranscribe').addEventListener('click', () => {
-      el('transcript-box').value = state.transcript;
+      if (editor) editor.reset(state.transcript);
+      updateTranscriptCount();
     });
 
     bindFeedback();
