@@ -700,6 +700,7 @@ html[data-theme="light"] {
   body.sat-player-grey ::-webkit-scrollbar-thumb { background: var(--pl-bd) !important; }
   body.sat-player-grey ::-webkit-scrollbar-thumb:hover { background: var(--tone-purple) !important; }
 </style>
+<link rel="stylesheet" href="./question-content.css"/>
 </head>
 
 <body class="bg-base tx sat-shell sat-player-grey">
@@ -934,7 +935,7 @@ html[data-theme="light"] {
     <div class="sat-player-passage-panel" id="passagePanel">
       <div class="sat-player-passage-scroll">
         <article class="sat-passage-card">
-          <p id="questionParagraph" class="sat-passage-text"></p>
+          <div id="questionParagraph" class="sat-passage-text"></div>
         </article>
       </div>
     </div>
@@ -957,7 +958,7 @@ html[data-theme="light"] {
             <span id="sessionFilterChips" class="sat-filter-chip-row" aria-label="Active filters" style="display:inline-flex; gap:0.375rem;"></span>
           </div>
           <h2 id="questionStemTitle" class="sat-question-title is-hidden" style="margin:0; width:100%; font-size:1rem;"></h2>
-          <p id="questionStem" class="sat-question-stem"></p>
+          <div id="questionStem" class="sat-question-stem"></div>
           <div id="answerChoices" class="sat-answer-list"></div>
           <div class="sat-check-row"><button id="checkAnswerBtn" class="sat-button sat-button-primary" type="button" data-requires-auth>Check</button></div>
           <section id="feedbackPanel" class="sat-feedback-panel is-hidden"></section>
@@ -1932,23 +1933,7 @@ RULES:
       renderMarkdownAndMath(container, text);
       return;
     }
-    // CB rationales carry MathML equations and SVG figures. An html-only profile
-    // strips those tags but keeps their text, collapsing e.g. a fraction into "12".
-    const sanitized = window.DOMPurify
-      ? DOMPurify.sanitize(text, { USE_PROFILES: { html: true, mathMl: true, svg: true } })
-      : text;
-    container.innerHTML = sanitized;
-    if (typeof renderMathInElement === 'function') {
-      renderMathInElement(container, {
-        delimiters: [
-          { left: '$$', right: '$$', display: true },
-          { left: '$',  right: '$',  display: false },
-          { left: '\\(', right: '\\)', display: false },
-          { left: '\\[', right: '\\]', display: true }
-        ],
-        throwOnError: false
-      });
-    }
+    window.KorahQuestionContent.render(container, text);
   }
 
   async function renderKorahExplanation(body) {
@@ -2268,6 +2253,7 @@ RULES:
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+<script src="./js/question-content.js"></script>
 <script src="https://www.desmos.com/api/v1.12/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>

@@ -505,6 +505,7 @@ function renderQuestion() {
 }
 
 function renderStem(q) {
+  if (q.stemHtml) return `<div class="stem">${window.KorahQuestionContent.html(q.stemHtml)}</div>`;
   if (q.stemImg) {
     return `<div class="stem stem-img-only"><img src="../../docs/practice-tests/${testSlug}/question-imgs/${encPath(q.stemImg)}" alt="question ${q.n} stem"/></div>`;
   }
@@ -522,7 +523,9 @@ function renderMcq(selected, key, q) {
       const tone = OPTION_TONES[i % OPTION_TONES.length];
       const text = opt.replace(/^[A-D]\)\s*/, ""); // strip leading letter if present
       const sel = selected === letter;
-      const optImg = q.optionImgs && q.optionImgs[i]
+      const optImg = q.optionHtml?.[i]
+        ? window.KorahQuestionContent.html(q.optionHtml[i])
+        : q.optionImgs && q.optionImgs[i]
         ? `<div class="opt-img-wrap"><img class="opt-img" src="../../docs/practice-tests/${testSlug}/question-imgs/${encPath(q.optionImgs[i])}" alt="option ${letter}"/></div>`
         : `<span>${esc(text)}</span>`;
       return `<div class="option ${tone}${sel ? " is-selected" : ""}" data-letter="${letter}" role="button" tabindex="0">

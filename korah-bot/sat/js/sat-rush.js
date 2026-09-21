@@ -4,41 +4,8 @@
 (() => {
   const { OPENSAT_CATALOG } = window.KorahSAT;
 
-  // ── HTML sanitize + KaTeX render (mirrors sat-player.js) ──────────────────
-  function normalizeSvgUseHrefs(html) {
-    return String(html || "").replace(/xlink:href=/g, "href=");
-  }
-  const SVG_PURIFY_CONFIG = { ADD_TAGS: ["use"], ADD_ATTR: ["href", "xlink:href"] };
-  if (window.DOMPurify) {
-    DOMPurify.addHook("afterSanitizeAttributes", (node) => {
-      if (node.tagName && node.tagName.toLowerCase() === "use") {
-        for (const attr of ["href", "xlink:href"]) {
-          const val = node.getAttribute(attr);
-          if (val !== null && !val.startsWith("#")) node.removeAttribute(attr);
-        }
-      }
-    });
-  }
-  function sanitize(html) {
-    if (!window.DOMPurify) return String(html || "");
-    return DOMPurify.sanitize(normalizeSvgUseHrefs(html), SVG_PURIFY_CONFIG);
-  }
-  function setHtml(el, html) {
-    el.innerHTML = sanitize(html);
-    if (typeof renderMathInElement === "function") {
-      try {
-        renderMathInElement(el, {
-          delimiters: [
-            { left: "$$", right: "$$", display: true },
-            { left: "\\(", right: "\\)", display: false },
-            { left: "\\[", right: "\\]", display: true },
-            { left: "$", right: "$", display: false },
-          ],
-          throwOnError: false,
-        });
-      } catch (e) { /* non-fatal */ }
-    }
-  }
+  const sanitize = html => window.KorahQuestionContent.html(html);
+  const setHtml = (el, html) => window.KorahQuestionContent.render(el, html);
 
   // ── Static config ─────────────────────────────────────────────────────────
   const icon = (name, tint) => `<span class="material-icons-round${tint ? " rush-icon-tint-" + tint : ""}">${name}</span>`;
@@ -562,12 +529,7 @@
         <span class="rush-choice-key">${opt.key}</span>
         <span class="rush-choice-text">${sanitize(opt.text)}</span>
       </button>`).join("");
-    // render math inside choices
-    $("rushChoices").querySelectorAll(".rush-choice-text").forEach((el) => {
-      if (typeof renderMathInElement === "function") {
-        try { renderMathInElement(el, { delimiters: [{ left: "\\(", right: "\\)", display: false }, { left: "$", right: "$", display: false }], throwOnError: false }); } catch (e) {}
-      }
-    });
+
   }
 
   // Choice selection (event delegation)

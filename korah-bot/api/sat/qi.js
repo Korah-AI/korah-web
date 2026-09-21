@@ -1,4 +1,4 @@
-import { acceptedAnswers, fetchQuestionDetail } from "../_lib/collegeboard.js";
+import { normalizeQuestionContent, fetchQuestionDetail } from "../_lib/collegeboard.js";
 
 export const config = {
   maxDuration: 30,
@@ -42,17 +42,7 @@ export default async function handler(req, res) {
     res.setHeader("Vercel-CDN-Cache-Control", "public, s-maxage=86400");
     return res.status(200).json({
       id,
-      type: detail.type || "mcq",
-      paragraph: typeof detail.stimulus === "string" ? detail.stimulus : "",
-      stem: typeof detail.stem === "string" ? detail.stem : "",
-      options: detail.answerOptions
-        ? ["A", "B", "C", "D"]
-            .filter((k) => detail.answerOptions[k] != null && detail.answerOptions[k] !== "")
-            .map((k) => ({ key: k, text: detail.answerOptions[k] }))
-        : [],
-      correctAnswer: acceptedAnswers(detail.correct_answer)[0] ?? "",
-      correctAnswers: acceptedAnswers(detail.correct_answer),
-      explanation: typeof detail.rationale === "string" ? detail.rationale : "",
+      ...normalizeQuestionContent(detail),
     });
   } catch (err) {
     console.error("question detail error:", err);

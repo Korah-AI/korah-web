@@ -282,34 +282,43 @@ async function fetchRegularQuestion(externalId, signal) {
 // the fences: "x(x-1)(x+5)" displays as "xx-1x+5". Rewrite each <mfenced> to the
 // equivalent <mrow><mo>(</mo> … <mo>)</mo></mrow>, which every engine renders.
 //
-// The `separators` attribute is not translated: CB never emits a multi-child
-// <mfenced>, so there is nothing to separate.
+// Preserve separators as well as delimiters, including nested fences.
 function mfencedAttr(attrs, name, fallback) {
-  const match = new RegExp(`\\b${name}\\s*=\\s*"([^"]*)"`, "i").exec(attrs);
-  return match ? match[1] : fallback;
+  const match = new RegExp(`(?:^|\\s)${name}\\s*=\\s*(["'])(.*?)\\1`, "i").exec(attrs);
+  return match ? match[2] : fallback;
 }
 
 function escapeFence(ch) {
-  return ch.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return ch.replace(/&(?!(?:#\d+|#x[0-9a-f]+|amp|lt|gt|quot|apos);)/gi, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 export function expandMfenced(html) {
-  if (typeof html !== "string" || !html.includes("<mfenced")) return html;
-  // Open tags push their close delimiter so nested fences pair up correctly.
-  const closers = [];
-  return html.replace(/<(\/?)mfenced\b([^>]*)>/gi, (_, slash, attrs) => {
-    if (slash) {
-      return `<mo>${escapeFence(closers.pop() ?? ")")}</mo></mrow>`;
+  if (typeof html !== "string" || !/<mfenced\b/i.test(html)) return html;
+  function expand(attrs, inner = "") {
+    const children = [];
+    let depth = 0, child = "";
+    for (const token of inner.match(/<[^>]+>|[^<]+/g) || []) {
+      if (!depth && !token.trim()) continue;
+      child += token;
+      if (/^<\//.test(token)) depth--;
+      else if (/^<[a-z]/i.test(token) && !/\/>$/.test(token)) depth++;
+      if (depth === 0) { children.push(child); child = ""; }
     }
-    const open = escapeFence(mfencedAttr(attrs, "open", "("));
+    if (child) children.push(child);
+    const separators = [...mfencedAttr(attrs, "separators", ",").replace(/\s/g, "")];
+    const open = mfencedAttr(attrs, "open", "(");
     const close = mfencedAttr(attrs, "close", ")");
-    // <mfenced/> has no children and no closing tag, so emit both delimiters now.
-    if (attrs.trim().endsWith("/")) {
-      return `<mrow><mo>${open}</mo><mo>${escapeFence(close)}</mo></mrow>`;
-    }
-    closers.push(close);
-    return `<mrow><mo>${open}</mo>`;
-  });
+    const op = value => value ? `<mo>${escapeFence(value)}</mo>` : "";
+    return `<mrow>${op(open)}${children.map((c, i) => (i && separators.length ? op(separators[Math.min(i - 1, separators.length - 1)]) : "") + c).join("")}${op(close)}</mrow>`;
+  }
+  let result = html.replace(/<mfenced\b([^>]*?)\/>/gi, (_, attrs) => expand(attrs));
+  // Each pass expands innermost fences first, preserving complete child nodes.
+  for (let i = 0; i < 100; i++) {
+    const next = result.replace(/<mfenced\b([^>]*)>((?:(?!<\/?mfenced\b)[\s\S])*?)<\/mfenced>/gi, (_, attrs, inner) => expand(attrs, inner));
+    if (next === result) break;
+    result = next;
+  }
+  return result;
 }
 
 // ── MathML <menclose> expansion ────────────────────────────────────────
@@ -318,16 +327,21 @@ export function expandMfenced(html) {
 // browsers render the children and lose the bar — which changes the meaning.
 // <mover> with a combining overbar is the Core equivalent.
 export function expandMenclose(html) {
-  if (typeof html !== "string" || !html.includes("<menclose")) return html;
+  if (typeof html !== "string" || !/<menclose\b/i.test(html)) return html;
   // Only notation="top" is rewritten; any other notation is left alone so its
   // children still render rather than being silently restructured.
-  return html.replace(
-    /<menclose\b([^>]*)>([\s\S]*?)<\/menclose>/gi,
-    (whole, attrs, inner) =>
-      /\bnotation\s*=\s*"top"/i.test(attrs)
+  let result = html;
+  for (let i = 0; i < 100; i++) {
+    const next = result.replace(
+      /<menclose\b([^>]*)>((?:(?!<\/?menclose\b)[\s\S])*?)<\/menclose>/gi,
+      (whole, attrs, inner) => mfencedAttr(attrs, "notation", "") === "top"
         ? `<mover accent="true"><mrow>${inner}</mrow><mo>&#175;</mo></mover>`
         : whole
-  );
+    );
+    if (next === result) break;
+    result = next;
+  }
+  return result;
 }
 
 // Every question's HTML passes through here on its way to the API routes.
@@ -393,6 +407,21 @@ export function acceptedAnswers(raw) {
   return [...new Set(list.map((v) => String(v).trim()).filter(Boolean))];
 }
 
+// Keep the first batch and later hydration byte-for-byte consistent. Rendering
+// remains a client concern, including classification of source equation images.
+export function normalizeQuestionContent(detail) {
+  const accepted = acceptedAnswers(detail?.correct_answer);
+  return {
+    paragraph: fixImageUrls(detail?.stimulus),
+    stem: fixImageUrls(detail?.stem),
+    options: optionsArray(detail?.answerOptions),
+    correctAnswer: accepted[0] ?? "",
+    correctAnswers: accepted,
+    explanation: fixImageUrls(detail?.rationale),
+    type: detail?.type || "mcq",
+  };
+}
+
 export function normalizeQuestion(meta, detail) {
   const domainCode = meta?.primary_class_cd;
   const domainName =
@@ -405,7 +434,6 @@ export function normalizeQuestion(meta, detail) {
   // external_id / ibn are what the CB detail API accepts — use them as the
   // canonical id so that stored analytics IDs can always be re-fetched.
   const detailKey = meta?.external_id || meta?.ibn || "";
-  const accepted = loaded ? acceptedAnswers(detail.correct_answer) : [];
 
   return {
     id: meta?.external_id || meta?.ibn || meta?.questionId || "",
@@ -414,13 +442,7 @@ export function normalizeQuestion(meta, detail) {
     domain: domainName,
     skillCd: meta?.skill_cd || "",
     difficulty: meta?.difficulty || "",
-    paragraph: loaded ? fixImageUrls(detail.stimulus) : "",
-    stem: loaded ? fixImageUrls(detail.stem) : "",
-    options: loaded ? optionsArray(detail.answerOptions) : [],
-    correctAnswer: accepted[0] ?? "",
-    correctAnswers: accepted,
-    explanation: loaded ? fixImageUrls(detail.rationale) : "",
-    type: loaded ? detail.type || "mcq" : "mcq",
+    ...normalizeQuestionContent(detail),
     loaded,
   };
 }

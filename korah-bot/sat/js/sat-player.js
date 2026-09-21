@@ -12,27 +12,7 @@
   } = window.KorahSAT;
   const query = parseOpenSatV1Query();
 
-  // CollegeBoard matplotlib SVGs draw axis labels via <use xlink:href="#glyphId"/>.
-  // Browsers + DOMPurify treat SVG 2's plain `href` more reliably than `xlink:href`,
-  // so normalize to `href` before sanitizing.
-  function normalizeSvgUseHrefs(html) {
-    if (!html || html.indexOf('xlink:href') === -1) return html;
-    return html.replace(/\sxlink:href=/g, ' href=');
-  }
-
-  const SVG_PURIFY_CONFIG = { ADD_TAGS: ['use'], ADD_ATTR: ['href', 'xlink:href'] };
-  DOMPurify.addHook('afterSanitizeAttributes', (node) => {
-    if (node.tagName && node.tagName.toLowerCase() === 'use') {
-      for (const attr of ['href', 'xlink:href']) {
-        const val = node.getAttribute(attr);
-        if (val !== null && !val.startsWith('#')) node.removeAttribute(attr);
-      }
-    }
-  });
-
-  function sanitizeHtml(html) {
-    return DOMPurify.sanitize(normalizeSvgUseHrefs(html), SVG_PURIFY_CONFIG);
-  }
+  const sanitizeHtml = html => window.KorahQuestionContent.html(html);
 
   const DEMO_QUESTIONS = [
     {
