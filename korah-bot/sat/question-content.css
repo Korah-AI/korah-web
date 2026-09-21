@@ -15,11 +15,21 @@ html .question-content img.question-inline-math {
   filter: none !important;
 }
 html .question-content .question-figure {
-  display: block; max-width: 100%; height: auto; margin: 1rem auto !important;
+  display: block;
+  width: min(100%, var(--question-figure-width, 24rem)) !important;
+  max-width: 100% !important;
+  height: auto !important;
+  max-height: var(--question-figure-height, 24rem) !important;
+  object-fit: contain;
+  margin: 1rem auto !important;
   padding: 0 !important; border-radius: 0 !important; filter: none !important;
   background: white; color: black;
 }
-html .question-content svg.question-figure { width: min(100%, 32rem); }
+/* Answer figures use the same proportions in a more compact space. */
+.sat-answer-choice, .rush-choice, .option {
+  --question-figure-width: 18rem;
+  --question-figure-height: 18rem;
+}
 /* Blend the source paper into the actual surface, including choice hover colors.
    A white backing also makes transparent and opaque source images consistent. */
 html .question-content img.question-figure,
@@ -37,9 +47,16 @@ html[data-theme="dark"] .question-content svg.question-monochrome { filter: inve
 .question-content .question-label-background { fill: transparent !important; }
 .question-content figure { max-width: 100%; margin: 1rem auto; }
 .question-content .question-table-scroll { max-width: 100%; overflow-x: auto; margin: 1rem 0; }
-html .question-content table { border-collapse: collapse; margin: 0 auto; color: inherit; background: transparent; }
+html .question-content table {
+  border-collapse: collapse; margin: 0 auto; color: inherit; background: transparent;
+  width: auto !important; height: auto !important;
+  max-width: 100%; font-size: 1em !important; line-height: 1.5;
+}
 html .question-content table, html .question-content th, html .question-content td {
   border: 1px solid currentColor !important; padding: .45rem .7rem; color: inherit;
+}
+html .question-content th, html .question-content td {
+  height: auto !important; font-size: 1em !important;
 }
 .question-content th { font-weight: 700; }
 .question-content td p, .question-content th p { margin: 0; }
