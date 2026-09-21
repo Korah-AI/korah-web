@@ -37,17 +37,19 @@ html .question-content .question-figure {
 }
 /* Blend the source paper into the actual surface, including choice hover colors.
    A white backing also makes transparent and opaque source images consistent. */
-html .question-content img.question-figure,
+html .question-content .question-figure,
 html .question-content img.question-inline-math {
   background: white !important;
   mix-blend-mode: multiply;
 }
-html[data-theme="dark"] .question-content img.question-figure,
+html[data-theme="dark"] .question-content .question-figure,
 html[data-theme="dark"] .question-content img.question-inline-math {
   filter: invert(1) hue-rotate(180deg) !important;
   mix-blend-mode: screen;
 }
-html[data-theme="dark"] .question-content svg.question-monochrome { filter: invert(1) !important; background: transparent; }
+/* Include SVGs with embedded bitmaps, gradients, or colored series. Inverting
+   the whole figure and screening it removes white paper without deleting
+   meaningful filled bars, gridlines, or masks inside the source artwork. */
 .question-content .question-plot-background { fill: transparent !important; }
 .question-content .question-label-background { fill: transparent !important; }
 .question-content figure { max-width: 100%; margin: 1rem auto; }
@@ -58,7 +60,8 @@ html .question-content table {
   max-width: 100%; font-size: 1em !important; line-height: 1.5;
 }
 html .question-content table, html .question-content th, html .question-content td {
-  border: 1px solid currentColor !important; padding: .45rem .7rem; color: inherit;
+  border: 1px solid currentColor !important; padding: .45rem .7rem; color: inherit !important;
+  background-color: transparent !important;
 }
 html .question-content th, html .question-content td {
   height: auto !important; font-size: 1em !important;
