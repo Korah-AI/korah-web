@@ -41,6 +41,11 @@ test('legacy math conversion is bounded and preserves expressions', () => {
   assert.ok(convert('FE equals 8 point 5').includes('<mi>F</mi><mi>E</mi><mo>=</mo><mn>8.5</mn>'));
   assert.ok(convert('ED').includes('<mi>E</mi><mi>D</mi>'));
   assert.equal(convert('line segment AF and BE'), null);
+  assert.ok(convert('N of d equals 115 open parenthesis 0.90 close parenthesis to the d power')?.includes('<msup><mrow><mo>(</mo><mn>0.90</mn><mo>)</mo></mrow><mrow><mi>d</mi>'));
+  assert.ok(convert('(2x+5)^2 - (x-2) + 2(x+3)')?.includes('<msup><mrow><mo>(</mo>'));
+  assert.ok(convert('f of negative 1')?.includes('<mi>f</mi><mrow><mo>(</mo><mo>−</mo><mn>1</mn>'));
+  assert.ok(convert('f of x equals the fraction with numerator x squared minus 6 x plus 3 and denominator x minus 1 end fraction')?.includes('<mi>f</mi><mrow><mo>(</mo><mi>x</mi><mo>)</mo></mrow><mo>=</mo><mfrac>'));
+  for (const invalid of ['(x+) squared', '() squared', '(x+2)^', '(x+2)^2^3']) assert.equal(convert(invalid), null, invalid);
   assert.ok(convert('x is not equal to 0').includes('<mi>x</mi><mo>≠</mo><mn>0</mn>'));
   for (const expression of ['8 x squared y to the fourth power', '4 x y to the fourth', '4 x to the negative 2 power y squared', '4 x to the negative 1 power y to the fourth']) {
     assert.ok(convert(expression)?.includes('<msup>'), expression);

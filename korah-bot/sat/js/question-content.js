@@ -29,6 +29,12 @@
       const result = mathFromDescription(value);
       return result?.replace(/^<math[^>]*><mrow>/, '').replace(/<\/mrow><\/math>$/, '');
     };
+    const equality = /^(.+?)\s*(?:equals|=)\s*,?\s*((?:the\s+)?fraction\b.+)$/i.exec(source);
+    if (equality) {
+      const left = inner(equality[1].replace(/,\s*$/, ''));
+      const right = inner(equality[2]);
+      if (left && right) return wrap(left + '<mo>=</mo>' + right);
+    }
     // Explicit boundaries allow compound fractions and radicals without
     // guessing where the numerator, denominator, or radicand ends.
     const compoundFraction = /^(?:the\s+)?fraction (?:with )?numerator\s+(.+?),?\s+(?:and )?denominator\s+(.+?),?\s+end fraction$/i.exec(source);
@@ -68,7 +74,8 @@
     }
     const words = { one:1, two:2, three:3, four:4, five:5, six:6, seven:7, eight:8, nine:9, ten:10, eleven:11, twelve:12 };
     const denominators = { half:2, halves:2, third:3, thirds:3, fourth:4, fourths:4, quarter:4, quarters:4, fifth:5, fifths:5, sixth:6, sixths:6, seventh:7, sevenths:7, eighth:8, eighths:8, ninth:9, ninths:9, tenth:10, tenths:10, eleventh:11, elevenths:11, twelfth:12, twelfths:12 };
-    let text = source.replace(/[−–]/g, '-');
+    let text = source.replace(/[−–]/g, '-')
+      .replace(/\b([A-Za-z]) of (negative )?(\d+(?:\.\d+)?|[A-Za-z])\b/g, (_, fn, sign, arg) => `${fn}(${sign ? '−' : ''}${arg})`);
     const spokenFraction = /^([a-z]+) ([a-z]+)$/i.exec(text);
     if (spokenFraction && words[spokenFraction[1].toLowerCase()] && denominators[spokenFraction[2].toLowerCase()]) {
       text = `${words[spokenFraction[1].toLowerCase()]}/${denominators[spokenFraction[2].toLowerCase()]}`;
@@ -97,7 +104,7 @@
     } else {
       // Fully consume a restricted spoken arithmetic grammar. Phrases with
       // unspecified fraction boundaries, systems, or prose remain untouched.
-      text = text.replace(/(\d),(?=\d{3}(?:\D|$))/g, '$1')
+      text = text.replace(/-/g, '−').replace(/(\d),(?=\d{3}(?:\D|$))/g, '$1')
         .replace(/\b(\d+) point (\d+)\b/gi, '$1.$2')
         .replace(/\bis less than or equal to\b/gi, '≤')
         .replace(/\bis greater than or equal to\b/gi, '≥')
@@ -107,6 +114,7 @@
         .replace(/\bto the (second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth)(?: power)?\b/gi, (_, ordinal) => '^' + ({second:2,third:3,fourth:4,fifth:5,sixth:6,seventh:7,eighth:8,ninth:9,tenth:10}[ordinal.toLowerCase()]))
         .replace(/\b(?:to the power of|to the)\s+(negative\s+)?(\d+)(?:st|nd|rd|th)?(?:\s+power)?\b/gi, (_, sign, power) => '^' + (sign ? '−' : '') + power)
         .replace(/\b(?:is equal to|equals)\b/gi, '=')
+        .replace(/\b(?:to the power of|to the)\s+([A-Za-z])(?:\s+power)?\b/g, '^$1')
         .replace(/\b(?:negative|minus)\b/gi, '−')
         .replace(/\bplus\b/gi, '+').replace(/\btimes\b/gi, '×')
         .replace(/\bopen parenthesis\b/gi, '(').replace(/\bclose parenthesis\b/gi, ')')
@@ -124,22 +132,39 @@
       if (depth) return null;
       // A dangling operator is evidence of an incomplete description.
       if (/[+−=≠<>≤≥×(^]$/.test(text) || /^[+=≠<>≤≥×)^]/.test(text)) return null;
-      const nodes = [];
-      for (let i = 0; i < tokens.length; i++) {
-        const token = tokens[i];
-        if (token === '^') return null;
-        let node = /^\d/.test(token) ? `<mn>${token}</mn>` : /^[A-Za-z]$/.test(token) ? `<mi>${token}</mi>` : `<mo>${escape(token)}</mo>`;
-        if (tokens[i + 1] === '^') {
-          if (!/^(?:[A-Za-z]|\d+(?:\.\d+)?)$/.test(token)) return null;
-          i += 2;
-          const negative = tokens[i] === '−';
-          if (negative) i++;
-          if (!/^\d+$/.test(tokens[i] || '')) return null;
-          node = `<msup>${node}<mrow>${negative ? '<mo>−</mo>' : ''}<mn>${tokens[i]}</mn></mrow></msup>`;
+      let cursor = 0;
+      function sequence(nested = false) {
+        const nodes = [];
+        while (cursor < tokens.length && tokens[cursor] !== ')') {
+          const token = tokens[cursor++];
+          if (token === '^') return null;
+          let node;
+          let atom = /^(?:[A-Za-z]|\d+(?:\.\d+)?)$/.test(token);
+          if (token === '(') {
+            const children = sequence(true);
+            if (!children || tokens[cursor++] !== ')') return null;
+            node = `<mrow><mo>(</mo>${children}<mo>)</mo></mrow>`;
+            atom = true;
+          } else {
+            node = /^\d/.test(token) ? `<mn>${token}</mn>` : /^[A-Za-z]$/.test(token) ? `<mi>${token}</mi>` : `<mo>${escape(token)}</mo>`;
+          }
+          if (tokens[cursor] === '^') {
+            if (!atom) return null;
+            cursor++;
+            const negative = tokens[cursor] === '−';
+            if (negative) cursor++;
+            const exponent = tokens[cursor++];
+            if (!/^(?:\d+|[A-Za-z])$/.test(exponent || '')) return null;
+            const power = /^\d/.test(exponent) ? `<mn>${exponent}</mn>` : `<mi>${exponent}</mi>`;
+            node = `<msup>${node}<mrow>${negative ? '<mo>−</mo>' : ''}${power}</mrow></msup>`;
+          }
+          nodes.push(node);
         }
-        nodes.push(node);
+        if (!nodes.length || (nested && /[+−=≠<>≤≥×]/.test(tokens[cursor - 1]) && tokens[cursor - 1].length === 1)) return null;
+        return nodes.join('');
       }
-      body = nodes.join('');
+      body = sequence();
+      if (!body || cursor !== tokens.length) return null;
     }
     return `<math xmlns="${MATH_NS}" aria-label="${escape(source)}"><mrow>${body}</mrow></math>`;
   }
