@@ -24,6 +24,20 @@
   function mathFromDescription(description) {
     const source = String(description || '').trim();
     if (reviewedMath.has(source)) return `<math xmlns="${MATH_NS}" aria-label="${escape(source)}"><mrow>${reviewedMath.get(source)}</mrow></math>`;
+    // Geometry labels are commonly exported as tiny PNGs too. Only accept
+    // explicit segment/overbar descriptions; a bare AB is a length or label.
+    const segment = /^(?:(?:the\s+)?(?:line\s+)?segment\s+([A-Z])\s*([A-Z])|(?:the\s+)?(?:line\s+)?([A-Z])\s*([A-Z])\s+(?:with\s+(?:a\s+)?(?:bar|overbar)\s+(?:above|over\s+it)|bar|overbar))\.?$/.exec(source);
+    if (segment) {
+      const letters = (segment[1] || segment[3]) + (segment[2] || segment[4]);
+      return `<math xmlns="${MATH_NS}" aria-label="${escape(source)}"><mrow><mover accent="true"><mrow><mi>${letters[0]}</mi><mi>${letters[1]}</mi></mrow><mo>¯</mo></mover></mrow></math>`;
+    }
+    // A complete equality with an atomic fraction is unambiguous. Render it
+    // as native math instead of retaining the low-resolution equation PNG.
+    const fractionEquation = /^([a-z])\s*(?:equals|=)\s*,?\s*(?:(?:the\s+)?fraction\s+)?(-?\d+(?:\.\d+)?|[a-z])\s*(?:over|\/)\s*(-?\d+(?:\.\d+)?|[a-z])(?:\s*,?\s*end fraction)?\s*$/i.exec(source);
+    if (fractionEquation && Number(fractionEquation[3]) !== 0) {
+      const atom = value => /^[a-z]$/i.test(value) ? `<mi>${value}</mi>` : `<mn>${value}</mn>`;
+      return `<math xmlns="${MATH_NS}" aria-label="${escape(source)}"><mrow><mi>${fractionEquation[1]}</mi><mo>=</mo><mfrac>${atom(fractionEquation[2])}${atom(fractionEquation[3])}</mfrac></mrow></math>`;
+    }
     const pair = source.replace(/^(?:the ordered pair|with coordinates)\s+/i, '').split(/\s+comma\s+/i);
     if (pair.length === 2) {
       const parts = pair.map(part => mathFromDescription(part));
@@ -50,6 +64,10 @@
       body = `<mn>${text}</mn>`;
     } else if (/^[a-zA-Z]$/.test(text)) {
       body = `<mi>${text}</mi>`;
+    } else if (/^[A-Z]\s*[A-Z]$/.test(text)) {
+      body = text.replace(/\s/g, '').split('').map(c => `<mi>${c}</mi>`).join('');
+    } else if (/^[A-Z]\s*(?:equals\s*,?\s*|=\s*)[A-Z]{2}$/.test(text)) {
+      body = text.replace(/equals\s*,?/, '=').replace(/\s/g, '').split('').map(c => c === '=' ? '<mo>=</mo>' : `<mi>${c}</mi>`).join('');
     } else if (/^[A-Z]{2}\s*=\s*[A-Z]{2}$/.test(text)) {
       body = text.replace(/\s/g, '').split('').map(c => c === '=' ? '<mo>=</mo>' : `<mi>${c}</mi>`).join('');
     } else if (/^(?:angle\s+|∠)[A-Z]{1,3}$/i.test(text)) {
@@ -69,6 +87,9 @@
         .replace(/\bplus\b/gi, '+').replace(/\btimes\b/gi, '×')
         .replace(/\bopen parenthesis\b/gi, '(').replace(/\bclose parenthesis\b/gi, ')')
         .replace(/,/g, ' ').trim();
+      // Uppercase pairs denote geometric lengths (AB = 9, BC = 18.5).
+      // Split only those pairs, leaving other words to fail validation.
+      text = text.replace(/\b([A-Z])([A-Z])\b/g, '$1 $2');
       const tokens = text.match(/\d+(?:\.\d+)?|[A-Za-z]+|[+−=≤≥×()]/g) || [];
       if (!tokens.length || text.replace(/\s/g, '') !== tokens.join('') || tokens.some(t => /^[A-Za-z]{2,}$/.test(t))) return null;
       let depth = 0;

@@ -28,5 +28,19 @@ test('legacy math conversion is bounded and preserves expressions', () => {
   assert.ok(convert('120 a, plus 100 b, is less than or equal to 1,100').includes('<mo>≤</mo><mn>1100</mn>'));
   assert.ok(convert('negative 3 point 5').includes('<mo>−</mo><mn>3.5</mn>'));
   assert.ok(convert('AB = AC').includes('<mi>A</mi><mi>B</mi><mo>=</mo><mi>A</mi><mi>C</mi>'));
+  assert.ok(convert('Q equals, the fraction P over T').includes('<mi>Q</mi><mo>=</mo><mfrac><mi>P</mi><mi>T</mi></mfrac>'));
+  assert.ok(convert('Q = T/P').includes('<mfrac><mi>T</mi><mi>P</mi></mfrac>'));
+  assert.ok(convert('Q equals, fraction T over P, end fraction').includes('<mfrac><mi>T</mi><mi>P</mi></mfrac>'));
+  assert.ok(convert('Q equals PT').includes('<mi>Q</mi><mo>=</mo><mi>P</mi><mi>T</mi>'));
+  assert.ok(convert('Q equals T minus P').includes('<mi>T</mi><mo>−</mo><mi>P</mi>'));
+  for (const description of ['line segment AF', 'segment A F', 'AF with bar above', 'AF bar']) {
+    assert.ok(convert(description).includes('<mover accent="true"><mrow><mi>A</mi><mi>F</mi></mrow><mo>¯</mo></mover>'), description);
+  }
+  assert.ok(convert('AB equals 9').includes('<mi>A</mi><mi>B</mi><mo>=</mo><mn>9</mn>'));
+  assert.ok(convert('BC equals 18.5').includes('<mi>B</mi><mi>C</mi><mo>=</mo><mn>18.5</mn>'));
+  assert.ok(convert('FE equals 8 point 5').includes('<mi>F</mi><mi>E</mi><mo>=</mo><mn>8.5</mn>'));
+  assert.ok(convert('ED').includes('<mi>E</mi><mi>D</mi>'));
+  assert.equal(convert('line segment AF and BE'), null);
+  for (const text of ['Q equals P over T plus 1', 'Q = P/0', 'Q equals price']) assert.equal(convert(text), null, text);
   for(const text of ['x over y plus z','the equation shown','1/0','x plus','x minus','<script>alert(1)</script>','(x+y']) assert.equal(convert(text),null,text);
 });
