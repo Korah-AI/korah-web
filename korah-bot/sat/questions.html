@@ -1143,6 +1143,7 @@ html[data-theme="light"] {
   .ask-korah-trigger:hover { filter: brightness(1.08); transform: scale(1.03); }
 
   .ask-korah-panel {
+    box-sizing: border-box;
     position: fixed; top: 0; right: 0; height: 100vh;
     width: var(--ask-korah-w);
     background: var(--pl-page); /* solid, opaque */
@@ -1163,6 +1164,28 @@ html[data-theme="light"] {
   body.ask-korah-open .sat-player-topbar,
   body.ask-korah-open .sat-player-footer { right: var(--ask-korah-w); }
   body.ask-korah-open #main-area-wrapper { width: calc(100% - var(--ask-korah-w)) !important; }
+  /* The split is fixed to the viewport, so shrinking its parent is not enough. */
+  #playerSplit { transition: right .25s ease; }
+  body.ask-korah-open #playerSplit { right: var(--ask-korah-w); }
+  body.ask-korah-open #playerSplit.has-desmos {
+    grid-template-columns: minmax(0, 1fr) .5rem minmax(0, 1.2fr) !important;
+  }
+  .ask-korah-tab, .explain-source-toggle button {
+    transition: color .18s ease, background-color .18s ease, border-color .18s ease;
+  }
+  @keyframes ask-korah-content-enter {
+    from { opacity: 0; transform: translateY(.4rem); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .ask-korah-body.is-switching, .explain-body {
+    animation: ask-korah-content-enter .2s ease both;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #playerSplit, #main-area-wrapper, .ask-korah-panel,
+    .sat-player-topbar, .sat-player-footer,
+    .ask-korah-tab, .explain-source-toggle button { transition: none !important; }
+    .ask-korah-body.is-switching, .explain-body { animation: none; }
+  }
 
   .ask-korah-topbar {
     display: flex; align-items: center; justify-content: space-between;
@@ -1284,9 +1307,20 @@ html[data-theme="light"] {
 
   @media (max-width: 48rem) {
     :root { --ask-korah-w: 100vw; }
+    .ask-korah-panel {
+      top: auto; bottom: 0; height: 45dvh;
+      border-left: 0; border-top: .0625rem solid var(--pl-bd);
+      transform: translateY(100%);
+    }
+    .ask-korah-panel.open { transform: translateY(0); }
     body.ask-korah-open .sat-player-topbar,
-    body.ask-korah-open .sat-player-footer,
-    body.ask-korah-open #main-area-wrapper { display: none; }
+    body.ask-korah-open .sat-player-footer { right: 0; }
+    body.ask-korah-open .sat-player-footer { bottom: 45dvh; }
+    body.ask-korah-open #main-area-wrapper { width: 100% !important; }
+    body.ask-korah-open #playerSplit {
+      right: 0;
+      bottom: calc(45dvh + var(--player-footer-h));
+    }
   }
 </style>
 
@@ -1615,6 +1649,9 @@ html[data-theme="light"] {
 
   // ─── Tabs ──────────────────────────────────────────────────────────────
   function showTab(tab) {
+    bodyEl.classList.remove('is-switching');
+    void bodyEl.offsetWidth;
+    bodyEl.classList.add('is-switching');
     activeTab = tab;
     tabChat.classList.toggle('active', tab === 'chat');
     tabExpl.classList.toggle('active', tab === 'explanation');
