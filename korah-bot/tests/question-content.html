@@ -16,6 +16,7 @@ document.querySelector('#narrow').onclick = () => { document.querySelector('#exa
 const results = [];
 const assert = (name, condition) => { results.push(`${condition ? 'PASS' : 'FAIL'} ${name}`); };
 const mount = source => { const article=document.createElement('article'); article.className='sat-question-stem'; KorahQuestionContent.render(article, source); document.querySelector('#examples').append(article); return article; };
+mount('<p>Image-based question: check that the paper blends into the page in both themes.</p><img alt="Practice question image" src="../docs/practice-tests/test-11/question-imgs/mod-2/math-m2-q9.png">');
 const rich=mount('<p>Before <img role="math" class="math-img" alt="three halves" src="data:image/png;base64,AA=="> after. Prices are $5 and $10.</p><table><caption>Data</caption><tr><th scope="col">x</th><th scope="col">y</th></tr><tr><td>1</td><td>3</td></tr></table><p>Text following the table wraps as a normal paragraph.</p>');
 assert('legacy fraction becomes MathML', rich.querySelector('mfrac')?.textContent === '32');
 assert('currency remains prose', rich.textContent.includes('$5 and $10'));

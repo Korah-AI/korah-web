@@ -20,7 +20,18 @@ html .question-content .question-figure {
   background: white; color: black;
 }
 html .question-content svg.question-figure { width: min(100%, 32rem); }
-html[data-theme="dark"] .question-content img.question-inline-math { filter: invert(1) !important; }
+/* Blend the source paper into the actual surface, including choice hover colors.
+   A white backing also makes transparent and opaque source images consistent. */
+html .question-content img.question-figure,
+html .question-content img.question-inline-math {
+  background: white !important;
+  mix-blend-mode: multiply;
+}
+html[data-theme="dark"] .question-content img.question-figure,
+html[data-theme="dark"] .question-content img.question-inline-math {
+  filter: invert(1) hue-rotate(180deg) !important;
+  mix-blend-mode: screen;
+}
 html[data-theme="dark"] .question-content svg.question-monochrome { filter: invert(1) !important; background: transparent; }
 .question-content .question-plot-background { fill: transparent !important; }
 .question-content .question-label-background { fill: transparent !important; }
