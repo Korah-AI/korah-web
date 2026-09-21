@@ -24,6 +24,25 @@
   function mathFromDescription(description) {
     const source = String(description || '').trim();
     if (reviewedMath.has(source)) return `<math xmlns="${MATH_NS}" aria-label="${escape(source)}"><mrow>${reviewedMath.get(source)}</mrow></math>`;
+    const wrap = body => `<math xmlns="${MATH_NS}" aria-label="${escape(source)}"><mrow>${body}</mrow></math>`;
+    const inner = value => {
+      const result = mathFromDescription(value);
+      return result?.replace(/^<math[^>]*><mrow>/, '').replace(/<\/mrow><\/math>$/, '');
+    };
+    // Explicit boundaries allow compound fractions and radicals without
+    // guessing where the numerator, denominator, or radicand ends.
+    const compoundFraction = /^(?:the\s+)?fraction (?:with )?numerator\s+(.+?),?\s+(?:and )?denominator\s+(.+?),?\s+end fraction$/i.exec(source);
+    if (compoundFraction) {
+      const numerator = inner(compoundFraction[1].replace(/,\s*$/, ''));
+      const denominator = inner(compoundFraction[2].replace(/,\s*$/, ''));
+      if (numerator && denominator && !/^<mn>0(?:\.0+)?<\/mn>$/.test(denominator)) return wrap(`<mfrac><mrow>${numerator}</mrow><mrow>${denominator}</mrow></mfrac>`);
+      return null;
+    }
+    const radical = /^(?:the\s+)?square root (?:of\s+)?(.+?),?\s+end (?:square )?root$/i.exec(source);
+    if (radical) {
+      const radicand = inner(radical[1].replace(/,\s*$/, ''));
+      return radicand ? wrap(`<msqrt>${radicand}</msqrt>`) : null;
+    }
     // Geometry labels are commonly exported as tiny PNGs too. Only accept
     // explicit segment/overbar descriptions; a bare AB is a length or label.
     const segment = /^(?:(?:the\s+)?(?:line\s+)?segment\s+([A-Z])\s*([A-Z])|(?:the\s+)?(?:line\s+)?([A-Z])\s*([A-Z])\s+(?:with\s+(?:a\s+)?(?:bar|overbar)\s+(?:above|over\s+it)|bar|overbar))\.?$/.exec(source);
@@ -82,6 +101,11 @@
         .replace(/\b(\d+) point (\d+)\b/gi, '$1.$2')
         .replace(/\bis less than or equal to\b/gi, '≤')
         .replace(/\bis greater than or equal to\b/gi, '≥')
+        .replace(/\b(?:is not equal to|does not equal|not equal to)\b/gi, '≠')
+        .replace(/\bis less than\b/gi, '<').replace(/\bis greater than\b/gi, '>')
+        .replace(/\bsquared\b/gi, '^2').replace(/\bcubed\b/gi, '^3')
+        .replace(/\bto the (second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth)(?: power)?\b/gi, (_, ordinal) => '^' + ({second:2,third:3,fourth:4,fifth:5,sixth:6,seventh:7,eighth:8,ninth:9,tenth:10}[ordinal.toLowerCase()]))
+        .replace(/\b(?:to the power of|to the)\s+(negative\s+)?(\d+)(?:st|nd|rd|th)?(?:\s+power)?\b/gi, (_, sign, power) => '^' + (sign ? '−' : '') + power)
         .replace(/\b(?:is equal to|equals)\b/gi, '=')
         .replace(/\b(?:negative|minus)\b/gi, '−')
         .replace(/\bplus\b/gi, '+').replace(/\btimes\b/gi, '×')
@@ -90,7 +114,7 @@
       // Uppercase pairs denote geometric lengths (AB = 9, BC = 18.5).
       // Split only those pairs, leaving other words to fail validation.
       text = text.replace(/\b([A-Z])([A-Z])\b/g, '$1 $2');
-      const tokens = text.match(/\d+(?:\.\d+)?|[A-Za-z]+|[+−=≤≥×()]/g) || [];
+      const tokens = text.match(/\d+(?:\.\d+)?|[A-Za-z]+|[+−=≠<>≤≥×()^]/g) || [];
       if (!tokens.length || text.replace(/\s/g, '') !== tokens.join('') || tokens.some(t => /^[A-Za-z]{2,}$/.test(t))) return null;
       let depth = 0;
       for (const token of tokens) {
@@ -99,8 +123,23 @@
       }
       if (depth) return null;
       // A dangling operator is evidence of an incomplete description.
-      if (/[+−=≤≥×(]$/.test(text) || /^[+=≤≥×)]/.test(text)) return null;
-      body = tokens.map(token => /^\d/.test(token) ? `<mn>${token}</mn>` : /^[A-Za-z]$/.test(token) ? `<mi>${token}</mi>` : `<mo>${escape(token)}</mo>`).join('');
+      if (/[+−=≠<>≤≥×(^]$/.test(text) || /^[+=≠<>≤≥×)^]/.test(text)) return null;
+      const nodes = [];
+      for (let i = 0; i < tokens.length; i++) {
+        const token = tokens[i];
+        if (token === '^') return null;
+        let node = /^\d/.test(token) ? `<mn>${token}</mn>` : /^[A-Za-z]$/.test(token) ? `<mi>${token}</mi>` : `<mo>${escape(token)}</mo>`;
+        if (tokens[i + 1] === '^') {
+          if (!/^(?:[A-Za-z]|\d+(?:\.\d+)?)$/.test(token)) return null;
+          i += 2;
+          const negative = tokens[i] === '−';
+          if (negative) i++;
+          if (!/^\d+$/.test(tokens[i] || '')) return null;
+          node = `<msup>${node}<mrow>${negative ? '<mo>−</mo>' : ''}<mn>${tokens[i]}</mn></mrow></msup>`;
+        }
+        nodes.push(node);
+      }
+      body = nodes.join('');
     }
     return `<math xmlns="${MATH_NS}" aria-label="${escape(source)}"><mrow>${body}</mrow></math>`;
   }

@@ -41,6 +41,14 @@ test('legacy math conversion is bounded and preserves expressions', () => {
   assert.ok(convert('FE equals 8 point 5').includes('<mi>F</mi><mi>E</mi><mo>=</mo><mn>8.5</mn>'));
   assert.ok(convert('ED').includes('<mi>E</mi><mi>D</mi>'));
   assert.equal(convert('line segment AF and BE'), null);
+  assert.ok(convert('x is not equal to 0').includes('<mi>x</mi><mo>≠</mo><mn>0</mn>'));
+  for (const expression of ['8 x squared y to the fourth power', '4 x y to the fourth', '4 x to the negative 2 power y squared', '4 x to the negative 1 power y to the fourth']) {
+    assert.ok(convert(expression)?.includes('<msup>'), expression);
+  }
+  const radicalFraction = convert('the fraction with numerator the square root of 16 x to the fourth power y to the eighth power, end root, and denominator x cubed, end fraction');
+  assert.ok(radicalFraction?.includes('<mfrac><mrow><msqrt>'));
+  assert.ok(radicalFraction?.includes('<msup><mi>x</mi><mrow><mn>3</mn></mrow></msup>'));
+  for (const expression of ['x to the power of', 'x ^ ^ 2', 'square root of x plus y', 'the fraction with numerator x and denominator 0 end fraction']) assert.equal(convert(expression), null, expression);
   for (const text of ['Q equals P over T plus 1', 'Q = P/0', 'Q equals price']) assert.equal(convert(text), null, text);
   for(const text of ['x over y plus z','the equation shown','1/0','x plus','x minus','<script>alert(1)</script>','(x+y']) assert.equal(convert(text),null,text);
 });
