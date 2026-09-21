@@ -44,5 +44,21 @@ html .question-content table, html .question-content th, html .question-content 
 .question-content th { font-weight: 700; }
 .question-content td p, .question-content th p { margin: 0; }
 .sat-answer-choice > .question-content, .rush-choice-text { flex: 1; min-width: 0; }
+/* Let tall fractions and multi-line answers size the choice itself. The
+   general content scroller can otherwise clip MathML ink and show tiny bars. */
+.sat-answer-choice,
+.rush-choice {
+  height: auto;
+  max-height: none;
+  min-width: 0;
+}
+.sat-answer-choice .question-content,
+.rush-choice .question-content,
+.option .question-content {
+  overflow: visible;
+  height: auto;
+  max-height: none;
+  padding-block: .25em;
+}
 .question-content [data-math-conversion="needs-review"] { object-fit: contain; }
 .question-content .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
