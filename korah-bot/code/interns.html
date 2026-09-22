@@ -296,20 +296,41 @@
     margin-top: 0.6rem;
   }
 
-  /* ── Image placeholders (replace src with a real image) ── */
-  .ph {
-    display: block;
+  /* Branded previews are used until the team supplies approved screenshots. */
+  .project-preview {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 0.625rem;
     width: 100%;
+    min-height: 15rem;
     aspect-ratio: 16 / 9;
-    object-fit: cover;
-    border: 1px dashed var(--bd);
-    border-radius: 0.875rem;
-    background: var(--sf2);
-    color: var(--tx);
-    font-size: 0.8125rem;
+    padding: clamp(1.5rem, 4vw, 2.5rem);
+    border: 1px solid var(--bd);
+    border-radius: 1rem;
+    background: linear-gradient(145deg, var(--preview-start), var(--preview-end));
+    color: #fff;
   }
-  .ph.square { aspect-ratio: 1 / 1; border-radius: 50%; }
-  .ph.wide { aspect-ratio: 21 / 9; }
+  .project-preview .material-icons-round { font-size: 2.5rem; }
+  .project-preview strong { font-size: clamp(1.5rem, 3vw, 2.25rem); line-height: 1.1; }
+  .project-preview span:last-child { font-size: 0.875rem; opacity: 0.88; }
+  .project-preview.coffeehouse { --preview-start: #47322d; --preview-end: #171b2b; }
+  .project-preview.circuitry { --preview-start: #214936; --preview-end: #101b18; }
+  .project-preview.chorequest { --preview-start: #286b54; --preview-end: #163a35; }
+  .project-preview.cars { --preview-start: #30374f; --preview-end: #171923; }
+  .cohort-avatar {
+    display: grid;
+    place-items: center;
+    width: 6.5rem;
+    height: 6.5rem;
+    margin: 0 auto 1rem;
+    border-radius: 50%;
+    border: 1px solid var(--bd);
+    background: var(--sf2);
+    color: var(--p4);
+    font-size: 2rem;
+    font-weight: 800;
+  }
 
   /* ── Project carousel ── */
   .carousel {
@@ -344,7 +365,6 @@
     transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1);
   }
   .project-slide.is-active { opacity: 1; }
-  .project-slide .ph { border-radius: 1rem; }
   .project-slide img { pointer-events: none; user-select: none; }
   @media (max-width: 48rem) {
     .project-slide { grid-template-columns: 1fr; }
@@ -531,7 +551,6 @@
     padding: 1.5rem 1.25rem;
     text-align: center;
   }
-  .cohort-card .ph { width: 6.5rem; margin: 0 auto 1rem; }
   .cohort-card h3 {
     font-size: 1.0625rem;
     font-weight: 800;
@@ -970,7 +989,6 @@
     <p>
       During this internship, you'll get to contribute to a real-world, impactful codebase in many creative ways. I will personally mentor you and give you advice on how to apply the skills you learn in a way that benefits you exponentially (like making a passion project or softwares that bring profit.) You'll be tasked with two major projects that will be actually used by users, and given various lessons and assignments throughout your internship. Be prepared to be challenged with real tasks, collaborate with your team to complete assignments, and spend time designing your own creative solutions to given problems.
     </p>
-    <img class="ph wide" alt="Placeholder: team / program photo">
     <p style="margin-top:1.25rem;">
       Only a handful of applicants will be selected for this internship. All programming will be done using HTML, CSS, and JS. The selection criteria is relatively light: experience with HTML/CSS/JS and experience with web development. Applicants are highly encouraged to provide their resume, Github username, or digital portfolio.
     </p>
@@ -989,7 +1007,11 @@
         <div class="carousel-track" id="carouselTrack">
 
           <article class="project-slide is-active">
-            <img class="ph" alt="Placeholder: CoffeeHouse screenshot">
+            <div class="project-preview coffeehouse" aria-label="CoffeeHouse project preview">
+              <span class="material-icons-round" aria-hidden="true">local_cafe</span>
+              <strong>CoffeeHouse</strong>
+              <span>Study together, wherever you are.</span>
+            </div>
             <div>
               <h3>CoffeeHouse</h3>
               <p class="creator"><span class="material-icons-round">person</span> Built by Umer Qureshi</p>
@@ -999,7 +1021,11 @@
           </article>
 
           <article class="project-slide">
-            <img class="ph" alt="Placeholder: Glistening Circuitry screenshot">
+            <div class="project-preview circuitry" aria-label="Glistening Circuitry project preview">
+              <span class="material-icons-round" aria-hidden="true">memory</span>
+              <strong>Glistening Circuitry</strong>
+              <span>Learn electrical engineering by doing.</span>
+            </div>
             <div>
               <h3>Glistening Circuitry</h3>
               <p class="creator"><span class="material-icons-round">person</span> Built by Abdelwahab Rahama</p>
@@ -1009,7 +1035,11 @@
           </article>
 
           <article class="project-slide">
-            <img class="ph" alt="Placeholder: ChoreQuest screenshot">
+            <div class="project-preview chorequest" aria-label="ChoreQuest project preview">
+              <span class="material-icons-round" aria-hidden="true">task_alt</span>
+              <strong>ChoreQuest</strong>
+              <span>Make everyday chores feel rewarding.</span>
+            </div>
             <div>
               <h3>ChoreQuest</h3>
               <p class="creator"><span class="material-icons-round">person</span> Built by Daniel Oluyomi</p>
@@ -1019,7 +1049,11 @@
           </article>
 
           <article class="project-slide">
-            <img class="ph" alt="Placeholder: car ranking site screenshot">
+            <div class="project-preview cars" aria-label="Fastest Car Rankings project preview">
+              <span class="material-icons-round" aria-hidden="true">speed</span>
+              <strong>Fastest Car Rankings</strong>
+              <span>Compare the quickest cars by the numbers.</span>
+            </div>
             <div>
               <h3>Fastest Car Rankings</h3>
               <p class="creator"><span class="material-icons-round">person</span> Built by Om Patel</p>
@@ -1151,22 +1185,22 @@
 
     <div class="cohort-grid">
       <div class="cohort-card">
-        <img class="ph square" alt="Placeholder: intern headshot">
+        <div class="cohort-avatar" aria-hidden="true">UQ</div>
         <h3>Umer Qureshi</h3>
         <p>Pembroke Pines Charter High School, FL<br>Electrical Engineering &amp; Neuroscience</p>
       </div>
       <div class="cohort-card">
-        <img class="ph square" alt="Placeholder: intern headshot">
+        <div class="cohort-avatar" aria-hidden="true">OP</div>
         <h3>Om Patel</h3>
         <p>Cedar Creek High School, NJ<br>Accounting</p>
       </div>
       <div class="cohort-card">
-        <img class="ph square" alt="Placeholder: intern headshot">
+        <div class="cohort-avatar" aria-hidden="true">DO</div>
         <h3>Daniel Oluyomi</h3>
         <p>Richard Montgomery High School, MD<br>Software Engineering</p>
       </div>
       <div class="cohort-card">
-        <img class="ph square" alt="Placeholder: intern headshot">
+        <div class="cohort-avatar" aria-hidden="true">AR</div>
         <h3>Abdelwahab Rahama</h3>
         <p>Bloomfield High School, NJ<br>EECS</p>
       </div>
