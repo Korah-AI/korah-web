@@ -7,7 +7,18 @@
   // Exact descriptions checked against the equation PNGs in the recorded
   // disclosed fixtures. These are explicit transcriptions, not an OCR guess.
   const half = '<mfrac><mn>1</mn><mn>2</mn></mfrac>';
+  const fractionTimesW = (numerator, denominator) => `<mfrac><mn>${numerator}</mn><mn>${denominator}</mn></mfrac><mi>w</mi>`;
   const reviewedMath = new Map([
+    // Verified against College Board question 181cc4d6. These four choices
+    // are equations, not figures, and should remain selectable inline math.
+    ['four-thirds w', fractionTimesW(4, 3)],
+    ['w plus 5', '<mi>w</mi><mo>+</mo><mn>5</mn>'],
+    ['three-fourths w', fractionTimesW(3, 4)],
+    ['w minus 5', '<mi>w</mi><mo>−</mo><mn>5</mn>'],
+    // Verified against College Board question c8d60e48. The triangle itself
+    // stays an image; only these surrounding expressions become MathML.
+    ['the length of side A, B equals the length of side A, C', '<mi>A</mi><mi>B</mi><mo>=</mo><mi>A</mi><mi>C</mi>'],
+    ['angle A, B C', '<mo>∠</mo><mi>A</mi><mi>B</mi><mi>C</mi>'],
     ['negative x plus y, equals negative 3 point 5, and, x plus 3 y, equals 9 point 5', '<mtable><mtr><mtd><mo>−</mo><mi>x</mi><mo>+</mo><mi>y</mi><mo>=</mo><mo>−</mo><mn>3.5</mn></mtd></mtr><mtr><mtd><mi>x</mi><mo>+</mo><mn>3</mn><mi>y</mi><mo>=</mo><mn>9.5</mn></mtd></mtr></mtable>'],
     ['y equals six fourths', '<mi>y</mi><mo>=</mo><mfrac><mn>6</mn><mn>4</mn></mfrac>'],
     ['one half y equals 4', half+'<mi>y</mi><mo>=</mo><mn>4</mn>'],
@@ -248,6 +259,16 @@
         }
       });
     }
+    // College Board coordinate graphs place white rectangles behind axis tick
+    // labels. In dark mode the figure is inverted, turning these into black
+    // boxes. Remove only rects inside a tick that also contains a text label.
+    svg.querySelectorAll('.tick rect').forEach(rect => {
+      if (!rect.parentElement?.querySelector('text')) return;
+      const fill = rect.style.fill || rect.getAttribute('fill') || '';
+      if (/^(?:white|#fff(?:fff)?|rgb\(255,\s*255,\s*255\))$/i.test(fill)) {
+        rect.classList.add('question-label-background');
+      }
+    });
     const view = (svg.getAttribute('viewBox') || '').trim().split(/[ ,]+/).map(Number);
     for (const [old, next] of ids) {
       if (!/^PolyCollection_\d+$/.test(old) || view.length !== 4) continue;
