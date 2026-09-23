@@ -16,7 +16,7 @@
             <span><i class="material-icons-round">quiz</i>${exam.questionCount} questions</span>
             <span><i class="material-icons-round">schedule</i>${window.KorahAP.formatDuration(exam.durationSec)}</span>
           </div>
-          <p>Two timed multiple-choice parts with a calculator break between them.</p>
+          <p>${exam.blurb}</p>
           <a class="ap-primary-button" href="${window.KorahAP.examUrl(exam.id)}">Review exam setup <i class="material-icons-round">arrow_forward</i></a>
         </article>`).join("");
       initCardEffects();
