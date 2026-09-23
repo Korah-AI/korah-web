@@ -159,37 +159,76 @@ async function fetchDisclosedQuestion(questionId, signal) {
   return null;
 }
 
-// Disclosed SPR rationales sometimes encode the correct answer in the
-// "<img alt=...>" alt text using written fractions; translate them numerically.
+// Disclosed questions state the answer in prose ("The correct answer is 25.4.")
+// and render fractions as <img alt="three halves">, so the answer has to be read
+// off the rationale text with the alt text spliced back in.
 const NUMERATOR_WORDS = {
-  one: 1, two: 2, three: 3, four: 4, five: 5,
-  six: 6, seven: 7, eight: 8, nine: 9, ten: 10,
+  one: 1, two: 2, three: 3, four: 4, five: 5, six: 6,
+  seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12,
 };
 const DENOMINATOR_WORDS = {
   half: 2, halves: 2, third: 3, thirds: 3, quarter: 4, quarters: 4,
-  fifth: 5, fifths: 5, sixth: 6, sixths: 6, seventh: 7, sevenths: 7,
-  eighth: 8, eighths: 8, ninth: 9, ninths: 9, tenth: 10, tenths: 10,
+  fourth: 4, fourths: 4, fifth: 5, fifths: 5, sixth: 6, sixths: 6,
+  seventh: 7, sevenths: 7, eighth: 8, eighths: 8, ninth: 9, ninths: 9,
+  tenth: 10, tenths: 10, eleventh: 11, elevenths: 11, twelfth: 12, twelfths: 12,
 };
-function translateFractionWords(word) {
-  if (!word) return "";
-  const m = word.toLowerCase().trim().match(/^(\w+)\s+(\w+)$/);
-  if (!m) return word;
-  const n = NUMERATOR_WORDS[m[1]];
-  const d = DENOMINATOR_WORDS[m[2]];
-  return n != null && d != null ? `${n}/${d}` : word;
+
+function flattenRationale(html) {
+  return String(html || "")
+    .replace(/<img[^>]*\balt="([^"]*)"[^>]*>/gi, " $1 ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/\s+/g, " ")
+    // "3,540" is one number; "7, 8, or 13" is a list. Only the separator-free
+    // thousands comma is dropped so the two cases stay distinguishable.
+    .replace(/(\d),(?=\d{3}\b)/g, "$1");
+}
+
+// One accepted value at the head of `text`, in any of the forms CB writes:
+// "25.4", "10/3", "the fraction 10 over 3", "three halves". Leading list
+// separators are skipped so "either 7, 8, or 13" reads as three values.
+const ANSWER_TOKEN =
+  /^(?:\s*(?:,|or|and)\s*)*\s*(?:(?:the\s+)?fraction\s+(-?[\d.]+)\s+over\s+(-?[\d.]+)|(-?[\d.]+)\s*\/\s*(-?[\d.]+)|([a-z]+)\s+([a-z]+)|(-?\d*\.?\d+))/i;
+
+function readAnswerToken(text) {
+  const m = ANSWER_TOKEN.exec(text);
+  if (!m) return null;
+  const [, fracN, fracD, slashN, slashD, word1, word2, plain] = m;
+  if (fracN) return { value: `${fracN}/${fracD}`, length: m[0].length };
+  if (slashN) return { value: `${slashN}/${slashD}`, length: m[0].length };
+  if (word1) {
+    const n = NUMERATOR_WORDS[word1.toLowerCase()];
+    const d = DENOMINATOR_WORDS[word2.toLowerCase()];
+    return n != null && d != null
+      ? { value: `${n}/${d}`, length: m[0].length }
+      : null;
+  }
+  if (plain) return { value: plain, length: m[0].length };
+  return null;
 }
 
 function extractDisclosedCorrectAnswer(q) {
-  if (q.answer?.style === "Multiple Choice" && q.answer.correct_choice) {
-    return [String(q.answer.correct_choice).toUpperCase()];
+  if (q.answer?.style === "Multiple Choice") {
+    if (q.answer.correct_choice) {
+      return [String(q.answer.correct_choice).toUpperCase()];
+    }
+    const m = /The correct answer is ([A-D])\.|Choice ([A-D]) is correct\./i.exec(
+      q.answer?.rationale || ""
+    );
+    return m ? [(m[1] || m[2]).toUpperCase()] : [];
   }
-  const rationale = q.answer?.rationale || "";
-  const m = rationale.match(
-    /The correct answer is ([A-D])\.|Choice ([A-D]) is correct\.|alt="([^"]*)"/i
-  );
-  if (!m) return [];
-  if (m[3]) return [translateFractionWords(m[3]).toUpperCase()];
-  return [(m[1] || m[2] || "").toUpperCase()];
+  const text = flattenRationale(q.answer?.rationale);
+  const intro = /the correct answer is\s*(?:either\s*)?/i.exec(text);
+  if (!intro) return [];
+  let rest = text.slice(intro.index + intro[0].length, intro.index + intro[0].length + 200);
+  const answers = [];
+  while (answers.length < 6) {
+    const hit = readAnswerToken(rest);
+    if (!hit) break;
+    answers.push(hit.value);
+    rest = rest.slice(hit.length);
+  }
+  return answers;
 }
 
 async function fetchRegularQuestion(externalId, signal) {
@@ -243,45 +282,77 @@ async function fetchRegularQuestion(externalId, signal) {
 // the fences: "x(x-1)(x+5)" displays as "xx-1x+5". Rewrite each <mfenced> to the
 // equivalent <mrow><mo>(</mo> … <mo>)</mo></mrow>, which every engine renders.
 //
-// The `separators` attribute is not translated: CB never emits a multi-child
-// <mfenced>, so there is nothing to separate.
+// Preserve separators as well as delimiters, including nested fences.
 function mfencedAttr(attrs, name, fallback) {
-  const match = new RegExp(`\\b${name}\\s*=\\s*"([^"]*)"`, "i").exec(attrs);
-  return match ? match[1] : fallback;
+  const match = new RegExp(`(?:^|\\s)${name}\\s*=\\s*(["'])(.*?)\\1`, "i").exec(attrs);
+  return match ? match[2] : fallback;
 }
 
 function escapeFence(ch) {
-  return ch.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return ch.replace(/&(?!(?:#\d+|#x[0-9a-f]+|amp|lt|gt|quot|apos);)/gi, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 export function expandMfenced(html) {
-  if (typeof html !== "string" || !html.includes("<mfenced")) return html;
-  // Open tags push their close delimiter so nested fences pair up correctly.
-  const closers = [];
-  return html.replace(/<(\/?)mfenced\b([^>]*)>/gi, (_, slash, attrs) => {
-    if (slash) {
-      return `<mo>${escapeFence(closers.pop() ?? ")")}</mo></mrow>`;
+  if (typeof html !== "string" || !/<mfenced\b/i.test(html)) return html;
+  function expand(attrs, inner = "") {
+    const children = [];
+    let depth = 0, child = "";
+    for (const token of inner.match(/<[^>]+>|[^<]+/g) || []) {
+      if (!depth && !token.trim()) continue;
+      child += token;
+      if (/^<\//.test(token)) depth--;
+      else if (/^<[a-z]/i.test(token) && !/\/>$/.test(token)) depth++;
+      if (depth === 0) { children.push(child); child = ""; }
     }
-    const open = escapeFence(mfencedAttr(attrs, "open", "("));
+    if (child) children.push(child);
+    const separators = [...mfencedAttr(attrs, "separators", ",").replace(/\s/g, "")];
+    const open = mfencedAttr(attrs, "open", "(");
     const close = mfencedAttr(attrs, "close", ")");
-    // <mfenced/> has no children and no closing tag, so emit both delimiters now.
-    if (attrs.trim().endsWith("/")) {
-      return `<mrow><mo>${open}</mo><mo>${escapeFence(close)}</mo></mrow>`;
-    }
-    closers.push(close);
-    return `<mrow><mo>${open}</mo>`;
-  });
+    const op = value => value ? `<mo>${escapeFence(value)}</mo>` : "";
+    return `<mrow>${op(open)}${children.map((c, i) => (i && separators.length ? op(separators[Math.min(i - 1, separators.length - 1)]) : "") + c).join("")}${op(close)}</mrow>`;
+  }
+  let result = html.replace(/<mfenced\b([^>]*?)\/>/gi, (_, attrs) => expand(attrs));
+  // Each pass expands innermost fences first, preserving complete child nodes.
+  for (let i = 0; i < 100; i++) {
+    const next = result.replace(/<mfenced\b([^>]*)>((?:(?!<\/?mfenced\b)[\s\S])*?)<\/mfenced>/gi, (_, attrs, inner) => expand(attrs, inner));
+    if (next === result) break;
+    result = next;
+  }
+  return result;
+}
+
+// ── MathML <menclose> expansion ────────────────────────────────────────
+// <menclose notation="top"> is how CB draws the segment bar in "line segment AB"
+// and the repeating bar in "0.3 repeating". MathML Core dropped <menclose>, so
+// browsers render the children and lose the bar — which changes the meaning.
+// <mover> with a combining overbar is the Core equivalent.
+export function expandMenclose(html) {
+  if (typeof html !== "string" || !/<menclose\b/i.test(html)) return html;
+  // Only notation="top" is rewritten; any other notation is left alone so its
+  // children still render rather than being silently restructured.
+  let result = html;
+  for (let i = 0; i < 100; i++) {
+    const next = result.replace(
+      /<menclose\b([^>]*)>((?:(?!<\/?menclose\b)[\s\S])*?)<\/menclose>/gi,
+      (whole, attrs, inner) => mfencedAttr(attrs, "notation", "") === "top"
+        ? `<mover accent="true"><mrow>${inner}</mrow><mo>&#175;</mo></mover>`
+        : whole
+    );
+    if (next === result) break;
+    result = next;
+  }
+  return result;
 }
 
 // Every question's HTML passes through here on its way to the API routes.
 function expandDetailMfenced(detail) {
   if (!detail) return detail;
   for (const field of ["stem", "stimulus", "rationale"]) {
-    detail[field] = expandMfenced(detail[field]);
+    detail[field] = expandMenclose(expandMfenced(detail[field]));
   }
   if (detail.answerOptions) {
     for (const key of Object.keys(detail.answerOptions)) {
-      detail.answerOptions[key] = expandMfenced(detail.answerOptions[key]);
+      detail.answerOptions[key] = expandMenclose(expandMfenced(detail.answerOptions[key]));
     }
   }
   return detail;
@@ -329,6 +400,28 @@ export function findCachedQuestionMeta(id) {
   return null;
 }
 
+// CB ships every accepted form of an SPR answer ("25/4" and "6.25" both grade
+// as correct), so the whole list travels to the frontend, not just the first.
+export function acceptedAnswers(raw) {
+  const list = Array.isArray(raw) ? raw : typeof raw === "string" ? [raw] : [];
+  return [...new Set(list.map((v) => String(v).trim()).filter(Boolean))];
+}
+
+// Keep the first batch and later hydration byte-for-byte consistent. Rendering
+// remains a client concern, including classification of source equation images.
+export function normalizeQuestionContent(detail) {
+  const accepted = acceptedAnswers(detail?.correct_answer);
+  return {
+    paragraph: fixImageUrls(detail?.stimulus),
+    stem: fixImageUrls(detail?.stem),
+    options: optionsArray(detail?.answerOptions),
+    correctAnswer: accepted[0] ?? "",
+    correctAnswers: accepted,
+    explanation: fixImageUrls(detail?.rationale),
+    type: detail?.type || "mcq",
+  };
+}
+
 export function normalizeQuestion(meta, detail) {
   const domainCode = meta?.primary_class_cd;
   const domainName =
@@ -349,18 +442,7 @@ export function normalizeQuestion(meta, detail) {
     domain: domainName,
     skillCd: meta?.skill_cd || "",
     difficulty: meta?.difficulty || "",
-    paragraph: loaded ? fixImageUrls(detail.stimulus) : "",
-    stem: loaded ? fixImageUrls(detail.stem) : "",
-    options: loaded ? optionsArray(detail.answerOptions) : [],
-    correctAnswer: loaded
-      ? Array.isArray(detail.correct_answer)
-        ? detail.correct_answer[0] ?? ""
-        : typeof detail.correct_answer === "string"
-          ? detail.correct_answer
-          : ""
-      : "",
-    explanation: loaded ? fixImageUrls(detail.rationale) : "",
-    type: loaded ? detail.type || "mcq" : "mcq",
+    ...normalizeQuestionContent(detail),
     loaded,
   };
 }

@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en" x-data="{
+  theme: localStorage.getItem('korah_theme') || 'dark',
+  activeTab: 'college-prep',
+  sidebarCollapsed: window.innerWidth <= 768 ? false : localStorage.getItem('korah_sidebar_collapsed') === 'true',
+  mobileOpen: false,
+  screen: 'setup',
+  essayType: 'personal_statement',
+  school: '',
+  schoolPrompt: '',
+  wordLimit: 650,
+  applicationWebsite: 'common_app',
+  applicationPrompt: '',
+  focusNote: '',
+  title: '',
+  promptModal: false,
+  schoolList: window.getSchoolList ? window.getSchoolList() : [],
+  promptList: window.COMMON_APP_PROMPTS || [],
+  commonAppLimit: window.COMMON_APP_WORD_LIMIT || 650,
+  isCommonApp() {
+    return this.essayType === 'personal_statement' && this.applicationWebsite === 'common_app';
+  },
+  promptMeta() {
+    return window.getCommonAppPrompt ? window.getCommonAppPrompt(this.applicationPrompt) : null;
+  },
+  choosePrompt(p) {
+    this.applicationPrompt = p.text;
+    this.wordLimit = this.commonAppLimit;
+    this.promptModal = false;
+    if (window.saveEssayMeta) window.saveEssayMeta();
+  },
+  getEffectiveTheme() {
+    if (this.theme === 'system') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return this.theme;
+  },
+  toggleSidebar() {
+    if (window.innerWidth <= 768) {
+      this.mobileOpen = !this.mobileOpen;
+      const overlay = document.querySelector('.sidebar-overlay');
+      if (overlay) overlay.classList.toggle('show', this.mobileOpen);
+    } else {
+      this.sidebarCollapsed = !this.sidebarCollapsed;
+      localStorage.setItem('korah_sidebar_collapsed', this.sidebarCollapsed);
+    }
+  }
+}" :data-theme="getEffectiveTheme()" x-cloak>
+<head>
+<link rel="stylesheet" href="../transitions/page-transitions.css"/>
+<script src="../transitions/page-transitions.js"></script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Korah AI   Essay Editor</title>
+<script>document.documentElement.setAttribute('data-theme', localStorage.getItem('korah_theme') || 'dark');</script>
+<link rel="icon" type="image/png" href="../logo-images/newlogo0.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script src="../sidebar-loader.js" defer></script>
+<script src="../study/js/sidebar.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="../app/korah-chat.css"/>
+<link rel="stylesheet" href="college-prep.css"/>
+<script src="data/schools.js"></script>
+<script src="data/common-app-prompts.js"></script>
+<style>
+  /* Scoped to body, not the root: the <html> tag carries x-cloak too, and a
+     global rule would blank the page if Alpine ever failed to boot. */
+  body [x-cloak] { display: none !important; }
+  .feed-scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; position: relative; z-index: 1; }
+  .feed-page { padding: 1.75rem 2.25rem 3.75rem; max-width: 77.5rem; margin: 0 auto; }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "prosemirror-view": "https://esm.sh/prosemirror-view@1.37.1",
+    "prosemirror-state": "https://esm.sh/prosemirror-state@1.4.3",
+    "prosemirror-model": "https://esm.sh/prosemirror-model@1.24.1",
+    "prosemirror-commands": "https://esm.sh/prosemirror-commands@1.6.0",
+    "prosemirror-inputrules": "https://esm.sh/prosemirror-inputrules@1.4.0",
+    "prosemirror-keymap": "https://esm.sh/prosemirror-keymap@1.2.2",
+    "prosemirror-history": "https://esm.sh/prosemirror-history@1.4.1",
+    "prosemirror-schema-basic": "https://esm.sh/prosemirror-schema-basic@1.2.3",
+    "tiptap-core": "https://esm.sh/@tiptap/core@2.11.5",
+    "tiptap-starter-kit": "https://esm.sh/@tiptap/starter-kit@2.11.5",
+    "tiptap-placeholder": "https://esm.sh/@tiptap/extension-placeholder@2.11.5"
+  }
+}
+</script>
+</head>
+<body class="korah-grey cp-grey">
+
+<canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
+<script>
+  /* The starfield/shooting stars live in sidebar.js. korahReady only fires once
+     the Firestore bootstrap below resolves, and never at all for a signed-out
+     visitor, so kick it off on whichever of korahReady / load lands first. */
+  (function () {
+    let started = false;
+    function startBackground() {
+      if (started || !window.KorahSidebar || !window.KorahSidebar.initBackground) return;
+      started = true;
+      window.KorahSidebar.initBackground();
+    }
+    window.addEventListener('korahReady', startBackground, { once: true });
+    window.addEventListener('load', startBackground, { once: true });
+    if (document.readyState === 'complete') startBackground();
+  })();
+</script>
+
+<div id="sidebar-root"></div>
+
+<div id="main-area-wrapper" class="main-area-wrapper">
+<main id="main-content" class="main-content">
+  <header class="chat-topbar bg-sf glass-sm t-theme bd">
+    <button id="sidebar-toggle" @click="toggleSidebar()" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+    <div class="chat-title-area">
+      <div class="korah-status-dot"></div>
+      <span class="font-semibold tx text-sm" x-text="screen === 'setup' ? 'New Essay' : 'Essay Editor'">New Essay</span>
+    </div>
+    <div class="topbar-actions" x-show="screen === 'editor'">
+      <button class="essay-topbar-btn" onclick="window.location.href='index.html'" title="Back to essays">
+        <span class="material-icons-round" style="font-size: 1.125rem;">arrow_back</span>
+        <span class="nav-text" style="font-size: 0.75rem;">Back</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- SETUP SCREEN -->
+  <div class="feed-scroll" x-show="screen === 'setup'">
+    <div class="feed-page">
+      <div class="essay-setup-card">
+        <h2 class="essay-setup-title">Start a New Essay</h2>
+        <p class="essay-setup-sub">Choose your essay type and provide details for tailored feedback.</p>
+
+        <!-- Essay Type -->
+        <div class="essay-setup-field">
+          <label class="essay-setup-label">Essay Type</label>
+          <div class="essay-type-switch">
+            <button class="type-pill" :class="{ active: essayType === 'personal_statement' }" @click="essayType = 'personal_statement'">Personal Statement</button>
+            <button class="type-pill" :class="{ active: essayType === 'supplemental' }" @click="essayType = 'supplemental'">Supplemental</button>
+          </div>
+        </div>
+
+        <!-- Supplemental-only fields -->
+        <div x-show="essayType === 'supplemental'" x-cloak>
+          <div class="essay-setup-field">
+            <label class="essay-setup-label">Target School</label>
+            <select class="essay-setup-select" x-model="school">
+              <option value="">Select a school...</option>
+              <template x-for="s in schoolList" :key="s.key">
+                <option :value="s.key" x-text="s.name"></option>
+              </template>
+            </select>
+          </div>
+          <!-- Supplemental prompts are pasted, not picked: every school words its
+               own, and the exact wording is what the model scores against. -->
+          <div class="essay-setup-field">
+            <label class="essay-setup-label">Prompt <span class="essay-setup-req">Required</span></label>
+            <textarea class="essay-setup-textarea" x-model="schoolPrompt" rows="3"
+                      placeholder="Paste the prompt here, word for word, as the school wrote it."></textarea>
+          </div>
+        </div>
+
+        <!-- Personal Statement-only fields -->
+        <div x-show="essayType === 'personal_statement'" x-cloak>
+          <div class="essay-setup-field">
+            <label class="essay-setup-label">Application Website</label>
+            <select class="essay-setup-select" x-model="applicationWebsite" @change="applicationPrompt = ''">
+              <option value="common_app">Common App</option>
+              <option value="questbridge">QuestBridge</option>
+            </select>
+          </div>
+
+          <!-- Common App prompts are picked from the official seven, never typed -->
+          <template x-if="applicationWebsite === 'common_app'">
+            <div class="essay-setup-field">
+              <label class="essay-setup-label">Prompt <span class="essay-setup-req">Required</span></label>
+              <button type="button" class="essay-prompt-picker" :class="{ 'is-set': applicationPrompt }" @click="promptModal = true">
+                <span class="essay-prompt-picker-label" x-show="!applicationPrompt">Select prompt</span>
+                <template x-if="promptMeta()">
+                  <span class="essay-prompt-picker-label">
+                    <strong x-text="'Prompt ' + promptMeta().n + ' \u00b7 '"></strong><span x-text="promptMeta().short"></span>
+                  </span>
+                </template>
+                <span class="material-icons-round" style="font-size: 1.125rem;">expand_more</span>
+              </button>
+            </div>
+          </template>
+
+          <!-- QuestBridge Prompts -->
+          <template x-if="applicationWebsite === 'questbridge'">
+            <div class="essay-setup-field">
+              <label class="essay-setup-label">Prompt</label>
+              <select class="essay-setup-select" x-model="applicationPrompt">
+                <option value="">Select a prompt...</option>
+                <option value="We are interested in learning more about you and the context in which you have grown up, formed your aspirations, and accomplished your academic successes. Please describe how the most influential factors and challenges in your life have shaped you into the person you are today.">Personal Essay   How factors and challenges shaped you (800 words)</option>
+                <option value="Tell us about a time you learned something new and were excited to uncover more information about that topic.">Topical Essay   Time you learned something new (400 words)</option>
+                <option value="Our behavior is often shaped by our values. Tell us about a value you hold.">Topical Essay   A value you hold (400 words)</option>
+                <option value="Tell us about a time when your perspective was different from someone else's.">Topical Essay   Different perspective (400 words)</option>
+              </select>
+            </div>
+          </template>
+        </div>
+
+        <!-- Word Limit -->
+        <div class="essay-setup-field">
+          <label class="essay-setup-label">Word Limit</label>
+          <template x-if="isCommonApp()">
+            <div class="essay-fixed-limit"><span x-text="commonAppLimit"></span> words, set by Common App</div>
+          </template>
+          <template x-if="!isCommonApp()">
+            <input type="number" class="essay-setup-input" x-model.number="wordLimit" min="50" max="2000" placeholder="650">
+          </template>
+        </div>
+
+        <!-- Essay Content -->
+        <div class="essay-setup-field">
+          <label class="essay-setup-label">Your Essay</label>
+          <textarea id="essay-input" class="essay-setup-textarea essay-textarea-large" placeholder="Write or paste your essay here..." rows="12"></textarea>
+          <div class="essay-word-count">
+            <span id="essay-word-count">0</span> / <span x-text="wordLimit">650</span> words
+          </div>
+        </div>
+
+        <!-- Focus Note -->
+        <div class="essay-setup-field">
+          <label class="essay-setup-label">Focus Note <span style="color: var(--tx3); font-weight: 400;">(optional)</span></label>
+          <textarea class="essay-setup-textarea" x-model="focusNote" placeholder="Anything specific you want feedback on? e.g. 'I feel like I spend too long on X instead of Y'" rows="2"></textarea>
+        </div>
+
+        <!-- Analyze Button -->
+        <button class="essay-analyze-btn" onclick="startAnalysis()">
+          <span class="material-icons-round" style="font-size: 1.125rem;">auto_awesome</span>
+          Analyze Essay
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDITOR SCREEN -->
+  <div class="essay-editor-layout" x-show="screen === 'editor'" style="display: none;">
+    <!-- Left: Editor -->
+    <div class="essay-editor-panel">
+      <!-- The scroller wraps the header and the paper; #editor-container holds
+           nothing but the sheet, since editor.js owns its innerHTML. -->
+      <div class="essay-doc-scroll">
+        <div class="essay-doc-head">
+          <input class="essay-doc-title" x-model="title" placeholder="Untitled Essay"
+                 @change="window.saveEssayMeta && window.saveEssayMeta()"
+                 @blur="window.saveEssayMeta && window.saveEssayMeta()"/>
+          <button class="essay-prompt-btn" x-show="isCommonApp()" @click="promptModal = true"
+                  x-text="applicationPrompt ? 'Change prompt' : 'Select prompt'">Select prompt</button>
+        </div>
+        <template x-if="promptMeta()">
+          <div class="essay-prompt-card">
+            <div class="essay-prompt-card-title" x-text="'Common App Prompt ' + promptMeta().n"></div>
+            <p class="essay-prompt-card-text" x-text="promptMeta().text"></p>
+          </div>
+        </template>
+        <div id="editor-container" class="essay-editor-container"></div>
+      </div>
+      <div class="essay-editor-footer">
+        <span id="editor-word-count">0</span> words
+      </div>
+    </div>
+
+    <!-- Right: Review -->
+    <div class="essay-review-panel">
+      <!-- Stands in for the panel while the analysis passes run -->
+      <div class="essay-review-skeleton" aria-hidden="true">
+        <div class="sk-block">
+          <div class="sk-bar" style="width: 35%;"></div>
+          <div class="sk-bar" style="width: 60%; height: 1.5rem;"></div>
+          <div class="sk-bar"></div>
+          <div class="sk-bar"></div>
+        </div>
+        <div class="sk-block">
+          <div class="sk-bar" style="width: 50%;"></div>
+          <div class="sk-card"></div>
+          <div class="sk-card"></div>
+        </div>
+        <div class="sk-block">
+          <div class="sk-bar" style="width: 45%;"></div>
+          <div class="sk-card is-short"></div>
+          <div class="sk-card is-short"></div>
+          <div class="sk-card is-short"></div>
+        </div>
+      </div>
+
+      <!-- Score Panel -->
+      <div id="score-panel" class="essay-score-panel" style="display: none;">
+        <div class="essay-score-header">
+          <h3 class="essay-score-title">Scores</h3>
+          <button class="essay-score-toggle" onclick="toggleScoreCollapse()" title="Toggle sub-scores">
+            <span class="material-icons-round" id="score-toggle-icon">expand_less</span>
+          </button>
+        </div>
+        <div class="essay-score-average">
+          <span id="score-average" class="essay-average-num">--</span>
+          <span class="essay-average-label">Average</span>
+        </div>
+        <div id="score-dims" class="essay-score-dims"></div>
+      </div>
+
+      <!-- What the reader sees: threads across the essay and the person they
+           add up to. Collapses the same way the score panel does. -->
+      <div id="themes-panel" class="essay-themes-panel" style="display: none;">
+        <div class="essay-score-header">
+          <h3 class="essay-score-title">What the reader sees</h3>
+          <button class="essay-score-toggle" onclick="toggleThemesCollapse()" title="Toggle themes">
+            <span class="material-icons-round">expand_less</span>
+          </button>
+        </div>
+        <div id="themes-body" class="essay-themes-body"></div>
+      </div>
+
+      <!-- Annotation Cards -->
+      <div class="essay-rec-header">
+        <span class="essay-rec-header-label">Recommendations</span>
+        <div class="rec-filter">
+          <button class="rec-filter-pill active" data-filter="open" type="button" onclick="setRecFilter('open')">
+            Open <span class="rec-filter-count" id="rec-count-open">0</span>
+          </button>
+          <button class="rec-filter-pill" data-filter="resolved" type="button" onclick="setRecFilter('resolved')">
+            Resolved <span class="rec-filter-count" id="rec-count-resolved">0</span>
+          </button>
+        </div>
+      </div>
+      <div id="annotation-list" class="essay-annotation-list">
+        <div class="essay-annotation-empty">
+          <span class="material-icons-round" style="font-size: 1.5rem; color: var(--tx3);">chat_bubble_outline</span>
+          <p style="color: var(--tx3); font-size: 0.8125rem; margin: 0;">Annotations will appear here after analysis.</p>
+        </div>
+      </div>
+      <p id="rec-empty-note" class="essay-rec-empty" hidden></p>
+    </div>
+  </div>
+
+  <!-- Submit for feedback — shows once the essay differs from the analysed copy -->
+  <div id="feedbackPill" class="cp-selection-pill" hidden>
+    <span class="cp-pill-count">Essay edited</span>
+    <button id="feedbackPillSubmit" class="cp-pill-btn cp-pill-start t-btn" type="button">
+      <span>Submit for feedback</span>
+      <svg class="cp-pill-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+  </div>
+
+  <!-- Analysis loader. Floats over the page and dismisses on an outside click;
+       the work carries on and the review panel keeps its skeleton. -->
+  <div id="analysis-loading" class="essay-loading-overlay" style="display: none;">
+    <div class="essay-loading-card">
+      <div class="essay-loading-spinner"></div>
+      <div>
+        <h3 class="essay-loading-title">Analyzing your essay...</h3>
+        <p class="essay-loading-sub" id="loading-status">Running annotation pass...</p>
+      </div>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<!-- Common App prompt picker — used by the setup screen and the editor header -->
+<div class="prompt-modal" :class="{ show: promptModal }" @click.self="promptModal = false" x-cloak>
+  <div class="prompt-modal-card">
+    <div class="prompt-modal-head">
+      <h3 class="prompt-modal-title">Choose a Common App prompt</h3>
+      <button class="prompt-modal-close" @click="promptModal = false" aria-label="Close">
+        <span class="material-icons-round">close</span>
+      </button>
+    </div>
+    <p class="prompt-modal-sub">Every prompt has the same 650-word limit.</p>
+    <div class="prompt-modal-list">
+      <template x-for="p in promptList" :key="p.n">
+        <button class="prompt-option" :class="{ 'is-selected': applicationPrompt === p.text }" @click="choosePrompt(p)">
+          <span class="prompt-option-n" x-text="'Prompt ' + p.n"></span>
+          <span class="prompt-option-short" x-text="p.short"></span>
+          <span class="prompt-option-text" x-text="p.text"></span>
+        </button>
+      </template>
+    </div>
+  </div>
+</div>
+
+<!-- Selection feedback — follows a highlighted passage in the essay. Lives on
+     the body so a re-render of the essay never takes it down mid-question. -->
+<div id="ask-pop" class="cp-ask-pop" hidden>
+  <button id="ask-pop-trigger" class="cp-ask-trigger t-btn" type="button">
+    <span class="material-icons-round" style="font-size: 1rem;">auto_awesome</span>
+    <span>Ask for feedback on this</span>
+  </button>
+  <form id="ask-pop-form" class="cp-ask-form" hidden>
+    <input id="ask-pop-input" class="cp-ask-input" type="text" autocomplete="off"
+           placeholder="What do you want to know about this passage?"/>
+    <button class="cp-ask-send t-btn" type="submit" aria-label="Send question">
+      <span class="material-icons-round" style="font-size: 1.125rem;">arrow_upward</span>
+    </button>
+  </form>
+</div>
+
+<!-- Alert popup — reuses the app's modal styling from korah-chat.css -->
+<div id="essay-modal" class="delete-modal is-alert">
+  <div class="delete-modal-content">
+    <div class="delete-modal-icon"><span class="material-icons-round" style="font-size:2.25rem;color:var(--red,#ef4444);">error_outline</span></div>
+    <h3 class="delete-modal-title">Nothing to analyze yet</h3>
+    <p class="delete-modal-desc" id="essay-modal-desc"></p>
+    <div class="delete-modal-actions">
+      <button id="essay-modal-confirm" class="delete-modal-btn confirm t-btn">OK</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Replaces alert() so failures show in the app's own modal, not a browser dialog.
+  (function () {
+    const modal = document.getElementById("essay-modal");
+    const descEl = document.getElementById("essay-modal-desc");
+    const confirmBtn = document.getElementById("essay-modal-confirm");
+
+    function close() { modal.classList.remove("show"); }
+
+    window.showEssayAlert = function (message) {
+      descEl.textContent = message;
+      modal.classList.add("show");
+      confirmBtn.focus();
+    };
+
+    confirmBtn.addEventListener("click", close);
+    modal.addEventListener("click", (e) => { if (e.target === modal) close(); });
+    document.addEventListener("keydown", (e) => {
+      if (!modal.classList.contains("show")) return;
+      if (e.key === "Escape" || e.key === "Enter") close();
+    });
+  })();
+</script>
+
+<script type="module" src="js/editor.js"></script>
+<script type="module" src="js/ask.js"></script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+  import { setupKorahDB } from "../app/data/firestore-store.js";
+  import { startGuestSession, initGuestGate } from "../guest-gate.js";
+  import { startAuthGuard } from "../auth-guard.js";
+  import { getDemoEssay, DEMO_ESSAY_ID } from "./js/demo-data.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
+    authDomain: "korah-app.firebaseapp.com",
+    projectId: "korah-app",
+    storageBucket: "korah-app.firebasestorage.app",
+    messagingSenderId: "226169460321",
+    appId: "1:226169460321:web:b166fc8260107c55dafc20"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  let currentUser = null;
+  let currentEssayId = null;
+
+  async function persistEssay(extra) {
+    if (!currentUser || currentEssayId === DEMO_ESSAY_ID) return;
+    const d = getAlpineData();
+    if (!d) return;
+    try {
+      const { getFirestore, doc, setDoc } = await import("https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js");
+      const db = getFirestore(app);
+      if (!currentEssayId) {
+        currentEssayId = (crypto.randomUUID && crypto.randomUUID()) || String(Date.now());
+        history.replaceState(null, '', `editor.html?id=${currentEssayId}`);
+      }
+      await setDoc(doc(db, `users/${currentUser.uid}/essays`, currentEssayId), {
+        type: d.essayType,
+        title: d.title,
+        school: d.school,
+        schoolPrompt: d.schoolPrompt,
+        wordLimit: d.wordLimit,
+        applicationWebsite: d.applicationWebsite,
+        applicationPrompt: d.applicationPrompt,
+        focusNote: d.focusNote,
+        content: document.getElementById('essay-input').value.trim(),
+        updatedAt: new Date().toISOString(),
+        ...extra,
+      }, { merge: true });
+    } catch (e) {
+      console.warn('Could not save essay:', e);
+    }
+  }
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      startGuestSession();
+      initGuestGate('../');
+      return;
+    }
+    currentUser = user;
+    await setupKorahDB(app, user.uid);
+    const detail = { uid: user.uid };
+    window._korahReadyFired = detail;
+    window.dispatchEvent(new CustomEvent('korahReady', { detail }));
+    startAuthGuard(auth, '../index.html');
+
+    const params = new URLSearchParams(window.location.search);
+    const essayId = params.get('id');
+    if (essayId && essayId !== DEMO_ESSAY_ID) {
+      currentEssayId = essayId;
+      loadEssay(essayId);
+    }
+  });
+
+  // #logout-btn lives in the sidebar, which sidebar-loader.js injects asynchronously,
+  // so it does not exist yet when this module runs. Delegate from document instead.
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#logout-btn')) return;
+    window.confirmLogout(async () => {
+      await signOut(auth);
+      localStorage.removeItem('korah_first_name');
+      window.KorahTransitions.go('../login.html');
+    });
+  });
+
+  function getAlpineData() {
+    const el = document.querySelector('[x-data]');
+    if (!el || !el._x_dataStack) return null;
+    return el._x_dataStack[0];
+  }
+
+  async function loadEssay(id) {
+    try {
+      if (id === DEMO_ESSAY_ID) {
+        const demo = await getDemoEssay();
+        if (demo) await applyEssay(demo);
+        return;
+      }
+      const { getFirestore, doc, getDoc } = await import("https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js");
+      const db = getFirestore(app);
+      const snap = await getDoc(doc(db, `users/${currentUser.uid}/essays`, id));
+      if (snap.exists()) await applyEssay(snap.data());
+    } catch (e) {
+      console.warn("Could not load essay:", e);
+    }
+  }
+
+  async function applyEssay(data) {
+    const d = getAlpineData();
+    if (d) {
+      d.essayType = data.type || 'personal_statement';
+      d.school = data.school || '';
+      d.schoolPrompt = data.schoolPrompt || data.prompt || '';
+      d.wordLimit = data.wordLimit || 650;
+      d.applicationWebsite = data.applicationWebsite || 'common_app';
+      d.applicationPrompt = data.applicationPrompt || '';
+      d.focusNote = data.focusNote || '';
+      d.title = data.title || '';
+    }
+    const input = document.getElementById('essay-input');
+    if (input && data.content) {
+      input.value = data.content;
+      input.dispatchEvent(new Event('input'));
+    }
+    if (data.scores) {
+      switchToEditor();
+      window.dispatchEvent(new CustomEvent('essay-loaded', { detail: data }));
+      const { default: EssayScoring } = await import('./js/scoring.js');
+      window._lastScores = data.scores;
+      EssayScoring.render(data.scores);
+      EssayScoring.renderRecommendations(data.scores);
+      EssayScoring.renderThemes(data.themes);
+      EssayScoring.applyResolved(data.resolved);
+      if (window.highlightAllDimensions) await window.highlightAllDimensions();
+      setBaseline(data.content || '');
+    }
+  }
+
+  function switchToEditor() {
+    const d = getAlpineData();
+    if (d) d.screen = 'editor';
+  }
+
+  // Title edits and prompt changes in the editor header save on the spot.
+  window.saveEssayMeta = function () { persistEssay(); };
+
+  // scoring.js calls this when a card is resolved or reopened.
+  window.persistResolved = function (ids) { persistEssay({ resolved: ids }); };
+
+  /* "Submit for feedback" only makes sense once the essay drifts from the copy
+     the current annotations were built from, so every analysis records a
+     baseline and every edit compares against it. Both sides are normalised
+     because the highlighted view rebuilds the essay paragraph by paragraph. */
+  let analysedContent = '';
+  const feedbackPill = document.getElementById('feedbackPill');
+
+  function normalizeEssay(text) {
+    return (text || '').split(/\n+/).map(p => p.trim()).filter(Boolean).join('\n\n');
+  }
+
+  function syncFeedbackPill() {
+    const now = normalizeEssay(document.getElementById('essay-input').value);
+    feedbackPill.toggleAttribute('hidden', !(analysedContent && now && now !== analysedContent));
+  }
+
+  function setBaseline(content) {
+    analysedContent = normalizeEssay(content);
+    syncFeedbackPill();
+  }
+
+  // editor.js fires this from the highlighted view on every keystroke.
+  window.addEventListener('essay-edited', syncFeedbackPill);
+
+  document.getElementById('feedbackPillSubmit').addEventListener('click', () => {
+    const content = normalizeEssay(document.getElementById('essay-input').value);
+    if (!content) return;
+    feedbackPill.setAttribute('hidden', '');
+    analyze(content, window._lastScores);
+  });
+
+  /* The loader is advisory: clicking anywhere outside its card puts it away and
+     the analysis keeps going. Each run starts it over. */
+  const loaderEl = document.getElementById('analysis-loading');
+
+  function showLoader() {
+    loaderEl.style.display = 'flex';
+  }
+
+  function hideLoader() {
+    loaderEl.style.display = 'none';
+  }
+
+  document.addEventListener('pointerdown', (e) => {
+    if (loaderEl.style.display === 'none') return;
+    if (e.target.closest('.essay-loading-card')) return;
+    hideLoader();
+  });
+
+  function setReviewLoading(on) {
+    const panel = document.querySelector('.essay-review-panel');
+    if (panel) panel.classList.toggle('is-loading', on);
+  }
+
+  /* Both the setup screen's Analyze button and the pill land here. Handing the
+     old scores back gives the score bars their +/- deltas on a re-run. */
+  async function analyze(content, previousScores) {
+    const d = getAlpineData();
+    if (!d) return;
+    const status = document.getElementById('loading-status');
+    showLoader();
+    setReviewLoading(true);
+    status.textContent = 'Scoring essay...';
+
+    try {
+      const { default: EssayAPI } = await import('./js/api.js');
+      const { default: EssayScoring } = await import('./js/scoring.js');
+
+      const effectivePrompt = d.essayType === 'supplemental' ? d.schoolPrompt : (d.applicationPrompt || '');
+      const scores = await EssayAPI.score(content, d.essayType, d.school, effectivePrompt, d.wordLimit);
+      if (!scores) throw new Error('Scoring returned no scores');
+
+      window._lastScores = scores;
+      EssayScoring.render(scores, previousScores);
+      EssayScoring.renderRecommendations(scores);
+      setReviewLoading(false);
+
+      // The overall read. A new set of cards starts with nothing resolved.
+      status.textContent = 'Reading for themes...';
+      const themes = await EssayAPI.themes(content, d.essayType, d.school, effectivePrompt, d.wordLimit);
+      EssayScoring.renderThemes(themes);
+      persistEssay({ scores, themes: themes || null, resolved: [] });
+
+      if (d.focusNote) {
+        status.textContent = 'Running focus pass...';
+        const focusResults = await EssayAPI.focusNote(content, d.focusNote, d.essayType, d.school, effectivePrompt, d.wordLimit);
+        if (focusResults && focusResults.length) {
+          EssayScoring.renderFocusCards(focusResults);
+        }
+      }
+
+      status.textContent = 'Highlighting essay...';
+      if (window.highlightAllDimensions) await window.highlightAllDimensions();
+    } catch (e) {
+      console.error('Analysis failed:', e);
+      status.textContent = 'Analysis failed. Using canned data...';
+      try {
+        const { default: EssayScoring } = await import('./js/scoring.js');
+        const canned = await fetch('data/canned-feedback.json').then(r => r.json());
+        window._lastScores = canned.scores;
+        EssayScoring.render(canned.scores);
+        EssayScoring.renderRecommendations(canned.scores);
+        EssayScoring.renderThemes(null);
+        if (window.highlightAllDimensions) await window.highlightAllDimensions();
+      } catch (e2) {
+        console.error('Canned data load failed:', e2);
+      }
+    }
+
+    hideLoader();
+    setReviewLoading(false);
+    setBaseline(content);
+  }
+
+  window.startAnalysis = async function() {
+    const d = getAlpineData();
+    if (!d) return;
+    const content = document.getElementById('essay-input').value.trim();
+    if (!content) { showEssayAlert('Write or paste your essay first, then run the analysis.'); return; }
+    if (d.isCommonApp() && !d.applicationPrompt) {
+      showEssayAlert('Pick one of the seven Common App prompts before running the analysis.');
+      return;
+    }
+    if (d.essayType === 'supplemental' && !d.schoolPrompt.trim()) {
+      showEssayAlert('Paste the supplemental prompt before running the analysis.');
+      return;
+    }
+
+    switchToEditor();
+    persistEssay();
+    await new Promise(r => setTimeout(r, 100));
+    if (window.initEditor) await window.initEditor(content);
+    await analyze(content, null);
+  };
+
+  // The dashboard's wizard choice arrives as ?type=
+  document.addEventListener('alpine:initialized', () => {
+    const type = new URLSearchParams(window.location.search).get('type');
+    const d = getAlpineData();
+    if (d && (type === 'personal_statement' || type === 'supplemental')) d.essayType = type;
+  });
+
+  // The localhost placeholder needs no account, so it loads outside the auth
+  // handler. editor.js registers its essay-loaded listener on DOMContentLoaded,
+  // so wait for that before dispatching.
+  document.addEventListener('DOMContentLoaded', () => {
+    const id = new URLSearchParams(window.location.search).get('id');
+    if (id === DEMO_ESSAY_ID) {
+      currentEssayId = id;
+      loadEssay(id);
+    }
+  });
+
+  // Word count for setup textarea
+  document.addEventListener('DOMContentLoaded', () => {
+    const input = document.getElementById('essay-input');
+    if (input) {
+      input.addEventListener('input', () => {
+        const words = input.value.trim() ? input.value.trim().split(/\s+/).length : 0;
+        const el = document.getElementById('essay-word-count');
+        if (el) el.textContent = words;
+      });
+    }
+  });
+</script>
+
+<script>
+  /* Recent Chats / Recent Study Items. initSidebar() reads #chat-history
+     straight away, so wait for korahReady: by then KorahDB is up and the
+     sidebar partial has been injected. */
+  window.addEventListener('korahReady', function () {
+    if (!window.KorahSidebar) return;
+    window.KorahSidebar.initSidebar({
+      chatBaseUrl: '../chat.html',
+      itemPageUrl: '../study/item.html',
+    });
+  }, { once: true });
+</script>
+</body>
+</html>

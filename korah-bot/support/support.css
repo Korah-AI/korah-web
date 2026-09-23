@@ -18,3 +18,54 @@ section[id] { scroll-margin-top: 6rem; }
     80% { opacity: 1; }
     100% { opacity: 0; transform: rotate(var(--angle, 35deg)) translateX(37.5rem); }
 }
+
+/* Legal sections (privacy + terms): grey resting surfaces, see docs/WIZARD-UI-PATTERNS.md */
+.legal {
+    --lg-sf:  #26262e;
+    --lg-sf2: #31313c;
+    --lg-bd:  #454553;
+    --acc:      #3b82f6;
+    --acc-fill: #3472d9;
+    --tx2: var(--tx);
+    --tx3: var(--tx);
+}
+html[data-theme="light"] .legal {
+    --lg-sf: #eceef2; --lg-sf2: #e0e3ea; --lg-bd: #c3c8d2;
+}
+.legal .tx2, .legal .tx3 { color: var(--tx); }
+
+.legal-card {
+    background: var(--lg-sf);
+    border: 1px solid var(--lg-bd);
+    border-radius: 1rem;
+}
+
+.legal-row + .legal-row { margin-top: 0.5rem; }
+
+.legal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.875rem 1rem;
+    background: var(--lg-sf2);
+    border: 1px solid var(--lg-bd);
+    border-radius: 0.625rem;
+    cursor: pointer;
+    transition: transform .18s ease, background .18s ease, border-color .18s ease;
+}
+.legal-head:hover:not(.is-open) {
+    border-color: var(--acc);
+    transform: scale(1.01);
+}
+.legal-head.is-open {
+    background: var(--acc-fill);
+    border-color: var(--acc-fill);
+    color: #fff;
+}
+
+.legal-link {
+    color: var(--acc);
+    text-decoration: none;
+}
+.legal-link:hover { text-decoration: underline; }

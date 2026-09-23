@@ -256,7 +256,14 @@ function showSidebarDeleteModal(name, onConfirm) {
 
   // ── Render Chat History ──
   function _getChatLogoPath() {
-    return 'logo-images/newlogo5.png';
+    // Resolve the base from this script's own URL, the same way
+    // sidebar-loader.js does. A page-relative path breaks on /sat/ and
+    // /sat/vocab/ pages, and a root-absolute one breaks wherever the site is
+    // not served from the server root — the loader rewrites the sidebar markup
+    // for exactly that reason, but it cannot touch what we inject afterwards.
+    const el = document.querySelector('script[src*="study/js/sidebar.js"]');
+    const base = el ? el.src.replace(/\/study\/js\/sidebar\.js.*$/, '') : '';
+    return base + '/logo-images/newlogo5.png';
   }
 
   function renderChatHistory(container, baseUrl) {
@@ -481,7 +488,10 @@ function showSidebarDeleteModal(name, onConfirm) {
 
   function initBackground() {
     const canvas = document.getElementById("bg-canvas");
-    if (!canvas) return;
+    // Pages that start the canvas early also reach here through initSidebar;
+    // one animate() loop per canvas is enough.
+    if (!canvas || canvas.dataset.bgStarted) return;
+    canvas.dataset.bgStarted = "1";
     const ctx = canvas.getContext("2d");
     let w, h, stars = [], shootingStars = [], dots = [];
 
@@ -1298,6 +1308,16 @@ function showSidebarDeleteModal(name, onConfirm) {
   function initSidebar(options) {
     const { chatHistoryId, studyItemsId, chatBaseUrl, itemPageUrl, onItemClick, activeId } = options || {};
 
+    // sidebar-loader.js fetches and injects sidebar.html asynchronously. When a
+    // page's bootstrap wins that race the markup is not here yet, so every
+    // lookup below comes back null and the chat list keeps its skeleton rows.
+    // Pages with no #sidebar-root carry their own markup and are unaffected.
+    const sidebarRoot = document.getElementById("sidebar-root");
+    if (sidebarRoot && !sidebarRoot.children.length) {
+      window.addEventListener("korahSidebarReady", () => initSidebar(options), { once: true });
+      return;
+    }
+
     // 0. Action Modals (Rename, Delete, Clear, Logout)
     initActionModals();
     
@@ -1638,6 +1658,7 @@ function showSidebarDeleteModal(name, onConfirm) {
   window.KorahSidebar = {
     getSessions, getStudyItems, getTypeEmoji, getModeIconHtml, getTypeIconHtml,
     renderChatHistory, renderStudyItemsHistory, updateActiveItem, initSidebar,
+    initBackground,
     initTimerWidget, updateTimerWidget,
     onCollapseChange: null,
   };

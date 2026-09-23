@@ -597,7 +597,7 @@ html[data-theme="light"] .collapsed-more-dropdown .more-dropdown-item.danger:hov
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 1.75rem;
+    margin-bottom: 0.25rem;
     flex-shrink: 0;
 }
 
@@ -628,13 +628,78 @@ html[data-theme="light"] .collapsed-more-dropdown .more-dropdown-item.danger:hov
 }
 .new-chat-btn:hover { filter: brightness(1.15); transform: translateY(-0.0625rem); box-shadow: 0 0 1.25rem var(--glow) }
 
+/* ── Tab selector — segmented control ───────────────────────────────────────
+   One grey track across the sidebar, with the current tab as a lighter filled
+   chip and the rest as plain labels. The greys step up off the panel
+   (--chrome-sf panel -> --chrome-sf2 track -> lightened chip) and come from the
+   chrome set rather than --nav-sf/--nav-bd, because those flip with the theme
+   while the sidebar panel does not. The track spans the sidebar's content width
+   so it lines up with the nav buttons beneath it. */
+.sidebar-tab-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.1875rem;
+  padding: 0.3125rem;
+  margin: 0.375rem 0 0.875rem;
+  border-radius: 0.875rem;
+  background: var(--chrome-sf2);
+  flex-shrink: 0;
+}
+.sidebar-tab-pill {
+  /* Grow from the label's own width rather than into equal thirds: "College
+     Prep" needs more room than "AP", and equal segments would clip it. */
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.5rem;
+  padding: 0 0.5rem;
+  border: none;
+  border-radius: 0.625rem;
+  background: transparent;
+  color: var(--tx2);
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease, transform .15s ease;
+  text-decoration: none;
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+.sidebar-tab-pill:hover {
+  color: var(--tx);
+  background: color-mix(in srgb, var(--chrome-tx) 9%, var(--chrome-sf2));
+  transform: scale(1.03);
+}
+/* The tab you're on is the lighter chip resting on the track. */
+.sidebar-tab-pill.active,
+.sidebar-tab-pill.active:hover {
+  background: color-mix(in srgb, var(--chrome-tx) 18%, var(--chrome-sf2));
+  color: var(--tx);
+  font-weight: 700;
+  transform: none;
+}
+
+.sidebar.collapsed .sidebar-tab-selector {
+  padding: 0 0.625rem;
+}
+.sidebar.collapsed .sidebar-tab-selector {
+  display: none;
+}
+
 .sidebar-nav {
   display: flex;
   flex-direction: column;
-  gap: 0.375rem;
-  margin-top: -1rem;
+  gap: 0.5rem;
+  margin-top: 0;
   margin-bottom: 1rem;
   flex-shrink: 0;
+}
+.sidebar-nav > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 .sidebar-nav-link {
   flex: 1;
@@ -781,9 +846,8 @@ html[data-theme="light"] .sat-more-dropdown .more-dropdown-item::before {
     padding: 0.25rem 0.375rem;
     margin: 0.75rem 0 0.375rem;
     flex-shrink: 0;
-    position: sticky;
-    top: 0;
-    z-index: 1;
+    /* Not sticky: the labels scroll with the buttons they title, instead of
+       pinning to the top of the sidebar once you scroll past them. */
     background: transparent;
 }
 
@@ -3454,7 +3518,7 @@ body.korah-home-chat .send-btn-circle {
   background: transparent !important;
 }
 
-html {
+html[data-theme="light"] {
   background: #faf8ff;
 }
 
@@ -4586,13 +4650,14 @@ html {
     bottom: 10rem;
     left: 50%;
     transform: translateX(-50%) translateY(1.25rem) scale(0.95);
-    background: rgba(8, 4, 20, 0.72);
-    border: 0.0625rem solid rgba(255, 255, 255, 0.14);
+    /* Solid, not glass: the toast overlaps the transcript and the text behind it
+       was reading through the panel. Shared toast grey, same surface as
+       .fix-toast in sat/questions.html. */
+    background: #6e6e73;
+    border: 0.0625rem solid #85858a;
     border-radius: 1rem;
     padding: 0.875rem 1.25rem;
     box-shadow: 0 0.75rem 2.5rem rgba(0,0,0,.5), 0 0 1.5rem var(--glow), inset 0 1px 0 rgba(255,255,255,.12);
-    backdrop-filter: blur(1.75rem) saturate(1.6);
-    -webkit-backdrop-filter: blur(1.75rem) saturate(1.6);
     z-index: 1000;
     max-width: 22rem;
     min-width: 18rem;
@@ -4632,11 +4697,11 @@ html {
 .pro-tip-toast-text {
     font-size: 0.8125rem;
     line-height: 1.5;
-    color: rgba(255, 255, 255, 0.85);
+    color: #ffffff;
     font-weight: 400;
 }
 [data-theme="light"] .pro-tip-toast-text {
-    color: rgba(255, 255, 255, 0.85);
+    color: #ffffff;
 }
 .pro-tip-toast-close {
     width: 1.5rem;
@@ -4648,7 +4713,7 @@ html {
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--tx3);
+    color: #ffffff;
     font-size: 1rem;
     flex-shrink: 0;
     transition: all .25s cubic-bezier(0.23,1,.32,1);
@@ -4660,8 +4725,8 @@ html {
 
 /* Light mode pro tip toast */
 [data-theme="light"] .pro-tip-toast {
-    background: rgba(80, 40, 140, 0.35);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: #6e6e73;
+    border-color: #85858a;
     box-shadow: 0 0.75rem 2rem rgba(0,0,0,.25), 0 0 1rem rgba(109,40,217,.15), inset 0 1px 0 rgba(255,255,255,.25);
 }
 [data-theme="light"] .pro-tip-toast-icon {
@@ -5075,3 +5140,144 @@ html[data-theme="light"] .more-dropdown-theme-header {
 .ic-quiz  { color: #EF5350; }
 .ic-fire  { color: #ef4444; }
 .ic-gems  { color: #38bdf8; }
+
+/* ══ Sidebar nav buttons — grey color blocking ══════════════════════════════
+   Follows docs/WIZARD-UI-PATTERNS.md: neutral grey resting surfaces instead of
+   the purple --sf2/--bd (which read as "same color as the background"), with
+   color reserved for identity and state. Each link carries its own bright
+   --acc, which drives the icon and label; the current page is filled with it. */
+:root {
+    --nav-sf: #31313c;
+    --nav-bd: #454553;
+}
+html[data-theme="light"] {
+    --nav-sf: #e0e3ea;
+    --nav-bd: #c3c8d2;
+}
+/* ── Sidebar nav buttons ────────────────────────────────────────────────────
+   Same grey blocking as the cards: the nav buttons rest on the neutral wizard
+   grey instead of the purple --sf2/--bd, and each one carries its own bright
+   --acc so the column is a set of distinct colors rather than one repeated
+   white. Applies to every page that loads this stylesheet. */
+.sidebar-nav-link {
+    background: var(--nav-sf);
+    border-color: var(--nav-bd);
+    box-shadow: none;
+    /* Fallback keeps any link without a tone (e.g. the productivity link) legible. */
+    color: var(--acc, var(--tx));
+    transition: border-color .15s ease, background .15s ease, box-shadow .15s ease, transform .15s ease, color .15s ease;
+}
+
+/* One bright tone per destination. */
+.sidebar-nav-link[href*="/index.html"]:not([href*="/sat/"]) { --acc: #34d399; }
+.sidebar-nav-link[href*="/chat.html"]:not([href*="math-chat"])                       { --acc: #22d3ee; }
+.sidebar-nav-link[href*="/study/feed.html"]                 { --acc: #60a5fa; }
+.sidebar-nav-link[href*="/sat/dashboard.html"]              { --acc: #f472b6; }
+.sidebar-nav-link[href*="/sat/index.html"]                  { --acc: #fbbf24; }
+.sidebar-nav-link[href*="/sat/latest-questions.html"]       { --acc: #4ade80; }
+.sidebar-nav-link[href*="/sat/math-chat.html"]              { --acc: #38bdf8; }
+.sidebar-nav-link[href*="/sat/rush.html"]                   { --acc: #fb923c; }
+.sidebar-nav-link[href*="/sat/study-plan.html"]             { --acc: #f87171; }
+
+/* Deeper shades in light theme — the bright set washes out on the pale grey. */
+html[data-theme="light"] .sidebar-nav-link[href*="/index.html"]:not([href*="/sat/"]) { --acc: #059669; }
+html[data-theme="light"] .sidebar-nav-link[href*="/chat.html"]:not([href*="math-chat"])                       { --acc: #0e7490; }
+html[data-theme="light"] .sidebar-nav-link[href*="/study/feed.html"]                 { --acc: #2563eb; }
+html[data-theme="light"] .sidebar-nav-link[href*="/sat/dashboard.html"]              { --acc: #db2777; }
+html[data-theme="light"] .sidebar-nav-link[href*="/sat/index.html"]                  { --acc: #b45309; }
+html[data-theme="light"] .sidebar-nav-link[href*="/sat/latest-questions.html"]       { --acc: #15803d; }
+html[data-theme="light"] .sidebar-nav-link[href*="/sat/math-chat.html"]              { --acc: #0369a1; }
+html[data-theme="light"] .sidebar-nav-link[href*="/sat/rush.html"]                   { --acc: #c2410c; }
+html[data-theme="light"] .sidebar-nav-link[href*="/sat/study-plan.html"]             { --acc: #dc2626; }
+
+.sidebar-nav-link:hover {
+    color: var(--acc, var(--tx));
+    background: color-mix(in srgb, var(--acc, var(--tx)) 16%, var(--nav-sf));
+    border-color: var(--acc, var(--nav-bd));
+}
+
+/* The page you're on is filled Korah purple — one iconic active color on
+   every page, matching the Home button. */
+.sidebar-nav-link.active,
+.sidebar-nav-link.active:hover {
+    color: #fff;
+    background: linear-gradient(180deg, var(--p4), color-mix(in srgb, var(--p4) 78%, #000));
+    border-color: var(--p4);
+    box-shadow: none;
+}
+
+/* More vertical breathing room — the default 0.375rem gap and 0.5rem padding
+   packed the column too tightly once the buttons became solid grey blocks. */
+.sidebar-nav {
+    gap: 0.625rem;
+}
+.sidebar-nav-link {
+    padding: 0.6875rem 0.75rem;
+}
+.sidebar-section-label {
+    margin-top: 0.5rem;
+}
+/* The first label sits directly under the tab selector — the group labels
+   further down still need their top margin to separate the clusters. */
+.sidebar-nav > div:first-child > .sidebar-section-label:first-child {
+    margin-top: 0;
+    padding-top: 0;
+}
+.sidebar.collapsed .sidebar-nav {
+    gap: 0.875rem;
+}
+
+/* Recent Chats takes every pixel left between the nav and the footer and
+   scrolls inside itself once the list outgrows that space. The min-height is a
+   floor: the nav is tall enough that flex alone would hand the list a couple of
+   rows on a short viewport. .sidebar keeps its own overflow as the safety
+   valve — when the nav plus that floor outgrow 100vh the whole column scrolls
+   as one piece, rather than cutting the nav off out of reach. */
+.sidebar {
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+}
+.sidebar-middle {
+    flex: 1 1 auto;
+    min-height: 14rem;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+}
+
+/* Thin grey scrollbar for the sidebar — the global thumb is 0.3125rem of --p4
+   purple with !important, which is loud against the grey nav. */
+.sidebar::-webkit-scrollbar { width: 0.1875rem; }
+.sidebar::-webkit-scrollbar-track { background: transparent; }
+.sidebar::-webkit-scrollbar-thumb {
+    background: var(--nav-bd) !important;
+    border-radius: 62.4375rem;
+}
+.sidebar::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in srgb, var(--nav-bd) 70%, var(--tx)) !important;
+}
+.sidebar-middle::-webkit-scrollbar { width: 0.1875rem; }
+.sidebar-middle::-webkit-scrollbar-track { background: transparent; }
+.sidebar-middle::-webkit-scrollbar-thumb {
+    background: var(--nav-bd) !important;
+    border-radius: 62.4375rem;
+}
+.sidebar-middle::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in srgb, var(--nav-bd) 70%, var(--tx)) !important;
+}
+.sidebar,
+.sidebar-middle { scrollbar-color: var(--nav-bd) transparent; scrollbar-width: thin; }
+
+/* ══ Chrome greys ═══════════════════════════════════════════════════════════
+   The flat grey panel these were written for is gone (see 50d5457); the
+   sidebar and topbars are back on the purple --sf. The tokens stay because the
+   sidebar tab selector still steps its track and active chip off them, and
+   those greys have to hold steady while the theme flips. */
+:root {
+    --chrome-sf:  #24262c;   /* the panel itself                */
+    --chrome-sf2: #2f3138;   /* rows/chips resting on the panel */
+    --chrome-bd:  #3c3f47;   /* borders + dividers              */
+    --chrome-tx:  #f2f3f6;   /* text on the panel               */
+    --chrome-tx2: #cfd2da;   /* secondary text                  */
+}

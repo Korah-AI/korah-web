@@ -124,7 +124,8 @@ function buildToast() {
       position: fixed; right: 1.5rem; bottom: 1.5rem; transform: translateY(1rem);
       display: none; align-items: center; gap: 0.875rem; z-index: 9999;
       max-width: 26rem; padding: 0.875rem 1rem; border-radius: 1rem;
-      background: var(--bg-card, #16151c); border: 1px solid var(--bd2, rgba(139,92,246,0.25));
+      /* Shared toast grey, same surface as .fix-toast in sat/questions.html. */
+      background: #6e6e73; border: 1px solid #85858a;
       box-shadow: 0 1.25rem 2.5rem rgba(0,0,0,0.35);
       opacity: 0; transition: opacity .3s ease, transform .3s ease;
       font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
@@ -138,8 +139,8 @@ function buildToast() {
     #guest-toast.is-nudging { animation: gt-nudge .5s ease; }
     #guest-toast img { height: 2.25rem; width: auto; flex-shrink: 0; }
     #guest-toast .gt-body { display: flex; flex-direction: column; gap: 0.125rem; }
-    #guest-toast .gt-header { font-size: 0.875rem; font-weight: 700; color: var(--tx, #fff); }
-    #guest-toast .gt-text { font-size: 0.8125rem; color: var(--tx2, #a1a1aa); }
+    #guest-toast .gt-header { font-size: 0.875rem; font-weight: 700; color: #fff; }
+    #guest-toast .gt-text { font-size: 0.8125rem; color: #fff; }
     #guest-toast .gt-cta {
       flex-shrink: 0; padding: 0.5rem 0.9rem; border-radius: 999px; border: none;
       background: var(--p4, #8b5cf6); color: #fff; font-size: 0.8125rem; font-weight: 600;
@@ -197,7 +198,8 @@ export function showAuthWall(base = '') {
     #auth-wall .aw-card {
       position: relative; text-align: center; max-width: 27rem; width: 100%;
       padding: 2.5rem 2rem 2rem; border-radius: 1.25rem;
-      background: var(--sf, #16151c); border: 0.0625rem solid var(--bd2, rgba(139,92,246,0.3));
+      /* Shared toast grey, same surface as .fix-toast in sat/questions.html. */
+      background: #6e6e73; border: 0.0625rem solid #85858a;
       box-shadow: 0 1.5rem 4rem rgba(0,0,0,0.5), 0 0 2rem rgba(139,92,246,0.2);
       transform: translateY(1rem) scale(0.97); transition: transform .4s cubic-bezier(0.34,1.56,0.64,1);
       display: flex; flex-direction: column; align-items: center;
@@ -209,7 +211,7 @@ export function showAuthWall(base = '') {
     }
     #auth-wall .aw-title {
       font-size: 1.375rem; font-weight: 800; line-height: 1.3; margin: 0 0 0.625rem;
-      color: var(--tx, #fff);
+      color: #fff;
     }
     #auth-wall .aw-desc {
       font-size: 0.9375rem; line-height: 1.6; margin: 0 0 1.75rem;
