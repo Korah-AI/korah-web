@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en" x-data="{
+  theme: localStorage.getItem('korah_theme') || 'dark',
+  activeTab: 'ap',
+  sidebarCollapsed: window.innerWidth <= 768 ? false : localStorage.getItem('korah_sidebar_collapsed') === 'true',
+  mobileOpen: false,
+  getEffectiveTheme() {
+    if (this.theme === 'system') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return this.theme;
+  },
+  toggleSidebar() {
+    if (window.innerWidth <= 768) {
+      this.mobileOpen = !this.mobileOpen;
+      const overlay = document.querySelector('.sidebar-overlay');
+      if (overlay) overlay.classList.toggle('show', this.mobileOpen);
+    } else {
+      this.sidebarCollapsed = !this.sidebarCollapsed;
+      localStorage.setItem('korah_sidebar_collapsed', this.sidebarCollapsed);
+    }
+  }
+}" :data-theme="getEffectiveTheme()" x-cloak>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Korah AP Mock Exams</title>
+  <link rel="icon" href="../logo-images/newlogo0.png">
+  <script>
+    (function() {
+      const t = localStorage.getItem('korah_theme') || 'dark';
+      const isL = t === 'light' || (t === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches);
+      document.documentElement.setAttribute('data-theme', isL ? 'light' : 'dark');
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <script src="../sidebar-loader.js" defer></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="../study/js/sidebar.js"></script>
+  <link rel="stylesheet" href="../app/korah-chat.css">
+  <link rel="stylesheet" href="../sat/sat.css">
+  <link rel="stylesheet" href="./ap.css">
+  <script src="./js/ap-shared.js" defer></script>
+  <script src="./js/ap-picker.js" defer></script>
+</head>
+<body class="ap-body">
+  <canvas id="bg-canvas" class="ap-background" aria-hidden="true"></canvas>
+  <div id="sidebar-root"></div>
+  <main class="ap-main">
+    <header class="ap-hero">
+      <div class="ap-hero-copy">
+        <p class="ap-eyebrow">Korah AP Prep</p>
+        <h1>Walk into exam day <span>ready.</span></h1>
+        <p>Full-length practice with authentic section timing, calculator rules, and a focused testing experience.</p>
+        <div class="ap-hero-pills" aria-label="Exam features">
+          <span><i class="material-icons-round">timer</i>Real timing</span>
+          <span><i class="material-icons-round">lock</i>Secure sections</span>
+          <span><i class="material-icons-round">insights</i>Score insights</span>
+        </div>
+      </div>
+      <div class="ap-hero-mark" aria-hidden="true"><i class="material-icons-round">functions</i></div>
+    </header>
+    <section aria-labelledby="available-title">
+      <div class="ap-section-heading">
+        <div><p class="ap-eyebrow">Available now</p><h2 id="available-title">Choose an exam</h2></div>
+      </div>
+      <div id="exam-list" class="ap-exam-grid" aria-live="polite"><p class="ap-muted">Loading exams…</p></div>
+    </section>
+  </main>
+  <script>
+    window.KorahSidebar?.initBackground();
+  </script>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+    import { setupKorahDB } from "../app/data/firestore-store.js";
+    import { startAuthGuard } from '../auth-guard.js';
+    import { initGuestGate, startGuestSession, showGuestToastOnce } from '../guest-gate.js';
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
+      authDomain: "korah-app.firebaseapp.com",
+      projectId: "korah-app",
+      storageBucket: "korah-app.firebasestorage.app",
+      messagingSenderId: "226169460321",
+      appId: "1:226169460321:web:b166fc8260107c55dafc20"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        // Exams are static JSON under ./data/ and need no Firebase, so guests
+        // browse the picker and sit the exam exactly like signed-in users.
+        startGuestSession();
+        initGuestGate('../');
+        showGuestToastOnce();
+        return;
+      }
+      await setupKorahDB(app, user.uid);
+      const detail = { uid: user.uid };
+      window._korahReadyFired = detail;
+      window.dispatchEvent(new CustomEvent('korahReady', { detail }));
+      startAuthGuard(auth, '../index.html');
+    });
+
+    // sidebar.html is fetched asynchronously, so #logout-btn does not exist
+    // when this module runs. Delegate instead of binding to a missing node.
+    document.addEventListener('click', (event) => {
+      if (!event.target.closest('#logout-btn')) return;
+      window.confirmLogout?.(async () => {
+        await signOut(auth);
+        localStorage.removeItem('korah_first_name');
+        window.location.href = '../login.html';
+      });
+    });
+  </script>
+
+  <script>
+    window.addEventListener('korahReady', () => {
+      window.KorahSidebar?.initSidebar({
+        chatBaseUrl: "../chat.html",
+        itemPageUrl: "../study/item.html"
+      });
+    }, { once: true });
+  </script>
+</body>
+</html>

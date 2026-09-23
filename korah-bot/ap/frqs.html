@@ -79,7 +79,7 @@
 
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
-      // The course picker renders from static config; guests can browse it.
+      // The picker is served from static JSON; guests can browse it.
       startGuestSession();
       initGuestGate('../');
       showGuestToastOnce();
@@ -129,31 +129,23 @@
   <div class="ap-page" style="padding: 1.25rem;">
     <div class="ap-page-inner">
 
+      <a class="ap-back-link" href="./index.html"><span class="material-icons-round" style="font-size:1rem;">arrow_back</span> All courses</a>
+
       <div class="ap-eyebrow-row">
         <img src="../logo-images/newlogo12.png" class="ap-eyebrow-logo" alt="Korah logo"/>
         <p class="ap-eyebrow">Korah AP Prep</p>
       </div>
-      <h1 class="ap-page-title">Free Response Practice</h1>
-      <p class="ap-page-desc">
-        Pick a course, work a real College Board style free response question under a
-        timer, and get point-by-point feedback against the official rubric. Grading
-        quotes your own work back at you, so you can trust every point you earned.
-      </p>
+      <h1 class="ap-page-title" id="frq-course-title">Loading course...</h1>
+      <p class="ap-page-desc" id="frq-course-desc"></p>
 
-      <p class="ap-page-desc">Want a full timed practice session instead? <a href="./exams.html" style="color:var(--tone-blue);font-weight:700;">Browse AP mock exams</a>.</p>
-
-      <div id="course-grid" class="ap-course-grid">
-        <div class="ap-loading"><div class="ap-spinner"></div><div class="ap-loading-text">Loading courses...</div></div>
-      </div>
-
-      <div style="margin-top:2.25rem;padding:1.25rem 1.375rem;border-radius:1.125rem;background:var(--ap-sf);border:1px solid var(--ap-bd);">
-        <div class="ap-fix-label" style="color:var(--acc);"><span class="material-icons-round" style="font-size:1rem;">lightbulb</span> How it works</div>
-        <ol style="margin:0;padding-left:1.25rem;display:grid;gap:0.5rem;color:var(--tx2);font-size:0.875rem;line-height:1.6;">
-          <li>Work the question under its real time limit. Type your answer or photograph your handwritten work.</li>
-          <li>Review the transcription, fix any misread math, then confirm.</li>
-          <li>The grader scores every rubric point and quotes your work for each verdict.</li>
-          <li>Flag any point you disagree with. Your Progress page shows the rubric categories you keep missing.</li>
-        </ol>
+      <div class="ap-frq-list">
+        <div class="ap-list-head">
+          <span class="ap-list-title" id="frq-list-title">Free response questions</span>
+          <span class="ap-list-count" id="frq-list-count"></span>
+        </div>
+        <div id="frq-list" class="ap-frq-list">
+          <div class="ap-loading"><div class="ap-spinner"></div><div class="ap-loading-text">Loading questions...</div></div>
+        </div>
       </div>
 
     </div>
@@ -188,75 +180,72 @@
   (function () {
     if (!window.KorahAP) return;
 
-    const grid = document.getElementById('course-grid');
+    const params = new URLSearchParams(location.search);
+    const courseSlug = params.get('course') || '';
+    const course = window.KorahAP.getCourse(courseSlug);
+    const list = document.getElementById('frq-list');
 
-    // One accent per course, so the picker is never a single flat color.
-    const courseTones = { 'ap-calculus-ab': 'tone-blue', 'ap-us-history': 'tone-pink' };
+    if (!course) {
+      document.getElementById('frq-course-title').textContent = 'Unknown course';
+      list.innerHTML = '<p class="ap-panel-empty">That course does not exist yet. <a href="./index.html">Back to courses</a>.</p>';
+      return;
+    }
 
-    async function attemptedMap(source) {
-      if (!window.KorahAPProgress || !window.KorahAPProgress.latestPerFrq) return null;
-      const out = {};
-      for (const c of window.KorahAP.getCourses()) {
-        try {
-          const list = source === 'firestore'
-            ? await window.KorahAPProgress.getFrqAttemptCounts(c.slug)
-            : window.KorahAPProgress.latestPerFrq(await window.KorahAPProgress.loadPlaceholderAttempts(c.slug));
-          out[c.slug] = list;
-        } catch (e) {
-          out[c.slug] = null;
-        }
-      }
-      return out;
+    document.title = 'Korah AI — ' + course.name + ' · AP FRQ';
+    document.getElementById('frq-course-title').textContent = course.name;
+    document.getElementById('frq-course-desc').textContent = course.description;
+    document.getElementById('frq-list-title').textContent = course.shortName + ' ' + course.frqLabel.toLowerCase();
+
+    function countPoints(frq) {
+      return (frq.parts || []).reduce((n, p) => n + (p.rubricPoints || []).length, 0);
+    }
+
+    let attemptsById = new Map(); // frqId -> { count, lastScore, totalPoints }
+
+    function badgeFor(frq) {
+      const a = attemptsById.get(frq.id);
+      if (!a) return '';
+      const last = a.totalPoints ? ` · ${a.lastScore}/${a.totalPoints} last` : '';
+      return `<span class="ap-badge ap-badge-attempted"><span class="material-icons-round" style="font-size:0.8125rem;">check_circle</span>Attempted${last}</span>`;
+    }
+
+    function renderRows(frqs) {
+      list.innerHTML = frqs.map((frq, i) => `
+        <a class="ap-frq-row" href="./attempt.html?course=${encodeURIComponent(courseSlug)}&frq=${encodeURIComponent(frq.id)}">
+          <div class="ap-frq-idx">${frq.questionNumber != null ? frq.questionNumber : i + 1}</div>
+          <div class="ap-frq-body">
+            <div class="ap-frq-name">${window.KorahAP.frqLabel(frq)} · ${frq.title}</div>
+            <div class="ap-frq-topic">${frq.topic || 'Mixed topics'} · ${countPoints(frq)} rubric points</div>
+          </div>
+          <div class="ap-frq-meta">
+            <span class="ap-badge ap-badge-timer"><span class="material-icons-round" style="font-size:0.8125rem;">schedule</span>${frq.timeAllottedMin} min</span>
+            ${frq.calculatorAllowed
+              ? '<span class="ap-badge"><span class="material-icons-round" style="font-size:0.8125rem;">calculate</span>Calculator allowed</span>'
+              : '<span class="ap-badge"><span class="material-icons-round" style="font-size:0.8125rem;">block</span>No calculator</span>'}
+            ${badgeFor(frq)}
+          </div>
+        </a>`).join('');
+      document.getElementById('frq-list-count').textContent = frqs.length + ' available';
     }
 
     function applyAttempts(map) {
-      if (!map) return;
-      for (const c of window.KorahAP.getCourses()) {
-        const counts = map[c.slug];
-        if (!counts) continue;
-        const done = counts.size || 0;
-        const el = document.getElementById('attempted-' + c.slug);
-        if (el && done > 0) el.textContent = done;
-      }
+      attemptsById = map || new Map();
+      // Rerender rows if they already exist so badges appear.
+      window.KorahAP.loadFrqs(courseSlug).then(renderRows);
     }
 
-    async function render() {
-      const courses = window.KorahAP.getCourses();
-      const rows = await Promise.all(courses.map(async (c) => {
-        let frqList = [];
-        try {
-          frqList = await window.KorahAP.loadFrqs(c.slug);
-        } catch (e) {}
-        const n = frqList.filter((f) => !f.sample).length || frqList.length;
-        const rubricPoints = frqList.reduce((s, f) => s + (f.parts || []).reduce((p, part) => p + (part.rubricPoints || []).length, 0), 0);
-        return { c, n, rubricPoints };
-      }));
-
-      grid.innerHTML = rows.map(({ c, n, rubricPoints }) => `
-        <a class="ap-course-card ${courseTones[c.slug] || 'tone-blue'}" href="./frqs.html?course=${encodeURIComponent(c.slug)}">
-          <div class="ap-course-card-top">
-            <div class="ap-course-icon"><span class="material-icons-round">${c.icon}</span></div>
-            <span class="ap-badge ap-badge-timer">${n} ${c.frqLabel.toLowerCase()}</span>
-          </div>
-          <div>
-            <div class="ap-course-name">${c.name}</div>
-            <p class="ap-course-tagline">${c.tagline}</p>
-          </div>
-          <div class="ap-course-stats">
-            <span><b id="attempted-${c.slug}">0</b> attempted</span>
-            <span><b>${rubricPoints}</b> rubric points</span>
-          </div>
-          <span class="ap-course-cta">Open ${c.frqLabel} <span class="material-icons-round" style="font-size:1.125rem;">arrow_forward</span></span>
-        </a>`).join('');
-    }
-
-    render();
+    window.KorahAP.loadFrqs(courseSlug).then(renderRows).catch(() => {});
 
     window.addEventListener('korahReady', async () => {
-      // Offline demo first (placeholder attempts), then real Firestore data.
-      applyAttempts(await attemptedMap('placeholder'));
-      if (window.KorahAPProgress && window.KorahAPProgress.getFrqAttemptCounts) {
-        applyAttempts(await attemptedMap('firestore'));
+      if (!window.KorahAPProgress || !window.KorahAPProgress.latestPerFrq) return;
+      try {
+        const placeholders = await window.KorahAPProgress.loadPlaceholderAttempts(courseSlug);
+        applyAttempts(window.KorahAPProgress.latestPerFrq(placeholders));
+      } catch (e) {}
+      if (window.KorahAPProgress.getFrqAttemptCounts) {
+        try {
+          applyAttempts(await window.KorahAPProgress.getFrqAttemptCounts(courseSlug));
+        } catch (e) {}
       }
     }, { once: true });
   })();
