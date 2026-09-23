@@ -3,30 +3,16 @@
 // NEW FEATURES: stopwatch, progress bar, reference panel, session modal, desmos calculator, question number
 // OLD FUNCTIONALITY: all original question loading/display/error handling preserved
 (() => {
-  const { parseOpenSatV1Query, buildOpenSatV1QuestionUrl, OPENSAT_CATALOG } = window.KorahSAT;
+  const {
+    parseOpenSatV1Query,
+    buildOpenSatV1QuestionUrl,
+    OPENSAT_CATALOG,
+    acceptedAnswersFor,
+    isAnswerCorrect,
+  } = window.KorahSAT;
   const query = parseOpenSatV1Query();
 
-  // CollegeBoard matplotlib SVGs draw axis labels via <use xlink:href="#glyphId"/>.
-  // Browsers + DOMPurify treat SVG 2's plain `href` more reliably than `xlink:href`,
-  // so normalize to `href` before sanitizing.
-  function normalizeSvgUseHrefs(html) {
-    if (!html || html.indexOf('xlink:href') === -1) return html;
-    return html.replace(/\sxlink:href=/g, ' href=');
-  }
-
-  const SVG_PURIFY_CONFIG = { ADD_TAGS: ['use'], ADD_ATTR: ['href', 'xlink:href'] };
-  DOMPurify.addHook('afterSanitizeAttributes', (node) => {
-    if (node.tagName && node.tagName.toLowerCase() === 'use') {
-      for (const attr of ['href', 'xlink:href']) {
-        const val = node.getAttribute(attr);
-        if (val !== null && !val.startsWith('#')) node.removeAttribute(attr);
-      }
-    }
-  });
-
-  function sanitizeHtml(html) {
-    return DOMPurify.sanitize(normalizeSvgUseHrefs(html), SVG_PURIFY_CONFIG);
-  }
+  const sanitizeHtml = html => window.KorahQuestionContent.html(html);
 
   const DEMO_QUESTIONS = [
     {
@@ -322,12 +308,6 @@
   let desmosInstance = null;
   let resizeHandleInitialized = false;
 
-  // Normalize SPR answers for comparison: trim, lowercase, fix leading decimal (e.g. ".75" → "0.75")
-  function normalizeSprAnswer(val) {
-    if (!val) return "";
-    return String(val).trim().toLowerCase().replace(/^(-?)\./, "$10.");
-  }
-
   // Helper — always call this instead of setting playerCounter.textContent directly
   function setCounterText(text) {
     const el = document.getElementById('qNavCounterText');
@@ -440,20 +420,44 @@
     if (markReviewBtn) markReviewBtn.classList.toggle("is-active", isReviewed);
   }
 
+  // The domain label is tinted per domain (see .sat-domain-label[data-domain]
+  // in questions.html). CSS cannot match on text, so slug the name onto the
+  // element alongside it.
+  function setDomainLabel(text) {
+    const label = String(text || "");
+    questionDomain.textContent = label;
+    if (label) {
+      questionDomain.dataset.domain = label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    } else {
+      delete questionDomain.dataset.domain;
+    }
+  }
+
+  // The passage lives in its own pane to the left of the question (Bluebook
+  // layout). Only questions that carry one open it; Math has no passage, so
+  // the pane and the Desmos pane never compete for the same half.
+  const passagePanel = document.getElementById("passagePanel");
+  function setPassage(html) {
+    const has = !!html;
+    questionParagraph.innerHTML = has ? html : "";
+    questionParagraph.classList.toggle("is-hidden", !has);
+    if (passagePanel) passagePanel.style.display = has ? "flex" : "none";
+    if (playerSplit) playerSplit.classList.toggle("has-passage", has);
+  }
+
   function renderQuestion() {
     const current = getCurrentQuestion();
 
     // RESTORED: Loading state with all button disabled
     if (loadState === "loading") {
       if (questionNumberEl) questionNumberEl.textContent = "—";
-      questionDomain.textContent = "";
+      setDomainLabel("");
       if (questionStemTitle) {
         questionStemTitle.textContent = "Loading questions…";
         questionStemTitle.classList.remove("is-hidden");
       }
-      questionParagraph.textContent = "Fetching your session from the Official College Board Question Bank.";
-      questionParagraph.classList.remove("is-hidden");
-      questionStem.textContent = "";
+      setPassage("");
+      questionStem.textContent = "Fetching your session from the Official College Board Question Bank.";
       answerChoices.innerHTML = "";
       feedbackPanel.className = "sat-feedback-panel is-hidden";
       feedbackPanel.innerHTML = "";
@@ -471,14 +475,13 @@
     // RESTORED: Error state with retry button
     if (loadState === "error") {
       if (questionNumberEl) questionNumberEl.textContent = "!";
-      questionDomain.textContent = "";
+      setDomainLabel("");
       if (questionStemTitle) {
         questionStemTitle.textContent = "College Board connection issue";
         questionStemTitle.classList.remove("is-hidden");
       }
-      questionParagraph.textContent = loadError || "Something went wrong while loading questions.";
-      questionParagraph.classList.remove("is-hidden");
-      questionStem.textContent = "";
+      setPassage("");
+      questionStem.textContent = loadError || "Something went wrong while loading questions.";
       answerChoices.innerHTML = `
         <button class="sat-button sat-button-primary" type="button" id="retryLoadBtn">Retry</button>
         <a class="sat-button sat-button-ghost" href="./index.html">Back to bank</a>
@@ -499,14 +502,13 @@
     // RESTORED: Empty state
     if (loadState === "empty") {
       if (questionNumberEl) questionNumberEl.textContent = "—";
-      questionDomain.textContent = "";
+      setDomainLabel("");
       if (questionStemTitle) {
         questionStemTitle.textContent = "No questions matched this selection";
         questionStemTitle.classList.remove("is-hidden");
       }
-      questionParagraph.textContent = "Try another domain or lower the question limit.";
-      questionParagraph.classList.remove("is-hidden");
-      questionStem.textContent = "";
+      setPassage("");
+      questionStem.textContent = "Try another domain or lower the question limit.";
       answerChoices.innerHTML = `<a class="sat-button sat-button-primary" href="./index.html">Back to bank</a>`;
       feedbackPanel.className = "sat-feedback-panel is-hidden";
       feedbackPanel.innerHTML = "";
@@ -533,16 +535,15 @@
     // and let ensureDetail(currentIndex) hydrate it in the background.
     if (!current.loaded) {
       if (questionNumberEl) questionNumberEl.textContent = state.currentIndex + 1;
-      questionDomain.textContent = current.domain || "";
+      setDomainLabel(current.domain || "");
       if (questionStemTitle) {
         questionStemTitle.textContent = current._loadError ? "Could not load question" : "Loading question…";
         questionStemTitle.classList.remove("is-hidden");
       }
-      questionParagraph.textContent = current._loadError
+      setPassage("");
+      questionStem.textContent = current._loadError
         ? "Skip to the next one, or try again."
         : "Fetching question from the College Board question bank.";
-      questionParagraph.classList.remove("is-hidden");
-      questionStem.textContent = "";
       answerChoices.innerHTML = current._loadError
         ? `<button class="sat-button sat-button-primary" type="button" id="retryDetailBtn">Retry</button>`
         : "";
@@ -578,19 +579,17 @@
 
     // Question number display
     if (questionNumberEl) questionNumberEl.textContent = state.currentIndex + 1;
-    questionDomain.textContent = current.domain;
+    setDomainLabel(current.domain);
     if (questionStemTitle) {
       questionStemTitle.textContent = "";
       questionStemTitle.classList.add("is-hidden");
     }
-    if (current.paragraph) {
-      questionParagraph.innerHTML = sanitizeHtml(current.paragraph);
-      questionParagraph.classList.remove("is-hidden");
-    } else {
-      questionParagraph.innerHTML = "";
-      questionParagraph.classList.add("is-hidden");
-    }
-    questionStem.innerHTML = sanitizeHtml(current.stem);
+    // CB's math "stimulus" is the figure or data table the question is about, not
+    // a reading passage, so it renders inline above the stem. The passage pane
+    // stays English-only — on math it would fight Desmos for the same half.
+    const stimulus = current.paragraph ? sanitizeHtml(current.paragraph) : "";
+    setPassage(isMath ? "" : stimulus);
+    questionStem.innerHTML = (isMath ? stimulus : "") + sanitizeHtml(current.stem);
     syncReviewState(!!state.reviewed[current.id]);
 
     // Toggle calc button text + visibility
@@ -614,9 +613,7 @@
     }
 
     const isSpr = current.type === "spr";
-    const isCorrect = isSpr
-      ? normalizeSprAnswer(selectedAnswer) === normalizeSprAnswer(current.correctAnswer)
-      : selectedAnswer === current.correctAnswer;
+    const isCorrect = isAnswerCorrect(current, selectedAnswer);
 
     if (isSpr) {
       const safeVal = selectedAnswer ? String(selectedAnswer).replace(/&/g, "&amp;").replace(/"/g, "&quot;") : "";
@@ -666,11 +663,25 @@
         .join("");
     }
 
+    // Move (not re-create) the Check button so its click handler survives:
+    // it sits inside the selected answer row until the answer is graded.
+    if (checkAnswerBtn) {
+      const selectedRow = !checked && !isSpr && selectedAnswer
+        ? answerChoices.querySelector(".sat-answer-choice.is-selected")?.closest(".sat-answer-row")
+        : null;
+      const home = selectedRow || document.querySelector(".sat-check-row");
+      if (home && checkAnswerBtn.parentElement !== home) home.appendChild(checkAnswerBtn);
+      checkAnswerBtn.classList.toggle("is-inline", !!selectedRow);
+    }
+
     if (showExplanation) {
+      // SPR questions can have several accepted forms of the same value, and
+      // sometimes several different valid answers — show them all.
+      const answerText = acceptedAnswersFor(current).filter(Boolean).join(" or ");
       feedbackPanel.className = `sat-feedback-panel ${isCorrect ? "is-correct" : "is-incorrect"}`;
       feedbackPanel.innerHTML = `
-        <strong>${checked ? (isCorrect ? "Correct." : `Correct answer: ${current.correctAnswer}.`) : "Explanation preview."}</strong>
-        <p>${current.explanation}</p>
+        <strong>${checked ? (isCorrect ? "Correct." : `Correct answer: ${answerText}.`) : "Explanation preview."}</strong>
+        <div class="sat-feedback-body">${sanitizeHtml(current.explanation || "")}</div>
       `;
       feedbackPanel.classList.remove("is-hidden");
     } else {
@@ -802,6 +813,7 @@
           stem: body.stem || "",
           options: Array.isArray(body.options) ? body.options : [],
           correctAnswer: body.correctAnswer || "",
+          correctAnswers: Array.isArray(body.correctAnswers) ? body.correctAnswers : [],
           explanation: body.explanation || "",
           loaded: true,
         });
@@ -1078,10 +1090,7 @@
     // in this session, so refreshing/re-clicking doesn't double-count.
     if (!wasChecked && window.KorahSATAnalytics) {
       const selected = state.answers[current.id];
-      const isSpr = current.type === "spr";
-      const isCorrect = isSpr
-        ? normalizeSprAnswer(selected) === normalizeSprAnswer(current.correctAnswer)
-        : selected === current.correctAnswer;
+      const isCorrect = isAnswerCorrect(current, selected);
       window.KorahSATAnalytics.recordAttempt({
         questionId: current.detailKey || current.id,
         legacyQuestionId: current.id,
@@ -1094,7 +1103,7 @@
         assessment: query.assessment || "SAT",
         correct: isCorrect,
         timeSpent: state.stopwatchElapsed,
-        mode: "player",
+        mode: query.mode === "tailored" ? "tailored" : "player",
       }).catch((e) => console.warn("[SAT] recordAttempt failed", e));
     }
   });
@@ -1631,9 +1640,7 @@
       } else if (!checked) {
         status = 'attempted';
       } else {
-        const isCorrect = q.type === 'spr'
-          ? normalizeSprAnswer(answered) === normalizeSprAnswer(q.correctAnswer)
-          : answered === q.correctAnswer;
+        const isCorrect = isAnswerCorrect(q, answered);
         status = isCorrect ? 'correct' : 'incorrect';
       }
 

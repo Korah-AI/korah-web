@@ -1,4 +1,4 @@
-# SAT Questions API — `/api/sat/questions`
+# SAT Questions API — `/api/sat/q`
 
 Vercel serverless handler that fetches SAT questions directly from the **College Board question bank API** and returns them in a normalized shape for the Korah SAT player frontend.
 
@@ -7,7 +7,7 @@ Vercel serverless handler that fetches SAT questions directly from the **College
 ## Endpoint
 
 ```
-GET /api/sat/questions
+GET /api/sat/q
 ```
 
 **Max duration:** 60 seconds
@@ -22,6 +22,7 @@ GET /api/sat/questions
 | `difficulties` (or `difficulty`) | string | `"any"` | Comma-separated difficulty codes: `E`, `M`, `H` |
 | `limit` | string/number | `null` (no limit) | Max total questions to return. Accepts integers, `"none"`, `"unlimited"`, `"max"` |
 | `assessment` | string | `"SAT"` | Assessment type: `SAT`, `PSAT/NMSQT`, or `PSAT` |
+| `since` | number | — | Epoch-ms cutoff on the question's `createDate`. Keeps only questions created at or after it. Ignored when absent, empty, or unparseable |
 | `questionIds` (or `ids`) | string | — | Comma-separated list of specific question IDs to fetch (bypasses all other filters) |
 
 ## Response Shape
@@ -49,6 +50,7 @@ GET /api/sat/questions
         { "key": "B", "text": "..." }
       ],
       "correctAnswer": "B",
+      "correctAnswers": ["B"],
       "explanation": "<p>...HTML rationale...</p>",
       "type": "mcq",
       "loaded": true
@@ -64,6 +66,7 @@ GET /api/sat/questions
       "stem": "",
       "options": [],
       "correctAnswer": "",
+      "correctAnswers": [],
       "explanation": "",
       "type": "mcq",
       "loaded": false
@@ -75,8 +78,9 @@ GET /api/sat/questions
 **Notes:**
 - `stem`, `options[].text`, `paragraph`, and `explanation` contain HTML (including MathML for math questions).
 - `type` is `"mcq"` (multiple choice) or `"spr"` (student-produced response). SPR questions have no `options`.
+- `correctAnswers` is every form College Board accepts. SPR answers routinely have more than one (`["25/4", "6.25"]`, or `["7", "8", "13"]` when several different values are valid); `correctAnswer` is just the first and is kept for display. Grade against the whole list.
 - `paragraph` contains the passage/stimulus HTML (used in reading questions). Empty string when there is no stimulus.
-- `loaded: false` means the question is a **stub** — `stem`, `options`, `correctAnswer`, and `explanation` are empty. The frontend hydrates stubs on demand via `/api/sat/question?id=…` as the user navigates.
+- `loaded: false` means the question is a **stub** — `stem`, `options`, `correctAnswer`, and `explanation` are empty. The frontend hydrates stubs on demand via `/api/sat/qi?id=…` as the user navigates.
 - `batchSize` tells the frontend how many questions at the start of the array are fully loaded.
 - When `questionIds` is supplied the response only contains `count`, `questions`, and `batchSize` (no filter fields).
 
@@ -113,6 +117,10 @@ GET https://saic.collegeboard.org/disclosed/{questionId}.json
 ```
 
 Returns the actual question content: `stem`, `stimulus`, `answerOptions`, `correct_answer`, `rationale`, `type`. Detail responses are cached in-process for 24 hours.
+
+Disclosed questions carry no machine-readable answer for SPR items — the value is only stated in the rationale prose ("The correct answer is 25.4.") with fractions drawn as `<img alt="three halves">`. `extractDisclosedCorrectAnswer` flattens the rationale to text with alt text spliced in, then reads every value off that sentence.
+
+Both detail paths also rewrite two MathML elements that MathML Core dropped, so browsers render them: `<mfenced>` becomes `<mrow><mo>(</mo>…</mrow>`, and `<menclose notation="top">` becomes `<mover>` with an overbar (the segment/repeating bar).
 
 Only the first **20 questions** (`INITIAL_BATCH`) are fully detailed in the initial response (with concurrency capped at 5 simultaneous CB requests). The rest are returned as stubs.
 

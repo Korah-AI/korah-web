@@ -1,0 +1,92 @@
+/* Content rules deliberately outrank page-specific image decoration. */
+.question-content { min-width: 0; max-width: 100%; line-height: 1.6; font-weight: 400; white-space: normal; overflow-wrap: break-word; text-align: start; overflow-x: auto; }
+.question-content p { margin: 0 0 .8em; white-space: normal; }
+.question-content p:last-child { margin-bottom: 0; }
+.question-content .italic { font-style: italic; }
+.question-content .bold { font-weight: 700; }
+.question-content .underline { text-decoration: underline; }
+.question-content math { font-size: 1em; }
+/* Keep variables and numbers in the surrounding question typeface while
+   retaining the browser's mathematical layout and stretchy operators. */
+.question-content math mi, .question-content math mn, .question-content math mtext {
+  font-family: var(--pl-serif, Georgia, 'Times New Roman', serif);
+}
+.question-content math:not([display="block"]) { display: inline math; }
+.question-content .math-container { display: inline; }
+html .question-content img.question-inline-math {
+  display: inline-block !important; vertical-align: middle; width: auto; height: auto;
+  max-width: 100%; margin: 0 .08em !important; padding: 0 !important;
+  border: 0 !important; border-radius: 0 !important; background: transparent !important;
+  filter: none !important;
+}
+html .question-content .question-figure {
+  display: block;
+  width: min(100%, var(--question-figure-width, 24rem)) !important;
+  max-width: 100% !important;
+  height: auto !important;
+  max-height: var(--question-figure-height, 24rem) !important;
+  object-fit: contain;
+  margin: 1rem auto !important;
+  padding: 0 !important; border-radius: 0 !important; filter: none !important;
+  background: white; color: black;
+}
+/* Source SVGs use currentColor for graph labels and plotted points. Start
+   them black so the dark-theme inversion makes them white, not invisible. */
+html .question-content svg.question-figure { color: #000; }
+/* Answer figures use the same proportions in a more compact space. */
+.sat-answer-choice, .rush-choice, .option {
+  --question-figure-width: 18rem;
+  --question-figure-height: 18rem;
+}
+/* Blend the source paper into the actual surface, including choice hover colors.
+   A white backing also makes transparent and opaque source images consistent. */
+html .question-content .question-figure,
+html .question-content img.question-inline-math {
+  background: white !important;
+  mix-blend-mode: multiply;
+}
+html[data-theme="dark"] .question-content .question-figure,
+html[data-theme="dark"] .question-content img.question-inline-math {
+  filter: invert(1) hue-rotate(180deg) !important;
+  mix-blend-mode: screen;
+}
+/* Include SVGs with embedded bitmaps, gradients, or colored series. Inverting
+   the whole figure and screening it removes white paper without deleting
+   meaningful filled bars, gridlines, or masks inside the source artwork. */
+.question-content .question-plot-background { fill: transparent !important; }
+.question-content .question-label-background { fill: transparent !important; }
+.question-content figure { max-width: 100%; margin: 1rem auto; }
+.question-content .question-table-scroll { max-width: 100%; overflow-x: auto; margin: 1rem 0; }
+html .question-content table {
+  border-collapse: collapse; margin: 0 auto; color: inherit; background: transparent;
+  width: auto !important; height: auto !important;
+  max-width: 100%; font-size: 1em !important; line-height: 1.5;
+}
+html .question-content table, html .question-content th, html .question-content td {
+  border: 1px solid currentColor !important; padding: .45rem .7rem; color: inherit !important;
+  background-color: transparent !important;
+}
+html .question-content th, html .question-content td {
+  height: auto !important; font-size: 1em !important;
+}
+.question-content th { font-weight: 700; }
+.question-content td p, .question-content th p { margin: 0; }
+.sat-answer-choice > .question-content, .rush-choice-text { flex: 1; min-width: 0; }
+/* Let tall fractions and multi-line answers size the choice itself. The
+   general content scroller can otherwise clip MathML ink and show tiny bars. */
+.sat-answer-choice,
+.rush-choice {
+  height: auto;
+  max-height: none;
+  min-width: 0;
+}
+.sat-answer-choice .question-content,
+.rush-choice .question-content,
+.option .question-content {
+  overflow: visible;
+  height: auto;
+  max-height: none;
+  padding-block: .25em;
+}
+.question-content [data-math-conversion="needs-review"] { object-fit: contain; }
+.question-content .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }

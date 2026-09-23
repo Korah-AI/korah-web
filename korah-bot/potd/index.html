@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en" x-data="{
+  theme: localStorage.getItem('korah_theme') || 'dark',
+  activeTab: 'sat',
+  sidebarCollapsed: window.innerWidth <= 768 ? false : localStorage.getItem('korah_sidebar_collapsed') === 'true',
+  mobileOpen: false,
+  getEffectiveTheme() {
+    if (this.theme === 'system') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return this.theme;
+  },
+  toggleSidebar() {
+    if (window.innerWidth <= 768) {
+      this.mobileOpen = !this.mobileOpen;
+      const overlay = document.querySelector('.sidebar-overlay');
+      if (overlay) overlay.classList.toggle('show', this.mobileOpen);
+    } else {
+      this.sidebarCollapsed = !this.sidebarCollapsed;
+      localStorage.setItem('korah_sidebar_collapsed', this.sidebarCollapsed);
+    }
+  }
+}" :data-theme="getEffectiveTheme()" x-cloak>
+<head>
+<link rel="stylesheet" href="../transitions/page-transitions.css"/>
+<script src="../transitions/page-transitions.js"></script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Korah AI - Problem of the Day</title>
+<link rel="icon" type="image/png" href="../logo-images/newlogo0.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script src="../sidebar-loader.js" defer></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="../app/korah-chat.css"/>
+<link rel="stylesheet" href="./potd.css"/>
+</head>
+
+<body>
+<style>
+  [x-cloak] { display: none !important; }
+  html:not(.korah-page-ready) { background: #06040f !important; }
+  html[data-theme="light"]:not(.korah-page-ready) { background: #d2d2d2 !important; }
+  html:not(.korah-page-ready) body { opacity: 0 !important; }
+</style>
+
+<script>
+  (function() {
+    const t = localStorage.getItem('korah_theme') || 'dark';
+    if (t === 'light' || (t === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  })();
+</script>
+
+<canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
+<div id="sidebar-root"></div>
+
+<!-- MAIN AREA WRAPPER -->
+<div id="main-area-wrapper" class="main-area-wrapper">
+<main id="main-content" class="main-content">
+
+  <!-- Top bar -->
+  <header class="chat-topbar bg-sf glass-sm t-theme bd" style="opacity: 0.95;">
+    <button id="sidebar-toggle" @click="toggleSidebar()" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+    <div class="chat-title-area">
+      <div class="korah-status-dot"></div>
+      <span class="font-semibold tx text-sm" id="chat-title">Problem of the Day</span>
+    </div>
+  </header>
+
+  <div class="potd-page">
+    <section class="potd-shell">
+
+      <header class="potd-head">
+        <img src="../logo-images/newlogo12.png" class="potd-head-logo" alt=""/>
+        <h1 class="potd-title">Problem of the Day</h1>
+        <div class="potd-chips">
+          <span class="potd-chip tone-blue" id="potdDate" hidden></span>
+          <span class="potd-chip tone-pink" id="potdSubject" hidden></span>
+          <span class="potd-chip" id="potdDifficulty" hidden></span>
+        </div>
+      </header>
+
+      <section class="potd-card potd-state" id="potdLoading">
+        <p class="potd-state-text">Loading today's problem...</p>
+      </section>
+
+      <section class="potd-card potd-state" id="potdEmpty" hidden>
+        <img src="../logo-images/newlogo5.png" class="potd-state-icon" alt=""/>
+        <p class="potd-state-text">No problem has been posted yet. Check back soon.</p>
+      </section>
+
+      <section class="potd-card potd-problem tone-blue" id="potdProblemCard" hidden>
+        <h2 class="potd-card-title"><span class="material-icons-round">quiz</span> Today's problem</h2>
+        <div class="potd-figure"><img id="potdImage" alt="Today's problem"/></div>
+        <div class="potd-choices" id="potdChoices"></div>
+        <div class="potd-typed" id="potdTyped" hidden>
+          <input type="text" id="potdTypedInput" class="potd-input" placeholder="Type your answer" autocomplete="off"/>
+        </div>
+        <div class="potd-hint" id="potdHint" hidden>Answer first.</div>
+        <div class="potd-result" id="potdResult" hidden></div>
+        <div class="potd-btn-row">
+          <button id="potdSubmit" class="potd-btn" type="button">Submit answer</button>
+        </div>
+      </section>
+
+      <section class="potd-card potd-video-card tone-pink" id="potdWalkthrough" hidden>
+        <h2 class="potd-card-title"><span class="material-icons-round">play_circle</span> Walkthrough</h2>
+        <div class="potd-video-frame">
+          <iframe id="potdVideo" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen title="Walkthrough video"></iframe>
+        </div>
+      </section>
+
+    </section>
+  </div>
+
+</main>
+</div><!-- end .main-area-wrapper -->
+
+<!-- Post a problem: codeword gate, then the upload form -->
+<button class="potd-lock-btn" id="potdLockBtn" type="button" title="Post a problem" aria-label="Post a problem" hidden>
+  <span class="material-icons-round">lock</span>
+</button>
+
+<div class="potd-modal" id="potdAdmin">
+  <div class="potd-modal-backdrop"></div>
+  <div class="potd-modal-content">
+    <button class="potd-modal-close" id="potdAdminClose" type="button" aria-label="Close">&times;</button>
+
+    <form id="potdForm">
+      <h2 class="potd-modal-title">Schedule a problem</h2>
+
+      <div class="potd-field">
+        <span class="potd-label">Problem image</span>
+        <input type="file" id="potdImgFile" class="potd-input" accept="image/*"/>
+      </div>
+
+      <div class="potd-field">
+        <span class="potd-label">Subject</span>
+        <input type="text" id="potdSubjectIn" class="potd-input" value="Math"/>
+      </div>
+
+      <div class="potd-field">
+        <span class="potd-label">Difficulty</span>
+        <div class="potd-seg" id="potdDiffSeg">
+          <button type="button" class="potd-seg-btn tone-green" data-val="Easy">Easy</button>
+          <button type="button" class="potd-seg-btn tone-amber is-selected" data-val="Medium">Medium</button>
+          <button type="button" class="potd-seg-btn tone-red" data-val="Hard">Hard</button>
+        </div>
+      </div>
+
+      <div class="potd-field">
+        <span class="potd-label">Answer format</span>
+        <div class="potd-seg" id="potdTypeSeg">
+          <button type="button" class="potd-seg-btn tone-blue is-selected" data-val="choice">Multiple choice</button>
+          <button type="button" class="potd-seg-btn tone-teal" data-val="typed">Typed answer</button>
+        </div>
+      </div>
+
+      <div class="potd-field" id="potdChoiceFields">
+        <span class="potd-label">Choices - click a letter to mark the correct one</span>
+        <div class="potd-choice-rows" id="potdChoiceRows"></div>
+      </div>
+
+      <div class="potd-field" id="potdTypedFields" hidden>
+        <span class="potd-label">Correct answer</span>
+        <input type="text" id="potdTypedAnswer" class="potd-input" placeholder="e.g. 24"/>
+      </div>
+
+      <div class="potd-field">
+        <span class="potd-label">Walkthrough video (YouTube link)</span>
+        <input type="text" id="potdVideoUrl" class="potd-input" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off"/>
+      </div>
+
+      <div class="potd-field">
+        <span class="potd-label">Publish at</span>
+        <input type="datetime-local" id="potdPublishAt" class="potd-input"/>
+      </div>
+
+      <div class="potd-hint" id="potdFormError" hidden></div>
+      <div class="potd-result tone-blue" id="potdFormStatus" hidden></div>
+
+      <div class="potd-btn-row">
+        <button class="potd-btn" id="potdPublish" type="submit">Schedule problem</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- First-visit intro carousel -->
+<div id="potdIntro" class="potd-intro">
+  <div class="potd-intro-backdrop"></div>
+  <div class="potd-intro-content">
+    <button class="potd-intro-close" id="potdIntroClose" type="button" aria-label="Close">&times;</button>
+
+    <div class="potd-intro-slides">
+      <div class="potd-intro-slide is-active" data-slide="0">
+        <img src="../logo-images/newlogo11.png" class="potd-intro-icon" alt=""/>
+        <h2 class="potd-intro-title">One new problem every day</h2>
+        <p class="potd-intro-desc">
+          Every day you get a single SAT problem to work through. It takes a couple of
+          minutes, and it is the same problem everyone else is solving that day.
+        </p>
+      </div>
+
+      <div class="potd-intro-slide" data-slide="1">
+        <img src="../logo-images/newlogo10.png" class="potd-intro-icon" alt=""/>
+        <h2 class="potd-intro-title">Solve it yourself first</h2>
+        <p class="potd-intro-desc">
+          Work the problem out on your own, pick or type the answer you landed on, and
+          hit Submit. You find out right away whether you got it.
+        </p>
+      </div>
+
+      <div class="potd-intro-slide" data-slide="2">
+        <img src="../logo-images/newlogo5.png" class="potd-intro-icon" alt=""/>
+        <h2 class="potd-intro-title">Then compare with the walkthrough</h2>
+        <p class="potd-intro-desc">
+          Submitting unlocks the walkthrough video. Watch how the problem is solved and
+          compare it to your own method, whether you got it right or not.
+        </p>
+      </div>
+    </div>
+
+    <div class="potd-intro-dots">
+      <span class="potd-intro-dot is-active" data-dot="0"></span>
+      <span class="potd-intro-dot" data-dot="1"></span>
+      <span class="potd-intro-dot" data-dot="2"></span>
+    </div>
+
+    <div class="potd-intro-actions">
+      <button class="potd-intro-btn" id="potdIntroPrev" type="button" style="visibility:hidden;">Back</button>
+      <button class="potd-intro-btn is-primary" id="potdIntroNext" type="button">Next</button>
+    </div>
+  </div>
+</div>
+
+<script src="../app/timer-manager.js"></script>
+<script src="../study/js/sidebar.js"></script>
+<script src="../study/js/study-api.js"></script>
+
+<script>
+  window.addEventListener('korahReady', () => {
+    if (window.KorahSidebar) {
+      window.KorahSidebar.initSidebar({ chatBaseUrl: "../chat.html", itemPageUrl: "../study/item.html" });
+    }
+  }, { once: true });
+
+  // First-visit intro carousel
+  (function () {
+    const INTRO_KEY = 'korah_potd_intro_seen';
+    if (localStorage.getItem(INTRO_KEY)) return;
+
+    const modal = document.getElementById('potdIntro');
+    const slides = modal.querySelectorAll('.potd-intro-slide');
+    const dots = modal.querySelectorAll('.potd-intro-dot');
+    const prevBtn = document.getElementById('potdIntroPrev');
+    const nextBtn = document.getElementById('potdIntroNext');
+    let current = 0;
+
+    function goToSlide(idx) {
+      current = Math.max(0, Math.min(idx, slides.length - 1));
+      slides.forEach((s, i) => s.classList.toggle('is-active', i === current));
+      dots.forEach((d, i) => d.classList.toggle('is-active', i === current));
+      prevBtn.style.visibility = current === 0 ? 'hidden' : 'visible';
+      nextBtn.textContent = current === slides.length - 1 ? 'Start solving' : 'Next';
+    }
+
+    function close() {
+      modal.classList.remove('is-open');
+      localStorage.setItem(INTRO_KEY, 'true');
+    }
+
+    nextBtn.addEventListener('click', () => {
+      if (current === slides.length - 1) close();
+      else goToSlide(current + 1);
+    });
+    prevBtn.addEventListener('click', () => goToSlide(current - 1));
+    document.getElementById('potdIntroClose').addEventListener('click', close);
+    modal.querySelector('.potd-intro-backdrop').addEventListener('click', close);
+    dots.forEach(dot => dot.addEventListener('click', () => goToSlide(Number(dot.dataset.dot))));
+
+    setTimeout(() => modal.classList.add('is-open'), 600);
+  })();
+</script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+  import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, limit, Timestamp }
+    from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
+  import { startAuthGuard } from '../auth-guard.js';
+  import { startGuestSession, showAuthWall } from '../guest-gate.js';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
+    authDomain: "korah-app.firebaseapp.com",
+    projectId: "korah-app",
+    storageBucket: "korah-app.firebasestorage.app",
+    messagingSenderId: "226169460321",
+    appId: "1:226169460321:web:b166fc8260107c55dafc20"
+  };
+
+  // Only these accounts see the post button. Keep this list in sync with the
+  // uids in the problemOfTheDay Firestore rule, which is what actually decides
+  // who may write.
+  const POSTERS = [
+    'M3NQ6zzFRBaVZ2squxyuEu2zMpD3',
+    'vvywOdpJtefJ6utQRjPQn1u0l2F2',
+    'ZVZyZ8l7ebVAWKHWpvDWRdtag2M2'
+  ];
+  const COLLECTION = 'problemOfTheDay';
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  onAuthStateChanged(auth, (user) => {
+    if (!user) {
+      // No redirect: render the empty shell, then hard-block with the auth wall.
+      startGuestSession();
+      showAuthWall('../');
+      return;
+    }
+    const detail = { uid: user.uid };
+    window._korahReadyFired = detail;
+    window.dispatchEvent(new CustomEvent('korahReady', { detail }));
+    startAuthGuard(auth, '../index.html');
+    loadProblem();
+    if (POSTERS.includes(user.uid)) document.getElementById('potdLockBtn').hidden = false;
+  });
+
+  // #logout-btn lives in the sidebar, which sidebar-loader.js injects asynchronously,
+  // so it does not exist yet when this module runs. Delegate from document instead.
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#logout-btn')) return;
+    window.confirmLogout(async () => {
+      await signOut(auth);
+      localStorage.removeItem('korah_first_name');
+      window.KorahTransitions.go('../login.html');
+    });
+  });
+
+  // Today's problem
+  const LETTERS = ['A', 'B', 'C', 'D'];
+  const CHOICE_TONES = ['tone-blue', 'tone-pink', 'tone-amber', 'tone-teal'];
+  const DIFF_TONES = { Easy: 'tone-green', Medium: 'tone-amber', Hard: 'tone-red' };
+
+  const loadingEl = document.getElementById('potdLoading');
+  const emptyEl = document.getElementById('potdEmpty');
+  const cardEl = document.getElementById('potdProblemCard');
+  const choicesEl = document.getElementById('potdChoices');
+  const typedEl = document.getElementById('potdTyped');
+  const typedInput = document.getElementById('potdTypedInput');
+  const hintEl = document.getElementById('potdHint');
+  const resultEl = document.getElementById('potdResult');
+  const submitEl = document.getElementById('potdSubmit');
+  const walkthroughEl = document.getElementById('potdWalkthrough');
+  const videoEl = document.getElementById('potdVideo');
+
+  let problem = null;
+  let picked = null;
+  let submitted = false;
+
+  async function loadProblem() {
+    try {
+      const snap = await getDocs(query(
+        collection(db, COLLECTION),
+        where('publishAt', '<=', Timestamp.now()),
+        orderBy('publishAt', 'desc'),
+        limit(1)
+      ));
+      loadingEl.hidden = true;
+      if (snap.empty) {
+        emptyEl.hidden = false;
+        return;
+      }
+      renderProblem(snap.docs[0].data());
+    } catch (err) {
+      console.error('[POTD] load failed', err);
+      loadingEl.hidden = true;
+      emptyEl.hidden = false;
+    }
+  }
+
+  function renderProblem(p) {
+    problem = p;
+    const posted = p.publishAt && p.publishAt.toDate ? p.publishAt.toDate() : new Date();
+    const dateEl = document.getElementById('potdDate');
+    const subjectEl = document.getElementById('potdSubject');
+    const diffEl = document.getElementById('potdDifficulty');
+    dateEl.textContent = posted.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
+    subjectEl.textContent = p.subject;
+    diffEl.textContent = p.difficulty;
+    diffEl.classList.add(DIFF_TONES[p.difficulty] || 'tone-amber');
+    [dateEl, subjectEl, diffEl].forEach(el => { el.hidden = false; });
+    document.getElementById('potdImage').src = p.imageData;
+
+    if (p.answerType === 'typed') {
+      typedEl.hidden = false;
+      typedInput.addEventListener('input', () => { hintEl.hidden = true; });
+    } else {
+      p.choices.forEach((text, i) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'potd-choice ' + CHOICE_TONES[i % CHOICE_TONES.length];
+        btn.innerHTML = '<span class="potd-choice-letter">' + LETTERS[i] + '</span><span></span>';
+        btn.lastElementChild.textContent = text;
+        btn.addEventListener('click', () => {
+          if (submitted) return;
+          picked = i;
+          hintEl.hidden = true;
+          choicesEl.querySelectorAll('.potd-choice').forEach((el, j) => el.classList.toggle('is-selected', j === i));
+        });
+        choicesEl.appendChild(btn);
+      });
+    }
+
+    cardEl.hidden = false;
+  }
+
+  const normalize = (s) => String(s).trim().toLowerCase().replace(/\s+/g, ' ');
+
+  submitEl.addEventListener('click', () => {
+    if (submitted || !problem) return;
+
+    let right;
+    if (problem.answerType === 'typed') {
+      if (!typedInput.value.trim()) { hintEl.hidden = false; return; }
+      right = normalize(typedInput.value) === normalize(problem.correctText);
+      typedInput.disabled = true;
+    } else {
+      if (picked === null) { hintEl.hidden = false; return; }
+      right = picked === problem.correctIndex;
+      choicesEl.querySelectorAll('.potd-choice').forEach((el, i) => {
+        el.disabled = true;
+        el.classList.remove('is-selected');
+        if (i === problem.correctIndex) el.classList.add('is-correct');
+        else if (i === picked) el.classList.add('is-wrong');
+      });
+    }
+
+    submitted = true;
+    const answer = problem.answerType === 'typed'
+      ? problem.correctText
+      : LETTERS[problem.correctIndex] + ') ' + problem.choices[problem.correctIndex];
+
+    resultEl.className = 'potd-result ' + (right ? 'tone-green' : 'tone-red');
+    resultEl.innerHTML = '<span class="material-icons-round">' + (right ? 'check_circle' : 'cancel') + '</span><span></span>';
+    resultEl.lastElementChild.textContent = right
+      ? 'Correct. Watch the walkthrough to check your reasoning.'
+      : 'Not quite. The answer is ' + answer + '.';
+    resultEl.hidden = false;
+
+    submitEl.disabled = true;
+    submitEl.textContent = 'Answer submitted';
+
+    videoEl.src = 'https://www.youtube.com/embed/' + problem.youtubeId;
+    walkthroughEl.hidden = false;
+    walkthroughEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  });
+
+  // Post a problem
+  const adminEl = document.getElementById('potdAdmin');
+  const formEl = document.getElementById('potdForm');
+  const formErrorEl = document.getElementById('potdFormError');
+  const formStatusEl = document.getElementById('potdFormStatus');
+  const publishBtn = document.getElementById('potdPublish');
+  const choiceRowsEl = document.getElementById('potdChoiceRows');
+
+  let difficulty = 'Medium';
+  let answerType = 'choice';
+  let correctIndex = 0;
+
+  LETTERS.forEach((letter, i) => {
+    const row = document.createElement('div');
+    row.className = 'potd-choice-row';
+    row.innerHTML = '<button type="button" class="potd-pick ' + CHOICE_TONES[i] + '" data-i="' + i + '">' + letter + '</button>'
+      + '<input type="text" class="potd-input" placeholder="Choice ' + letter + '"/>';
+    row.firstElementChild.addEventListener('click', () => {
+      correctIndex = i;
+      choiceRowsEl.querySelectorAll('.potd-pick').forEach((b, j) => b.classList.toggle('is-selected', j === i));
+    });
+    choiceRowsEl.appendChild(row);
+  });
+  choiceRowsEl.querySelector('.potd-pick').classList.add('is-selected');
+
+  function wireSegment(id, onPick) {
+    const seg = document.getElementById(id);
+    seg.querySelectorAll('.potd-seg-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        seg.querySelectorAll('.potd-seg-btn').forEach(b => b.classList.toggle('is-selected', b === btn));
+        onPick(btn.dataset.val);
+      });
+    });
+  }
+  wireSegment('potdDiffSeg', (v) => { difficulty = v; });
+  wireSegment('potdTypeSeg', (v) => {
+    answerType = v;
+    document.getElementById('potdChoiceFields').hidden = v !== 'choice';
+    document.getElementById('potdTypedFields').hidden = v !== 'typed';
+  });
+
+  function openAdmin() { adminEl.classList.add('is-open'); }
+  function closeAdmin() { adminEl.classList.remove('is-open'); }
+
+  document.getElementById('potdLockBtn').addEventListener('click', openAdmin);
+  document.getElementById('potdAdminClose').addEventListener('click', closeAdmin);
+  adminEl.querySelector('.potd-modal-backdrop').addEventListener('click', closeAdmin);
+
+  // youtu.be/ID, watch?v=ID, /embed/ID and /shorts/ID all reduce to the id.
+  function youtubeId(url) {
+    const m = url.match(/(?:youtu\.be\/|v=|\/embed\/|\/shorts\/)([\w-]{11})/);
+    return m ? m[1] : null;
+  }
+
+  // The image rides along inside the Firestore document, which caps at 1MB, so
+  // it is downscaled and re-encoded until it fits with room to spare.
+  const MAX_IMAGE_CHARS = 900000;
+  function readImage(file) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('That image could not be read.'));
+      img.onload = () => {
+        const scale = Math.min(1, 1400 / img.width);
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        const ctx = canvas.getContext('2d');
+        // JPEG has no alpha, so a transparent PNG would come out on black.
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(img.src);
+        for (const quality of [0.85, 0.7, 0.5]) {
+          const data = canvas.toDataURL('image/jpeg', quality);
+          if (data.length <= MAX_IMAGE_CHARS) return resolve(data);
+        }
+        reject(new Error('That image is too large. Crop it or shrink it and try again.'));
+      };
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
+  formEl.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    formErrorEl.hidden = true;
+
+    const imageFile = document.getElementById('potdImgFile').files[0];
+    const videoUrl = document.getElementById('potdVideoUrl').value.trim();
+    const publishAt = document.getElementById('potdPublishAt').value;
+    const subject = document.getElementById('potdSubjectIn').value.trim();
+    const typedAnswer = document.getElementById('potdTypedAnswer').value.trim();
+    const choices = [...choiceRowsEl.querySelectorAll('.potd-input')].map(i => i.value.trim());
+
+    const fail = (msg) => { formErrorEl.textContent = msg; formErrorEl.hidden = false; };
+    if (!imageFile) return fail('Pick an image of the problem.');
+    if (!youtubeId(videoUrl)) return fail('Paste a YouTube link for the walkthrough.');
+    if (!publishAt) return fail('Set a publish time.');
+    if (!subject) return fail('Give the problem a subject.');
+    if (answerType === 'typed' && !typedAnswer) return fail('Type the correct answer.');
+    if (answerType === 'choice' && choices.filter(Boolean).length < 2) return fail('Fill in at least two choices.');
+    if (answerType === 'choice' && !choices[correctIndex]) return fail('The choice marked correct is empty.');
+
+    publishBtn.disabled = true;
+    const status = (msg) => { formStatusEl.textContent = msg; formStatusEl.hidden = false; };
+
+    try {
+      status('Preparing the image...');
+      const imageData = await readImage(imageFile);
+      status('Saving...');
+
+      const record = {
+        subject: subject,
+        difficulty: difficulty,
+        answerType: answerType,
+        imageData: imageData,
+        youtubeId: youtubeId(videoUrl),
+        publishAt: Timestamp.fromDate(new Date(publishAt)),
+        createdAt: Timestamp.now(),
+        createdBy: auth.currentUser.uid
+      };
+      if (answerType === 'typed') {
+        record.correctText = typedAnswer;
+      } else {
+        // Trailing blanks are dropped, so a three-choice problem stays three choices.
+        let last = choices.length - 1;
+        while (last >= 0 && !choices[last]) last--;
+        record.choices = choices.slice(0, last + 1);
+        record.correctIndex = correctIndex;
+      }
+      await addDoc(collection(db, COLLECTION), record);
+
+      status('Scheduled for ' + new Date(publishAt).toLocaleString() + '.');
+      formEl.reset();
+    } catch (err) {
+      console.error('[POTD] publish failed', err);
+      fail(err.message || 'Could not save the problem.');
+      formStatusEl.hidden = true;
+    } finally {
+      publishBtn.disabled = false;
+    }
+  });
+</script>
+
+</body>
+</html>

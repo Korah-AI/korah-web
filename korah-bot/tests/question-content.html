@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Question content regression checks</title>
+<link rel="stylesheet" href="../sat/sat.css">
+<link rel="stylesheet" href="../sat/sat-rush.css">
+<link rel="stylesheet" href="../sat/question-content.css">
+<style>body { background:#181818;color:white;font:18px system-ui;margin:24px } article { max-width:720px;padding:24px;border:1px solid #888;margin:24px auto } #results {white-space:pre-wrap} button {padding:12px} html[data-theme="light"] body{background:white;color:#111}</style>
+<h1>Question content regression checks</h1>
+<button id="theme">Switch theme</button><button id="narrow">Narrow content</button><pre id="results">Running…</pre><main id="examples"></main>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+<script src="../sat/js/question-content.js"></script>
+<script>
+document.querySelector('#theme').onclick = () => document.documentElement.dataset.theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+document.querySelector('#narrow').onclick = () => { document.querySelector('#examples').style.maxWidth='340px'; };
+const results = [];
+const assert = (name, condition) => { results.push(`${condition ? 'PASS' : 'FAIL'} ${name}`); };
+const mount = source => { const article=document.createElement('article'); article.className='sat-question-stem'; KorahQuestionContent.render(article, source); document.querySelector('#examples').append(article); return article; };
+mount('<p>Image-based question: check that the paper blends into the page in both themes.</p><img alt="Practice question image" src="../docs/practice-tests/test-11/question-imgs/mod-2/math-m2-q9.png">');
+const rich=mount('<p>Before <img role="math" class="math-img" alt="three halves" src="data:image/png;base64,AA=="> after. Prices are $5 and $10.</p><table><caption>Data</caption><tr><th scope="col">x</th><th scope="col">y</th></tr><tr><td>1</td><td>3</td></tr></table><p>Text following the table wraps as a normal paragraph.</p>');
+assert('legacy fraction becomes MathML', rich.querySelector('mfrac')?.textContent === '32');
+assert('currency remains prose', rich.textContent.includes('$5 and $10'));
+assert('table headers and caption preserved', rich.querySelector('th[scope="col"]') && rich.querySelector('caption'));
+assert('table has a local scroll region', rich.querySelector('.question-table-scroll table'));
+const math=mount('<math><mfenced open="[" close="]" separators=";"><mi>x</mi><mfenced><mi>y</mi><mi>z</mi></mfenced></mfenced><menclose notation="top"><mi>A</mi><mi>B</mi></menclose></math>');
+assert('nested fences and separators preserved', math.textContent === '[x;(y,z)]AB¯');
+assert('overbar is structured MathML', math.querySelector('mover[accent="true"]'));
+const unknown=mount('<p>An ambiguous equation <img class="math-img" alt="x over y plus z" src="data:image/png;base64,AA=="> remains available for review.</p>');
+assert('ambiguous math is never guessed', unknown.querySelector('img[data-math-conversion="needs-review"]') && !unknown.querySelector('math'));
+assert('fallback math remains inline', getComputedStyle(unknown.querySelector('img')).display === 'inline-block');
+const svg='<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100"><defs><path id="glyph" d="M0 0 L5 10"/><clipPath id="clip"><rect width="200" height="100"/></clipPath></defs><g id="patch_1"><path fill="white" d="M0 0H200V100H0Z"/></g><g clip-path="url(#clip)"><use xlink:href="#glyph"/><path d="M0 50H200M100 0V100" stroke="black"/></g></svg>';
+const a=mount(svg), b=mount(svg);
+assert('SVG use retained', !!a.querySelector('use'));
+assert('SVG IDs do not collide across questions', a.querySelector('path[id]').id !== b.querySelector('path[id]').id);
+assert('SVG glyph resolves locally', a.querySelector('use')?.getAttribute('href') === '#'+a.querySelector('path[id]').id);
+assert('SVG clip path preserved', a.querySelector('g[clip-path]')?.getAttribute('clip-path') === `url(#${a.querySelector('clipPath').id})`);
+assert('coordinate space preserved', a.querySelector('svg').getAttribute('viewBox') === '0 0 200 100');
+assert('only identified plot backgrounds removed', a.querySelectorAll('.question-plot-background').length === 1);
+const attack=mount('<img src="x" onerror="alert(1)"><script>alert(1)<\/script><svg><use href="https://example.com/a.svg#b"/></svg><p style="background:url(https://example.com/tracker);position:fixed">Safe text</p>');
+assert('scripts and handlers removed', !attack.querySelector('script,[onerror]'));
+assert('external SVG references removed', !attack.querySelector('use[href]'));
+assert('external CSS resources removed', !attack.querySelector('p').getAttribute('style')?.includes('url'));
+const purifier=window.DOMPurify; window.DOMPurify=undefined;
+const failure=KorahQuestionContent.html('<img src="x" onerror="alert(1)">'); window.DOMPurify=purifier;
+assert('missing sanitizer fails safely', !failure.includes('<img') && failure.includes('role="alert"'));
+(async () => {
+ try {
+  const fixtures=await (await fetch('./fixtures/collegeboard-content.json')).json();
+  for (const fixture of fixtures) {
+   if(new URLSearchParams(location.search).has('assessment')) continue;
+   const q=Array.isArray(fixture.detail) ? fixture.detail[0] : fixture.detail;
+   const fields=q.answer ? [q.body,q.prompt,...Object.values(q.answer.choices||{}).map(c=>c.body),q.answer.rationale] : [q.stimulus,q.stem,...(q.answerOptions||[]).map(c=>c.content),q.rationale];
+   if (new URLSearchParams(location.search).has('id') && fixture.meta.questionId !== new URLSearchParams(location.search).get('id')) continue;
+   const article=mount(fields.filter(Boolean).join('\n')); article.dataset.questionId=fixture.meta.questionId;
+   const label=document.createElement('h2');label.textContent=fixture.meta.questionId;article.prepend(label);
+   assert(`source content rendered: ${fixture.meta.questionId}`, article.querySelector('.question-content').textContent.trim().length > 0);
+   assert(`no deprecated math: ${fixture.meta.questionId}`, !article.querySelector('mfenced,menclose[notation="top"]'));
+   if(fixture.meta.questionId==='3f5a3602') assert('real graph label masks removed',article.querySelectorAll('.question-label-background').length===27);
+  }
+ } catch(error) { assert('source fixtures loaded: '+error.message,false); }
+ const assessment=await (await fetch('../docs/practice-tests/test-11/test-11.json')).json();
+ for (const q of assessment.mathModule1.filter(q=>q.stemHtml)) {
+  if(new URLSearchParams(location.search).has('assessment') && String(q.n)!==new URLSearchParams(location.search).get('assessment')) continue;
+  const el=mount(q.stemHtml+(q.optionHtml||[]).join(''));
+  el.id='assessment-'+q.n;
+  el.dataset.assessmentQuestion=String(q.n);
+  assert(`verified assessment ${q.n}: selectable stem`, !el.querySelector('img') && el.querySelector('.question-content').textContent.trim().length > 0);
+ }
+ assert('native MathML layout retained', getComputedStyle(rich.querySelector('math')).display.includes('math'));
+ assert('fraction uses a compact layout', rich.querySelector('mfrac').getBoundingClientRect().width < 100);
+ document.querySelector('#results').textContent=results.join('\n');
+ document.body.dataset.testStatus=results.some(r=>r.startsWith('FAIL'))?'failed':'passed';
+})();
+</script>
+</html>
