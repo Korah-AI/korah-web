@@ -60,14 +60,27 @@
     return t.trim();
   }
 
+  /**
+   * The grading prompt asks for LaTeX wrapped in \( and \), and the model writes
+   * those delimiters into JSON strings with a single backslash, which JSON.parse
+   * rejects as an invalid escape. Double any backslash that does not already
+   * start a legal JSON escape, leaving correctly escaped pairs alone.
+   */
+  function escapeStrayBackslashes(text) {
+    return text.replace(/\\(["\\/bfnrt]|u[0-9a-fA-F]{4})|\\/g, (m, valid) => (valid ? m : '\\\\'));
+  }
+
   function parseJson(text) {
     const t = stripCodeFences(text);
     if (!t) return null;
     try { return JSON.parse(t); } catch (_) {}
+    try { return JSON.parse(escapeStrayBackslashes(t)); } catch (_) {}
     const start = t.indexOf('{');
     const end = t.lastIndexOf('}') + 1;
     if (start === -1 || end <= start) return null;
-    try { return JSON.parse(t.slice(start, end)); } catch (_) { return null; }
+    const slice = t.slice(start, end);
+    try { return JSON.parse(slice); } catch (_) {}
+    try { return JSON.parse(escapeStrayBackslashes(slice)); } catch (_) { return null; }
   }
 
   function createHttpError(message, status, payload) {
