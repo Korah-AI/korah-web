@@ -26,96 +26,45 @@
 <script src="../transitions/page-transitions.js"></script>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Korah AI — AP Practice</title>
-<script>document.documentElement.setAttribute('data-theme', localStorage.getItem('korah_theme') || 'dark');</script>
+<title>Korah AI — AP FRQ Practice</title>
 <link rel="icon" type="image/png" href="../logo-images/newlogo0.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <script src="../sidebar-loader.js" defer></script>
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="../study/js/sidebar.js"></script>
 <link rel="stylesheet" href="../app/korah-chat.css"/>
-<style>
-  .coming-soon-page {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: calc(100dvh - 4rem);
-    padding: 2rem;
-  }
-  .coming-soon-card {
-    text-align: center;
-    max-width: 28rem;
-    background: var(--sf2);
-    border: 0.0625rem solid var(--bd);
-    border-radius: 1.125rem;
-    padding: 3rem 2rem;
-  }
-  .coming-soon-icon {
-    width: 4rem;
-    height: 4rem;
-    border-radius: 1rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 1.25rem;
-    background: var(--cu);
-  }
-  .coming-soon-title {
-    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
-    font-size: 1.5rem;
-    font-weight: 800;
-    color: var(--tx);
-    margin: 0 0 0.5rem;
-  }
-  .coming-soon-sub {
-    color: var(--tx2);
-    font-size: 0.9375rem;
-    margin: 0;
-    line-height: 1.6;
-  }
-</style>
+<link rel="stylesheet" href="../sat/sat.css"/>
+<link rel="stylesheet" href="./ap.css"/>
+<link rel="stylesheet" href="../app/intro-demos.css"/>
 </head>
-<body class="korah-grey">
 
-<div id="sidebar-root"></div>
+<body class="sat-grey">
+<style>
+  html:not(.korah-page-ready) { background: #06040f !important; }
+  html[data-theme="light"]:not(.korah-page-ready) { background: #d2d2d2 !important; }
+  html:not(.korah-page-ready) body { opacity: 0 !important; }
+</style>
 
-<div id="main-area-wrapper" class="main-area-wrapper">
-<main id="main-content" class="main-content">
-  <header class="chat-topbar bg-sf glass-sm t-theme bd" style="opacity: 0.95;">
-    <button id="sidebar-toggle" @click="toggleSidebar()" class="sidebar-toggle-btn t-btn tx2" aria-label="Toggle sidebar">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
-      </svg>
-    </button>
-    <div class="chat-title-area">
-      <div class="korah-status-dot"></div>
-      <span class="font-semibold tx text-sm">AP Practice</span>
-    </div>
-  </header>
-
-  <div class="home-scroll">
-    <div class="coming-soon-page">
-      <div class="coming-soon-card">
-        <div class="coming-soon-icon">
-          <span class="material-icons-round" style="font-size: 2rem; color: var(--p5);">school</span>
-        </div>
-        <h1 class="coming-soon-title">AP Practice</h1>
-        <p class="coming-soon-sub">AP subject practice, exam simulations, and topic-specific drills are under development. Check back soon.</p>
-      </div>
-    </div>
-  </div>
-</main>
-</div>
+<script>
+  (function() {
+    const t = localStorage.getItem('korah_theme') || 'dark';
+    if (t === 'light' || (t === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  })();
+</script>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
-  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
   import { setupKorahDB } from "../app/data/firestore-store.js";
-  import { startGuestSession, initGuestGate } from "../guest-gate.js";
-  import { startAuthGuard } from "../auth-guard.js";
+  import { initAPProgress } from "./js/ap-progress.js";
+  import { startAuthGuard } from '../auth-guard.js';
+  import { initGuestGate, startGuestSession, showGuestToastOnce } from '../guest-gate.js';
 
   const firebaseConfig = {
     apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
@@ -131,16 +80,256 @@
 
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
+      // The course picker renders from static config; guests can browse it.
       startGuestSession();
       initGuestGate('../');
+      showGuestToastOnce();
       return;
     }
     await setupKorahDB(app, user.uid);
+    await initAPProgress(app, user.uid);
     const detail = { uid: user.uid };
     window._korahReadyFired = detail;
     window.dispatchEvent(new CustomEvent('korahReady', { detail }));
     startAuthGuard(auth, '../index.html');
   });
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#logout-btn')) return;
+    window.confirmLogout(async () => {
+      await signOut(auth);
+      localStorage.removeItem('korah_first_name');
+      window.KorahTransitions.go('../login.html');
+    });
+  });
 </script>
+
+<canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
+<div id="sidebar-root"></div>
+
+<!-- ═══ MAIN AREA WRAPPER ═══ -->
+<div id="main-area-wrapper" class="main-area-wrapper">
+
+<main id="main-content" class="main-content">
+
+  <!-- Top bar -->
+  <header class="chat-topbar bg-sf glass-sm t-theme bd" style="opacity: 0.95;">
+    <button id="sidebar-toggle" @click="toggleSidebar()" class="sidebar-toggle-btn t-btn tx" aria-label="Toggle sidebar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+
+    <div class="chat-title-area">
+      <div class="korah-status-dot"></div>
+      <span class="font-semibold tx text-sm" id="chat-title">AP FRQ Practice</span>
+    </div>
+  </header>
+
+  <!-- AP Content -->
+  <div class="ap-page" style="padding: 1.25rem;">
+    <div class="ap-page-inner">
+
+      <div class="ap-eyebrow-row">
+        <img src="../logo-images/newlogo12.png" class="ap-eyebrow-logo" alt="Korah logo"/>
+        <p class="ap-eyebrow">Korah AP Prep</p>
+      </div>
+      <h1 class="ap-page-title">Free Response Practice</h1>
+      <p class="ap-page-desc">
+        Pick a course, work a real College Board style free response question under a
+        timer, and get point-by-point feedback against the official rubric. Grading
+        quotes your own work back at you, so you can trust every point you earned.
+      </p>
+
+      <p class="ap-page-desc">Want a full timed practice session instead? <a href="./exams.html" style="color:var(--tone-blue);font-weight:700;">Browse AP mock exams</a>.</p>
+
+      <div id="course-grid" class="ap-course-grid">
+        <div class="ap-loading"><div class="ap-spinner"></div><div class="ap-loading-text">Loading courses...</div></div>
+      </div>
+
+    </div>
+  </div>
+
+</main>
+
+</div><!-- end .main-area-wrapper -->
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"></script>
+<script src="../app/timer-manager.js"></script>
+<script src="../study/js/sidebar.js"></script>
+<script src="../app/korah-chat.js"></script>
+
+<script>
+  // Initialize sidebar with chat-specific callbacks
+  window.addEventListener('korahReady', () => {
+    if (window.KorahSidebar) {
+      window.KorahSidebar.initSidebar({
+        chatBaseUrl: "../chat.html",
+        itemPageUrl: "../study/item.html"
+      });
+    }
+  }, { once: true });
+</script>
+
+<script src="./js/ap-bank.js"></script>
+
+<script>
+  (function () {
+    if (!window.KorahAP) return;
+
+    const grid = document.getElementById('course-grid');
+
+    // One accent per course, so the picker is never a single flat color.
+    const courseTones = { 'ap-calculus-ab': 'tone-blue', 'ap-us-history': 'tone-pink' };
+
+    async function attemptedMap(source) {
+      if (!window.KorahAPProgress || !window.KorahAPProgress.latestPerFrq) return null;
+      const out = {};
+      for (const c of window.KorahAP.getCourses()) {
+        try {
+          const list = source === 'firestore'
+            ? await window.KorahAPProgress.getFrqAttemptCounts(c.slug)
+            : window.KorahAPProgress.latestPerFrq(await window.KorahAPProgress.loadPlaceholderAttempts(c.slug));
+          out[c.slug] = list;
+        } catch (e) {
+          out[c.slug] = null;
+        }
+      }
+      return out;
+    }
+
+    function applyAttempts(map) {
+      if (!map) return;
+      for (const c of window.KorahAP.getCourses()) {
+        const counts = map[c.slug];
+        if (!counts) continue;
+        const done = counts.size || 0;
+        const el = document.getElementById('attempted-' + c.slug);
+        if (el && done > 0) el.textContent = done;
+      }
+    }
+
+    async function render() {
+      const courses = window.KorahAP.getCourses();
+      const rows = await Promise.all(courses.map(async (c) => {
+        let frqList = [];
+        try {
+          frqList = await window.KorahAP.loadFrqs(c.slug);
+        } catch (e) {}
+        const n = frqList.filter((f) => !f.sample).length || frqList.length;
+        const rubricPoints = frqList.reduce((s, f) => s + (f.parts || []).reduce((p, part) => p + (part.rubricPoints || []).length, 0), 0);
+        return { c, n, rubricPoints };
+      }));
+
+      grid.innerHTML = rows.map(({ c, n, rubricPoints }) => `
+        <a class="ap-course-card ${courseTones[c.slug] || 'tone-blue'}" href="./frqs.html?course=${encodeURIComponent(c.slug)}">
+          <div class="ap-course-card-top">
+            <div class="ap-course-icon"><span class="material-icons-round">${c.icon}</span></div>
+            <span class="ap-badge ap-badge-timer">${n} ${c.frqLabel.toLowerCase()}</span>
+          </div>
+          <div>
+            <div class="ap-course-name">${c.name}</div>
+            <p class="ap-course-tagline">${c.tagline}</p>
+          </div>
+          <div class="ap-course-stats">
+            <span><b id="attempted-${c.slug}">0</b> attempted</span>
+            <span><b>${rubricPoints}</b> rubric points</span>
+          </div>
+          <span class="ap-course-cta">Open ${c.frqLabel} <span class="material-icons-round" style="font-size:1.125rem;">arrow_forward</span></span>
+        </a>`).join('');
+    }
+
+    render();
+
+    window.addEventListener('korahReady', async () => {
+      // Offline demo first (placeholder attempts), then real Firestore data.
+      applyAttempts(await attemptedMap('placeholder'));
+      if (window.KorahAPProgress && window.KorahAPProgress.getFrqAttemptCounts) {
+        applyAttempts(await attemptedMap('firestore'));
+      }
+    }, { once: true });
+  })();
+</script>
+
+<!-- First-visit intro carousel -->
+<div class="kintro sat-grey" data-intro-key="korah_ap_intro_seen" data-intro-done="Start practicing">
+  <div class="kintro-backdrop"></div>
+  <div class="kintro-content">
+    <button class="kintro-close" type="button" aria-label="Close">&times;</button>
+
+    <div class="kintro-slides">
+      <div class="kintro-slide is-active">
+        <img src="../logo-images/newlogo2.png" class="kintro-icon" alt=""/>
+        <h2 class="kintro-title">Welcome to AP Prep</h2>
+        <p class="kintro-desc">
+          Work real free response questions, get graded against the official rubric,
+          and sit full timed mock exams. Here is how it works.
+        </p>
+      </div>
+
+      <div class="kintro-slide">
+        <h2 class="kintro-title">Write a real free response</h2>
+        <p class="kintro-desc">
+          Pick a course, answer a College Board style question under a timer, and
+          submit it the same way you would on exam day.
+        </p>
+        <div class="kdemo kd-frq" aria-hidden="true">
+          <div class="kd-frq-top">
+            <span class="kd-frq-course">AP Biology</span>
+            <span class="kd-frq-timer"><i></i>22:14 left</span>
+          </div>
+          <div class="kd-frq-stem">
+            <span class="kd-frq-part">Part (a)</span>
+            <span class="kd-lines"><i></i><i></i><i class="is-short"></i></span>
+          </div>
+          <div class="kd-frq-write">
+            <span class="kd-typed" data-text="The rate rises because the enzyme"><span class="kd-typed-in">The rate rises because the enzyme</span></span>
+          </div>
+          <div class="kd-frq-foot"><span class="kd-frq-submit">Submit</span></div>
+        </div>
+      </div>
+
+      <div class="kintro-slide">
+        <h2 class="kintro-title">Graded on the official rubric</h2>
+        <p class="kintro-desc">
+          Every point is checked against the real scoring guidelines, and the grader
+          quotes your own words back, so you can see where each point came from.
+        </p>
+        <div class="kdemo kd-rubric" aria-hidden="true">
+          <div class="kd-rubric-head">
+            <span>Rubric</span>
+            <span class="kd-rubric-score">6 / 9</span>
+          </div>
+          <div class="kd-rubric-row is-earned">
+            <span class="kd-mark">+1</span>Names the independent variable
+            <span class="kd-rubric-quote">"time in minutes"</span>
+          </div>
+          <div class="kd-rubric-row is-earned">
+            <span class="kd-mark">+1</span>Explains the trend
+            <span class="kd-rubric-quote">"the rate rises"</span>
+          </div>
+          <div class="kd-rubric-row is-missed">
+            <span class="kd-mark">0</span>Links the result back to the model
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="kintro-dots">
+      <span class="kintro-dot is-active"></span>
+      <span class="kintro-dot"></span>
+      <span class="kintro-dot"></span>
+    </div>
+
+    <div class="kintro-actions">
+      <button class="kintro-btn" type="button" style="visibility:hidden;">Back</button>
+      <button class="kintro-btn is-primary" type="button">Next</button>
+    </div>
+  </div>
+</div>
+<script src="../app/intro-carousel.js"></script>
+
 </body>
 </html>

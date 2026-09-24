@@ -38,6 +38,7 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="study/js/sidebar.js"></script>
 <link rel="stylesheet" href="app/korah-chat.css"/>
+<link rel="stylesheet" href="app/intro-demos.css"/>
 <style>
   /* NOTE: elements sit over the dark --bg; add `backdrop-filter: blur(0.875rem)` to any
   surface/text that needs to render on top of it instead of blending underneath. */
@@ -125,16 +126,21 @@
 
   .opportunities-banner {
     display: flex; align-items: center; gap: 0.875rem; flex-wrap: wrap;
-    background: linear-gradient(135deg, rgba(16,185,129,.14), rgba(16,185,129,.04));
-    border: 1px solid rgba(16,185,129,.32);
+    background: linear-gradient(135deg, rgba(236,72,153,.14), rgba(236,72,153,.04));
+    border: 1px solid rgba(236,72,153,.32);
     border-radius: 1rem; padding: 0.875rem 1.125rem;
     margin-bottom: 2.25rem;
     backdrop-filter: blur(0.875rem);
+    animation: opportunities-pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes opportunities-pulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(236,72,153,.35); }
+    50% { transform: scale(1.015); box-shadow: 0 0 0.75rem 0.125rem rgba(236,72,153,.35); }
   }
   .opportunities-banner .banner-icon {
     width: 2.25rem; height: 2.25rem; flex-shrink: 0;
     border-radius: 0.625rem;
-    background: linear-gradient(135deg, rgba(16,185,129,.18), rgba(52,211,153,.12));
+    background: linear-gradient(135deg, rgba(236,72,153,.18), rgba(244,114,182,.12));
     display: flex; align-items: center; justify-content: center;
     font-size: 1.125rem;
   }
@@ -142,10 +148,10 @@
   .opportunities-banner .banner-text strong { font-weight: 700; }
   .opportunities-banner .banner-text span { color: white; }
   .opportunities-cta {
-    background: rgba(16,185,129,.16);
-    color: #10b981; font-weight: 700; font-size: 0.8125rem;
+    background: rgba(236,72,153,.16);
+    color: #ec4899; font-weight: 700; font-size: 0.8125rem;
   }
-  .opportunities-cta:hover { background: rgba(16,185,129,.28); }
+  .opportunities-cta:hover { background: rgba(236,72,153,.28); }
 
   .home-section-head {
     display: flex; align-items: center; gap: 0.5rem;
@@ -601,7 +607,7 @@
 
   /* One tone per card. On the grey cards it drives the accents; on the stat
      tiles it drives the fill as well. */
-  .korah-grey .opportunities-banner       { --acc: var(--tone-green); }
+  .korah-grey .opportunities-banner       { --acc: var(--tone-pink); }
   .korah-grey .countdown-card             { --acc: var(--tone-amber); }
   .korah-grey .score-banner               { --acc: var(--tone-blue); }
   .korah-grey .stat-card:nth-child(1)     { --acc: var(--tone-blue); }
@@ -949,13 +955,13 @@
       <div>
         <h1 class="greeting-title"><span id="greeting-prefix">Good morning,</span> <span class="name" id="greeting-name">guest</span></h1>
         <p class="greeting-sub"> <strong> "Is it better to cook, or to get cooked?" </strong> - Korah, 2026</p>
-        <!-- CODE Internship Banner -->
+        <!-- College Essay Helper Banner -->
         <div class="opportunities-banner" style="margin-top: 0.875rem;">
-          <div class="banner-icon"><img src="logo-images/newlogo10.png" alt="Korah CODE" style="width: 100%; height: 100%; object-fit: contain;"/></div>
+          <div class="banner-icon"><img src="logo-images/newlogo10.png" alt="Korah" style="width: 100%; height: 100%; object-fit: contain;"/></div>
           <div class="banner-text">
-            <strong>Get Daily TikTok SAT Tips:</strong> <span>We made an IG, follow us today @korah.ai!</span>
+            <strong>New:</strong> <span>We just dropped a College Essay Helper. Go check it out now!</span>
           </div>
-          <a href="https://www.tiktok.com/@korah.ai" target="_blank" rel="noopener" class="banner-cta opportunities-cta">Follow</a>
+          <a href="college-prep/index.html" class="banner-cta opportunities-cta">Check it out</a>
         </div>
       </div>
 
@@ -1291,7 +1297,40 @@
       <div class="onboard-slide" data-slide="2">
         <img src="logo-images/newlogo2.png" class="onboard-logo" alt="Korah"/>
         <h2 class="onboard-title">3,500+ Practice Questions</h2>
+        <!-- Replaced by the .kd-qb demo below.
         <img src="logo-images/questionbankdemo.png" alt="Question Bank screenshot" style="width:100%;aspect-ratio:16/9;border-radius:0.875rem;object-fit:contain;background:var(--sf2);">
+        -->
+        <div class="kdemo kd-qb" aria-hidden="true">
+          <div class="kd-qb-top">
+            <span class="kd-timer">03:25</span>
+            <span class="kd-qb-tools"><i></i><i></i><i></i></span>
+          </div>
+          <div class="kd-qb-card">
+            <span class="kd-qb-tags">
+              <b class="kd-qb-no">5</b>
+              <span class="kd-qb-domain">Geometry and Trigonometry</span>
+              <span class="kd-qb-hard">Hard</span>
+            </span>
+            <div class="kd-qb-body">
+              <svg class="kd-qb-fig" viewBox="0 0 120 50">
+                <path d="M 22 10 L 8 44 M 22 10 L 112 42 M 8 44 L 104 10 M 104 10 L 112 42"/>
+                <text x="18" y="7">W</text>
+                <text x="1" y="49">X</text>
+                <text x="100" y="7">Y</text>
+                <text x="112" y="49">Z</text>
+              </svg>
+              <span class="kd-qb-lines"><i></i><i></i><i class="is-short"></i></span>
+            </div>
+          </div>
+          <div class="kd-qb-answer">
+            <span class="kd-qb-val">54</span>
+            <span class="kd-qb-correct">Correct</span>
+          </div>
+          <div class="kd-qb-foot">
+            <span>Question 5 of 124</span>
+            <span class="kd-qb-check">Check Answer</span>
+          </div>
+        </div>
         <p class="onboard-desc">College Board-sourced questions across Math and Reading &amp; Writing. Every answer is tracked, so Korah always knows where you stand.</p>
       </div>
 
@@ -1299,7 +1338,54 @@
       <div class="onboard-slide" data-slide="3">
         <img src="logo-images/newlogo5.png" class="onboard-logo" alt="Korah"/>
         <h2 class="onboard-title">Desmos Chat</h2>
+        <!-- Replaced by the .kd-desmos demo below, the same component math-chat.html's intro uses.
         <img src="logo-images/desmosdemo.png" alt="Math Chat screenshot" style="width:100%;aspect-ratio:16/9;border-radius:0.875rem;object-fit:contain;background:var(--sf2);">
+        -->
+        <div class="kdemo kd-desmos" aria-hidden="true">
+          <div class="kd-desmos-side kd-paper">
+            <div class="kd-rail">
+              <span class="kd-math"><i>y</i><sub>2</sub> ~ <i>mx</i><sub>2</sub> + <i>b</i></span>
+              <div class="kd-table">
+                <span class="is-head"><i>x</i><sub>2</sub></span>
+                <span class="is-head"><i>y</i><sub>2</sub></span>
+                <span class="is-row">2</span>
+                <span class="is-row">10</span>
+                <span class="is-row">5</span>
+                <span class="is-row">25</span>
+              </div>
+            </div>
+            <div class="kd-graph kd-grid">
+              <svg class="kd-plot" viewBox="0 0 100 64" preserveAspectRatio="none">
+                <path class="kd-axis" d="M 34 0 V 64"/>
+                <path class="kd-axis" d="M 0 40 H 100"/>
+                <path class="kd-trace" d="M 24 64 L 46 0"/>
+              </svg>
+              <i class="kd-point" style="--x:31%; --y:77%"></i>
+              <i class="kd-point is-two" style="--x:39%; --y:41%"></i>
+            </div>
+          </div>
+          <div class="kd-chat">
+            <div class="kd-thread">
+              <span class="kd-ask">Teach me regressions</span>
+              <div class="kd-answer">
+                <span class="kd-answer-head"><img src="logo-images/newlogo0.png" alt=""/>Korah</span>
+                <span class="kd-answer-body">
+                  <span class="kd-think">Cooking...</span>
+                  <span class="kd-reply">
+                    <span>Put both points in a table.</span>
+                    <span>Then fit <i>y</i><sub>2</sub> ~ <i>mx</i><sub>2</sub> + <i>b</i> and read <i>m</i> and <i>b</i> off it.</span>
+                  </span>
+                </span>
+              </div>
+            </div>
+            <div class="kd-composer">
+              <span class="kd-typed" data-text="Teach me regressions"><span class="kd-typed-in">Teach me regressions</span></span>
+              <span class="kd-send">
+                <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              </span>
+            </div>
+          </div>
+        </div>
         <p class="onboard-desc">Korah actively updates the Desmos graph to teach you how to use it. Learn regression tricks, visualize functions, and solve problems faster than ever.</p>
       </div>
 
@@ -1307,7 +1393,29 @@
       <div class="onboard-slide" data-slide="4">
         <img src="logo-images/newlogo10.png" class="onboard-logo" alt="Korah"/>
         <h2 class="onboard-title">Korah Finds Your Weak Spots</h2>
+        <!-- Replaced by the .kd-home demo below.
         <img src="logo-images/desmosdemo0.png" alt="Weakness tracker screenshot" style="max-width:100%;border-radius:0.875rem;display:block;">
+        -->
+        <div class="kdemo kd-home" aria-hidden="true">
+          <span class="kd-home-label">My Stats</span>
+          <div class="kd-tiles">
+            <span class="kd-tile is-attempted"><i>Attempted</i><b>2058</b></span>
+            <span class="kd-tile is-accuracy"><i>Accuracy</i><b>90%</b></span>
+            <span class="kd-tile is-saved"><i>Saved</i><b>67</b></span>
+            <span class="kd-tile is-errors"><i>Errors</i><b>32</b></span>
+          </div>
+          <div class="kd-journey">
+            <span class="kd-journey-title">Score Journey</span>
+            <div class="kd-bar is-rw">
+              <span class="kd-bar-top">Reading &amp; Writing <b>750 / 770</b></span>
+              <span class="kd-bar-track"><i style="--w:97%"></i></span>
+            </div>
+            <div class="kd-bar is-math">
+              <span class="kd-bar-top">Math <b>720 / 750</b></span>
+              <span class="kd-bar-track"><i style="--w:96%"></i></span>
+            </div>
+          </div>
+        </div>
         <p class="onboard-desc">After you practice, Korah identifies your lowest-accuracy skills and surfaces targeted drills on your home page every single day.</p>
       </div>
 

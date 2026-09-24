@@ -1,0 +1,1375 @@
+<!DOCTYPE html>
+<html lang="en" x-data="app()" :data-theme="theme">
+<head>
+<link rel="stylesheet" href="../transitions/page-transitions.css"/>
+<script src="../transitions/page-transitions.js"></script>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="description" content="The work of the Korah CODE interns: projects, shipped features, and the mission behind the internship."/>
+<meta property="og:title" content="Korah CODE Interns: The Work"/>
+<meta property="og:description" content="Projects, shipped features, and the mission behind the Korah CODE internship."/>
+<title>Korah CODE Interns: The Work</title>
+<link rel="icon" type="image/png" href="../logo-images/newlogo0.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="../korah.js"></script>
+
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+<link rel="stylesheet" href="../korah.css"/>
+<style>
+  html { scroll-behavior: smooth; }
+
+  /* ── Page body clears fixed navbar ── */
+  .code-body {
+    padding: clamp(6.5rem, 12vw, 8.5rem) clamp(1.25rem, 5vw, 4rem) 5rem;
+    max-width: 80rem;
+    margin: 0 auto;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* ── Hero ── */
+  .code-hero {
+    position: relative;
+    border: 1px solid var(--bd);
+    border-radius: 1.25rem;
+    padding: clamp(1.5rem, 4vw, 3rem) clamp(1.25rem, 3.5vw, 2.5rem);
+    background:
+      radial-gradient(ellipse at 20% 0%, rgba(139,92,246,0.18) 0%, transparent 55%),
+      radial-gradient(ellipse at 100% 100%, rgba(99,102,241,0.12) 0%, transparent 55%),
+      var(--bg2);
+    overflow: hidden;
+  }
+  .code-hero-top {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0;
+    align-items: end;
+  }
+  .code-hero-logo {
+    display: block;
+    height: clamp(7.5rem, 16.5vw, 13.5rem) !important;
+    width: auto !important;
+    max-width: none;
+    object-fit: contain;
+    justify-self: start;
+    align-self: end;
+    margin-left: -2rem;
+  }
+  .code-hero-logo-mobile { display: none; }
+  @media (max-width: 48rem) {
+    .code-hero-top { grid-template-columns: 1fr; }
+    .code-hero-logo { display: none; }
+    .code-hero-logo-mobile {
+      display: block;
+      height: clamp(3rem, 12vw, 4.25rem);
+      width: auto;
+      object-fit: contain;
+      flex-shrink: 0;
+      margin-right: 0.25rem;
+    }
+  }
+  .code-title {
+    font-size: clamp(2rem, 5.5vw, 3.75rem);
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+    margin: 0 0 1rem;
+    color: var(--tx);
+  }
+  .code-title .purple { color: var(--p4); }
+  .code-title .expansion {
+    display: block;
+    font-size: clamp(1.125rem, 2.2vw, 1.75rem);
+    font-weight: 700;
+    color: var(--tx);
+    letter-spacing: -0.005em;
+    margin-top: 0.625rem;
+  }
+  .code-title .expansion .purple { color: var(--p4); }
+  .code-sub {
+    font-size: clamp(0.95rem, 1.6vw, 1.125rem);
+    line-height: 1.7;
+    color: var(--tx);
+    max-width: 44rem;
+    margin: 0 0 2rem;
+  }
+
+  /* ── Button fill-on-hover (shared) ──
+     A ::before layer reveals left-to-right via clip-path (no gradient seam
+     at rounded corners). The visible label is wrapped in .btn-label, kept
+     above the fill with position:relative + z-index, since an absolutely
+     positioned ::before otherwise paints above plain inline text/icons. */
+  .code-cta, .letter-glitch-btn, .carousel-arrow, .nav-btn { position: relative; overflow: hidden; }
+  .code-cta::before, .letter-glitch-btn::before, .carousel-arrow::before, .nav-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    clip-path: inset(0 100% 0 0);
+    transition: clip-path 0.4s ease;
+  }
+  .code-cta:hover::before, .letter-glitch-btn:hover::before, .carousel-arrow:hover::before, .nav-btn:hover::before {
+    clip-path: inset(0 0 0 0);
+  }
+  .btn-label { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 0.5rem; }
+
+  .code-cta {
+    display: inline-flex;
+    align-items: center;
+    height: 3.25rem;
+    padding: 0 2rem;
+    border-radius: 624.938rem;
+    background: var(--p4);
+    color: #fff;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    box-shadow: 0 0.625rem 1.875rem rgba(139,92,246,0.35);
+  }
+  .code-cta::before { background: var(--ac); }
+  .code-cta:hover { transform: scale(1.06); }
+  .code-cta.ghost {
+    background: transparent;
+    color: var(--tx);
+    border: 1px solid var(--bd);
+    box-shadow: none;
+    transition: transform 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+  }
+  .code-cta.ghost::before { background: var(--p4); }
+  .code-cta.ghost:hover { border-color: var(--p4); color: #fff; }
+
+  /* ── Meta badges ── */
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.625rem;
+    margin-top: 2rem;
+  }
+  .meta-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.5rem 0.875rem;
+    border: 1px solid transparent;
+    border-radius: 624.938rem;
+    background: var(--p4);
+    color: #fff;
+    font-size: 0.8125rem;
+    font-weight: 600;
+  }
+  .meta-badge:nth-child(2) { background: var(--ac); }
+  .meta-badge:nth-child(3) { background: var(--gold); }
+  .meta-badge:nth-child(4) { background: var(--grn); }
+  .meta-badge .material-icons-round { font-size: 1rem; color: #fff; }
+
+  /* ── Section heading ── */
+  .section-heading {
+    font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+    font-weight: 800;
+    letter-spacing: -0.015em;
+    color: var(--tx);
+    margin: 0 0 0.625rem;
+  }
+  .section-sub {
+    color: var(--tx);
+    font-size: 1rem;
+    max-width: 42rem;
+    margin: 0 0 2rem;
+    line-height: 1.65;
+  }
+  .section-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.1875rem;
+    font-weight: 600;
+    color: var(--tx);
+    margin: 0 0 0.75rem;
+  }
+  .section-eyebrow img { height: 1.5rem; width: auto; }
+
+  /* ── About card ── */
+  .about-card {
+    margin-top: 3.5rem;
+    padding: clamp(1.75rem, 3.5vw, 2.5rem);
+    border: 1px solid var(--bd);
+    border-radius: 1.25rem;
+    background: var(--bg2);
+  }
+  .about-card p {
+    color: var(--tx);
+    line-height: 1.75;
+    font-size: 1.0625rem;
+    margin: 0 0 1rem;
+  }
+  .about-card p:last-child { margin-bottom: 0; }
+
+  /* ── Mission card (logo beside text) ── */
+  .mission-card {
+    margin-top: 3.5rem;
+    padding: clamp(1.75rem, 3.5vw, 2.75rem);
+    border: 1px solid var(--bd);
+    border-radius: 1.25rem;
+    background:
+      radial-gradient(ellipse at 100% 0%, rgba(139,92,246,0.16) 0%, transparent 60%),
+      var(--bg2);
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: clamp(1.5rem, 4vw, 3rem);
+    align-items: center;
+  }
+  .mission-card img {
+    height: clamp(5rem, 12vw, 9rem);
+    width: auto;
+    object-fit: contain;
+  }
+  .mission-quote {
+    font-size: clamp(1.125rem, 2.2vw, 1.5rem);
+    font-weight: 700;
+    line-height: 1.55;
+    letter-spacing: -0.01em;
+    color: var(--tx);
+    margin: 0 0 1rem;
+  }
+  .mission-card p.mission-body {
+    color: var(--tx);
+    line-height: 1.75;
+    font-size: 1.0625rem;
+    margin: 0;
+  }
+  @media (max-width: 48rem) {
+    .mission-card { grid-template-columns: 1fr; }
+  }
+
+  /* ── Bento (two side-by-side list cards) ── */
+  .bento {
+    margin-top: 3.5rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+  }
+  @media (max-width: 56.25rem) {
+    .bento { grid-template-columns: 1fr; }
+  }
+  .bento-card {
+    border: 1px solid var(--bd);
+    border-radius: 1.25rem;
+    padding: clamp(1.75rem, 3vw, 2.5rem);
+    background: var(--bg2);
+  }
+  .bento-card h3 {
+    font-size: clamp(1.5rem, 2.5vw, 1.875rem);
+    font-weight: 800;
+    color: var(--tx);
+    margin: 0 0 1.5rem;
+    letter-spacing: -0.01em;
+  }
+  .bento-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .bento-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.875rem;
+    color: var(--tx);
+    font-size: 1.0625rem;
+    line-height: 1.55;
+  }
+  .bento-list li::before {
+    content: '';
+    flex-shrink: 0;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: var(--p4);
+    margin-top: 0.6rem;
+  }
+
+  .project-preview {
+    width: 100%;
+    min-height: 15rem;
+    aspect-ratio: 16 / 9;
+    border: 1px solid var(--bd);
+    border-radius: 1rem;
+    overflow: hidden;
+  }
+  .project-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .cohort-avatar {
+    width: 6.5rem;
+    height: 6.5rem;
+    margin: 0 auto 1rem;
+    border-radius: 50%;
+    border: 1px solid var(--bd);
+    overflow: hidden;
+  }
+  .cohort-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  /* ── Project carousel ── */
+  .carousel {
+    position: relative;
+    border: 1px solid var(--bd);
+    border-radius: 1.25rem;
+    background: var(--bg2);
+    overflow: hidden;
+  }
+  .carousel-viewport {
+    overflow: hidden;
+    touch-action: pan-y;
+    cursor: grab;
+  }
+  .carousel-viewport.dragging { cursor: grabbing; }
+  .carousel-track {
+    display: flex;
+    /* Transition is toggled off in JS while a drag is in progress. */
+    transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform;
+  }
+  .project-slide {
+    flex: 0 0 100%;
+    min-width: 0;
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: clamp(1.25rem, 3vw, 2.5rem);
+    align-items: center;
+    padding: clamp(1.25rem, 3vw, 2.25rem);
+    box-sizing: border-box;
+    opacity: 0.35;
+    transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .project-slide.is-active { opacity: 1; }
+  .project-slide img { pointer-events: none; user-select: none; }
+  @media (max-width: 48rem) {
+    .project-slide { grid-template-columns: 1fr; }
+  }
+  .project-slide h3 {
+    font-size: clamp(1.375rem, 2.5vw, 1.875rem);
+    font-weight: 800;
+    color: var(--tx);
+    margin: 0 0 0.375rem;
+    letter-spacing: -0.01em;
+  }
+  .project-slide .creator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--tx);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    margin: 0 0 1rem;
+  }
+  .project-slide .creator .material-icons-round { font-size: 1.125rem; color: #fff; }
+  .project-slide p.blurb {
+    color: var(--tx);
+    font-size: 1rem;
+    line-height: 1.7;
+    margin: 0 0 1.25rem;
+  }
+  .tag-row { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .tag {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #fff;
+    background: var(--p4);
+    border: 1px solid transparent;
+    border-radius: 624.938rem;
+    padding: 0.25rem 0.75rem;
+  }
+  .tag:nth-child(2) { background: var(--ac); }
+  .tag:nth-child(3) { background: var(--gold); }
+  .tag:nth-child(4) { background: var(--grn); }
+
+  /* Controls */
+  .carousel-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0 clamp(1.25rem, 3vw, 2.25rem) clamp(1.25rem, 3vw, 1.75rem);
+  }
+  .carousel-dots { display: flex; align-items: center; gap: 0.5rem; }
+  .carousel-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    padding: 0;
+    border: none;
+    border-radius: 624.938rem;
+    background: var(--p4);
+    opacity: 0.4;
+    cursor: pointer;
+    transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s;
+  }
+  .carousel-dot:nth-child(2) { background: var(--ac); }
+  .carousel-dot:nth-child(3) { background: var(--gold); }
+  .carousel-dot:nth-child(4) { background: var(--grn); }
+  .carousel-dot.is-active { width: 1.75rem; opacity: 1; }
+  .carousel-arrows { display: flex; gap: 0.5rem; }
+  .carousel-arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    border: 1px solid var(--bd);
+    background: var(--bd2);
+    color: var(--tx);
+    cursor: pointer;
+    transition: border-color 0.25s, transform 0.25s ease, color 0.25s ease;
+  }
+  .carousel-arrow::before { background: var(--p4); }
+  .carousel-arrow:hover { border-color: var(--p4); transform: scale(1.12); color: #fff; }
+  .carousel-arrow .material-icons-round { font-size: 1.25rem; }
+  /* Autoplay progress line, hidden once the visitor takes over. */
+  .carousel-progress {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 0.1875rem;
+    width: 100%;
+    transform: scaleX(0);
+    transform-origin: left;
+    background: #fff;
+  }
+  .carousel.is-playing .carousel-progress {
+    animation: carousel-fill 6s linear infinite;
+  }
+  @keyframes carousel-fill {
+    from { transform: scaleX(0); }
+    to   { transform: scaleX(1); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .carousel-track { transition: none; }
+    .carousel.is-playing .carousel-progress { animation: none; }
+  }
+
+  /* ── Shipped work, grouped by the intern who built it ── */
+  .ship-board {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+  }
+  @media (max-width: 56.25rem) {
+    .ship-board { grid-template-columns: 1fr; }
+  }
+  .ship-group {
+    border: 1px solid var(--bd);
+    border-radius: 1.25rem;
+    background: var(--bg2);
+    padding: clamp(1.5rem, 3vw, 2rem);
+  }
+  .ship-group-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--bd);
+  }
+  .ship-group-head h3 {
+    font-size: clamp(1.125rem, 2vw, 1.375rem);
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    color: var(--tx);
+    margin: 0;
+  }
+  .ship-count {
+    flex-shrink: 0;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--tx2);
+  }
+  .ship-item {
+    padding: 1.125rem 0;
+    border-bottom: 1px solid var(--bd);
+  }
+  .ship-item:last-child { padding-bottom: 0; border-bottom: none; }
+  .ship-item h4 {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--tx);
+    margin: 0 0 0.375rem;
+  }
+  .ship-item p {
+    color: var(--tx);
+    font-size: 0.9375rem;
+    line-height: 1.65;
+    margin: 0;
+  }
+  .ship-wip {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #fff;
+    background: var(--gold);
+    border-radius: 624.938rem;
+    padding: 0.15rem 0.5rem;
+  }
+
+  /* ── Cohort cards ── */
+  .cohort-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+    gap: 1.25rem;
+  }
+  .cohort-card {
+    border: 1px solid var(--bd);
+    border-radius: 1.25rem;
+    background: var(--bg2);
+    padding: 1.5rem 1.25rem;
+    text-align: center;
+  }
+  .cohort-card h3 {
+    font-size: 1.0625rem;
+    font-weight: 800;
+    color: var(--tx);
+    margin: 0 0 0.25rem;
+  }
+  .cohort-card p {
+    color: var(--tx);
+    font-size: 0.8125rem;
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  /* ── Final CTA strip ── */
+  .final-cta {
+    margin-top: 4rem;
+    padding: clamp(2rem, 4vw, 3rem);
+    border-radius: 1.25rem;
+    border: 1px solid var(--bd);
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(139,92,246,0.16) 0%, transparent 60%),
+      var(--bg2);
+    text-align: center;
+  }
+  .final-cta img {
+    height: clamp(3.5rem, 8vw, 5rem);
+    width: auto;
+    object-fit: contain;
+    margin: 0 auto 1.25rem;
+    display: block;
+  }
+  .final-cta h3 {
+    font-size: clamp(1.5rem, 3vw, 2.125rem);
+    font-weight: 800;
+    color: var(--tx);
+    margin: 0 0 0.625rem;
+    letter-spacing: -0.01em;
+  }
+  .final-cta p {
+    color: var(--tx);
+    margin: 0 0 1.5rem;
+    font-size: 1rem;
+  }
+
+  /* ── Letter Glitch windowed hero ── */
+  .letter-glitch-section {
+    position: relative;
+    width: 100%;
+    height: clamp(22.5rem, 56vh, 35rem);
+    margin-top: clamp(6.5rem, 12vw, 8.5rem);
+    margin-bottom: 2.5rem;
+    border-radius: 1.5rem;
+    overflow: hidden;
+    border: 1px solid var(--bd);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+    box-shadow: 0 1.5rem 4rem rgba(0,0,0,0.45), 0 0 2rem rgba(139,92,246,0.25);
+  }
+  .letter-glitch-wrapper {
+    position: absolute;
+    inset: 0;
+    background: #000;
+    overflow: hidden;
+  }
+  .letter-glitch-wrapper canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  .letter-glitch-vignette {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  .letter-glitch-vignette.outer {
+    background: radial-gradient(circle, rgba(0,0,0,0) 60%, rgba(0,0,0,1) 100%);
+  }
+  .letter-glitch-vignette.center {
+    background: radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.78) 28%, rgba(0,0,0,0.35) 55%, rgba(0,0,0,0) 80%);
+  }
+  /* Foreground hero content */
+  .letter-glitch-content {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    padding: 0 clamp(1.25rem, 5vw, 4rem);
+    max-width: 60rem;
+  }
+  .letter-glitch-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.625rem;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: #fff;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    padding: 0.375rem 0.875rem;
+    border-radius: 624.938rem;
+    backdrop-filter: blur(0.5rem);
+    -webkit-backdrop-filter: blur(0.5rem);
+    margin-bottom: 1.5rem;
+  }
+  .letter-glitch-eyebrow .pill {
+    background: #fff;
+    color: #000;
+    font-weight: 800;
+    font-size: 0.6875rem;
+    letter-spacing: 0.04em;
+    padding: 0.125rem 0.5rem;
+    border-radius: 624.938rem;
+  }
+  .letter-glitch-title {
+    font-size: clamp(2.25rem, 7vw, 5.25rem);
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+    color: #fff;
+    margin: 0 0 2rem;
+    text-shadow: 0 0.25rem 1.875rem rgba(0,0,0,0.85), 0 0.125rem 0.75rem rgba(0,0,0,0.7);
+  }
+  .letter-glitch-title .purple { color: #c4b5fd; }
+  .letter-glitch-btn {
+    display: inline-flex;
+    align-items: center;
+    height: 3.25rem;
+    padding: 0 2rem;
+    border-radius: 624.938rem;
+    background: #fff;
+    color: #000;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: transform 0.25s ease, box-shadow 0.25s ease, color 0.25s ease;
+    box-shadow: 0 0.625rem 1.875rem rgba(0,0,0,0.4);
+  }
+  .letter-glitch-btn::before { background: var(--p4); }
+  .letter-glitch-btn:hover { transform: scale(1.06); box-shadow: 0 0.875rem 2.25rem rgba(0,0,0,0.5); color: #fff; }
+
+  /* ── Nav buttons (scale + left-to-right fill on hover, no vertical translate) ── */
+  .nav-btn { transition: transform 0.25s ease, border-color 0.25s ease, color 0.25s ease; }
+  .nav-btn:hover { transform: scale(1.06); }
+  .nav-btn-ghost::before { background: var(--p4); }
+  .nav-btn-ghost:hover { color: #fff; border-color: var(--p4); }
+  .nav-btn-solid { background: var(--p4); }
+  .nav-btn-solid::before { background: var(--ac); }
+  .icon-btn-fill { transition: transform 0.25s ease, border-color 0.25s ease, background-color 0.25s ease; }
+  .icon-btn-fill:hover { transform: scale(1.12); }
+  /* Section margin handles navbar clearance, so strip body padding-top */
+  .code-body.has-glitch { padding-top: 0; }
+</style>
+</head>
+
+<body class="bg-base tx" x-cloak style="overflow-x:hidden;">
+<style>
+  html:not(.korah-page-ready) { background: #06040f !important; }
+  html[data-theme="light"]:not(.korah-page-ready) { background: #d2d2d2 !important; }
+  html:not(.korah-page-ready) body { opacity: 0 !important; }
+</style>
+<script>
+  (function() {
+    const t = localStorage.getItem('korah_theme') || 'dark';
+    if (t === 'light' || (t === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches)) {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+  })();
+</script>
+
+<!-- Star background -->
+<div class="stars-container" id="starField" :style="theme === 'light' ? 'opacity:0;pointer-events:none' : 'opacity:1'" style="transition:opacity 0.4s"></div>
+
+<!-- ═══ NAVBAR (mirrors landing) ═══ -->
+<nav id="navbar" class="fixed top-0 left-0 right-0 z-[1000] px-6 md:px-[clamp(1.75rem,5.5vw,6rem)]" style="height:var(--nav-h);display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:1.5rem;">
+  <a href="../index.html#home" class="flex items-center gap-2.5 no-underline shrink-0 z-10">
+    <img src="../logo-images/newlogo0.png" class="t-btn hover:rotate-[-5deg] hover:scale-[1.08]" style="height:2.5rem;width:auto;flex-shrink:0;">
+    <span style="font-family: 'Plus Jakarta Sans', sans-serif;" class="text-[1.1875rem] font-black tx">Korah</span>
+  </a>
+
+  <div class="nav-links hidden lg:flex items-center gap-0.5 bg-sf2 border bd2 rounded-full px-3 py-2 glass-sm t-theme" style="white-space:nowrap;position:relative;">
+    <a href="../index.html#home"     class="nav-link nav-pill text-[0.84375rem] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx hover:bg-[var(--bd)]"><span class="material-icons-round nav-link-icon">home</span><span class="nav-link-text">Home</span></a>
+    <a href="../index.html#sat"      class="nav-link nav-pill text-[0.84375rem] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx hover:bg-[var(--bd)]"><span class="material-icons-round nav-link-icon">calculate</span><span class="nav-link-text">Desmos Tutoring</span></a>
+    <a href="../index.html#progress" class="nav-link nav-pill text-[0.84375rem] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx hover:bg-[var(--bd)]"><span class="material-icons-round nav-link-icon">insights</span><span class="nav-link-text">Progress</span></a>
+    <a href="../index.html#chat"     class="nav-link nav-pill text-[0.84375rem] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx hover:bg-[var(--bd)]"><span class="material-icons-round nav-link-icon">assignment</span><span class="nav-link-text">Questionbank</span></a>
+    <a href="../index.html#tutoring" class="nav-link nav-pill text-[0.84375rem] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx hover:bg-[var(--bd)]"><span class="material-icons-round nav-link-icon">school</span><span class="nav-link-text">Tutoring</span></a>
+    <a href="./interns.html" class="nav-link text-[0.84375rem] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx" style="background:rgba(139,92,246,0.1); border: 1px solid rgba(139,92,246,0.25);"><span class="material-icons-round nav-link-icon">workspace_premium</span><span class="nav-link-text">Intern Work</span></a>
+  </div>
+
+  <div class="flex items-center gap-3 justify-self-end" style="grid-column:3;">
+    <button @click="theme = theme==='dark' ? 'light' : 'dark'; localStorage.setItem('korah_theme', theme)"
+        class="flex items-center justify-center w-9 h-9 rounded-xl bg-sf2 border bd cursor-pointer t-btn icon-btn-fill hover:border-p4 hover:bg-[var(--bd2)] t-theme"
+        aria-label="Toggle theme">
+      <svg x-show="theme==='light'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" style="color:var(--p5)">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/>
+      </svg>
+      <svg x-show="theme==='dark'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--p4)">
+        <circle cx="12" cy="12" r="5"/>
+        <line x1="12" y1="1" x2="12" y2="3"/>
+        <line x1="12" y1="21" x2="12" y2="23"/>
+        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+        <line x1="1" y1="12" x2="3" y2="12"/>
+        <line x1="21" y1="12" x2="23" y2="12"/>
+        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+      </svg>
+    </button>
+    <button class="text-[0.75rem] lg:text-[0.8125rem] font-semibold px-3 lg:px-5 py-2 lg:py-2.5 rounded-full cursor-pointer border bd tx2 bg-transparent t-btn nav-btn nav-btn-ghost"
+      onclick="window.KorahTransitions.go('../login.html')">
+      <span class="btn-label">Log in</span>
+    </button>
+    <button onclick="window.KorahTransitions.go('../home.html')" class="text-[0.75rem] lg:text-[0.8125rem] font-semibold px-3 lg:px-5 py-2 lg:py-2.5 rounded-full cursor-pointer border-none text-white t-btn nav-btn nav-btn-solid"><span class="btn-label">Open App</span></button>
+  </div>
+</nav>
+
+<main class="code-body has-glitch">
+
+  <!-- ═══ LETTER GLITCH HERO (windowed) ═══ -->
+  <section class="letter-glitch-section" id="glitch-hero">
+    <div class="letter-glitch-wrapper" id="letterGlitch">
+      <canvas id="letterGlitchCanvas"></canvas>
+      <div class="letter-glitch-vignette center"></div>
+    </div>
+    <div class="letter-glitch-content">
+      <div class="letter-glitch-eyebrow">
+        <span class="pill">FALL 26' </span>
+        <span>Application Opens Soon</span>
+      </div>
+      <h1 class="letter-glitch-title">
+        Korah <span class="purple">CODE</span> Internship: <br> Fall Cohort
+      </h1>
+      <a href="#intro" class="letter-glitch-btn"
+         onclick="event.preventDefault(); window.scrollBy({ top: window.innerHeight * 0.55, behavior: 'smooth' });">
+        <span class="btn-label">See the work <span class="material-icons-round" style="font-size:1.1rem;">arrow_downward</span></span>
+      </a>
+    </div>
+  </section>
+
+  <script>
+    (function () {
+      const glitchColors = ['#4c1d95', '#8b5cf6', '#c4b5fd'];
+      const glitchSpeed = 50;
+      const smooth = true;
+      const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$&*()-_+=/[]{};:<>.,0123456789';
+      const lettersAndSymbols = Array.from(characters);
+      const fontSize = 16;
+      const charWidth = 10;
+      const charHeight = 20;
+
+      const canvas = document.getElementById('letterGlitchCanvas');
+      const parent = canvas.parentElement;
+      const ctx = canvas.getContext('2d');
+
+      let letters = [];
+      let grid = { columns: 0, rows: 0 };
+      let lastGlitchTime = Date.now();
+      let animationId = null;
+      let resizeTimeout = null;
+
+      const getRandomChar = () => lettersAndSymbols[Math.floor(Math.random() * lettersAndSymbols.length)];
+      const getRandomColor = () => glitchColors[Math.floor(Math.random() * glitchColors.length)];
+
+      const hexToRgb = (hex) => {
+        const shorthand = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+        hex = hex.replace(shorthand, (m, r, g, b) => r + r + g + g + b + b);
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+          r: parseInt(result[1], 16),
+          g: parseInt(result[2], 16),
+          b: parseInt(result[3], 16)
+        } : null;
+      };
+
+      const interpolateColor = (start, end, factor) => {
+        const r = Math.round(start.r + (end.r - start.r) * factor);
+        const g = Math.round(start.g + (end.g - start.g) * factor);
+        const b = Math.round(start.b + (end.b - start.b) * factor);
+        return `rgb(${r}, ${g}, ${b})`;
+      };
+
+      const calculateGrid = (width, height) => ({
+        columns: Math.ceil(width / charWidth),
+        rows: Math.ceil(height / charHeight)
+      });
+
+      const initializeLetters = (columns, rows) => {
+        grid = { columns, rows };
+        const total = columns * rows;
+        letters = Array.from({ length: total }, () => ({
+          char: getRandomChar(),
+          color: getRandomColor(),
+          targetColor: getRandomColor(),
+          colorProgress: 1
+        }));
+      };
+
+      const drawLetters = () => {
+        if (!letters.length) return;
+        const { width, height } = canvas.getBoundingClientRect();
+        ctx.clearRect(0, 0, width, height);
+        ctx.font = `${fontSize}px monospace`;
+        ctx.textBaseline = 'top';
+        for (let i = 0; i < letters.length; i++) {
+          const x = (i % grid.columns) * charWidth;
+          const y = Math.floor(i / grid.columns) * charHeight;
+          ctx.fillStyle = letters[i].color;
+          ctx.fillText(letters[i].char, x, y);
+        }
+      };
+
+      const resizeCanvas = () => {
+        const dpr = window.devicePixelRatio || 1;
+        const rect = parent.getBoundingClientRect();
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        canvas.style.width = `${rect.width}px`;
+        canvas.style.height = `${rect.height}px`;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        const { columns, rows } = calculateGrid(rect.width, rect.height);
+        initializeLetters(columns, rows);
+        drawLetters();
+      };
+
+      const updateLetters = () => {
+        if (!letters.length) return;
+        const updateCount = Math.max(1, Math.floor(letters.length * 0.05));
+        for (let i = 0; i < updateCount; i++) {
+          const idx = Math.floor(Math.random() * letters.length);
+          if (!letters[idx]) continue;
+          letters[idx].char = getRandomChar();
+          letters[idx].targetColor = getRandomColor();
+          if (!smooth) {
+            letters[idx].color = letters[idx].targetColor;
+            letters[idx].colorProgress = 1;
+          } else {
+            letters[idx].colorProgress = 0;
+          }
+        }
+      };
+
+      const handleSmoothTransitions = () => {
+        let needsRedraw = false;
+        for (let i = 0; i < letters.length; i++) {
+          const letter = letters[i];
+          if (letter.colorProgress < 1) {
+            letter.colorProgress += 0.05;
+            if (letter.colorProgress > 1) letter.colorProgress = 1;
+            const startRgb = hexToRgb(letter.color);
+            const endRgb = hexToRgb(letter.targetColor);
+            if (startRgb && endRgb) {
+              letter.color = interpolateColor(startRgb, endRgb, letter.colorProgress);
+              needsRedraw = true;
+            }
+          }
+        }
+        if (needsRedraw) drawLetters();
+      };
+
+      const animate = () => {
+        const now = Date.now();
+        if (now - lastGlitchTime >= glitchSpeed) {
+          updateLetters();
+          drawLetters();
+          lastGlitchTime = now;
+        }
+        if (smooth) handleSmoothTransitions();
+        animationId = requestAnimationFrame(animate);
+      };
+
+      resizeCanvas();
+      animate();
+
+      window.addEventListener('resize', () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+          cancelAnimationFrame(animationId);
+          resizeCanvas();
+          animate();
+        }, 100);
+      });
+    })();
+  </script>
+
+  <!-- ═══ HERO ═══ -->
+  <section class="code-hero" id="intro">
+    <div class="code-hero-top">
+      <div>
+        <h1 class="code-title">
+          Built by students, for students
+          <span class="expansion">Korah Coding Opportunities for Development and Engineering</span>
+        </h1>
+        <p class="code-sub">
+          Last summer, I had the priveledge of spending six weeks teaching a group of four interns from the east coast the fundamentals of agentic programming and software engineering. After about two months of lessons, projects, and a capstone, they were able to apply their newfound knowledge by building brand new studying features, helping raise Korah AI's student-base from ~50 to ~200 users! This fall is the second cohort, and I am beyond excited to see what this new group will learn and build!
+        </p>
+
+        <div class="code-cta-row" style="display:flex;flex-wrap:wrap;align-items:center;gap:0.75rem;">
+          <img src="../logo-images/newlogo12.png" alt="Korah CODE" class="code-hero-logo-mobile">
+          <a href="https://forms.gle/AZdQbbewtxUZkSYt7" target="_blank" rel="noopener" class="code-cta">
+            <span class="btn-label">Apply Today! <span class="material-icons-round" style="font-size:1.1rem;">arrow_forward</span></span>
+          </a>
+          <a href="#projects" class="code-cta ghost"><span class="btn-label">Learn More</span></a>
+        </div>
+      </div>
+      <img src="../logo-images/newlogo12.png" alt="Korah CODE" class="code-hero-logo">
+    </div>
+
+    <div class="meta-row">
+      <span class="meta-badge"><span class="material-icons-round">event</span> Cohort Fall 2026</span>
+      <span class="meta-badge"><span class="material-icons-round">groups</span> 4-8 Interns</span>
+      <span class="meta-badge"><span class="material-icons-round">schedule</span> 6 Weeks</span>
+      <span class="meta-badge"><span class="material-icons-round">rocket_launch</span>Open To All Highschoolers</span>
+    </div>
+  </section>
+
+  <!-- ═══ MISSION ═══ -->
+  <section class="mission-card" id="mission">
+    <img src="../logo-images/newlogo2.png" alt="Korah CODE">
+    <div>
+      <p class="section-eyebrow">How the last cohort saw it</p>
+      <p class="mission-quote">
+        “Agentic AI is nothing but a tool to capture your intent through programming. It should not be organizing your system for you. It should not be guessing what you want"
+      </p>
+      <p class="mission-body">
+        Abdelwahab Rahama, Summer 2026 cohort. AI is meant to be a controlled implementer of your knowledge and skill, not a replacement for either. It should execute what you already understand, not guess at what you meant. That is the line between engineering and vibe coding, and it is the standard every intern is held to.
+      </p>
+    </div>
+  </section>
+
+  <!-- ═══ WHAT THE INTERNSHIP IS ═══ -->
+  <section class="about-card" id="what-is">
+    <p class="section-eyebrow"><img src="../logo-images/newlogo0.png" alt=""> What Korah CODE is</p>
+    <h2 class="section-heading">What is the Korah CODE internship?</h2>
+    <p>
+      AI slop. Vibecoding. Ever heard of it? In the modern era, too many people are given the most powerful tools to create beautfiul software, but a scare few truly understand what they're creating. Korah CODE is meant to teach the rising generation of programmers the art of Agentic Programming: how to use AI to assist you in producing quality code that you comprehend, not slop.
+    </p>
+    <p>
+      I built this program specifically for underrepresented, ambitious high schoolers who want hands-on software engineering experience. I am a big believer in "learning by doing," which is exactly what will be done during this internship.
+    </p>
+    <p>
+      Korah CODE is a highly collaborative and productive environment. During this internship, you'll be tasked with various major projects that will be actually used by users on the site, and given various lessons and assignments throughout your term.  you'll get to contribute to a real-world, impactful codebase in many creative ways. I will personally mentor you on how applying the skills you learn in a way that benefits you exponentially via a capstone project outside of Korah. Be prepared to be challenged with real tasks, collaborate with your team to complete assignments, and spend time designing your own creative solutions to given problems.
+    </p>
+    <p style="margin-top:1.25rem;">
+      This internship is lightly competitive. Only 4-8 applicants are accepted. Last year's acceptance rate was 40% from applicants across the U.S.. All work will be done in HTML/CSS/JS, potentially Swift, and another language of choice. Applicants are highly encouraged to provide their resume, Github username, or digital portfolio.
+    </p>
+  </section>
+
+  <!-- ═══ PROJECTS ═══ -->
+  <section id="projects" style="margin-top:4.5rem;">
+    <p class="section-eyebrow"><img src="../logo-images/newlogo12.png" alt=""> The work</p>
+    <h2 class="section-heading">Projects produced during the internship</h2>
+    <p class="section-sub">
+      Each intern picked their own capstone and built it start to finish over the six weeks: their idea, their spec, their site.
+    </p>
+
+    <div class="carousel is-playing" id="projectCarousel">
+      <div class="carousel-viewport" id="carouselViewport">
+        <div class="carousel-track" id="carouselTrack">
+
+          <article class="project-slide is-active">
+            <div class="project-preview">
+              <img src="project-images/coffeehouse.jpg" alt="CoffeeHouse project preview">
+            </div>
+            <div>
+              <h3>CoffeeHouse</h3>
+              <p class="creator"><span class="material-icons-round">person</span> Built by Umer Qureshi</p>
+              <p class="blurb">A lofi study and chat site where students from the same school help each other study. Groups for study sessions or class projects, no email required to join, and two chat study bots that turn a text channel into cheat sheets and notes. Already being used by students at Umer’s school. Live at <a href="https://www.coffee-house.app" target="_blank" rel="noopener" style="color:var(--p4);font-weight:600;">coffee-house.app</a>.</p>
+              <div class="tag-row"><span class="tag">Web app</span><span class="tag">Chat</span><span class="tag">Study bots</span></div>
+            </div>
+          </article>
+
+          <article class="project-slide">
+            <div class="project-preview">
+              <img src="project-images/circuitry.jpg" alt="Glistening Circuitry project preview">
+            </div>
+            <div>
+              <h3>Glistening Circuitry</h3>
+              <p class="creator"><span class="material-icons-round">person</span> Built by Abdelwahab Rahama</p>
+              <p class="blurb">An electrical engineering site for beginners, hobbyists, and EE students, themed after a phosphor green terminal. Animated sprites drive interactive exercises, and the whole thing was mapped out with a technical spec before a line of it was built. The site he wishes had existed when he started learning EE. Live at <a href="https://bushiusesjava.github.io/glistening-circuitry/" target="_blank" rel="noopener" style="color:var(--p4);font-weight:600;">bushiusesjava.github.io/glistening-circuitry</a>.</p>
+              <div class="tag-row"><span class="tag">Education</span><span class="tag">Terminal UI</span><span class="tag">Animation</span></div>
+            </div>
+          </article>
+
+          <article class="project-slide">
+            <div class="project-preview">
+              <img src="project-images/chorequest.jpg" alt="ChoreQuest project preview">
+            </div>
+            <div>
+              <h3>ChoreQuest</h3>
+              <p class="creator"><span class="material-icons-round">person</span> Built by Daniel Oluyomi</p>
+              <p class="blurb">Gamifies chores for kids so parents have something to motivate them with. Daniel had built games in Unity and Roblox before this, but never a site. ChoreQuest was his first, and the design is the part he is proudest of. Live at <a href="https://chorequest-sooty.vercel.app" target="_blank" rel="noopener" style="color:var(--p4);font-weight:600;">chorequest-sooty.vercel.app</a>.</p>
+              <div class="tag-row"><span class="tag">Gamification</span><span class="tag">UI design</span></div>
+            </div>
+          </article>
+
+          <article class="project-slide">
+            <div class="project-preview">
+              <img src="project-images/cars.jpg" alt="Fastest Car Rankings project preview">
+            </div>
+            <div>
+              <h3>Fastest Car Rankings</h3>
+              <p class="creator"><span class="material-icons-round">person</span> Built by Om Patel</p>
+              <p class="blurb">Ranks the fastest car made by each of the top 30 manufacturers in the world, with filters for 0-60, power, and year, plus a compare mode for putting any two cars side by side. Om had never written code before the internship; this started as an idea in his head and ended as a working site.</p>
+              <div class="tag-row"><span class="tag">Filtering</span><span class="tag">Comparison</span><span class="tag">Data</span></div>
+            </div>
+          </article>
+
+        </div>
+      </div>
+
+      <div class="carousel-bar">
+        <div class="carousel-dots" id="carouselDots"></div>
+        <div class="carousel-arrows">
+          <button class="carousel-arrow" id="carouselPrev" aria-label="Previous project"><span class="btn-label material-icons-round">arrow_back</span></button>
+          <button class="carousel-arrow" id="carouselNext" aria-label="Next project"><span class="btn-label material-icons-round">arrow_forward</span></button>
+        </div>
+      </div>
+
+      <div class="carousel-progress"></div>
+    </div>
+
+    <script>
+      (function () {
+        const carousel = document.getElementById('projectCarousel');
+        const viewport = document.getElementById('carouselViewport');
+        const track = document.getElementById('carouselTrack');
+        const dotsWrap = document.getElementById('carouselDots');
+        const slides = Array.from(track.children);
+        const AUTOPLAY_MS = 6000;
+
+        let index = 0;
+        let timer = null;
+        let userTookOver = false;
+
+        /* Dots */
+        const dots = slides.map((_, i) => {
+          const dot = document.createElement('button');
+          dot.className = 'carousel-dot' + (i === 0 ? ' is-active' : '');
+          dot.setAttribute('aria-label', `Go to project ${i + 1}`);
+          dot.addEventListener('click', () => { stopAutoplay(); goTo(i); });
+          dotsWrap.appendChild(dot);
+          return dot;
+        });
+
+        function render() {
+          track.style.transform = `translateX(${-index * 100}%)`;
+          slides.forEach((s, i) => s.classList.toggle('is-active', i === index));
+          dots.forEach((d, i) => d.classList.toggle('is-active', i === index));
+        }
+
+        function goTo(i) {
+          index = (i + slides.length) % slides.length;
+          render();
+        }
+
+        function stopAutoplay() {
+          userTookOver = true;
+          clearInterval(timer);
+          timer = null;
+          carousel.classList.remove('is-playing');
+        }
+
+        /* Autoplay runs until the visitor swipes, clicks an arrow, or picks a dot. */
+        function startAutoplay() {
+          if (userTookOver || timer) return;
+          timer = setInterval(() => goTo(index + 1), AUTOPLAY_MS);
+          carousel.classList.add('is-playing');
+        }
+
+        document.getElementById('carouselPrev').addEventListener('click', () => { stopAutoplay(); goTo(index - 1); });
+        document.getElementById('carouselNext').addEventListener('click', () => { stopAutoplay(); goTo(index + 1); });
+
+        /* Drag / swipe: the track follows the pointer, then snaps to the
+           nearest slide once the gesture passes a fifth of the viewport. */
+        let dragStartX = 0;
+        let dragDelta = 0;
+        let dragging = false;
+
+        viewport.addEventListener('pointerdown', (e) => {
+          dragging = true;
+          dragDelta = 0;
+          dragStartX = e.clientX;
+          viewport.setPointerCapture(e.pointerId);
+          viewport.classList.add('dragging');
+          track.style.transition = 'none';
+        });
+
+        viewport.addEventListener('pointermove', (e) => {
+          if (!dragging) return;
+          dragDelta = e.clientX - dragStartX;
+          const percent = (dragDelta / viewport.offsetWidth) * 100;
+          track.style.transform = `translateX(${-index * 100 + percent}%)`;
+        });
+
+        function endDrag(e) {
+          if (!dragging) return;
+          dragging = false;
+          viewport.classList.remove('dragging');
+          if (e.pointerId !== undefined && viewport.hasPointerCapture(e.pointerId)) {
+            viewport.releasePointerCapture(e.pointerId);
+          }
+          track.style.transition = '';
+          const threshold = viewport.offsetWidth / 5;
+          if (Math.abs(dragDelta) > threshold) {
+            stopAutoplay();
+            goTo(index + (dragDelta < 0 ? 1 : -1));
+          } else {
+            render();
+          }
+        }
+
+        viewport.addEventListener('pointerup', endDrag);
+        viewport.addEventListener('pointercancel', endDrag);
+
+        render();
+        startAutoplay();
+      })();
+    </script>
+  </section>
+
+  <!-- ═══ THE COHORT ═══ -->
+  <section id="cohort" style="margin-top:4.5rem;">
+    <p class="section-eyebrow"><img src="../logo-images/newlogo12.png" alt=""> The team</p>
+    <h2 class="section-heading">Meet the Summer interns</h2>
+    <p class="section-sub">
+      Four high schoolers from Florida, New Jersey, and Maryland, selected from a national applicant pool.
+    </p>
+
+    <div class="cohort-grid">
+      <div class="cohort-card">
+        <div class="cohort-avatar"><img src="project-images/umer-qureshi.jpg" alt="Umer Qureshi"></div>
+        <h3>Umer Qureshi</h3>
+        <p>Pembroke Pines Charter High School, FL<br>Electrical Engineering &amp; Neuroscience</p>
+      </div>
+      <div class="cohort-card">
+        <div class="cohort-avatar"><img src="project-images/om-patel.jpg" alt="Om Patel"></div>
+        <h3>Om Patel</h3>
+        <p>Cedar Creek High School, NJ<br>Accounting</p>
+      </div>
+      <div class="cohort-card">
+        <div class="cohort-avatar"><img src="project-images/daniel-oluyomi.jpg" alt="Daniel Oluyomi"></div>
+        <h3>Daniel Oluyomi</h3>
+        <p>Richard Montgomery High School, MD<br>Software Engineering</p>
+      </div>
+      <div class="cohort-card">
+        <div class="cohort-avatar"><img src="project-images/abdelwahab-rahama.jpg" alt="Abdelwahab Rahama"></div>
+        <h3>Abdelwahab Rahama</h3>
+        <p>Bloomfield High School, NJ<br>EECS</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ FEATURES SHIPPED ═══ -->
+  <section id="features" style="margin-top:4.5rem;">
+    <p class="section-eyebrow"><img src="../logo-images/newlogo0.png" alt=""> In production</p>
+    <h2 class="section-heading">Features shipped by the interns</h2>
+    <p class="section-sub">
+      Two major tasks and a set of sub-tasks each, specced first and peer reviewed by another intern before merging into the live Korah site.
+    </p>
+
+    <div class="ship-board">
+
+      <div class="ship-group">
+        <div class="ship-group-head">
+          <h3>Umer Qureshi</h3>
+          <span class="ship-count">3 features</span>
+        </div>
+        <div class="ship-item">
+          <h4>Study Planner</h4>
+          <p>Takes the student's SAT data, or starts from scratch, plus a target score and target hours per week, then returns a subject by subject study breakdown. Tasks check themselves off as the student answers questions on the site, and it stays in sync with the planner on the iOS app.</p>
+        </div>
+        <div class="ship-item">
+          <h4>Essay Editor and Annotator</h4>
+          <p>Grades personal statement and supplemental essays against the school and application they were written for. Returns an overall score, per category breakdowns, and highlighted spans where the essay could be stronger. Gemini backend behind a purpose built prompt.</p>
+        </div>
+        <div class="ship-item">
+          <h4>New College Board Question Bank</h4>
+          <p>A dedicated section for the 300 questions College Board released this year, keyed to their official question IDs.</p>
+        </div>
+      </div>
+
+      <div class="ship-group">
+        <div class="ship-group-head">
+          <h3>Om Patel</h3>
+          <span class="ship-count">3 features</span>
+        </div>
+        <div class="ship-item">
+          <h4>SAT Vocab Study Section</h4>
+          <p>A full vocab study flow with two modes, a definitions quiz and a word quiz, both drawing from the SAT vocab database.</p>
+        </div>
+        <div class="ship-item">
+          <h4>Word of the Day</h4>
+          <p>Rewired to pull from the SAT vocab database so a new word and definition appear every 24 hours at 12 AM EST. Sits in the bottom right of the homepage.</p>
+        </div>
+        <div class="ship-item">
+          <h4>College Match</h4>
+          <p>Matches students to colleges by comparing their SAT score against each school's score range. Built on a pre made algorithm and landing on the site soon.</p>
+        </div>
+      </div>
+
+      <div class="ship-group">
+        <div class="ship-group-head">
+          <h3>Daniel Oluyomi</h3>
+          <span class="ship-count">3 features</span>
+        </div>
+        <div class="ship-item">
+          <h4>Tailored Practice</h4>
+          <p>The targeted practice section Daniel kept looking for while studying for the SAT himself and could not find on other sites.</p>
+        </div>
+        <div class="ship-item">
+          <h4>AP Calculus AB MCQ Prep</h4>
+          <p>Multiple choice AP Calculus AB test prep, built out as a standalone prep track.</p>
+        </div>
+        <div class="ship-item">
+          <h4>UI and Button Color Pass</h4>
+          <p>Cleaned up the site UI and reworked the button colors to read sleeker and more classic.</p>
+        </div>
+      </div>
+
+      <div class="ship-group">
+        <div class="ship-group-head">
+          <h3>Abdelwahab Rahama</h3>
+          <span class="ship-count">3 features</span>
+        </div>
+        <div class="ship-item">
+          <h4>Full-Length SAT Practice Tests</h4>
+          <p>A practice test menu wired end to end, from data gathering through to the front end. The technical spec had to cover every edge case before the build started, which turned into his introduction to treating a feature as a system rather than a page.</p>
+        </div>
+        <div class="ship-item">
+          <h4>Timed AP FRQs</h4>
+          <p>Mock timed free response exams for AP US History and AP Calculus AB. Students either type their answers or snapshot handwritten work. Parsing the exam content and getting the pieces to cooperate made this the hardest task of his internship.</p>
+        </div>
+        <div class="ship-item">
+          <h4>User Activity Gradient</h4>
+          <p>A GitHub style contribution tracker for user activity, gradient shading and all.</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══ BENEFITS ═══ -->
+  <section id="benefits" style="margin-top:4.5rem;">
+    <p class="section-eyebrow"><img src="../logo-images/newlogo0.png" alt=""> Why it's worth it</p>
+    <h2 class="section-heading">Benefits of the internship</h2>
+    <p class="section-sub">
+      Taken from what the Summer 2026 cohort said they picked up, in their own post-internship survey.
+    </p>
+
+    <div class="bento" style="margin-top:0;">
+
+      <div class="bento-card">
+        <h3>What interns gain</h3>
+        <ul class="bento-list">
+          <li>Writing up a technical spec before building, meant to define systems, goals, and implementation ideas</li>
+          <li>Prompt engineering applying computer science concepts and system design, instead of asking it to “do this” and hoping</li>
+          <li>The frontend/backend split, and how the two halves add up to a fullstack working site</li>
+          <li>Git and GitHub fundamentals as a day-to-day workflow</li>
+          <li>Paired review with another intern, providing feedback on code quality before pushing to production</li>
+        </ul>
+      </div>
+
+      <div class="bento-card">
+        <h3>What they walk away with</h3>
+        <ul class="bento-list">
+          <li>Features live on the Korah site</li>
+          <li>A capstone project that is entirely theirs outside of Korah</li>
+          <li>Source control fundamentals via Git and Github </li>
+          <li>Web and app development on a resume that did not have it six weeks earlier</li>
+          <li>The ability to produce practically any software once having learned the underlying concepts necessary in doing so </li>
+        </ul>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══ FINAL CTA ═══ -->
+  <section id="apply" class="final-cta">
+    <img src="../logo-images/newlogo12.png" alt="Korah CODE">
+    <h3>Want to build the next one?</h3>
+    <p>Applications for the Fall 2026 cohort are open. Real tasks, peer review, and a capstone that is yours.</p>
+    <a href="https://forms.gle/AZdQbbewtxUZkSYt7" target="_blank" rel="noopener" class="code-cta">
+      <span class="btn-label">Apply Today! <span class="material-icons-round" style="font-size:1.1rem;">arrow_forward</span></span>
+    </a>
+  </section>
+
+</main>
+
+<footer class="relative z-10 bg-base border-t bd px-[clamp(1.25rem,6vw,5rem)] pt-[3.75rem] pb-10 t-theme">
+  <div class="max-w-[68.75rem] mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr] gap-12">
+    <div>
+      <div class="flex items-center gap-2.5">
+        <img src="../logo-images/newlogo0.png" style="height:2.5rem;width:auto;flex-shrink:0;">
+        <span style="font-family: 'Plus Jakarta Sans', sans-serif;" class="text-[1.1875rem] font-black tx">Korah</span>
+      </div>
+      <p class="text-sm tx2 leading-[1.7] max-w-[17.5rem] mt-3.5">Korah helps students ace the SAT with AI-powered tutoring, live Desmos graphing, adaptive practice, and progress tracking.</p>
+    </div>
+    <div>
+      <h4 class="text-xs font-bold tracking-[0.125rem] uppercase tx-p5 mb-4">Product</h4>
+      <a href="../index.html#sat"      class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Desmos Tutoring</a>
+      <a href="../index.html#progress" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Progress</a>
+      <a href="../index.html#chat"     class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Questionbank</a>
+      <a href="../index.html#tutoring" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Tutoring</a>
+      <a href="./code.html" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Korah CODE</a>
+      <a href="./interns.html" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Intern Work</a>
+      <a href="../home.html" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Web App</a>
+    </div>
+    <div>
+      <h4 class="text-xs font-bold tracking-[0.125rem] uppercase tx-p5 mb-4">Support</h4>
+      <a href="../support/index.html#contact" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Contact Us</a>
+      <a href="../support/index.html#faq"    class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">FAQ</a>
+    </div>
+    <div>
+      <h4 class="text-xs font-bold tracking-[0.125rem] uppercase tx-p5 mb-4">Company</h4>
+      <a href="#" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">About Korah</a>
+      <a href="https://www.instagram.com/korah.app/" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Social Media</a>
+      <a href="../support/index.html#privacy" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Privacy Policy</a>
+      <a href="../support/index.html#terms" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Terms</a>
+    </div>
+  </div>
+  <div class="max-w-[68.75rem] mx-auto mt-10 pt-6 border-t bd2 flex flex-wrap items-center justify-between gap-3 text-[0.78125rem] tx3">
+    <span>© 2025 Korah AI. All rights reserved.</span>
+    <span>Made for students, by students</span>
+    <span>Beta v0.9.1</span>
+  </div>
+</footer>
+
+</body>
+</html>

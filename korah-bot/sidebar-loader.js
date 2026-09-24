@@ -23,7 +23,7 @@
 
   // Also rewrite hrefs inside template x-if blocks (querySelectorAll can't see them).
   // Mark the current page's link active there too, so e.g. SAT sub-pages highlight
-  // their button purple instead of leaving the whole section grey.
+  // their button while preserving its destination color.
   root.querySelectorAll('template').forEach(tpl => {
     tpl.content.querySelectorAll('[href^="/"]').forEach(el => {
       el.setAttribute('href', base + el.getAttribute('href'));
