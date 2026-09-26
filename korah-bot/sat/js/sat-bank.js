@@ -1,6 +1,9 @@
 (() => {
   const { OPENSAT_CATALOG, buildOpenSatV1QuestionUrl } = window.KorahSAT;
 
+  const since = window.KorahSATBankConfig?.since ?? null;
+  const isLatest = since !== null;
+
   const state = {
     sections: [],
     domains: [],
@@ -98,7 +101,7 @@
         { value: "incorrect", label: "Incorrect" },
       ],
     },
-  ];
+  ].filter((filter) => !isLatest || filter.key !== "questionset");
 
   function selectedValues(key) {
     switch (key) {
@@ -162,9 +165,11 @@
 
   function renderPill() {
     const n = state.skills.length;
-    if (n > 0) {
+    if (n > 0 || isLatest) {
       selectionPill.removeAttribute("hidden");
-      pillCountLabel.textContent = `${n} topic${n === 1 ? "" : "s"} selected`;
+      pillCountLabel.textContent = n > 0
+        ? `${n} topic${n === 1 ? "" : "s"} selected`
+        : "All latest questions";
     } else {
       selectionPill.setAttribute("hidden", "");
     }
@@ -277,8 +282,8 @@
             </header>
             <div class="sat-topic-columns">
               <span class="sat-col-topic">Topic</span>
-              <span class="sat-col-progress">Progress</span>
-              <span class="sat-col-accuracy">Accuracy</span>
+              ${isLatest ? "" : '<span class="sat-col-progress">Progress</span>'}
+              ${isLatest ? "" : '<span class="sat-col-accuracy">Accuracy</span>'}
             </div>
             <div class="sat-domain-grid">
               ${section.domains
@@ -306,8 +311,8 @@
                         <div class="sat-topic-row">
                           <button class="sat-check ${skillSelected ? "is-active" : ""}" type="button" data-select-skill="${section.key}::${domain.key}::${skill.code}" aria-label="Select ${skill.key}"></button>
                           <span class="sat-topic-heading">${skill.key}</span>
-                          <div class="sat-topic-progress">${progressCol}</div>
-                          <div class="sat-topic-accuracy">${accuracyCol}</div>
+                          ${isLatest ? "" : `<div class="sat-topic-progress">${progressCol}</div>`}
+                          ${isLatest ? "" : `<div class="sat-topic-accuracy">${accuracyCol}</div>`}
                         </div>
                       `;
                     })
@@ -400,6 +405,7 @@
 
   function navigate() {
     const nextState = {
+      since,
       sections: state.sections.length > 0 ? state.sections : ["any"],
       domains: state.domains.length > 0 ? state.domains : ["any"],
       skills: state.skills.length > 0 ? state.skills : ["any"],
@@ -536,6 +542,8 @@
   }
 
   async function fetchGlobalStats() {
+    // The stats endpoint is bank-wide and does not support the release cutoff.
+    if (isLatest) return;
     try {
       const assessmentParam = state.assessment && state.assessment !== "SAT"
         ? `?assessment=${encodeURIComponent(state.assessment)}`
@@ -644,7 +652,7 @@
   pillStart.addEventListener("click", () => navigate());
 
   renderFilters();
-  loadUserProgress();
+  if (!isLatest) loadUserProgress();
   resetFilters();
   fetchGlobalStats();
 

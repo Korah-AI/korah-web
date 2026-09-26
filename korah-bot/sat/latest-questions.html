@@ -80,8 +80,7 @@
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
       // The new-question bank is served by /api/sat/* and needs no Firebase, so
-      // guests can browse it. Analytics stays undefined; sat-new-questions.js
-      // already handles that.
+      // guests can browse it. Analytics stays undefined for guest sessions.
       startGuestSession();
       initGuestGate('../');
       showGuestToastOnce();
@@ -141,13 +140,14 @@
           </div>
           <h1 class="sat-bank-title">Latest Questions</h1>
           <p class="sat-bank-desc">
-            College Board recently released 270+ new SAT questions. Pick a section and the skills you want to practice, then dive in. <br>
-            These are fresh questions from the official <strong> College Board Question Bank</strong>.
+            Practice College Board questions uploaded from July 30, 2026 through today. <br>
+            Start with the full batch, or choose topics and filters to narrow your practice.
           </p>
         </div>
         <img src="../logo-images/newlogo3.png" class="sat-bank-header-deco" alt=""/>
       </section>
 
+      <p class="sat-bank-desc">Saved, completed, result, and time filters apply when your session starts.</p>
       <section class="sat-bank-controls">
         <div class="sat-session-bar">
           <div class="sat-limit-dd" id="limitDropdown">
@@ -168,7 +168,7 @@
             <svg class="sat-ico sat-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
         </div>
-        <!-- Filter buttons are rendered by sat-new-questions.js from FILTERS -->
+        <!-- Filter buttons use the same controls as the question bank. -->
         <div class="sat-filter-row" id="filterRow" hidden></div>
       </section>
 
@@ -220,6 +220,7 @@
 
 <script src="./js/sat-shared.js"></script>
 <script src="./js/sat-new-questions.js"></script>
+<script src="./js/sat-bank.js"></script>
 
 </body>
 </html>

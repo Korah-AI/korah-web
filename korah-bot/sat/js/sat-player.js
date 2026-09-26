@@ -1276,6 +1276,9 @@
     if (query.assessment && query.assessment !== "SAT") {
       params.set("assessment", query.assessment);
     }
+    if (query.since !== null && query.since !== undefined) {
+      params.set("since", String(query.since));
+    }
     if (query.questionIds && query.questionIds.length > 0) {
       params.set("questionIds", query.questionIds.join(","));
     }

@@ -138,6 +138,10 @@
     const limit = limitRaw === null || limitRaw === "" ? null : (limitRaw.toLowerCase() === "none" ? null : Number(limitRaw));
     const effectiveLimit = (limit === null || (Number.isFinite(limit) && limit > 0)) ? limit : null;
 
+    const sinceRaw = (params.get("since") || "").trim();
+    const since = sinceRaw !== "" && Number.isFinite(Number(sinceRaw))
+      ? Number(sinceRaw) : null;
+
     // Handle explicit question IDs
     const questionIdsRaw = params.get("questionIds") || params.get("ids");
     const questionIds = questionIdsRaw ? questionIdsRaw.split(",").map(id => id.trim()).filter(Boolean) : [];
@@ -155,6 +159,7 @@
       difficulties: difficulties.length > 0 ? difficulties : ["any"],
       assessment,
       limit: effectiveLimit,
+      since,
       questionIds,
       random,
       mode,
@@ -194,6 +199,9 @@
     }
     if (state.limit !== null && state.limit !== undefined) {
       params.set("limit", String(state.limit));
+    }
+    if (state.since !== null && state.since !== undefined && Number.isFinite(Number(state.since))) {
+      params.set("since", String(state.since));
     }
     if (state.random) {
       params.set("random", "1");
