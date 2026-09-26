@@ -1,0 +1,878 @@
+/* ── Intro carousel demos and shell — intro-demos.css ───────────────────────
+   Looping HTML/CSS replicas of the product, used by the onboarding and
+   feature intro carousels instead of screenshots. Same idea as .cp-demo
+   (college-prep.css) and .cm-demo (college-match/college.css): a scaled-down
+   version of the real UI so a slide shows the feature rather than describing
+   it.
+
+   Used by home.html, sat/math-chat.html, ap/index.html, sat/rush.html and
+   sat/tailored.html. The Desmos Chat demo is the same component on home.html
+   and math-chat.html.
+
+   Type rules: labels are sentence case, never uppercase or letter-spaced, and
+   nothing is set in a monospace face. Text and numbers stay white (var(--kd-tx))
+   on the app surfaces; colour is carried by borders, bar fills and markers.
+   The one exception is a right/wrong verdict, which keeps its tone.
+
+   Sizing: .kdemo is an inline-size container and everything inside sizes in
+   cqi, so a demo holds its proportions in any modal and down to phone width.
+   .kdemo's own padding and gaps stay in %, since an element cannot query
+   itself.
+   ────────────────────────────────────────────────────────────────────────── */
+
+.kdemo {
+  --kd-dur: 6s;
+  --kd-sf:  var(--sf2);
+  --kd-sf2: var(--bg2);
+  --kd-bd:  var(--bd);
+  --kd-tx:  var(--tx);
+  --kd-blue: #3b82f6;  --kd-green: #22c55e;  --kd-purple: #8b5cf6;
+  --kd-red:  #ef4444;  --kd-amber: #f59e0b;  --kd-teal: #14b8a6;
+  /* Desmos renders light in both themes, so its surfaces are fixed */
+  --kd-paper: #f8f9fb; --kd-ink: #2b2b33; --kd-rule: #d6d8e0; --kd-grid: #e6e8ee;
+
+  container-type: inline-size;
+  position: relative;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 34rem;
+  aspect-ratio: 16 / 9;
+  margin: 0.25rem auto 0;
+  padding: 2.6%;
+  border-radius: 0.75rem;
+  border: 0.0625rem solid var(--kd-bd);
+  background: var(--kd-sf);
+  overflow: hidden;
+  text-align: left;
+  color: var(--kd-tx);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+/* math-chat.html runs the chat grey palette and the SAT/AP pages the sat-grey
+   one; home.html keeps the purple app tokens. The intro modals on the SAT and
+   AP pages carry .sat-grey themselves, since they sit outside the page scopes
+   that normally define those tokens. */
+.korah-grey .kdemo {
+  --kd-sf:  var(--kg-sf2, #31313c);
+  --kd-sf2: var(--kg-sf, #26262e);
+  --kd-bd:  var(--kg-bd, #454553);
+}
+.sat-grey .kdemo {
+  --kd-sf:  var(--sat-panel-sf2, #31313c);
+  --kd-sf2: var(--sat-panel-sf, #26262e);
+  --kd-bd:  var(--sat-panel-bd, #454553);
+}
+
+/* Shared entrance. Elements share one period and stagger by delay. */
+@keyframes kdPop {
+  0%, 6%    { opacity: 0; transform: translateY(0.5em) scale(0.97); }
+  15%, 86%  { opacity: 1; transform: none; }
+  96%, 100% { opacity: 0; transform: scale(0.98); }
+}
+
+/* Bars and meters that fill, then reset */
+@keyframes kdFill {
+  0%, 10%   { transform: scaleX(0); }
+  45%, 88%  { transform: scaleX(1); }
+  97%, 100% { transform: scaleX(0); }
+}
+
+/* ══ Desmos surfaces ════════════════════════════════════════════════════════ */
+
+.kd-paper {
+  background: var(--kd-paper);
+  color: var(--kd-ink);
+  border-radius: 1.4cqi;
+}
+.kd-grid {
+  position: relative;
+  overflow: hidden;
+  background:
+    repeating-linear-gradient(to right, var(--kd-grid) 0 0.2cqi, transparent 0.2cqi 4cqi),
+    repeating-linear-gradient(to bottom, var(--kd-grid) 0 0.2cqi, transparent 0.2cqi 4cqi),
+    var(--kd-paper);
+}
+
+/* The plot stretches to fill its box, so anything that must keep its shape,
+   the points and the axis numbers, sits above it as HTML instead. */
+.kd-plot { position: absolute; inset: 0; width: 100%; height: 100%; }
+.kd-plot path { fill: none; stroke: #2f7d44; stroke-width: 1.6; vector-effect: non-scaling-stroke; }
+.kd-plot .kd-axis { stroke: #8f93a1; stroke-width: 1; vector-effect: non-scaling-stroke; }
+
+.kd-trace { stroke-dasharray: 220; stroke-dashoffset: 220; animation: kdDraw var(--kd-dur) ease-in-out infinite; }
+@keyframes kdDraw {
+  0%, 50%   { stroke-dashoffset: 220; }
+  70%, 90%  { stroke-dashoffset: 0; }
+  97%, 100% { stroke-dashoffset: 220; }
+}
+.kd-point {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: 1.5cqi;
+  height: 1.5cqi;
+  margin: -0.75cqi 0 0 -0.75cqi;
+  border-radius: 50%;
+  background: #c74440;
+  opacity: 0;
+  animation: kdDot var(--kd-dur) ease-in-out infinite;
+}
+.kd-point.is-two { animation-delay: 0.4s; }
+@keyframes kdDot {
+  0%, 68%   { opacity: 0; }
+  75%, 90%  { opacity: 1; }
+  97%, 100% { opacity: 0; }
+}
+.kd-tick {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  transform: translate(-100%, -50%);
+  padding-right: 0.6cqi;
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 2.6cqi;
+  color: var(--kd-ink);
+}
+
+/* Desmos' own label above a regression's parameters. Sentence case here. */
+.kd-caps {
+  display: block;
+  margin-top: 0.8cqi;
+  font-size: 2.4cqi;
+  font-weight: 600;
+  color: #73767f;
+}
+
+/* Math set in Desmos' serif, variables italic */
+.kd-math {
+  display: block;
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 3.2cqi;
+  line-height: 1.35;
+  color: var(--kd-ink);
+}
+.kd-math i { font-style: italic; }
+.kd-math sub, .kd-math sup { font-size: 0.68em; }
+
+.kd-table {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-top: 0.2cqi solid var(--kd-rule);
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 2.8cqi;
+  text-align: center;
+}
+.kd-table span {
+  padding: 0.7cqi 0;
+  border-bottom: 0.2cqi solid var(--kd-rule);
+  color: var(--kd-ink);
+}
+.kd-table span:nth-child(odd) { border-right: 0.2cqi solid var(--kd-rule); }
+.kd-table .is-head { font-style: italic; }
+.kd-table .is-row { opacity: 0; animation: kdRow var(--kd-dur) ease-in-out infinite; }
+.kd-table .is-row:nth-child(n+5) { animation-delay: 0.3s; }
+@keyframes kdRow {
+  0%, 56%   { opacity: 0; }
+  64%, 90%  { opacity: 1; }
+  97%, 100% { opacity: 0; }
+}
+
+/* ══ Chat — the thread and composer the Desmos demo drives ══════════════════
+   Matches the real chat: the user's message is a bubble on the right, Korah's
+   reply is flat with a logo and name above it. */
+.kd-chat { display: flex; flex-direction: column; }
+.kd-thread { flex: 1; min-height: 0; }
+
+.kd-ask {
+  display: block;
+  width: fit-content;
+  margin-left: auto;
+  max-width: 88%;
+  padding: 1.4cqi 1.8cqi;
+  border-radius: 2.4cqi;
+  background: var(--kd-sf2);
+  border: 0.2cqi solid var(--kd-bd);
+  font-size: 2.6cqi;
+  font-weight: 600;
+  color: var(--kd-tx);
+  opacity: 0;
+  animation: kdAsk var(--kd-dur) ease-in-out infinite;
+}
+@keyframes kdAsk {
+  0%, 24%   { opacity: 0; transform: translateY(0.5em) scale(0.96); }
+  31%, 90%  { opacity: 1; transform: none; }
+  97%, 100% { opacity: 0; }
+}
+
+.kd-answer { margin-top: 2cqi; opacity: 0; animation: kdAnswer var(--kd-dur) ease-in-out infinite; }
+@keyframes kdAnswer {
+  0%, 33%   { opacity: 0; }
+  39%, 90%  { opacity: 1; }
+  97%, 100% { opacity: 0; }
+}
+.kd-answer-head { display: flex; align-items: center; gap: 1cqi; font-size: 2.4cqi; font-weight: 700; color: var(--kd-tx); }
+.kd-answer-head img { width: 3.4cqi; height: 3.4cqi; object-fit: contain; }
+.kd-answer-body { position: relative; display: block; min-height: 10cqi; margin-top: 1.2cqi; }
+
+/* "Cooking..." while Korah thinks, with a highlight sweeping across the word.
+   The gradient is mixed from --kd-tx so the sweep reads in both themes. */
+.kd-think {
+  position: absolute;
+  top: 0.4cqi;
+  left: 0;
+  font-size: 2.6cqi;
+  font-weight: 700;
+  /* Solid fallback first: if the gradient below is ever dropped, background-clip
+     still paints the word instead of leaving it transparent. */
+  background: var(--kd-tx);
+  background: linear-gradient(100deg,
+    color-mix(in srgb, var(--kd-tx) 38%, transparent) 32%,
+    var(--kd-tx) 50%,
+    color-mix(in srgb, var(--kd-tx) 38%, transparent) 68%);
+  background-size: 260% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation:
+    kdThink var(--kd-dur) ease-in-out infinite,
+    kdShimmer 1.7s linear infinite;
+}
+@keyframes kdThink {
+  0%, 36%   { opacity: 0; }
+  42%, 52%  { opacity: 1; }
+  58%, 100% { opacity: 0; }
+}
+@keyframes kdShimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -60% 0; }
+}
+
+/* Korah's actual answer, arriving a line at a time */
+.kd-reply { display: grid; gap: 1.4cqi; }
+.kd-reply span {
+  font-size: 2.4cqi;
+  line-height: 1.45;
+  color: var(--kd-tx);
+  opacity: 0;
+  animation: kdStream var(--kd-dur) ease-in-out infinite;
+}
+.kd-reply span:nth-child(2) { animation-delay: 0.3s; }
+.kd-reply span i, .kd-reply span sub { font-family: 'Times New Roman', Times, serif; }
+.kd-reply span i { font-style: italic; }
+
+.kd-lines { display: grid; gap: 1.2cqi; }
+.kd-lines i { display: block; height: 1cqi; border-radius: 62.4375rem; background: var(--kd-bd); opacity: 0; animation: kdStream var(--kd-dur) ease-in-out infinite; }
+.kd-lines i:nth-child(2) { animation-delay: 0.22s; }
+.kd-lines i:nth-child(3) { animation-delay: 0.44s; }
+.kd-lines i.is-short { width: 58%; }
+@keyframes kdStream {
+  0%, 54%   { opacity: 0; transform: translateY(0.4em); }
+  62%, 90%  { opacity: 1; transform: none; }
+  97%, 100% { opacity: 0; }
+}
+
+.kd-composer {
+  display: flex;
+  align-items: center;
+  gap: 1.4cqi;
+  margin-top: 1.8cqi;
+  padding: 1.4cqi 1.6cqi;
+  border-radius: 2.4cqi;
+  background: var(--kd-sf2);
+  border: 0.2cqi solid var(--kd-bd);
+}
+/* Typewriter. The wrapper's ::before is a hidden copy of the string, so the
+   wrapper ends up exactly as wide as the finished text and the reveal stops on
+   the last character instead of running on through empty space. The inner
+   span's right border is the caret. */
+.kd-typed {
+  position: relative;
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 2.5cqi;
+  font-weight: 600;
+  color: var(--kd-tx);
+}
+.kd-typed::before {
+  content: attr(data-text);
+  display: block;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  white-space: nowrap;
+}
+.kd-typed-in {
+  display: block;
+  width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  border-right: 0.3cqi solid transparent;
+  animation:
+    kdTypePrompt var(--kd-dur) steps(24, end) infinite,
+    kdCaret var(--kd-dur) steps(1, end) infinite;
+}
+.kd-composer .kd-typed { flex: 0 1 auto; margin-right: auto; }
+@keyframes kdTypePrompt {
+  0%        { width: 0; }
+  18%       { width: 100%; }
+  21%, 100% { width: 0; }
+}
+@keyframes kdCaret {
+  0%, 3%    { border-right-color: var(--kd-tx); }
+  6%, 9%    { border-right-color: transparent; }
+  12%, 15%  { border-right-color: var(--kd-tx); }
+  18%, 20%  { border-right-color: var(--kd-tx); }
+  21%, 100% { border-right-color: transparent; }
+}
+.kd-send {
+  display: grid;
+  place-items: center;
+  width: 5cqi;
+  height: 5cqi;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--kd-green);
+  animation: kdSend var(--kd-dur) ease-out infinite;
+}
+.kd-send svg { width: 2.6cqi; height: 2.6cqi; fill: none; stroke: #fff; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+@keyframes kdSend {
+  0%, 18%   { transform: scale(1); }
+  21%       { transform: scale(1.22); }
+  25%, 100% { transform: scale(1); }
+}
+
+/* ══ Desmos Chat ════════════════════════════════════════════════════════════
+   home.html slide 3 and math-chat.html slide 2. The prompt types itself, gets
+   sent, Korah thinks, and the answer lands as the graph redraws beside it. */
+.kd-desmos { --kd-dur: 9s; display: grid; grid-template-columns: 1.06fr 1fr; column-gap: 2.6%; }
+.kd-desmos-side { display: grid; grid-template-columns: 0.82fr 1fr; overflow: hidden; border-radius: 1.4cqi; }
+.kd-rail {
+  padding: 2cqi 1.6cqi;
+  border-right: 0.2cqi solid var(--kd-rule);
+  border-radius: 1.4cqi 0 0 1.4cqi;
+}
+.kd-rail .kd-math { font-size: 2.9cqi; }
+.kd-rail .kd-table { margin-top: 1.6cqi; font-size: 2.6cqi; }
+.kd-graph { border-radius: 0 1.4cqi 1.4cqi 0; }
+
+/* ══ Regressions ════════════════════════════════════════════════════════════
+   math-chat.html slide 3. The parameters Desmos solves for arrive one by one. */
+.kd-reg { display: flex; flex-direction: column; justify-content: center; }
+.kd-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2cqi;
+  padding: 2.2cqi;
+  animation: kdPop var(--kd-dur) ease-in-out infinite;
+}
+.kd-card + .kd-card { margin-top: 2cqi; animation-delay: 1.1s; }
+.kd-card-no {
+  font-size: 2.4cqi;
+  font-weight: 600;
+  color: #73767f;
+  padding-right: 1.6cqi;
+  border-right: 0.2cqi solid var(--kd-rule);
+}
+.kd-params {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin-top: 0.6cqi;
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 3cqi;
+  color: var(--kd-ink);
+}
+.kd-params span { opacity: 0; animation: kdPop var(--kd-dur) ease-in-out infinite; animation-delay: 0.45s; }
+.kd-params span:nth-child(2) { animation-delay: 0.65s; }
+.kd-params span:nth-child(3) { animation-delay: 0.85s; }
+.kd-stat {
+  display: inline-block;
+  margin-top: 0.6cqi;
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 3cqi;
+  color: var(--kd-ink);
+  animation: kdPop var(--kd-dur) ease-in-out infinite;
+  animation-delay: 1.05s;
+}
+.kd-tag {
+  display: inline-block;
+  margin-top: 1cqi;
+  padding: 0.8cqi 1.4cqi;
+  border-radius: 0.8cqi;
+  border: 0.2cqi solid var(--kd-rule);
+  background: #fff;
+  font-size: 2.4cqi;
+  font-weight: 600;
+  color: var(--kd-ink);
+}
+
+/* ══ Exponential ════════════════════════════════════════════════════════════
+   math-chat.html slide 4. */
+.kd-exp { display: grid; grid-template-columns: 1fr 1.1fr; column-gap: 2.6%; }
+.kd-exp-side { padding: 2.2cqi; }
+.kd-exp-reg { margin-top: 1.8cqi; padding-top: 1.6cqi; border-top: 0.2cqi solid var(--kd-rule); }
+.kd-exp .kd-graph { border-radius: 1.4cqi; }
+
+/* ══ Question bank ══════════════════════════════════════════════════════════
+   home.html slide 2. The answer types in, then the verdict lands. */
+.kd-qb { display: flex; flex-direction: column; }
+.kd-qb-top { display: flex; align-items: center; justify-content: space-between; }
+.kd-timer {
+  padding: 0.9cqi 2cqi;
+  border-radius: 62.4375rem;
+  background: var(--kd-sf2);
+  border: 0.2cqi solid var(--kd-bd);
+  font-size: 2.6cqi;
+  font-weight: 800;
+  color: var(--kd-tx);
+}
+.kd-qb-tools { display: flex; gap: 1cqi; }
+.kd-qb-tools i { display: block; width: 4.4cqi; height: 2.2cqi; border-radius: 0.6cqi; background: var(--kd-sf2); }
+.kd-qb-tools i:last-child { background: var(--kd-purple); }
+
+.kd-qb-card {
+  margin-top: 1.8cqi;
+  padding: 1.8cqi;
+  border-radius: 1.4cqi;
+  background: var(--kd-sf2);
+  border: 0.2cqi solid var(--kd-bd);
+  animation: kdPop var(--kd-dur) ease-in-out infinite;
+}
+.kd-qb-tags { display: flex; align-items: center; gap: 1cqi; font-size: 2.4cqi; font-weight: 700; color: var(--kd-tx); }
+.kd-qb-no {
+  display: grid;
+  place-items: center;
+  width: 4cqi;
+  height: 4cqi;
+  border-radius: 50%;
+  background: var(--kd-bd);
+  color: var(--kd-tx);
+}
+/* Filled, not outlined, the way the real tags read. */
+.kd-qb-domain { padding: 0.6cqi 1.4cqi; border-radius: 62.4375rem; background: var(--kd-blue); color: #fff; }
+.kd-qb-hard { padding: 0.6cqi 1.4cqi; border-radius: 62.4375rem; background: var(--kd-red); color: #fff; }
+.kd-qb-body { display: grid; grid-template-columns: 1.35fr 1fr; align-items: center; gap: 2cqi; margin-top: 1.4cqi; }
+/* Fixed height with the default preserveAspectRatio, so the figure letterboxes
+   in its column instead of pushing the footer out of the box. */
+.kd-qb-fig { width: 100%; height: 13cqi; }
+.kd-qb-fig path { fill: none; stroke: var(--kd-tx); stroke-width: 1.2; vector-effect: non-scaling-stroke; }
+.kd-qb-fig text { fill: var(--kd-tx); font-size: 8px; font-style: italic; }
+.kd-qb-lines { display: grid; gap: 1cqi; }
+.kd-qb-lines i { display: block; height: 1cqi; border-radius: 62.4375rem; background: var(--kd-bd); }
+.kd-qb-lines i.is-short { width: 62%; }
+
+.kd-qb-answer {
+  display: flex;
+  align-items: center;
+  gap: 1.4cqi;
+  margin-top: 1.8cqi;
+  padding: 1.4cqi 1.8cqi;
+  border-radius: 1.4cqi;
+  border: 0.2cqi solid transparent;
+  font-size: 2.8cqi;
+  font-weight: 700;
+  color: #fff;
+  animation: kdField var(--kd-dur) ease-in-out infinite;
+}
+/* Fills rather than outlines: a neutral fill while empty, the green fill once
+   the answer checks out. */
+@keyframes kdField {
+  0%, 40%   { background: var(--kd-bd); }
+  55%, 88%  { background: var(--kd-green); }
+  97%, 100% { background: var(--kd-bd); }
+}
+.kd-qb-val { display: inline-block; overflow: hidden; white-space: nowrap; animation: kdType var(--kd-dur) ease-in-out infinite; }
+@keyframes kdType {
+  0%, 22%   { width: 0; }
+  38%, 88%  { width: 4.6cqi; }
+  97%, 100% { width: 0; }
+}
+/* A verdict is the one place a tone still carries meaning. */
+.kd-qb-correct {
+  margin-left: auto;
+  font-size: 2.4cqi;
+  font-weight: 800;
+  color: #fff;
+  animation: kdPop var(--kd-dur) ease-in-out infinite;
+  animation-delay: 1.5s;
+}
+.kd-qb-foot { display: flex; align-items: center; justify-content: space-between; margin-top: auto; padding-top: 1.6cqi; font-size: 2.4cqi; font-weight: 700; color: var(--kd-tx); }
+.kd-qb-check { padding: 1cqi 2.2cqi; border-radius: 62.4375rem; background: var(--kd-purple); color: #fff; }
+
+/* ══ Home dashboard ═════════════════════════════════════════════════════════
+   home.html slide 4. Tiles and bars are sized to carry the box on their own. */
+.kd-home { display: flex; flex-direction: column; justify-content: space-between; }
+.kd-home-label { font-size: 2.9cqi; font-weight: 800; color: var(--kd-tx); }
+.kd-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.8cqi; margin-top: 1.6cqi; }
+.kd-tile {
+  display: grid;
+  align-content: center;
+  gap: 1cqi;
+  padding: 2.6cqi 2cqi;
+  border-radius: 1.6cqi;
+  background: var(--c);
+  animation: kdPop var(--kd-dur) ease-in-out infinite;
+}
+.kd-tile:nth-child(2) { animation-delay: 0.12s; }
+.kd-tile:nth-child(3) { animation-delay: 0.24s; }
+.kd-tile:nth-child(4) { animation-delay: 0.36s; }
+.kd-tile i { font-style: normal; font-size: 2.5cqi; font-weight: 700; color: #fff; }
+.kd-tile b { font-size: 6cqi; font-weight: 800; line-height: 1; color: #fff; }
+.kd-tile.is-attempted { --c: var(--kd-blue); }
+.kd-tile.is-accuracy  { --c: var(--kd-green); }
+.kd-tile.is-saved     { --c: var(--kd-purple); }
+.kd-tile.is-errors    { --c: var(--kd-red); }
+
+.kd-journey { margin-top: 2.4cqi; }
+.kd-journey-title { display: block; font-size: 3.2cqi; font-weight: 800; color: var(--kd-tx); }
+.kd-bar { margin-top: 1.8cqi; }
+.kd-bar-top { display: flex; justify-content: space-between; font-size: 2.6cqi; font-weight: 700; color: var(--kd-tx); }
+.kd-bar-track { display: block; height: 3.2cqi; margin-top: 0.9cqi; border-radius: 62.4375rem; background: var(--kd-sf2); overflow: hidden; }
+.kd-bar-track i {
+  display: block;
+  height: 100%;
+  width: var(--w);
+  border-radius: inherit;
+  background: var(--c);
+  transform-origin: left;
+  animation: kdFill var(--kd-dur) ease-in-out infinite;
+}
+.kd-bar.is-rw { --c: var(--kd-blue); }
+.kd-bar.is-math { --c: var(--kd-green); }
+.kd-bar.is-math .kd-bar-track i { animation-delay: 0.2s; }
+
+/* ══ AP free response ═══════════════════════════════════════════════════════
+   ap/index.html slide 1. A timed part, with the response written into it. */
+.kd-frq { --kd-dur: 7s; display: flex; flex-direction: column; }
+.kd-frq-top { display: flex; align-items: center; justify-content: space-between; font-size: 2.6cqi; font-weight: 700; color: var(--kd-tx); }
+.kd-frq-course { padding: 0.9cqi 1.8cqi; border-radius: 62.4375rem; background: var(--kd-sf2); border: 0.2cqi solid var(--kd-bd); }
+.kd-frq-timer { display: flex; align-items: center; gap: 1cqi; }
+.kd-frq-timer i { display: block; width: 1.6cqi; height: 1.6cqi; border-radius: 50%; background: var(--kd-amber); animation: kdPulse 1.6s ease-in-out infinite; }
+@keyframes kdPulse { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
+
+.kd-frq-stem {
+  margin-top: 1.8cqi;
+  padding: 1.8cqi;
+  border-radius: 1.4cqi;
+  background: var(--kd-sf2);
+  border: 0.2cqi solid var(--kd-bd);
+}
+.kd-frq-part { display: block; font-size: 2.5cqi; font-weight: 800; color: var(--kd-tx); }
+.kd-frq-stem .kd-lines { margin-top: 1.2cqi; }
+.kd-frq-stem .kd-lines i { animation: none; opacity: 1; }
+
+.kd-frq-write {
+  flex: 1;
+  margin-top: 1.8cqi;
+  padding: 1.8cqi;
+  border-radius: 1.4cqi;
+  background: var(--kd-sf2);
+  border: 0.2cqi dashed var(--kd-bd);
+}
+.kd-frq-foot { display: flex; justify-content: flex-end; margin-top: 1.6cqi; }
+.kd-frq-submit { padding: 1.1cqi 2.4cqi; border-radius: 62.4375rem; background: var(--kd-green); color: #fff; font-size: 2.4cqi; font-weight: 800; animation: kdSend var(--kd-dur) ease-out infinite; }
+
+/* ══ AP rubric ══════════════════════════════════════════════════════════════
+   ap/index.html slide 2. Rubric points check off and the score settles. */
+.kd-rubric { --kd-dur: 7s; display: flex; flex-direction: column; justify-content: center; gap: 1.6cqi; }
+.kd-rubric-head { display: flex; align-items: baseline; justify-content: space-between; }
+.kd-rubric-head span { font-size: 2.9cqi; font-weight: 800; color: var(--kd-tx); }
+.kd-rubric-score { font-size: 5.4cqi; font-weight: 800; color: var(--kd-tx); }
+.kd-rubric-row {
+  display: flex;
+  align-items: center;
+  gap: 1.4cqi;
+  padding: 1.4cqi 1.6cqi;
+  border-radius: 1.2cqi;
+  background: var(--kd-sf2);
+  border: 0.2cqi solid var(--kd-bd);
+  font-size: 2.5cqi;
+  font-weight: 600;
+  color: var(--kd-tx);
+  animation: kdPop var(--kd-dur) ease-in-out infinite;
+}
+.kd-rubric-row:nth-child(3) { animation-delay: 0.45s; }
+.kd-rubric-row:nth-child(4) { animation-delay: 0.9s; }
+.kd-rubric-row .kd-mark {
+  display: grid;
+  place-items: center;
+  width: 3.6cqi;
+  height: 3.6cqi;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 0.2cqi solid var(--m);
+  font-size: 2.2cqi;
+  font-weight: 800;
+  color: var(--m);
+}
+/* Earned or missed is a verdict, so it keeps its tone. */
+.kd-rubric-row.is-earned { --m: var(--kd-green); }
+.kd-rubric-row.is-missed { --m: var(--kd-red); }
+.kd-rubric-quote { margin-left: auto; padding-left: 1.4cqi; font-style: italic; opacity: 0.85; }
+
+/* ══ Practice Rush setup ════════════════════════════════════════════════════
+   sat/rush.html slide 1. Steps advance as the skills get picked. */
+.kd-rush { --kd-dur: 7s; display: flex; flex-direction: column; }
+.kd-rush-dots { display: flex; gap: 1.2cqi; }
+.kd-rush-dots i { display: block; width: 6cqi; height: 1.2cqi; border-radius: 62.4375rem; background: var(--kd-sf2); animation: kdStep var(--kd-dur) steps(1, end) infinite; }
+/* Negative delays so the three steps are already in phase on the first pass. */
+.kd-rush-dots i:nth-child(2) { animation-delay: -4.67s; }
+.kd-rush-dots i:nth-child(3) { animation-delay: -2.34s; }
+@keyframes kdStep {
+  0%, 32%   { background: var(--kd-teal); }
+  33%, 100% { background: var(--kd-sf2); }
+}
+.kd-rush-title { display: block; margin-top: 1.8cqi; font-size: 2.9cqi; font-weight: 800; color: var(--kd-tx); }
+.kd-rush-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.4cqi; margin-top: 1.6cqi; }
+.kd-chip-opt {
+  padding: 1.6cqi 1.4cqi;
+  border-radius: 1.2cqi;
+  background: var(--kd-sf2);
+  border: 0.2cqi solid var(--kd-bd);
+  font-size: 2.4cqi;
+  font-weight: 700;
+  color: var(--kd-tx);
+  text-align: center;
+  animation: kdSelect var(--kd-dur) ease-in-out infinite;
+}
+.kd-chip-opt:nth-child(2) { animation-delay: 0.35s; }
+.kd-chip-opt:nth-child(3) { animation-delay: 0.7s; }
+.kd-chip-opt:nth-child(4) { animation-delay: 1.05s; }
+.kd-chip-opt:nth-child(5) { animation-delay: 1.4s; }
+.kd-chip-opt:nth-child(6) { animation-delay: 1.75s; }
+@keyframes kdSelect {
+  0%, 22%   { border-color: var(--kd-bd); background: var(--kd-sf2); }
+  34%, 88%  { border-color: var(--kd-teal); background: var(--kd-sf2); }
+  97%, 100% { border-color: var(--kd-bd); }
+}
+.kd-rush-foot { display: flex; align-items: center; justify-content: space-between; margin-top: auto; padding-top: 1.8cqi; font-size: 2.5cqi; font-weight: 700; color: var(--kd-tx); }
+.kd-rush-start { padding: 1.1cqi 2.4cqi; border-radius: 62.4375rem; background: var(--kd-green); color: #fff; font-weight: 800; animation: kdSend var(--kd-dur) ease-out infinite; }
+
+/* ══ Practice Rush flow ═════════════════════════════════════════════════════
+   sat/rush.html slide 2. The run keeps going: progress, streak, next question. */
+.kd-flow { --kd-dur: 6s; display: flex; flex-direction: column; }
+.kd-flow-top { display: flex; align-items: center; gap: 1.6cqi; }
+.kd-flow-track { flex: 1; height: 1.6cqi; border-radius: 62.4375rem; background: var(--kd-sf2); overflow: hidden; }
+.kd-flow-track i { display: block; height: 100%; width: 100%; border-radius: inherit; background: var(--kd-teal); transform-origin: left; animation: kdFill var(--kd-dur) linear infinite; }
+.kd-flow-streak { font-size: 2.5cqi; font-weight: 800; color: var(--kd-tx); }
+.kd-flow-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1.4cqi;
+  margin-top: 1.8cqi;
+  padding: 2cqi;
+  border-radius: 1.4cqi;
+  background: var(--kd-sf2);
+  border: 0.2cqi solid var(--kd-bd);
+  animation: kdSwap var(--kd-dur) ease-in-out infinite;
+}
+@keyframes kdSwap {
+  0%, 4%    { opacity: 0; transform: translateX(1.4cqi); }
+  12%, 74%  { opacity: 1; transform: none; }
+  86%, 100% { opacity: 0; transform: translateX(-1.4cqi); }
+}
+.kd-flow-card .kd-lines i { animation: none; opacity: 1; }
+.kd-flow-opts { display: grid; gap: 1cqi; }
+.kd-flow-opt {
+  padding: 1.2cqi 1.6cqi;
+  border-radius: 1.2cqi;
+  border: 0.2cqi solid var(--kd-bd);
+  font-size: 2.4cqi;
+  font-weight: 600;
+  color: var(--kd-tx);
+}
+.kd-flow-opt.is-picked { animation: kdPick var(--kd-dur) ease-in-out infinite; }
+@keyframes kdPick {
+  0%, 40%   { border-color: var(--kd-bd); }
+  52%, 74%  { border-color: var(--kd-green); }
+  84%, 100% { border-color: var(--kd-bd); }
+}
+
+/* ══ Tailored priorities ════════════════════════════════════════════════════
+   sat/tailored.html slide 1. The weakest skills rank themselves. */
+.kd-prio { --kd-dur: 7s; display: flex; flex-direction: column; justify-content: space-between; gap: 2cqi; }
+.kd-prio-head { font-size: 3.4cqi; font-weight: 800; color: var(--kd-tx); }
+.kd-prio-row {
+  display: flex;
+  align-items: center;
+  gap: 2cqi;
+  padding: 2.8cqi 2.4cqi;
+  border-radius: 1.6cqi;
+  background: var(--kd-sf2);
+  border: 0.2cqi solid var(--kd-bd);
+  font-size: 3.1cqi;
+  font-weight: 700;
+  color: var(--kd-tx);
+  animation: kdPop var(--kd-dur) ease-in-out infinite;
+}
+.kd-prio-row:nth-child(3) { animation-delay: 0.4s; }
+.kd-prio-row:nth-child(4) { animation-delay: 0.8s; }
+.kd-prio-no { font-size: 3.1cqi; font-weight: 800; color: var(--kd-tx); }
+.kd-prio-meter { flex: 1; height: 2.6cqi; border-radius: 62.4375rem; background: var(--kd-bd); overflow: hidden; }
+.kd-prio-meter i { display: block; height: 100%; width: var(--w); border-radius: inherit; background: var(--c, var(--kd-amber)); transform-origin: left; animation: kdFill var(--kd-dur) ease-in-out infinite; }
+.kd-prio-row.is-low i { --c: var(--kd-red); }
+.kd-prio-row.is-mid i { --c: var(--kd-amber); }
+.kd-prio-pct { width: 11cqi; text-align: right; }
+
+/* ══ Tailored set ═══════════════════════════════════════════════════════════
+   sat/tailored.html slide 2. The set assembles itself from those priorities. */
+.kd-set { --kd-dur: 7s; display: grid; grid-template-columns: 1fr 1.05fr; column-gap: 3%; align-items: center; }
+.kd-set-total { text-align: center; }
+.kd-set-total b { display: block; font-size: 11cqi; font-weight: 800; line-height: 1; color: var(--kd-tx); }
+.kd-set-total span { display: block; margin-top: 0.6cqi; font-size: 2.8cqi; font-weight: 700; color: var(--kd-tx); }
+.kd-set-list { display: grid; gap: 1.6cqi; }
+.kd-set-skill {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2.1cqi 2cqi;
+  border-radius: 1.6cqi;
+  background: var(--kd-sf2);
+  border: 0.2cqi solid var(--kd-bd);
+  font-size: 2.9cqi;
+  font-weight: 700;
+  color: var(--kd-tx);
+  animation: kdPop var(--kd-dur) ease-in-out infinite;
+}
+.kd-set-skill:nth-child(2) { animation-delay: 0.3s; }
+.kd-set-skill:nth-child(3) { animation-delay: 0.6s; }
+.kd-set-go {
+  margin-top: 0.8cqi;
+  padding: 1.9cqi;
+  border-radius: 1.6cqi;
+  background: var(--kd-green);
+  color: #fff;
+  font-size: 3cqi;
+  font-weight: 800;
+  text-align: center;
+  animation: kdSend var(--kd-dur) ease-out infinite;
+  animation-delay: 1.2s;
+}
+
+/* ══ Carousel shell ═════════════════════════════════════════════════════════
+   The modal the demos sit in, driven by app/intro-carousel.js. Pages that
+   already have their own intro markup (home.html, math-chat.html,
+   college-prep, college-match) keep theirs; this is for the rest. */
+.kintro {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+.kintro.is-open { opacity: 1; pointer-events: auto; }
+.kintro-backdrop { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.62); }
+.kintro-content {
+  position: relative;
+  box-sizing: border-box;
+  width: calc(100% - 2rem);
+  max-width: 40rem;
+  max-height: calc(100vh - 3rem);
+  overflow-y: auto;
+  padding: 2.5rem 2.5rem 2rem;
+  border-radius: 1.25rem;
+  background: var(--sf);
+  border: 0.0625rem solid var(--bd);
+  box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.4);
+  transform: translateY(1.5rem) scale(0.95);
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  text-align: center;
+}
+.korah-grey .kintro-content { background: var(--kg-sf, #26262e); border-color: var(--kg-bd, #454553); }
+.sat-grey .kintro-content { background: var(--sat-panel-sf, #26262e); border-color: var(--sat-panel-bd, #454553); }
+.kintro.is-open .kintro-content { transform: translateY(0) scale(1); }
+.kintro-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--tx);
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  z-index: 1;
+}
+.kintro-close:hover { background: var(--bd); }
+.korah-grey .kintro-close:hover { background: var(--kg-bd, #454553); }
+.sat-grey .kintro-close:hover { background: var(--sat-panel-bd, #454553); }
+.kintro-slides { position: relative; min-height: 20rem; display: flex; align-items: center; justify-content: center; }
+.kintro-slide { display: none; flex-direction: column; align-items: center; gap: 0.875rem; width: 100%; }
+.kintro-slide.is-active { display: flex; animation: kintroIn 0.35s ease; }
+@keyframes kintroIn {
+  from { opacity: 0; transform: translateX(1rem); }
+  to   { opacity: 1; transform: none; }
+}
+.kintro-icon { width: 4.5rem; height: 4.5rem; object-fit: contain; }
+.kintro-title { margin: 0; font-size: 1.5rem; font-weight: 800; line-height: 1.3; color: var(--tx); }
+.kintro-desc { margin: 0; max-width: 32rem; font-size: 0.9375rem; line-height: 1.65; color: var(--tx); }
+.kintro-dots { display: flex; justify-content: center; gap: 0.5rem; margin: 1.25rem 0 1rem; }
+.kintro-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--bd);
+  cursor: pointer;
+  transition: background 0.25s ease, transform 0.25s ease;
+}
+.korah-grey .kintro-dot { background: var(--kg-bd, #454553); }
+.sat-grey .kintro-dot { background: var(--sat-panel-bd, #454553); }
+.kintro-dot.is-active { background: #22c55e; transform: scale(1.3); }
+.kintro-actions { display: flex; justify-content: space-between; gap: 0.75rem; }
+.kintro-btn {
+  flex: 1;
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.625rem;
+  border: 0.0625rem solid var(--bd);
+  background: var(--sf2);
+  color: var(--tx);
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.18s ease, filter 0.18s ease, background 0.18s ease;
+}
+.korah-grey .kintro-btn { background: var(--kg-sf2, #31313c); border-color: var(--kg-bd, #454553); }
+.sat-grey .kintro-btn { background: var(--sat-panel-sf2, #31313c); border-color: var(--sat-panel-bd, #454553); }
+.kintro-btn:hover { transform: scale(1.02); }
+.kintro-btn.is-primary {
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: #fff;
+  box-shadow: 0 0.25rem 0 0 #24529c;
+}
+.kintro-btn.is-primary:hover { filter: brightness(1.08); }
+
+@media (max-width: 36.25rem) {
+  .kintro-content { padding: 2rem 1.25rem 1.5rem; }
+  .kintro-slides { min-height: auto; }
+  .kintro-title { font-size: 1.2rem; }
+  .kintro-desc { font-size: 0.8125rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kdemo *, .kdemo *::before, .kdemo *::after { animation: none !important; }
+  .kintro-slide.is-active { animation: none; }
+  .kd-trace { stroke-dashoffset: 0; }
+  .kd-point,
+  .kd-table .is-row,
+  .kd-params span,
+  .kd-ask,
+  .kd-answer,
+  .kd-lines i { opacity: 1; }
+  .kd-think { display: none; }
+  .kd-reply span { opacity: 1; }
+  .kd-qb-val, .kd-typed-in { width: auto; }
+}
