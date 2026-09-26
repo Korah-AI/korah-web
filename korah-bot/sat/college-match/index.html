@@ -189,9 +189,10 @@
             <span class="cm-slider-name">Math</span>
             <span class="cm-slider-val" x-text="math"></span>
           </div>
+          <div class="cm-slider-track" :style="'--fill:calc(' + savedTickPct(math) + '% + ' + (1 - savedTickPct(math) / 100) + 'rem)'">
           <input type="range" :min="sectionMin" :max="sectionMax" step="10" :value="math"
-                 :style="'--fill:' + savedTickPct(math) + '%'"
                  @input="onSlider('math', $event.target.value)" class="cm-slider" aria-label="Math score"/>
+          </div>
           <div class="cm-track-ticks">
             <span class="cm-saved-tick" x-show="hasSavedScore" x-cloak
                   :style="'left:' + savedTickPct(savedMath) + '%'" title="Your saved math score">
@@ -207,9 +208,10 @@
             <span class="cm-slider-name">Reading &amp; writing</span>
             <span class="cm-slider-val" x-text="erw"></span>
           </div>
+          <div class="cm-slider-track" :style="'--fill:calc(' + savedTickPct(erw) + '% + ' + (1 - savedTickPct(erw) / 100) + 'rem)'">
           <input type="range" :min="sectionMin" :max="sectionMax" step="10" :value="erw"
-                 :style="'--fill:' + savedTickPct(erw) + '%'"
                  @input="onSlider('erw', $event.target.value)" class="cm-slider" aria-label="Reading and writing score"/>
+          </div>
           <div class="cm-track-ticks">
             <span class="cm-saved-tick" x-show="hasSavedScore" x-cloak
                   :style="'left:' + savedTickPct(savedErw) + '%'" title="Your saved reading and writing score">
@@ -301,7 +303,7 @@
 
                 <div class="cm-band">
                   <span class="cm-band-min" x-text="item.school.sat.combined.p25"></span>
-                  <span class="cm-band-track">
+                  <span class="cm-band-track" :class="'is-' + mark(score, item.school.sat.combined).pos">
                     <span class="cm-band-marker"
                           :class="'is-' + mark(score, item.school.sat.combined).pos"
                           :style="'left:' + mark(score, item.school.sat.combined).pct + '%'"></span>
@@ -328,7 +330,7 @@
                             <span>Math</span>
                             <span class="cm-sec-range" x-text="item.school.sat.math.p25 + '–' + item.school.sat.math.p75"></span>
                           </div>
-                          <div class="cm-band is-mini">
+                          <div class="cm-band is-mini" :class="'is-' + mark(math, item.school.sat.math).pos">
                             <span class="cm-band-marker"
                                   :class="'is-' + mark(math, item.school.sat.math).pos"
                                   :style="'left:' + mark(math, item.school.sat.math).pct + '%'"></span>
@@ -341,7 +343,7 @@
                             <span>Reading &amp; writing</span>
                             <span class="cm-sec-range" x-text="item.school.sat.erw.p25 + '–' + item.school.sat.erw.p75"></span>
                           </div>
-                          <div class="cm-band is-mini">
+                          <div class="cm-band is-mini" :class="'is-' + mark(erw, item.school.sat.erw).pos">
                             <span class="cm-band-marker"
                                   :class="'is-' + mark(erw, item.school.sat.erw).pos"
                                   :style="'left:' + mark(erw, item.school.sat.erw).pct + '%'"></span>

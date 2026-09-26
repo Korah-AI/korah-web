@@ -210,7 +210,22 @@ html[data-theme="light"] * { scrollbar-color: rgba(28, 30, 38, 0.35) transparent
 
 /* Thick meter bar like the Score Journey card on home.html: a deep grey
    channel, a tone gradient filled to --fill, and a pale grip to drag. */
+.cm-slider-track {
+  position: relative;
+  border-radius: 0.75rem;
+  background: var(--cm-sf2);
+}
+.cm-slider-track::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--fill, 0%);
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--acc-fill), var(--acc));
+  pointer-events: none;
+}
 .cm-slider {
+  position: relative;
   display: block;
   width: 100%;
   margin: 0;
@@ -218,7 +233,7 @@ html[data-theme="light"] * { scrollbar-color: rgba(28, 30, 38, 0.35) transparent
   -webkit-appearance: none;
   height: 1.75rem;
   border-radius: 0.75rem;
-  background: var(--cm-sf2);
+  background: transparent;
   cursor: pointer;
 }
 .cm-slider:focus { outline: none; }
@@ -226,8 +241,7 @@ html[data-theme="light"] * { scrollbar-color: rgba(28, 30, 38, 0.35) transparent
 .cm-slider::-webkit-slider-runnable-track {
   height: 1.75rem;
   border-radius: 0.75rem;
-  background: linear-gradient(90deg, var(--acc-fill), var(--acc)) no-repeat;
-  background-size: var(--fill, 0%) 100%;
+  background: transparent;
 }
 .cm-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
@@ -243,11 +257,11 @@ html[data-theme="light"] * { scrollbar-color: rgba(28, 30, 38, 0.35) transparent
 }
 .cm-slider::-webkit-slider-thumb:hover { transform: scale(1.12); }
 .cm-slider:active::-webkit-slider-thumb { transform: scale(1.12); }
-.cm-slider::-moz-range-track { height: 1.75rem; border-radius: 0.75rem; background: var(--cm-sf2); }
+.cm-slider::-moz-range-track { height: 1.75rem; border-radius: 0.75rem; background: transparent; }
 .cm-slider::-moz-range-progress {
   height: 1.75rem;
   border-radius: 0.75rem;
-  background: linear-gradient(90deg, var(--acc-fill), var(--acc));
+  background: transparent;
 }
 .cm-slider::-moz-range-thumb {
   width: 1rem;
@@ -530,9 +544,9 @@ html[data-theme="light"] * { scrollbar-color: rgba(28, 30, 38, 0.35) transparent
   /* No transition on left: the marker is a readout of the slider, so it has to
      track 1:1. A 0.18s ease makes it trail the thumb, which reads as lag. */
 }
-/* Off-track markers sit just outside the ends rather than clamping onto them. */
-.cm-band-marker.is-below { transform: translate(-150%, -50%); }
-.cm-band-marker.is-above { transform: translate(50%, -50%); }
+/* Out-of-range scores never put a marker next to the score labels. */
+.cm-band-marker.is-below,
+.cm-band-marker.is-above { display: none; }
 
 .cm-band.is-mini {
   position: relative;
@@ -543,6 +557,12 @@ html[data-theme="light"] * { scrollbar-color: rgba(28, 30, 38, 0.35) transparent
   border: 1px solid var(--cm-bd);
 }
 .cm-band.is-mini .cm-band-marker { width: 0.65rem; height: 0.65rem; }
+.cm-band-track.is-above,
+.cm-band.is-mini.is-above {
+  background: var(--acc-fill);
+  border-color: var(--acc);
+  box-shadow: 0 0 0.4rem var(--acc);
+}
 
 .cm-card-foot {
   display: flex;

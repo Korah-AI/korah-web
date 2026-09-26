@@ -325,13 +325,13 @@
         if (score == null || !band) return { pct: 0, pos: "in" };
         if (score < band.p25) return { pct: 0, pos: "below" };
         if (score > band.p75) return { pct: 100, pos: "above" };
-        return { pct: ((score - band.p25) / (band.p75 - band.p25)) * 100, pos: "in" };
+        return { pct: band.p75 === band.p25 ? 50 : ((score - band.p25) / (band.p75 - band.p25)) * 100, pos: "in" };
       },
 
       bandHint(score, band) {
         const pos = this.mark(score, band).pos;
-        if (pos === "below") return "Below their 25th, so the marker sits off the track.";
-        if (pos === "above") return "Above their 75th, so the marker sits off the track.";
+        if (pos === "below") return "Below their 25th percentile SAT score.";
+        if (pos === "above") return "Above their 75th percentile SAT score.";
         return "Middle half of admitted scores: " + band.p25 + "-" + band.p75 + ".";
       },
 
