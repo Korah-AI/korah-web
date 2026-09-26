@@ -90,7 +90,7 @@ function splitCsvLine(line) {
 }
 
 const CSV_COLUMNS = {
-  unitid: "UNITID", name: "INSTNM", city: "CITY", state: "STABBR",
+  unitid: "UNITID", name: "INSTNM", city: "CITY", state: "STABBR", website: "INSTURL",
   ownership: "CONTROL", size: "UGDS", admitRate: "ADM_RATE", satAvg: "SAT_AVG",
   m25: "SATMT25", m50: "SATMTMID", m75: "SATMT75",
   e25: "SATVR25", e50: "SATVRMID", e75: "SATVR75",
@@ -126,6 +126,7 @@ async function loadFromCsv(file) {
       name: get("name"),
       city: get("city"),
       state: get("state"),
+      website: get("website"),
       // CONTROL: 1 public, 2 private nonprofit, 3 private for-profit.
       ownership: num(get("ownership")),
       size: num(get("size")),
@@ -141,7 +142,7 @@ async function loadFromCsv(file) {
 // ── Source B: the paged API ─────────────────────────────────────────────────
 
 const API_FIELDS = [
-  "id", "school.name", "school.city", "school.state", "school.ownership",
+  "id", "school.name", "school.city", "school.state", "school.ownership", "school.school_url",
   `${YEAR}.student.size`,
   `${YEAR}.admissions.admission_rate.overall`,
   `${YEAR}.admissions.sat_scores.average.overall`,
@@ -213,6 +214,7 @@ async function loadFromApi() {
     name: r["school.name"],
     city: r["school.city"],
     state: r["school.state"],
+    website: r["school.school_url"],
     ownership: num(r["school.ownership"]),
     size: num(r[`${YEAR}.student.size`]),
     admitRate: num(r[`${YEAR}.admissions.admission_rate.overall`]),
@@ -289,6 +291,16 @@ function slug(name) {
     .replace(/^-|-$/g, "");
 }
 
+function websiteUrl(value) {
+  if (!value || /^(null|privacySuppressed)$/i.test(value.trim())) return null;
+  const raw = value.trim();
+  try {
+    const url = new URL(/^[a-z][a-z\d+.-]*:/i.test(raw) ? raw : `https://${raw.replace(/^\/\//, "")}`);
+    return ["https:", "http:"].includes(url.protocol) && url.hostname.includes(".") && !url.username && !url.password
+      ? url.href : null;
+  } catch { return null; }
+}
+
 function toRecord(r, seen) {
   if (!r.name) return null;
   if (r.size === null || r.size < MIN_SIZE) return null;
@@ -304,6 +316,7 @@ function toRecord(r, seen) {
   return {
     id,
     name: r.name,
+    website: websiteUrl(r.website),
     city: r.city || "",
     state: r.state || "",
     public: r.ownership === 1,

@@ -47,6 +47,35 @@
   // ── Fallback payload — mirrors api/college/c.js so the page is fully
   //    buildable/testable on localhost, where the route 404s. The helper sums
   //    section percentiles into the combined band exactly like the route data.
+  // Official institution URLs from the same Scorecard source as the full dataset.
+  const FALLBACK_WEBSITES = {
+    "harvard-university": "https://www.harvard.edu/",
+    "mit": "https://web.mit.edu/",
+    "yale-university": "https://www.yale.edu/",
+    "princeton-university": "https://www.princeton.edu/",
+    "columbia-university": "https://www.columbia.edu/",
+    "stanford-university": "https://www.stanford.edu/",
+    "upenn": "https://www.upenn.edu/",
+    "georgetown-university": "https://www.georgetown.edu/",
+    "nyu": "https://www.nyu.edu/",
+    "boston-university": "https://www.bu.edu/",
+    "northeastern-university": "https://www.northeastern.edu/",
+    "tufts-university": "https://www.tufts.edu/",
+    "usc": "https://www.usc.edu/",
+    "penn-state": "https://psu.edu/",
+    "ohio-state": "https://www.osu.edu/",
+    "ut-austin": "https://www.utexas.edu/",
+    "michigan-state": "https://www.msu.edu/",
+    "rutgers": "https://newbrunswick.rutgers.edu/",
+    "uconn": "https://uconn.edu/",
+    "suny-stony-brook": "https://www.stonybrook.edu/",
+    "university-of-florida": "https://www.ufl.edu/",
+    "georgia-tech": "https://www.gatech.edu/",
+    "uva": "https://www.virginia.edu/",
+    "uc-berkeley": "https://www.berkeley.edu/",
+    "ucla": "https://www.ucla.edu/",
+    "uc-san-diego": "https://www.ucsd.edu/",
+  };
   const S = (id, name, city, state, pub, size, rate, avg, mp25, mp50, mp75, ep25, ep50, ep75) => ({
     id, name, city, state, public: pub, size, admitRate: rate,
     sat: {
@@ -178,6 +207,7 @@
           this.dataYear = FALLBACK_SCHOOLS.dataYear;
           this.schools = FALLBACK_SCHOOLS.schools.map((s) => ({
             ...s,
+            website: FALLBACK_WEBSITES[s.id],
             tips: CollegeMatch.schoolTips(s),
           }));
           this.source = "fallback";
