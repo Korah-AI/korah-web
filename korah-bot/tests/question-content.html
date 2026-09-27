@@ -36,6 +36,28 @@ assert('SVG glyph resolves locally', a.querySelector('use')?.getAttribute('href'
 assert('SVG clip path preserved', a.querySelector('g[clip-path]')?.getAttribute('clip-path') === `url(#${a.querySelector('clipPath').id})`);
 assert('coordinate space preserved', a.querySelector('svg').getAttribute('viewBox') === '0 0 200 100');
 assert('only identified plot backgrounds removed', a.querySelectorAll('.question-plot-background').length === 1);
+// Synthetic Reading stimulus: preserve meaningful white masks and colored series.
+const readingSource='<figure><svg width="240" height="120" aria-label="Bar chart of survey results"><g id="patch_1"><rect width="240" height="120" fill="white"/></g><rect x="20" y="30" width="60" height="90" fill="#2374ab"/><rect x="100" y="60" width="60" height="60" fill="#db6015"/><text x="20" y="20" fill="black">Survey results</text></svg><figcaption>Survey results</figcaption></figure>';
+const reading=document.createElement('article');
+KorahQuestionContent.render(reading, readingSource, { passage: true });
+document.querySelector('#examples').append(reading);
+assert('Reading SVG retains meaningful white fills', !reading.querySelector('.question-plot-background, .question-label-background'));
+assert('Reading chart preserves colored bars', reading.querySelector('rect[fill="#2374ab"]'));
+const colored=mount(readingSource);
+assert('colored charts outside passages retain their backgrounds', !colored.querySelector('.question-plot-background'));
+const monochromeReading=document.createElement('article');
+KorahQuestionContent.render(monochromeReading, svg, { passage: true });
+document.querySelector('#examples').append(monochromeReading);
+assert('monochrome Reading charts retain backgrounds', !monochromeReading.querySelector('.question-plot-background'));
+for (const theme of ['light', 'dark']) {
+ document.documentElement.dataset.theme=theme;
+ for (const chart of [reading, colored, monochromeReading]) {
+  const style=getComputedStyle(chart.querySelector('svg'));
+  assert(`${theme}: informational chart colors unchanged`, style.filter==='none' && style.mixBlendMode==='normal');
+  assert(`${theme}: Reading chart has visible dimensions`, chart.querySelector('svg').getBoundingClientRect().height>0);
+ }
+ assert(`${theme}: fallback equation uses appropriate theme`, getComputedStyle(unknown.querySelector('img')).filter.includes('invert') === (theme==='dark'));
+}
 const attack=mount('<img src="x" onerror="alert(1)"><script>alert(1)<\/script><svg><use href="https://example.com/a.svg#b"/></svg><p style="background:url(https://example.com/tracker);position:fixed">Safe text</p>');
 assert('scripts and handlers removed', !attack.querySelector('script,[onerror]'));
 assert('external SVG references removed', !attack.querySelector('use[href]'));

@@ -224,7 +224,7 @@
     expandOverbars(); // verified legacy transcriptions can introduce an overbar
   }
 
-  function normalizeSvg(svg) {
+  function normalizeSvg(svg, { passage = false } = {}) {
     const ids = new Map();
     const prefix = `qsvg-${++serial}-`;
     svg.querySelectorAll('[id]').forEach(node => {
@@ -247,46 +247,6 @@
         }
       }
     });
-    // Match only conventional matplotlib canvas/plot background groups.
-    // Other filled rectangles and paths may carry mathematical information.
-    for (const [old, next] of ids) {
-      if (!/^patch_[12]$/.test(old)) continue;
-      const group = svg.querySelector(`[id="${next}"]`);
-      group?.querySelectorAll('path, rect').forEach(node => {
-        const fill = node.style.fill || node.getAttribute('fill');
-        if (/^(?:#fff(?:fff)?|white|rgb\(255,\s*255,\s*255\))$/i.test(fill || '')) {
-          node.classList.add('question-plot-background');
-        }
-      });
-    }
-    // College Board coordinate graphs place white rectangles behind axis tick
-    // labels. In dark mode the figure is inverted, turning these into black
-    // boxes. Remove only rects inside a tick that also contains a text label.
-    svg.querySelectorAll('.tick rect').forEach(rect => {
-      if (!rect.parentElement?.querySelector('text')) return;
-      const fill = rect.style.fill || rect.getAttribute('fill') || '';
-      if (/^(?:white|#fff(?:fff)?|rgb\(255,\s*255,\s*255\))$/i.test(fill)) {
-        rect.classList.add('question-label-background');
-      }
-    });
-    const view = (svg.getAttribute('viewBox') || '').trim().split(/[ ,]+/).map(Number);
-    for (const [old, next] of ids) {
-      if (!/^PolyCollection_\d+$/.test(old) || view.length !== 4) continue;
-      const group = svg.querySelector(`[id="${next}"]`);
-      // In this export family, one or more masks immediately precede text_N.
-      let sibling = group.nextElementSibling;
-      while (sibling && [...ids].some(([name, id]) => /^PolyCollection_\d+$/.test(name) && id === sibling.id)) sibling = sibling.nextElementSibling;
-      if (!sibling || ![...ids].some(([name, id]) => /^text_\d+$/.test(name) && id === sibling.id)) continue;
-      group.querySelectorAll('path').forEach(path => {
-        if (!/^(?:white|#fff(?:fff)?|rgb\(255,\s*255,\s*255\))$/i.test(path.style.fill || path.getAttribute('fill') || '')) return;
-        const d = path.getAttribute('d') || '';
-        if (!/^\s*M\s*[-\d.]+[ ,]+[-\d.]+(?:\s*L\s*[-\d.]+[ ,]+[-\d.]+){3}\s*z\s*$/i.test(d)) return;
-        const numbers = d.match(/-?\d+(?:\.\d+)?/g).map(Number);
-        const xs = [...new Set(numbers.filter((_, i) => i % 2 === 0))];
-        const ys = [...new Set(numbers.filter((_, i) => i % 2 === 1))];
-        if (xs.length === 2 && ys.length === 2 && Math.abs((xs[1]-xs[0])*(ys[1]-ys[0])) < view[2]*view[3]*.01) path.classList.add('question-label-background');
-      });
-    }
     // Theme only monochrome assets; colored plots retain their source palette.
     const paints = [...svg.querySelectorAll('*'), svg].flatMap(node => [node.style.fill, node.style.stroke, node.getAttribute('fill'), node.getAttribute('stroke')]).filter(Boolean);
     const grayscale = /^(?:none|currentcolor|transparent|black|white|gray|grey|#[0-9a-f]{3,8}|rgb\([^)]*\))$/i;
@@ -299,14 +259,58 @@
       if (/^rgb/i.test(paint)) { const n = paint.match(/[\d.]+/g); return n?.length === 3 && n[0] === n[1] && n[1] === n[2]; }
       return true;
     };
-    if (paints.every(isGray)) svg.classList.add('question-monochrome');
+    const informational = passage || !paints.every(isGray) || !!svg.querySelector('image, linearGradient, radialGradient');
+    if (informational) svg.classList.add('question-informational-graphic');
+    else svg.classList.add('question-monochrome');
+    if (!informational) {
+      // Match only conventional matplotlib canvas/plot background groups.
+      // Other filled rectangles and paths may carry mathematical information.
+      for (const [old, next] of ids) {
+        if (!/^patch_[12]$/.test(old)) continue;
+        const group = svg.querySelector(`[id="${next}"]`);
+        group?.querySelectorAll('path, rect').forEach(node => {
+          const fill = node.style.fill || node.getAttribute('fill');
+          if (/^(?:#fff(?:fff)?|white|rgb\(255,\s*255,\s*255\))$/i.test(fill || '')) {
+            node.classList.add('question-plot-background');
+          }
+        });
+      }
+      // College Board coordinate graphs place white rectangles behind axis tick
+      // labels. In dark mode the figure is inverted, turning these into black
+      // boxes. Remove only rects inside a tick that also contains a text label.
+      svg.querySelectorAll('.tick rect').forEach(rect => {
+        if (!rect.parentElement?.querySelector('text')) return;
+        const fill = rect.style.fill || rect.getAttribute('fill') || '';
+        if (/^(?:white|#fff(?:fff)?|rgb\(255,\s*255,\s*255\))$/i.test(fill)) {
+          rect.classList.add('question-label-background');
+        }
+      });
+      const view = (svg.getAttribute('viewBox') || '').trim().split(/[ ,]+/).map(Number);
+      for (const [old, next] of ids) {
+        if (!/^PolyCollection_\d+$/.test(old) || view.length !== 4) continue;
+        const group = svg.querySelector(`[id="${next}"]`);
+        // In this export family, one or more masks immediately precede text_N.
+        let sibling = group.nextElementSibling;
+        while (sibling && [...ids].some(([name, id]) => /^PolyCollection_\d+$/.test(name) && id === sibling.id)) sibling = sibling.nextElementSibling;
+        if (!sibling || ![...ids].some(([name, id]) => /^text_\d+$/.test(name) && id === sibling.id)) continue;
+        group.querySelectorAll('path').forEach(path => {
+          if (!/^(?:white|#fff(?:fff)?|rgb\(255,\s*255,\s*255\))$/i.test(path.style.fill || path.getAttribute('fill') || '')) return;
+          const d = path.getAttribute('d') || '';
+          if (!/^\s*M\s*[-\d.]+[ ,]+[-\d.]+(?:\s*L\s*[-\d.]+[ ,]+[-\d.]+){3}\s*z\s*$/i.test(d)) return;
+          const numbers = d.match(/-?\d+(?:\.\d+)?/g).map(Number);
+          const xs = [...new Set(numbers.filter((_, i) => i % 2 === 0))];
+          const ys = [...new Set(numbers.filter((_, i) => i % 2 === 1))];
+          if (xs.length === 2 && ys.length === 2 && Math.abs((xs[1]-xs[0])*(ys[1]-ys[0])) < view[2]*view[3]*.01) path.classList.add('question-label-background');
+        });
+      }
+    }
     svg.classList.add('question-figure');
     // Preserve coordinate space when upstream supplies only width/height.
     const w = Number(svg.getAttribute('width')), h = Number(svg.getAttribute('height'));
     if (!svg.hasAttribute('viewBox') && w > 0 && h > 0) svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
   }
 
-  function html(source) {
+  function html(source, options = {}) {
     if (!window.DOMPurify) return `<div class="question-content" role="alert">Question content could not be displayed safely. Please reload.</div>`;
     const root = document.createElement('div');
     root.className = 'question-content';
@@ -325,8 +329,11 @@
       }
     });
     normalizeMath(root);
-    root.querySelectorAll('svg').forEach(normalizeSvg);
-    root.querySelectorAll('img:not(.question-inline-math)').forEach(img => img.classList.add('question-figure'));
+    root.querySelectorAll('svg').forEach(svg => normalizeSvg(svg, options));
+    root.querySelectorAll('img:not(.question-inline-math)').forEach(img => {
+      img.classList.add('question-figure');
+      if (options.passage) img.classList.add('question-informational-graphic');
+    });
     root.querySelectorAll('table').forEach(table => {
       const scroll = document.createElement('div');
       scroll.className = 'question-table-scroll';
@@ -337,8 +344,8 @@
     });
     return root.outerHTML;
   }
-  function render(container, source) {
-    container.innerHTML = html(source);
+  function render(container, source, options = {}) {
+    container.innerHTML = html(source, options);
     // CB MathML is already mathematical markup. Do not run dollar-delimited
     // TeX processing over prose: two currency amounts are not an equation.
   }

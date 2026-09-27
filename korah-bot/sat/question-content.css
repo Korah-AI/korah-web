@@ -45,14 +45,16 @@ html .question-content img.question-inline-math {
   background: white !important;
   mix-blend-mode: multiply;
 }
-html[data-theme="dark"] .question-content .question-figure,
+html[data-theme="dark"] .question-content .question-figure:not(.question-informational-graphic),
 html[data-theme="dark"] .question-content img.question-inline-math {
   filter: invert(1) hue-rotate(180deg) !important;
   mix-blend-mode: screen;
 }
-/* Include SVGs with embedded bitmaps, gradients, or colored series. Inverting
-   the whole figure and screening it removes white paper without deleting
-   meaningful filled bars, gridlines, or masks inside the source artwork. */
+/* Informational graphics keep their source paper and palette in both themes. */
+html .question-content .question-informational-graphic {
+  filter: none !important;
+  mix-blend-mode: normal;
+}
 .question-content .question-plot-background { fill: transparent !important; }
 .question-content .question-label-background { fill: transparent !important; }
 .question-content figure { max-width: 100%; margin: 1rem auto; }

@@ -12,7 +12,7 @@
   } = window.KorahSAT;
   const query = parseOpenSatV1Query();
 
-  const sanitizeHtml = html => window.KorahQuestionContent.html(html);
+  const sanitizeHtml = (html, options) => window.KorahQuestionContent.html(html, options);
 
   const DEMO_QUESTIONS = [
     {
@@ -587,7 +587,7 @@
     // CB's math "stimulus" is the figure or data table the question is about, not
     // a reading passage, so it renders inline above the stem. The passage pane
     // stays English-only — on math it would fight Desmos for the same half.
-    const stimulus = current.paragraph ? sanitizeHtml(current.paragraph) : "";
+    const stimulus = current.paragraph ? sanitizeHtml(current.paragraph, { passage: !isMath }) : "";
     setPassage(isMath ? "" : stimulus);
     questionStem.innerHTML = (isMath ? stimulus : "") + sanitizeHtml(current.stem);
     syncReviewState(!!state.reviewed[current.id]);

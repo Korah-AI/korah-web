@@ -211,7 +211,8 @@ TEXT FORMATTING:
       graphpaper: true,
       autosize: true,
       expressions: true,
-      settingsMenu: false,
+      // Use the native Graph Settings wrench (the public API has no menu toggle method).
+      settingsMenu: true,
       zoomButtons: true,
       border: false,
       keyboard: false,
