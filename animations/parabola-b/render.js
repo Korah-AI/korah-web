@@ -37,7 +37,6 @@ const PAPER = '#e9e9e9';
 const FRAME = '#f4d56a'; // pastel yellow border around the video
 const CARD_FILL = '#f6f6f4';
 const BLUR = 7;        // out-of-focus blur in world px, so it grows as the camera pushes in
-const HEADER_BLUR = 7; // the header bar is always soft, like the reference
 const CAP_Y = 1470;    // caption centre
 
 // ---- layout (world units, 1:1 with the frame at zoom 1) -----------------------------
@@ -129,16 +128,16 @@ function buildLayout(ctx) {
 // ---- camera shots -------------------------------------------------------------------
 // world point (x, y) lands at screen (540, sy) at zoom z
 const frame = (x, y, z, sy = 900) => ({ c: [x, y + (960 - sy) / z], z });
-const CARD_BLUR = { t1: 1, eq1: 1, t2: 1, eq2: 1, t3: 1, ans: 1 };
+const CARD_BLUR = { header: 1, t1: 1, eq1: 1, t2: 1, eq2: 1, t3: 1, ans: 1 };
 const PANEL_BLUR = { ...CARD_BLUR, bar: 1, graph: 1 };
 const GRAPH_BLUR = { ...CARD_BLUR, bar: 1, panel: 1 };
 const SHOT = {
   wide: { ...frame(540, CARD.y + CARD.h / 2, 1.02, 780), blur: {} },
-  intro: { ...frame(540, 379, 1.2, 850), blur: { t2: 1, eq2: 1, t3: 1 } },
-  eq1: { ...frame(540, EQ1_Y, 1.6, 880), blur: { t1: 1, t2: 1, eq2: 1, t3: 1 } },
-  body: { ...frame(540, 642, 1.15, 850), blur: { t1: 1, eq1: 1, t3: 1 } },
-  eq2: { ...frame(540, EQ2_Y, 1.55, 880), blur: { t1: 1, eq1: 1, t2: 1, t3: 1 } },
-  ask: { ...frame(540, 875, 1.2, 860), blur: { t1: 1, eq1: 1, t2: 1, eq2: 1 } },
+  intro: { ...frame(540, 379, 1.2, 850), blur: { header: 1, t2: 1, eq2: 1, t3: 1 } },
+  eq1: { ...frame(540, EQ1_Y, 1.6, 880), blur: { header: 1, t1: 1, t2: 1, eq2: 1, t3: 1 } },
+  body: { ...frame(540, 642, 1.15, 850), blur: { header: 1, t1: 1, eq1: 1, t3: 1 } },
+  eq2: { ...frame(540, EQ2_Y, 1.55, 880), blur: { header: 1, t1: 1, eq1: 1, t2: 1, t3: 1 } },
+  ask: { ...frame(540, 875, 1.2, 860), blur: { header: 1, t1: 1, eq1: 1, t2: 1, eq2: 1 } },
   // the window lands low enough that the caption sits just under it, not on empty page
   desmos: { ...frame(540, DES.y + DES.h, 1.0, 1415), blur: CARD_BLUR },
   panel: { ...frame(...dAt(140, 150), 2.25, 880), blur: PANEL_BLUR },
@@ -149,7 +148,7 @@ const SHOT = {
   // the answer and the tangency point together; the point (crop 456, 74) sits above the caption
   end: { ...frame(540, dAt(456, 74)[1], 0.97, 1230), blur: { ...CARD_BLUR, ans: 0, bar: 1, panel: 1 } },
 };
-const GROUPS = ['t1', 'eq1', 't2', 'eq2', 't3', 'ans', 'bar', 'panel', 'graph'];
+const GROUPS = ['header', 't1', 'eq1', 't2', 'eq2', 't3', 'ans', 'bar', 'panel', 'graph'];
 
 function camera(t) {
   let k = 0;
@@ -264,12 +263,13 @@ function drawHeader(ctx) {
   ctx.fillRect(COL - 30 + 130, 150, CARD.x + CARD.w - 30 - (COL + 100), 64);
   ctx.fillStyle = '#26407e';
   rrect(ctx, COL - 30, 150, 130, 64, 5); ctx.fill();
+  // header labels are set in the caption face, not the Times used for the question
   ctx.fillStyle = '#fff';
-  ctx.font = font('b', 32); ctx.textAlign = 'center';
-  ctx.fillText('Math', COL + 35, 193);
+  ctx.font = '29px Jakarta'; ctx.textAlign = 'center';
+  ctx.fillText('Math', COL + 35, 192);
   ctx.textAlign = 'left';
-  ctx.fillStyle = '#555b61'; ctx.font = font('r', 30);
-  ctx.fillText('Difficulty: Hard', COL + 130, 192);
+  ctx.fillStyle = '#555b61'; ctx.font = '26px Jakarta';
+  ctx.fillText('Difficulty: Hard', COL + 130, 191);
 }
 
 // ---- hand-made marks ----------------------------------------------------------------
@@ -466,7 +466,7 @@ function drawFrame(ctx, t, R) {
   sheet(ctx, R.cardPath, CARD_FILL, cam, 1 - outCubic(cu), R.grain);
   const cm = [m[0], 0, 0, m[3], m[4], m[5] + cdy * cam.z];
   const b = (g) => cam.blur[GROUPS.indexOf(g)] * BLUR * cam.z;
-  group(ctx, R.off, cm, [CARD.x, 140, CARD.w, 90], HEADER_BLUR * cam.z, drawHeader);
+  group(ctx, R.off, cm, [CARD.x, 140, CARD.w, 90], b('header'), drawHeader);
   group(ctx, R.off, cm, [CARD.x, Y1 - 62, CARD.w, 100], b('t1'), (x) => drawBlock(x, L.text1, span(t, ...T.hl1)));
   group(ctx, R.off, cm, [CARD.x, EQ1_Y - 70, CARD.w, 120], b('eq1'), (x) => drawEq(x, t, L.eq1, EQ1_Y, T.eq1Red));
   group(ctx, R.off, cm, [CARD.x, Y2 - 62, CARD.w, 160], b('t2'), (x) => drawBlock(x, L.text2, span(t, ...T.hl2)));

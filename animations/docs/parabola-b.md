@@ -104,9 +104,17 @@ to frame; clipping a fixed path does not.
 
 ## Camera
 
+The header bar (`Math` / `Difficulty: Hard`) is a normal blur group here, not a permanently
+soft one. The y-intercept reel kept it out of focus in every shot, copying the reference's
+shallow depth of field, which reads as a rendering fault on the opening wide shot where
+everything else on the card is sharp. It is sharp at `wide` and blurred in every pushed-in
+shot, like the other groups. Its two labels are set in the caption face (Plus Jakarta Sans
+Bold, 29px and 26px) rather than the Times used for the question, so the Bluebook strip
+reads as chrome instead of as more of the problem.
+
 | Time | Shot | Zoom | In focus |
 | --- | --- | --- | --- |
-| 0 | wide | 1.02 | whole card (card rises in) |
+| 0 | wide | 1.02 | whole card, header included (card rises in) |
 | 5.0 | intro | 1.2 | first line and the equation under it |
 | 8.7 | eq1 | 1.6 | 2y = 4.5, red, pen underline drawn |
 | 10.4 | body | 1.15 | second block and the equation under it |

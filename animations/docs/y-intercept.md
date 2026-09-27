@@ -77,7 +77,8 @@ what's the perimeter?") explained over a single printed page.
 - Math and question text in a Times-style serif, black, italic variables, large stacked
   fractions.
 - A Bluebook-style question header at the top: navy number box and a grey bar. It is
-  always out of focus, even in wide shots, like shallow depth of field.
+  always out of focus, even in wide shots, like shallow depth of field. (Copying this
+  literally was a mistake: see the note under "Learned on later videos".)
 - Emphasis is color, not boxes: labels and the key equation turn red (roughly `#d7141a`)
   while they are talked about.
 - Blue handwritten notes (around `#0a3e7a`) for working ("soh cah toa", "tan =
@@ -145,7 +146,8 @@ diffing the panel between frames:
 - Times New Roman 42px for the question, italic for variables, 44px for the table and
   choices, 56px for the display equation. The inline fraction in the source question is
   pulled out into a centered display equation, like the reference's big tan(x) line.
-- Plus Jakarta Sans Bold 42px for captions.
+- Plus Jakarta Sans Bold 42px for captions. Later videos also set the header's two labels
+  in it (see "Learned on later videos") instead of the Times used here.
 
 **Color**
 
@@ -193,7 +195,7 @@ interpolated in log space so push-ins feel even.
 - Card content is split into groups (table, text, equation, choices, header). Each group
   has a 0 to 1 blur weight per shot, interpolated with the camera move.
 - Blur is 7 world px, so it grows on screen as the camera pushes in (about 6px wide,
-  15px at 2.2x). The header is always blurred.
+  15px at 2.2x). The header is always blurred (`HEADER_BLUR`), which later videos dropped.
 - The Desmos footage is blurred per region (top bar, panel, graph) at source resolution,
   then scaled up. In-focus regions are the untouched footage pixels.
 
@@ -273,6 +275,13 @@ Learned on later videos in this format (see `parabola-b.md`):
 - For hand-drawn marks (highlighter, pen), make the wobble a function of the stroke's own
   parameter and reveal it with a rectangular clip. A jittered polyline whose segment count
   follows the revealed length redraws differently every frame and shimmers.
+- Set the header's labels ("Math", "Difficulty: Hard") in the caption face, not in Times.
+  The header is chrome around the problem, not part of it, and Times makes it read as more
+  question text. 29px and 26px Plus Jakarta Sans Bold sit correctly in the 64px bar.
+- Do not keep the header permanently blurred. `HEADER_BLUR` was taken from the reference,
+  where the header is soft in every shot, but on a wide shot where the rest of the card is
+  sharp it reads as a rendering fault rather than as depth of field. Make `header` an
+  ordinary blur group: sharp on the wide shot, blurred in every pushed-in shot.
 
 ## Checklist for the next video in this format
 
