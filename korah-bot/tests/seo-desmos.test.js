@@ -24,6 +24,15 @@ test('public pages expose a description, robots directive, and canonical URL', (
   }
 });
 
+test('public page browser titles stay concise', () => {
+  for (const file of publicPages.keys()) {
+    const html = read(file);
+    const title = html.match(/<title>(.*?)<\/title>/i)?.[1]?.trim();
+    assert.ok(title, `${file} needs a browser title`);
+    assert.ok(title.length <= 32, `${file} browser title is too long`);
+  }
+});
+
 test('landing page includes social cards and valid structured data', () => {
   const html = read('index.html');
   for (const property of ['og:type', 'og:site_name', 'og:url', 'og:title', 'og:description', 'og:image']) {
