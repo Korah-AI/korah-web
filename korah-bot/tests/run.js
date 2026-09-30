@@ -2,3 +2,4 @@
 // subprocess creation. node:test emits the report after all imports complete.
 import './collegeboard-content.test.js';
 import './assessment-content.test.js';
+import './seo-desmos.test.js';
