@@ -1,7 +1,7 @@
 # SAT Question Bank — Filters
 
-The bank page (`sat/index.html`) has a **Filters** toggle that reveals a row of
-filter dropdowns. The filters are defined by a single config, `FILTERS`, in
+The bank page (`sat/index.html`) opens a section modal (`#sectionModal`) that
+holds a **Filters** toggle revealing a row of filter dropdowns. The filters are defined by a single config, `FILTERS`, in
 `sat/js/sat-bank.js`. Each entry looks like:
 
 ```js

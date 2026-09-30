@@ -150,6 +150,8 @@
   <!-- SAT Content -->
   <div class="sat-page sat-bank-page" style="padding: 1.25rem;">
     <section class="sat-bank-shell">
+      <!-- Replaced by the compact topline and the section tiles below; the
+           topic picker and its filters now live in #sectionModal.
       <section class="sat-bank-header">
         <div class="sat-bank-header-text">
           <div class="sat-eyebrow-row">
@@ -164,40 +166,111 @@
           <a href="./latest-questions.html" class="sat-new-questions-btn">
             <span class="sat-new-badge">NEW</span>
             Latest Questions
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            <svg class="sat-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
           </a>
         </div>
         <img src="../logo-images/newlogo3.png" class="sat-bank-header-deco" alt=""/>
       </section>
-        
+      -->
+      <section class="sat-bank-topline">
+        <img src="../logo-images/newlogo12.png" class="sat-bank-topline-logo" alt="Korah logo"/>
+        <h1 class="sat-bank-title">Question Bank</h1>
+        <a href="./latest-questions.html" class="sat-new-questions-btn">
+          <span class="sat-new-badge">NEW</span>
+          Latest Questions
+          <svg class="sat-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </a>
+      </section>
 
-      <section class="sat-bank-controls">
-        <div class="sat-session-bar">
-          <div class="sat-limit-dd" id="limitDropdown">
-            <button id="limitToggle" class="sat-filters-toggle t-btn" type="button" aria-expanded="false" aria-label="Set question limit">
-              <svg class="sat-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-              <span id="limitToggleLabel">Question Limit</span>
-              <svg class="sat-ico sat-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-            </button>
-            <div id="limitMenu" class="sat-limit-menu">
-              <div class="sat-filter-note">Number of questions</div>
-              <input id="limitInput" type="text" class="sat-limit-input" placeholder="e.g. 20 (blank = no limit)" />
-            </div>
-          </div>
-          <button id="filtersToggle" class="sat-filters-toggle t-btn" type="button" aria-expanded="false" aria-controls="filterRow" aria-label="Toggle filters">
-            <svg class="sat-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-            <span>Filters</span>
-            <span id="filtersBadge" class="sat-filters-badge" hidden>0</span>
-            <svg class="sat-ico sat-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-          </button>
+      <div class="sat-entry-grid" id="entryCards"></div>
+
+      <h2 class="sat-stats-head">
+        <span class="material-icons-round">insert_chart_outlined</span>
+        Your Stats
+        <a href="./dashboard.html" class="sat-head-cta">View full dashboard <svg class="sat-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></a>
+      </h2>
+
+      <!-- Row one is tinted, row two is grey. A row is never mixed. -->
+      <div class="sat-stats-grid" id="bankStatsGrid">
+        <div class="sat-stat-card is-tinted tone-blue">
+          <div class="sat-stat-label">Questions Answered</div>
+          <div class="sat-stat-value" id="bankStatAnswered">0</div>
+          <div class="sat-stat-sub" id="bankStatAnsweredSub">Start practicing</div>
+          <span class="material-icons-round sat-stat-ico">check_circle</span>
         </div>
-        <!-- Filter buttons are rendered by sat-bank.js from the FILTERS config -->
-        <div class="sat-filter-row" id="filterRow" hidden></div>
+        <div class="sat-stat-card is-tinted tone-green">
+          <div class="sat-stat-label">Overall Accuracy</div>
+          <div class="sat-stat-value" id="bankStatAccuracy">—</div>
+          <div class="sat-stat-sub" id="bankStatAccuracySub">No data yet</div>
+          <span class="material-icons-round sat-stat-ico">bar_chart</span>
+        </div>
+        <div class="sat-stat-card is-tinted tone-purple">
+          <div class="sat-stat-label">Saved Questions</div>
+          <div class="sat-stat-value" id="bankStatSaved">0</div>
+          <div class="sat-stat-sub" id="bankStatSavedSub">Bookmarked questions</div>
+          <span class="material-icons-round sat-stat-ico">bookmark</span>
+        </div>
+        <div class="sat-stat-card is-tinted tone-amber">
+          <div class="sat-stat-label">Total XP</div>
+          <div class="sat-stat-value" id="bankStatXp">0</div>
+          <div class="sat-stat-sub" id="bankStatXpSub">Level 0</div>
+          <span class="material-icons-round sat-stat-ico">bolt</span>
+        </div>
+      </div>
+
+      <div class="sat-stats-grid">
+        <div class="sat-stat-card tone-teal">
+          <div class="sat-stat-label">Practice Time</div>
+          <div class="sat-stat-value" id="bankStatTime">0 min</div>
+          <div class="sat-stat-sub" id="bankStatTimeSub">All-time</div>
+          <span class="material-icons-round sat-stat-ico">timer</span>
+        </div>
+        <div class="sat-stat-card tone-pink">
+          <div class="sat-stat-label">This Week</div>
+          <div class="sat-stat-value" id="bankStatWeek">0</div>
+          <div class="sat-stat-sub" id="bankStatWeekSub">Last 7 days</div>
+          <span class="material-icons-round sat-stat-ico">calendar_today</span>
+        </div>
+        <div class="sat-stat-card tone-orange">
+          <div class="sat-stat-label">Time per Question</div>
+          <div class="sat-stat-value" id="bankStatPace">—</div>
+          <div class="sat-stat-sub" id="bankStatPaceSub">No timed attempts yet</div>
+          <span class="material-icons-round sat-stat-ico">speed</span>
+        </div>
+        <div class="sat-stat-card tone-indigo">
+          <div class="sat-stat-label">Topics Covered</div>
+          <div class="sat-stat-value" id="bankStatTopics">0</div>
+          <div class="sat-stat-sub" id="bankStatTopicsSub">Topics with practice</div>
+          <span class="material-icons-round sat-stat-ico">donut_large</span>
+        </div>
+      </div>
+      <p class="sat-bank-desc" id="bankStatsNote" hidden>Sign in to track your progress across sessions.</p>
+
+      <section class="sat-trend-panel" id="bankTrendPanel" hidden>
+        <h3 class="sat-trend-title">Activity trend</h3>
+        <div class="sat-trend-legend" id="bankTrendLegend"></div>
+        <div class="sat-trend-ycap">Questions</div>
+        <div class="sat-trend-plot">
+          <div class="sat-trend-yaxis" id="bankTrendYAxis"></div>
+          <div class="sat-trend-chart" id="bankTrendChart"></div>
+        </div>
+        <div class="sat-trend-axis" id="bankTrendAxis"></div>
       </section>
 
-      <section class="sat-bank-layout">
-        <div class="sat-section-column" id="sectionColumns"></div>
-      </section>
+      <div class="sat-panel-grid" id="bankPanels" hidden>
+        <section class="sat-panel">
+          <h3 class="sat-panel-title">Accuracy by section</h3>
+          <div id="bankSectionSplit"></div>
+        </section>
+        <section class="sat-panel">
+          <h3 class="sat-panel-title">Accuracy by difficulty</h3>
+          <div id="bankDifficultySplit"></div>
+        </section>
+        <section class="sat-panel sat-panel-wide">
+          <h3 class="sat-panel-title">Focus areas</h3>
+          <div id="bankFocusAreas"></div>
+        </section>
+      </div>
     </section>
   </div>
 
@@ -206,6 +279,58 @@
 
 
 </div><!-- end .main-area-wrapper -->
+
+<!-- Section topic modal, opened from the tiles on the landing page -->
+<div id="sectionModal" class="sat-modal" hidden>
+  <div class="sat-modal-panel" role="dialog" aria-modal="true" aria-labelledby="sectionModalTitle">
+    <header class="sat-modal-head">
+      <button id="sectionModalBack" class="sat-modal-back t-btn" type="button">
+        <svg class="sat-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        Back to Question Bank
+      </button>
+      <button id="sectionModalClose" class="sat-modal-close t-btn" type="button" aria-label="Close">&times;</button>
+    </header>
+
+    <h2 class="sat-modal-title" id="sectionModalTitle">Section</h2>
+    <section class="sat-bank-controls">
+      <div class="sat-session-bar">
+        <div class="sat-limit-dd" id="limitDropdown">
+          <button id="limitToggle" class="sat-filters-toggle t-btn" type="button" aria-expanded="false" aria-label="Set question limit">
+            <svg class="sat-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            <span id="limitToggleLabel">Question Limit</span>
+            <svg class="sat-ico sat-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div id="limitMenu" class="sat-limit-menu">
+            <div class="sat-filter-note">Number of questions</div>
+            <input id="limitInput" type="text" class="sat-limit-input" placeholder="e.g. 20 (blank = no limit)" />
+          </div>
+        </div>
+        <button id="filtersToggle" class="sat-filters-toggle t-btn" type="button" aria-expanded="false" aria-controls="filterRow" aria-label="Toggle filters">
+          <svg class="sat-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          <span>Filters</span>
+          <span id="filtersBadge" class="sat-filters-badge" hidden>0</span>
+          <svg class="sat-ico sat-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+      </div>
+      <!-- Filter buttons are rendered by sat-bank.js from the FILTERS config -->
+      <div class="sat-filter-row" id="filterRow" hidden></div>
+    </section>
+
+    <div class="sat-practice-all">
+      <div class="sat-practice-all-text">
+        <h3 class="sat-practice-all-title">Practice all topics</h3>
+        <p class="sat-practice-all-desc" id="practiceAllDesc">Start practicing every skill in this section.</p>
+      </div>
+      <button id="practiceAllBtn" class="sat-practice-all-btn t-btn" type="button">Start practice</button>
+    </div>
+
+    <div class="sat-modal-body">
+      <section class="sat-bank-layout">
+        <div class="sat-section-column" id="sectionColumns"></div>
+      </section>
+    </div>
+  </div>
+</div>
 
 <!-- Bottom selection pill — appears when the user selects topics -->
 <div id="selectionPill" class="sat-selection-pill" hidden>
@@ -403,6 +528,7 @@
 
 <script src="./js/sat-shared.js"></script>
 <script src="./js/sat-bank.js"></script>
+<script src="./js/sat-bank-stats.js"></script>
 
 </body>
 </html>

@@ -509,13 +509,28 @@
     font-size: 0.75rem; font-weight: 700; padding: 0.375rem 0.75rem; border-radius: 62.4375rem;
     font-variant-numeric: tabular-nums;
   }
-  .trend-chip.good { background: rgba(34,197,94,.1); color: #22c55e; border: 1px solid rgba(34,197,94,.3); }
-  .trend-chip.bad  { background: rgba(239,68,68,.1); color: #ef4444; border: 1px solid rgba(239,68,68,.3); }
+  .trend-chip.good { background: #22c55e; color: #fff; }
+  .trend-chip.bad  { background: #ef4444; color: #fff; }
 
-  .trend-chart { display: flex; align-items: flex-end; gap: 0.25rem; height: 10rem; }
+  .trend-ycap { font-size: 0.6875rem; font-weight: 700; color: var(--tx2); margin-bottom: 0.25rem; }
+  .trend-plot { display: flex; gap: 0.5rem; }
+  .trend-yaxis { position: relative; flex: none; width: 1.75rem; height: 10rem; }
+  .trend-yaxis span {
+    position: absolute; right: 0; transform: translateY(50%);
+    font-size: 0.625rem; color: var(--tx2); font-variant-numeric: tabular-nums;
+  }
+  .trend-chart {
+    flex: 1; min-width: 0;
+    display: flex; align-items: flex-end; gap: 0.25rem; height: 10rem;
+    background-image: repeating-linear-gradient(to top,
+      color-mix(in srgb, var(--tx) 12%, transparent) 0 1px, transparent 1px 25%);
+  }
   .trend-col { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: flex-end; height: 100%; }
   .trend-seg { width: 100%; border-radius: 0.125rem; margin-top: 1px; min-height: 0.125rem; }
-  .trend-axis { display: flex; justify-content: space-between; font-size: 0.625rem; color: var(--tx2); margin-top: 0.5rem; font-variant-numeric: tabular-nums; }
+  /* One cell per bar. Only every nth cell carries a date, and the text may
+     overflow into its empty neighbours so it stays centred under its bar. */
+  .trend-axis { display: flex; gap: 0.25rem; font-size: 0.625rem; color: var(--tx2); margin: 0.5rem 0 0 2.25rem; font-variant-numeric: tabular-nums; }
+  .trend-axis span { flex: 1; min-width: 0; text-align: center; white-space: nowrap; }
 
   .mini-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.625rem; }
   .mini-grid.three { grid-template-columns: 1fr 1fr 1fr; }
@@ -1087,9 +1102,12 @@
       <div class="panel-card trend-panel report-span2">
         <h3>Activity Trend</h3>
         <div class="trend-legend" id="trendLegend"></div>
-        <div class="trend-chart" id="trendChart"><div class="empty-hint" style="width:100%;">No attempts in this range yet.</div></div>
+        <div class="trend-ycap">Questions</div>
+        <div class="trend-plot">
+          <div class="trend-yaxis" id="trendYAxis"></div>
+          <div class="trend-chart" id="trendChart"><div class="empty-hint" style="width:100%;">No attempts in this range yet.</div></div>
+        </div>
         <div class="trend-axis" id="trendAxis"></div>
-        <div class="report-hint">Each bar is one week. Darker segments are harder questions. Wrong stacks under correct.</div>
       </div>
 
       <div class="panel-card pace-panel">
@@ -1749,6 +1767,16 @@
     return out;
   }
 
+  // Round the axis top up to something divisible by 4 so all five ticks are
+  // whole numbers.
+  function niceMax(value) {
+    const steps = [1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000];
+    for (const step of steps) {
+      if (step * 4 >= value) return step * 4;
+    }
+    return Math.ceil(value / 4000) * 4000;
+  }
+
   function renderSatReport() {
     const grid = document.getElementById("reportGrid");
     const head = grid?.previousElementSibling;
@@ -1779,10 +1807,12 @@
     }
     const chartEl = document.getElementById("trendChart");
     const axisEl = document.getElementById("trendAxis");
+    const yAxisEl = document.getElementById("trendYAxis");
     const weekKeys = [...weekMap.keys()].sort((a, b) => a - b);
     if (!weekKeys.length) {
       chartEl.innerHTML = `<div class="empty-hint" style="width:100%;">No attempts in this range yet.</div>`;
       axisEl.innerHTML = "";
+      yAxisEl.innerHTML = "";
     } else {
       const buckets = [];
       const cursor = new Date(weekKeys[0]);
@@ -1791,7 +1821,10 @@
         cursor.setDate(cursor.getDate() + 7);
       }
       const totalOf = (b) => b ? ["E", "M", "H"].reduce((s, d) => s + b.correct[d] + b.wrong[d], 0) : 0;
-      const maxTotal = Math.max(1, ...buckets.map((x) => totalOf(x.b)));
+      const top = niceMax(Math.max(1, ...buckets.map((x) => totalOf(x.b))));
+      yAxisEl.innerHTML = [4, 3, 2, 1, 0]
+        .map((step) => `<span style="bottom:${step * 25}%;">${(top / 4) * step}</span>`)
+        .join("");
       // Stack (bottom → top): wrong H/M/E, then correct H/M/E — DOM renders
       // top-first, so emit in reverse. Harder = darker.
       const SEGS = [
@@ -1802,12 +1835,15 @@
         const segs = SEGS.map(([kind, d, color]) => {
           const n = b ? b[kind][d] : 0;
           if (!n) return "";
-          return `<div class="trend-seg" style="height:${(n / maxTotal * 100).toFixed(1)}%; background:${color};"></div>`;
+          return `<div class="trend-seg" style="height:${(n / top * 100).toFixed(1)}%; background:${color};"></div>`;
         }).join("");
         return `<div class="trend-col">${segs}</div>`;
       }).join("");
       const fmtWeek = (t) => new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric" });
-      axisEl.innerHTML = `<span>${fmtWeek(buckets[0].t)}</span><span>${fmtWeek(buckets[buckets.length - 1].t)}</span>`;
+      const labelStep = Math.max(1, Math.ceil(buckets.length / 6));
+      axisEl.innerHTML = buckets
+        .map(({ t }, i) => `<span>${i % labelStep === 0 || i === buckets.length - 1 ? fmtWeek(t) : ""}</span>`)
+        .join("");
     }
 
     // ── Goal pace ──

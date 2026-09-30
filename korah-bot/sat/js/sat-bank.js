@@ -16,10 +16,16 @@
     skillProgress: null, // skillCd -> { attempts, correct, byDifficulty }
     // Selections for filters not yet wired to data — see docs/sat-bank-filters.md.
     placeholders: { timespent: "any", saved: "all", completed: "all", result: "all" },
+    openSection: null, // section key whose topic modal is open, or null
   };
 
-  let hasRevealed = false; // animate progress/accuracy once on first data load
-
+  const entryCards = document.getElementById("entryCards");
+  const sectionModal = document.getElementById("sectionModal");
+  const sectionModalTitle = document.getElementById("sectionModalTitle");
+  const sectionModalBack = document.getElementById("sectionModalBack");
+  const sectionModalClose = document.getElementById("sectionModalClose");
+  const practiceAllBtn = document.getElementById("practiceAllBtn");
+  const practiceAllDesc = document.getElementById("practiceAllDesc");
   const sectionColumns = document.getElementById("sectionColumns");
   const limitInput = document.getElementById("limitInput");
   const limitDropdown = document.getElementById("limitDropdown");
@@ -165,11 +171,11 @@
 
   function renderPill() {
     const n = state.skills.length;
-    if (n > 0 || isLatest) {
+    if (state.openSection && (n > 0 || isLatest)) {
       selectionPill.removeAttribute("hidden");
       pillCountLabel.textContent = n > 0
         ? `${n} topic${n === 1 ? "" : "s"} selected`
-        : "All latest questions";
+        : "All topics in this section";
     } else {
       selectionPill.setAttribute("hidden", "");
     }
@@ -221,44 +227,162 @@
     renderAll();
   }
 
+  // ── Bank question counts, filtered by the difficulty selection ──
+  function bankStats() {
+    return state.globalStats?.data?.stats || {};
+  }
+  function countDomain(code) {
+    const stats = bankStats();
+    if (state.difficulties.length === 0) return (stats.domainBreakdown || {})[code] || 0;
+    const bucket = (stats.domainBreakdownByDifficulty || {})[code];
+    if (!bucket) return 0;
+    return state.difficulties.reduce((sum, d) => sum + (bucket[d] || 0), 0);
+  }
+  function countSkill(code) {
+    const stats = bankStats();
+    if (state.difficulties.length === 0) return (stats.skillBreakdown || {})[code] || 0;
+    const bucket = (stats.skillBreakdownByDifficulty || {})[code];
+    if (!bucket) return 0;
+    return state.difficulties.reduce((sum, d) => sum + (bucket[d] || 0), 0);
+  }
+
+  // User's practice progress per skill, difficulty-filtered to match counts.
+  function skillProg(code) {
+    const p = (state.skillProgress || {})[code];
+    if (!p) return { attempts: 0, correct: 0 };
+    if (state.difficulties.length === 0) {
+      return { attempts: p.attempts || 0, correct: p.correct || 0 };
+    }
+    let attempts = 0, correct = 0;
+    for (const d of state.difficulties) {
+      const b = p.byDifficulty && p.byDifficulty[d];
+      if (b) { attempts += b.attempts || 0; correct += b.correct || 0; }
+    }
+    return { attempts, correct };
+  }
+  const accClass = (pct) => (pct >= 60 ? "is-good" : pct >= 35 ? "is-mid" : "is-low");
+
+  // Flat section art for the tiles. This replaced the newlogo3.png watermark
+  // the tiles first carried, which read as a logo rather than as artwork.
+  const SECTION_ART = {
+    english: `
+      <svg class="sat-entry-art" viewBox="0 0 120 120" fill="none" aria-hidden="true">
+        <path d="M10 28c14-7 30-7 44 2v66c-14-9-30-9-44-2z" fill="#fff" fill-opacity=".22"/>
+        <path d="M98 28c-14-7-30-7-44 2v66c14-9 30-9 44-2z" fill="#fff" fill-opacity=".12"/>
+        <path d="M10 28c14-7 30-7 44 2 14-9 30-9 44-2v66c-14-7-30-7-44 2-14-9-30-9-44-2z" stroke="#fff" stroke-opacity=".55" stroke-width="3" stroke-linejoin="round"/>
+        <path d="M54 30v66" stroke="#fff" stroke-opacity=".55" stroke-width="3"/>
+        <path d="M20 46h22M20 58h22M20 70h14" stroke="#fff" stroke-opacity=".45" stroke-width="3" stroke-linecap="round"/>
+        <path d="M84 16l13 9-27 38-14 4 4-13z" fill="#fff" fill-opacity=".3" stroke="#fff" stroke-opacity=".55" stroke-width="3" stroke-linejoin="round"/>
+      </svg>`,
+    math: `
+      <svg class="sat-entry-art" viewBox="0 0 120 120" fill="none" aria-hidden="true">
+        <path d="M20 96 58 26l38 70z" fill="#fff" fill-opacity=".18" stroke="#fff" stroke-opacity=".55" stroke-width="3" stroke-linejoin="round"/>
+        <circle cx="92" cy="30" r="15" fill="#fff" fill-opacity=".14" stroke="#fff" stroke-opacity=".45" stroke-width="3"/>
+        <path d="M12 104h96" stroke="#fff" stroke-opacity=".45" stroke-width="3" stroke-linecap="round"/>
+        <path d="M24 34h16M32 26v16" stroke="#fff" stroke-opacity=".4" stroke-width="3" stroke-linecap="round"/>
+      </svg>`,
+  };
+
+  // ── Landing tiles: one per section, opening its topic modal ──
+  function renderEntries() {
+    entryCards.innerHTML = OPENSAT_CATALOG.sections
+      .map((section) => {
+        const total = section.domains.reduce((sum, d) => sum + countDomain(d.code), 0);
+        const solved = section.domains.reduce(
+          (sum, d) => sum + (d.skills || []).reduce((n, sk) => n + skillProg(sk.code).attempts, 0),
+          0
+        );
+        const pct = total > 0 ? Math.min(100, Math.round((solved / total) * 100)) : 0;
+
+        // The latest-questions page has no bank-wide counts (the stats endpoint
+        // ignores the release cutoff), so its tiles carry no numbers.
+        let meta = `<span>Fresh College Board uploads</span>`;
+        let track = "";
+        if (!isLatest) {
+          meta = total > 0
+            ? `<span>${solved.toLocaleString()} of ${total.toLocaleString()} solved</span><span>${pct}%</span>`
+            : `<span>Loading question counts…</span>`;
+          track = `<div class="sat-entry-track"><span class="sat-entry-fill" data-pct="${pct}"></span></div>`;
+        }
+
+        return `
+          <button class="sat-entry-card is-${section.key}" type="button" data-open-section="${section.key}">
+            ${SECTION_ART[section.key] || ""}
+            <span class="sat-entry-name">${section.label}</span>
+            <span class="sat-entry-meta">${meta}</span>
+            ${track}
+            <span class="sat-entry-open">
+              Open
+              <svg class="sat-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </span>
+          </button>
+        `;
+      })
+      .join("");
+
+    // Fills start at 0 in CSS, so setting the width on the next frame grows them.
+    entryCards.querySelectorAll(".sat-entry-fill").forEach((el) => {
+      const pct = Math.max(0, Math.min(100, parseFloat(el.dataset.pct) || 0));
+      requestAnimationFrame(() => { el.style.width = pct + "%"; });
+    });
+  }
+
+  // ── Section modal ──
+  function openSectionModal(sectionKey) {
+    const section = OPENSAT_CATALOG.sections.find((s) => s.key === sectionKey);
+    if (!section) return;
+
+    // Selections are per section: opening one drops whatever the other had.
+    const domainKeys = new Set(section.domains.map((d) => d.key));
+    const skillCodes = new Set(section.domains.flatMap((d) => (d.skills || []).map((sk) => sk.code)));
+    state.sections = [sectionKey]; // scopes a start with no topics ticked
+    state.domains = state.domains.filter((d) => domainKeys.has(d));
+    state.skills = state.skills.filter((s) => skillCodes.has(s));
+    state.openSection = sectionKey;
+
+    // The section card's own header is hidden in the modal, so its question
+    // count moves into the Practice-all line.
+    const total = section.domains.reduce((sum, d) => sum + countDomain(d.code), 0);
+    sectionModalTitle.textContent = section.label;
+    practiceAllDesc.textContent = total > 0
+      ? `Start practicing all ${skillCodes.size} skills in ${section.label} (${total.toLocaleString()} questions).`
+      : `Start practicing all ${skillCodes.size} skills in ${section.label}.`;
+    sectionModal.removeAttribute("hidden");
+    document.body.classList.add("sat-modal-open");
+    renderAll();
+    paintProgress(true);
+  }
+
+  function closeSectionModal() {
+    if (sectionModal.hasAttribute("hidden") || sectionModal.classList.contains("is-closing")) return;
+    sectionModal.classList.add("is-closing");
+    sectionModal.addEventListener("animationend", function done(event) {
+      if (event.target !== sectionModal) return;
+      sectionModal.removeEventListener("animationend", done);
+      sectionModal.classList.remove("is-closing");
+      sectionModal.setAttribute("hidden", "");
+      document.body.classList.remove("sat-modal-open");
+      state.openSection = null;
+      renderAll();
+      renderEntries(); // counts follow the difficulty filter set in the modal
+    });
+  }
+
+  // "Practice all topics": take the whole open section, ignoring any ticks.
+  function startWholeSection() {
+    const section = OPENSAT_CATALOG.sections.find((s) => s.key === state.openSection);
+    if (!section) return;
+    state.sections = [section.key];
+    state.domains = section.domains.map((d) => d.key);
+    state.skills = section.domains.flatMap((d) => (d.skills || []).map((sk) => sk.code));
+    navigate();
+  }
+
   function renderSections() {
-    const sections = OPENSAT_CATALOG.sections;
-    const stats = state.globalStats?.data?.stats || {};
-    const domainStats = stats.domainBreakdown || {};
-    const skillStats = stats.skillBreakdown || {};
-    const domainByDiff = stats.domainBreakdownByDifficulty || {};
-    const skillByDiff = stats.skillBreakdownByDifficulty || {};
-    const difficultyFilter = state.difficulties; // [] | array of "E"/"M"/"H"
-
-    function countDomain(code) {
-      if (difficultyFilter.length === 0) return domainStats[code] || 0;
-      const bucket = domainByDiff[code];
-      if (!bucket) return 0;
-      return difficultyFilter.reduce((sum, d) => sum + (bucket[d] || 0), 0);
-    }
-    function countSkill(code) {
-      if (difficultyFilter.length === 0) return skillStats[code] || 0;
-      const bucket = skillByDiff[code];
-      if (!bucket) return 0;
-      return difficultyFilter.reduce((sum, d) => sum + (bucket[d] || 0), 0);
-    }
-
-    // User's practice progress per skill, difficulty-filtered to match counts.
-    const progress = state.skillProgress || {};
-    function skillProg(code) {
-      const p = progress[code];
-      if (!p) return { attempts: 0, correct: 0 };
-      if (difficultyFilter.length === 0) {
-        return { attempts: p.attempts || 0, correct: p.correct || 0 };
-      }
-      let attempts = 0, correct = 0;
-      for (const d of difficultyFilter) {
-        const b = p.byDifficulty && p.byDifficulty[d];
-        if (b) { attempts += b.attempts || 0; correct += b.correct || 0; }
-      }
-      return { attempts, correct };
-    }
-    const accClass = (pct) => (pct >= 60 ? "is-good" : pct >= 35 ? "is-mid" : "is-low");
+    // Only the open section renders — the landing page shows the tiles instead.
+    const sections = state.openSection
+      ? OPENSAT_CATALOG.sections.filter((s) => s.key === state.openSection)
+      : [];
 
     sectionColumns.innerHTML = sections
       .map((section) => {
@@ -378,15 +502,6 @@
     requestAnimationFrame(tick);
   }
 
-  // Fire the page-open reveal once, after question counts and user progress
-  // are both available.
-  function maybeReveal() {
-    if (hasRevealed) return;
-    if (!state.globalStats || state.skillProgress === null) return;
-    hasRevealed = true;
-    paintProgress(true);
-  }
-
   function loadUserProgress() {
     const analytics = window.KorahSATAnalytics;
     if (!analytics) {
@@ -400,7 +515,7 @@
         state.skillProgress = map;
       })
       .catch(() => { state.skillProgress = {}; })
-      .finally(() => { renderSections(); maybeReveal(); });
+      .finally(() => { renderSections(); renderEntries(); });
   }
 
   function navigate() {
@@ -555,7 +670,7 @@
       if (response.ok) {
         state.globalStats = await response.json();
         renderSections();
-        maybeReveal();
+        renderEntries();
       }
     } catch (err) {
       console.error("Failed to fetch global stats:", err);
@@ -644,6 +759,22 @@
     }
   });
 
+  // ── Section tiles + modal ──
+  entryCards.addEventListener("click", (event) => {
+    const card = event.target.closest("[data-open-section]");
+    if (card) openSectionModal(card.dataset.openSection);
+  });
+
+  sectionModalBack.addEventListener("click", closeSectionModal);
+  sectionModalClose.addEventListener("click", closeSectionModal);
+  sectionModal.addEventListener("click", (event) => {
+    if (event.target === sectionModal) closeSectionModal();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeSectionModal();
+  });
+  practiceAllBtn.addEventListener("click", startWholeSection);
+
   // ── Bottom selection pill ──
   pillRandomize.addEventListener("click", () => {
     state.random = !state.random;
@@ -654,14 +785,6 @@
   renderFilters();
   if (!isLatest) loadUserProgress();
   resetFilters();
+  renderEntries();
   fetchGlobalStats();
-
-  // Fallback: if analytics never becomes available (e.g. no attempts yet),
-  // still reveal the bars once question counts have loaded.
-  setTimeout(() => {
-    if (!hasRevealed) {
-      if (state.skillProgress === null) state.skillProgress = {};
-      maybeReveal();
-    }
-  }, 3500);
 })();

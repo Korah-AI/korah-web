@@ -51,12 +51,55 @@ html[data-theme="light"] .pt-scope {
 }
 .pt-shell[data-step="1"] {
   justify-content: center;
-  min-height: calc(100vh - 9.5rem);
+  /* 9.5rem of chrome, plus the 4rem the topline above now occupies. */
+  min-height: calc(100vh - 13.5rem);
 }
 
 .pt-hero { text-align: center; margin-bottom: 1.75rem; }
 .pt-hero h1 { font-size: clamp(1.7rem, 4vw, 2.15rem); font-weight: 800; letter-spacing: -0.02em; margin: 0 0 0.5rem; }
 .pt-hero p  { font-size: 1rem; line-height: 1.6; margin: 0; }
+
+/* ── Page topline ──────────────────────────────────────────────────────────
+   The Question Bank's compact header (.sat-bank-topline in ../sat.css),
+   rebuilt on the --pt-* tokens because this page does not load sat.css.
+   Held to the same 46rem column as .pt-shell so the page stays one column. */
+.pt-topline {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  width: 100%;
+  max-width: 46rem;
+  margin: 0 auto 1.5rem;
+}
+.pt-topline-logo { width: 2.25rem; height: 2.25rem; object-fit: contain; }
+.pt-topline-title {
+  flex: 1;
+  min-width: 8rem;
+  margin: 0;
+  font-size: 1.8125rem;
+  line-height: 1.2;
+  font-weight: 700;
+  color: var(--pt-tx);
+}
+.pt-topline-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  height: 2.5rem;
+  padding: 0 0.9rem;
+  border-radius: 62.4375rem;
+  border: 0.0625rem solid var(--pt-bd);
+  background: var(--pt-sf2);
+  color: var(--pt-tx);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: transform 0.18s cubic-bezier(0.23, 1, 0.32, 1), border-color 0.15s ease;
+}
+.pt-topline-link:hover { transform: scale(1.04); border-color: #8b5cf6; }
+.pt-topline-link svg { width: 1rem; height: 1rem; flex-shrink: 0; }
 
 .pt-steps-indicator { display: flex; gap: 0.5rem; justify-content: center; margin-bottom: 1.75rem; }
 .pt-step-dot {

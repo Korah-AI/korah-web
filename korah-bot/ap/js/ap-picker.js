@@ -2,42 +2,34 @@
   "use strict";
   const list = document.getElementById("exam-list");
 
+  // One accent per course, matching the FRQ picker on ./index.html.
+  const COURSE_TONES = { "ap-calculus-ab": "tone-blue", "ap-us-history": "tone-pink" };
+
   async function init() {
     try {
       const response = await fetch("./data/manifest.json", { cache: "no-store" });
       if (!response.ok) throw new Error(`manifest returned ${response.status}`);
       const manifest = await response.json();
       list.innerHTML = manifest.exams.map((exam) => `
-        <article class="ap-exam-card tone-blue">
-          <div class="ap-card-top"><span class="ap-course-badge">${exam.courseTitle}</span><span class="ap-ready-badge"><i class="material-icons-round">check_circle</i> Ready</span></div>
-          <div class="ap-exam-icon"><i class="material-icons-round">functions</i></div>
-          <h3>${exam.title}</h3>
-          <div class="ap-exam-meta">
-            <span><i class="material-icons-round">quiz</i>${exam.questionCount} questions</span>
-            <span><i class="material-icons-round">schedule</i>${window.KorahAP.formatDuration(exam.durationSec)}</span>
+        <a class="ap-course-card ${COURSE_TONES[exam.course] || "tone-blue"}" href="${window.KorahAP.examUrl(exam.id)}">
+          <div class="ap-course-card-top">
+            <div class="ap-exam-icon"><span class="material-icons-round">functions</span></div>
+            <span class="ap-badge ap-badge-timer">${window.KorahAP.formatDuration(exam.durationSec)}</span>
           </div>
-          <p>${exam.blurb}</p>
-          <a class="ap-primary-button" href="${window.KorahAP.examUrl(exam.id)}">Review exam setup <i class="material-icons-round">arrow_forward</i></a>
-        </article>`).join("");
-      initCardEffects();
+          <div>
+            <div class="ap-course-name">${exam.title}</div>
+            <p class="ap-course-tagline">${exam.blurb}</p>
+          </div>
+          <div class="ap-course-stats">
+            <span><b>${exam.questionCount}</b> questions</span>
+            <span>${exam.courseTitle}</span>
+          </div>
+          <span class="ap-course-cta">Review exam setup <span class="material-icons-round" style="font-size:1.125rem;">arrow_forward</span></span>
+        </a>`).join("");
     } catch (error) {
       console.error("[AP picker]", error);
       list.innerHTML = `<div class="ap-error"><strong>Exams could not be loaded.</strong><span>Open this page through Live Server instead of a file:// URL.</span></div>`;
     }
-  }
-  function initCardEffects() {
-    document.addEventListener("pointermove", (event) => {
-      const card = event.target.closest?.(".ap-exam-card");
-      if (!card) return;
-      const rect = card.getBoundingClientRect();
-      card.style.setProperty("--spotlight-x", `${event.clientX - rect.left}px`);
-      card.style.setProperty("--spotlight-y", `${event.clientY - rect.top}px`);
-      card.style.setProperty("--spotlight-opacity", ".65");
-    }, { passive: true });
-    document.addEventListener("pointerout", (event) => {
-      const card = event.target.closest?.(".ap-exam-card");
-      if (card && !(event.relatedTarget && card.contains(event.relatedTarget))) card.style.setProperty("--spotlight-opacity", "0");
-    }, { passive: true });
   }
   init();
 })();

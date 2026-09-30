@@ -156,3 +156,68 @@ no dimmed text, the step shell and transitions, custom popups instead of
   ~0.18s ease transition. No `translateY` lifts or `translateX` nudges — sliding
   drags neighbouring alignment and reads as a jump. `translate` is still fine for
   positioning (e.g. `translateY(-50%)` centering).
+
+- **Dropdowns all use the same shell and motion.** Reference implementations:
+  `.sat-filter-menu` / `.sat-filter-option` in `korah-bot/sat/sat.css` and
+  `.mood-dropdown` / `.mood-option` in `korah-bot/app/korah-chat.css`. Copy this,
+  renaming the classes and pointing `--acc` at the control's tone:
+
+  ```css
+  /* Panel: absolute under its trigger, grey surface, grows from the trigger. */
+  .x-menu {
+      position: absolute;
+      top: calc(100% + 0.4rem);
+      left: 0;
+      z-index: 40;
+      min-width: 12rem;
+      padding: 0.375rem;
+      border-radius: 0.875rem;
+      background: var(--sat-card-sf);
+      border: 0.0625rem solid var(--sat-card-bd);
+      box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.28);
+      display: none;
+      flex-direction: column;
+      gap: 0.125rem;
+      transform-origin: top left;
+  }
+  .x-dd.is-open .x-menu {
+      display: flex;
+      animation: menuIn .16s cubic-bezier(.23, 1, .32, 1) both;
+  }
+  @keyframes menuIn {
+      from { opacity: 0; transform: translateY(-0.375rem) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  /* Trigger: grows on hover, presses in on click, caret flips when open. */
+  .x-btn {
+      transition: border-color .15s ease, background .15s ease,
+                  transform .18s cubic-bezier(.23, 1, .32, 1);
+  }
+  .x-btn:hover { transform: scale(1.03); border-color: var(--acc); }
+  .x-btn:active { transform: scale(0.98); }
+  .x-btn .caret { transition: transform .2s ease; }
+  .x-dd.is-open .x-btn .caret { transform: rotate(180deg); }
+
+  /* Option: tinted row plus an accent bar that scales up from the bottom. */
+  .x-option { position: relative; transition: background .12s ease, color .12s ease; }
+  .x-option::before {
+      content: "";
+      position: absolute;
+      left: 0.125rem;
+      top: 0.3rem;
+      bottom: 0.3rem;
+      width: 0.1875rem;
+      border-radius: 0 0.125rem 0.125rem 0;
+      background: var(--acc);
+      transform: scaleY(0);
+      transform-origin: bottom;
+      transition: transform .2s ease;
+  }
+  .x-option:hover { background: var(--sat-card-sf2); }
+  .x-option:hover::before { transform: scaleY(1); }
+  ```
+
+  Open and close by toggling `.is-open` on the wrapper, never by setting
+  `style.display` from JS. Keep the open animation at 0.16–0.2s. Close on an
+  outside click, and close any sibling menu first so only one is ever open.

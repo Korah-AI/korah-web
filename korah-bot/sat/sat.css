@@ -44,11 +44,11 @@
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 .sat-new-questions-btn:hover {
-  transform: translateY(-2px);
+  transform: scale(1.04);
   box-shadow: 0 4px 16px rgba(236, 72, 153, 0.35);
 }
 .sat-new-questions-btn:active {
-  transform: translateY(0);
+  transform: scale(0.98);
 }
 .sat-new-badge {
   background: rgba(255, 255, 255, 0.2);
@@ -687,8 +687,8 @@ html[data-theme="light"] .sat-desmos-container {
     animation: satFilterMenuIn .16s cubic-bezier(.23, 1, .32, 1) both;
 }
 @keyframes satFilterMenuIn {
-    from { opacity: 0; transform: translateY(-0.375rem); }
-    to { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; transform: translateY(-0.375rem) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 /* ── Question Limit dropdown ── */
@@ -4561,3 +4561,657 @@ html[data-theme="light"] .sat-grey {
     border-color: var(--acc);
     color: var(--tx);
 }
+
+/* ══ Bank landing: section tiles, stats strip, section modal ════════════════
+   The two bank pages open on a pair of section tiles plus the user's stats;
+   picking a section opens its topic list in a modal. Same system as the grey
+   block above: grey resting surfaces, one tone per element, flat fills, and
+   hover states that scale instead of sliding. */
+
+/* ── Compact page head (replaces the full-width hero) ── */
+.sat-bank-topline {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.25rem 0.125rem 0;
+    flex-wrap: wrap;
+}
+.sat-bank-topline-logo {
+    width: 2.25rem;
+    height: 2.25rem;
+    object-fit: contain;
+}
+.sat-bank-topline .sat-bank-title {
+    margin: 0;
+    flex: 1;
+    min-width: 8rem;
+}
+.sat-bank-topline .sat-new-questions-btn,
+.sat-bank-topline .sat-bank-backlink { margin-top: 0; }
+
+/* The topline is reused on pages that carry their own grey palette instead of
+   .sat-grey (tailored: --t-*, AP: --ap-*), so the fallbacks walk those before
+   landing on the app tokens. */
+.sat-bank-topline.is-standalone { margin-bottom: 1.5rem; }
+
+.sat-bank-backlink {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    height: 2.5rem;
+    padding: 0 0.9rem;
+    border-radius: 62.4375rem;
+    border: 0.0625rem solid var(--sat-card-bd, var(--t-bd, var(--ap-border, var(--bd))));
+    background: var(--sat-card-sf2, var(--t-sf2, var(--ap-surface-2, var(--sf2))));
+    color: var(--tx);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: transform .18s cubic-bezier(.23, 1, .32, 1), border-color .15s ease;
+}
+.sat-bank-backlink:hover {
+    transform: scale(1.04);
+    border-color: var(--tone-purple, var(--p4));
+}
+
+/* ── Section tiles ── */
+.sat-entry-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+@media (max-width: 48rem) {
+    .sat-entry-grid { grid-template-columns: 1fr; }
+}
+
+.sat-entry-card {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    min-height: 10.5rem;
+    padding: 1.25rem 1.375rem 1.125rem;
+    border-radius: 1.125rem;
+    border: 0.0625rem solid var(--acc-fill);
+    background: var(--acc-fill);
+    box-shadow: 0 0.3rem 0 0 color-mix(in srgb, var(--acc-fill) 55%, #000);
+    color: #fff;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: transform .18s cubic-bezier(.23, 1, .32, 1), box-shadow .18s ease;
+}
+.sat-entry-card.is-english { --acc-fill: #d03f87; }
+.sat-entry-card.is-math { --acc-fill: #3472d9; }
+.sat-entry-card:hover {
+    transform: scale(1.015);
+    box-shadow: 0 0.45rem 0 0 color-mix(in srgb, var(--acc-fill) 55%, #000);
+}
+.sat-entry-card:active { transform: scale(0.995); }
+
+.sat-entry-name {
+    font-size: 1.375rem;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+}
+.sat-entry-meta {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.92);
+}
+.sat-entry-track {
+    height: 0.375rem;
+    border-radius: 62.4375rem;
+    background: rgba(255, 255, 255, 0.28);
+    overflow: hidden;
+}
+.sat-entry-fill {
+    display: block;
+    width: 0;
+    height: 100%;
+    border-radius: inherit;
+    background: #fff;
+    transition: width .7s cubic-bezier(.23, 1, .32, 1);
+}
+.sat-entry-open {
+    align-self: flex-start;
+    margin-top: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    height: 2.25rem;
+    padding: 0 0.95rem;
+    border-radius: 62.4375rem;
+    background: #fff;
+    color: #1b1b23;
+    font-size: 0.875rem;
+    font-weight: 800;
+    transition: transform .18s cubic-bezier(.23, 1, .32, 1);
+}
+.sat-entry-card:hover .sat-entry-open { transform: scale(1.06); }
+.sat-entry-art {
+    position: absolute;
+    right: -0.5rem;
+    bottom: -0.75rem;
+    width: 8.5rem;
+    height: 8.5rem;
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+/* ── Stats strip ── */
+.sat-stats-head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.75rem 0 0;
+    font-size: 0.9375rem;
+    font-weight: 800;
+    color: var(--tx);
+}
+.sat-stats-head .material-icons-round { font-size: 1.125rem; }
+.sat-head-cta {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 62.4375rem;
+    border: 0.0625rem solid var(--sat-card-bd);
+    background: var(--sat-card-sf2);
+    color: var(--tx);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: transform .18s cubic-bezier(.23, 1, .32, 1), border-color .15s ease;
+}
+.sat-head-cta:hover {
+    transform: scale(1.04);
+    border-color: var(--tone-purple);
+}
+
+.sat-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.875rem;
+}
+@media (max-width: 61.25rem) {
+    .sat-stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 32.5rem) {
+    .sat-stats-grid { grid-template-columns: 1fr; }
+}
+
+/* A row is all tinted or all grey, never mixed: .is-tinted is set per card in
+   the markup so the four cards of a row always match. The accent runs the whole
+   border rather than sitting under the card as an edge. */
+.sat-stat-card {
+    position: relative;
+    overflow: hidden;
+    padding: 1rem 1.125rem 1.125rem;
+    border-radius: 1rem;
+    border: 0.0625rem solid var(--sat-panel-bd);
+    background: var(--sat-panel-sf);
+    transition: transform .18s cubic-bezier(.23, 1, .32, 1), border-color .15s ease;
+}
+/* Flat, opaque fills per docs/WIZARD-UI-PATTERNS.md: --acc-fill is the tone at
+   88% against black, which keeps white text readable on it. */
+.sat-stat-card.is-tinted {
+    background: var(--acc-fill);
+    border-color: var(--acc-fill);
+    color: #fff;
+}
+.sat-stat-card.is-tinted .sat-stat-label,
+.sat-stat-card.is-tinted .sat-stat-value,
+.sat-stat-card.is-tinted .sat-stat-sub { color: #fff; }
+.sat-stat-card.is-tinted .sat-stat-sub { opacity: 0.85; }
+.sat-stat-card.is-tinted .sat-stat-ico { color: rgba(255, 255, 255, 0.24); }
+.sat-stat-card:hover {
+    transform: scale(1.02);
+    border-color: var(--acc);
+}
+.sat-stat-card.tone-blue { --acc: var(--tone-blue); --acc-fill: #3472d9; }
+.sat-stat-card.tone-green { --acc: var(--tone-green); --acc-fill: #1ead53; }
+.sat-stat-card.tone-purple { --acc: var(--tone-purple); --acc-fill: #7a51d8; }
+.sat-stat-card.tone-amber { --acc: var(--tone-amber); --acc-fill: #d88b0a; }
+.sat-stat-card.tone-teal { --acc: var(--tone-teal); --acc-fill: #12a292; }
+.sat-stat-card.tone-pink { --acc: var(--tone-pink); --acc-fill: #d03f87; }
+.sat-stat-card.tone-orange { --acc: #f97316; --acc-fill: #db6513; }
+.sat-stat-card.tone-indigo { --acc: #6366f1; --acc-fill: #5759d8; }
+.sat-stat-label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--tx);
+}
+.sat-stat-value {
+    margin-top: 0.25rem;
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--tx);
+    font-variant-numeric: tabular-nums;
+}
+.sat-stat-sub {
+    margin-top: 0.125rem;
+    font-size: 0.75rem;
+    color: var(--tx);
+}
+.sat-stat-ico {
+    position: absolute;
+    right: 0.5rem;
+    bottom: 0.25rem;
+    font-size: 3.25rem !important;
+    /* Grey cards carry their tone here, so the row still reads as a set. */
+    color: color-mix(in srgb, var(--acc) 55%, transparent);
+    pointer-events: none;
+}
+
+/* ── Activity trend ── */
+.sat-trend-panel {
+    padding: 1.125rem 1.25rem 1.25rem;
+    border-radius: 1.125rem;
+    border: 0.0625rem solid var(--sat-panel-bd);
+    background: var(--sat-panel-sf);
+}
+.sat-trend-panel[hidden] { display: none; }
+.sat-trend-title {
+    margin: 0;
+    font-size: 0.9375rem;
+    font-weight: 800;
+    color: var(--tx);
+}
+.sat-trend-legend {
+    display: flex;
+    gap: 0.5rem;
+    margin: 0.75rem 0 0.875rem;
+}
+.sat-trend-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.35rem 0.7rem;
+    border-radius: 62.4375rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+.sat-trend-chip .material-icons-round { font-size: 0.875rem !important; }
+.sat-trend-chip.is-good { background: #22c55e; color: #fff; }
+.sat-trend-chip.is-bad { background: #ef4444; color: #fff; }
+
+.sat-trend-ycap {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: var(--tx);
+    margin-bottom: 0.25rem;
+}
+.sat-trend-plot {
+    display: flex;
+    gap: 0.5rem;
+}
+.sat-trend-yaxis {
+    position: relative;
+    flex: none;
+    width: 1.75rem;
+    height: 9rem;
+}
+.sat-trend-yaxis span {
+    position: absolute;
+    right: 0;
+    transform: translateY(50%);
+    font-size: 0.625rem;
+    color: var(--tx);
+    font-variant-numeric: tabular-nums;
+}
+.sat-trend-chart {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: flex-end;
+    gap: 0.25rem;
+    height: 9rem;
+    background-image: repeating-linear-gradient(to top,
+        color-mix(in srgb, var(--tx) 12%, transparent) 0 0.0625rem,
+        transparent 0.0625rem 25%);
+}
+.sat-trend-col {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    transform-origin: bottom;
+    animation: satTrendGrow .45s cubic-bezier(.23, 1, .32, 1) both;
+}
+@keyframes satTrendGrow {
+    from { transform: scaleY(0); opacity: 0; }
+    to { transform: scaleY(1); opacity: 1; }
+}
+.sat-trend-seg {
+    width: 100%;
+    min-height: 0.125rem;
+    margin-top: 0.0625rem;
+    border-radius: 0.125rem;
+}
+.sat-trend-axis {
+    display: flex;
+    gap: 0.25rem;
+    margin: 0.5rem 0 0 2.25rem;
+    font-size: 0.625rem;
+    color: var(--tx);
+    font-variant-numeric: tabular-nums;
+}
+/* One cell per bar. Only every nth cell carries a date, and the text is free to
+   overflow into its empty neighbours so it stays centred under its bar. */
+.sat-trend-axis span {
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+    white-space: nowrap;
+}
+
+/* ── Breakdown panels ── */
+.sat-panel-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.875rem;
+}
+.sat-panel-grid[hidden] { display: none; }
+@media (max-width: 48rem) {
+    .sat-panel-grid { grid-template-columns: 1fr; }
+}
+.sat-panel {
+    padding: 1.125rem 1.25rem 1.25rem;
+    border-radius: 1.125rem;
+    border: 0.0625rem solid var(--sat-panel-bd);
+    background: var(--sat-panel-sf);
+}
+.sat-panel-wide { grid-column: 1 / -1; }
+.sat-panel-title {
+    margin: 0 0 0.875rem;
+    font-size: 0.9375rem;
+    font-weight: 800;
+    color: var(--tx);
+}
+.sat-panel-empty {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--tx);
+}
+
+.sat-meter + .sat-meter { margin-top: 0.875rem; }
+.sat-meter-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.375rem;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--tx);
+}
+.sat-meter-sub {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+.sat-meter-track {
+    height: 0.5rem;
+    border-radius: 62.4375rem;
+    background: var(--sat-panel-bd);
+    overflow: hidden;
+}
+.sat-meter-fill {
+    display: block;
+    width: 0;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--acc, var(--tone-purple));
+    transition: width .7s cubic-bezier(.23, 1, .32, 1);
+}
+
+.sat-focus-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.625rem 0.75rem;
+    border-radius: 0.75rem;
+    border: 0.0625rem solid transparent;
+    color: var(--tx);
+    text-decoration: none;
+    transition: transform .18s cubic-bezier(.23, 1, .32, 1), background .15s ease, border-color .15s ease;
+}
+.sat-focus-row:hover {
+    transform: scale(1.01);
+    background: var(--sat-panel-sf2);
+    border-color: var(--acc, var(--tone-purple));
+}
+.sat-focus-name {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.875rem;
+    font-weight: 700;
+}
+.sat-focus-sub {
+    font-size: 0.75rem;
+    font-weight: 600;
+    opacity: 0.8;
+}
+.sat-focus-acc {
+    flex: none;
+    font-size: 0.8125rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+}
+.sat-focus-cta {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+/* ── Section modal ── */
+.sat-modal {
+    position: fixed;
+    inset: 0;
+    /* Above the sidebar (100), in the same band as the app's other modals. */
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem 1rem;
+    background: rgba(6, 4, 15, 0.62);
+    backdrop-filter: blur(0.35rem);
+    -webkit-backdrop-filter: blur(0.35rem);
+    animation: satModalIn .18s ease-out both;
+}
+html[data-theme="light"] .sat-modal { background: rgba(30, 30, 38, 0.42); }
+.sat-modal[hidden] { display: none; }
+.sat-modal.is-closing { animation: satModalOut .16s ease-in both; }
+@keyframes satModalIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes satModalOut { from { opacity: 1; } to { opacity: 0; } }
+
+.sat-modal-panel {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+    width: min(54rem, 100%);
+    max-height: min(90vh, 56rem);
+    /* The bottom padding keeps the selection pill clear of the topic list. */
+    padding: 1.125rem 1.25rem 4.5rem;
+    border-radius: 1.25rem;
+    border: 0.0625rem solid var(--sat-card-bd);
+    background: var(--sat-panel-sf);
+    color: var(--tx);
+    box-shadow: 0 1.5rem 3rem rgba(0, 0, 0, 0.45);
+    animation: satModalPanelIn .24s cubic-bezier(.23, 1, .32, 1) both;
+}
+.sat-modal.is-closing .sat-modal-panel { animation: satModalPanelOut .16s ease-in both; }
+@keyframes satModalPanelIn {
+    from { opacity: 0; transform: scale(0.965) translateY(0.75rem); }
+    to { opacity: 1; transform: none; }
+}
+@keyframes satModalPanelOut {
+    from { opacity: 1; transform: none; }
+    to { opacity: 0; transform: scale(0.98); }
+}
+
+.sat-modal-head {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+.sat-modal-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.75rem 0.35rem 0.5rem;
+    border: 0;
+    border-radius: 62.4375rem;
+    background: transparent;
+    color: var(--tx);
+    font: inherit;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform .18s cubic-bezier(.23, 1, .32, 1), background .15s ease;
+}
+.sat-modal-back:hover { transform: scale(1.04); background: var(--sat-card-sf2); }
+.sat-modal-close {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border: 0;
+    border-radius: 50%;
+    background: var(--sat-card-sf2);
+    color: var(--tx);
+    font-size: 1.125rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: transform .18s cubic-bezier(.23, 1, .32, 1), background .15s ease;
+}
+.sat-modal-close:hover { transform: scale(1.1); background: var(--sat-card-sf); }
+.sat-modal-title {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    color: var(--tx);
+}
+.sat-modal-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 0.25rem;
+}
+.sat-modal .sat-bank-controls { align-items: flex-start; }
+.sat-modal .sat-session-bar { justify-content: flex-start; }
+
+/* One section per modal, and the modal head already names it. */
+.sat-modal .sat-section-column { grid-template-columns: 1fr; }
+.sat-modal .sat-section-header { display: none; }
+.sat-modal .sat-topic-columns {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.sat-practice-all {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.875rem 1rem;
+    border-radius: 1rem;
+    border: 0.0625rem solid var(--sat-card-bd);
+    background: var(--sat-card-sf);
+}
+.sat-practice-all-text { flex: 1; min-width: 0; }
+.sat-practice-all-title {
+    margin: 0;
+    font-size: 0.9375rem;
+    font-weight: 800;
+    color: var(--tx);
+}
+.sat-practice-all-desc {
+    margin: 0.125rem 0 0;
+    font-size: 0.8125rem;
+    color: var(--tx);
+}
+.sat-practice-all-btn {
+    --acc: var(--tone-green);
+    flex-shrink: 0;
+    height: 2.5rem;
+    padding: 0 1.1rem;
+    border: 0.0625rem solid var(--acc);
+    border-radius: 62.4375rem;
+    background: var(--acc);
+    color: #fff;
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 0.25rem 0 0 color-mix(in srgb, var(--acc) 55%, #000);
+    transition: transform .18s cubic-bezier(.23, 1, .32, 1), box-shadow .18s ease;
+}
+.sat-practice-all-btn:hover { transform: scale(1.04); }
+.sat-practice-all-btn:active {
+    transform: scale(0.98);
+    box-shadow: 0 0.1rem 0 0 color-mix(in srgb, var(--acc) 55%, #000);
+}
+
+/* The modal owns the page scroll while it is open. */
+body.sat-modal-open .sat-page.sat-bank-page { overflow: hidden; }
+
+/* The pill floats over the modal, so it has to clear the overlay. */
+body.sat-modal-open .sat-selection-pill { z-index: 1010; }
+
+/* ── Grey scoping for the new surfaces ── */
+.sat-grey .sat-modal { --tx2: var(--tx); --tx3: var(--tx); }
+/* Inside the modal the panel is already the card, so the section card drops
+   its own surface and keeps only its rows. */
+.sat-grey .sat-modal .sat-section-card {
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+}
+
+/* ── Motion polish on the existing controls: grow on hover, press down on
+      click, and open menus with a short scale instead of a hard cut. ── */
+.sat-grey .sat-filters-toggle:hover,
+.sat-grey .sat-filter-btn:hover { transform: scale(1.03); }
+.sat-grey .sat-filters-toggle:active,
+.sat-grey .sat-filter-btn:active { transform: scale(0.98); }
+
+.sat-filter-menu,
+.sat-limit-menu { transform-origin: top left; }
+
+.sat-filter-option { position: relative; }
+.sat-filter-option::before {
+    content: "";
+    position: absolute;
+    left: 0.125rem;
+    top: 0.3rem;
+    bottom: 0.3rem;
+    width: 0.1875rem;
+    border-radius: 0 0.125rem 0.125rem 0;
+    background: var(--acc, var(--p4));
+    transform: scaleY(0);
+    transform-origin: bottom;
+    transition: transform .2s ease;
+}
+.sat-filter-option:hover::before { transform: scaleY(1); }
+
+.sat-pill-btn { transition: transform .18s cubic-bezier(.23, 1, .32, 1), background .15s ease, color .15s ease; }
+.sat-pill-btn:hover { transform: scale(1.04); }
+.sat-pill-btn:active { transform: scale(0.98); }
