@@ -170,11 +170,15 @@ html[data-theme="light"] .ap-page {
 }
 
 .ap-course-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; }
-.ap-course-icon {
-  width: 3rem; height: 3rem; border-radius: 0.875rem; flex-shrink: 0;
+/* Filled tone tile: the exam picker's icon treatment, now shared by both
+   pickers. --acc-fill comes from the card's .tone-* class, so each card's
+   icon carries that card's color. */
+.ap-course-icon,
+.ap-exam-icon {
+  width: 3rem; height: 3rem; margin-top: 0; border-radius: 0.875rem; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
-  background: var(--ap-sf2);
-  border: 1px solid var(--ap-bd); color: var(--acc); font-size: 1.5rem;
+  background: var(--acc-fill); border: 0; color: #fff; font-size: 1.5rem;
+  box-shadow: 0 0.25rem 0 0 color-mix(in srgb, var(--acc-fill) 60%, #000);
 }
 .ap-course-card.is-disabled { opacity: 0.6; cursor: not-allowed; }
 .ap-course-card.is-disabled:hover { transform: none; border-color: var(--ap-bd); box-shadow: none; }
@@ -535,29 +539,89 @@ html[data-theme="light"] .ap-page {
 .ap-feedback-foot { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-top: 1.5rem; }
 
 /* ── Progress ───────────────────────────────────────────────────────────── */
-/* Data tiles stay filled in their own color, never grey. */
-.ap-summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: 1rem; margin-top: 1.5rem; }
-.ap-summary-card {
-  padding: 1.125rem 1.25rem; border-radius: 0.9375rem;
-  background: var(--acc-fill); border: 1px solid var(--acc-fill); color: #fff;
-  --acc: var(--tone-blue);
-}
-.ap-summary-card:nth-child(2) { --acc: var(--tone-pink); }
-.ap-summary-card:nth-child(3) { --acc: var(--tone-amber); }
-.ap-summary-card:nth-child(4) { --acc: var(--tone-green); }
-.ap-summary-label { font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: #fff; }
-.ap-summary-value { font-weight: 800; font-size: 1.75rem; color: #fff; margin-top: 0.375rem; line-height: 1.1; }
-.ap-summary-sub { font-size: 0.75rem; color: #fff; margin-top: 0.25rem; }
+/* Color blocking, same split the SAT dashboard writes out in sat/dashboard.html:
+     · filled and opaque — the four overview tiles. They are the readouts at the
+       top of the page, and a filled tile is the strongest read available.
+     · grey — every panel that holds a chart or a list. A saturated panel fill
+       fought the color-coded bars drawn on top of it, which is what made this
+       page hard to read. Those panels carry their tone on the heading, the rank
+       badges, the row borders and the hover glow instead. */
 
-.ap-panel { margin-top: 1.75rem; }
-.ap-panel-title { font-weight: 800; font-size: 1.1875rem; color: var(--tx); margin: 0 0 0.75rem; }
+/* Section heads: small icon, caps label, optional right-hand ghost CTA. Same
+   shape as .home-section-head on the dashboard. Replaces .ap-panel-title
+   (commented out at the end of this section), which set each section as a
+   large bold h2 with nothing containing the content underneath it. */
+.ap-section-head {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-size: 0.875rem; font-weight: 700;
+  color: var(--tx); margin: 1.75rem 0 0.875rem;
+}
+.ap-section-head:first-of-type { margin-top: 0.75rem; }
+.ap-section-head .material-icons-round { font-size: 1.125rem; color: var(--tx); }
+.ap-head-cta {
+  margin-left: auto; padding: 0.375rem 0.75rem; border-radius: 999px;
+  font-size: 0.75rem; font-weight: 700;
+  text-decoration: none; color: var(--tx);
+  background: var(--ap-sf2); border: 1px solid var(--ap-bd);
+  transition: background-color .18s ease, border-color .18s ease, transform .18s ease;
+}
+.ap-head-cta:hover { transform: scale(1.03); background: var(--ap-bd); }
+
+/* Overview tiles: filled in their own color, never grey. --acc-fill has to be
+   set here alongside --acc, since these tiles carry no .tone-* class in the
+   markup and var(--acc-fill) with nothing behind it left them unfilled. */
+.ap-summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: 1rem; }
+.ap-summary-card {
+  position: relative; overflow: hidden; min-height: 7.375rem;
+  padding: 1.125rem 1.25rem; border-radius: 1rem;
+  --acc: var(--tone-blue); --acc-fill: #3472d9;
+  background: var(--acc-fill); border: 1px solid var(--acc-fill); color: #fff;
+  box-shadow: 0 0.25rem 0 0 color-mix(in srgb, var(--acc-fill) 60%, #000);
+  transition: transform .18s cubic-bezier(.23,1,.32,1), box-shadow .2s;
+}
+.ap-summary-card:nth-child(2) { --acc: var(--tone-pink);  --acc-fill: #d03f87; }
+.ap-summary-card:nth-child(3) { --acc: var(--tone-amber); --acc-fill: #d88b0a; }
+.ap-summary-card:nth-child(4) { --acc: var(--tone-green); --acc-fill: #1ead53; }
+.ap-summary-card:hover {
+  transform: scale(1.02);
+  box-shadow: 0 0.6rem 1.6rem color-mix(in srgb, var(--acc-fill) 40%, transparent),
+              0 0.3rem 0 0 color-mix(in srgb, var(--acc-fill) 60%, #000);
+}
+.ap-summary-label { font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: #fff; }
+.ap-summary-value { font-weight: 800; font-size: 2.25rem; letter-spacing: -0.02em; color: #fff; margin-top: 0.375rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.ap-summary-sub { font-size: 0.75rem; color: #fff; margin-top: 0.25rem; }
+.ap-summary-watermark { position: absolute; right: 0.75rem; bottom: 0.5rem; font-size: 3.75rem; color: rgba(255,255,255,.22); pointer-events: none; }
+
+/* Grey panels: opaque wizard grey, 3D shadow, tone on the heading and hover. */
+.ap-panel-card {
+  padding: 1.25rem 1.375rem; border-radius: 1.125rem;
+  background: var(--ap-sf); border: 1px solid var(--ap-bd);
+  box-shadow: 0 0.25rem 0 0 var(--ap-bd);
+  transition: border-color .2s, box-shadow .2s;
+}
+.ap-panel-card:hover {
+  border-color: color-mix(in srgb, var(--acc) 70%, var(--ap-bd));
+  box-shadow: 0 0.6rem 1.6rem color-mix(in srgb, var(--acc) 30%, transparent),
+              0 0.3rem 0 0 color-mix(in srgb, var(--acc) 45%, var(--ap-bd));
+}
+.ap-panel-card > h3 {
+  font-size: 0.6875rem; font-weight: 800; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--acc); margin: 0 0 0.875rem;
+}
+.ap-panel-hint { font-size: 0.75rem; color: var(--tx); margin: 0.875rem 0 0; }
+.ap-panel-trend    { --acc: var(--tone-blue); }
+.ap-panel-weak     { --acc: var(--tone-pink); }
+.ap-panel-attempts { --acc: var(--tone-orange); }
+
 .ap-panel-empty {
   padding: 2rem 1.25rem; text-align: center; border-radius: 0.9375rem;
-  background: var(--ap-sf); border: 1px dashed var(--ap-bd); color: var(--tx); font-size: 0.90625rem; line-height: 1.6;
+  background: var(--ap-sf2); border: 1px dashed var(--ap-bd); color: var(--tx); font-size: 0.90625rem; line-height: 1.6;
 }
 .ap-panel-empty a { color: var(--tone-blue); font-weight: 700; text-decoration: none; }
 
-.ap-trend { display: flex; align-items: flex-end; gap: 0.625rem; padding: 1.25rem 1.25rem 1rem; border-radius: 0.9375rem; background: var(--ap-sf); border: 1px solid var(--ap-bd); }
+/* The trend chart sits inside .ap-panel-card now, so it brings no surface of
+   its own. */
+.ap-trend { display: flex; align-items: flex-end; gap: 0.625rem; }
 .ap-trend-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.375rem; min-width: 2.25rem; cursor: pointer; }
 .ap-trend-bar {
   width: 100%; max-width: 2.5rem; border-radius: 0.375rem 0.375rem 0.1875rem 0.1875rem;
@@ -568,8 +632,24 @@ html[data-theme="light"] .ap-page {
 .ap-trend-label { font-size: 0.6875rem; color: var(--tx); text-align: center; line-height: 1.3; }
 .ap-trend-value { font-size: 0.71875rem; font-weight: 700; color: var(--tx); }
 
-.ap-weak-list { padding: 0 0.25rem; }
-.ap-weak-row { margin-bottom: 1rem; }
+/* Rubric weakness: numbered rows in two columns on a wide screen. The rank
+   badge carries the row's tone; the meter keeps the semantic red/gold/green,
+   which is the one place color means a value rather than an identity. */
+.ap-weak-list { display: grid; gap: 0.125rem; }
+@media (min-width: 60rem) { .ap-weak-list { grid-template-columns: 1fr 1fr; column-gap: 1.75rem; } }
+.ap-weak-row {
+  display: flex; align-items: flex-start; gap: 0.625rem;
+  padding: 0.625rem 0.5rem; border-radius: 0.5rem;
+  border-bottom: 1px solid var(--ap-bd);
+  transition: background-color .15s ease;
+}
+.ap-weak-row:hover { background: var(--ap-sf2); }
+.ap-weak-rank {
+  width: 1.5rem; height: 1.5rem; flex-shrink: 0; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--acc); color: #fff; font-size: 0.6875rem; font-weight: 800;
+}
+.ap-weak-body { flex: 1; min-width: 0; }
 .ap-weak-head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.375rem; }
 .ap-weak-name { font-weight: 700; color: var(--tx); font-size: 0.875rem; }
 .ap-weak-nums { font-size: 0.75rem; color: var(--tx); white-space: nowrap; }
@@ -579,11 +659,14 @@ html[data-theme="light"] .ap-page {
 .ap-weak-bar-fill.decent { background: var(--gold); }
 .ap-weak-bar-fill.good { background: var(--grn); }
 
-.ap-attempt-row-wrap { margin-bottom: 0.625rem; }
+/* Attempts: rows inside the panel, so they rest on --ap-sf2 against the
+   panel's --ap-sf instead of floating loose on the page. */
+.ap-attempt-row-wrap { margin-bottom: 0.5rem; }
+.ap-attempt-row-wrap:last-child { margin-bottom: 0; }
 .ap-attempt-row {
   width: 100%; display: flex; align-items: center; gap: 1rem; text-align: left;
   padding: 1rem 1.25rem; border-radius: 0.9375rem;
-  background: var(--ap-sf); border: 1px solid var(--ap-bd);
+  background: var(--ap-sf2); border: 1px solid var(--ap-bd);
   color: inherit; cursor: pointer; font: inherit; border-left: 3px solid var(--acc);
   transition: transform .2s, border-color .2s, box-shadow .2s;
 }
@@ -592,6 +675,7 @@ html[data-theme="light"] .ap-page {
   border-color: color-mix(in srgb, var(--acc) 70%, var(--ap-bd));
   box-shadow: 0 0 1rem color-mix(in srgb, var(--acc) 30%, transparent);
 }
+.ap-attempt-row-wrap.open .ap-attempt-row { border-radius: 0.9375rem 0.9375rem 0 0; }
 .ap-attempt-score { font-weight: 800; font-size: 1.375rem; color: var(--tx); min-width: 3rem; }
 .ap-attempt-main { flex: 1; min-width: 0; }
 .ap-attempt-name { font-weight: 700; color: var(--tx); font-size: 0.90625rem; }
@@ -602,6 +686,7 @@ html[data-theme="light"] .ap-page {
 .ap-attempt-detail {
   display: none; padding: 1rem 1.25rem 1.25rem; border-radius: 0 0 0.9375rem 0.9375rem;
   background: var(--ap-sf2); border: 1px solid var(--ap-bd); border-top: none;
+  border-left: 3px solid var(--acc);
 }
 .ap-attempt-row-wrap.open .ap-attempt-detail { display: block; }
 .ap-detail-label { font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--tx); margin: 0.875rem 0 0.5rem; }
@@ -614,16 +699,22 @@ html[data-theme="light"] .ap-page {
 .ap-detail-verdict.lost b { color: var(--mr); font-weight: 700; }
 .ap-detail-transcript { padding: 0.75rem 0.875rem; border-radius: 0.625rem; background: var(--ap-sf); border: 1px solid var(--ap-bd); color: var(--tx); font-size: 0.8125rem; line-height: 1.6; white-space: pre-wrap; }
 
+/* Replaced by .ap-section-head + .ap-panel-card above. Nothing else on the AP
+   pages uses these two.
+.ap-panel { margin-top: 1.75rem; }
+.ap-panel-title { font-weight: 800; font-size: 1.1875rem; color: var(--tx); margin: 0 0 0.75rem; }
+*/
+
 /* ── Per-option accents ────────────────────────────────────────────────────
    Lists of generic options cycle the tones so a group is never one flat
    color. Meaningful groups (course cards, course-switcher chips) set their
    tone in the markup instead. */
-.ap-frq-row:nth-child(6n+1), .ap-attempt-row-wrap:nth-child(6n+1), .ap-trend-col:nth-child(6n+1) { --acc: var(--tone-blue); }
-.ap-frq-row:nth-child(6n+2), .ap-attempt-row-wrap:nth-child(6n+2), .ap-trend-col:nth-child(6n+2) { --acc: var(--tone-pink); }
-.ap-frq-row:nth-child(6n+3), .ap-attempt-row-wrap:nth-child(6n+3), .ap-trend-col:nth-child(6n+3) { --acc: var(--tone-teal); }
-.ap-frq-row:nth-child(6n+4), .ap-attempt-row-wrap:nth-child(6n+4), .ap-trend-col:nth-child(6n+4) { --acc: var(--tone-amber); }
-.ap-frq-row:nth-child(6n+5), .ap-attempt-row-wrap:nth-child(6n+5), .ap-trend-col:nth-child(6n+5) { --acc: var(--tone-green); }
-.ap-frq-row:nth-child(6n+6), .ap-attempt-row-wrap:nth-child(6n+6), .ap-trend-col:nth-child(6n+6) { --acc: var(--tone-orange); }
+.ap-frq-row:nth-child(6n+1), .ap-attempt-row-wrap:nth-child(6n+1), .ap-trend-col:nth-child(6n+1), .ap-weak-row:nth-child(6n+1) { --acc: var(--tone-blue); }
+.ap-frq-row:nth-child(6n+2), .ap-attempt-row-wrap:nth-child(6n+2), .ap-trend-col:nth-child(6n+2), .ap-weak-row:nth-child(6n+2) { --acc: var(--tone-pink); }
+.ap-frq-row:nth-child(6n+3), .ap-attempt-row-wrap:nth-child(6n+3), .ap-trend-col:nth-child(6n+3), .ap-weak-row:nth-child(6n+3) { --acc: var(--tone-teal); }
+.ap-frq-row:nth-child(6n+4), .ap-attempt-row-wrap:nth-child(6n+4), .ap-trend-col:nth-child(6n+4), .ap-weak-row:nth-child(6n+4) { --acc: var(--tone-amber); }
+.ap-frq-row:nth-child(6n+5), .ap-attempt-row-wrap:nth-child(6n+5), .ap-trend-col:nth-child(6n+5), .ap-weak-row:nth-child(6n+5) { --acc: var(--tone-green); }
+.ap-frq-row:nth-child(6n+6), .ap-attempt-row-wrap:nth-child(6n+6), .ap-trend-col:nth-child(6n+6), .ap-weak-row:nth-child(6n+6) { --acc: var(--tone-orange); }
 
 @media (max-width: 48rem) {
   .ap-frq-row { flex-wrap: wrap; }

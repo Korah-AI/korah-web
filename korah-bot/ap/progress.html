@@ -130,6 +130,9 @@
   <div class="ap-page" style="padding: 1.25rem;">
     <div class="ap-page-inner">
 
+      <!-- Replaced by the compact topline below, same as the Question Bank. The
+           back link became the topline's right-hand action, and the course
+           description came out with the rest of the header copy.
       <a class="ap-back-link" href="./index.html"><span class="material-icons-round" style="font-size:1rem;">arrow_back</span> All courses</a>
 
       <div class="ap-eyebrow-row">
@@ -140,6 +143,12 @@
       <p class="ap-page-desc" id="progress-course-desc">
         Every past attempt, your score trend, and the rubric categories you keep losing points on.
       </p>
+      -->
+      <header class="sat-bank-topline">
+        <img src="../logo-images/newlogo10.png" class="sat-bank-topline-logo" alt="Korah logo"/>
+        <h1 class="sat-bank-title" id="progress-course-title">AP Progress</h1>
+        <a href="./index.html" class="sat-bank-backlink">All courses <svg class="sat-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></a>
+      </header>
 
       <!-- Course switcher -->
       <div class="ap-meta-chips" id="progress-course-chips">
@@ -149,25 +158,53 @@
       <div id="progress-demo-note" class="ap-answer-box-note" hidden>Demo data. Live progress shows when your account is connected and you have completed attempts.</div>
 
       <!-- Summary cards -->
+      <h2 class="ap-section-head"><span class="material-icons-round">insert_chart_outlined</span> Overview</h2>
       <div class="ap-summary-cards" id="progress-summary">
         <div class="ap-loading"><div class="ap-spinner"></div><div class="ap-loading-text">Loading progress...</div></div>
       </div>
 
-      <!-- Score trend -->
+      <!-- The three sections below used to be bare: an h2.ap-panel-title with
+           the chart, the bars or the attempt rows loose on the page under it.
+           Each one is now a section head plus a grey .ap-panel-card.
       <div class="ap-panel">
         <h2 class="ap-panel-title">Score trend</h2>
         <div id="progress-trend" class="ap-panel-empty">No attempts yet.</div>
       </div>
 
-      <!-- Weakness view -->
       <div class="ap-panel">
         <h2 class="ap-panel-title">Rubric category weakness</h2>
         <div id="progress-weak" class="ap-panel-empty">No data yet.</div>
       </div>
 
-      <!-- Attempt list -->
       <div class="ap-panel">
         <h2 class="ap-panel-title">Attempts</h2>
+        <div id="progress-attempts" class="ap-panel-empty">No attempts yet.</div>
+      </div>
+      -->
+
+      <!-- Score trend -->
+      <h2 class="ap-section-head">
+        <span class="material-icons-round">trending_up</span> Score trend
+        <a class="ap-head-cta" id="progress-frq-link" href="./frqs.html">Practice FRQs</a>
+      </h2>
+      <div class="ap-panel-card ap-panel-trend">
+        <h3>Points per attempt</h3>
+        <div id="progress-trend" class="ap-panel-empty">No attempts yet.</div>
+        <p class="ap-panel-hint" id="progress-trend-hint" hidden>Tap a bar to open that attempt below.</p>
+      </div>
+
+      <!-- Weakness view -->
+      <h2 class="ap-section-head"><span class="material-icons-round">flag</span> Rubric categories</h2>
+      <div class="ap-panel-card ap-panel-weak">
+        <h3>Where you lose points</h3>
+        <div id="progress-weak" class="ap-panel-empty">No data yet.</div>
+        <p class="ap-panel-hint" id="progress-weak-hint" hidden>Ordered worst first. The meter is points earned out of points available.</p>
+      </div>
+
+      <!-- Attempt list -->
+      <h2 class="ap-section-head"><span class="material-icons-round">history</span> Attempts</h2>
+      <div class="ap-panel-card ap-panel-attempts">
+        <h3>Every graded FRQ</h3>
         <div id="progress-attempts" class="ap-panel-empty">No attempts yet.</div>
       </div>
 
@@ -267,7 +304,7 @@
     function renderSummary() {
       const el = $('progress-summary');
       if (!attempts.length) {
-        el.innerHTML = '<div class="ap-summary-card"><div class="ap-summary-label">Attempts</div><div class="ap-summary-value">0</div><div class="ap-summary-sub">No FRQs graded yet</div></div>';
+        el.innerHTML = '<div class="ap-summary-card"><div class="ap-summary-label">Attempts</div><div class="ap-summary-value">0</div><div class="ap-summary-sub">No FRQs graded yet</div><span class="ap-summary-watermark material-icons-round">fact_check</span></div>';
         return;
       }
       const n = attempts.length;
@@ -277,17 +314,19 @@
       const best = attempts.reduce((m, a) => (!m || a.score / Math.max(1, a.totalPoints) > m.score / Math.max(1, m.totalPoints)) ? a : m, null);
       const hrs = attempts.reduce((s, a) => s + (a.timeSpentSec || 0), 0) / 3600;
       el.innerHTML = `
-        <div class="ap-summary-card"><div class="ap-summary-label">Attempts</div><div class="ap-summary-value">${n}</div><div class="ap-summary-sub">${usingPlaceholders ? 'demo set' : 'graded FRQs'}</div></div>
-        <div class="ap-summary-card"><div class="ap-summary-label">Average points</div><div class="ap-summary-value">${sumScore}<span style="color:var(--tx3);font-size:1rem;"> /${sumTotal}</span></div><div class="ap-summary-sub">${avg}% earned overall</div></div>
-        <div class="ap-summary-card"><div class="ap-summary-label">Best score</div><div class="ap-summary-value">${best ? best.score + '<span style="color:var(--tx3);font-size:1rem;"> /' + best.totalPoints + '</span>' : '0'}</div><div class="ap-summary-sub">${best ? esc(best.frqId) : ''}</div></div>
-        <div class="ap-summary-card"><div class="ap-summary-label">Time practised</div><div class="ap-summary-value">${hrs.toFixed(1)}<span style="color:var(--tx3);font-size:1rem;">h</span></div><div class="ap-summary-sub">across ${n} attempts</div></div>`;
+        <div class="ap-summary-card"><div class="ap-summary-label">Attempts</div><div class="ap-summary-value">${n}</div><div class="ap-summary-sub">${usingPlaceholders ? 'demo set' : 'graded FRQs'}</div><span class="ap-summary-watermark material-icons-round">fact_check</span></div>
+        <div class="ap-summary-card"><div class="ap-summary-label">Average points</div><div class="ap-summary-value">${sumScore}<span style="font-size:1rem;opacity:.75;"> /${sumTotal}</span></div><div class="ap-summary-sub">${avg}% earned overall</div><span class="ap-summary-watermark material-icons-round">bar_chart</span></div>
+        <div class="ap-summary-card"><div class="ap-summary-label">Best score</div><div class="ap-summary-value">${best ? best.score + '<span style="font-size:1rem;opacity:.75;"> /' + best.totalPoints + '</span>' : '0'}</div><div class="ap-summary-sub">${best ? esc(best.frqId) : ''}</div><span class="ap-summary-watermark material-icons-round">emoji_events</span></div>
+        <div class="ap-summary-card"><div class="ap-summary-label">Time practised</div><div class="ap-summary-value">${hrs.toFixed(1)}<span style="font-size:1rem;opacity:.75;">h</span></div><div class="ap-summary-sub">across ${n} attempts</div><span class="ap-summary-watermark material-icons-round">timer</span></div>`;
     }
 
     let openedIndex = -1;
 
     function renderTrend() {
       const el = $('progress-trend');
+      $('progress-trend-hint').hidden = !attempts.length;
       if (!attempts.length) {
+        el.className = 'ap-panel-empty';
         el.innerHTML = 'No attempts yet. <a href="./frqs.html?course=' + encodeURIComponent(courseSlug) + '">Pick an FRQ</a> to start.';
         return;
       }
@@ -314,32 +353,40 @@
 
     function renderWeakness() {
       const el = $('progress-weak');
+      const hint = $('progress-weak-hint');
       if (!attempts.length || !window.KorahAPProgress || !window.KorahAPProgress.computeWeakness) {
         el.className = 'ap-panel-empty';
         el.innerHTML = 'No rubric data yet. Grade an attempt to see your categories.';
+        hint.hidden = true;
         return;
       }
       window.KorahAPProgress.computeWeakness(attempts, courseSlug).then((rows) => {
         if (!rows.length) {
           el.className = 'ap-panel-empty';
           el.innerHTML = 'No rubric data yet. Grade an attempt to see your categories.';
+          hint.hidden = true;
           return;
         }
         el.className = 'ap-weak-list';
-        el.innerHTML = rows.map((r) => {
+        el.innerHTML = rows.map((r, i) => {
           const pct = Math.round(r.accuracy * 100);
           return `
             <div class="ap-weak-row">
-              <div class="ap-weak-head">
-                <span class="ap-weak-name">${esc(r.label)}</span>
-                <span class="ap-weak-nums">${r.earned}/${r.available} points · ${pct}%</span>
+              <span class="ap-weak-rank">${i + 1}</span>
+              <div class="ap-weak-body">
+                <div class="ap-weak-head">
+                  <span class="ap-weak-name">${esc(r.label)}</span>
+                  <span class="ap-weak-nums">${r.earned}/${r.available} points · ${pct}%</span>
+                </div>
+                <div class="ap-weak-bar-track"><div class="ap-weak-bar-fill ${weaknessClass(r.accuracy)}" style="width:${Math.max(4, pct)}%"></div></div>
               </div>
-              <div class="ap-weak-bar-track"><div class="ap-weak-bar-fill ${weaknessClass(r.accuracy)}" style="width:${Math.max(4, pct)}%"></div></div>
             </div>`;
         }).join('');
+        hint.hidden = false;
       }).catch(() => {
         el.className = 'ap-panel-empty';
         el.innerHTML = 'Could not aggregate rubric categories right now.';
+        hint.hidden = true;
       });
     }
 
@@ -394,8 +441,8 @@
     function applyCourseMeta() {
       const course = window.KorahAP.getCourse(courseSlug);
       $('progress-course-title').textContent = course.name + ' Progress';
-      $('progress-course-desc').textContent = course.description;
       document.title = 'Korah AI — ' + course.name + ' Progress';
+      $('progress-frq-link').href = './frqs.html?course=' + encodeURIComponent(courseSlug);
       renderChips();
     }
 
