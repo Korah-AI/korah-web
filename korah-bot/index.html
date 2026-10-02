@@ -48,6 +48,13 @@
     --ln-fill-hi: #fff;
     --ln-fill-tx: #000;
     --ln-lift:    0 0.75rem 2rem rgba(0,0,0,0.6);
+    /* One per rotating role in the hero headline. */
+    --ln-rot-1:   #7cc4ff;
+    --ln-rot-2:   #ffbe5c;
+    --ln-rot-3:   #a894ff;
+    --ln-rot-4:   #67e8f9;
+    --ln-rot-5:   #ff8fa3;
+    --ln-rot-6:   #4ade80;
   }
   html[data-theme="light"] {
     --ln-bg:      #fff;
@@ -63,6 +70,12 @@
     --ln-fill-hi: #000;
     --ln-fill-tx: #fff;
     --ln-lift:    0 0.75rem 2rem rgba(0,0,0,0.12);
+    --ln-rot-1:   #1f6feb;
+    --ln-rot-2:   #b45309;
+    --ln-rot-3:   #6d4aff;
+    --ln-rot-4:   #0e7490;
+    --ln-rot-5:   #be123c;
+    --ln-rot-6:   #15803d;
   }
 
   .ln-page {
@@ -113,6 +126,33 @@
   .ln-btn-soft:hover { background: var(--ln-bd); }
   .ln-btn-sm { height: 2.25rem; padding: 0 0.875rem; font-size: 0.8125rem; }
   .ln-btn-lg { height: 3rem; padding: 0 1.5rem; font-size: 0.9375rem; }
+
+  /* Liquid glass: a translucent pane that blurs and saturates whatever is
+     behind it (the hero shader, the CTA surface), lit by a bright inner top
+     edge and a specular sweep that crosses on hover. */
+  .ln-btn-glass {
+    position: relative; overflow: hidden;
+    color: var(--ln-tx);
+    background: color-mix(in srgb, var(--ln-tx) 9%, transparent);
+    border-color: color-mix(in srgb, var(--ln-tx) 20%, transparent);
+    backdrop-filter: blur(1.125rem) saturate(1.8);
+    -webkit-backdrop-filter: blur(1.125rem) saturate(1.8);
+    box-shadow: inset 0 0.0625rem 0 color-mix(in srgb, var(--ln-tx) 30%, transparent),
+                inset 0 -0.0625rem 0 color-mix(in srgb, var(--ln-tx) 8%, transparent);
+  }
+  .ln-btn-glass > * { position: relative; z-index: 1; }
+  .ln-btn-glass::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(115deg, transparent 32%,
+                color-mix(in srgb, var(--ln-tx) 24%, transparent) 50%, transparent 68%);
+    transform: translateX(-130%);
+    transition: transform .75s cubic-bezier(.23,1,.32,1);
+  }
+  .ln-btn-glass:hover {
+    background: color-mix(in srgb, var(--ln-tx) 15%, transparent);
+    border-color: color-mix(in srgb, var(--ln-tx) 34%, transparent);
+  }
+  .ln-btn-glass:hover::after { transform: translateX(130%); }
 
   /* ══ NAVBAR ═════════════════════════════════════════════════════════════
      Solid and opaque on scroll, no purple tint, no gradient underline. */
@@ -267,6 +307,32 @@
   .ln-fact h3 { margin: 0.75rem 0 0.375rem; font-size: 1rem; font-weight: 600; color: var(--ln-tx); }
   .ln-fact p  { margin: 0; font-size: 0.875rem; line-height: 1.55; color: var(--ln-tx2); }
 
+  /* ══ TUTORING SPLIT ═════════════════════════════════════════════════════
+     Details left, a phone playing the tutor's problem walkthrough right. The
+     frame is a plain rounded shell, not the 3D hero phone. */
+  .ln-tut { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: clamp(2rem, 5vw, 4rem); align-items: center; }
+  .ln-tut-list { list-style: none; margin: 1.5rem 0 2rem; padding: 0; display: grid; gap: 0.875rem; }
+  .ln-tut-list li { display: flex; gap: 0.75rem; align-items: flex-start; }
+  .ln-tut-list .material-icons-round { font-size: 1.125rem; color: var(--ln-tx2); line-height: 1.5; }
+  .ln-tut-list b { display: block; font-size: 1rem; font-weight: 600; color: var(--ln-tx); }
+  .ln-tut-list span.t { display: block; margin-top: 0.1875rem; font-size: 0.875rem; line-height: 1.55; color: var(--ln-tx2); }
+  .ln-tut-phone {
+    justify-self: center; width: min(17rem, 100%);
+    padding: 0.625rem; border-radius: 2.5rem;
+    background: var(--ln-sf2); border: 0.0625rem solid var(--ln-bd);
+  }
+  .ln-tut-screen {
+    position: relative; overflow: hidden;
+    aspect-ratio: 9 / 19.5; border-radius: 2rem;
+    background: #000; display: flex; align-items: center; justify-content: center;
+  }
+  .ln-tut-screen video { width: 100%; height: 100%; object-fit: cover; }
+  .ln-tut-ph { font-size: 0.8125rem; color: var(--ln-tx3); text-align: center; padding: 0 1.5rem; }
+  .ln-tut-cap { margin: 1rem 0 0; text-align: center; font-size: 0.8125rem; color: var(--ln-tx3); }
+  @media (max-width: 52rem) {
+    .ln-tut { grid-template-columns: 1fr; }
+  }
+
   .ln-chips { display: flex; flex-wrap: wrap; gap: 0.375rem; }
   .ln-chip {
     padding: 0.3125rem 0.625rem;
@@ -340,9 +406,53 @@
     background: radial-gradient(circle at center, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0) 100%);
   }
   ──────────────────────────────────────────────────────────────────────── */
+
+  /* ── Scroll cue: sits at the hero's bottom edge and points at the band of
+        school names below. The shimmer is a clipped gradient sweeping across
+        the glyphs; the arrow bobs on its own, slower cycle. ── */
+  .ln-scroll-cue {
+    position: absolute; z-index: 2;
+    left: 50%; bottom: clamp(1rem, 2.5vw, 1.75rem); transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+    text-decoration: none; padding: 0.5rem 0.75rem;
+  }
+  .ln-scroll-cue-text {
+    font-size: 0.8125rem; font-weight: 500; letter-spacing: -0.01em;
+    background: linear-gradient(100deg,
+      var(--ln-tx3) 0%, var(--ln-tx3) 38%, var(--ln-tx) 50%, var(--ln-tx3) 62%, var(--ln-tx3) 100%);
+    background-size: 280% 100%;
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent; color: transparent;
+    animation: ln-cue-glisten 3.4s linear infinite;
+  }
+  .ln-scroll-cue .material-icons-round {
+    font-size: 1.125rem; color: var(--ln-tx3);
+    animation: ln-cue-bob 2.1s ease-in-out infinite;
+    transition: color .18s ease;
+  }
+  .ln-scroll-cue:hover .material-icons-round { color: var(--ln-tx); }
+  @keyframes ln-cue-glisten {
+    from { background-position: 140% 0; }
+    to   { background-position: -40% 0; }
+  }
+  @keyframes ln-cue-bob {
+    0%, 100% { transform: translateY(0); opacity: 0.75; }
+    50%      { transform: translateY(0.25rem); opacity: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ln-scroll-cue-text {
+      animation: none; background: none;
+      -webkit-text-fill-color: var(--ln-tx2); color: var(--ln-tx2);
+    }
+    .ln-scroll-cue .material-icons-round { animation: none; }
+  }
+
   .ln-hero-grid {
     position: relative; z-index: 1;
     width: 100%; max-width: 72rem; margin: 0 auto;
+    /* Off dead centre: the copy column reads left-heavy against the shader, so
+       the whole grid rides a little right. */
+    transform: translateX(clamp(0rem, 3vw, 3.5rem));
     display: grid; grid-template-columns: 1.1fr 0.9fr;
     gap: clamp(2rem, 5vw, 4rem); align-items: center;
   }
@@ -354,6 +464,61 @@
     font-size: 0.8125rem; font-weight: 500; color: var(--ln-tx2);
   }
   .ln-badge i { width: 0.4375rem; height: 0.4375rem; border-radius: 50%; background: #22c55e; flex-shrink: 0; }
+  /* Rotating headline, spun like a revolver cylinder. Each phrase rides down
+     through the slot: it waits above, rolls into the chamber, then carries on
+     out of the bottom as the next one arrives. The vertical squash is what
+     sells it — a chamber turning away from you foreshortens, so only the phrase
+     facing front is at full height — and the blur is the motion smear.
+
+     Travel time comes from --rot-dur, which the script resets on every tick to
+     that tick's own gap. So the roll is a blur at the start and a slow, heavy
+     turn by the end: the deceleration is in the movement itself, not just in
+     how often it happens.
+
+     Nothing but the swapped phrase may move. Two things buy that: each variable
+     phrase sits in a slot that stacks every variant in one grid cell, so the
+     slot is permanently as wide as its longest phrase and the line can never
+     rewrap; and each slot ends its line, so the dead width a short phrase leaves
+     is trailing space nobody can see. The headline is therefore always exactly
+     two lines and the lead and stat row below never shift.
+
+     Every selector below is a direct-child one on purpose: line two nests a
+     subject chamber inside the "for" chamber, and a loose descendant selector
+     would drive both from the outer slot's state. */
+  .ln-rot-line { display: block; }
+  .ln-rot-slot {
+    display: inline-grid; align-items: baseline;
+    --rot-dur: 300ms;
+    --rot-ease: cubic-bezier(.32,0,.2,1);
+  }
+  /* The last chamber is a different motion from the rest: the script gives it a
+     full second, and this curve spends most of it arriving — it covers the
+     distance early, overshoots a hair, then takes its time settling back. That
+     long tail is the satisfying part. */
+  .ln-rot-slot.is-landing { --rot-ease: cubic-bezier(.18,1.16,.3,1); }
+
+  /* Resting state is "parked above", and it carries no transition — so a
+     phrase that has finished its pass snaps back to the top instead of flying
+     up through the chamber on its way to being reused. */
+  .ln-rot-slot > .ln-rot {
+    grid-area: 1 / 1; justify-self: start;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translateY(-0.5em) scaleY(0.78);
+    filter: blur(0.16rem);
+  }
+  /* Only the phrase coming in and the one going out are in motion. */
+  .ln-rot-slot > .ln-rot.is-on,
+  .ln-rot-slot > .ln-rot.is-below {
+    transition: opacity var(--rot-dur) ease,
+                transform var(--rot-dur) var(--rot-ease),
+                filter var(--rot-dur) ease;
+  }
+  .ln-rot-slot > .ln-rot.is-on {
+    opacity: 1; transform: translateY(0) scaleY(1); filter: blur(0);
+  }
+  .ln-rot-slot > .ln-rot.is-below { transform: translateY(0.5em) scaleY(0.78); }
+
   .ln-hero-copy .ln-lead { max-width: 34rem; margin-top: 1.25rem; }
   .ln-hero-copy .ln-actions { margin-top: 2rem; }
   .ln-hero-stats {
@@ -366,45 +531,69 @@
 
   @media (max-width: 56.25rem) {
     .ln-hero { min-height: 0; }
-    .ln-hero-grid { grid-template-columns: 1fr; gap: 3rem; }
+    .ln-hero-grid { grid-template-columns: 1fr; gap: 3rem; transform: none; }
     .ln-hero-copy { text-align: center; }
+    .ln-rot-slot > .ln-rot { justify-self: center; }
     .ln-hero-copy .ln-lead { margin-left: auto; margin-right: auto; }
     .ln-hero-copy .ln-actions { justify-content: center; }
     .ln-hero-stats { justify-content: center; text-align: center; }
   }
 
-  /* ══ UNIVERSITY MARQUEE (same component as login.html) ══════════════════ */
-  .ln-marquee-wrap { max-width: 46rem; margin: 0 auto; }
-  .ln-marquee-label { margin: 0 0 0.75rem; text-align: center; font-size: 0.875rem; font-weight: 500; color: var(--ln-tx2); }
-  .ln-marquee {
-    overflow: hidden; padding: 0.25rem 0;
-    -webkit-mask-image: linear-gradient(to right, transparent, #000 18%, #000 82%, transparent);
-            mask-image: linear-gradient(to right, transparent, #000 18%, #000 82%, transparent);
+  /* ══ UNIVERSITY MARQUEE ═════════════════════════════════════════
+     Full bleed and two rows running opposite ways, so the band fills the
+     section instead of a 46rem strip floating in it. Names carry the weight;
+     the chip is the supporting mark. */
+  .ln-marquee-wrap { width: 100%; }
+  .ln-marquee-label {
+    margin: 0 0 1.75rem; text-align: center;
+    font-size: clamp(1.25rem, 2.4vw, 1.75rem); font-weight: 600;
+    letter-spacing: -0.02em; color: var(--ln-tx);
   }
+  .ln-marquee {
+    overflow: hidden; padding: 0.375rem 0;
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 7%, #000 93%, transparent);
+            mask-image: linear-gradient(to right, transparent, #000 7%, #000 93%, transparent);
+  }
+  .ln-marquee + .ln-marquee { margin-top: 1.75rem; }
   .ln-marquee-track {
-    display: flex; width: max-content; gap: 2.625rem;
-    animation: ln-marquee-scroll 60s linear infinite;
+    --mq-gap: 4rem;
+    display: flex; width: max-content; gap: var(--mq-gap);
+    animation: ln-marquee-scroll 48s linear infinite;
     /* Own compositor layer: at ~0.4px per frame the track otherwise snaps to
        whole pixels on the main thread and the scroll reads as jittery. */
     will-change: transform;
     backface-visibility: hidden;
   }
-  /* -50% lands half a gap short of one full set, so pull back the extra gap/2 */
+  /* Second row drifts the other way at a different speed, so the two never
+     line up into one block that reads as a single wide row. */
+  .ln-marquee-track.rev { animation-name: ln-marquee-scroll-rev; animation-duration: 58s; }
+  /* -50% lands half a gap short of one full set, so pull back the extra gap/2.
+     Read off --mq-gap so the mobile gap below stays seamless. */
   @keyframes ln-marquee-scroll {
     from { transform: translateX(0); }
-    to   { transform: translateX(calc(-50% - 1.3125rem)); }
+    to   { transform: translateX(calc(-50% - var(--mq-gap) / 2)); }
+  }
+  @keyframes ln-marquee-scroll-rev {
+    from { transform: translateX(calc(-50% - var(--mq-gap) / 2)); }
+    to   { transform: translateX(0); }
   }
   .ln-marquee:hover .ln-marquee-track { animation-play-state: paused; }
-  .ln-uni { display: flex; align-items: center; gap: 0.5rem; white-space: nowrap; user-select: none; }
+  .ln-uni { display: flex; align-items: center; gap: 0.75rem; white-space: nowrap; user-select: none; }
   .ln-uni-chip {
-    width: 1.75rem; height: 1.75rem; flex-shrink: 0;
+    width: 2.5rem; height: 2.5rem; flex-shrink: 0;
     display: flex; align-items: center; justify-content: center;
-    padding: 0.1875rem; border-radius: 0.375rem;
+    padding: 0.25rem; border-radius: 0.5rem;
     background: rgba(255,255,255,0.95);
   }
   html[data-theme="light"] .ln-uni-chip { background: var(--ln-sf2); border: 0.0625rem solid var(--ln-bd); }
   .ln-uni-chip img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
-  .ln-uni-name { font-size: 0.8125rem; font-weight: 500; color: var(--ln-tx2); }
+  .ln-uni-name {
+    font-size: clamp(1.125rem, 2.2vw, 1.5rem); font-weight: 600;
+    letter-spacing: -0.02em; color: var(--ln-tx2);
+  }
+  @media (max-width: 48rem) {
+    .ln-marquee-track { --mq-gap: 2.5rem; }
+  }
 
   /* ══ ESSAY EDITOR DEMO ══════════════════════════════════════════════════
      The one feature without a demo in intro-demos.css, so it is built here in
@@ -477,6 +666,7 @@
 
   @media (prefers-reduced-motion: reduce) {
     .ln-marquee-track { animation: none; }
+    .ln-rot-slot > .ln-rot { transition: none; }
     .ln-btn:hover, .ln-card:hover, .ln-step:hover,
     .ln-more-item:hover, .ln-theme-btn:hover { transform: none; }
   }
@@ -565,8 +755,9 @@
 <!-- ═══ NAVBAR ═══ -->
 <nav id="navbar" class="fixed top-0 left-0 right-0 z-[1000] px-4 md:px-[clamp(1.75rem,5.5vw,6rem)]" style="height:var(--nav-h);display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:1.5rem;">
   <a href="#home" class="flex items-center gap-2.5 no-underline shrink-0 z-10">
-    <img src="logo-images/newlogo0.png" class="ln-logo" alt="">
-    <span class="ln-brand">Korah</span>
+    <!-- <img src="logo-images/newlogo0.png" class="ln-logo" alt=""> -->
+    <img src="logo-images/newlogo2.png" class="ln-logo" alt="">
+    <span class="ln-brand">Korah AI</span>
   </a>
 
   <div class="ln-navpills nav-links hidden lg:flex items-center gap-0.5 rounded-full px-1.5 py-1.5" style="white-space:nowrap;position:relative;">
@@ -688,6 +879,31 @@
     background: #111116;
     transform: translateZ(1px);
   }
+  /* One layer per headline rotation, crossfading under the island and glare. */
+  .phone-slide {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: #111116;
+    opacity: 0; transition: opacity var(--slide-dur, .3s) ease;
+  }
+  .phone-slide.is-on { opacity: 1; }
+  /* While the headline spins the slides have ~80ms each, so they cut rather
+     than crossfade; without this they'd all sit half-faded at once and the
+     screen would just go muddy. The landing slide gets the full fade back. */
+  .phone-screen.is-spinning .phone-slide { transition: opacity .14s ease; }
+  .phone-slide img {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%; object-fit: cover;
+    transform: translateY(3.1%);
+  }
+  .phone-slide-ph {
+    padding: 0 1.75rem; text-align: center;
+    font-size: 0.875rem; font-weight: 600; line-height: 1.5; color: #7a7a86;
+  }
+  .phone-slide-ph em {
+    display: block; margin-top: 0.5rem;
+    font-style: normal; font-weight: 400; font-size: 0.6875rem; color: #4a4a54;
+  }
   .phone-island {
     position: absolute;
     top: 0.85rem;
@@ -769,12 +985,50 @@ window.addEventListener('DOMContentLoaded', function () {
       <div id="heroContent">
         <span class="ln-badge"><i></i>Free for every student</span>
 
+        <!-- Replaced by the rotating headline below.
         <h1 class="ln-h1">The first AI Desmos tutor for the SAT.</h1>
+        -->
+        <!-- Two fixed lines, and two nested chambers on the second one.
+
+             "for" is not a rotating phrase: it sits in the outer chamber's
+             first state and holds still for the whole spin while only the
+             subject turns inside it. The outer chamber turns exactly once, on
+             the final pass, and that is when "for" leaves with it so the
+             headline can read "Your Dream Score starts here."
+
+             Whitespace between the variants is dropped by the grid container.
+             Each slot ends its line, so the dead width a short phrase leaves is
+             trailing space nobody can see. -->
+        <h1 class="ln-h1">
+          <span class="ln-rot-line">Your
+            <span class="ln-rot-slot" id="rotRole">
+              <span class="ln-rot is-on" style="color:var(--ln-rot-1);">Desmos tutor</span>
+              <span class="ln-rot" style="color:var(--ln-rot-2);" aria-hidden="true">study partner</span>
+              <span class="ln-rot" style="color:var(--ln-rot-3);" aria-hidden="true">essay editor</span>
+              <span class="ln-rot" style="color:var(--ln-rot-4);" aria-hidden="true">study plan</span>
+              <span class="ln-rot" style="color:var(--ln-rot-5);" aria-hidden="true">cram partner</span>
+              <span class="ln-rot" style="color:var(--ln-rot-6);" aria-hidden="true">Dream Score</span>
+            </span>
+          </span>
+          <span class="ln-rot-line">
+            <span class="ln-rot-slot" id="rotTail">
+              <span class="ln-rot is-on">for
+                <span class="ln-rot-slot" id="rotSubject">
+                  <span class="ln-rot is-on">the SAT.</span>
+                  <span class="ln-rot" aria-hidden="true">AP exams.</span>
+                  <span class="ln-rot" aria-hidden="true">college apps.</span>
+                  <span class="ln-rot" aria-hidden="true">test day.</span>
+                  <span class="ln-rot" aria-hidden="true">finals week.</span>
+                </span>
+              </span>
+              <span class="ln-rot" aria-hidden="true">starts here.</span>
+            </span>
+          </span>
+        </h1>
 
         <p class="ln-lead">
-          Korah drives the graph while it explains, so you learn the calculator
-          tricks that turn a three-minute problem into a twenty-second one.
-          3,500 questions, essay feedback and one-on-one tutoring come with it.
+          Ask math questions and get a visualized explanation on Desmos.
+          We just released our AP prep and college essay editor too.
         </p>
 
         <div class="ln-actions">
@@ -782,7 +1036,7 @@ window.addEventListener('DOMContentLoaded', function () {
             Download on iOS
             <span class="material-icons-round" style="font-size:1rem;">arrow_forward</span>
           </a>
-          <a href="home.html" class="ln-btn ln-btn-ghost ln-btn-lg">Use the web app</a>
+          <a href="home.html" class="ln-btn ln-btn-glass ln-btn-lg">Use the web app</a>
         </div>
 
         <div class="ln-hero-stats">
@@ -791,8 +1045,8 @@ window.addEventListener('DOMContentLoaded', function () {
             <span>Practice questions</span>
           </div>
           <div class="ln-hero-stat">
-            <b>Live</b>
-            <span>Desmos graphing</span>
+            <b>AP</b>
+            <span>Class Prep</span>
           </div>
           <div class="ln-hero-stat">
             <b>$0</b>
@@ -868,7 +1122,34 @@ window.addEventListener('DOMContentLoaded', function () {
             <div class="phone-side-btn power"></div>
             <div class="phone-screen">
               <div class="phone-island"></div>
+
+              <!-- Replaced by the .phone-slide stack below, which crossfades
+                   in step with the rotating headline.
               <img src="logo-images/phone-preview.png" alt="Korah app preview" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:translateY(3.1%);">
+              -->
+
+              <!-- One slide per headline rotation, in the same order as the
+                   variants in the h1 above. Slides 2-4 are placeholders: drop
+                   an <img> in and delete the label span. -->
+              <div class="phone-slide is-on">
+                <img src="logo-images/phone-preview.png" alt="Korah app preview">
+              </div>
+              <div class="phone-slide">
+                <span class="phone-slide-ph">AP exam prep<em>logo-images/phone-ap.png</em></span>
+              </div>
+              <div class="phone-slide">
+                <span class="phone-slide-ph">College essay editor<em>logo-images/phone-essay.png</em></span>
+              </div>
+              <div class="phone-slide">
+                <span class="phone-slide-ph">Study plan<em>logo-images/phone-plan.png</em></span>
+              </div>
+              <div class="phone-slide">
+                <span class="phone-slide-ph">Finals cram<em>logo-images/phone-cram.png</em></span>
+              </div>
+              <div class="phone-slide">
+                <span class="phone-slide-ph">Score report<em>logo-images/phone-score.png</em></span>
+              </div>
+
               <div class="phone-glare"></div>
             </div>
           </div>
@@ -889,7 +1170,63 @@ window.addEventListener('DOMContentLoaded', function () {
       </filter>
     </defs>
   </svg>
+
+  <a href="#accepted" class="ln-scroll-cue" aria-label="Scroll to where Korah students get accepted">
+    <span class="ln-scroll-cue-text">Scroll to see more</span>
+    <span class="material-icons-round" aria-hidden="true">keyboard_arrow_down</span>
+  </a>
 </section>
+
+<script>
+  /* ── Scroll cue: its own tween rather than the anchor's native smooth jump,
+        so the travel is slow and decelerates onto the band. Lands a little
+        past the section's top edge so the next section shows underneath. ── */
+  (function () {
+    const cue    = document.querySelector('.ln-scroll-cue');
+    const target = document.getElementById('accepted');
+    const nav    = document.getElementById('navbar');
+    if (!cue || !target) return;
+
+    const DURATION = 1400;
+
+    cue.addEventListener('click', function (e) {
+      e.preventDefault();
+
+      const start = window.scrollY;
+      const max   = document.documentElement.scrollHeight - window.innerHeight;
+      const end   = Math.min(max, Math.round(
+        target.getBoundingClientRect().top + start
+        - (nav ? nav.offsetHeight : 0)
+        + window.innerHeight * 0.1
+      ));
+
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        window.scrollTo({ top: end, behavior: 'instant' });
+        return;
+      }
+
+      /* scroll-behavior: smooth is set on <html>, so every frame has to say
+         'instant' or the browser tries to animate each step itself. */
+      const t0 = performance.now();
+      let cancelled = false;
+      const stop = () => { cancelled = true; };
+      window.addEventListener('wheel', stop, { passive: true, once: true });
+      window.addEventListener('touchstart', stop, { passive: true, once: true });
+
+      (function step(now) {
+        if (cancelled) return;
+        const t = Math.min(1, (now - t0) / DURATION);
+        const e = 1 - Math.pow(1 - t, 4);   // long slow landing
+        window.scrollTo({ top: start + (end - start) * e, behavior: 'instant' });
+        if (t < 1) requestAnimationFrame(step);
+        else {
+          window.removeEventListener('wheel', stop);
+          window.removeEventListener('touchstart', stop);
+        }
+      })(t0);
+    });
+  }());
+</script>
 
 <script>
 (function () {
@@ -985,11 +1322,14 @@ window.addEventListener('DOMContentLoaded', function () {
 </script>
 
 <!-- ═══ WHERE STUDENTS ARE HEADED ═══ -->
-<section class="ln-section ln-alt" style="padding-top:2.5rem;padding-bottom:2.5rem;">
+<section id="accepted" class="ln-section ln-alt" style="padding:3.25rem 0;">
   <div class="ln-marquee-wrap">
-    <p class="ln-marquee-label">Where Korah students are headed</p>
+    <p class="ln-marquee-label">Korah Students Get Accepted To...</p>
     <div class="ln-marquee">
       <div class="ln-marquee-track" id="marqueeTrack"></div>
+    </div>
+    <div class="ln-marquee">
+      <div class="ln-marquee-track rev" id="marqueeTrack2"></div>
     </div>
   </div>
 </section>
@@ -1116,11 +1456,9 @@ window.addEventListener('DOMContentLoaded', function () {
     </div>
 
     <div class="ln-feature-head">
-      <h2 class="ln-h2">Stop solving SAT math by hand</h2>
+      <h2 class="ln-h2">Learn Desmos Regressions</h2>
       <p class="ln-lead">
-        Ask a question and Korah builds the graph as it answers: tables, sliders
-        and regressions appear in Desmos while the reasoning shows up in plain
-        English beside them.
+        Korah AI is the only resource that actually uses 
       </p>
       <a href="sat/math-chat.html" class="ln-btn ln-btn-primary">Open Desmos chat</a>
     </div>
@@ -1271,9 +1609,9 @@ window.addEventListener('DOMContentLoaded', function () {
     </div>
 
     <div class="ln-feature-head">
-      <h2 class="ln-h2">3,500 real questions, all tracked</h2>
+      <h2 class="ln-h2">3,500 problem questionbank, all tracked</h2>
       <p class="ln-lead">
-        College Board-sourced Math and Reading &amp; Writing, filterable by
+        Specially sourced Math and Reading &amp; Writing, filterable by
         domain, skill and difficulty. Every answer you give feeds the accuracy
         numbers on your home page.
       </p>
@@ -1509,6 +1847,7 @@ window.addEventListener('DOMContentLoaded', function () {
       <span>Free tutoring</span>
     </div>
 
+    <!-- Replaced by the .ln-tut split below.
     <div class="ln-feature-head">
       <h2 class="ln-h2">One-on-one, with someone who scored 1500+</h2>
       <p class="ln-lead">
@@ -1517,6 +1856,47 @@ window.addEventListener('DOMContentLoaded', function () {
         payment at any point.
       </p>
       <a href="https://forms.gle/uaKH3mMsM48a1oVm9" target="_blank" rel="noopener" class="ln-btn ln-btn-primary">Book a session</a>
+    </div>
+    -->
+
+    <div class="ln-tut">
+      <div>
+        <h2 class="ln-h2">One-on-one, with someone who scored 1500+</h2>
+        <p class="ln-lead" style="margin-top:1rem;">
+          We opened free online tutoring for students with demonstrated interest
+          and need. Weekly sessions, a plan built around your weak spots, and no
+          payment at any point.
+        </p>
+        <ul class="ln-tut-list">
+          <li>
+            <span class="material-icons-round">person</span>
+            <span><b>Taught by 1500+ scorers</b><span class="t">Student tutors who sat the same test recently and know which shortcuts actually survive the clock.</span></span>
+          </li>
+          <li>
+            <span class="material-icons-round">event_repeat</span>
+            <span><b>Weekly sessions</b><span class="t">A standing one-on-one slot, with a study plan that rebuilds itself as your accuracy changes between sessions.</span></span>
+          </li>
+          <li>
+            <span class="material-icons-round">savings</span>
+            <span><b>No fees, no card</b><span class="t">Nothing to pay and nothing to cancel. We ask for demonstrated interest and need, not a payment method.</span></span>
+          </li>
+        </ul>
+        <a href="https://forms.gle/uaKH3mMsM48a1oVm9" target="_blank" rel="noopener" class="ln-btn ln-btn-primary">Book a session</a>
+      </div>
+
+      <div>
+        <div class="ln-tut-phone">
+          <div class="ln-tut-screen">
+            <!-- Drop the tutor's walkthrough in here:
+            <video controls playsinline preload="metadata" poster="logo-images/tutor-video-poster.jpg">
+              <source src="videos/tutor-hard-sat-problem.mp4" type="video/mp4">
+            </video>
+            -->
+            <p class="ln-tut-ph">Tutor video goes here</p>
+          </div>
+        </div>
+        <p class="ln-tut-cap">A Korah tutor walking through a hard SAT problem.</p>
+      </div>
     </div>
 
     <!-- Replaced by the .ln-facts row below.
@@ -1548,6 +1928,7 @@ window.addEventListener('DOMContentLoaded', function () {
     </div>
     -->
 
+    <!-- Folded into the .ln-tut list above.
     <div class="ln-facts">
       <div class="ln-card ln-fact">
         <span class="material-icons-round">person</span>
@@ -1565,10 +1946,48 @@ window.addEventListener('DOMContentLoaded', function () {
         <p>Nothing to pay and nothing to cancel. We ask for demonstrated interest and need, not a payment method.</p>
       </div>
     </div>
+    -->
   </div>
 </section>
 
-<!-- ═══ EVERYTHING ELSE ═══ -->
+<!-- ═══ MISSION AND NUMBERS ═══ -->
+<section class="ln-section ln-alt">
+  <div class="ln-wrap reveal">
+
+    <div class="ln-eyebrow">
+      <span class="ln-eyebrow-chip"><span class="material-icons-round">volunteer_activism</span></span>
+      <span>Our mission</span>
+    </div>
+
+    <div class="ln-feature-head">
+      <h2 class="ln-h2">Quality prep, free, for the students who get skipped</h2>
+      <p class="ln-lead">
+        Korah AI is a nonprofit. We exist to put quality SAT, AP, and college
+        preparatory resources in the hands of underrepresented students for
+        100% free: no fees, no tiers, no card at any point.
+      </p>
+    </div>
+
+    <div class="ln-stats">
+      <div class="ln-card ln-stat">
+        <b>100k+</b>
+        <span>Students reached across our social media, where we break down real SAT and AP problems.</span>
+      </div>
+      <div class="ln-card ln-stat">
+        <b>Worldwide</b>
+        <span>Students studying in the app from across the United States and around the world.</span>
+      </div>
+      <div class="ln-card ln-stat">
+        <b>Our team</b>
+        <span>About a dozen developers, tutors, and content creators building Korah from all around the country.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Replaced by the mission and numbers section above.
+
+═══ EVERYTHING ELSE ═══
 <section class="ln-section ln-alt">
   <div class="ln-wrap reveal">
     <div style="max-width:38rem;margin-bottom:2rem;">
@@ -1591,7 +2010,7 @@ window.addEventListener('DOMContentLoaded', function () {
   </div>
 </section>
 
-<!-- ═══ BY THE NUMBERS ═══ -->
+═══ BY THE NUMBERS ═══
 <section class="ln-section" style="padding-bottom:0;">
   <div class="ln-wrap reveal">
     <div class="ln-stats">
@@ -1610,6 +2029,7 @@ window.addEventListener('DOMContentLoaded', function () {
     </div>
   </div>
 </section>
+-->
 
 <!-- ═══ FINAL CTA ═══ -->
 <section class="ln-section">
@@ -1624,7 +2044,7 @@ window.addEventListener('DOMContentLoaded', function () {
           Download on iOS
           <span class="material-icons-round" style="font-size:1rem;">arrow_forward</span>
         </a>
-        <a href="home.html" class="ln-btn ln-btn-ghost ln-btn-lg">Use the web app</a>
+        <a href="home.html" class="ln-btn ln-btn-glass ln-btn-lg">Use the web app</a>
       </div>
     </div>
   </div>
@@ -1673,8 +2093,135 @@ window.addEventListener('DOMContentLoaded', function () {
 </footer>
 
 <script>
-  /* ── University marquee — one set rendered twice for a seamless loop.
-        Same component and same list as login.html. ── */
+  /* ── Rotating hero headline — spun like a revolver cylinder. It breaks hard
+        out of the gate (40ms a pass, too fast to read, which is the point),
+        drags down over fourteen passes, and then the last chamber takes a full
+        second to drop and lock on "Your Dream Score starts here."
+
+        Two chambers turn on the second line. The inner one holds the subjects
+        and turns on every pass; the outer one holds "for" plus that inner
+        chamber, and turns exactly once — on the final pass, taking "for" away
+        with it. So "for" never rotates, it just leaves at the end.
+
+        Each tick sets --rot-dur to its own gap, so the roll itself decelerates
+        rather than just firing less often. The phrases live in the markup; this
+        only decides which chamber is facing front. ── */
+  (function () {
+    const roleSlot    = document.getElementById('rotRole');
+    const tailSlot    = document.getElementById('rotTail');
+    const subjectSlot = document.getElementById('rotSubject');
+    if (!roleSlot || !tailSlot || !subjectSlot) return;
+
+    const slots    = [roleSlot, tailSlot, subjectSlot];
+    /* Direct children only — a bare '.ln-rot' on the tail would also sweep up
+       the subjects nested inside it. */
+    const roles    = roleSlot.querySelectorAll(':scope > .ln-rot');
+    const tails    = tailSlot.querySelectorAll(':scope > .ln-rot');
+    const subjects = subjectSlot.querySelectorAll(':scope > .ln-rot');
+    const screen   = document.querySelector('.phone-screen');
+    const slides   = document.querySelectorAll('.phone-slide');
+
+    const LEN    = subjects.length;     /* the rotating pairs */
+    const FINALE = roles.length - 1;    /* "Dream Score", only ever shown last */
+
+    /* FAST is the first gap, SLOW the last, and the gap grows by a constant
+       ratio in between — that constant ratio is what reads as a cylinder losing
+       momentum. The last pass breaks the ramp twice over: LAND_HOLD sits it out
+       for an extra beat first, and LAND_DUR then gives it 1.25s, about two and
+       a half times the pass before it. So the drop onto "Your Dream Score
+       starts here." arrives late and heavy rather than as the last step of the
+       ramp.
+       The finale is a fixed state rather than a position in the cycle, so the
+       tick count is free — no landing arithmetic needed. */
+    const FAST = 40, SLOW = 620, LAND_DUR = 1250, LAND_HOLD = 420, TICKS = 15;
+    const RATIO = Math.pow(SLOW / FAST, 1 / (TICKS - 1));
+
+    /* `from` is the chamber rolling out of the bottom; everything that is
+       neither it nor the incoming one parks back at the top, which it does
+       without a transition (see .ln-rot-slot > .ln-rot). Pass -1 to park
+       everything and have the new phrase simply be there. Only the lit variant
+       is exposed — the others would otherwise be read out as part of the
+       headline. */
+    function pick(els, i, from) {
+      els.forEach(function (el, n) {
+        el.classList.toggle('is-on', n === i);
+        el.classList.toggle('is-below', n === from);
+        if (n === i) el.removeAttribute('aria-hidden');
+        else el.setAttribute('aria-hidden', 'true');
+      });
+    }
+
+    function lightSlide(i) {
+      slides.forEach(function (s, n) { s.classList.toggle('is-on', n === i); });
+    }
+
+    let cur = 0;
+    function showPair(i) {
+      pick(roles, i, cur);
+      pick(subjects, i, cur);
+      lightSlide(i);
+      cur = i;
+    }
+
+    /* The outer chamber turns here and nowhere else, carrying "for" out with
+       it. The subjects are left mid-pass on purpose — they ride away inside it. */
+    function showFinale(from) {
+      pick(roles, FINALE, from);
+      pick(tails, 1, from === -1 ? -1 : 0);
+      lightSlide(FINALE);
+    }
+
+    /* Nothing to spin: go straight to the phrase the spin would have landed on,
+       with no chamber left rolling out behind it. */
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      showFinale(-1);
+      return;
+    }
+
+    let tick = 0, delay = FAST;
+    function spin() {
+      tick++;
+      const last = tick === TICKS;
+
+      /* Every pass takes as long as the gap it sits in, so each is slower and
+         heavier than the one before — except the last, which gets LAND_DUR. */
+      const dur = (last ? LAND_DUR : Math.round(delay)) + 'ms';
+      slots.forEach(function (sl) {
+        sl.style.setProperty('--rot-dur', dur);
+        if (last) sl.classList.add('is-landing');
+      });
+      /* The phone lands on the same clock as the headline: drop the spin-speed
+         crossfade and give the last slide the full LAND_DUR, or it would settle
+         a second before the words do. */
+      if (last && screen) {
+        screen.classList.remove('is-spinning');
+        screen.style.setProperty('--slide-dur', LAND_DUR + 'ms');
+      }
+
+      if (last) showFinale(cur);
+      else showPair(tick % LEN);
+
+      if (!last) {
+        delay *= RATIO;
+        /* LAND_HOLD only ever lands in front of the final pass. By then the
+           pass before it has finished travelling, so the cylinder goes
+           genuinely still for about half a second — everything has tumbled out
+           of the box and stopped — and then the last one drops. */
+        setTimeout(spin, tick + 1 === TICKS ? delay + LAND_HOLD : delay);
+      }
+    }
+
+    /* A beat on the opening phrase before the cylinder goes. */
+    setTimeout(function () {
+      if (screen) screen.classList.add('is-spinning');
+      spin();
+    }, 500);
+  }());
+</script>
+
+<script>
+  /* ── University marquee — two full-bleed rows, each holding the set twice
+        for a seamless loop. Same list as login.html. ── */
   (function () {
     const UNIVERSITIES = [
       { name: 'Harvard',   file: 'harvard',   alt: 'Harvard University' },
@@ -1691,16 +2238,26 @@ window.addEventListener('DOMContentLoaded', function () {
       { name: 'Duke',      file: 'duke',      alt: 'Duke University' }
     ];
 
-    const track = document.getElementById('marqueeTrack');
+    const track  = document.getElementById('marqueeTrack');
+    const track2 = document.getElementById('marqueeTrack2');
     if (!track) return;
 
-    const html = UNIVERSITIES.map(u => `
+    const render = list => list.map(u => `
       <div class="ln-uni">
-        <span class="ln-uni-chip"><img src="logo-images/universities/${u.file}.png" alt="${u.alt}" width="28" height="28"/></span>
+        <span class="ln-uni-chip"><img src="logo-images/universities/${u.file}.png" alt="${u.alt}" width="40" height="40"/></span>
         <span class="ln-uni-name">${u.name}</span>
       </div>`).join('');
 
-    track.innerHTML = html + html;
+    /* Each row gets its own half of the list, so the top and bottom rows
+       never carry the same school. Each half is laid down twice within a
+       block, and the block twice again, so the -50% loop seam is invisible
+       and the shorter half still spans the viewport. */
+    const half = Math.ceil(UNIVERSITIES.length / 2);
+    const rowA = render(UNIVERSITIES.slice(0, half)).repeat(2);
+    const rowB = render(UNIVERSITIES.slice(half)).repeat(2);
+
+    track.innerHTML = rowA + rowA;
+    if (track2) track2.innerHTML = rowB + rowB;
   })();
 </script>
 
