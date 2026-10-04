@@ -165,19 +165,6 @@ body.sat-math-shell {
   inset: 0;
 }
 
-.sat-math-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.25rem 0.75rem;
-  background: rgba(5, 150, 105, 0.15);
-  border: 0.0625rem solid rgba(5, 150, 105, 0.3);
-  border-radius: 1.25rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--p5);
-}
-
 /* ── Welcome Screen V2 ── */
 .sat-welcome-v2 {
   justify-content: space-between !important;
@@ -675,15 +662,6 @@ html[data-theme="dark"] .sat-math-shell .welcome-title {
   transform: none;
 }
 
-/* ── Mode badge ─────────────────────────────────────────────────────────────
-   Grey card, green glyph — the same split chat.html uses on its mode badge. */
-.korah-grey .sat-math-badge {
-  background: var(--kg-sf);
-  border: 0.0625rem solid var(--kg-bd);
-  color: var(--tx);
-}
-.korah-grey .sat-math-badge .m-icon { color: var(--tone-green); }
-
 /* ── Early development toast ────────────────────────────────────────────────
    Grey like the pro-tip toast next to it, with the warning tone on the icon
    and label instead of a translucent orange panel. */
@@ -759,4 +737,45 @@ html[data-theme="light"] .korah-grey .feature-intro-content {
   align-items: center;
   justify-content: center;
   min-height: 8.75rem;
+}
+
+/* ── Top bar buttons ────────────────────────────────────────────────────────
+   Same filled 3D treatment as the send button, one tone per button. Hover
+   scales up and brightens. */
+.sat-math-layout .chat-topbar .sidebar-toggle-btn,
+.sat-math-layout .chat-topbar .topbar-btn {
+  background: linear-gradient(180deg, var(--btn-tone), color-mix(in srgb, var(--btn-tone) 78%, #000));
+  border: 0.0625rem solid var(--btn-tone);
+  color: #fff;
+  box-shadow: 0 0.1875rem 0 0 color-mix(in srgb, var(--btn-tone) 55%, #000);
+  transition: transform 0.18s ease, filter 0.18s ease;
+}
+.sat-math-layout .chat-topbar .sidebar-toggle-btn:hover,
+.sat-math-layout .chat-topbar .topbar-btn:hover {
+  border-color: var(--btn-tone);
+  color: #fff;
+  filter: brightness(1.08);
+  transform: scale(1.1);
+}
+.sat-math-layout .chat-topbar .sidebar-toggle-btn:active,
+.sat-math-layout .chat-topbar .topbar-btn:active {
+  transform: scale(0.97);
+}
+.sat-math-layout .chat-topbar .sidebar-toggle-btn { --btn-tone: var(--tone-blue); }
+.sat-math-layout .chat-topbar #new-chat-topbar-btn { --btn-tone: var(--tone-green); }
+.sat-math-layout .chat-topbar #sat-graph-clear { --btn-tone: var(--tone-amber); }
+.sat-math-layout .chat-topbar #clear-chat-btn { --btn-tone: var(--tone-red); }
+
+/* Send buttons scale up on hover like the top bar buttons */
+.sat-math-shell .welcome-send-btn,
+.sat-math-shell .send-btn-circle {
+  transition: transform 0.18s ease, filter 0.18s ease;
+}
+.sat-math-shell .welcome-send-btn:hover,
+.sat-math-shell .send-btn-circle:hover {
+  transform: scale(1.1);
+}
+.sat-math-shell .welcome-send-btn:active,
+.sat-math-shell .send-btn-circle:active {
+  transform: scale(0.97);
 }
