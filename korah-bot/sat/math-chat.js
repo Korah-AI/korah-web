@@ -269,8 +269,6 @@ TEXT FORMATTING:
           });
         }
 
-        updateGraphContextIndicator();
-
         // Persist graph state to session
         if (currentSession) {
           currentSession.graphState = state;
@@ -280,34 +278,6 @@ TEXT FORMATTING:
         console.warn('Failed to capture graph state:', e);
       }
     }, 500);
-  }
-
-  function updateGraphContextIndicator() {
-    let indicator = document.getElementById('graph-context-indicator');
-    
-    if (graphExpressions.length === 0) {
-      indicator?.remove();
-      return;
-    }
-
-    if (!indicator) {
-      indicator = document.createElement('div');
-      indicator.id = 'graph-context-indicator';
-      indicator.className = 'graph-context-indicator';
-      indicator.innerHTML = `
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M3 3v18h18"/>
-          <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/>
-        </svg>
-        <span>Graph has ${graphExpressions.length} item(s)</span>
-      `;
-      
-      const inputArea = document.getElementById('chat-input-area');
-      inputArea?.parentNode?.insertBefore(indicator, inputArea);
-    } else {
-      indicator.querySelector('span').textContent = 
-        `Graph has ${graphExpressions.length} item(s)`;
-    }
   }
 
   function getGraphContext() {
@@ -534,7 +504,6 @@ ${skeletonsBlock}`;
       if (satMathCalculator) {
         satMathCalculator.setBlank();
         graphExpressions = [];
-        updateGraphContextIndicator();
       }
     });
   }
@@ -925,7 +894,7 @@ ${skeletonsBlock}`;
     if (messagesList) messagesList.innerHTML = '';
     welcomeScreen?.classList.remove('hidden');
     document.getElementById('chat-input-area')?.classList.add('hidden');
-    if (satMathCalculator) { satMathCalculator.setBlank(); graphExpressions = []; updateGraphContextIndicator(); }
+    if (satMathCalculator) { satMathCalculator.setBlank(); graphExpressions = []; }
     const chatTitleEl = document.getElementById('chat-title');
     if (chatTitleEl) chatTitleEl.textContent = 'Desmos Chat';
     createNewSession();
