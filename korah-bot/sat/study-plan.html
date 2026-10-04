@@ -124,7 +124,7 @@
     <!-- STATE: LOADING -->
     <template x-if="$store.studyPlan.planState === 'loading'">
       <div class="panel-card" style="text-align:center; padding:4rem;">
-        <div class="sat-spinner" style="width:2.5rem;height:2.5rem;margin:0 auto 1rem;border:3px solid var(--bd);border-top-color:var(--p4);border-radius:50%;animation:spin 1s linear infinite;"></div>
+        <div class="sat-spinner" style="width:2.5rem;height:2.5rem;margin:0 auto 1rem;border:3px solid var(--sp-bd,#454553);border-top-color:#06b6d4;border-radius:50%;animation:spin 1s linear infinite;"></div>
         <p class="tx2">Loading your study plan…</p>
         <template x-if="$store.studyPlan.initError">
           <p class="tx3" style="margin-top:1rem;color:#ef4444;">Error: {{ $store.studyPlan.initError }}</p>
@@ -145,6 +145,16 @@
         <div class="rush-hero">
           <h1>Your Study Plan</h1>
           <p>Four quick questions and Korah builds a day-by-day plan up to your test date.</p>
+        </div>
+
+        <!-- Page-wide drop target, shown only while a file is dragged over the score report step -->
+        <div class="sp-drag-overlay" :class="{ 'is-active': dragging && imageStep }"
+             @dragover.window="onDragOver($event)" @dragleave.window="onDragLeave($event)" @drop.window="onWindowDrop($event)">
+          <div class="sp-drag-overlay-inner">
+            <span class="material-icons-round">cloud_upload</span>
+            <span class="sp-drag-overlay-text">Drop your score report here</span>
+            <span class="sp-drag-overlay-hint">PNG, JPG, or WebP screenshots</span>
+          </div>
         </div>
 
         <!-- Step indicator -->
@@ -188,7 +198,7 @@
               <h2 class="rush-step-title">Upload your score report</h2>
               <p class="rush-step-sub">We read your Math and Reading and Writing scores automatically.</p>
 
-              <div class="rush-drop tone-cyan" @click="$refs.fileInput.click()" @dragover.prevent @drop.prevent="handleDrop" :class="{ 'has-file': scoreImages.length }">
+              <div class="rush-drop tone-cyan" @click="$refs.fileInput.click()" :class="{ 'has-file': scoreImages.length }">
                 <div x-show="!scoreImages.length" class="rush-drop-empty">
                   <span class="material-icons-round" style="font-size:3rem;color:var(--acc);">cloud_upload</span>
                   <strong>Click or drag a screenshot here</strong>
@@ -392,7 +402,7 @@
 
         <!-- Weekly view -->
         <template x-if="viewMode === 'week'">
-          <template x-for="(week, wi) in weeks" :key="week.weekStart">
+          <template x-for="(week, wi) in weeks" :key="week.label">
             <div class="spc-card" :class="toneAt(wi)">
               <h4 class="spc-card-title" x-text="week.label"></h4>
               <template x-for="session in week.sessions" :key="session.id">
@@ -403,7 +413,7 @@
                   <div class="spc-session-body">
                     <div class="spc-session-head">
                       <strong x-text="session.skillName"></strong>
-                      <span class="spc-subject-chip" x-text="session.subject === 'math' ? 'MATH' : 'READING AND WRITING'"></span>
+                      <span class="spc-subject-chip" x-text="session.subject === 'math' ? 'Math' : 'Reading and Writing'"></span>
                       <span class="spc-session-activity" x-text="session.activity"></span>
                     </div>
                     <div class="spc-session-meta">
@@ -441,6 +451,13 @@
             </div>
           </template>
         </template>
+
+        <div class="spc-reset-row">
+          <button type="button" class="spc-delete-btn" @click="confirmReset()">
+            <span class="material-icons-round">delete</span>
+            <span>Delete plan</span>
+          </button>
+        </div>
       </div>
     </template>
 
@@ -592,7 +609,21 @@
         return window.KorahStudyPlan;
       },
       handleFileSelect(e) { this.processFiles(e.target.files); },
-      handleDrop(e) { this.processFiles(e.dataTransfer.files); },
+      dragging: false,
+      get imageStep() { return this.step === 2 && this.intake.startPoint !== 'none'; },
+      hasFiles(e) { return Array.from(e.dataTransfer?.types || []).includes('Files'); },
+      onDragOver(e) {
+        if (!this.imageStep || !this.hasFiles(e)) return;
+        e.preventDefault();
+        this.dragging = true;
+      },
+      onDragLeave(e) { if (!e.relatedTarget) this.dragging = false; },
+      onWindowDrop(e) {
+        if (!this.imageStep || !this.hasFiles(e)) return;
+        e.preventDefault();
+        this.dragging = false;
+        this.processFiles(e.dataTransfer.files);
+      },
       async processFiles(fileList) {
         const files = Array.from(fileList || []).filter(f => f.type.startsWith('image/'));
         if (files.length === 0) return;
@@ -708,7 +739,7 @@
 
     return {
       planData: plan,
-      viewMode: 'week',
+      viewMode: 'month',
       // Color blocking, same system as the wizard: tones cycle by index where
       // they only need to differ, and carry meaning where one exists.
       tones: ["tone-red", "tone-orange", "tone-amber", "tone-green", "tone-teal", "tone-blue", "tone-pink"],
@@ -718,8 +749,8 @@
       weekdayTone(i) { return this.tones[i]; },
       get weeks() {
         const out = [];
-        const start = new Date(today);
-        start.setDate(start.getDate() - start.getDay() + 1); // Monday
+        const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        start.setDate(start.getDate() - ((start.getDay() + 6) % 7)); // Monday
         for (let w = 0; w < 10; w++) {
           const weekStart = new Date(start);
           const weekSessions = (plan.sessions || []).filter(s => {
@@ -875,7 +906,7 @@
   .sp-wizard .rush-domain.sp-perf:hover { transform: none; box-shadow: none; border-color: var(--acc); }
   .sp-perf-level {
     font-weight: 800; font-size: 0.85rem; color: var(--tx);
-    text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap;
+    white-space: nowrap;
   }
   .sp-reset-row { display: flex; justify-content: center; margin-top: 0.85rem; }
   .sp-wizard .rush-mini-btn {
@@ -884,6 +915,7 @@
     box-shadow: 0 0.15rem 0 0 var(--sp-bd);
   }
   .sp-wizard .rush-mini-btn:hover { background: var(--sp-bd); }
+  .sp-wizard .rush-eyebrow, .sp-wizard .rush-chip, .sp-wizard .rush-stat-label { text-transform: none; letter-spacing: normal; }
 
   /* Full-contrast text everywhere — no dimmed greys in the wizard. */
   .sp-wizard,
@@ -990,10 +1022,36 @@
   .sp-wizard .rush-stat-value,
   .sp-wizard .rush-stat-label { color: #fff; }
 
+  /* Thin grey scrollbars instead of the app's purple ones. */
+  * { scrollbar-color: #454553 transparent; scrollbar-width: thin; }
+  ::-webkit-scrollbar { width: 0.1875rem; height: 0.1875rem; }
+  ::-webkit-scrollbar-thumb { background: #454553 !important; border-radius: 0.125rem; }
+  ::-webkit-scrollbar-thumb:hover { background: #5a5a6b !important; }
+  html[data-theme="light"] * { scrollbar-color: #c3c8d2 transparent; }
+  html[data-theme="light"] ::-webkit-scrollbar-thumb { background: #c3c8d2 !important; }
+  html[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: #a9afbc !important; }
+
+  /* Page-wide drop overlay for the score report step */
+  .sp-drag-overlay {
+    display: none; position: fixed; inset: 0; z-index: 9000;
+    align-items: center; justify-content: center;
+    background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(0.375rem); -webkit-backdrop-filter: blur(0.375rem);
+  }
+  .sp-drag-overlay.is-active { display: flex; animation: fadeIn 0.2s ease both; }
+  .sp-drag-overlay-inner {
+    display: flex; flex-direction: column; align-items: center; gap: 0.75rem;
+    padding: 2.5rem 3rem; border-radius: 1.5rem;
+    background: var(--sp-sf); border: 0.125rem dashed var(--tone-cyan);
+    box-shadow: 0 1rem 3rem rgba(0,0,0,0.4);
+  }
+  .sp-drag-overlay-inner .material-icons-round { font-size: 4rem; color: var(--tone-cyan); }
+  .sp-drag-overlay-text { font-size: 1.25rem; font-weight: 800; color: var(--tx); }
+  .sp-drag-overlay-hint { font-size: 0.875rem; font-weight: 600; color: var(--tx); }
+
   /* Manual score entry */
   .sp-wizard .rush-field-row { display: flex; gap: 0.75rem; flex-wrap: wrap; }
   .sp-wizard .rush-field { flex: 1; min-width: 9rem; display: flex; flex-direction: column; gap: 0.4rem; }
-  .sp-wizard .rush-field-label { font-size: 0.78rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; }
+  .sp-wizard .rush-field-label { font-size: 0.78rem; font-weight: 800; }
   .sp-wizard .rush-field .rush-spr-input { border-color: var(--sp-bd); }
   .sp-wizard .rush-spr-input:focus { border-color: var(--acc); }
 
@@ -1056,8 +1114,7 @@
   .spc-header-text { min-width: 0; }
   .spc-header-text p { margin: 0.2rem 0 0; font-size: 0.9rem; color: var(--tx); font-weight: 600; }
   .spc-eyebrow {
-    font-size: 0.7rem; font-weight: 800; letter-spacing: 0.08em;
-    text-transform: uppercase; color: var(--tone-teal);
+    font-size: 0.8rem; font-weight: 800; color: var(--tone-teal);
   }
   .spc-view-btn {
     margin-left: auto; display: inline-flex; align-items: center; gap: 0.4rem;
@@ -1077,8 +1134,7 @@
     margin-bottom: 1.25rem; padding: 1rem 1.15rem;
     border-radius: 1rem; line-height: 1.6; color: var(--tx); font-weight: 600;
     background: var(--sp-sf);
-    border: 0.0625rem solid var(--sp-bd);
-    border-left: 0.35rem solid var(--acc);
+    border: 0.125rem solid var(--acc);
   }
   .spc-feedback .material-icons-round { color: var(--acc); font-size: 1.5rem; }
 
@@ -1086,8 +1142,7 @@
   .sp-calendar .spc-card {
     margin-bottom: 1rem; padding: 1.15rem 1.25rem;
     border-radius: 1.125rem;
-    background: var(--sp-sf); border: 0.0625rem solid var(--sp-bd);
-    border-top: 0.25rem solid var(--acc);
+    background: var(--sp-sf); border: 0.125rem solid var(--acc);
     animation: riseIn 0.55s cubic-bezier(.22,1,.36,1) both;
   }
   .spc-card-title { margin: 0 0 1rem; font-size: 1rem; font-weight: 800; color: var(--acc); }
@@ -1099,14 +1154,12 @@
     padding: 0.85rem 1rem; margin-bottom: 0.5rem;
     border-radius: 1rem; color: var(--tx);
     background: var(--sp-sf2);
-    border: 0.0625rem solid var(--sp-bd);
-    border-left: 0.35rem solid var(--acc);
+    border: 0.125rem solid var(--acc);
     transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
   }
-  .spc-session:hover { border-color: color-mix(in srgb, var(--acc) 70%, var(--sp-bd)); border-left-color: var(--acc); }
   .spc-session.is-done {
     color: #fff;
-    border-color: var(--tone-green); border-left-color: var(--tone-green);
+    border-color: var(--tone-green);
     background: linear-gradient(180deg, var(--tone-green), color-mix(in srgb, var(--tone-green) 78%, #000));
   }
   .spc-session.is-done .spc-session-body strong { text-decoration: line-through; }
@@ -1117,7 +1170,7 @@
   .spc-session-meta { font-size: 0.8125rem; font-weight: 600; margin-top: 0.3rem; display: flex; gap: 1rem; flex-wrap: wrap; }
   /* Subject chip is pure identity, so it is always filled. */
   .spc-subject-chip {
-    font-size: 0.68rem; font-weight: 800; letter-spacing: 0.04em;
+    font-size: 0.72rem; font-weight: 800;
     padding: 0.15rem 0.55rem; border-radius: 62.4375rem;
     color: #fff; background: var(--acc);
   }
@@ -1132,11 +1185,23 @@
   .spc-check:hover { background: color-mix(in srgb, var(--tx) 20%, transparent); }
   .spc-check.is-done { background: #fff; border-color: #fff; color: var(--tone-green); }
 
+  .spc-reset-row { display: flex; justify-content: center; margin-top: 1.25rem; }
+  .spc-delete-btn {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    padding: 0.5rem 0.9rem; border-radius: 0.75rem; cursor: pointer;
+    font-size: 0.8rem; font-weight: 800; color: var(--tx);
+    background: var(--sp-sf2); border: 0.0625rem solid var(--sp-bd);
+    box-shadow: 0 0.15rem 0 0 var(--sp-bd);
+    transition: transform 0.18s ease, background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+  }
+  .spc-delete-btn .material-icons-round { font-size: 1rem; }
+  .spc-delete-btn:hover { transform: scale(1.03); background: var(--tone-red); border-color: var(--tone-red); color: #fff; }
+
   /* Month grid */
   .spc-month-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.375rem; }
   .spc-dow {
     text-align: center; font-size: 0.6875rem; font-weight: 800;
-    text-transform: uppercase; padding: 0.4rem 0.25rem;
+    padding: 0.4rem 0.25rem;
     border-radius: 0.5rem 0.5rem 0 0;
     color: #fff; background: var(--acc);
   }
@@ -1166,6 +1231,16 @@
     .spc-day { min-height: 4rem; }
     .spc-day-session { font-size: 0.55rem; }
   }
+  /* Error / confirm popup: grey surfaces instead of the app's purple-tinted tokens. */
+  #plan-modal { --sp-sf: #26262e; --sp-sf2: #31313c; --sp-bd: #454553; --tx2: var(--tx); }
+  html[data-theme="light"] #plan-modal { --sp-sf: #eceef2; --sp-sf2: #e0e3ea; --sp-bd: #c3c8d2; }
+  #plan-modal .delete-modal-content { background: var(--sp-sf); border-color: var(--sp-bd); }
+  #plan-modal .delete-modal-btn { transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease; }
+  #plan-modal .delete-modal-btn:hover { transform: scale(1.03); }
+  #plan-modal .delete-modal-btn.cancel { background: var(--sp-sf2); color: var(--tx); border-color: var(--sp-bd); box-shadow: 0 0.15rem 0 0 var(--sp-bd); }
+  #plan-modal .delete-modal-btn.cancel:hover { background: var(--sp-bd); border-color: var(--sp-bd); }
+  #plan-modal .delete-modal-btn.confirm { background: #d23c3c; color: #fff; border-color: #d23c3c; box-shadow: 0 0.15rem 0 0 #8f2626; }
+  #plan-modal .delete-modal-btn.confirm:hover { background: #ef4444; border-color: #ef4444; }
   .sat-spinner { width:1.15rem;height:1.15rem;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite; }
 </style>
 
