@@ -323,7 +323,7 @@
   .ln-tut-list b { display: block; font-size: 1rem; font-weight: 600; color: var(--ln-tx); }
   .ln-tut-list span.t { display: block; margin-top: 0.1875rem; font-size: 0.875rem; line-height: 1.55; color: var(--ln-tx2); }
   .ln-tut-phone {
-    justify-self: center; width: min(17rem, 100%);
+    justify-self: center; width: min(21rem, 100%);
     padding: 0.625rem; border-radius: 2.5rem;
     background: var(--ln-sf2); border: 0.0625rem solid var(--ln-bd);
   }
@@ -332,6 +332,13 @@
     border-radius: 2rem; background: #000;
   }
   .ln-tut-screen video { display: block; width: 100%; height: auto; }
+  /* iPhone notch, drawn over the top of the video. */
+  .ln-tut-screen::before {
+    content: ""; position: absolute; z-index: 1;
+    top: 0.5rem; left: 50%; transform: translateX(-50%);
+    width: 5.5rem; height: 1.5rem; border-radius: 1rem;
+    background: #000; pointer-events: none;
+  }
   .ln-tut-ph { font-size: 0.8125rem; color: var(--ln-tx3); text-align: center; padding: 0 1.5rem; }
   .ln-tut-cap { margin: 1rem 0 0; text-align: center; font-size: 0.8125rem; color: var(--ln-tx3); }
   @media (max-width: 52rem) {
@@ -606,43 +613,70 @@
      .kd-paper surface for the draft, and the shared kdPop entrance. Real
      sentences rather than placeholder rules, since the whole point of the
      feature is which words got flagged. */
-  .lnd-essay { display: grid; grid-template-columns: 1.3fr 1fr; column-gap: 2.6%; align-items: center; }
-  .lnd-doc { padding: 3.4cqi; }
-  .lnd-doc-label {
-    display: block; margin-bottom: 1.8cqi;
-    font-size: 2.1cqi; font-weight: 700; color: #8f93a1;
+  /* Laid out like the real editor: draft column on the left (title, prompt
+     card, a letter-shaped page cropped by the word-count bar), scores and
+     recommendations in a sidebar on the right. */
+  .lnd-essay { display: grid; grid-template-columns: 1.55fr 1fr; padding: 0; }
+  .lnd-main { position: relative; padding: 2.4cqi 2.6cqi 0; min-width: 0; overflow: hidden; }
+  .lnd-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.6cqi; }
+  .lnd-title { font-size: 3cqi; font-weight: 700; color: #8f93a1; }
+  .lnd-btn { padding: 0.9cqi 1.8cqi; border-radius: 1cqi; background: #3fa653; box-shadow: 0 0.4cqi 0 #2f8a41; font-size: 1.7cqi; font-weight: 700; color: #fff; }
+  .lnd-prompt {
+    margin-bottom: 1.8cqi; padding: 1.3cqi 1.8cqi;
+    border-radius: 1cqi; border-left: 0.6cqi solid #3b64d4;
+    background: var(--kd-paper); color: var(--kd-ink);
   }
-  .lnd-text { margin: 0; font-size: 2.3cqi; line-height: 1.64; }
-  /* Highlighter sweeping over the flagged phrase, tinted to match its note.
+  .lnd-prompt b { display: block; margin-bottom: 0.5cqi; font-size: 2cqi; color: #3b64d4; }
+  .lnd-prompt span { font-size: 1.5cqi; line-height: 1.45; color: #5b5f6b; }
+  /* US Letter proportions. The demo box is 16/9, so the bottom runs off the
+     edge the way the page does in the editor. */
+  .lnd-doc { aspect-ratio: 8.5 / 11; padding: 4.6cqi 5cqi; border-radius: 0.5cqi 0.5cqi 0 0; }
+  .lnd-text { margin: 0 0 1.4cqi; font-size: 1.7cqi; line-height: 1.75; }
+  /* Highlighter sweeping over the flagged phrase, tinted to its category.
      box-decoration-break keeps the rounding on both ends when it wraps. */
   .lnd-mark {
-    padding: 0.3cqi 0.5cqi;
-    border-radius: 0.5cqi;
+    padding: 0.2cqi 0.4cqi; border-radius: 0.4cqi;
     background: transparent;
     -webkit-box-decoration-break: clone;
             box-decoration-break: clone;
     animation: lndMark 6s ease-in-out infinite;
   }
-  .lnd-mark.is-fix  { --mk: rgba(245, 158, 11, 0.38); }
-  .lnd-mark.is-good { --mk: rgba(34, 197, 94, 0.32); animation-delay: 0.45s; }
+  .lnd-mark.is-w { --mk: rgba(139, 92, 246, 0.22); }
+  .lnd-mark.is-d { --mk: rgba(59, 130, 246, 0.22); animation-delay: 0.3s; }
+  .lnd-mark.is-v { --mk: rgba(236, 72, 153, 0.2);  animation-delay: 0.6s; }
+  .lnd-mark.is-r { --mk: rgba(245, 158, 11, 0.28); animation-delay: 0.9s; }
   @keyframes lndMark {
     0%, 12%   { background: transparent; }
     26%, 86%  { background: var(--mk); }
     96%, 100% { background: transparent; }
   }
-  .lnd-notes { display: grid; gap: 1.6cqi; }
-  .lnd-note {
-    display: flex; align-items: center; gap: 1.4cqi;
-    padding: 1.8cqi; border-radius: 1.4cqi;
+  .lnd-words {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 1;
+    padding: 1.2cqi 2.6cqi; background: var(--kd-sf);
+    font-size: 1.5cqi; color: var(--kd-tx);
+  }
+  .lnd-side { min-width: 0; overflow: hidden; padding: 2.4cqi 2cqi 0; border-left: 0.2cqi solid var(--kd-bd); }
+  .lnd-h { margin: 0 0 1.2cqi; font-size: 1.9cqi; font-weight: 700; color: var(--kd-tx); }
+  .lnd-avg { display: flex; align-items: baseline; gap: 1cqi; margin-bottom: 1.4cqi; font-size: 1.6cqi; color: var(--kd-tx); }
+  .lnd-avg b { font-size: 5cqi; line-height: 1; }
+  .lnd-score { display: grid; grid-template-columns: 9cqi 1fr 2cqi; align-items: center; gap: 1.2cqi; margin-bottom: 1.2cqi; font-size: 1.5cqi; font-weight: 600; color: var(--kd-tx); }
+  .lnd-bar { height: 0.7cqi; border-radius: 1cqi; background: var(--kd-bd); overflow: hidden; }
+  .lnd-bar i { display: block; height: 100%; width: var(--v); border-radius: 1cqi; background: var(--c); transform-origin: left; animation: lndBar 6s ease-in-out infinite; }
+  @keyframes lndBar {
+    0%, 8%    { transform: scaleX(0); }
+    24%, 90%  { transform: scaleX(1); }
+    98%, 100% { transform: scaleX(0); }
+  }
+  .lnd-recs { margin-top: 2cqi; padding-top: 1.6cqi; border-top: 0.2cqi solid var(--kd-bd); }
+  .lnd-rec {
+    margin-bottom: 1.2cqi; padding: 1.4cqi 1.6cqi; border-radius: 1.2cqi;
     background: var(--kd-sf2); border: 0.2cqi solid var(--kd-bd);
-    font-size: 2.4cqi; font-weight: 700; color: var(--kd-tx);
+    font-size: 1.4cqi; line-height: 1.45; color: var(--kd-tx);
     opacity: 0; animation: kdPop 6s ease-in-out infinite;
   }
-  .lnd-note:nth-child(2) { animation-delay: 0.45s; }
-  .lnd-note:nth-child(3) { animation-delay: 0.9s; }
-  .lnd-note b { margin-left: auto; color: var(--kd-tx); }
-  .lnd-note.is-fix b  { color: var(--kd-amber); }
-  .lnd-note.is-good b { color: var(--kd-green); }
+  .lnd-rec:nth-of-type(2) { animation-delay: 0.45s; }
+  .lnd-rec b { display: block; margin-bottom: 0.8cqi; font-size: 1.7cqi; }
+  .lnd-rec em { display: block; margin-bottom: 0.8cqi; padding-left: 1.2cqi; border-left: 0.4cqi solid var(--c); font-family: Georgia, serif; }
 
   /* ══ FOOTER ═════════════════════════════════════════════════════════════ */
   .ln-footer {
@@ -1802,20 +1836,47 @@ window.addEventListener('DOMContentLoaded', function () {
 
       <div class="ln-card">
         <div class="kdemo lnd-essay" aria-hidden="true">
-          <div class="lnd-doc kd-paper">
-            <span class="lnd-doc-label">Personal statement</span>
-            <p class="lnd-text">
-              The first time I rebuilt the carburetor I did it wrong, and the
-              second time too. <span class="lnd-mark is-fix">I learned a lot
-              about persistence that summer.</span> By the fourth attempt,
-              <span class="lnd-mark is-good">my hands knew the order of the
-              parts before my head did.</span>
-            </p>
+          <div class="lnd-main">
+            <div class="lnd-head">
+              <span class="lnd-title">Untitled Essay</span>
+              <span class="lnd-btn">Change prompt</span>
+            </div>
+            <div class="lnd-prompt">
+              <b>Common App Prompt 3</b>
+              <span>Reflect on a time when you questioned or challenged a belief or idea. What prompted your thinking? What was the outcome?</span>
+            </div>
+            <div class="lnd-doc kd-paper">
+              <p class="lnd-text">
+                <span class="lnd-mark is-w">The first time I rebuilt the carburetor I did it wrong, and the
+                second time too.</span> <span class="lnd-mark is-d">Gasoline pooled
+                under the bench and the garage smelled like a gas station for a week.</span>
+                My dad kept saying a machine is only a set of
+                decisions someone made before you. <span class="lnd-mark is-r">I learned a lot
+                about persistence that summer.</span>
+              </p>
+              <p class="lnd-text">
+                <span class="lnd-mark is-v">By the fourth attempt, my hands knew the order of the
+                parts before my head did.</span> I started to wonder what else I had
+                been taking on faith, and whether the things I called talent were
+                really just repetition I had not counted yet.
+              </p>
+            </div>
+            <div class="lnd-words">507 words</div>
           </div>
-          <div class="lnd-notes">
-            <span class="lnd-note is-fix">Show, don't summarise<b>Fix</b></span>
-            <span class="lnd-note is-good">Strong closing image<b>Keep</b></span>
-            <span class="lnd-note is-good">Reflection<b>8.4</b></span>
+          <div class="lnd-side">
+            <p class="lnd-h">Scores</p>
+            <div class="lnd-avg"><b>6.7</b>Average</div>
+            <div class="lnd-score">Writing<span class="lnd-bar"><i style="--v:70%;--c:#8b5cf6"></i></span>7</div>
+            <div class="lnd-score">Detail<span class="lnd-bar"><i style="--v:60%;--c:#3b82f6"></i></span>6</div>
+            <div class="lnd-score">Voice<span class="lnd-bar"><i style="--v:80%;--c:#e879f9"></i></span>8</div>
+            <div class="lnd-score">Reflection<span class="lnd-bar"><i style="--v:80%;--c:#f59e0b"></i></span>8</div>
+            <div class="lnd-score">Curiosity<span class="lnd-bar"><i style="--v:50%;--c:#22c55e"></i></span>5</div>
+            <div class="lnd-score">Contribution<span class="lnd-bar"><i style="--v:60%;--c:#ef4444"></i></span>6</div>
+            <div class="lnd-recs">
+              <p class="lnd-h">Recommendations</p>
+              <div class="lnd-rec" style="--c:#8b5cf6"><b>Writing</b><em>"The first time I rebuilt the carburetor I did it wrong, and the second time too."</em>Consider varying sentence length to improve flow.</div>
+              <div class="lnd-rec" style="--c:#f59e0b"><b>Reflection</b><em>"I learned a lot about persistence that summer."</em>Show the lesson instead of naming it.</div>
+            </div>
           </div>
         </div>
         <div class="ln-card-cap">
