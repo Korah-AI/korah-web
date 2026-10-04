@@ -465,7 +465,7 @@ ${skeletonsBlock}`;
   // (adaptedState may be null for visualizer / null classifications) or null on
   // total failure. Parsing mirrors the legacy phases; validation/fallback of the
   // adaptedState sub-field happens at the call site (in sendMessage).
-  async function runMergedClassifyAdapt(problem, history = []) {
+  async function runMergedClassifyAdapt(problem, history = [], onThought = null) {
     console.log('[Merged] classify+adapt starting…');
     const t0 = performance.now();
     let systemPrompt;
@@ -482,6 +482,7 @@ ${skeletonsBlock}`;
         systemPrompt,
         history,
         temperature: MERGED_TEMPERATURE,
+        onThought,
         _phaseTag: 'Merged (classify+adapt)',
       });
     } catch (e) {
@@ -1018,6 +1019,24 @@ ${skeletonsBlock}`;
       startDotCycle(THINKING_PHRASES, thinkingIndicator);
     }
 
+    // Live thought summaries from the model, shown muted and italic under the
+    // indicator. contentElement is cleared on the first response chunk, which
+    // removes them.
+    let firstChunkSeen = false;
+    let thoughtText = '';
+    let thoughtEl = null;
+    const showThought = (chunk) => {
+      if (!contentElement || firstChunkSeen) return;
+      thoughtText += chunk;
+      if (!thoughtEl?.isConnected) {
+        thoughtEl = document.createElement('div');
+        thoughtEl.className = 'thinking-summary';
+        contentElement.appendChild(thoughtEl);
+      }
+      thoughtEl.textContent = thoughtText.replace(/\*\*/g, '');
+      chatBody.scrollTop = chatBody.scrollHeight;
+    };
+
     let currentTypedText = "";
     let charBuffer = [];
     let typewriterActive = false;
@@ -1155,7 +1174,7 @@ ${skeletonsBlock}`;
     const classifyInput = (typeof userContent === 'string' && lastAI?.content.includes(DESMOS_OFFER) && lastUser)
       ? `${lastUser.content}\n\n[Student follow-up: ${userContent}]`
       : userContent;
-    const merged = await runMergedClassifyAdapt(classifyInput, conversationHistory);
+    const merged = await runMergedClassifyAdapt(classifyInput, conversationHistory, showThought);
     const stateId = merged?.stateId || null;
     const classifierStrategy = merged?.strategy || '';
 
@@ -1216,9 +1235,9 @@ ${skeletonsBlock}`;
     typewriterActive = false;
     lastBufferedLength = 0;
     currentTypedText = '';
-    let firstChunkSeen = false;
 
     console.log(`🟢 [Phase 3] streaming tutoring response (grounded=${!!loadedState})…`);
+    let phase3Thinking = false;
     const phase3T0 = performance.now();
     await callAPI(userContent, (_chunk, fullText) => {
       phase3FullText = fullText;
@@ -1239,6 +1258,10 @@ ${skeletonsBlock}`;
       history: conversationHistory,
       systemPrompt: buildPhase3SystemPrompt(loadedState, classifierStrategy),
       temperature: 0.65,
+      onThought: (chunk) => {
+        if (!phase3Thinking) { phase3Thinking = true; thoughtText = ''; }
+        showThought(chunk);
+      },
       _phaseTag: 'Phase 3 (respond)',
     });
     console.log(`🟢 [Phase 3] done in ${Math.round(performance.now() - phase3T0)}ms (${phase3FullText.length} chars)`);
@@ -1294,7 +1317,8 @@ ${skeletonsBlock}`;
       model: MODEL,
       temperature,
       messages: messagesWithSystem,
-      stream: true
+      stream: true,
+      include_thoughts: !!options.onThought
     };
 
     const bodyStr = JSON.stringify(bodyObj);
@@ -1357,6 +1381,8 @@ ${skeletonsBlock}`;
 
             try {
               const parsed = JSON.parse(data);
+              const reasoning = parsed?.choices?.[0]?.delta?.reasoning;
+              if (reasoning && options.onThought) options.onThought(reasoning);
               const content = parsed?.choices?.[0]?.delta?.content;
               if (content) {
                 fullReply += content;

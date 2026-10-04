@@ -45,6 +45,7 @@ export default async function handler(req, res) {
     temperature,
     stream = false,
     response_format,
+    include_thoughts = false,
   } = req.body;
 
   // 1. Translate Request (OpenAI -> Gemini)
@@ -90,6 +91,10 @@ export default async function handler(req, res) {
       responseMimeType: response_format?.type === 'json_object' ? 'application/json' : 'text/plain',
     }
   };
+
+  if (include_thoughts) {
+    body.generationConfig.thinkingConfig = { includeThoughts: true };
+  }
 
   if (systemMessage) {
     body.systemInstruction = {
@@ -147,6 +152,11 @@ export default async function handler(req, res) {
               const parts = data.candidates?.[0]?.content?.parts || [];
               const realPart = parts.find(p => !p.thought && p.text != null);
               const content = realPart?.text || '';
+              const thought = parts.filter(p => p.thought && p.text != null).map(p => p.text).join('');
+
+              if (thought) {
+                res.write(`data: ${JSON.stringify({ choices: [{ delta: { reasoning: thought }, index: 0, finish_reason: null }] })}\n\n`);
+              }
 
               if (content) {
                 const openAiChunk = {
