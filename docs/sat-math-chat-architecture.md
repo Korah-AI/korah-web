@@ -39,7 +39,7 @@ Every user message triggers three sequential AI calls. Phase 1 and 2 are silent 
 { "stateId": "linear-functions", "strategy": "one-sentence rationale" }
 ```
 
-The classifier is biased strongly toward picking a template — almost every SAT math problem maps to one. It returns `null` only for non-mathematical inputs or categories clearly outside the library (pure 3D geometry, probability, etc.).
+The classifier picks a specific template only when the problem's structure matches it. Any other math problem gets the generic `free-graph` template (a function or equation, one reference curve or line, and up to two marked points). It returns `null` only for non-mathematical input.
 
 **Parsing:** Code fences and leading junk are stripped, then `JSON.parse`. Falls back to balanced-brace extraction if parsing fails.
 
@@ -65,11 +65,15 @@ Two code paths based on template type (looked up in the index):
 
 **Fallback chain:**
 ```
-Phase 2 API returns adapted state
-  → validateDesmosState passes → loadDesmosState (setState) ✓
-  → validateDesmosState fails  → load verified example as fallback
-Phase 2 API returns null        → load verified example as fallback
+Visualizer template             → load verified example as-is ✓
+Problem-solver, adapted state passes validateDesmosState → loadDesmosState (setState) ✓
+Problem-solver, adapted state missing / verbatim / invalid → skip graph
 Phase 2 API throws              → skip graph (no state loaded)
+
+The verified example is never the fallback for a problem-solver (it solves a
+different problem). With no graph, Phase 3 solves algebraically and ends with
+"Want me to visualize it on Desmos?". If the student says yes, the classifier
+is given the previous problem plus the follow-up.
 ```
 
 **`loadDesmosState(state)`** is the single entry point for applying any state to the calculator:
