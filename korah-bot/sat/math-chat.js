@@ -431,6 +431,8 @@ CRITICAL DESMOS RULES (violations break the graph):
 - A table must appear BEFORE any expression that uses its columns.
 - Regressions use TILDE (\\sim), not equals.
 - Text nodes use ONLY {type, id, text} — NO color field, NO LaTeX, NO backslashes, NO $...$, NO subscripts. Plain English sentences only. To show a formula, use an {type:"expression", latex:"..."} node instead.
+- Prose and math never share a node. Every equation, expression, or computed value goes in its own {type:"expression", hidden:true, latex:"..."} node right after the sentence that introduces it, exactly as the skeleton lays out. Text nodes contain no equations and no numbers used as math.
+- Each worked-step expression holds ONE numeric expression (Desmos evaluates it on screen) or ONE equation. Use "=" only to define a new letter or to relate x and y; never write an equation between constants that are already defined (it errors). Never chain equalities (a=b=c) and never write a function call with a number on the left of "=" (f(1)=...). Never write m=..., b=..., or any letter the regression fits or the table uses as a column.
 - Every id must be unique within expressions.list.
 - LaTeX backslashes must be JSON-escaped (\\\\frac, \\\\sim, \\\\left, …).
 - adaptedState top-level fields: version, randomSeed, expressions only. NO "graph"/"viewport".
