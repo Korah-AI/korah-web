@@ -1025,16 +1025,36 @@ ${skeletonsBlock}`;
     let firstChunkSeen = false;
     let thoughtText = '';
     let thoughtEl = null;
+    let thoughtQueue = [];
+    let thoughtTyping = false;
+    // Gemini sends summaries in large chunks, so type them out instead of
+    // dropping each chunk in at once.
+    const typeThought = () => {
+      if (firstChunkSeen || thoughtQueue.length === 0) { thoughtTyping = false; return; }
+      const n = thoughtQueue.length > 200 ? 6 : thoughtQueue.length > 80 ? 3 : 1;
+      thoughtText += thoughtQueue.splice(0, n).join('');
+      if (!thoughtEl?.isConnected) {
+        const wrap = document.createElement('div');
+        wrap.className = 'thinking-thoughts';
+        wrap.innerHTML = `<button type="button" class="thinking-toggle" aria-expanded="true">Hide thinking</button><div class="thinking-summary"></div>`;
+        thoughtEl = wrap.querySelector('.thinking-summary');
+        const toggle = wrap.querySelector('.thinking-toggle');
+        toggle.addEventListener('click', () => {
+          const open = thoughtEl.hidden;
+          thoughtEl.hidden = !open;
+          toggle.setAttribute('aria-expanded', String(open));
+          toggle.textContent = open ? 'Hide thinking' : 'Show thinking';
+        });
+        contentElement.appendChild(wrap);
+      }
+      thoughtEl.textContent = thoughtText;
+      chatBody.scrollTop = chatBody.scrollHeight;
+      setTimeout(typeThought, 15);
+    };
     const showThought = (chunk) => {
       if (!contentElement || firstChunkSeen) return;
-      thoughtText += chunk;
-      if (!thoughtEl?.isConnected) {
-        thoughtEl = document.createElement('div');
-        thoughtEl.className = 'thinking-summary';
-        contentElement.appendChild(thoughtEl);
-      }
-      thoughtEl.textContent = thoughtText.replace(/\*\*/g, '');
-      chatBody.scrollTop = chatBody.scrollHeight;
+      thoughtQueue.push(...chunk.replace(/\*\*/g, ''));
+      if (!thoughtTyping) { thoughtTyping = true; typeThought(); }
     };
 
     let currentTypedText = "";
@@ -1149,11 +1169,12 @@ ${skeletonsBlock}`;
   // Helper: replace the current indicator with a "Drawing graph…" indicator.
   const showDrawingIndicator = () => {
     if (!contentElement) return;
-    contentElement.innerHTML = '';
+    // Keep the thoughts dropdown; swap only the shimmer indicator.
+    contentElement.querySelector('.thinking-indicator')?.remove();
     const ind = document.createElement('div');
     ind.className = 'thinking-indicator graph-loading-indicator';
     ind.innerHTML = `<span class="thinking-shimmer-text">Drawing Graph.</span>`;
-    contentElement.appendChild(ind);
+    contentElement.prepend(ind);
     thinkingIndicator = ind;
     startDotCycle('Drawing Graph', ind);
   };
@@ -1259,7 +1280,7 @@ ${skeletonsBlock}`;
       systemPrompt: buildPhase3SystemPrompt(loadedState, classifierStrategy),
       temperature: 0.65,
       onThought: (chunk) => {
-        if (!phase3Thinking) { phase3Thinking = true; thoughtText = ''; }
+        if (!phase3Thinking) { phase3Thinking = true; thoughtText = ''; thoughtQueue = []; if (thoughtEl) thoughtEl.textContent = ''; }
         showThought(chunk);
       },
       _phaseTag: 'Phase 3 (respond)',
