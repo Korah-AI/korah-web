@@ -156,6 +156,8 @@ console.log('math-chat.js loading...');
   // ─── Phase 3 (tutoring response) ────────────────────────────────────────
   // Streams a chat-facing markdown explanation. Grounded in the loaded Desmos
   // state when one was loaded, so the model can reference exact values.
+  const DESMOS_OFFER = 'Want me to visualize it on Desmos?';
+
   function buildPhase3SystemPrompt(adaptedState, classifierStrategy) {
     const base = `You are Korah, an SAT Math tutor created by Oscar Euceda. The system has already loaded a Desmos graph for the student (or determined no graph was needed). Your job: explain the solution, referencing what is visible on the graph.
 
@@ -194,7 +196,7 @@ TEXT FORMATTING:
       const slim = { expressions: adaptedState.expressions };
       context += `\n\n=== LOADED GRAPH STATE (ground your explanation in these exact values) ===\n${JSON.stringify(slim, null, 2)}\n\nThe text nodes above already contain the algebraic reasoning written by the system. Rewrite that reasoning as a flowing student-facing explanation — do NOT just copy the text nodes verbatim, but use their numbers and steps as ground truth.`;
     } else {
-      context += `\n\n=== NO GRAPH LOADED ===\nNo Desmos graph was loaded for this problem. Solve it algebraically with clear steps.`;
+      context += `\n\n=== NO GRAPH LOADED ===\nNo Desmos graph was loaded for this problem. Solve it algebraically with clear steps. If the message is a math problem, end your reply with this exact line on its own: ${DESMOS_OFFER}`;
     }
     return base + context;
   }
@@ -270,8 +272,6 @@ TEXT FORMATTING:
           });
         }
 
-        updateGraphContextIndicator();
-
         // Persist graph state to session
         if (currentSession) {
           currentSession.graphState = state;
@@ -281,34 +281,6 @@ TEXT FORMATTING:
         console.warn('Failed to capture graph state:', e);
       }
     }, 500);
-  }
-
-  function updateGraphContextIndicator() {
-    let indicator = document.getElementById('graph-context-indicator');
-    
-    if (graphExpressions.length === 0) {
-      indicator?.remove();
-      return;
-    }
-
-    if (!indicator) {
-      indicator = document.createElement('div');
-      indicator.id = 'graph-context-indicator';
-      indicator.className = 'graph-context-indicator';
-      indicator.innerHTML = `
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M3 3v18h18"/>
-          <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/>
-        </svg>
-        <span>Graph has ${graphExpressions.length} item(s)</span>
-      `;
-      
-      const inputArea = document.getElementById('chat-input-area');
-      inputArea?.parentNode?.insertBefore(indicator, inputArea);
-    } else {
-      indicator.querySelector('span').textContent = 
-        `Graph has ${graphExpressions.length} item(s)`;
-    }
   }
 
   function getGraphContext() {
@@ -413,8 +385,14 @@ Output a SINGLE raw JSON object — NO code fences, NO commentary, NO extra fiel
 {
   "stateId": "id_from_template_list_or_null",
   "strategy": "one short sentence (max 20 words) on which template fits and why",
-  "adaptedState": <Desmos state object, OR null>
+  "adaptedState": <Desmos state object, OR null>,
+  "keepGraph": true OR false
 }
+
+Earlier turns of this conversation are included before the student's latest message. If the latest message ends with "[Current Desmos State: ...]", a graph is already on screen.
+
+Set "keepGraph": true (with stateId null and adaptedState null) when a graph is already on screen AND the latest message is a follow-up the current graph already serves: a question about the problem or its steps ("why did you do that?", "what's the slope again?", "explain step 2"), a request to re-explain, a hint, or a check of the student's work on the same problem. Redrawing would wipe what the student is looking at.
+Set "keepGraph": false and follow the steps below when there is no graph yet, the message is a new problem or a new topic, or the student asks for a different or additional visual.
 
 Rules for "adaptedState":
 - If the chosen template's type is "problem-solver": adaptedState MUST be the fully-filled Desmos state (see ADAPTATION RULES). Never null in this case.
@@ -425,9 +403,9 @@ Rules for "adaptedState":
 STEP 1 — CLASSIFY (pick stateId)
 ═══════════════════════════════════════════
 
-Korah's whole value is teaching SAT math through Desmos. ALMOST EVERY SAT MATH PROBLEM maps to one of the templates below. Default to picking a template. Only return null as an absolute last resort.
+Korah's whole value is teaching SAT math through Desmos, so every math problem should get a graph. Pick a SPECIFIC template only when the problem's structure matches its description, not just its topic. If no specific template matches, pick "free-graph". Return null only for input that is not math at all.
 
-You SHOULD pick a template whenever any of these apply:
+Pick a specific template when one of these applies:
 - Linear function, line, slope, y-intercept → linear-functions / linear-equations-in-two-variables
 - Equation in one variable with unknown constants asking "infinitely many / no solutions" → linear-equations-in-one-variable
 - Inequality asking which (x,y) pairs satisfy it → linear-equalities-in-one-or-two-variables
@@ -439,12 +417,13 @@ You SHOULD pick a template whenever any of these apply:
 - Sine/cosine waves, period, amplitude, phase → sine-cosine-sinuoids-graphs
 - Dilations, vertical/horizontal stretches → nonrigid-transformations-dilations
 - Concavity, concave up/down, rate of change → concavity-discovery / concavity-rate-of-change
+- Anything else that involves a function, equation, or graph (graphed polynomial, f(x) = k with a number of solutions, curve and line intersections, turning points, intercepts) → free-graph
 
 Draw a graph EVEN WHEN NOT EXPLICITLY ASKED: any request that would be clearer with a worked example on the graph should get one, including broad/how-to questions ("show me a strategy for linear systems"). Pick the template that best DEMONSTRATES the concept.
 
-"visualizer" templates are for conceptual questions ("what is concavity?", "show me the unit circle"). "problem-solver" templates are for concrete SAT problems with numbers/equations to solve — prefer these when the student pastes a problem.
+"visualizer" templates are for conceptual questions ("what is concavity?", "show me the unit circle"). "problem-solver" templates are for concrete SAT problems with numbers/equations to solve — prefer these when the student pastes a problem. Never force a problem into a specific problem-solver skeleton it does not structurally fit: a polynomial that is graphed is NOT an "equivalent-expressions" problem, which needs a polynomial identity that holds for all x.
 
-Only return stateId: null if the input is COMPLETELY non-mathematical ("hi", "what is Korah?") or clearly outside the template list (3D volume geometry, pure probability/statistics with no graph utility). When in doubt — PICK A TEMPLATE.
+Only return stateId: null if the input is COMPLETELY non-mathematical ("hi", "what is Korah?"). For any other math input with no specific match, return "free-graph".
 
 ═══════════════════════════════════════════
 STEP 2 — ADAPT (only for problem-solver templates)
@@ -462,6 +441,9 @@ CRITICAL DESMOS RULES (violations break the graph):
 - A table must appear BEFORE any expression that uses its columns.
 - Regressions use TILDE (\\sim), not equals.
 - Text nodes use ONLY {type, id, text} — NO color field, NO LaTeX, NO backslashes, NO $...$, NO subscripts. Plain English sentences only. To show a formula, use an {type:"expression", latex:"..."} node instead.
+- Prose and math never share a node. Every equation, expression, or computed value goes in its own {type:"expression", hidden:true, latex:"..."} node right after the sentence that introduces it, exactly as the skeleton lays out. Text nodes contain no equations and no numbers used as math.
+- Each worked-step expression holds ONE numeric expression (Desmos evaluates it on screen) or ONE equation. Use "=" only to define a new letter or to relate x and y; never write an equation between constants that are already defined (it errors). Never chain equalities (a=b=c) and never write a function call with a number on the left of "=" (f(1)=...). Never write m=..., b=..., or any letter the regression fits or the table uses as a column.
+- For "free-graph" only: keep the skeleton's ids and order, but delete reference_graph, algebra_step nodes (with their text nodes), or key_point nodes that do not apply to the problem. Never leave a {{placeholder}} behind. Use only functions, equations, points, and vertical/horizontal lines: no tables, regressions, folders, or sliders.
 - Every id must be unique within expressions.list.
 - LaTeX backslashes must be JSON-escaped (\\\\frac, \\\\sim, \\\\left, …).
 - adaptedState top-level fields: version, randomSeed, expressions only. NO "graph"/"viewport".
@@ -484,7 +466,7 @@ ${skeletonsBlock}`;
   // (adaptedState may be null for visualizer / null classifications) or null on
   // total failure. Parsing mirrors the legacy phases; validation/fallback of the
   // adaptedState sub-field happens at the call site (in sendMessage).
-  async function runMergedClassifyAdapt(problem) {
+  async function runMergedClassifyAdapt(problem, history = [], onThought = null) {
     console.log('[Merged] classify+adapt starting…');
     const t0 = performance.now();
     let systemPrompt;
@@ -499,7 +481,9 @@ ${skeletonsBlock}`;
     try {
       await callAPI(problem, (_chunk, full) => { fullText = full; }, {
         systemPrompt,
+        history,
         temperature: MERGED_TEMPERATURE,
+        onThought,
         _phaseTag: 'Merged (classify+adapt)',
       });
     } catch (e) {
@@ -519,8 +503,9 @@ ${skeletonsBlock}`;
       stateId: typeof parsed.stateId === 'string' ? parsed.stateId : null,
       strategy: typeof parsed.strategy === 'string' ? parsed.strategy : '',
       adaptedState: (parsed.adaptedState && typeof parsed.adaptedState === 'object') ? parsed.adaptedState : null,
+      keepGraph: parsed.keepGraph === true,
     };
-    console.log('[Merged] parsed:', { stateId: out.stateId, strategy: out.strategy, hasState: !!out.adaptedState });
+    console.log('[Merged] parsed:', { stateId: out.stateId, strategy: out.strategy, hasState: !!out.adaptedState, keepGraph: out.keepGraph });
     return out;
   }
 
@@ -535,7 +520,6 @@ ${skeletonsBlock}`;
       if (satMathCalculator) {
         satMathCalculator.setBlank();
         graphExpressions = [];
-        updateGraphContextIndicator();
       }
     });
   }
@@ -926,7 +910,7 @@ ${skeletonsBlock}`;
     if (messagesList) messagesList.innerHTML = '';
     welcomeScreen?.classList.remove('hidden');
     document.getElementById('chat-input-area')?.classList.add('hidden');
-    if (satMathCalculator) { satMathCalculator.setBlank(); graphExpressions = []; updateGraphContextIndicator(); }
+    if (satMathCalculator) { satMathCalculator.setBlank(); graphExpressions = []; }
     const chatTitleEl = document.getElementById('chat-title');
     if (chatTitleEl) chatTitleEl.textContent = 'Desmos Chat';
     createNewSession();
@@ -1035,6 +1019,44 @@ ${skeletonsBlock}`;
       contentElement.appendChild(thinkingIndicator);
       startDotCycle(THINKING_PHRASES, thinkingIndicator);
     }
+
+    // Live thought summaries from the model, shown muted and italic under the
+    // indicator. contentElement is cleared on the first response chunk, which
+    // removes them.
+    let firstChunkSeen = false;
+    let thoughtText = '';
+    let thoughtEl = null;
+    let thoughtQueue = [];
+    let thoughtTyping = false;
+    // Gemini sends summaries in large chunks, so type them out instead of
+    // dropping each chunk in at once.
+    const typeThought = () => {
+      if (firstChunkSeen || thoughtQueue.length === 0) { thoughtTyping = false; return; }
+      const n = thoughtQueue.length > 200 ? 6 : thoughtQueue.length > 80 ? 3 : 1;
+      thoughtText += thoughtQueue.splice(0, n).join('');
+      if (!thoughtEl?.isConnected) {
+        const wrap = document.createElement('div');
+        wrap.className = 'thinking-thoughts';
+        wrap.innerHTML = `<button type="button" class="thinking-toggle" aria-expanded="true">Hide thinking</button><div class="thinking-summary"></div>`;
+        thoughtEl = wrap.querySelector('.thinking-summary');
+        const toggle = wrap.querySelector('.thinking-toggle');
+        toggle.addEventListener('click', () => {
+          const open = thoughtEl.hidden;
+          thoughtEl.hidden = !open;
+          toggle.setAttribute('aria-expanded', String(open));
+          toggle.textContent = open ? 'Hide thinking' : 'Show thinking';
+        });
+        contentElement.appendChild(wrap);
+      }
+      thoughtEl.textContent = thoughtText;
+      chatBody.scrollTop = chatBody.scrollHeight;
+      setTimeout(typeThought, 15);
+    };
+    const showThought = (chunk) => {
+      if (!contentElement || firstChunkSeen) return;
+      thoughtQueue.push(...chunk.replace(/\*\*/g, ''));
+      if (!thoughtTyping) { thoughtTyping = true; typeThought(); }
+    };
 
     let currentTypedText = "";
     let charBuffer = [];
@@ -1148,11 +1170,12 @@ ${skeletonsBlock}`;
   // Helper: replace the current indicator with a "Drawing graph…" indicator.
   const showDrawingIndicator = () => {
     if (!contentElement) return;
-    contentElement.innerHTML = '';
+    // Keep the thoughts dropdown; swap only the shimmer indicator.
+    contentElement.querySelector('.thinking-indicator')?.remove();
     const ind = document.createElement('div');
     ind.className = 'thinking-indicator graph-loading-indicator';
     ind.innerHTML = `<span class="thinking-shimmer-text">Drawing Graph.</span>`;
-    contentElement.appendChild(ind);
+    contentElement.prepend(ind);
     thinkingIndicator = ind;
     startDotCycle('Drawing Graph', ind);
   };
@@ -1162,15 +1185,27 @@ ${skeletonsBlock}`;
 
     // ── CLASSIFY + LOAD GRAPH (single merged call) ──
     // One silent call returns { stateId, strategy, adaptedState }. It replaces
-    // the old two round-trips (classify, then adapt). The verified example is
-    // still the fallback whenever the adapted state is missing, verbatim, or
-    // fails validation — so the graph stays robust even if the model slips.
+    // the old two round-trips (classify, then adapt). Visualizers load their
+    // verified example as-is; a problem-solver whose adapted state is missing,
+    // verbatim, or invalid gets no graph rather than another problem's example.
     let loadedState = null;
-    const merged = await runMergedClassifyAdapt(userContent);
+    // After a "visualize it" offer, a bare "yes" has no problem in it, so give
+    // the classifier the problem from the previous turn.
+    const lastAI = [...conversationHistory].reverse().find(m => m.role === 'assistant');
+    const lastUser = [...conversationHistory].reverse().find(m => m.role === 'user');
+    const classifyInput = (typeof userContent === 'string' && lastAI?.content.includes(DESMOS_OFFER) && lastUser)
+      ? `${lastUser.content}\n\n[Student follow-up: ${userContent}]`
+      : userContent;
+    const merged = await runMergedClassifyAdapt(classifyInput, conversationHistory, showThought);
     const stateId = merged?.stateId || null;
     const classifierStrategy = merged?.strategy || '';
 
-    if (stateId) {
+    if (merged?.keepGraph && graphExpressions.length > 0 && satMathCalculator) {
+      // Follow-up on the graph already on screen: leave it untouched and
+      // ground Phase 3 in its current state.
+      loadedState = satMathCalculator.getState();
+      console.log('[Merged] keepGraph — leaving the current graph as is');
+    } else if (stateId) {
       showDrawingIndicator();
       try {
         const index = await loadTemplateIndex();
@@ -1204,9 +1239,9 @@ ${skeletonsBlock}`;
               : verbatim ? 'verbatim copy'
               : leftoverSlots.length ? `unfilled placeholders: ${leftoverSlots.join(', ')}`
               : 'validation failed';
-            console.warn(`[Merged] adapted state unusable (${reason}); falling back to verified example.`);
-            const example = await loadExample(stateId);
-            if (loadDesmosState(example).ok) { loadedState = example; console.log('[Merged] fallback example loaded'); }
+            // The example solves a different problem, so showing it would mislead.
+            // Load nothing; Phase 3 solves without a graph and offers one.
+            console.warn(`[Merged] adapted state unusable (${reason}); skipping graph.`);
           }
         }
       } catch (e) {
@@ -1222,9 +1257,9 @@ ${skeletonsBlock}`;
     typewriterActive = false;
     lastBufferedLength = 0;
     currentTypedText = '';
-    let firstChunkSeen = false;
 
     console.log(`🟢 [Phase 3] streaming tutoring response (grounded=${!!loadedState})…`);
+    let phase3Thinking = false;
     const phase3T0 = performance.now();
     await callAPI(userContent, (_chunk, fullText) => {
       phase3FullText = fullText;
@@ -1242,8 +1277,13 @@ ${skeletonsBlock}`;
         if (!typewriterActive) typeNextChar();
       }
     }, {
+      history: conversationHistory,
       systemPrompt: buildPhase3SystemPrompt(loadedState, classifierStrategy),
       temperature: 0.65,
+      onThought: (chunk) => {
+        if (!phase3Thinking) { phase3Thinking = true; thoughtText = ''; thoughtQueue = []; if (thoughtEl) thoughtEl.textContent = ''; }
+        showThought(chunk);
+      },
       _phaseTag: 'Phase 3 (respond)',
     });
     console.log(`🟢 [Phase 3] done in ${Math.round(performance.now() - phase3T0)}ms (${phase3FullText.length} chars)`);
@@ -1291,6 +1331,7 @@ ${skeletonsBlock}`;
 
     const messagesWithSystem = [
       { role: 'system', content: systemPrompt },
+      ...(options.history ?? []),
       { role: 'user', content: userContent }
     ];
 
@@ -1298,7 +1339,8 @@ ${skeletonsBlock}`;
       model: MODEL,
       temperature,
       messages: messagesWithSystem,
-      stream: true
+      stream: true,
+      include_thoughts: !!options.onThought
     };
 
     const bodyStr = JSON.stringify(bodyObj);
@@ -1361,6 +1403,8 @@ ${skeletonsBlock}`;
 
             try {
               const parsed = JSON.parse(data);
+              const reasoning = parsed?.choices?.[0]?.delta?.reasoning;
+              if (reasoning && options.onThought) options.onThought(reasoning);
               const content = parsed?.choices?.[0]?.delta?.content;
               if (content) {
                 fullReply += content;

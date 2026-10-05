@@ -26,10 +26,113 @@
 <style>
   html { scroll-behavior: smooth; }
 
+  /* ══ LANDING TOKENS ═════════════════════════════════════════════════════
+     Same set index.html runs: solid neutrals after login.html, with a light
+     twin. korah.css's purple app tokens are left untouched. */
+  :root, html[data-theme="dark"] {
+    --ln-bg:      #000;
+    --ln-sf:      #121212;
+    --ln-sf2:     #1a1a1a;
+    --ln-bd:      #242424;
+    --ln-bd2:     #3d3d3d;
+    --ln-tx:      #fff;
+    --ln-tx2:     #8b8b8b;
+    --ln-tx3:     #5c5c5c;
+    --ln-fill:    #ededed;
+    --ln-fill-hi: #fff;
+    --ln-fill-tx: #000;
+    --ln-lift:    0 0.75rem 2rem rgba(0,0,0,0.6);
+  }
+  html[data-theme="light"] {
+    --ln-bg:      #fff;
+    --ln-sf:      #fff;
+    --ln-sf2:     #f4f4f5;
+    --ln-bd:      #e4e4e7;
+    --ln-bd2:     #c4c4ca;
+    --ln-tx:      #09090b;
+    --ln-tx2:     #6c6c76;
+    --ln-tx3:     #9b9ba3;
+    --ln-fill:    #09090b;
+    --ln-fill-hi: #000;
+    --ln-fill-tx: #fff;
+    --ln-lift:    0 0.75rem 2rem rgba(0,0,0,0.12);
+  }
+
+  .ln-page {
+    background: var(--ln-bg);
+    color: var(--ln-tx);
+    transition: background-color .4s, color .4s;
+  }
+
+  /* ══ NAVBAR ═════════════════════════════════════════════════════════════
+     Mirrors index.html: solid and opaque on scroll, no purple tint, no
+     gradient underline. */
+  #navbar.scrolled {
+    background: var(--ln-bg);
+    box-shadow: 0 0.0625rem 0 var(--ln-bd);
+  }
+  #navbar::after { display: none; }
+
+  .ln-navpills {
+    background: var(--ln-sf);
+    border: 0.0625rem solid var(--ln-bd);
+  }
+  /* korah.css positions the indicator absolutely, so it paints above the
+     static pills. The purple fill it replaces was translucent and the label
+     read through it; this one is solid, so the links get their own layer. */
+  .ln-navpills .nav-link {
+    position: relative; z-index: 1;
+    color: var(--ln-tx2); transition: color .15s ease;
+  }
+  .ln-navpills .nav-link:hover { color: var(--ln-tx); }
+  .nav-indicator {
+    z-index: 0;
+    background: var(--ln-sf2);
+    border: 0.0625rem solid var(--ln-bd2);
+  }
+  .nav-link.active { color: var(--ln-tx) !important; }
+  .nav-link.active .nav-link-icon { filter: none; }
+
+  .ln-brand { font-size: 1.1875rem; font-weight: 800; letter-spacing: -0.02em; color: var(--ln-tx); }
+  .ln-logo {
+    height: 2.25rem; width: auto; flex-shrink: 0;
+    transition: transform .18s cubic-bezier(.23,1,.32,1);
+  }
+  a:hover > .ln-logo { transform: scale(1.06); }
+
+  .ln-theme-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 2.25rem; height: 2.25rem; flex-shrink: 0;
+    border-radius: 0.5rem;
+    background: var(--ln-sf); border: 0.0625rem solid var(--ln-bd);
+    color: var(--ln-tx2); cursor: pointer;
+    transition: transform .18s cubic-bezier(.23,1,.32,1), box-shadow .18s ease,
+                background .18s ease, border-color .18s ease, color .18s ease;
+  }
+  .ln-theme-btn:hover { color: var(--ln-tx); border-color: var(--ln-bd2); transform: scale(1.05); box-shadow: var(--ln-lift); }
+  .ln-theme-btn:active { transform: scale(0.97); box-shadow: none; }
+
+  .ln-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+    height: 2.25rem; padding: 0 0.875rem;
+    border-radius: 0.5rem;
+    border: 0.0625rem solid transparent;
+    font-family: inherit; font-size: 0.8125rem; font-weight: 600;
+    text-decoration: none; cursor: pointer; white-space: nowrap;
+    transition: transform .18s cubic-bezier(.23,1,.32,1), box-shadow .18s ease,
+                background .18s ease, border-color .18s ease, color .18s ease;
+  }
+  .ln-btn:hover  { transform: scale(1.025); box-shadow: var(--ln-lift); }
+  .ln-btn:active { transform: scale(0.99); box-shadow: none; }
+  .ln-btn-primary { background: var(--ln-fill); color: var(--ln-fill-tx); border-color: var(--ln-fill); }
+  .ln-btn-primary:hover { background: var(--ln-fill-hi); border-color: var(--ln-fill-hi); }
+  .ln-btn-soft { background: var(--ln-sf2); color: var(--ln-tx); }
+  .ln-btn-soft:hover { background: var(--ln-bd); }
+
   /* ── Page body clears fixed navbar ── */
   .code-body {
-    padding: clamp(6.5rem, 12vw, 8.5rem) clamp(1.25rem, 5vw, 4rem) 5rem;
-    max-width: 80rem;
+    padding: clamp(6.5rem, 12vw, 8.5rem) clamp(1rem, 5vw, 4rem) 5rem;
+    max-width: 72rem;
     margin: 0 auto;
     width: 100%;
     box-sizing: border-box;
@@ -38,13 +141,10 @@
   /* ── Hero ── */
   .code-hero {
     position: relative;
-    border: 1px solid var(--bd);
+    border: 0.0625rem solid var(--ln-bd);
     border-radius: 1.25rem;
     padding: clamp(1.5rem, 4vw, 3rem) clamp(1.25rem, 3.5vw, 2.5rem);
-    background:
-      radial-gradient(ellipse at 20% 0%, rgba(139,92,246,0.18) 0%, transparent 55%),
-      radial-gradient(ellipse at 100% 100%, rgba(99,102,241,0.12) 0%, transparent 55%),
-      var(--bg2);
+    background: var(--ln-sf);
     overflow: hidden;
   }
   .code-hero-top {
@@ -78,26 +178,28 @@
   }
   .code-title {
     font-size: clamp(2rem, 5.5vw, 3.75rem);
-    font-weight: 900;
-    letter-spacing: -0.02em;
+    font-weight: 700;
+    letter-spacing: -0.035em;
     line-height: 1.05;
     margin: 0 0 1rem;
-    color: var(--tx);
+    color: var(--ln-tx);
   }
-  .code-title .purple { color: var(--p4); }
+  /* The class name is historical; the accent is a muted companion tone now
+     rather than purple. */
+  .code-title .purple { color: var(--ln-tx2); }
   .code-title .expansion {
     display: block;
     font-size: clamp(1.125rem, 2.2vw, 1.75rem);
-    font-weight: 700;
-    color: var(--tx);
-    letter-spacing: -0.005em;
+    font-weight: 600;
+    color: var(--ln-tx2);
+    letter-spacing: -0.02em;
     margin-top: 0.625rem;
   }
-  .code-title .expansion .purple { color: var(--p4); }
+  .code-title .expansion .purple { color: var(--ln-tx2); }
   .code-sub {
     font-size: clamp(0.95rem, 1.6vw, 1.125rem);
     line-height: 1.7;
-    color: var(--tx);
+    color: var(--ln-tx2);
     max-width: 44rem;
     margin: 0 0 2rem;
   }
@@ -120,66 +222,64 @@
   }
   .btn-label { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 0.5rem; }
 
+  /* Buttons lift: a small scale plus a deeper shadow, never a translate. */
   .code-cta {
     display: inline-flex;
     align-items: center;
-    height: 3.25rem;
-    padding: 0 2rem;
-    border-radius: 624.938rem;
-    background: var(--p4);
-    color: #fff;
-    font-size: 0.9375rem;
-    font-weight: 700;
+    height: 2.75rem;
+    padding: 0 1.5rem;
+    border-radius: 0.5rem;
+    background: var(--ln-fill);
+    color: var(--ln-fill-tx);
+    border: 0.0625rem solid var(--ln-fill);
+    font-size: 0.875rem;
+    font-weight: 600;
     text-decoration: none;
-    transition: transform 0.25s ease, box-shadow 0.25s ease;
-    box-shadow: 0 0.625rem 1.875rem rgba(139,92,246,0.35);
+    transition: transform .18s cubic-bezier(.23,1,.32,1), box-shadow .18s ease,
+                background .18s ease, border-color .18s ease, color .18s ease;
   }
-  .code-cta::before { background: var(--ac); }
-  .code-cta:hover { transform: scale(1.06); }
+  .code-cta::before { background: var(--ln-fill-hi); }
+  .code-cta:hover  { transform: scale(1.025); box-shadow: var(--ln-lift); }
+  .code-cta:active { transform: scale(0.99); box-shadow: none; }
   .code-cta.ghost {
     background: transparent;
-    color: var(--tx);
-    border: 1px solid var(--bd);
-    box-shadow: none;
-    transition: transform 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+    color: var(--ln-tx);
+    border-color: var(--ln-bd);
   }
-  .code-cta.ghost::before { background: var(--p4); }
-  .code-cta.ghost:hover { border-color: var(--p4); color: #fff; }
+  .code-cta.ghost::before { background: var(--ln-sf2); }
+  .code-cta.ghost:hover { border-color: var(--ln-bd2); color: var(--ln-tx); }
 
   /* ── Meta badges ── */
   .meta-row {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.625rem;
+    gap: 0.5rem;
     margin-top: 2rem;
   }
   .meta-badge {
     display: inline-flex;
     align-items: center;
     gap: 0.45rem;
-    padding: 0.5rem 0.875rem;
-    border: 1px solid transparent;
-    border-radius: 624.938rem;
-    background: var(--p4);
-    color: #fff;
+    padding: 0.4375rem 0.8125rem;
+    border: 0.0625rem solid var(--ln-bd);
+    border-radius: 62.4375rem;
+    background: var(--ln-sf2);
+    color: var(--ln-tx);
     font-size: 0.8125rem;
-    font-weight: 600;
+    font-weight: 500;
   }
-  .meta-badge:nth-child(2) { background: var(--ac); }
-  .meta-badge:nth-child(3) { background: var(--gold); }
-  .meta-badge:nth-child(4) { background: var(--grn); }
-  .meta-badge .material-icons-round { font-size: 1rem; color: #fff; }
+  .meta-badge .material-icons-round { font-size: 1rem; color: var(--ln-tx2); }
 
   /* ── Section heading ── */
   .section-heading {
     font-size: clamp(1.75rem, 3.5vw, 2.5rem);
-    font-weight: 800;
-    letter-spacing: -0.015em;
-    color: var(--tx);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--ln-tx);
     margin: 0 0 0.625rem;
   }
   .section-sub {
-    color: var(--tx);
+    color: var(--ln-tx2);
     font-size: 1rem;
     max-width: 42rem;
     margin: 0 0 2rem;
@@ -189,38 +289,47 @@
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 1.1875rem;
+    font-size: 0.875rem;
     font-weight: 600;
-    color: var(--tx);
+    color: var(--ln-tx2);
     margin: 0 0 0.75rem;
   }
-  .section-eyebrow img { height: 1.5rem; width: auto; }
+  .section-eyebrow img { height: 1.375rem; width: auto; }
+
+  /* ── Shared card surface ── */
+  .about-card,
+  .mission-card,
+  .bento-card,
+  .carousel,
+  .ship-group,
+  .cohort-card,
+  .final-cta,
+  .project-preview,
+  .cohort-avatar {
+    border: 0.0625rem solid var(--ln-bd);
+    background: var(--ln-sf);
+  }
 
   /* ── About card ── */
   .about-card {
     margin-top: 3.5rem;
     padding: clamp(1.75rem, 3.5vw, 2.5rem);
-    border: 1px solid var(--bd);
     border-radius: 1.25rem;
-    background: var(--bg2);
   }
   .about-card p {
-    color: var(--tx);
+    color: var(--ln-tx2);
     line-height: 1.75;
     font-size: 1.0625rem;
     margin: 0 0 1rem;
   }
   .about-card p:last-child { margin-bottom: 0; }
+  .about-card .section-heading { margin-bottom: 1rem; }
 
   /* ── Mission card (logo beside text) ── */
   .mission-card {
     margin-top: 3.5rem;
     padding: clamp(1.75rem, 3.5vw, 2.75rem);
-    border: 1px solid var(--bd);
     border-radius: 1.25rem;
-    background:
-      radial-gradient(ellipse at 100% 0%, rgba(139,92,246,0.16) 0%, transparent 60%),
-      var(--bg2);
     display: grid;
     grid-template-columns: auto 1fr;
     gap: clamp(1.5rem, 4vw, 3rem);
@@ -233,14 +342,14 @@
   }
   .mission-quote {
     font-size: clamp(1.125rem, 2.2vw, 1.5rem);
-    font-weight: 700;
+    font-weight: 600;
     line-height: 1.55;
-    letter-spacing: -0.01em;
-    color: var(--tx);
+    letter-spacing: -0.02em;
+    color: var(--ln-tx);
     margin: 0 0 1rem;
   }
   .mission-card p.mission-body {
-    color: var(--tx);
+    color: var(--ln-tx2);
     line-height: 1.75;
     font-size: 1.0625rem;
     margin: 0;
@@ -254,23 +363,21 @@
     margin-top: 3.5rem;
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 1.25rem;
+    gap: 1rem;
   }
   @media (max-width: 56.25rem) {
     .bento { grid-template-columns: 1fr; }
   }
   .bento-card {
-    border: 1px solid var(--bd);
     border-radius: 1.25rem;
     padding: clamp(1.75rem, 3vw, 2.5rem);
-    background: var(--bg2);
   }
   .bento-card h3 {
-    font-size: clamp(1.5rem, 2.5vw, 1.875rem);
-    font-weight: 800;
-    color: var(--tx);
+    font-size: clamp(1.25rem, 2.5vw, 1.5rem);
+    font-weight: 600;
+    color: var(--ln-tx);
     margin: 0 0 1.5rem;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.02em;
   }
   .bento-list {
     list-style: none;
@@ -284,17 +391,17 @@
     display: flex;
     align-items: flex-start;
     gap: 0.875rem;
-    color: var(--tx);
-    font-size: 1.0625rem;
-    line-height: 1.55;
+    color: var(--ln-tx2);
+    font-size: 1rem;
+    line-height: 1.6;
   }
   .bento-list li::before {
     content: '';
     flex-shrink: 0;
-    width: 0.5rem;
-    height: 0.5rem;
+    width: 0.375rem;
+    height: 0.375rem;
     border-radius: 50%;
-    background: var(--p4);
+    background: var(--ln-tx3);
     margin-top: 0.6rem;
   }
 
@@ -302,8 +409,7 @@
     width: 100%;
     min-height: 15rem;
     aspect-ratio: 16 / 9;
-    border: 1px solid var(--bd);
-    border-radius: 1rem;
+    border-radius: 0.875rem;
     overflow: hidden;
   }
   .project-preview img {
@@ -317,7 +423,6 @@
     height: 6.5rem;
     margin: 0 auto 1rem;
     border-radius: 50%;
-    border: 1px solid var(--bd);
     overflow: hidden;
   }
   .cohort-avatar img {
@@ -330,9 +435,7 @@
   /* ── Project carousel ── */
   .carousel {
     position: relative;
-    border: 1px solid var(--bd);
     border-radius: 1.25rem;
-    background: var(--bg2);
     overflow: hidden;
   }
   .carousel-viewport {
@@ -365,41 +468,44 @@
     .project-slide { grid-template-columns: 1fr; }
   }
   .project-slide h3 {
-    font-size: clamp(1.375rem, 2.5vw, 1.875rem);
-    font-weight: 800;
-    color: var(--tx);
+    font-size: clamp(1.25rem, 2.5vw, 1.625rem);
+    font-weight: 600;
+    color: var(--ln-tx);
     margin: 0 0 0.375rem;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.02em;
   }
   .project-slide .creator {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    color: var(--tx);
+    color: var(--ln-tx2);
     font-size: 0.9375rem;
-    font-weight: 600;
+    font-weight: 500;
     margin: 0 0 1rem;
   }
-  .project-slide .creator .material-icons-round { font-size: 1.125rem; color: #fff; }
+  .project-slide .creator .material-icons-round { font-size: 1.125rem; color: var(--ln-tx3); }
   .project-slide p.blurb {
-    color: var(--tx);
+    color: var(--ln-tx2);
     font-size: 1rem;
     line-height: 1.7;
     margin: 0 0 1.25rem;
   }
-  .tag-row { display: flex; flex-wrap: wrap; gap: 0.4rem; }
-  .tag {
-    font-size: 0.8125rem;
+  .project-slide p.blurb a {
+    color: var(--ln-tx);
     font-weight: 600;
-    color: #fff;
-    background: var(--p4);
-    border: 1px solid transparent;
-    border-radius: 624.938rem;
-    padding: 0.25rem 0.75rem;
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
   }
-  .tag:nth-child(2) { background: var(--ac); }
-  .tag:nth-child(3) { background: var(--gold); }
-  .tag:nth-child(4) { background: var(--grn); }
+  .tag-row { display: flex; flex-wrap: wrap; gap: 0.375rem; }
+  .tag {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--ln-tx2);
+    background: var(--ln-sf2);
+    border: 0.0625rem solid var(--ln-bd);
+    border-radius: 0.4375rem;
+    padding: 0.3125rem 0.625rem;
+  }
 
   /* Controls */
   .carousel-bar {
@@ -415,16 +521,12 @@
     height: 0.5rem;
     padding: 0;
     border: none;
-    border-radius: 624.938rem;
-    background: var(--p4);
-    opacity: 0.4;
+    border-radius: 62.4375rem;
+    background: var(--ln-bd2);
     cursor: pointer;
-    transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s;
+    transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1), background 0.3s;
   }
-  .carousel-dot:nth-child(2) { background: var(--ac); }
-  .carousel-dot:nth-child(3) { background: var(--gold); }
-  .carousel-dot:nth-child(4) { background: var(--grn); }
-  .carousel-dot.is-active { width: 1.75rem; opacity: 1; }
+  .carousel-dot.is-active { width: 1.75rem; background: var(--ln-fill); }
   .carousel-arrows { display: flex; gap: 0.5rem; }
   .carousel-arrow {
     display: inline-flex;
@@ -433,25 +535,27 @@
     width: 2.5rem;
     height: 2.5rem;
     border-radius: 50%;
-    border: 1px solid var(--bd);
-    background: var(--bd2);
-    color: var(--tx);
+    border: 0.0625rem solid var(--ln-bd);
+    background: var(--ln-sf2);
+    color: var(--ln-tx);
     cursor: pointer;
-    transition: border-color 0.25s, transform 0.25s ease, color 0.25s ease;
+    transition: transform .18s cubic-bezier(.23,1,.32,1), box-shadow .18s ease,
+                border-color .18s ease, color .18s ease;
   }
-  .carousel-arrow::before { background: var(--p4); }
-  .carousel-arrow:hover { border-color: var(--p4); transform: scale(1.12); color: #fff; }
+  .carousel-arrow::before { background: var(--ln-bd); }
+  .carousel-arrow:hover  { border-color: var(--ln-bd2); transform: scale(1.06); box-shadow: var(--ln-lift); }
+  .carousel-arrow:active { transform: scale(0.97); box-shadow: none; }
   .carousel-arrow .material-icons-round { font-size: 1.25rem; }
   /* Autoplay progress line, hidden once the visitor takes over. */
   .carousel-progress {
     position: absolute;
     left: 0;
     bottom: 0;
-    height: 0.1875rem;
+    height: 0.125rem;
     width: 100%;
     transform: scaleX(0);
     transform-origin: left;
-    background: #fff;
+    background: var(--ln-tx);
   }
   .carousel.is-playing .carousel-progress {
     animation: carousel-fill 6s linear infinite;
@@ -463,21 +567,21 @@
   @media (prefers-reduced-motion: reduce) {
     .carousel-track { transition: none; }
     .carousel.is-playing .carousel-progress { animation: none; }
+    .code-cta:hover, .nav-btn:hover, .carousel-arrow:hover,
+    .ln-btn:hover, .ln-theme-btn:hover, .letter-glitch-btn:hover { transform: none; }
   }
 
   /* ── Shipped work, grouped by the intern who built it ── */
   .ship-board {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 1.25rem;
+    gap: 1rem;
   }
   @media (max-width: 56.25rem) {
     .ship-board { grid-template-columns: 1fr; }
   }
   .ship-group {
-    border: 1px solid var(--bd);
     border-radius: 1.25rem;
-    background: var(--bg2);
     padding: clamp(1.5rem, 3vw, 2rem);
   }
   .ship-group-head {
@@ -486,24 +590,24 @@
     justify-content: space-between;
     gap: 1rem;
     padding-bottom: 1rem;
-    border-bottom: 1px solid var(--bd);
+    border-bottom: 0.0625rem solid var(--ln-bd);
   }
   .ship-group-head h3 {
-    font-size: clamp(1.125rem, 2vw, 1.375rem);
-    font-weight: 800;
-    letter-spacing: -0.01em;
-    color: var(--tx);
+    font-size: clamp(1.0625rem, 2vw, 1.25rem);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--ln-tx);
     margin: 0;
   }
   .ship-count {
     flex-shrink: 0;
     font-size: 0.8125rem;
-    font-weight: 600;
-    color: var(--tx2);
+    font-weight: 500;
+    color: var(--ln-tx2);
   }
   .ship-item {
     padding: 1.125rem 0;
-    border-bottom: 1px solid var(--bd);
+    border-bottom: 0.0625rem solid var(--ln-bd);
   }
   .ship-item:last-child { padding-bottom: 0; border-bottom: none; }
   .ship-item h4 {
@@ -512,24 +616,23 @@
     flex-wrap: wrap;
     gap: 0.5rem;
     font-size: 1rem;
-    font-weight: 700;
-    color: var(--tx);
+    font-weight: 600;
+    color: var(--ln-tx);
     margin: 0 0 0.375rem;
   }
   .ship-item p {
-    color: var(--tx);
+    color: var(--ln-tx2);
     font-size: 0.9375rem;
     line-height: 1.65;
     margin: 0;
   }
   .ship-wip {
     font-size: 0.6875rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: #fff;
-    background: var(--gold);
-    border-radius: 624.938rem;
+    font-weight: 600;
+    color: var(--ln-tx2);
+    background: var(--ln-sf2);
+    border: 0.0625rem solid var(--ln-bd);
+    border-radius: 62.4375rem;
     padding: 0.15rem 0.5rem;
   }
 
@@ -537,23 +640,21 @@
   .cohort-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
-    gap: 1.25rem;
+    gap: 1rem;
   }
   .cohort-card {
-    border: 1px solid var(--bd);
     border-radius: 1.25rem;
-    background: var(--bg2);
     padding: 1.5rem 1.25rem;
     text-align: center;
   }
   .cohort-card h3 {
     font-size: 1.0625rem;
-    font-weight: 800;
-    color: var(--tx);
+    font-weight: 600;
+    color: var(--ln-tx);
     margin: 0 0 0.25rem;
   }
   .cohort-card p {
-    color: var(--tx);
+    color: var(--ln-tx2);
     font-size: 0.8125rem;
     margin: 0;
     line-height: 1.5;
@@ -564,10 +665,6 @@
     margin-top: 4rem;
     padding: clamp(2rem, 4vw, 3rem);
     border-radius: 1.25rem;
-    border: 1px solid var(--bd);
-    background:
-      radial-gradient(ellipse at 50% 0%, rgba(139,92,246,0.16) 0%, transparent 60%),
-      var(--bg2);
     text-align: center;
   }
   .final-cta img {
@@ -579,18 +676,21 @@
   }
   .final-cta h3 {
     font-size: clamp(1.5rem, 3vw, 2.125rem);
-    font-weight: 800;
-    color: var(--tx);
+    font-weight: 700;
+    color: var(--ln-tx);
     margin: 0 0 0.625rem;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.03em;
   }
   .final-cta p {
-    color: var(--tx);
+    color: var(--ln-tx2);
     margin: 0 0 1.5rem;
     font-size: 1rem;
   }
 
-  /* ── Letter Glitch windowed hero ── */
+  /* ── Letter Glitch windowed hero ──
+     The glitch canvas is this page's generative backdrop, the counterpart to
+     the shader on index.html, so it keeps its purple character colours. The
+     chrome sitting on top of it does not. */
   .letter-glitch-section {
     position: relative;
     width: 100%;
@@ -599,12 +699,12 @@
     margin-bottom: 2.5rem;
     border-radius: 1.5rem;
     overflow: hidden;
-    border: 1px solid var(--bd);
+    border: 0.0625rem solid var(--ln-bd);
     display: flex;
     align-items: center;
     justify-content: center;
     background: #000;
-    box-shadow: 0 1.5rem 4rem rgba(0,0,0,0.45), 0 0 2rem rgba(139,92,246,0.25);
+    box-shadow: 0 1.5rem 4rem rgba(0,0,0,0.45);
   }
   .letter-glitch-wrapper {
     position: absolute;
@@ -636,75 +736,101 @@
     padding: 0 clamp(1.25rem, 5vw, 4rem);
     max-width: 60rem;
   }
+  /* Solid, not glass: the chip sits on an already dark vignette. */
   .letter-glitch-eyebrow {
     display: inline-flex;
     align-items: center;
     gap: 0.625rem;
-    background: rgba(255,255,255,0.08);
-    border: 1px solid rgba(255,255,255,0.15);
+    background: #121212;
+    border: 0.0625rem solid #2e2e2e;
     color: #fff;
     font-size: 0.8125rem;
-    font-weight: 600;
+    font-weight: 500;
     padding: 0.375rem 0.875rem;
-    border-radius: 624.938rem;
-    backdrop-filter: blur(0.5rem);
-    -webkit-backdrop-filter: blur(0.5rem);
+    border-radius: 62.4375rem;
     margin-bottom: 1.5rem;
   }
   .letter-glitch-eyebrow .pill {
-    background: #fff;
+    background: #ededed;
     color: #000;
-    font-weight: 800;
+    font-weight: 600;
     font-size: 0.6875rem;
-    letter-spacing: 0.04em;
     padding: 0.125rem 0.5rem;
-    border-radius: 624.938rem;
+    border-radius: 62.4375rem;
   }
   .letter-glitch-title {
     font-size: clamp(2.25rem, 7vw, 5.25rem);
-    font-weight: 900;
-    letter-spacing: -0.02em;
+    font-weight: 700;
+    letter-spacing: -0.035em;
     line-height: 1.05;
     color: #fff;
     margin: 0 0 2rem;
     text-shadow: 0 0.25rem 1.875rem rgba(0,0,0,0.85), 0 0.125rem 0.75rem rgba(0,0,0,0.7);
   }
-  .letter-glitch-title .purple { color: #c4b5fd; }
+  .letter-glitch-title .purple { color: rgba(255,255,255,0.62); }
   .letter-glitch-btn {
     display: inline-flex;
     align-items: center;
-    height: 3.25rem;
-    padding: 0 2rem;
-    border-radius: 624.938rem;
-    background: #fff;
+    height: 3rem;
+    padding: 0 1.5rem;
+    border-radius: 0.5rem;
+    background: #ededed;
     color: #000;
     font-size: 0.9375rem;
-    font-weight: 700;
+    font-weight: 600;
     text-decoration: none;
-    transition: transform 0.25s ease, box-shadow 0.25s ease, color 0.25s ease;
+    transition: transform .18s cubic-bezier(.23,1,.32,1), box-shadow .18s ease, color .18s ease;
     box-shadow: 0 0.625rem 1.875rem rgba(0,0,0,0.4);
   }
-  .letter-glitch-btn::before { background: var(--p4); }
-  .letter-glitch-btn:hover { transform: scale(1.06); box-shadow: 0 0.875rem 2.25rem rgba(0,0,0,0.5); color: #fff; }
+  .letter-glitch-btn::before { background: #fff; }
+  .letter-glitch-btn:hover  { transform: scale(1.025); box-shadow: 0 0.875rem 2.25rem rgba(0,0,0,0.5); }
+  .letter-glitch-btn:active { transform: scale(0.99); }
 
-  /* ── Nav buttons (scale + left-to-right fill on hover, no vertical translate) ── */
-  .nav-btn { transition: transform 0.25s ease, border-color 0.25s ease, color 0.25s ease; }
-  .nav-btn:hover { transform: scale(1.06); }
-  .nav-btn-ghost::before { background: var(--p4); }
-  .nav-btn-ghost:hover { color: #fff; border-color: var(--p4); }
-  .nav-btn-solid { background: var(--p4); }
-  .nav-btn-solid::before { background: var(--ac); }
-  .icon-btn-fill { transition: transform 0.25s ease, border-color 0.25s ease, background-color 0.25s ease; }
-  .icon-btn-fill:hover { transform: scale(1.12); }
+  /* ── Nav buttons (scale plus a left-to-right fill, never a translate) ── */
+  .nav-btn { transition: transform .18s cubic-bezier(.23,1,.32,1), box-shadow .18s ease, border-color .18s ease, color .18s ease; }
+  .nav-btn:hover  { transform: scale(1.025); box-shadow: var(--ln-lift); }
+  .nav-btn:active { transform: scale(0.99); box-shadow: none; }
+  .nav-btn-ghost::before { background: var(--ln-bd); }
+  .nav-btn-ghost:hover { border-color: var(--ln-bd2); color: var(--ln-tx); }
+  .nav-btn-solid::before { background: var(--ln-fill-hi); }
+
+  /* ── Footer ── */
+  .ln-footer {
+    background: var(--ln-bg);
+    border-top: 0.0625rem solid var(--ln-bd);
+    padding: clamp(3rem, 6vw, 4.5rem) clamp(1rem, 5vw, 4rem) 2.5rem;
+  }
+  .ln-footer-grid {
+    max-width: 72rem; margin: 0 auto;
+    display: grid; grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: clamp(2rem, 4vw, 3rem);
+  }
+  @media (max-width: 52rem) { .ln-footer-grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 26rem) { .ln-footer-grid { grid-template-columns: 1fr; } }
+  /* Sentence case, no uppercase and no letter-spacing, like every other label
+     on the page. */
+  .ln-footer h4 { margin: 0 0 0.875rem; font-size: 0.875rem; font-weight: 600; color: var(--ln-tx); }
+  .ln-footer a { display: block; padding: 0.3125rem 0; font-size: 0.875rem; color: var(--ln-tx2); text-decoration: none; transition: color .15s ease; }
+  .ln-footer a:hover { color: var(--ln-tx) !important; }
+  .ln-footer p { font-size: 0.9375rem; line-height: 1.6; color: var(--ln-tx2); margin: 0; }
+  .ln-footer-base {
+    max-width: 72rem; margin: 2.5rem auto 0; padding-top: 1.5rem;
+    border-top: 0.0625rem solid var(--ln-bd);
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+    gap: 0.75rem; font-size: 0.8125rem; color: var(--ln-tx3);
+  }
+
+  .icon-btn-fill { transition: transform .18s cubic-bezier(.23,1,.32,1); }
+  .icon-btn-fill:hover { transform: scale(1.05); }
   /* Section margin handles navbar clearance, so strip body padding-top */
   .code-body.has-glitch { padding-top: 0; }
 </style>
 </head>
 
-<body class="bg-base tx" x-cloak style="overflow-x:hidden;">
+<body class="ln-page" x-cloak style="overflow-x:hidden;">
 <style>
-  html:not(.korah-page-ready) { background: #06040f !important; }
-  html[data-theme="light"]:not(.korah-page-ready) { background: #d2d2d2 !important; }
+  html:not(.korah-page-ready) { background: #000 !important; }
+  html[data-theme="light"]:not(.korah-page-ready) { background: #fff !important; }
   html:not(.korah-page-ready) body { opacity: 0 !important; }
 </style>
 <script>
@@ -720,29 +846,28 @@
 <div class="stars-container" id="starField" :style="theme === 'light' ? 'opacity:0;pointer-events:none' : 'opacity:1'" style="transition:opacity 0.4s"></div>
 
 <!-- ═══ NAVBAR (mirrors landing) ═══ -->
-<nav id="navbar" class="fixed top-0 left-0 right-0 z-[1000] px-6 md:px-[clamp(1.75rem,5.5vw,6rem)]" style="height:var(--nav-h);display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:1.5rem;">
+<nav id="navbar" class="fixed top-0 left-0 right-0 z-[1000] px-4 md:px-[clamp(1.75rem,5.5vw,6rem)]" style="height:var(--nav-h);display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:1.5rem;">
   <a href="../index.html#home" class="flex items-center gap-2.5 no-underline shrink-0 z-10">
-    <img src="../logo-images/newlogo0.png" class="t-btn hover:rotate-[-5deg] hover:scale-[1.08]" style="height:2.5rem;width:auto;flex-shrink:0;">
-    <span style="font-family: 'Plus Jakarta Sans', sans-serif;" class="text-[1.1875rem] font-black tx">Korah</span>
+    <img src="../logo-images/newlogo0.png" class="ln-logo" alt="">
+    <span class="ln-brand">Korah</span>
   </a>
 
-  <div class="nav-links hidden lg:flex items-center gap-0.5 bg-sf2 border bd2 rounded-full px-3 py-2 glass-sm t-theme" style="white-space:nowrap;position:relative;">
-    <a href="../index.html#home"     class="nav-link nav-pill text-[0.84375rem] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx hover:bg-[var(--bd)]"><span class="material-icons-round nav-link-icon">home</span><span class="nav-link-text">Home</span></a>
-    <a href="../index.html#sat"      class="nav-link nav-pill text-[0.84375rem] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx hover:bg-[var(--bd)]"><span class="material-icons-round nav-link-icon">calculate</span><span class="nav-link-text">Desmos Tutoring</span></a>
-    <a href="../index.html#progress" class="nav-link nav-pill text-[0.84375rem] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx hover:bg-[var(--bd)]"><span class="material-icons-round nav-link-icon">insights</span><span class="nav-link-text">Progress</span></a>
-    <a href="../index.html#chat"     class="nav-link nav-pill text-[0.84375rem] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx hover:bg-[var(--bd)]"><span class="material-icons-round nav-link-icon">assignment</span><span class="nav-link-text">Questionbank</span></a>
-    <a href="../index.html#tutoring" class="nav-link nav-pill text-[0.84375rem] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx hover:bg-[var(--bd)]"><span class="material-icons-round nav-link-icon">school</span><span class="nav-link-text">Tutoring</span></a>
-    <a href="./interns.html" class="nav-link text-[0.84375rem] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx" style="background:rgba(139,92,246,0.1); border: 1px solid rgba(139,92,246,0.25);"><span class="material-icons-round nav-link-icon">workspace_premium</span><span class="nav-link-text">Intern Work</span></a>
+  <div class="ln-navpills nav-links hidden lg:flex items-center gap-0.5 rounded-full px-1.5 py-1.5" style="white-space:nowrap;position:relative;">
+    <a href="../index.html#home"     class="nav-link nav-pill text-[0.84375rem] font-medium px-3.5 py-1.5 rounded-full no-underline"><span class="material-icons-round nav-link-icon">home</span><span class="nav-link-text">Home</span></a>
+    <a href="../index.html#sat"      class="nav-link nav-pill text-[0.84375rem] font-medium px-3.5 py-1.5 rounded-full no-underline"><span class="material-icons-round nav-link-icon">calculate</span><span class="nav-link-text">Desmos tutor</span></a>
+    <a href="../index.html#chat"     class="nav-link nav-pill text-[0.84375rem] font-medium px-3.5 py-1.5 rounded-full no-underline"><span class="material-icons-round nav-link-icon">assignment</span><span class="nav-link-text">Question bank</span></a>
+    <a href="../index.html#essays"   class="nav-link nav-pill text-[0.84375rem] font-medium px-3.5 py-1.5 rounded-full no-underline"><span class="material-icons-round nav-link-icon">edit_note</span><span class="nav-link-text">Essays</span></a>
+    <a href="../index.html#tutoring" class="nav-link nav-pill text-[0.84375rem] font-medium px-3.5 py-1.5 rounded-full no-underline"><span class="material-icons-round nav-link-icon">school</span><span class="nav-link-text">Tutoring</span></a>
+    <a href="./interns.html" class="nav-link text-[0.84375rem] font-medium px-3.5 py-1.5 rounded-full no-underline"><span class="material-icons-round nav-link-icon">workspace_premium</span><span class="nav-link-text">Intern work</span></a>
   </div>
 
-  <div class="flex items-center gap-3 justify-self-end" style="grid-column:3;">
+  <div class="flex items-center gap-2 justify-self-end" style="grid-column:3;">
     <button @click="theme = theme==='dark' ? 'light' : 'dark'; localStorage.setItem('korah_theme', theme)"
-        class="flex items-center justify-center w-9 h-9 rounded-xl bg-sf2 border bd cursor-pointer t-btn icon-btn-fill hover:border-p4 hover:bg-[var(--bd2)] t-theme"
-        aria-label="Toggle theme">
-      <svg x-show="theme==='light'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" style="color:var(--p5)">
+        class="ln-theme-btn icon-btn-fill" aria-label="Toggle theme">
+      <svg x-show="theme==='light'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
         <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/>
       </svg>
-      <svg x-show="theme==='dark'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--p4)">
+      <svg x-show="theme==='dark'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="5"/>
         <line x1="12" y1="1" x2="12" y2="3"/>
         <line x1="12" y1="21" x2="12" y2="23"/>
@@ -754,11 +879,11 @@
         <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
       </svg>
     </button>
-    <button class="text-[0.75rem] lg:text-[0.8125rem] font-semibold px-3 lg:px-5 py-2 lg:py-2.5 rounded-full cursor-pointer border bd tx2 bg-transparent t-btn nav-btn nav-btn-ghost"
+    <button class="ln-btn ln-btn-soft nav-btn nav-btn-ghost hidden sm:inline-flex"
       onclick="window.KorahTransitions.go('../login.html')">
       <span class="btn-label">Log in</span>
     </button>
-    <button onclick="window.KorahTransitions.go('../home.html')" class="text-[0.75rem] lg:text-[0.8125rem] font-semibold px-3 lg:px-5 py-2 lg:py-2.5 rounded-full cursor-pointer border-none text-white t-btn nav-btn nav-btn-solid"><span class="btn-label">Open App</span></button>
+    <button onclick="window.KorahTransitions.go('../home.html')" class="ln-btn ln-btn-primary nav-btn nav-btn-solid"><span class="btn-label">Open app</span></button>
   </div>
 </nav>
 
@@ -772,7 +897,7 @@
     </div>
     <div class="letter-glitch-content">
       <div class="letter-glitch-eyebrow">
-        <span class="pill">FALL 26' </span>
+        <span class="pill">Fall 26'</span>
         <span>Application Opens Soon</span>
       </div>
       <h1 class="letter-glitch-title">
@@ -1012,7 +1137,7 @@
             <div>
               <h3>CoffeeHouse</h3>
               <p class="creator"><span class="material-icons-round">person</span> Built by Umer Qureshi</p>
-              <p class="blurb">A lofi study and chat site where students from the same school help each other study. Groups for study sessions or class projects, no email required to join, and two chat study bots that turn a text channel into cheat sheets and notes. Already being used by students at Umer’s school. Live at <a href="https://www.coffee-house.app" target="_blank" rel="noopener" style="color:var(--p4);font-weight:600;">coffee-house.app</a>.</p>
+              <p class="blurb">A lofi study and chat site where students from the same school help each other study. Groups for study sessions or class projects, no email required to join, and two chat study bots that turn a text channel into cheat sheets and notes. Already being used by students at Umer’s school. Live at <a href="https://www.coffee-house.app" target="_blank" rel="noopener" >coffee-house.app</a>.</p>
               <div class="tag-row"><span class="tag">Web app</span><span class="tag">Chat</span><span class="tag">Study bots</span></div>
             </div>
           </article>
@@ -1024,7 +1149,7 @@
             <div>
               <h3>Glistening Circuitry</h3>
               <p class="creator"><span class="material-icons-round">person</span> Built by Abdelwahab Rahama</p>
-              <p class="blurb">An electrical engineering site for beginners, hobbyists, and EE students, themed after a phosphor green terminal. Animated sprites drive interactive exercises, and the whole thing was mapped out with a technical spec before a line of it was built. The site he wishes had existed when he started learning EE. Live at <a href="https://bushiusesjava.github.io/glistening-circuitry/" target="_blank" rel="noopener" style="color:var(--p4);font-weight:600;">bushiusesjava.github.io/glistening-circuitry</a>.</p>
+              <p class="blurb">An electrical engineering site for beginners, hobbyists, and EE students, themed after a phosphor green terminal. Animated sprites drive interactive exercises, and the whole thing was mapped out with a technical spec before a line of it was built. The site he wishes had existed when he started learning EE. Live at <a href="https://bushiusesjava.github.io/glistening-circuitry/" target="_blank" rel="noopener" >bushiusesjava.github.io/glistening-circuitry</a>.</p>
               <div class="tag-row"><span class="tag">Education</span><span class="tag">Terminal UI</span><span class="tag">Animation</span></div>
             </div>
           </article>
@@ -1036,7 +1161,7 @@
             <div>
               <h3>ChoreQuest</h3>
               <p class="creator"><span class="material-icons-round">person</span> Built by Daniel Oluyomi</p>
-              <p class="blurb">Gamifies chores for kids so parents have something to motivate them with. Daniel had built games in Unity and Roblox before this, but never a site. ChoreQuest was his first, and the design is the part he is proudest of. Live at <a href="https://chorequest-sooty.vercel.app" target="_blank" rel="noopener" style="color:var(--p4);font-weight:600;">chorequest-sooty.vercel.app</a>.</p>
+              <p class="blurb">Gamifies chores for kids so parents have something to motivate them with. Daniel had built games in Unity and Roblox before this, but never a site. ChoreQuest was his first, and the design is the part he is proudest of. Live at <a href="https://chorequest-sooty.vercel.app" target="_blank" rel="noopener" >chorequest-sooty.vercel.app</a>.</p>
               <div class="tag-row"><span class="tag">Gamification</span><span class="tag">UI design</span></div>
             </div>
           </article>
@@ -1334,39 +1459,39 @@
 
 </main>
 
-<footer class="relative z-10 bg-base border-t bd px-[clamp(1.25rem,6vw,5rem)] pt-[3.75rem] pb-10 t-theme">
-  <div class="max-w-[68.75rem] mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr] gap-12">
+<footer class="ln-footer">
+  <div class="ln-footer-grid">
     <div>
       <div class="flex items-center gap-2.5">
-        <img src="../logo-images/newlogo0.png" style="height:2.5rem;width:auto;flex-shrink:0;">
-        <span style="font-family: 'Plus Jakarta Sans', sans-serif;" class="text-[1.1875rem] font-black tx">Korah</span>
+        <img src="../logo-images/newlogo0.png" class="ln-logo" alt="">
+        <span class="ln-brand">Korah</span>
       </div>
-      <p class="text-sm tx2 leading-[1.7] max-w-[17.5rem] mt-3.5">Korah helps students ace the SAT with AI-powered tutoring, live Desmos graphing, adaptive practice, and progress tracking.</p>
+      <p style="max-width:19rem;margin-top:0.875rem;">Korah helps students ace the SAT with AI-powered tutoring, live Desmos graphing, adaptive practice, and progress tracking.</p>
     </div>
     <div>
-      <h4 class="text-xs font-bold tracking-[0.125rem] uppercase tx-p5 mb-4">Product</h4>
-      <a href="../index.html#sat"      class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Desmos Tutoring</a>
-      <a href="../index.html#progress" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Progress</a>
-      <a href="../index.html#chat"     class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Questionbank</a>
-      <a href="../index.html#tutoring" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Tutoring</a>
-      <a href="./code.html" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Korah CODE</a>
-      <a href="./interns.html" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Intern Work</a>
-      <a href="../home.html" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Web App</a>
+      <h4>Product</h4>
+      <a href="../index.html#sat">Desmos tutor</a>
+      <a href="../index.html#chat">Question bank</a>
+      <a href="../index.html#essays">College essays</a>
+      <a href="../index.html#tutoring">Tutoring</a>
+      <a href="./code.html">Korah CODE</a>
+      <a href="./interns.html">Intern work</a>
+      <a href="../home.html">Web app</a>
     </div>
     <div>
-      <h4 class="text-xs font-bold tracking-[0.125rem] uppercase tx-p5 mb-4">Support</h4>
-      <a href="../support/index.html#contact" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Contact Us</a>
-      <a href="../support/index.html#faq"    class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">FAQ</a>
+      <h4>Support</h4>
+      <a href="../support/index.html#contact">Contact us</a>
+      <a href="../support/index.html#faq">FAQ</a>
     </div>
     <div>
-      <h4 class="text-xs font-bold tracking-[0.125rem] uppercase tx-p5 mb-4">Company</h4>
-      <a href="#" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">About Korah</a>
-      <a href="https://www.instagram.com/korah.app/" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Social Media</a>
-      <a href="../support/index.html#privacy" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Privacy Policy</a>
-      <a href="../support/index.html#terms" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Terms</a>
+      <h4>Company</h4>
+      <a href="#">About Korah</a>
+      <a href="https://www.instagram.com/korah.app/">Social media</a>
+      <a href="../support/index.html#privacy">Privacy policy</a>
+      <a href="../support/index.html#terms">Terms</a>
     </div>
   </div>
-  <div class="max-w-[68.75rem] mx-auto mt-10 pt-6 border-t bd2 flex flex-wrap items-center justify-between gap-3 text-[0.78125rem] tx3">
+  <div class="ln-footer-base">
     <span>© 2025 Korah AI. All rights reserved.</span>
     <span>Made for students, by students</span>
     <span>Beta v0.9.1</span>

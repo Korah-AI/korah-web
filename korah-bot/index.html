@@ -50,32 +50,696 @@
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
 <link rel="stylesheet" href="korah.css"/>
+<!-- The feature demos are the same looping CSS replicas the onboarding and
+     feature intros run, so the landing page shows the product instead of a
+     screenshot of it. -->
+<link rel="stylesheet" href="app/intro-demos.css"/>
 <style>
   html { scroll-behavior: smooth; }
 
-  .stat-divider {
-    width: 1px;
-    height: 2.5rem;
-    background: var(--bd);
-    flex-shrink: 0;
+  /* ══ LANDING TOKENS ═════════════════════════════════════════════════════
+     Solid neutrals only, the same duotone login.html runs: #000 page,
+     #121212 card, hairline border, near-white primary fill. No purple in the
+     chrome, no glass, no gradient text. Scoped to this page with an --ln-
+     prefix so korah.css's app tokens are untouched. */
+  :root, html[data-theme="dark"] {
+    --ln-bg:      #000;
+    --ln-bg2:     #0a0a0a;
+    --ln-sf:      #121212;
+    --ln-sf2:     #1a1a1a;
+    --ln-bd:      #242424;
+    --ln-bd2:     #3d3d3d;
+    --ln-tx:      #fff;
+    --ln-tx2:     #8b8b8b;
+    --ln-tx3:     #5c5c5c;
+    --ln-fill:    #ededed;
+    --ln-fill-hi: #fff;
+    --ln-fill-tx: #000;
+    --ln-lift:    0 0.75rem 2rem rgba(0,0,0,0.6);
+    /* One per rotating role in the hero headline. */
+    --ln-rot-1:   #7cc4ff;
+    --ln-rot-2:   #ffbe5c;
+    --ln-rot-3:   #a894ff;
+    --ln-rot-4:   #67e8f9;
+    --ln-rot-5:   #ff8fa3;
+    --ln-rot-6:   #4ade80;
+  }
+  html[data-theme="light"] {
+    --ln-bg:      #fff;
+    --ln-bg2:     #fafafa;
+    --ln-sf:      #fff;
+    --ln-sf2:     #f4f4f5;
+    --ln-bd:      #e4e4e7;
+    --ln-bd2:     #c4c4ca;
+    --ln-tx:      #09090b;
+    --ln-tx2:     #6c6c76;
+    --ln-tx3:     #9b9ba3;
+    --ln-fill:    #09090b;
+    --ln-fill-hi: #000;
+    --ln-fill-tx: #fff;
+    --ln-lift:    0 0.75rem 2rem rgba(0,0,0,0.12);
+    --ln-rot-1:   #1f6feb;
+    --ln-rot-2:   #b45309;
+    --ln-rot-3:   #6d4aff;
+    --ln-rot-4:   #0e7490;
+    --ln-rot-5:   #be123c;
+    --ln-rot-6:   #15803d;
   }
 
-  .hero-stat-num {
-    font-size: clamp(1.5rem, 3vw, 2.25rem);
-    font-weight: 900;
-    line-height: 1;
-    color: var(--tx);
-  }
-  .hero-stat-label {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--tx2);
-    margin-top: 0.25rem;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
+  .ln-page {
+    background: var(--ln-bg);
+    color: var(--ln-tx);
+    transition: background-color .4s, color .4s;
   }
 
-  /* Two-column feature sections */
+  /* ══ TYPE ═══════════════════════════════════════════════════════════════
+     Sentence case everywhere. Nothing on this page is uppercased or
+     letter-spaced, matching the type rules in app/intro-demos.css. */
+  .ln-h1 {
+    font-size: clamp(2.5rem, 6.4vw, 4.5rem);
+    font-weight: 700; letter-spacing: -0.035em; line-height: 1.04;
+    margin: 0; color: var(--ln-tx);
+  }
+  .ln-h2 {
+    font-size: clamp(1.875rem, 4vw, 3rem);
+    font-weight: 700; letter-spacing: -0.03em; line-height: 1.08;
+    margin: 0; color: var(--ln-tx);
+  }
+  .ln-lead {
+    font-size: clamp(1rem, 1.6vw, 1.125rem);
+    line-height: 1.65; color: var(--ln-tx2); margin: 0;
+  }
+  .ln-body { font-size: 0.9375rem; line-height: 1.6; color: var(--ln-tx2); margin: 0; }
+
+  /* ══ BUTTONS ════════════════════════════════════════════════════════════
+     They lift: a small scale plus a deeper shadow. Never a translate — a
+     sliding button drags its neighbours' alignment (korah-bot/CLAUDE.md). */
+  .ln-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+    height: 2.75rem; padding: 0 1.25rem;
+    border-radius: 0.5rem;
+    border: 0.0625rem solid transparent;
+    font-family: inherit; font-size: 0.875rem; font-weight: 600;
+    text-decoration: none; cursor: pointer; white-space: nowrap;
+    transition: transform .18s cubic-bezier(.23,1,.32,1), box-shadow .18s ease,
+                background .18s ease, border-color .18s ease, color .18s ease;
+  }
+  .ln-btn:hover  { transform: scale(1.025); box-shadow: var(--ln-lift); }
+  .ln-btn:active { transform: scale(0.99); box-shadow: none; }
+  .ln-btn-primary { background: var(--ln-fill); color: var(--ln-fill-tx); border-color: var(--ln-fill); }
+  .ln-btn-primary:hover { background: var(--ln-fill-hi); border-color: var(--ln-fill-hi); }
+  .ln-btn-ghost { background: transparent; color: var(--ln-tx); border-color: var(--ln-bd); }
+  .ln-btn-ghost:hover { background: var(--ln-sf2); border-color: var(--ln-bd2); }
+  .ln-btn-soft { background: var(--ln-sf2); color: var(--ln-tx); border-color: transparent; }
+  .ln-btn-soft:hover { background: var(--ln-bd); }
+  .ln-btn-sm { height: 2.25rem; padding: 0 0.875rem; font-size: 0.8125rem; }
+  .ln-btn-lg { height: 3rem; padding: 0 1.5rem; font-size: 0.9375rem; }
+
+  /* Liquid glass: a translucent pane that blurs and saturates whatever is
+     behind it (the hero shader, the CTA surface), lit by a bright inner top
+     edge and a specular sweep that crosses on hover. */
+  .ln-btn-glass {
+    position: relative; overflow: hidden;
+    color: var(--ln-tx);
+    background: color-mix(in srgb, var(--ln-tx) 9%, transparent);
+    border-color: color-mix(in srgb, var(--ln-tx) 20%, transparent);
+    backdrop-filter: blur(1.125rem) saturate(1.8);
+    -webkit-backdrop-filter: blur(1.125rem) saturate(1.8);
+    box-shadow: inset 0 0.0625rem 0 color-mix(in srgb, var(--ln-tx) 30%, transparent),
+                inset 0 -0.0625rem 0 color-mix(in srgb, var(--ln-tx) 8%, transparent);
+  }
+  .ln-btn-glass > * { position: relative; z-index: 1; }
+  .ln-btn-glass::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(115deg, transparent 32%,
+                color-mix(in srgb, var(--ln-tx) 24%, transparent) 50%, transparent 68%);
+    transform: translateX(-130%);
+    transition: transform .75s cubic-bezier(.23,1,.32,1);
+  }
+  .ln-btn-glass:hover {
+    background: color-mix(in srgb, var(--ln-tx) 15%, transparent);
+    border-color: color-mix(in srgb, var(--ln-tx) 34%, transparent);
+  }
+  .ln-btn-glass:hover::after { transform: translateX(130%); }
+
+  /* ══ NAVBAR ═════════════════════════════════════════════════════════════
+     Solid and opaque on scroll, no purple tint, no gradient underline. */
+  #navbar.scrolled {
+    background: var(--ln-bg);
+    box-shadow: 0 0.0625rem 0 var(--ln-bd);
+  }
+  #navbar::after { display: none; }
+
+  .ln-navpills {
+    background: var(--ln-sf);
+    border: 0.0625rem solid var(--ln-bd);
+  }
+  /* korah.css positions the indicator absolutely, so it paints above the
+     static pills. The purple fill it replaces was translucent and the label
+     read through it; this one is solid, so the links get their own layer. */
+  .ln-navpills .nav-link {
+    position: relative; z-index: 1;
+    color: var(--ln-tx2); transition: color .15s ease;
+  }
+  .ln-navpills .nav-link:hover { color: var(--ln-tx); }
+  .nav-indicator {
+    z-index: 0;
+    background: var(--ln-sf2);
+    border: 0.0625rem solid var(--ln-bd2);
+  }
+  .nav-link.active { color: var(--ln-tx) !important; }
+  .nav-link.active .nav-link-icon { filter: none; }
+
+  .ln-brand { font-size: 1.1875rem; font-weight: 800; letter-spacing: -0.02em; color: var(--ln-tx); }
+  .ln-logo {
+    height: 2.25rem; width: auto; flex-shrink: 0;
+    transition: transform .18s cubic-bezier(.23,1,.32,1);
+  }
+  a:hover > .ln-logo { transform: scale(1.06); }
+
+  .ln-theme-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 2.25rem; height: 2.25rem; flex-shrink: 0;
+    border-radius: 0.5rem;
+    background: var(--ln-sf); border: 0.0625rem solid var(--ln-bd);
+    color: var(--ln-tx2); cursor: pointer;
+    transition: transform .18s cubic-bezier(.23,1,.32,1), box-shadow .18s ease,
+                background .18s ease, border-color .18s ease, color .18s ease;
+  }
+  .ln-theme-btn:hover { color: var(--ln-tx); border-color: var(--ln-bd2); transform: scale(1.05); box-shadow: var(--ln-lift); }
+  .ln-theme-btn:active { transform: scale(0.97); box-shadow: none; }
+
+  /* ══ SECTION SHELL ══════════════════════════════════════════════════════
+     Every section carries its own surface, so the fixed star field shows
+     through the hero and nowhere else. Stars drifting behind the feature
+     bentos would compete with the demos. */
+  .ln-section {
+    padding: clamp(4rem, 8vw, 7rem) clamp(1rem, 5vw, 4rem);
+    background: var(--ln-bg);
+  }
+  .ln-wrap { max-width: 72rem; margin: 0 auto; }
+  .ln-alt {
+    background: var(--ln-bg2);
+    border-top: 0.0625rem solid var(--ln-bd);
+    border-bottom: 0.0625rem solid var(--ln-bd);
+  }
+
+  /* Small icon chip plus a label, the header of every feature block */
+  .ln-eyebrow { display: flex; align-items: center; gap: 0.625rem; margin-bottom: 1.25rem; }
+  .ln-eyebrow-chip {
+    width: 1.875rem; height: 1.875rem; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 0.5rem;
+    background: var(--ln-sf2); border: 0.0625rem solid var(--ln-bd);
+    color: var(--ln-tx);
+  }
+  .ln-eyebrow-chip .material-icons-round { font-size: 1rem; }
+  .ln-eyebrow span { font-size: 0.875rem; font-weight: 600; color: var(--ln-tx2); }
+
+  /* Headline left with its button under it, supporting paragraph right.
+     Placed rather than nested so that when the grid collapses the reading
+     order is headline, paragraph, button. */
+  .ln-feature-head {
+    display: grid; grid-template-columns: 1.15fr 1fr;
+    column-gap: clamp(1.5rem, 5vw, 4rem); row-gap: 1.5rem;
+    align-items: start;
+    margin-bottom: 2.25rem;
+  }
+  .ln-feature-head > .ln-h2   { grid-column: 1; grid-row: 1; }
+  .ln-feature-head > .ln-lead { grid-column: 2; grid-row: 1 / span 2; }
+  .ln-feature-head > .ln-btn  { grid-column: 1; grid-row: 2; justify-self: start; }
+  @media (max-width: 52rem) {
+    .ln-feature-head { grid-template-columns: 1fr; row-gap: 1.125rem; }
+    .ln-feature-head > * { grid-column: 1; grid-row: auto; }
+  }
+
+  /* ══ CARDS AND BENTO ════════════════════════════════════════════════════ */
+  .ln-card {
+    display: flex; flex-direction: column; gap: 0.875rem;
+    padding: 0.875rem;
+    border-radius: 0.875rem;
+    background: var(--ln-sf);
+    border: 0.0625rem solid var(--ln-bd);
+    transition: border-color .18s ease, transform .18s cubic-bezier(.23,1,.32,1), box-shadow .18s ease;
+  }
+  .ln-card:hover { border-color: var(--ln-bd2); transform: scale(1.008); box-shadow: var(--ln-lift); }
+  .ln-card-cap { padding: 0 0.375rem 0.25rem; }
+  .ln-card-cap h3 { margin: 0 0 0.25rem; font-size: 0.9375rem; font-weight: 600; color: var(--ln-tx); }
+  .ln-card-cap p  { margin: 0; font-size: 0.8125rem; line-height: 1.5; color: var(--ln-tx2); }
+
+  .ln-bento { display: grid; grid-template-columns: 1.6fr 1fr; gap: 1rem; align-items: stretch; }
+  /* One demo card then one text card: the demo keeps the height its 16/9
+     aspect ratio asks for and the text card absorbs whatever is left, so the
+     two columns finish flush without squashing a demo. */
+  .ln-bento-side { display: grid; grid-template-rows: auto 1fr; gap: 1rem; min-width: 0; }
+  .ln-bento > .ln-card { min-width: 0; }
+  @media (max-width: 52rem) {
+    .ln-bento { grid-template-columns: 1fr; }
+    .ln-bento-side { grid-template-rows: auto; }
+  }
+
+  /* Demos sit on the landing neutrals rather than the purple app tokens, the
+     same way .korah-grey and .sat-grey retheme them in intro-demos.css. */
+  .ln-card .kdemo,
+  .ln-step-demo .kdemo {
+    --kd-sf:  var(--ln-sf2);
+    --kd-sf2: var(--ln-bg2);
+    --kd-bd:  var(--ln-bd);
+    --kd-tx:  var(--ln-tx);
+  }
+  /* Bento demos fill their card. Step demos keep intro-demos.css's own 34rem
+     cap, which only bites once the three steps stack on a narrow screen. */
+  .ln-card .kdemo { max-width: none; margin: 0; }
+  /* A screen recording in place of a bento demo keeps the demo's frame and
+     takes the video's own height. */
+  .ln-card-video {
+    display: block; width: 100%; height: auto;
+    border-radius: 0.75rem; border: 0.0625rem solid var(--ln-bd);
+  }
+
+  /* ══ THREE-STEP ROW ═════════════════════════════════════════════════════ */
+  .ln-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+  @media (max-width: 60rem) { .ln-steps { grid-template-columns: 1fr; } }
+  .ln-step {
+    display: flex; flex-direction: column; min-width: 0;
+    border-radius: 0.875rem; overflow: hidden;
+    background: var(--ln-sf); border: 0.0625rem solid var(--ln-bd);
+    transition: border-color .18s ease, transform .18s cubic-bezier(.23,1,.32,1), box-shadow .18s ease;
+  }
+  .ln-step:hover { border-color: var(--ln-bd2); transform: scale(1.008); box-shadow: var(--ln-lift); }
+  .ln-step-demo { padding: 0.875rem; background: var(--ln-bg2); border-bottom: 0.0625rem solid var(--ln-bd); }
+  .ln-step-body { padding: 1.25rem; }
+  .ln-step-no { display: block; margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 500; color: var(--ln-tx3); }
+  .ln-step-body h3 { margin: 0 0 0.5rem; font-size: 1.125rem; font-weight: 600; letter-spacing: -0.015em; color: var(--ln-tx); }
+  .ln-step-body p  { margin: 0; font-size: 0.875rem; line-height: 1.55; color: var(--ln-tx2); }
+
+  /* ══ PLAIN FACT CARDS ═══════════════════════════════════════════════════ */
+  .ln-facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+  @media (max-width: 52rem) { .ln-facts { grid-template-columns: 1fr; } }
+  .ln-fact { padding: 1.5rem; }
+  .ln-fact .material-icons-round { font-size: 1.25rem; color: var(--ln-tx2); }
+  .ln-fact h3 { margin: 0.75rem 0 0.375rem; font-size: 1rem; font-weight: 600; color: var(--ln-tx); }
+  .ln-fact p  { margin: 0; font-size: 0.875rem; line-height: 1.55; color: var(--ln-tx2); }
+
+  /* ══ TUTORING SPLIT ═════════════════════════════════════════════════════
+     Details left, a phone playing the tutor's problem walkthrough right. The
+     frame is a plain rounded shell, not the 3D hero phone. */
+  .ln-tut { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: clamp(2rem, 5vw, 4rem); align-items: center; }
+  .ln-tut-list { list-style: none; margin: 1.5rem 0 2rem; padding: 0; display: grid; gap: 0.875rem; }
+  .ln-tut-list li { display: flex; gap: 0.75rem; align-items: flex-start; }
+  .ln-tut-list .material-icons-round { font-size: 1.125rem; color: var(--ln-tx2); line-height: 1.5; }
+  .ln-tut-list b { display: block; font-size: 1rem; font-weight: 600; color: var(--ln-tx); }
+  .ln-tut-list span.t { display: block; margin-top: 0.1875rem; font-size: 0.875rem; line-height: 1.55; color: var(--ln-tx2); }
+  .ln-tut-phone {
+    justify-self: center; width: min(21rem, 100%);
+    padding: 0.625rem; border-radius: 2.5rem;
+    background: var(--ln-sf2); border: 0.0625rem solid var(--ln-bd);
+  }
+  .ln-tut-screen {
+    position: relative; overflow: hidden;
+    border-radius: 2rem; background: #000;
+  }
+  .ln-tut-screen video { display: block; width: 100%; height: auto; }
+  /* iPhone notch, drawn over the top of the video. */
+  .ln-tut-screen::before {
+    content: ""; position: absolute; z-index: 1;
+    top: 0.5rem; left: 50%; transform: translateX(-50%);
+    width: 5.5rem; height: 1.5rem; border-radius: 1rem;
+    background: #000; pointer-events: none;
+  }
+  .ln-tut-ph { font-size: 0.8125rem; color: var(--ln-tx3); text-align: center; padding: 0 1.5rem; }
+  .ln-tut-cap { margin: 1rem 0 0; text-align: center; font-size: 0.8125rem; color: var(--ln-tx3); }
+  @media (max-width: 52rem) {
+    .ln-tut { grid-template-columns: 1fr; }
+  }
+
+  .ln-chips { display: flex; flex-wrap: wrap; gap: 0.375rem; }
+  .ln-chip {
+    padding: 0.3125rem 0.625rem;
+    border-radius: 0.4375rem;
+    background: var(--ln-sf2); border: 0.0625rem solid var(--ln-bd);
+    font-size: 0.75rem; font-weight: 500; color: var(--ln-tx2);
+  }
+
+  /* ══ MORE-FEATURES GRID ═════════════════════════════════════════════════ */
+  .ln-more { display: grid; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); gap: 0.75rem; }
+  .ln-more-item {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.875rem 1rem;
+    border-radius: 0.75rem;
+    background: var(--ln-sf); border: 0.0625rem solid var(--ln-bd);
+    font-size: 0.875rem; font-weight: 500; color: var(--ln-tx);
+    text-decoration: none;
+    transition: transform .18s cubic-bezier(.23,1,.32,1), box-shadow .18s ease,
+                background .18s ease, border-color .18s ease;
+  }
+  .ln-more-item:hover { background: var(--ln-sf2); border-color: var(--ln-bd2); transform: scale(1.02); box-shadow: var(--ln-lift); }
+  .ln-more-item:active { transform: scale(0.99); box-shadow: none; }
+  .ln-more-item .material-icons-round { font-size: 1.125rem; color: var(--ln-tx2); flex-shrink: 0; }
+
+  /* ══ STATS BAND ═════════════════════════════════════════════════════════ */
+  .ln-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+  @media (max-width: 40rem) { .ln-stats { grid-template-columns: 1fr; } }
+  .ln-stat { padding: 1.75rem 1.5rem; }
+  .ln-stat b {
+    display: block; font-size: clamp(1.75rem, 4vw, 2.5rem);
+    font-weight: 700; letter-spacing: -0.03em; line-height: 1; color: var(--ln-tx);
+  }
+  .ln-stat span { display: block; margin-top: 0.625rem; font-size: 0.875rem; color: var(--ln-tx2); }
+
+  /* ══ CTA PANEL ══════════════════════════════════════════════════════════ */
+  .ln-cta {
+    padding: clamp(2.75rem, 7vw, 4.5rem) clamp(1.25rem, 5vw, 3.5rem);
+    border-radius: 1.25rem;
+    background: var(--ln-sf); border: 0.0625rem solid var(--ln-bd);
+    text-align: center;
+  }
+  .ln-actions { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+  .ln-cta .ln-actions { justify-content: center; }
+
+  /* ══ HERO ═══════════════════════════════════════════════════════════════ */
+  .ln-hero {
+    position: relative; overflow: hidden;
+    display: flex; align-items: center; min-height: 100vh;
+    padding: calc(var(--nav-h) + clamp(2rem, 6vw, 3.5rem)) clamp(1rem, 5vw, 4rem) clamp(3rem, 6vw, 5rem);
+  }
+  /* The shader canvas sits behind the hero copy and is nudged up so the wave
+     crosses above the headline rather than through it. */
+  #design-shader-canvas { transform: translateY(-16%); }
+  @media (max-width: 48rem) {
+    #design-shader-canvas { transform: translateY(-18%); }
+  }
+
+  /* ── Replaced by the shader above: login.html's dot matrix and its vignette.
+  .ln-hero-dots {
+    position: absolute; inset: 0; z-index: 0;
+    display: block; width: 100%; height: 100%;
+    pointer-events: none;
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 62%, transparent 100%);
+            mask-image: linear-gradient(to bottom, #000 0%, #000 62%, transparent 100%);
+  }
+  .ln-hero-vignette {
+    position: absolute; inset: 0; z-index: 0; pointer-events: none;
+    background: radial-gradient(circle at center, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0) 100%);
+  }
+  html[data-theme="light"] .ln-hero-vignette {
+    background: radial-gradient(circle at center, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0) 100%);
+  }
+  ──────────────────────────────────────────────────────────────────────── */
+
+  /* ── Scroll cue: sits at the hero's bottom edge and points at the band of
+        school names below. The shimmer is a clipped gradient sweeping across
+        the glyphs; the arrow bobs on its own, slower cycle. ── */
+  .ln-scroll-cue {
+    position: absolute; z-index: 2;
+    left: 50%; bottom: clamp(1rem, 2.5vw, 1.75rem); transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+    text-decoration: none; padding: 0.5rem 0.75rem;
+  }
+  .ln-scroll-cue-text {
+    font-size: 0.8125rem; font-weight: 500; letter-spacing: -0.01em;
+    background: linear-gradient(100deg,
+      var(--ln-tx3) 0%, var(--ln-tx3) 38%, var(--ln-tx) 50%, var(--ln-tx3) 62%, var(--ln-tx3) 100%);
+    background-size: 280% 100%;
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent; color: transparent;
+    animation: ln-cue-glisten 3.4s linear infinite;
+  }
+  .ln-scroll-cue .material-icons-round {
+    font-size: 1.125rem; color: var(--ln-tx3);
+    animation: ln-cue-bob 2.1s ease-in-out infinite;
+    transition: color .18s ease;
+  }
+  .ln-scroll-cue:hover .material-icons-round { color: var(--ln-tx); }
+  @keyframes ln-cue-glisten {
+    from { background-position: 140% 0; }
+    to   { background-position: -40% 0; }
+  }
+  @keyframes ln-cue-bob {
+    0%, 100% { transform: translateY(0); opacity: 0.75; }
+    50%      { transform: translateY(0.25rem); opacity: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ln-scroll-cue-text {
+      animation: none; background: none;
+      -webkit-text-fill-color: var(--ln-tx2); color: var(--ln-tx2);
+    }
+    .ln-scroll-cue .material-icons-round { animation: none; }
+  }
+
+  .ln-hero-grid {
+    position: relative; z-index: 1;
+    width: 100%; max-width: 72rem; margin: 0 auto;
+    /* Off dead centre: the copy column reads left-heavy against the shader, so
+       the whole grid rides a little right. */
+    transform: translateX(clamp(0rem, 3vw, 3.5rem));
+    display: grid; grid-template-columns: 1.1fr 0.9fr;
+    gap: clamp(2rem, 5vw, 4rem); align-items: center;
+  }
+  .ln-badge {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    height: 1.875rem; padding: 0 0.75rem; margin-bottom: 1.5rem;
+    border-radius: 62.4375rem;
+    background: var(--ln-sf); border: 0.0625rem solid var(--ln-bd);
+    font-size: 0.8125rem; font-weight: 500; color: var(--ln-tx2);
+  }
+  .ln-badge i { width: 0.4375rem; height: 0.4375rem; border-radius: 50%; background: #22c55e; flex-shrink: 0; }
+  /* Rotating headline, spun like a revolver cylinder. Each phrase rides down
+     through the slot: it waits above, rolls into the chamber, then carries on
+     out of the bottom as the next one arrives. The vertical squash is what
+     sells it — a chamber turning away from you foreshortens, so only the phrase
+     facing front is at full height — and the blur is the motion smear.
+
+     Travel time comes from --rot-dur, which the script resets on every tick to
+     that tick's own gap. So the roll is a blur at the start and a slow, heavy
+     turn by the end: the deceleration is in the movement itself, not just in
+     how often it happens.
+
+     Nothing but the swapped phrase may move. Two things buy that: each variable
+     phrase sits in a slot that stacks every variant in one grid cell, so the
+     slot is permanently as wide as its longest phrase and the line can never
+     rewrap; and each slot ends its line, so the dead width a short phrase leaves
+     is trailing space nobody can see. The headline is therefore always exactly
+     two lines and the lead and stat row below never shift.
+
+     Every selector below is a direct-child one on purpose: line two nests a
+     subject chamber inside the "for" chamber, and a loose descendant selector
+     would drive both from the outer slot's state. */
+  .ln-rot-line { display: block; }
+  .ln-rot-slot {
+    display: inline-grid; align-items: baseline;
+    --rot-dur: 300ms;
+    --rot-ease: cubic-bezier(.32,0,.2,1);
+  }
+  /* The last chamber is a different motion from the rest: the script gives it a
+     full second, and this curve spends most of it arriving — it covers the
+     distance early, overshoots a hair, then takes its time settling back. That
+     long tail is the satisfying part. */
+  .ln-rot-slot.is-landing { --rot-ease: cubic-bezier(.18,1.16,.3,1); }
+
+  /* Resting state is "parked above", and it carries no transition — so a
+     phrase that has finished its pass snaps back to the top instead of flying
+     up through the chamber on its way to being reused. */
+  .ln-rot-slot > .ln-rot {
+    grid-area: 1 / 1; justify-self: start;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translateY(-0.5em) scaleY(0.78);
+    filter: blur(0.16rem);
+  }
+  /* Only the phrase coming in and the one going out are in motion. */
+  .ln-rot-slot > .ln-rot.is-on,
+  .ln-rot-slot > .ln-rot.is-below {
+    transition: opacity var(--rot-dur) ease,
+                transform var(--rot-dur) var(--rot-ease),
+                filter var(--rot-dur) ease;
+  }
+  .ln-rot-slot > .ln-rot.is-on {
+    opacity: 1; transform: translateY(0) scaleY(1); filter: blur(0);
+  }
+  .ln-rot-slot > .ln-rot.is-below { transform: translateY(0.5em) scaleY(0.78); }
+
+  .ln-hero-copy .ln-lead { max-width: 34rem; margin-top: 1.25rem; }
+  .ln-hero-copy .ln-actions { margin-top: 2rem; }
+  .ln-hero-stats {
+    display: flex; align-items: flex-start; gap: clamp(1.5rem, 4vw, 3rem); flex-wrap: wrap;
+    margin-top: 2.5rem; padding-top: 2rem;
+    border-top: 0.0625rem solid var(--ln-bd);
+  }
+  .ln-hero-stat b { display: block; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; line-height: 1; color: var(--ln-tx); }
+  .ln-hero-stat span { display: block; margin-top: 0.375rem; font-size: 0.8125rem; color: var(--ln-tx2); }
+
+  @media (max-width: 56.25rem) {
+    .ln-hero { min-height: 0; }
+    .ln-hero-grid { grid-template-columns: 1fr; gap: 3rem; transform: none; }
+    .ln-hero-copy { text-align: center; }
+    .ln-rot-slot > .ln-rot { justify-self: center; }
+    .ln-hero-copy .ln-lead { margin-left: auto; margin-right: auto; }
+    .ln-hero-copy .ln-actions { justify-content: center; }
+    .ln-hero-stats { justify-content: center; text-align: center; }
+  }
+
+  /* ══ UNIVERSITY MARQUEE ═════════════════════════════════════════
+     Full bleed and two rows running opposite ways, so the band fills the
+     section instead of a 46rem strip floating in it. Names carry the weight;
+     the chip is the supporting mark. */
+  .ln-marquee-wrap { width: 100%; }
+  .ln-marquee-label {
+    margin: 0 0 1.75rem; text-align: center;
+    font-size: clamp(1.25rem, 2.4vw, 1.75rem); font-weight: 600;
+    letter-spacing: -0.02em; color: var(--ln-tx);
+  }
+  .ln-marquee {
+    overflow: hidden; padding: 0.375rem 0;
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 7%, #000 93%, transparent);
+            mask-image: linear-gradient(to right, transparent, #000 7%, #000 93%, transparent);
+  }
+  .ln-marquee + .ln-marquee { margin-top: 1.75rem; }
+  .ln-marquee-track {
+    --mq-gap: 4rem;
+    display: flex; width: max-content; gap: var(--mq-gap);
+    animation: ln-marquee-scroll 48s linear infinite;
+    /* Own compositor layer: at ~0.4px per frame the track otherwise snaps to
+       whole pixels on the main thread and the scroll reads as jittery. */
+    will-change: transform;
+    backface-visibility: hidden;
+  }
+  /* Second row drifts the other way at a different speed, so the two never
+     line up into one block that reads as a single wide row. */
+  .ln-marquee-track.rev { animation-name: ln-marquee-scroll-rev; animation-duration: 58s; }
+  /* -50% lands half a gap short of one full set, so pull back the extra gap/2.
+     Read off --mq-gap so the mobile gap below stays seamless. */
+  @keyframes ln-marquee-scroll {
+    from { transform: translateX(0); }
+    to   { transform: translateX(calc(-50% - var(--mq-gap) / 2)); }
+  }
+  @keyframes ln-marquee-scroll-rev {
+    from { transform: translateX(calc(-50% - var(--mq-gap) / 2)); }
+    to   { transform: translateX(0); }
+  }
+  .ln-marquee:hover .ln-marquee-track { animation-play-state: paused; }
+  .ln-uni { display: flex; align-items: center; gap: 0.75rem; white-space: nowrap; user-select: none; }
+  .ln-uni-chip {
+    width: 2.5rem; height: 2.5rem; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0.25rem; border-radius: 0.5rem;
+    background: rgba(255,255,255,0.95);
+  }
+  html[data-theme="light"] .ln-uni-chip { background: var(--ln-sf2); border: 0.0625rem solid var(--ln-bd); }
+  .ln-uni-chip img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+  .ln-uni-name {
+    font-size: clamp(1.125rem, 2.2vw, 1.5rem); font-weight: 600;
+    letter-spacing: -0.02em; color: var(--ln-tx2);
+  }
+  @media (max-width: 48rem) {
+    .ln-marquee-track { --mq-gap: 2.5rem; }
+  }
+
+  /* ══ ESSAY EDITOR DEMO ══════════════════════════════════════════════════
+     The one feature without a demo in intro-demos.css, so it is built here in
+     the same idiom: the .kdemo shell for sizing, cqi units inside, the fixed
+     .kd-paper surface for the draft, and the shared kdPop entrance. Real
+     sentences rather than placeholder rules, since the whole point of the
+     feature is which words got flagged. */
+  /* Laid out like the real editor: draft column on the left (title, prompt
+     card, a letter-shaped page cropped by the word-count bar), scores and
+     recommendations in a sidebar on the right. */
+  .lnd-essay { display: grid; grid-template-columns: 1.55fr 1fr; padding: 0; }
+  .lnd-main { position: relative; padding: 2.4cqi 2.6cqi 0; min-width: 0; overflow: hidden; }
+  .lnd-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.6cqi; }
+  .lnd-title { font-size: 3cqi; font-weight: 700; color: #8f93a1; }
+  .lnd-btn { padding: 0.9cqi 1.8cqi; border-radius: 1cqi; background: #3fa653; box-shadow: 0 0.4cqi 0 #2f8a41; font-size: 1.7cqi; font-weight: 700; color: #fff; }
+  .lnd-prompt {
+    margin-bottom: 1.8cqi; padding: 1.3cqi 1.8cqi;
+    border-radius: 1cqi; border-left: 0.6cqi solid #3b64d4;
+    background: var(--kd-paper); color: var(--kd-ink);
+  }
+  .lnd-prompt b { display: block; margin-bottom: 0.5cqi; font-size: 2cqi; color: #3b64d4; }
+  .lnd-prompt span { font-size: 1.5cqi; line-height: 1.45; color: #5b5f6b; }
+  /* US Letter proportions. The demo box is 16/9, so the bottom runs off the
+     edge the way the page does in the editor. */
+  .lnd-doc { aspect-ratio: 8.5 / 11; padding: 4.6cqi 5cqi; border-radius: 0.5cqi 0.5cqi 0 0; }
+  .lnd-text { margin: 0 0 1.4cqi; font-size: 1.7cqi; line-height: 1.75; }
+  /* Highlighter sweeping over the flagged phrase, tinted to its category.
+     box-decoration-break keeps the rounding on both ends when it wraps. */
+  .lnd-mark {
+    padding: 0.2cqi 0.4cqi; border-radius: 0.4cqi;
+    background: transparent;
+    -webkit-box-decoration-break: clone;
+            box-decoration-break: clone;
+    animation: lndMark 6s ease-in-out infinite;
+  }
+  .lnd-mark.is-w { --mk: rgba(139, 92, 246, 0.22); }
+  .lnd-mark.is-d { --mk: rgba(59, 130, 246, 0.22); animation-delay: 0.3s; }
+  .lnd-mark.is-v { --mk: rgba(236, 72, 153, 0.2);  animation-delay: 0.6s; }
+  .lnd-mark.is-r { --mk: rgba(245, 158, 11, 0.28); animation-delay: 0.9s; }
+  @keyframes lndMark {
+    0%, 12%   { background: transparent; }
+    26%, 86%  { background: var(--mk); }
+    96%, 100% { background: transparent; }
+  }
+  .lnd-words {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 1;
+    padding: 1.2cqi 2.6cqi; background: var(--kd-sf);
+    font-size: 1.5cqi; color: var(--kd-tx);
+  }
+  .lnd-side { min-width: 0; overflow: hidden; padding: 2.4cqi 2cqi 0; border-left: 0.2cqi solid var(--kd-bd); }
+  .lnd-h { margin: 0 0 1.2cqi; font-size: 1.9cqi; font-weight: 700; color: var(--kd-tx); }
+  .lnd-avg { display: flex; align-items: baseline; gap: 1cqi; margin-bottom: 1.4cqi; font-size: 1.6cqi; color: var(--kd-tx); }
+  .lnd-avg b { font-size: 5cqi; line-height: 1; }
+  .lnd-score { display: grid; grid-template-columns: 9cqi 1fr 2cqi; align-items: center; gap: 1.2cqi; margin-bottom: 1.2cqi; font-size: 1.5cqi; font-weight: 600; color: var(--kd-tx); }
+  .lnd-bar { height: 0.7cqi; border-radius: 1cqi; background: var(--kd-bd); overflow: hidden; }
+  .lnd-bar i { display: block; height: 100%; width: var(--v); border-radius: 1cqi; background: var(--c); transform-origin: left; animation: lndBar 6s ease-in-out infinite; }
+  @keyframes lndBar {
+    0%, 8%    { transform: scaleX(0); }
+    24%, 90%  { transform: scaleX(1); }
+    98%, 100% { transform: scaleX(0); }
+  }
+  .lnd-recs { margin-top: 2cqi; padding-top: 1.6cqi; border-top: 0.2cqi solid var(--kd-bd); }
+  .lnd-rec {
+    margin-bottom: 1.2cqi; padding: 1.4cqi 1.6cqi; border-radius: 1.2cqi;
+    background: var(--kd-sf2); border: 0.2cqi solid var(--kd-bd);
+    font-size: 1.4cqi; line-height: 1.45; color: var(--kd-tx);
+    opacity: 0; animation: kdPop 6s ease-in-out infinite;
+  }
+  .lnd-rec:nth-of-type(2) { animation-delay: 0.45s; }
+  .lnd-rec b { display: block; margin-bottom: 0.8cqi; font-size: 1.7cqi; }
+  .lnd-rec em { display: block; margin-bottom: 0.8cqi; padding-left: 1.2cqi; border-left: 0.4cqi solid var(--c); font-family: Georgia, serif; }
+
+  /* ══ FOOTER ═════════════════════════════════════════════════════════════ */
+  .ln-footer {
+    background: var(--ln-bg);
+    border-top: 0.0625rem solid var(--ln-bd);
+    padding: clamp(3rem, 6vw, 4.5rem) clamp(1rem, 5vw, 4rem) 2.5rem;
+  }
+  .ln-footer-grid {
+    max-width: 72rem; margin: 0 auto;
+    display: grid; grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: clamp(2rem, 4vw, 3rem);
+  }
+  @media (max-width: 52rem) { .ln-footer-grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 26rem) { .ln-footer-grid { grid-template-columns: 1fr; } }
+  /* Sentence case, no uppercase and no letter-spacing, like every other label
+     on the page. */
+  .ln-footer h4 { margin: 0 0 0.875rem; font-size: 0.875rem; font-weight: 600; color: var(--ln-tx); }
+  .ln-footer a { display: block; padding: 0.3125rem 0; font-size: 0.875rem; color: var(--ln-tx2); text-decoration: none; transition: color .15s ease; }
+  .ln-footer a:hover { color: var(--ln-tx) !important; }
+  .ln-footer-base {
+    max-width: 72rem; margin: 2.5rem auto 0; padding-top: 1.5rem;
+    border-top: 0.0625rem solid var(--ln-bd);
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+    gap: 0.75rem; font-size: 0.8125rem; color: var(--ln-tx3);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ln-marquee-track { animation: none; }
+    .ln-rot-slot > .ln-rot { transition: none; }
+    .ln-btn:hover, .ln-card:hover, .ln-step:hover,
+    .ln-more-item:hover, .ln-theme-btn:hover { transform: none; }
+  }
+
+  /* ── Replaced by the rules above. This is the screenshot-and-mock-browser
+        layout the feature sections used before the demo bentos. ────────────
   .feature-section {
     display: grid;
     grid-template-columns: 1.2fr 1fr;
@@ -92,7 +756,6 @@
   .feature-section.reverse { direction: rtl; }
   .feature-section.reverse > * { direction: ltr; }
 
-  /* Mock browser window */
   .mock-browser {
     background: var(--bg2);
     border: 1px solid var(--bd);
@@ -109,38 +772,30 @@
     gap: 0.5rem;
   }
   .mock-dot { width: 0.6rem; height: 0.6rem; border-radius: 50%; }
-  .mock-placeholder {
+  .feature-shot {
+    display: block;
     width: 100%;
-    aspect-ratio: 4/3;
-    background: linear-gradient(135deg, rgba(139,92,246,0.08) 0%, rgba(99,102,241,0.08) 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    gap: 0.75rem;
-    border: 0.125rem dashed rgba(139,92,246,0.2);
-    color: var(--tx3);
-    font-size: 0.8rem;
-    font-weight: 600;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
+    aspect-ratio: 16 / 10;
+    object-fit: cover;
+    object-position: top center;
   }
-
   .bullet-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem; }
   .bullet-list li { display: flex; align-items: center; gap: 0.75rem; font-size: 1.0625rem; color: var(--tx2); }
   .bullet-dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--p4); flex-shrink: 0; }
-
-  #design-shader-canvas { transform: translateY(-16%); }
-  @media (max-width: 48rem) {
-    #design-shader-canvas { transform: translateY(-18%); }
+  .stat-divider { width: 1px; height: 2.5rem; background: var(--bd); flex-shrink: 0; }
+  .hero-stat-num { font-size: clamp(1.5rem, 3vw, 2.25rem); font-weight: 900; line-height: 1; color: var(--tx); }
+  .hero-stat-label {
+    font-size: 0.75rem; font-weight: 600; color: var(--tx2);
+    margin-top: 0.25rem; text-transform: uppercase; letter-spacing: 0.06em;
   }
+  ──────────────────────────────────────────────────────────────────────── */
 </style>
 </head>
 
-<body class="bg-base tx" x-cloak style="overflow-x:hidden;">
+<body class="ln-page" x-cloak style="overflow-x:hidden;">
 <style>
-  html:not(.korah-page-ready) { background: #06040f !important; }
-  html[data-theme="light"]:not(.korah-page-ready) { background: #d2d2d2 !important; }
+  html:not(.korah-page-ready) { background: #000 !important; }
+  html[data-theme="light"]:not(.korah-page-ready) { background: #fff !important; }
   html:not(.korah-page-ready) body { opacity: 0 !important; }
 </style>
 <script>
@@ -152,36 +807,44 @@
   })();
 </script>
 
-<!-- Shooting Star background and twinkling stars -->
+<!-- Space background: korah.js fills this with 120 twinkling stars and a
+     shooting star every few seconds. It is fixed at z-index -1, so it sits
+     above body's background (body is a stacking context via korah.css's
+     isolation: isolate) and shows through the sections that carry no surface
+     of their own — the hero, the stats band and the closing CTA. -->
 <div class="stars-container" id="starField" :style="theme === 'light' ? 'opacity:0;pointer-events:none' : 'opacity:1'" style="transition:opacity 0.4s"></div>
+
+<!-- Was the light-theme stand-in for the star field. The hero dot matrix now
+     runs in both themes and covers that job, so this stays off.
 <canvas id="constellation-canvas" style="position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; opacity:0; transition:opacity 0.5s; z-index:-1;"></canvas>
+-->
 
 <!-- ═══ NAVBAR ═══ -->
-<nav id="navbar" class="fixed top-0 left-0 right-0 z-[1000] px-6 md:px-[clamp(1.75rem,5.5vw,6rem)]" style="height:var(--nav-h);display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:1.5rem;">
+<nav id="navbar" class="fixed top-0 left-0 right-0 z-[1000] px-4 md:px-[clamp(1.75rem,5.5vw,6rem)]" style="height:var(--nav-h);display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:1.5rem;">
   <a href="#home" class="flex items-center gap-2.5 no-underline shrink-0 z-10">
-    <img src="logo-images/newlogo0.png" class="t-btn hover:rotate-[-5deg] hover:scale-[1.08]" style="height:2.5rem;width:auto;flex-shrink:0;">
-    <span style="font-family: 'Plus Jakarta Sans', sans-serif;" class="text-[1.1875rem] font-black tx">Korah</span>
+    <!-- <img src="logo-images/newlogo0.png" class="ln-logo" alt=""> -->
+    <img src="logo-images/newlogo2.png" class="ln-logo" alt="">
+    <span class="ln-brand">Korah AI</span>
   </a>
 
-  <div class="nav-links hidden lg:flex items-center gap-0.5 bg-sf2 border bd2 rounded-full px-3 py-2 glass-sm t-theme" style="white-space:nowrap;position:relative;">
+  <div class="ln-navpills nav-links hidden lg:flex items-center gap-0.5 rounded-full px-1.5 py-1.5" style="white-space:nowrap;position:relative;">
     <div class="nav-indicator" id="navIndicator"></div>
-    <a href="#home"     class="nav-link nav-pill text-[0.84375rem] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx hover:bg-[var(--bd)]"><span class="material-icons-round nav-link-icon">home</span><span class="nav-link-text">Home</span></a>
-    <a href="#sat"      class="nav-link nav-pill text-[0.84375rem] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx hover:bg-[var(--bd)]"><span class="material-icons-round nav-link-icon">calculate</span><span class="nav-link-text">Desmos Tutoring</span></a>
-    <a href="#progress" class="nav-link nav-pill text-[0.84375rem] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx hover:bg-[var(--bd)]"><span class="material-icons-round nav-link-icon">insights</span><span class="nav-link-text">Progress</span></a>
-    <a href="#chat"     class="nav-link nav-pill text-[0.84375rem] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx hover:bg-[var(--bd)]"><span class="material-icons-round nav-link-icon">assignment</span><span class="nav-link-text">Questionbank</span></a>
-    <a href="#tutoring" class="nav-link nav-pill text-[0.84375rem] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx hover:bg-[var(--bd)]"><span class="material-icons-round nav-link-icon">school</span><span class="nav-link-text">Tutoring</span></a>
-    <!-- <a href="code/code.html" class="nav-link nav-pill text-[0.84375rem] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx" style="background:rgba(139,92,246,0.1); border: 1px solid rgba(139,92,246,0.25);"><span class="material-icons-round nav-link-icon">code</span><span class="nav-link-text">Korah CODE</span></a> -->
-    <a href="code/interns.html" class="nav-link text-[0.84375rem] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx" style="background:rgba(139,92,246,0.1); border: 1px solid rgba(139,92,246,0.25);"><span class="material-icons-round nav-link-icon">workspace_premium</span><span class="nav-link-text">Intern Work</span></a>
+    <a href="#home"     class="nav-link nav-pill text-[0.84375rem] font-medium px-3.5 py-1.5 rounded-full no-underline"><span class="material-icons-round nav-link-icon">home</span><span class="nav-link-text">Home</span></a>
+    <a href="#sat"      class="nav-link nav-pill text-[0.84375rem] font-medium px-3.5 py-1.5 rounded-full no-underline"><span class="material-icons-round nav-link-icon">calculate</span><span class="nav-link-text">Desmos tutor</span></a>
+    <a href="#chat"     class="nav-link nav-pill text-[0.84375rem] font-medium px-3.5 py-1.5 rounded-full no-underline"><span class="material-icons-round nav-link-icon">assignment</span><span class="nav-link-text">Question bank</span></a>
+    <a href="#ap"       class="nav-link nav-pill text-[0.84375rem] font-medium px-3.5 py-1.5 rounded-full no-underline"><span class="material-icons-round nav-link-icon">workspace_premium</span><span class="nav-link-text">AP</span></a>
+    <a href="#essays"   class="nav-link nav-pill text-[0.84375rem] font-medium px-3.5 py-1.5 rounded-full no-underline"><span class="material-icons-round nav-link-icon">edit_note</span><span class="nav-link-text">Essays</span></a>
+    <a href="#tutoring" class="nav-link nav-pill text-[0.84375rem] font-medium px-3.5 py-1.5 rounded-full no-underline"><span class="material-icons-round nav-link-icon">school</span><span class="nav-link-text">Tutoring</span></a>
+    <a href="code/interns.html" class="nav-link text-[0.84375rem] font-medium px-3.5 py-1.5 rounded-full no-underline"><span class="material-icons-round nav-link-icon">workspace_premium</span><span class="nav-link-text">Intern work</span></a>
   </div>
 
-  <div class="flex items-center gap-3 justify-self-end" style="grid-column:3;">
+  <div class="flex items-center gap-2 justify-self-end" style="grid-column:3;">
     <button @click="theme = theme==='dark' ? 'light' : 'dark'; localStorage.setItem('korah_theme', theme)"
-        class="flex items-center justify-center w-9 h-9 rounded-xl bg-sf2 border bd cursor-pointer t-btn hover:border-p4 hover:bg-[var(--bd2)] t-theme"
-        aria-label="Toggle theme">
-      <svg x-show="theme==='light'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" style="color:var(--p5)">
+        class="ln-theme-btn" aria-label="Toggle theme">
+      <svg x-show="theme==='light'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
         <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/>
       </svg>
-      <svg x-show="theme==='dark'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--p4)">
+      <svg x-show="theme==='dark'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="5"/>
         <line x1="12" y1="1" x2="12" y2="3"/>
         <line x1="12" y1="21" x2="12" y2="23"/>
@@ -193,35 +856,13 @@
         <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
       </svg>
     </button>
-    <button class="text-[0.75rem] lg:text-[0.8125rem] font-semibold px-3 lg:px-5 py-2 lg:py-2.5 rounded-full cursor-pointer border bd tx2 bg-transparent t-btn hover:tx-p4 hover:border-p4 hover:bg-[var(--bd2)]"
-      onclick="window.KorahTransitions.go('login.html')">
-      Log in
-    </button>
-    <button onclick="window.KorahTransitions.go('home.html')" class="text-[0.75rem] lg:text-[0.8125rem] font-semibold px-3 lg:px-5 py-2 lg:py-2.5 rounded-full cursor-pointer border-none text-white t-btn hover:-translate-y-px" style="background:var(--p4);">Open App</button>
+    <button class="ln-btn ln-btn-soft ln-btn-sm hidden sm:inline-flex" onclick="window.KorahTransitions.go('login.html')">Log in</button>
+    <button class="ln-btn ln-btn-primary ln-btn-sm" onclick="window.KorahTransitions.go('home.html')">Open app</button>
   </div>
 </nav>
 
-<!-- ═══ 3D IPHONE (lives inside the wave hero) ═══ -->
+<!-- ═══ 3D IPHONE (lives inside the hero) ═══ -->
 <style>
-  .hero-grid {
-    display: grid;
-    grid-template-columns: 1.15fr 0.85fr;
-    gap: clamp(2rem, 5vw, 4.5rem);
-    align-items: center;
-  }
-  @media (max-width: 56.25rem) {
-    .hero-grid { grid-template-columns: 1fr; gap: 3rem; }
-  }
-  /* Hero card fades in while the phone slides across it */
-  .hero-grid > div:first-child {
-    animation: hero-card-fade 3s cubic-bezier(0.16,1,0.3,1) 1.2s both;
-  }
-  @keyframes hero-card-fade {
-    from { opacity: 0; transform: translateY(1.5rem); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-
-  /* ── 3D phone stage ── */
   .phone-stage {
     position: relative;
     display: flex;
@@ -229,20 +870,19 @@
     align-items: center;
     perspective: 81.25rem;
   }
+  /* Neutral, not the purple bloom */
   .phone-glow {
     position: absolute;
     width: 130%;
     height: 110%;
     top: -5%;
     left: -15%;
-    background: radial-gradient(ellipse 50% 45% at 50% 50%, rgba(139,92,246,0.28) 0%, transparent 70%);
+    background: radial-gradient(ellipse 50% 45% at 50% 50%, rgba(255,255,255,0.07) 0%, transparent 70%);
     filter: blur(1.25rem);
     pointer-events: none;
-    animation: phone-glow-pulse 7s ease-in-out 2.1s infinite;
   }
-  @keyframes phone-glow-pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50%      { opacity: 0.7; transform: scale(0.96) translateY(0.5rem); }
+  html[data-theme="light"] .phone-glow {
+    background: radial-gradient(ellipse 50% 45% at 50% 50%, rgba(0,0,0,0.08) 0%, transparent 70%);
   }
 
   .phone-tilt {
@@ -250,17 +890,18 @@
     transition: transform 0.45s cubic-bezier(0.16,1,0.3,1);
     will-change: transform;
   }
+  /* Settles in, then floats. The old entrance flew the phone in from -85vw
+     with three axes of rotation; a fade and a short rise carries the same
+     arrival without the theatrics. */
   .phone-float {
     transform-style: preserve-3d;
     animation:
-      phone-enter 4.8s cubic-bezier(0.22,1,0.36,1) 0.35s both,
-      phone-float 7s ease-in-out 5.15s infinite;
+      phone-enter 1.1s cubic-bezier(0.22,1,0.36,1) 0.15s both,
+      phone-float 7s ease-in-out 1.3s infinite;
   }
   @keyframes phone-enter {
-    0%   { opacity: 0; transform: translateX(-85vw) translateY(7rem) rotateY(58deg) rotateX(12deg) rotateZ(-12deg) scale(0.78); }
-    10%  { opacity: 1; }
-    62%  { transform: translateX(1.25rem) translateY(0.5rem) rotateY(-27deg) rotateX(7deg) rotateZ(2deg) scale(1.03); }
-    100% { opacity: 1; transform: translateX(0) translateY(0) rotateY(-17deg) rotateX(5deg) rotateZ(0deg) scale(1); }
+    from { opacity: 0; transform: translateY(2rem) rotateY(-17deg) rotateX(5deg) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0)   rotateY(-17deg) rotateX(5deg) scale(1); }
   }
   @keyframes phone-float {
     0%, 100% { transform: translateY(0) rotateY(-17deg) rotateX(5deg); }
@@ -277,8 +918,7 @@
     transform-style: preserve-3d;
     box-shadow:
       inset 0 0 0 0.125rem rgba(255,255,255,0.06),
-      0 3rem 5rem rgba(0,0,0,0.5),
-      0 0 4rem rgba(139,92,246,0.25);
+      0 2.5rem 4.5rem rgba(0,0,0,0.5);
   }
   .phone-back {
     position: absolute;
@@ -304,8 +944,33 @@
     height: 100%;
     border-radius: 2.25rem;
     overflow: hidden;
-    background: linear-gradient(160deg, #12101d 0%, #1b1530 55%, #120f22 100%);
+    background: #111116;
     transform: translateZ(1px);
+  }
+  /* One layer per headline rotation, crossfading under the island and glare. */
+  .phone-slide {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: #111116;
+    opacity: 0; transition: opacity var(--slide-dur, .3s) ease;
+  }
+  .phone-slide.is-on { opacity: 1; }
+  /* While the headline spins the slides have ~80ms each, so they cut rather
+     than crossfade; without this they'd all sit half-faded at once and the
+     screen would just go muddy. The landing slide gets the full fade back. */
+  .phone-screen.is-spinning .phone-slide { transition: opacity .14s ease; }
+  .phone-slide img {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%; object-fit: cover;
+    transform: translateY(3.1%);
+  }
+  .phone-slide-ph {
+    padding: 0 1.75rem; text-align: center;
+    font-size: 0.875rem; font-weight: 600; line-height: 1.5; color: #7a7a86;
+  }
+  .phone-slide-ph em {
+    display: block; margin-top: 0.5rem;
+    font-style: normal; font-weight: 400; font-size: 0.6875rem; color: #4a4a54;
   }
   .phone-island {
     position: absolute;
@@ -336,13 +1001,10 @@
   }
 
   @media (max-width: 56.25rem) {
-    .phone-body { width: min(clamp(14.5rem, 62vw, 19rem), 36vh); }
+    .phone-body { width: min(clamp(14.5rem, 62vw, 19rem), 42vh); }
   }
   @media (prefers-reduced-motion: reduce) {
-    .phone-float, .phone-glow, .phone-glare,
-    .hero-grid > div:first-child {
-      animation: none !important;
-    }
+    .phone-float, .phone-glare { animation: none !important; }
     .phone-float { transform: rotateY(-14deg) rotateX(4deg); }
     .phone-tilt { transition: none; }
   }
@@ -370,122 +1032,152 @@ window.addEventListener('DOMContentLoaded', function () {
 </script>
 
 <!-- ═══ HERO ═══ -->
-<section id="home" style="position:relative;min-height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;padding-top:clamp(5.125rem,10vw,7rem);padding-bottom:4rem;">
+<section id="home" class="ln-hero">
   <canvas id="design-shader-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;display:block;-webkit-mask-image:linear-gradient(to bottom,transparent 0%,black 14%,black 86%,transparent 100%);mask-image:linear-gradient(to bottom,transparent 0%,black 14%,black 86%,transparent 100%);"></canvas>
 
-  <div class="hero-grid" style="position:relative;z-index:10;width:100%;max-width:80rem;margin:0 auto;padding:0 1.25rem;">
+  <!-- Replaced by the shader above. This was login.html's dot-matrix grid.
+  <canvas id="heroDots" class="ln-hero-dots" aria-hidden="true"></canvas>
+  <div class="ln-hero-vignette" aria-hidden="true"></div>
+  -->
 
+  <div class="ln-hero-grid hero-grid">
+
+    <!-- Replaced by the plain column below. The hero copy used to sit in a
+         double-bordered translucent card floating over the shader.
     <div class="hero-card t-theme" id="heroCard" style="text-align:center;border:0.0625rem solid var(--bd);padding:0.375rem;border-radius:0.75rem;display:inline-block;width:100%;background:color-mix(in srgb, var(--bg) 55%, transparent);backdrop-filter:blur(1.125rem);-webkit-backdrop-filter:blur(1.125rem);">
       <div style="border:0.0625rem solid var(--bd);border-radius:0.5rem;padding:2.5rem 1.5rem 2rem;">
+    -->
+    <div class="ln-hero-copy" id="heroCard">
 
-        <!-- ── Hero content (initial) ── -->
-        <div id="heroContent">
-          <h1 class="tx" style="font-size:clamp(2.25rem,7vw,5.5rem);font-weight:900;letter-spacing:-0.02em;line-height:1.05;margin:0 0 0.5rem;">
-            The First
-          </h1>
-          <h1 style="font-size:clamp(2.25rem,7vw,5.5rem);font-weight:900;letter-spacing:-0.02em;line-height:1.05;margin:0 0 1.5rem;background:linear-gradient(135deg,#7dd3fc,#38bdf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-shadow:none;">
-            AI Desmos Tutor
-          </h1>
-          <p class="tx2" style="font-size:clamp(0.9rem,1.8vw,1.125rem);line-height:1.65;max-width:36rem;margin:0 auto 2rem;">
-            And it's 100% free.<bold>Start cooking today</bold> .
-          </p>
+      <!-- ── Hero content (initial) ── -->
+      <div id="heroContent">
+        <span class="ln-badge"><i></i>Free for every student</span>
 
-          <div style="display:flex;align-items:center;justify-content:center;gap:0.75rem;flex-wrap:wrap;margin-bottom:2.5rem;">
-            <div data-electric="#10b981" data-electric-2="#22d3ee" style="display:inline-flex;border-radius:624.938rem;">
-              <a href="https://apps.apple.com/us/app/korah/id6757345573" target="_blank" rel="noopener" class="no-underline"
-                style="display:inline-flex;align-items:center;justify-content:center;height:3.25rem;padding:0 2rem;border-radius:624.938rem;background:#10b981;color:#fff;font-size:0.9375rem;font-weight:700;cursor:pointer;font-family:inherit;transition:transform 0.3s,opacity 0.3s;"
-                onmouseover="this.style.transform='translateY(-0.125rem)';this.style.opacity='0.88'" onmouseout="this.style.transform='';this.style.opacity='1'">
-                Download on iOS &nbsp;→
-              </a>
-            </div>
-            <a href="home.html"
-              class="no-underline"
-              style="display:inline-flex;align-items:center;justify-content:center;height:3.25rem;padding:0 2rem;border-radius:624.938rem;background:#ec4899;color:#fff;font-size:0.9375rem;font-weight:700;cursor:pointer;font-family:inherit;transition:transform 0.3s,opacity 0.3s;"
-              onmouseover="this.style.transform='translateY(-0.125rem)';this.style.opacity='0.88'" onmouseout="this.style.transform='';this.style.opacity='1'">
-              Use Website Version
-            </a>
-          </div>
+        <!-- Replaced by the rotating headline below.
+        <h1 class="ln-h1">The first AI Desmos tutor for the SAT.</h1>
+        -->
+        <!-- Two fixed lines, and two nested chambers on the second one.
 
-          <div style="display:flex;align-items:center;justify-content:center;gap:1.5rem;flex-wrap:wrap;">
-            <div style="text-align:center;">
-              <div class="hero-stat-num">3500+</div>
-              <div class="hero-stat-label">Practice Questions</div>
-            </div>
-            <div class="stat-divider hidden sm:block"></div>
-            <div style="text-align:center;">
-              <div class="hero-stat-num">Live</div>
-              <div class="hero-stat-label">Desmos Integration</div>
-            </div>
-            <div class="stat-divider hidden sm:block"></div>
-            <div style="text-align:center;">
-              <div class="hero-stat-num">1600</div>
-              <div class="hero-stat-label">Points Possible</div>
-            </div>
-          </div>
+             "for" is not a rotating phrase: it sits in the outer chamber's
+             first state and holds still for the whole spin while only the
+             subject turns inside it. The outer chamber turns exactly once, on
+             the final pass, and that is when "for" leaves with it so the
+             headline can read "Your Dream Score starts here."
+
+             Whitespace between the variants is dropped by the grid container.
+             Each slot ends its line, so the dead width a short phrase leaves is
+             trailing space nobody can see. -->
+        <h1 class="ln-h1">
+          <span class="ln-rot-line">Your
+            <span class="ln-rot-slot" id="rotRole">
+              <span class="ln-rot is-on" style="color:var(--ln-rot-1);">Desmos tutor</span>
+              <span class="ln-rot" style="color:var(--ln-rot-2);" aria-hidden="true">study partner</span>
+              <span class="ln-rot" style="color:var(--ln-rot-3);" aria-hidden="true">essay editor</span>
+              <span class="ln-rot" style="color:var(--ln-rot-4);" aria-hidden="true">study plan</span>
+              <span class="ln-rot" style="color:var(--ln-rot-5);" aria-hidden="true">cram partner</span>
+              <span class="ln-rot" style="color:var(--ln-rot-6);" aria-hidden="true">Dream Score</span>
+            </span>
+          </span>
+          <span class="ln-rot-line">
+            <span class="ln-rot-slot" id="rotTail">
+              <span class="ln-rot is-on">for
+                <span class="ln-rot-slot" id="rotSubject">
+                  <span class="ln-rot is-on">the SAT.</span>
+                  <span class="ln-rot" aria-hidden="true">AP exams.</span>
+                  <span class="ln-rot" aria-hidden="true">college apps.</span>
+                  <span class="ln-rot" aria-hidden="true">test day.</span>
+                  <span class="ln-rot" aria-hidden="true">finals week.</span>
+                </span>
+              </span>
+              <span class="ln-rot" aria-hidden="true">starts here.</span>
+            </span>
+          </span>
+        </h1>
+
+        <p class="ln-lead">
+          Ask math questions and get a visualized explanation on Desmos.
+          We just released our AP prep and college essay editor too.
+        </p>
+
+        <div class="ln-actions">
+          <a href="https://apps.apple.com/us/app/korah/id6757345573" target="_blank" rel="noopener" class="ln-btn ln-btn-primary ln-btn-lg">
+            Download on iOS
+            <span class="material-icons-round" style="font-size:1rem;">arrow_forward</span>
+          </a>
+          <a href="home.html" class="ln-btn ln-btn-glass ln-btn-lg">Use the web app</a>
         </div>
 
-        <!-- ── Signup content (after transition) ── -->
-        <div id="signupContent" style="display:none;opacity:0;">
-          <div id="signupFormWrap">
-            <h2 class="tx" style="font-size:clamp(1.75rem,4vw,2.5rem);font-weight:900;letter-spacing:-0.02em;line-height:1.05;margin:0 0 0.5rem;">
-              Join the Waitlist
-            </h2>
-            <p class="tx2" style="font-size:0.95rem;line-height:1.6;margin:0 auto 1.75rem;max-width:24rem;">
-              Be first in line when Korah launches this August.
-            </p>
-            <form id="wl-form" onsubmit="return submitWaitlist(event)" novalidate style="display:flex;flex-direction:column;gap:0.85rem;max-width:24rem;margin:0 auto;text-align:left;">
-              <div style="display:flex;gap:0.85rem;flex-wrap:wrap;">
-                <div style="flex:1;min-width:9rem;">
-                  <label class="signup-label" for="wl-first">First name</label>
-                  <input id="wl-first" class="signup-input" type="text" placeholder="Jane">
-                  <div class="signup-error" id="wl-first-error"></div>
-                </div>
-                <div style="flex:1;min-width:9rem;">
-                  <label class="signup-label" for="wl-last">Last name</label>
-                  <input id="wl-last" class="signup-input" type="text" placeholder="Doe">
-                  <div class="signup-error" id="wl-last-error"></div>
-                </div>
-              </div>
-              <div>
-                <label class="signup-label" for="wl-email">Email</label>
-                <input id="wl-email" class="signup-input" type="email" placeholder="jane@email.com">
-                <div class="signup-error" id="wl-email-error"></div>
-              </div>
-              <button type="submit" class="signup-btn-primary" id="wl-submit-btn">Join Waitlist &nbsp;→</button>
-            </form>
-
-            <!--
-            <div style="display:flex;align-items:center;gap:0.75rem;margin:1.5rem auto 0;max-width:24rem;">
-              <div style="flex:1;height:1px;background:#fff;"></div>
-              <span class="tx3" style="font-size:0.72rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;">or</span>
-              <div style="flex:1;height:1px;background:#fff;"></div>
-            </div>
-
-            <a href="https://testflight.apple.com/" target="_blank" rel="noopener" class="signup-btn-secondary" style="margin-top:1rem;">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.365 1.43c0 1.14-.42 2.06-1.14 2.79-.79.8-1.83 1.24-2.86 1.16-.11-1.1.42-2.24 1.09-2.94.73-.77 1.98-1.34 2.91-1.29zM20.5 17.02c-.53 1.22-.78 1.76-1.46 2.84-.95 1.51-2.29 3.39-3.95 3.4-1.47.01-1.85-.96-3.84-.95-1.99.01-2.41.97-3.88.94-1.66-.03-2.93-1.72-3.88-3.23-2.66-4.24-2.94-9.21-1.3-11.85 1.17-1.88 3.01-2.98 4.74-2.98 1.76 0 2.87.97 4.33.97 1.42 0 2.28-.97 4.32-.97 1.55 0 3.19.85 4.36 2.31-3.83 2.1-3.21 7.57.56 9.47z"/></svg>
-              Join the Apple Waitlist &nbsp;→
-            </a>
-            -->
+        <div class="ln-hero-stats">
+          <div class="ln-hero-stat">
+            <b>3,500+</b>
+            <span>Practice questions</span>
           </div>
-
-          <!-- Success state -->
-          <div id="signupSuccess" style="display:none;">
-            <div style="width:3.75rem;height:3.75rem;border-radius:624.938rem;background:#10b981;display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem;">
-              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-            </div>
-            <h2 class="tx" style="font-size:clamp(2rem,5vw,3rem);font-weight:900;letter-spacing:-0.02em;line-height:1.05;margin:0 0 0.75rem;">
-              You're In.
-            </h2>
-            <p class="tx2" style="font-size:1rem;line-height:1.6;margin:0 auto;max-width:22rem;">
-              We'll email you when we release early August.
-            </p>
+          <div class="ln-hero-stat">
+            <b>AP</b>
+            <span>Class Prep</span>
+          </div>
+          <div class="ln-hero-stat">
+            <b>$0</b>
+            <span>No fees, ever</span>
           </div>
         </div>
-
       </div>
+
+      <!-- ── Signup content (after transition) ── -->
+      <div id="signupContent" style="display:none;opacity:0;">
+        <div id="signupFormWrap">
+          <h2 class="ln-h2" style="margin-bottom:0.5rem;">Join the waitlist</h2>
+          <p class="ln-body" style="margin:0 0 1.75rem;max-width:24rem;">
+            Be first in line when Korah launches this August.
+          </p>
+          <form id="wl-form" onsubmit="return submitWaitlist(event)" novalidate style="display:flex;flex-direction:column;gap:0.85rem;max-width:24rem;text-align:left;">
+            <div style="display:flex;gap:0.85rem;flex-wrap:wrap;">
+              <div style="flex:1;min-width:9rem;">
+                <label class="signup-label" for="wl-first">First name</label>
+                <input id="wl-first" class="signup-input" type="text" placeholder="Jane">
+                <div class="signup-error" id="wl-first-error"></div>
+              </div>
+              <div style="flex:1;min-width:9rem;">
+                <label class="signup-label" for="wl-last">Last name</label>
+                <input id="wl-last" class="signup-input" type="text" placeholder="Doe">
+                <div class="signup-error" id="wl-last-error"></div>
+              </div>
+            </div>
+            <div>
+              <label class="signup-label" for="wl-email">Email</label>
+              <input id="wl-email" class="signup-input" type="email" placeholder="jane@email.com">
+              <div class="signup-error" id="wl-email-error"></div>
+            </div>
+            <button type="submit" class="ln-btn ln-btn-primary ln-btn-lg" id="wl-submit-btn" style="margin-top:0.5rem;">Join waitlist</button>
+          </form>
+
+          <!--
+          <div style="display:flex;align-items:center;gap:0.75rem;margin:1.5rem auto 0;max-width:24rem;">
+            <div style="flex:1;height:1px;background:#fff;"></div>
+            <span class="tx3" style="font-size:0.72rem;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;">or</span>
+            <div style="flex:1;height:1px;background:#fff;"></div>
+          </div>
+
+          <a href="https://testflight.apple.com/" target="_blank" rel="noopener" class="signup-btn-secondary" style="margin-top:1rem;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.365 1.43c0 1.14-.42 2.06-1.14 2.79-.79.8-1.83 1.24-2.86 1.16-.11-1.1.42-2.24 1.09-2.94.73-.77 1.98-1.34 2.91-1.29zM20.5 17.02c-.53 1.22-.78 1.76-1.46 2.84-.95 1.51-2.29 3.39-3.95 3.4-1.47.01-1.85-.96-3.84-.95-1.99.01-2.41.97-3.88.94-1.66-.03-2.93-1.72-3.88-3.23-2.66-4.24-2.94-9.21-1.3-11.85 1.17-1.88 3.01-2.98 4.74-2.98 1.76 0 2.87.97 4.33.97 1.42 0 2.28-.97 4.32-.97 1.55 0 3.19.85 4.36 2.31-3.83 2.1-3.21 7.57.56 9.47z"/></svg>
+            Join the Apple Waitlist &nbsp;→
+          </a>
+          -->
+        </div>
+
+        <!-- Success state -->
+        <div id="signupSuccess" style="display:none;">
+          <div style="width:3.25rem;height:3.25rem;border-radius:624.938rem;background:#22c55e;display:flex;align-items:center;justify-content:center;margin-bottom:1.25rem;">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <h2 class="ln-h2" style="margin-bottom:0.75rem;">You're in.</h2>
+          <p class="ln-body" style="max-width:22rem;">We'll email you when we release early August.</p>
+        </div>
+      </div>
+
     </div>
 
-    <!-- 3D iPhone: right of the hero card -->
+    <!-- 3D iPhone: right of the hero copy -->
     <div class="phone-stage">
       <div class="phone-glow"></div>
       <div class="phone-tilt" id="phoneTilt">
@@ -498,7 +1190,34 @@ window.addEventListener('DOMContentLoaded', function () {
             <div class="phone-side-btn power"></div>
             <div class="phone-screen">
               <div class="phone-island"></div>
+
+              <!-- Replaced by the .phone-slide stack below, which crossfades
+                   in step with the rotating headline.
               <img src="logo-images/phone-preview.png" alt="Korah app preview" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:translateY(3.1%);">
+              -->
+
+              <!-- One slide per headline rotation, in the same order as the
+                   variants in the h1 above. Slides 2-4 are placeholders: drop
+                   an <img> in and delete the label span. -->
+              <div class="phone-slide is-on">
+                <img src="logo-images/phone-preview.png" alt="Korah app preview">
+              </div>
+              <div class="phone-slide">
+                <span class="phone-slide-ph">AP exam prep<em>logo-images/phone-ap.png</em></span>
+              </div>
+              <div class="phone-slide">
+                <span class="phone-slide-ph">College essay editor<em>logo-images/phone-essay.png</em></span>
+              </div>
+              <div class="phone-slide">
+                <span class="phone-slide-ph">Study plan<em>logo-images/phone-plan.png</em></span>
+              </div>
+              <div class="phone-slide">
+                <span class="phone-slide-ph">Finals cram<em>logo-images/phone-cram.png</em></span>
+              </div>
+              <div class="phone-slide">
+                <span class="phone-slide-ph">Score report<em>logo-images/phone-score.png</em></span>
+              </div>
+
               <div class="phone-glare"></div>
             </div>
           </div>
@@ -519,7 +1238,63 @@ window.addEventListener('DOMContentLoaded', function () {
       </filter>
     </defs>
   </svg>
+
+  <a href="#accepted" class="ln-scroll-cue" aria-label="Scroll to where Korah students get accepted">
+    <span class="ln-scroll-cue-text">Scroll to see more</span>
+    <span class="material-icons-round" aria-hidden="true">keyboard_arrow_down</span>
+  </a>
 </section>
+
+<script>
+  /* ── Scroll cue: its own tween rather than the anchor's native smooth jump,
+        so the travel is slow and decelerates onto the band. Lands a little
+        past the section's top edge so the next section shows underneath. ── */
+  (function () {
+    const cue    = document.querySelector('.ln-scroll-cue');
+    const target = document.getElementById('accepted');
+    const nav    = document.getElementById('navbar');
+    if (!cue || !target) return;
+
+    const DURATION = 1400;
+
+    cue.addEventListener('click', function (e) {
+      e.preventDefault();
+
+      const start = window.scrollY;
+      const max   = document.documentElement.scrollHeight - window.innerHeight;
+      const end   = Math.min(max, Math.round(
+        target.getBoundingClientRect().top + start
+        - (nav ? nav.offsetHeight : 0)
+        + window.innerHeight * 0.1
+      ));
+
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        window.scrollTo({ top: end, behavior: 'instant' });
+        return;
+      }
+
+      /* scroll-behavior: smooth is set on <html>, so every frame has to say
+         'instant' or the browser tries to animate each step itself. */
+      const t0 = performance.now();
+      let cancelled = false;
+      const stop = () => { cancelled = true; };
+      window.addEventListener('wheel', stop, { passive: true, once: true });
+      window.addEventListener('touchstart', stop, { passive: true, once: true });
+
+      (function step(now) {
+        if (cancelled) return;
+        const t = Math.min(1, (now - t0) / DURATION);
+        const e = 1 - Math.pow(1 - t, 4);   // long slow landing
+        window.scrollTo({ top: start + (end - start) * e, behavior: 'instant' });
+        if (t < 1) requestAnimationFrame(step);
+        else {
+          window.removeEventListener('wheel', stop);
+          window.removeEventListener('touchstart', stop);
+        }
+      })(t0);
+    });
+  }());
+</script>
 
 <script>
 (function () {
@@ -614,180 +1389,866 @@ window.addEventListener('DOMContentLoaded', function () {
 }());
 </script>
 
-<!-- ═══ SAT PREP ═══ -->
-<section id="sat" class="min-h-[85vh] flex items-center px-5 md:px-[clamp(1.25rem,6vw,5rem)] bg-base t-theme">
-  <div class="feature-section reveal w-full">
-
-    <!-- Mock browser: left -->
-    <div class="mock-side">
-      <div class="mock-browser">
-        <div class="mock-browser-bar">
-          <div class="mock-dot" style="background:#ff5f57;"></div>
-          <div class="mock-dot" style="background:#febc2e;"></div>
-          <div class="mock-dot" style="background:#28c840;"></div>
-          <span class="text-[0.6875rem] tx3 ml-2 font-medium">SAT Math Chat · Desmos</span>
-        </div>
-        <img src="logo-images/desmosdemo.png" alt="Desmos Demo" style="display:block;width:100%;height:100%;object-fit:cover;">
-      </div>
+<!-- ═══ WHERE STUDENTS ARE HEADED ═══ -->
+<section id="accepted" class="ln-section ln-alt" style="padding:3.25rem 0;">
+  <div class="ln-marquee-wrap">
+    <p class="ln-marquee-label">Korah Students Get Accepted To...</p>
+    <div class="ln-marquee">
+      <div class="ln-marquee-track" id="marqueeTrack"></div>
     </div>
-
-    <!-- Text: right -->
-    <div>
-      <h2 class="text-[clamp(2.25rem,5vw,3.5rem)] font-bold tx leading-tight mb-4">AI Desmos Tutoring</h2>
-      <p class="text-[1.0625rem] tx2 leading-relaxed mb-6" style="max-width:36rem;">We built the first AI system that actually understands SAT calculator tricks; learn how to solve any problem at lighting speed. </p>
-      <ul class="bullet-list mb-8">
-        <li><span class="bullet-dot"></span>Korah actively updates the graph</li>
-        <li><span class="bullet-dot"></span>Understand tips and tricks for quicker problemsolving</li>
-        <li><span class="bullet-dot"></span>Learn every kind of regression</li>
-        <li><span class="bullet-dot"></span>Every step explained in plain English</li>
-      </ul>
-      <a href="home.html" class="inline-flex items-center gap-2 text-[0.8125rem] font-semibold px-6 py-3 rounded-full border-none text-white t-btn hover:-translate-y-px no-underline" style="background:var(--p4);">
-        Try SAT Prep →
-      </a>
+    <div class="ln-marquee">
+      <div class="ln-marquee-track rev" id="marqueeTrack2"></div>
     </div>
-
   </div>
 </section>
 
-<!-- ═══ PROGRESS TRACKING ═══ -->
-<section id="progress" class="min-h-[85vh] flex items-center px-5 md:px-[clamp(1.25rem,6vw,5rem)] bg-base2 t-theme">
-  <div class="feature-section reverse reveal w-full">
+<!-- ═══ HOW IT WORKS ═══ -->
+<section class="ln-section">
+  <div class="ln-wrap reveal">
+    <div style="max-width:40rem;margin-bottom:2.5rem;">
+      <h2 class="ln-h2">Three steps to a better score</h2>
+      <p class="ln-lead" style="margin-top:1rem;">
+        Hand Korah your last score report, get a plan built around the skills
+        costing you the most points, then work it with a tutor.
+      </p>
+    </div>
 
-    <!-- Mock browser: right (reversed) -->
-    <div class="mock-side">
-      <div class="mock-browser">
-        <div class="mock-browser-bar">
-          <div class="mock-dot" style="background:#ff5f57;"></div>
-          <div class="mock-dot" style="background:#febc2e;"></div>
-          <div class="mock-dot" style="background:#28c840;"></div>
-          <span class="text-[0.6875rem] tx3 ml-2 font-medium">Progress Dashboard</span>
+    <div class="ln-steps">
+
+      <div class="ln-step">
+        <div class="ln-step-demo">
+          <div class="kdemo kd-rush" aria-hidden="true">
+            <div class="kd-rush-dots"><i></i><i></i><i></i></div>
+            <span class="kd-rush-title">Choose domains and skills</span>
+            <div class="kd-rush-grid">
+              <span class="kd-chip-opt">Algebra</span>
+              <span class="kd-chip-opt">Advanced math</span>
+              <span class="kd-chip-opt">Geometry</span>
+              <span class="kd-chip-opt">Problem solving</span>
+              <span class="kd-chip-opt">Craft and structure</span>
+              <span class="kd-chip-opt">Expression of ideas</span>
+            </div>
+            <div class="kd-rush-foot">
+              <span>6 skills selected</span>
+              <span class="kd-rush-start">Start practice</span>
+            </div>
+          </div>
         </div>
-        <img src="logo-images/desmosdemo0.png" alt="Analytics Screenshot" style="display:block;width:100%;height:100%;object-fit:cover;">
+        <div class="ln-step-body">
+          <span class="ln-step-no">01</span>
+          <h3>Upload your score report</h3>
+          <p>Screenshot your official SAT or PSAT report and drop it in. Korah reads your domain scores straight off it.</p>
+        </div>
       </div>
-    </div>
 
-    <!-- Text: left -->
-    <div>
-      <h2 class="text-[clamp(2.25rem,5vw,3.5rem)] font-bold tx leading-tight mb-4">Track Your Progress</h2>
-      <p class="text-[1.0625rem] tx2 leading-relaxed mb-6" style="max-width:34rem;">See exactly where you're strong and where to focus next. Korah's analytics break down your performance by domain so you study smarter, not harder.</p>
-      <ul class="bullet-list mb-8">
-        <li><span class="bullet-dot"></span>Score trends over time by topic</li>
-        <li><span class="bullet-dot"></span>Weak area detection across all domains</li>
-        <li><span class="bullet-dot"></span>Collect XP and level up for consistency</li>
-        <li><span class="bullet-dot"></span>Practice suggestions based on performance</li>
-      </ul>
-      <a href="home.html" class="inline-flex items-center gap-2 text-[0.8125rem] font-semibold px-6 py-3 rounded-full border-none text-white t-btn hover:-translate-y-px no-underline" style="background:var(--p4);">
-        View Dashboard →
-      </a>
-    </div>
+      <div class="ln-step">
+        <div class="ln-step-demo">
+          <div class="kdemo kd-qb" aria-hidden="true">
+            <div class="kd-qb-top">
+              <span class="kd-timer">03:25</span>
+              <span class="kd-qb-tools"><i></i><i></i><i></i></span>
+            </div>
+            <div class="kd-qb-card">
+              <span class="kd-qb-tags">
+                <b class="kd-qb-no">5</b>
+                <span class="kd-qb-domain">Geometry and Trigonometry</span>
+                <span class="kd-qb-hard">Hard</span>
+              </span>
+              <div class="kd-qb-body">
+                <svg class="kd-qb-fig" viewBox="0 0 120 50">
+                  <path d="M 22 10 L 8 44 M 22 10 L 112 42 M 8 44 L 104 10 M 104 10 L 112 42"/>
+                  <text x="18" y="7">W</text>
+                  <text x="1" y="49">X</text>
+                  <text x="100" y="7">Y</text>
+                  <text x="112" y="49">Z</text>
+                </svg>
+                <span class="kd-qb-lines"><i></i><i></i><i class="is-short"></i></span>
+              </div>
+            </div>
+            <div class="kd-qb-answer">
+              <span class="kd-qb-val">54</span>
+              <span class="kd-qb-correct">Correct</span>
+            </div>
+            <div class="kd-qb-foot">
+              <span>Question 5 of 124</span>
+              <span class="kd-qb-check">Check Answer</span>
+            </div>
+          </div>
+        </div>
+        <div class="ln-step-body">
+          <span class="ln-step-no">02</span>
+          <h3>Build a study plan tailored to you</h3>
+          <p>Those scores get ranked into a plan, weakest skills first, and it rebuilds itself as your accuracy changes.</p>
+        </div>
+      </div>
 
+      <div class="ln-step">
+        <div class="ln-step-demo">
+          <div class="kdemo kd-prio" aria-hidden="true">
+            <span class="kd-prio-head">Practice priorities</span>
+            <div class="kd-prio-row is-low">
+              <span class="kd-prio-no">1</span>Nonlinear functions
+              <span class="kd-prio-meter"><i style="--w:38%"></i></span>
+              <span class="kd-prio-pct">38%</span>
+            </div>
+            <div class="kd-prio-row is-low">
+              <span class="kd-prio-no">2</span>Inference
+              <span class="kd-prio-meter"><i style="--w:47%"></i></span>
+              <span class="kd-prio-pct">47%</span>
+            </div>
+            <div class="kd-prio-row is-mid">
+              <span class="kd-prio-no">3</span>Linear equations
+              <span class="kd-prio-meter"><i style="--w:61%"></i></span>
+              <span class="kd-prio-pct">61%</span>
+            </div>
+          </div>
+        </div>
+        <div class="ln-step-body">
+          <span class="ln-step-no">03</span>
+          <h3>Get tutoring from Korah and our team</h3>
+          <p>Work the plan with the Korah tutor any hour, or take a standing one-on-one slot with a 1500+ scorer on our team.</p>
+        </div>
+      </div>
+
+    </div>
   </div>
 </section>
 
-<!-- ═══ AI STUDY CHAT ═══ -->
-<section id="chat" class="min-h-[85vh] flex items-center px-5 md:px-[clamp(1.25rem,6vw,5rem)] bg-base t-theme relative overflow-hidden">
-  <div class="absolute inset-0 pointer-events-none" style="background:radial-gradient(ellipse at 50% 50%,rgba(139,92,246,0.07) 0%,transparent 65%);"></div>
-  <div class="feature-section relative z-10 reveal w-full">
+<!-- ═══ DESMOS TUTORING ═══ -->
+<section id="sat" class="ln-section ln-alt">
+  <div class="ln-wrap reveal">
 
-    <!-- Mock browser: left -->
-    <div class="mock-side">
-      <div class="mock-browser">
-        <div class="mock-browser-bar">
-          <div class="mock-dot" style="background:#ff5f57;"></div>
-          <div class="mock-dot" style="background:#febc2e;"></div>
-          <div class="mock-dot" style="background:#28c840;"></div>
-          <span class="text-[0.6875rem] tx3 ml-2 font-medium">Korah AI Chat</span>
+    <div class="ln-eyebrow">
+      <span class="ln-eyebrow-chip"><span class="material-icons-round">calculate</span></span>
+      <span>Desmos tutor</span>
+    </div>
+
+    <div class="ln-feature-head">
+      <h2 class="ln-h2">Learn Desmos Regressions</h2>
+      <p class="ln-lead">
+        Korah AI is the only resource that actually uses 
+      </p>
+      <a href="sat/math-chat.html" class="ln-btn ln-btn-primary">Open Desmos chat</a>
+    </div>
+
+    <!-- Replaced by the .kd-desmos bento below, the same demo math-chat.html's
+         intro runs. The old block was a screenshot in a fake browser window.
+    <div class="feature-section reveal w-full">
+      <div class="mock-side">
+        <div class="mock-browser">
+          <div class="mock-browser-bar">
+            <div class="mock-dot" style="background:#ff5f57;"></div>
+            <div class="mock-dot" style="background:#febc2e;"></div>
+            <div class="mock-dot" style="background:#28c840;"></div>
+            <span class="text-[0.6875rem] tx3 ml-2 font-medium">SAT Math Chat · Desmos</span>
+          </div>
+          <img class="feature-shot" src="logo-images/feature-desmos-2026.png" alt="Current Desmos Chat interface">
         </div>
-        <img src="logo-images/questionbankdemo.png" alt="Chat Screenshot" style="display:block;width:100%;height:100%;object-fit:cover;">
+      </div>
+      <div>
+        <h2 class="text-[clamp(2.25rem,5vw,3.5rem)] font-bold tx leading-tight mb-4">AI Desmos Tutoring</h2>
+        <p class="text-[1.0625rem] tx2 leading-relaxed mb-6" style="max-width:36rem;">We built the first AI system that actually understands SAT calculator tricks; learn how to solve any problem at lighting speed. </p>
+        <ul class="bullet-list mb-8">
+          <li><span class="bullet-dot"></span>Korah actively updates the graph</li>
+          <li><span class="bullet-dot"></span>Understand tips and tricks for quicker problemsolving</li>
+          <li><span class="bullet-dot"></span>Learn every kind of regression</li>
+          <li><span class="bullet-dot"></span>Every step explained in plain English</li>
+        </ul>
+        <a href="home.html" class="inline-flex items-center gap-2 text-[0.8125rem] font-semibold px-6 py-3 rounded-full border-none text-white t-btn hover:-translate-y-px no-underline" style="background:var(--p4);">
+          Try SAT Prep →
+        </a>
       </div>
     </div>
+    -->
 
-    <!-- Text: right -->
-    <div>
-      <h2 class="text-[clamp(2.25rem,5vw,3.5rem)] font-bold tx leading-tight mb-4">3500+ Problem Questionbank</h2>
-      <p class="text-[1.0625rem] tx2 leading-relaxed mb-6" style="max-width:34rem;">Ask Korah anything — it explains concepts step by step, generates practice problems on demand, and adapts to how you learn.</p>
-      <ul class="bullet-list mb-8">
-        <li><span class="bullet-dot"></span>Step-by-step problem walkthroughs</li>
-        <li><span class="bullet-dot"></span>On-demand practice problem generation</li>
-        <li><span class="bullet-dot"></span>Concept explanations in plain English</li>
-        <li><span class="bullet-dot"></span>Works with any subject, not just SAT</li>
-      </ul>
-      <a href="home.html" class="inline-flex items-center gap-2 text-[0.8125rem] font-semibold px-6 py-3 rounded-full border-none text-white t-btn hover:-translate-y-px no-underline" style="background:var(--p4);">
-        Chat with Korah →
-      </a>
+    <div class="ln-bento">
+
+      <div class="ln-card">
+        <!-- Replaced by the desmos-chat screen recording below.
+        <div class="kdemo kd-desmos" aria-hidden="true">
+          <div class="kd-desmos-side kd-paper">
+            <div class="kd-rail">
+              <span class="kd-math"><i>y</i><sub>2</sub> ~ <i>mx</i><sub>2</sub> + <i>b</i></span>
+              <div class="kd-table">
+                <span class="is-head"><i>x</i><sub>2</sub></span>
+                <span class="is-head"><i>y</i><sub>2</sub></span>
+                <span class="is-row">2</span>
+                <span class="is-row">10</span>
+                <span class="is-row">5</span>
+                <span class="is-row">25</span>
+              </div>
+            </div>
+            <div class="kd-graph kd-grid">
+              <svg class="kd-plot" viewBox="0 0 100 64" preserveAspectRatio="none">
+                <path class="kd-axis" d="M 34 0 V 64"/>
+                <path class="kd-axis" d="M 0 40 H 100"/>
+                <path class="kd-trace" d="M 24 64 L 46 0"/>
+              </svg>
+              <i class="kd-point" style="--x:31%; --y:77%"></i>
+              <i class="kd-point is-two" style="--x:39%; --y:41%"></i>
+            </div>
+          </div>
+          <div class="kd-chat">
+            <div class="kd-thread">
+              <span class="kd-ask">Teach me regressions</span>
+              <div class="kd-answer">
+                <span class="kd-answer-head"><img src="logo-images/newlogo0.png" alt=""/>Korah</span>
+                <span class="kd-answer-body">
+                  <span class="kd-think">Cooking...</span>
+                  <span class="kd-reply">
+                    <span>Put both points in a table.</span>
+                    <span>Then fit <i>y</i><sub>2</sub> ~ <i>mx</i><sub>2</sub> + <i>b</i> and read <i>m</i> and <i>b</i> off it.</span>
+                  </span>
+                </span>
+              </div>
+            </div>
+            <div class="kd-composer">
+              <span class="kd-typed" data-text="Teach me regressions"><span class="kd-typed-in">Teach me regressions</span></span>
+              <span class="kd-send">
+                <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              </span>
+            </div>
+          </div>
+        </div>
+        -->
+        <!-- Replaced by the desmos-chat-v2 recording below.
+        <video class="ln-card-video" autoplay muted loop playsinline preload="auto">
+          <source src="videos/desmos-chat.mp4" type="video/mp4">
+        </video>
+        -->
+        <video class="ln-card-video" autoplay muted loop playsinline preload="auto">
+          <source src="videos/desmos-chat-v2.mp4" type="video/mp4">
+        </video>
+        <div class="ln-card-cap">
+          <h3>Korah drives the graph</h3>
+          <p>You ask in the chat and the calculator updates beside it. Nothing to set up, nothing to copy across.</p>
+        </div>
+      </div>
+
+      <div class="ln-bento-side">
+
+        <div class="ln-card">
+          <div class="kdemo kd-reg" aria-hidden="true">
+            <div class="kd-card kd-paper">
+              <span class="kd-card-no">1</span>
+              <div>
+                <span class="kd-math">(5<i>x</i><sub>1</sub> &minus; 17)(4<i>x</i><sub>1</sub> &minus; <i>c</i>) ~ <i>ax</i><sub>1</sub><sup>2</sup> + <i>bx</i><sub>1</sub> + 119</span>
+                <span class="kd-caps">Regression parameters</span>
+                <div class="kd-params">
+                  <span><i>c</i> = 7</span>
+                  <span><i>a</i> = 20</span>
+                  <span><i>b</i> = &minus;103</span>
+                </div>
+                <span class="kd-caps">Statistics</span>
+                <span class="kd-stat"><i>RMSE</i> = 0</span>
+              </div>
+            </div>
+            <div class="kd-card kd-paper">
+              <span class="kd-card-no">2</span>
+              <div>
+                <span class="kd-math"><i>x</i><sub>1</sub> = [ 2, 3, 4 ]</span>
+                <span class="kd-tag">3 element list</span>
+              </div>
+            </div>
+          </div>
+          <div class="ln-card-cap">
+            <h3>Parameters read back to you</h3>
+            <p>Every fit comes with its coefficients and residual, so you know the answer is the right one.</p>
+          </div>
+        </div>
+
+        <div class="ln-card" style="justify-content:center;padding:1.5rem;">
+          <div class="ln-card-cap" style="padding:0;">
+            <h3>Every fit on the test</h3>
+            <p style="margin-bottom:0.875rem;">The calculator methods that shortcut whole question types, not just the algebra you already know.</p>
+          </div>
+          <div class="ln-chips">
+            <span class="ln-chip">Linear</span>
+            <span class="ln-chip">Quadratic</span>
+            <span class="ln-chip">Exponential</span>
+            <span class="ln-chip">Systems</span>
+            <span class="ln-chip">Circles</span>
+            <span class="ln-chip">Lists and tables</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ QUESTION BANK ═══ -->
+<section id="chat" class="ln-section">
+  <div class="ln-wrap reveal">
+
+    <div class="ln-eyebrow">
+      <span class="ln-eyebrow-chip"><span class="material-icons-round">assignment</span></span>
+      <span>Question bank</span>
     </div>
 
+    <div class="ln-feature-head">
+      <h2 class="ln-h2">3,500 problem questionbank, all tracked</h2>
+      <p class="ln-lead">
+        Specially sourced Math and Reading &amp; Writing, filterable by
+        domain, skill and difficulty. Every answer you give feeds the accuracy
+        numbers on your home page.
+      </p>
+      <a href="sat/index.html" class="ln-btn ln-btn-primary">Open the question bank</a>
+    </div>
+
+    <!-- Replaced by the .kd-qb bento below.
+    <div class="feature-section relative z-10 reveal w-full">
+      <div class="mock-side">
+        <div class="mock-browser">
+          <div class="mock-browser-bar">
+            <div class="mock-dot" style="background:#ff5f57;"></div>
+            <div class="mock-dot" style="background:#febc2e;"></div>
+            <div class="mock-dot" style="background:#28c840;"></div>
+            <span class="text-[0.6875rem] tx3 ml-2 font-medium">SAT Question Bank</span>
+          </div>
+          <img class="feature-shot" src="logo-images/feature-question-bank-2026.png" alt="Current SAT question bank interface">
+        </div>
+      </div>
+      <div>
+        <h2 class="text-[clamp(2.25rem,5vw,3.5rem)] font-bold tx leading-tight mb-4">3500+ Problem Questionbank</h2>
+        <p class="text-[1.0625rem] tx2 leading-relaxed mb-6" style="max-width:34rem;">Ask Korah anything — it explains concepts step by step, generates practice problems on demand, and adapts to how you learn.</p>
+        <ul class="bullet-list mb-8">
+          <li><span class="bullet-dot"></span>Step-by-step problem walkthroughs</li>
+          <li><span class="bullet-dot"></span>On-demand practice problem generation</li>
+          <li><span class="bullet-dot"></span>Concept explanations in plain English</li>
+          <li><span class="bullet-dot"></span>Works with any subject, not just SAT</li>
+        </ul>
+        <a href="home.html" class="inline-flex items-center gap-2 text-[0.8125rem] font-semibold px-6 py-3 rounded-full border-none text-white t-btn hover:-translate-y-px no-underline" style="background:var(--p4);">
+          Chat with Korah →
+        </a>
+      </div>
+    </div>
+    -->
+
+    <div class="ln-bento">
+
+      <div class="ln-card">
+        <!-- Replaced by videos/question-bank.mp4
+        <div class="kdemo kd-qb" aria-hidden="true">
+          <div class="kd-qb-top">
+            <span class="kd-timer">03:25</span>
+            <span class="kd-qb-tools"><i></i><i></i><i></i></span>
+          </div>
+          <div class="kd-qb-card">
+            <span class="kd-qb-tags">
+              <b class="kd-qb-no">5</b>
+              <span class="kd-qb-domain">Geometry and Trigonometry</span>
+              <span class="kd-qb-hard">Hard</span>
+            </span>
+            <div class="kd-qb-body">
+              <svg class="kd-qb-fig" viewBox="0 0 120 50">
+                <path d="M 22 10 L 8 44 M 22 10 L 112 42 M 8 44 L 104 10 M 104 10 L 112 42"/>
+                <text x="18" y="7">W</text>
+                <text x="1" y="49">X</text>
+                <text x="100" y="7">Y</text>
+                <text x="112" y="49">Z</text>
+              </svg>
+              <span class="kd-qb-lines"><i></i><i></i><i class="is-short"></i></span>
+            </div>
+          </div>
+          <div class="kd-qb-answer">
+            <span class="kd-qb-val">54</span>
+            <span class="kd-qb-correct">Correct</span>
+          </div>
+          <div class="kd-qb-foot">
+            <span>Question 5 of 124</span>
+            <span class="kd-qb-check">Check Answer</span>
+          </div>
+        </div>
+        -->
+        <video class="ln-card-video" autoplay muted loop playsinline preload="auto">
+          <source src="videos/question-bank.mp4" type="video/mp4">
+        </video>
+        <div class="ln-card-cap">
+          <h3>The real thing, timed</h3>
+          <p>Same layout, same tools and the same clock you get on test day, with the explanation waiting behind every answer.</p>
+        </div>
+      </div>
+
+      <div class="ln-bento-side">
+
+        <div class="ln-card">
+          <div class="kdemo kd-home" aria-hidden="true">
+            <span class="kd-home-label">My Stats</span>
+            <div class="kd-tiles">
+              <span class="kd-tile is-attempted"><i>Attempted</i><b>2058</b></span>
+              <span class="kd-tile is-accuracy"><i>Accuracy</i><b>90%</b></span>
+              <span class="kd-tile is-saved"><i>Saved</i><b>67</b></span>
+              <span class="kd-tile is-errors"><i>Errors</i><b>32</b></span>
+            </div>
+            <div class="kd-journey">
+              <span class="kd-journey-title">Score Journey</span>
+              <div class="kd-bar is-rw">
+                <span class="kd-bar-top">Reading &amp; Writing <b>750 / 770</b></span>
+                <span class="kd-bar-track"><i style="--w:97%"></i></span>
+              </div>
+              <div class="kd-bar is-math">
+                <span class="kd-bar-top">Math <b>720 / 750</b></span>
+                <span class="kd-bar-track"><i style="--w:96%"></i></span>
+              </div>
+            </div>
+          </div>
+          <div class="ln-card-cap">
+            <h3>Your numbers, always current</h3>
+            <p>Accuracy, attempts and score journey update the moment you finish a question.</p>
+          </div>
+        </div>
+
+        <div class="ln-card" style="justify-content:center;padding:1.5rem;">
+          <div class="ln-card-cap" style="padding:0;">
+            <h3>Four ways through the bank</h3>
+            <p style="margin-bottom:0.875rem;">Same questions, different pace. Pick whichever one suits the time you have.</p>
+          </div>
+          <div class="ln-chips">
+            <span class="ln-chip">Free practice</span>
+            <span class="ln-chip">Question rush</span>
+            <span class="ln-chip">Tailored sets</span>
+            <span class="ln-chip">Mistake review</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ AP EXAM PREP ═══ -->
+<section id="ap" class="ln-section ln-alt">
+  <div class="ln-wrap reveal">
+
+    <div class="ln-eyebrow">
+      <span class="ln-eyebrow-chip"><span class="material-icons-round">workspace_premium</span></span>
+      <span>AP exam prep</span>
+    </div>
+
+    <div class="ln-feature-head">
+      <h2 class="ln-h2">Free response questions, graded point by point</h2>
+      <p class="ln-lead">
+        Work an FRQ under a timer, type it or photograph your handwritten
+        work, and see every rubric point marked earned or missed, with the
+        part of your answer that earned it.
+      </p>
+      <a href="ap/index.html" class="ln-btn ln-btn-primary">Open AP practice</a>
+    </div>
+
+    <div class="ln-bento" style="grid-template-columns:repeat(auto-fit,minmax(18rem,1fr));">
+
+      <div class="ln-card" style="justify-content:center;padding:1.5rem;">
+        <div class="ln-card-cap" style="padding:0;">
+          <h3>Free response</h3>
+          <p style="margin-bottom:0.875rem;">The score is the sum of the rubric points you earned, never a number guessed by the model. Anything you missed comes with what was absent.</p>
+        </div>
+        <div class="ln-chips">
+          <span class="ln-chip">Timed FRQs</span>
+          <span class="ln-chip">Photo or typed answers</span>
+          <span class="ln-chip">Point-by-point feedback</span>
+        </div>
+      </div>
+
+      <div class="ln-card" style="justify-content:center;padding:1.5rem;">
+        <div class="ln-card-cap" style="padding:0;">
+          <h3>Multiple choice</h3>
+          <p style="margin-bottom:0.875rem;">Sit a full mock exam in the real format, with the exam clock running and a review of every question once you submit.</p>
+        </div>
+        <div class="ln-chips">
+          <span class="ln-chip">Full mock exams</span>
+          <span class="ln-chip">Timed sections</span>
+          <span class="ln-chip">AP Calculus AB</span>
+          <span class="ln-chip">AP US History</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══ COLLEGE ESSAY EDITOR ═══ -->
+<section id="essays" class="ln-section ln-alt">
+  <span id="progress" aria-hidden="true" style="position:absolute;"></span>
+  <div class="ln-wrap reveal">
+
+    <div class="ln-eyebrow">
+      <span class="ln-eyebrow-chip"><span class="material-icons-round">edit_note</span></span>
+      <span>Essay editor</span>
+    </div>
+
+    <div class="ln-feature-head">
+      <h2 class="ln-h2">Write a stronger personal statement</h2>
+      <p class="ln-lead">
+        Draft in the editor and get feedback pinned to the exact passage it is
+        about, plus scores for voice, reflection and detail you can watch move
+        as you revise.
+      </p>
+      <a href="college-prep/index.html" class="ln-btn ln-btn-primary">Open the essay editor</a>
+    </div>
+
+    <!-- Replaced by the .lnd-essay demo bento below.
+    <div class="feature-section reverse reveal w-full">
+      <div class="mock-side">
+        <div class="mock-browser">
+          <div class="mock-browser-bar">
+            <div class="mock-dot" style="background:#ff5f57;"></div>
+            <div class="mock-dot" style="background:#febc2e;"></div>
+            <div class="mock-dot" style="background:#28c840;"></div>
+            <span class="text-[0.6875rem] tx3 ml-2 font-medium">College Essay Editor</span>
+          </div>
+          <img class="feature-shot" src="logo-images/feature-essay-editor-2026.png" alt="Current college essay editor interface">
+        </div>
+      </div>
+      <div>
+        <h2 class="text-[clamp(2.25rem,5vw,3.5rem)] font-bold tx leading-tight mb-4">Write a Stronger College Essay</h2>
+        <p class="text-[1.0625rem] tx2 leading-relaxed mb-6" style="max-width:34rem;">Draft, review, and revise your personal statement with feedback that shows what works, what needs attention, and why.</p>
+        <ul class="bullet-list mb-8">
+          <li><span class="bullet-dot"></span>Inline feedback tied to exact passages</li>
+          <li><span class="bullet-dot"></span>Scores for voice, reflection, detail, and more</li>
+          <li><span class="bullet-dot"></span>Recommendations you can resolve as you revise</li>
+          <li><span class="bullet-dot"></span>Personal statements and school supplements in one place</li>
+        </ul>
+        <a href="college-prep/index.html" class="inline-flex items-center gap-2 text-[0.8125rem] font-semibold px-6 py-3 rounded-full border-none text-white t-btn hover:-translate-y-px no-underline" style="background:var(--p4);">
+          Open Essay Editor →
+        </a>
+      </div>
+    </div>
+    -->
+
+    <div class="ln-bento">
+
+      <div class="ln-card">
+        <div class="kdemo lnd-essay" aria-hidden="true">
+          <div class="lnd-main">
+            <div class="lnd-head">
+              <span class="lnd-title">Untitled Essay</span>
+              <span class="lnd-btn">Change prompt</span>
+            </div>
+            <div class="lnd-prompt">
+              <b>Common App Prompt 3</b>
+              <span>Reflect on a time when you questioned or challenged a belief or idea. What prompted your thinking? What was the outcome?</span>
+            </div>
+            <div class="lnd-doc kd-paper">
+              <p class="lnd-text">
+                <span class="lnd-mark is-w">The first time I rebuilt the carburetor I did it wrong, and the
+                second time too.</span> <span class="lnd-mark is-d">Gasoline pooled
+                under the bench and the garage smelled like a gas station for a week.</span>
+                My dad kept saying a machine is only a set of
+                decisions someone made before you. <span class="lnd-mark is-r">I learned a lot
+                about persistence that summer.</span>
+              </p>
+              <p class="lnd-text">
+                <span class="lnd-mark is-v">By the fourth attempt, my hands knew the order of the
+                parts before my head did.</span> I started to wonder what else I had
+                been taking on faith, and whether the things I called talent were
+                really just repetition I had not counted yet.
+              </p>
+            </div>
+            <div class="lnd-words">507 words</div>
+          </div>
+          <div class="lnd-side">
+            <p class="lnd-h">Scores</p>
+            <div class="lnd-avg"><b>6.7</b>Average</div>
+            <div class="lnd-score">Writing<span class="lnd-bar"><i style="--v:70%;--c:#8b5cf6"></i></span>7</div>
+            <div class="lnd-score">Detail<span class="lnd-bar"><i style="--v:60%;--c:#3b82f6"></i></span>6</div>
+            <div class="lnd-score">Voice<span class="lnd-bar"><i style="--v:80%;--c:#e879f9"></i></span>8</div>
+            <div class="lnd-score">Reflection<span class="lnd-bar"><i style="--v:80%;--c:#f59e0b"></i></span>8</div>
+            <div class="lnd-score">Curiosity<span class="lnd-bar"><i style="--v:50%;--c:#22c55e"></i></span>5</div>
+            <div class="lnd-score">Contribution<span class="lnd-bar"><i style="--v:60%;--c:#ef4444"></i></span>6</div>
+            <div class="lnd-recs">
+              <p class="lnd-h">Recommendations</p>
+              <div class="lnd-rec" style="--c:#8b5cf6"><b>Writing</b><em>"The first time I rebuilt the carburetor I did it wrong, and the second time too."</em>Consider varying sentence length to improve flow.</div>
+              <div class="lnd-rec" style="--c:#f59e0b"><b>Reflection</b><em>"I learned a lot about persistence that summer."</em>Show the lesson instead of naming it.</div>
+            </div>
+          </div>
+        </div>
+        <div class="ln-card-cap">
+          <h3>Feedback where the sentence is</h3>
+          <p>Passages get highlighted in the draft and the note sits beside them, so you are never guessing which line a comment is about.</p>
+        </div>
+      </div>
+
+      <div class="ln-bento-side">
+
+        <div class="ln-card" style="justify-content:center;padding:1.5rem;">
+          <div class="ln-card-cap" style="padding:0;">
+            <h3>Six things it scores</h3>
+            <p style="margin-bottom:0.875rem;">Each one comes with a note on what moved it, not just a number.</p>
+          </div>
+          <div class="ln-chips">
+            <span class="ln-chip">Voice</span>
+            <span class="ln-chip">Reflection</span>
+            <span class="ln-chip">Detail</span>
+            <span class="ln-chip">Structure</span>
+            <span class="ln-chip">Theme</span>
+            <span class="ln-chip">Ending</span>
+          </div>
+        </div>
+
+        <div class="ln-card" style="justify-content:center;padding:1.5rem;">
+          <div class="ln-card-cap" style="padding:0;">
+            <h3>Statements and supplements together</h3>
+            <p>Your Common App essay and every school supplement live in one place, so you can reuse what already works.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
   </div>
 </section>
 
 <!-- ═══ FREE ONLINE TUTORING ═══ -->
-<section id="tutoring" class="min-h-[85vh] flex items-center px-5 md:px-[clamp(1.25rem,6vw,5rem)] bg-base2 t-theme">
-  <div class="feature-section reverse reveal w-full">
+<section id="tutoring" class="ln-section">
+  <div class="ln-wrap reveal">
 
-    <!-- Mock browser: right (reversed) -->
-    <div class="mock-side">
-      <div class="mock-browser">
-        <div class="mock-browser-bar">
-          <div class="mock-dot" style="background:#ff5f57;"></div>
-          <div class="mock-dot" style="background:#febc2e;"></div>
-          <div class="mock-dot" style="background:#28c840;"></div>
-          <span class="text-[0.6875rem] tx3 ml-2 font-medium">Free Online Tutoring</span>
+    <div class="ln-eyebrow">
+      <span class="ln-eyebrow-chip"><span class="material-icons-round">school</span></span>
+      <span>Free tutoring</span>
+    </div>
+
+    <!-- Replaced by the .ln-tut split below.
+    <div class="ln-feature-head">
+      <h2 class="ln-h2">One-on-one, with someone who scored 1500+</h2>
+      <p class="ln-lead">
+        We opened free online tutoring for students with demonstrated interest
+        and need. Weekly sessions, a plan built around your weak spots, and no
+        payment at any point.
+      </p>
+      <a href="https://forms.gle/uaKH3mMsM48a1oVm9" target="_blank" rel="noopener" class="ln-btn ln-btn-primary">Book a session</a>
+    </div>
+    -->
+
+    <div class="ln-tut">
+      <div>
+        <h2 class="ln-h2">One-on-one, with someone who scored 1500+</h2>
+        <p class="ln-lead" style="margin-top:1rem;">
+          We opened free online tutoring for students with demonstrated interest
+          and need. Weekly sessions, a plan built around your weak spots, and no
+          payment at any point.
+        </p>
+        <ul class="ln-tut-list">
+          <li>
+            <span class="material-icons-round">person</span>
+            <span><b>Taught by 1500+ scorers</b><span class="t">Student tutors who sat the same test recently and know which shortcuts actually survive the clock.</span></span>
+          </li>
+          <li>
+            <span class="material-icons-round">event_repeat</span>
+            <span><b>Weekly sessions</b><span class="t">A standing one-on-one slot, with a study plan that rebuilds itself as your accuracy changes between sessions.</span></span>
+          </li>
+          <li>
+            <span class="material-icons-round">savings</span>
+            <span><b>No fees, no card</b><span class="t">Nothing to pay and nothing to cancel. We ask for demonstrated interest and need, not a payment method.</span></span>
+          </li>
+        </ul>
+        <a href="https://forms.gle/uaKH3mMsM48a1oVm9" target="_blank" rel="noopener" class="ln-btn ln-btn-primary">Book a session</a>
+      </div>
+
+      <div>
+        <div class="ln-tut-phone">
+          <div class="ln-tut-screen">
+            <!-- Replaced by the parabola-b video below.
+            <video controls playsinline preload="metadata" poster="logo-images/tutor-video-poster.jpg">
+              <source src="videos/tutor-hard-sat-problem.mp4" type="video/mp4">
+            </video>
+            <p class="ln-tut-ph">Tutor video goes here</p>
+            -->
+            <video autoplay muted loop playsinline preload="auto">
+              <source src="videos/parabola-b.mp4" type="video/mp4">
+            </video>
+          </div>
         </div>
-        <img src="logo-images/tutoringdemo.png" alt="SAT Dashboard Screenshot" style="display:block;width:100%;height:100%;object-fit:cover;">
+        <p class="ln-tut-cap">A Korah tutor walking through a hard SAT problem.</p>
       </div>
     </div>
 
-    <!-- Text: left -->
-    <div>
-      <h2 class="text-[clamp(2.25rem,5vw,3.5rem)] font-bold tx leading-tight mb-4">Free Online Tutoring</h2>
-      <p class="text-[1.0625rem] tx2 leading-relaxed mb-6" style="max-width:34rem;">We just opened up free online tutoring for students with demonstrated interest and need in improving their SAT scores.</p>
-      <ul class="bullet-list mb-8">
-        <li><span class="bullet-dot"></span>Taught by students who scrored 1500+</li>
-        <li><span class="bullet-dot"></span>Weekly 1-on-1 online sessions</li>
-        <li><span class="bullet-dot"></span>Personalized study plans & feedback</li>
-        <li><span class="bullet-dot"></span>100% free: no fees, no payments</li>
-      </ul>
-      <a href="https://forms.gle/uaKH3mMsM48a1oVm9" class="inline-flex items-center gap-2 text-[0.8125rem] font-semibold px-6 py-3 rounded-full border-none text-white t-btn hover:-translate-y-px no-underline" style="background:var(--p4);">
-        Book a Session →
-      </a>
+    <!-- Replaced by the .ln-facts row below.
+    <div class="feature-section reverse reveal w-full">
+      <div class="mock-side">
+        <div class="mock-browser">
+          <div class="mock-browser-bar">
+            <div class="mock-dot" style="background:#ff5f57;"></div>
+            <div class="mock-dot" style="background:#febc2e;"></div>
+            <div class="mock-dot" style="background:#28c840;"></div>
+            <span class="text-[0.6875rem] tx3 ml-2 font-medium">Free Online Tutoring</span>
+          </div>
+          <img class="feature-shot" src="logo-images/feature-home-2026.png" alt="Current Korah student home interface">
+        </div>
+      </div>
+      <div>
+        <h2 class="text-[clamp(2.25rem,5vw,3.5rem)] font-bold tx leading-tight mb-4">Free Online Tutoring</h2>
+        <p class="text-[1.0625rem] tx2 leading-relaxed mb-6" style="max-width:34rem;">We just opened up free online tutoring for students with demonstrated interest and need in improving their SAT scores.</p>
+        <ul class="bullet-list mb-8">
+          <li><span class="bullet-dot"></span>Taught by students who scored 1500+</li>
+          <li><span class="bullet-dot"></span>Weekly 1-on-1 online sessions</li>
+          <li><span class="bullet-dot"></span>Personalized study plans & feedback</li>
+          <li><span class="bullet-dot"></span>100% free: no fees, no payments</li>
+        </ul>
+        <a href="https://forms.gle/uaKH3mMsM48a1oVm9" class="inline-flex items-center gap-2 text-[0.8125rem] font-semibold px-6 py-3 rounded-full border-none text-white t-btn hover:-translate-y-px no-underline" style="background:var(--p4);">
+          Book a Session →
+        </a>
+      </div>
     </div>
+    -->
 
+    <!-- Folded into the .ln-tut list above.
+    <div class="ln-facts">
+      <div class="ln-card ln-fact">
+        <span class="material-icons-round">person</span>
+        <h3>Taught by 1500+ scorers</h3>
+        <p>Student tutors who sat the same test recently and know which shortcuts actually survive the clock.</p>
+      </div>
+      <div class="ln-card ln-fact">
+        <span class="material-icons-round">event_repeat</span>
+        <h3>Weekly sessions</h3>
+        <p>A standing one-on-one slot, with a study plan that rebuilds itself as your accuracy changes between sessions.</p>
+      </div>
+      <div class="ln-card ln-fact">
+        <span class="material-icons-round">savings</span>
+        <h3>No fees, no card</h3>
+        <p>Nothing to pay and nothing to cancel. We ask for demonstrated interest and need, not a payment method.</p>
+      </div>
+    </div>
+    -->
   </div>
 </section>
 
-<footer class="relative z-10 bg-base border-t bd px-[clamp(1.25rem,6vw,5rem)] pt-[3.75rem] pb-10 t-theme">
-  <div class="max-w-[68.75rem] mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr] gap-12">
-    <div>
-      <div class="flex items-center gap-2.5">
-        <img src="logo-images/newlogo0.png" style="height:2.5rem;width:auto;flex-shrink:0;">
-        <span style="font-family: 'Plus Jakarta Sans', sans-serif;" class="text-[1.1875rem] font-black tx">Korah</span>
+<!-- ═══ MISSION AND NUMBERS ═══ -->
+<section class="ln-section ln-alt">
+  <div class="ln-wrap reveal">
+
+    <div class="ln-eyebrow">
+      <span class="ln-eyebrow-chip"><span class="material-icons-round">volunteer_activism</span></span>
+      <span>Our mission</span>
+    </div>
+
+    <div class="ln-feature-head">
+      <h2 class="ln-h2">Quality prep, free, for the students who get skipped</h2>
+      <p class="ln-lead">
+        Korah AI is a nonprofit. We exist to put quality SAT, AP, and college
+        preparatory resources in the hands of underrepresented students for
+        100% free: no fees, no tiers, no card at any point.
+      </p>
+    </div>
+
+    <div class="ln-stats">
+      <div class="ln-card ln-stat">
+        <b>100k+</b>
+        <span>Students reached across our social media, where we break down real SAT and AP problems.</span>
       </div>
-      <p class="text-sm tx2 leading-[1.7] max-w-[17.5rem] mt-3.5">Korah helps students ace the SAT with AI-powered tutoring, live Desmos graphing, adaptive practice, and progress tracking.</p>
-    </div>
-    <div>
-      <h4 class="text-xs font-bold tracking-[0.125rem] uppercase tx-p5 mb-4">Product</h4>
-      <a href="#sat"      class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Desmos Tutoring</a>
-      <a href="#progress" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Progress</a>
-      <a href="#chat"     class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Questionbank</a>
-      <a href="#tutoring" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Tutoring</a>
-      <a href="code/code.html" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Korah CODE</a>
-      <a href="code/interns.html" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Intern Work</a>
-      <a href="home.html" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Web App</a>
-    </div>
-    <div>
-      <h4 class="text-xs font-bold tracking-[0.125rem] uppercase tx-p5 mb-4">Support</h4>
-      <a href="support/index.html#contact" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Contact Us</a>
-      <a href="support/index.html#faq"    class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">FAQ</a>
-    </div>
-    <div>
-      <h4 class="text-xs font-bold tracking-[0.125rem] uppercase tx-p5 mb-4">Company</h4>
-      <a href="#" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">About Korah</a>
-      <a href="https://www.instagram.com/korah.app/" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Social Media</a>
-      <a href="support/index.html#privacy" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Privacy Policy</a>
-      <a href="support/index.html#terms" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Terms</a>
+      <div class="ln-card ln-stat">
+        <b>Worldwide</b>
+        <span>Students studying in the app from across the United States and around the world.</span>
+      </div>
+      <div class="ln-card ln-stat">
+        <b>Our team</b>
+        <span>About a dozen developers, tutors, and content creators building Korah from all around the country.</span>
+      </div>
     </div>
   </div>
-  <div class="max-w-[68.75rem] mx-auto mt-10 pt-6 border-t bd2 flex flex-wrap items-center justify-between gap-3 text-[0.78125rem] tx3">
+</section>
+
+<!-- Replaced by the mission and numbers section above.
+
+═══ EVERYTHING ELSE ═══
+<section class="ln-section ln-alt">
+  <div class="ln-wrap reveal">
+    <div style="max-width:38rem;margin-bottom:2rem;">
+      <h2 class="ln-h2">And the rest of it</h2>
+      <p class="ln-lead" style="margin-top:1rem;">
+        Everything below is in the app already, and all of it is free.
+      </p>
+    </div>
+
+    <div class="ln-more">
+      <a class="ln-more-item" href="sat/rush.html"><span class="material-icons-round">bolt</span>Question rush</a>
+      <a class="ln-more-item" href="sat/tailored.html"><span class="material-icons-round">tune</span>Tailored practice</a>
+      <a class="ln-more-item" href="sat/study-plan.html"><span class="material-icons-round">calendar_month</span>Study plan</a>
+      <a class="ln-more-item" href="sat/dashboard.html"><span class="material-icons-round">insights</span>Progress analytics</a>
+      <a class="ln-more-item" href="study/flashcards.html"><span class="material-icons-round">style</span>Flashcards</a>
+      <a class="ln-more-item" href="ap/index.html"><span class="material-icons-round">workspace_premium</span>AP exams</a>
+      <a class="ln-more-item" href="potd/index.html"><span class="material-icons-round">today</span>Problem of the day</a>
+      <a class="ln-more-item" href="sat/latest-questions.html"><span class="material-icons-round">fiber_new</span>Latest questions</a>
+    </div>
+  </div>
+</section>
+
+═══ BY THE NUMBERS ═══
+<section class="ln-section" style="padding-bottom:0;">
+  <div class="ln-wrap reveal">
+    <div class="ln-stats">
+      <div class="ln-card ln-stat">
+        <b>3,500+</b>
+        <span>College Board-sourced questions across Math and Reading &amp; Writing.</span>
+      </div>
+      <div class="ln-card ln-stat">
+        <b>1,600</b>
+        <span>Points on the table. Korah tells you which ones you are leaving there.</span>
+      </div>
+      <div class="ln-card ln-stat">
+        <b>$0</b>
+        <span>What every feature on this page costs, tutoring included.</span>
+      </div>
+    </div>
+  </div>
+</section>
+-->
+
+<!-- ═══ FINAL CTA ═══ -->
+<section class="ln-section">
+  <div class="ln-wrap reveal">
+    <div class="ln-cta">
+      <h2 class="ln-h2" style="max-width:28rem;margin:0 auto;">Start cooking today.</h2>
+      <p class="ln-lead" style="max-width:32rem;margin:1rem auto 0;">
+        Make an account and your first question is one tap away. No card, no trial, no upsell.
+      </p>
+      <div class="ln-actions" style="margin-top:2rem;">
+        <a href="https://apps.apple.com/us/app/korah/id6757345573" target="_blank" rel="noopener" class="ln-btn ln-btn-primary ln-btn-lg">
+          Download on iOS
+          <span class="material-icons-round" style="font-size:1rem;">arrow_forward</span>
+        </a>
+        <a href="home.html" class="ln-btn ln-btn-glass ln-btn-lg">Use the web app</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="ln-footer">
+  <div class="ln-footer-grid">
+    <div>
+      <div class="flex items-center gap-2.5">
+        <img src="logo-images/newlogo0.png" class="ln-logo" alt="">
+        <span class="ln-brand">Korah</span>
+      </div>
+      <p class="ln-body" style="max-width:19rem;margin-top:0.875rem;">
+        Korah helps students prepare for the SAT, improve their college essays,
+        and get personalized academic support.
+      </p>
+    </div>
+    <div>
+      <h4>Product</h4>
+      <a href="#sat">Desmos tutor</a>
+      <a href="#chat">Question bank</a>
+      <a href="#essays">College essays</a>
+      <a href="#tutoring">Tutoring</a>
+      <a href="code/code.html">Korah CODE</a>
+      <a href="code/interns.html">Intern work</a>
+      <a href="home.html">Web app</a>
+    </div>
+    <div>
+      <h4>Support</h4>
+      <a href="support/index.html#contact">Contact us</a>
+      <a href="support/index.html#faq">FAQ</a>
+    </div>
+    <div>
+      <h4>Company</h4>
+      <a href="#">About Korah</a>
+      <a href="https://www.instagram.com/korah.app/">Social media</a>
+      <a href="support/index.html#privacy">Privacy policy</a>
+      <a href="support/index.html#terms">Terms</a>
+    </div>
+  </div>
+  <div class="ln-footer-base">
     <span>© 2025 Korah AI. All rights reserved.</span>
     <span>Made for students, by students</span>
     <span>Beta v0.9.1</span>
@@ -795,6 +2256,177 @@ window.addEventListener('DOMContentLoaded', function () {
 </footer>
 
 <script>
+  /* ── Rotating hero headline — spun like a revolver cylinder. It breaks hard
+        out of the gate (40ms a pass, too fast to read, which is the point),
+        drags down over fourteen passes, and then the last chamber takes a full
+        second to drop and lock on "Your Dream Score starts here."
+
+        Two chambers turn on the second line. The inner one holds the subjects
+        and turns on every pass; the outer one holds "for" plus that inner
+        chamber, and turns exactly once — on the final pass, taking "for" away
+        with it. So "for" never rotates, it just leaves at the end.
+
+        Each tick sets --rot-dur to its own gap, so the roll itself decelerates
+        rather than just firing less often. The phrases live in the markup; this
+        only decides which chamber is facing front. ── */
+  (function () {
+    const roleSlot    = document.getElementById('rotRole');
+    const tailSlot    = document.getElementById('rotTail');
+    const subjectSlot = document.getElementById('rotSubject');
+    if (!roleSlot || !tailSlot || !subjectSlot) return;
+
+    const slots    = [roleSlot, tailSlot, subjectSlot];
+    /* Direct children only — a bare '.ln-rot' on the tail would also sweep up
+       the subjects nested inside it. */
+    const roles    = roleSlot.querySelectorAll(':scope > .ln-rot');
+    const tails    = tailSlot.querySelectorAll(':scope > .ln-rot');
+    const subjects = subjectSlot.querySelectorAll(':scope > .ln-rot');
+    const screen   = document.querySelector('.phone-screen');
+    const slides   = document.querySelectorAll('.phone-slide');
+
+    const LEN    = subjects.length;     /* the rotating pairs */
+    const FINALE = roles.length - 1;    /* "Dream Score", only ever shown last */
+
+    /* FAST is the first gap, SLOW the last, and the gap grows by a constant
+       ratio in between — that constant ratio is what reads as a cylinder losing
+       momentum. The last pass breaks the ramp twice over: LAND_HOLD sits it out
+       for an extra beat first, and LAND_DUR then gives it 1.25s, about two and
+       a half times the pass before it. So the drop onto "Your Dream Score
+       starts here." arrives late and heavy rather than as the last step of the
+       ramp.
+       The finale is a fixed state rather than a position in the cycle, so the
+       tick count is free — no landing arithmetic needed. */
+    const FAST = 40, SLOW = 620, LAND_DUR = 1250, LAND_HOLD = 420, TICKS = 15;
+    const RATIO = Math.pow(SLOW / FAST, 1 / (TICKS - 1));
+
+    /* `from` is the chamber rolling out of the bottom; everything that is
+       neither it nor the incoming one parks back at the top, which it does
+       without a transition (see .ln-rot-slot > .ln-rot). Pass -1 to park
+       everything and have the new phrase simply be there. Only the lit variant
+       is exposed — the others would otherwise be read out as part of the
+       headline. */
+    function pick(els, i, from) {
+      els.forEach(function (el, n) {
+        el.classList.toggle('is-on', n === i);
+        el.classList.toggle('is-below', n === from);
+        if (n === i) el.removeAttribute('aria-hidden');
+        else el.setAttribute('aria-hidden', 'true');
+      });
+    }
+
+    function lightSlide(i) {
+      slides.forEach(function (s, n) { s.classList.toggle('is-on', n === i); });
+    }
+
+    let cur = 0;
+    function showPair(i) {
+      pick(roles, i, cur);
+      pick(subjects, i, cur);
+      lightSlide(i);
+      cur = i;
+    }
+
+    /* The outer chamber turns here and nowhere else, carrying "for" out with
+       it. The subjects are left mid-pass on purpose — they ride away inside it. */
+    function showFinale(from) {
+      pick(roles, FINALE, from);
+      pick(tails, 1, from === -1 ? -1 : 0);
+      lightSlide(FINALE);
+    }
+
+    /* Nothing to spin: go straight to the phrase the spin would have landed on,
+       with no chamber left rolling out behind it. */
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      showFinale(-1);
+      return;
+    }
+
+    let tick = 0, delay = FAST;
+    function spin() {
+      tick++;
+      const last = tick === TICKS;
+
+      /* Every pass takes as long as the gap it sits in, so each is slower and
+         heavier than the one before — except the last, which gets LAND_DUR. */
+      const dur = (last ? LAND_DUR : Math.round(delay)) + 'ms';
+      slots.forEach(function (sl) {
+        sl.style.setProperty('--rot-dur', dur);
+        if (last) sl.classList.add('is-landing');
+      });
+      /* The phone lands on the same clock as the headline: drop the spin-speed
+         crossfade and give the last slide the full LAND_DUR, or it would settle
+         a second before the words do. */
+      if (last && screen) {
+        screen.classList.remove('is-spinning');
+        screen.style.setProperty('--slide-dur', LAND_DUR + 'ms');
+      }
+
+      if (last) showFinale(cur);
+      else showPair(tick % LEN);
+
+      if (!last) {
+        delay *= RATIO;
+        /* LAND_HOLD only ever lands in front of the final pass. By then the
+           pass before it has finished travelling, so the cylinder goes
+           genuinely still for about half a second — everything has tumbled out
+           of the box and stopped — and then the last one drops. */
+        setTimeout(spin, tick + 1 === TICKS ? delay + LAND_HOLD : delay);
+      }
+    }
+
+    /* A beat on the opening phrase before the cylinder goes. */
+    setTimeout(function () {
+      if (screen) screen.classList.add('is-spinning');
+      spin();
+    }, 500);
+  }());
+</script>
+
+<script>
+  /* ── University marquee — two full-bleed rows, each holding the set twice
+        for a seamless loop. Same list as login.html. ── */
+  (function () {
+    const UNIVERSITIES = [
+      { name: 'Harvard',   file: 'harvard',   alt: 'Harvard University' },
+      { name: 'Yale',      file: 'yale',      alt: 'Yale University' },
+      { name: 'Princeton', file: 'princeton', alt: 'Princeton University' },
+      { name: 'Stanford',  file: 'stanford',  alt: 'Stanford University' },
+      { name: 'MIT',       file: 'mit',       alt: 'Massachusetts Institute of Technology' },
+      { name: 'Columbia',  file: 'columbia',  alt: 'Columbia University' },
+      { name: 'Penn',      file: 'upenn',     alt: 'University of Pennsylvania' },
+      { name: 'Caltech',   file: 'caltech',   alt: 'California Institute of Technology' },
+      { name: 'Cornell',   file: 'cornell',   alt: 'Cornell University' },
+      { name: 'Brown',     file: 'brown',     alt: 'Brown University' },
+      { name: 'UChicago',  file: 'uchicago',  alt: 'University of Chicago' },
+      { name: 'Duke',      file: 'duke',      alt: 'Duke University' }
+    ];
+
+    const track  = document.getElementById('marqueeTrack');
+    const track2 = document.getElementById('marqueeTrack2');
+    if (!track) return;
+
+    const render = list => list.map(u => `
+      <div class="ln-uni">
+        <span class="ln-uni-chip"><img src="logo-images/universities/${u.file}.png" alt="${u.alt}" width="40" height="40"/></span>
+        <span class="ln-uni-name">${u.name}</span>
+      </div>`).join('');
+
+    /* Each row gets its own half of the list, so the top and bottom rows
+       never carry the same school. Each half is laid down twice within a
+       block, and the block twice again, so the -50% loop seam is invisible
+       and the shorter half still spans the viewport. */
+    const half = Math.ceil(UNIVERSITIES.length / 2);
+    const rowA = render(UNIVERSITIES.slice(0, half)).repeat(2);
+    const rowB = render(UNIVERSITIES.slice(half)).repeat(2);
+
+    track.innerHTML = rowA + rowA;
+    if (track2) track2.innerHTML = rowB + rowB;
+  })();
+</script>
+
+<script>
+/* Constellation background for the light theme. Inert now: the
+   #constellation-canvas markup is commented out above, so this returns. */
 window.addEventListener('load', function() {
   const canvas = document.getElementById('constellation-canvas');
   if (!canvas) return;
@@ -857,24 +2489,25 @@ window.addEventListener('load', function() {
 });
 </script>
 
-<!-- ═══ WAITLIST TRANSITION + SIGNUP + ELECTRIC BORDER ═══ -->
+<!-- ═══ WAITLIST SIGNUP ═══
+     Dead since the hero CTA became the iOS link in 84ac2cf: nothing calls
+     startWaitlist any more. Left in place rather than removed. -->
 <style>
-  /* Signup form (matches the hero card taste: solid fills, no gradients) */
   .signup-input {
     width: 100%;
     padding: 0.75rem 0.9rem;
-    border-radius: 0.6rem;
-    background: var(--bg2);
-    border: 1px solid var(--bd);
-    color: var(--tx);
-    font-size: 0.95rem;
+    border-radius: 0.5rem;
+    background: var(--ln-bg2);
+    border: 0.0625rem solid var(--ln-bd);
+    color: var(--ln-tx);
+    font-size: 0.9375rem;
     font-family: inherit;
     outline: none;
     box-sizing: border-box;
     transition: border-color 0.2s;
   }
-  .signup-input::placeholder { color: var(--tx3); }
-  .signup-input:focus { border-color: #10b981; }
+  .signup-input::placeholder { color: var(--ln-tx3); }
+  .signup-input:focus { border-color: var(--ln-bd2); }
   .signup-input.signup-input-error { border-color: #ef4444; }
   .signup-error {
     min-height: 1rem;
@@ -885,54 +2518,11 @@ window.addEventListener('load', function() {
   }
   .signup-label {
     display: block;
-    font-size: 0.72rem;
-    font-weight: 600;
-    color: var(--tx2);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--ln-tx2);
     margin-bottom: 0.35rem;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
   }
-  .signup-btn-primary {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 3.25rem;
-    margin-top: 0.5rem;
-    border-radius: 624.938rem;
-    background: #10b981;
-    color: #fff;
-    font-size: 0.9375rem;
-    font-weight: 700;
-    font-family: inherit;
-    border: none;
-    cursor: pointer;
-    transition: transform 0.3s, opacity 0.3s;
-  }
-  .signup-btn-primary:hover { transform: translateY(-0.125rem); opacity: 0.9; }
-  .signup-btn-primary:disabled { cursor: not-allowed; opacity: 0.7; transform: none; }
-  .signup-btn-secondary {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    width: 100%;
-    max-width: 24rem;
-    height: 3rem;
-    margin: 0 auto;
-    border-radius: 624.938rem;
-    background: var(--bg2);
-    color: var(--tx);
-    border: 1px solid var(--bd);
-    font-size: 0.9rem;
-    font-weight: 600;
-    font-family: inherit;
-    cursor: pointer;
-    text-decoration: none;
-    box-sizing: border-box;
-    transition: border-color 0.2s, transform 0.3s;
-  }
-  .signup-btn-secondary:hover { border-color: var(--tx2); transform: translateY(-0.125rem); }
 
   /* Reversed hero layout once the waitlist flow starts: phone left, card right */
   .hero-grid.waitlist-active { grid-template-columns: 0.85fr 1.15fr; }
@@ -940,8 +2530,6 @@ window.addEventListener('load', function() {
   @media (max-width: 56.25rem) {
     .hero-grid.waitlist-active { grid-template-columns: 1fr; }
   }
-  /* Card no longer fades once we take over its animation */
-  .hero-grid.waitlist-active > div:first-child { animation: none; }
 
   /* Phone flight: one continuous glide across the screen with a single flip,
      landing on the left tilted to face right. No mid-flight breakpoints. */
@@ -955,8 +2543,8 @@ window.addEventListener('load', function() {
     50%      { transform: translateY(-0.8rem) rotateX(2.5deg); }
   }
 
-  /* Electric border wrapper (vanilla port of ui-components/electric, tuned to
-     match korah-bot/login.html: purple, dark-theme only, hidden if reduced motion) */
+  /* Electric border wrapper (vanilla port of ui-components/electric). Nothing
+     on the page carries data-electric any more, so initElectric finds none. */
   .eb-content { position: relative; border-radius: inherit; z-index: 1; }
   .eb-canvas-holder, .eb-glow { display: none; }
   html[data-theme="dark"] .eb-canvas-holder,
@@ -1316,7 +2904,7 @@ window.addEventListener('load', function() {
   #qb-drop-toast .qb-drop-body { display: flex; flex-direction: column; gap: 0.1875rem; }
   #qb-drop-toast .qb-drop-header { font-size: 0.9375rem; font-weight: 800; line-height: 1.25; color: #fff; letter-spacing: -0.01em; }
   #qb-drop-toast .qb-drop-text { font-size: 0.875rem; font-weight: 600; line-height: 1.35; }
-  #qb-drop-toast .qb-drop-link { color: #a78bfa; font-weight: 700; }
+  #qb-drop-toast .qb-drop-link { color: #e8e8ea; font-weight: 700; text-decoration: underline; }
   #qb-drop-toast .qb-drop-close {
     position: absolute; top: 0.5rem; right: 0.5rem;
     width: 1.375rem; height: 1.375rem; display: flex; align-items: center; justify-content: center;
@@ -1331,8 +2919,8 @@ window.addEventListener('load', function() {
 <a id="qb-drop-toast" href="sat/latest-questions.html">
   <img src="logo-images/newlogo12.png" alt="Korah"/>
   <span class="qb-drop-body">
-    <span class="qb-drop-header">300+ New SAT Problems</span>
-    <span class="qb-drop-text"><span class="qb-drop-link">Click here to study them now!</span></span>
+    <span class="qb-drop-header">300+ new SAT problems</span>
+    <span class="qb-drop-text"><span class="qb-drop-link">Click here to study them now</span></span>
   </span>
 -->
 <a id="qb-drop-toast" href="code/interns.html">
