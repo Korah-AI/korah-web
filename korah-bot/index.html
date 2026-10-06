@@ -219,13 +219,16 @@
   /* Small icon chip plus a label, the header of every feature block */
   .ln-eyebrow { display: flex; align-items: center; gap: 0.625rem; margin-bottom: 1.25rem; }
   .ln-eyebrow-chip {
-    width: 1.875rem; height: 1.875rem; flex-shrink: 0;
+    width: 2.75rem; height: 2.75rem; flex-shrink: 0;
     display: flex; align-items: center; justify-content: center;
     border-radius: 0.5rem;
     background: var(--ln-sf2); border: 0.0625rem solid var(--ln-bd);
     color: var(--ln-tx);
   }
   .ln-eyebrow-chip .material-icons-round { font-size: 1rem; }
+  .ln-mascot { width: 100%; height: 100%; object-fit: contain; flex-shrink: 0; }
+  .ln-tut-list .ln-mascot { width: 2.25rem; height: 2.25rem; }
+  .ln-more-item .ln-mascot { width: 1.75rem; height: 1.75rem; }
   .ln-eyebrow span { font-size: 0.875rem; font-weight: 600; color: var(--ln-tx2); }
 
   /* Headline left with its button under it, supporting paragraph right.
@@ -317,8 +320,9 @@
      Details left, a phone playing the tutor's problem walkthrough right. The
      frame is a plain rounded shell, not the 3D hero phone. */
   .ln-tut { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: clamp(2rem, 5vw, 4rem); align-items: center; }
-  .ln-tut-list { list-style: none; margin: 1.5rem 0 2rem; padding: 0; display: grid; gap: 0.875rem; }
-  .ln-tut-list li { display: flex; gap: 0.75rem; align-items: flex-start; }
+  .ln-tut-list { list-style: disc; margin: 1.5rem 0 2rem; padding: 0 0 0 1.25rem; display: grid; gap: 0.875rem; }
+  .ln-tut-list li { display: list-item; padding-left: 0.25rem; }
+  .ln-tut-list li::marker { color: var(--ln-tx2); }
   .ln-tut-list .material-icons-round { font-size: 1.125rem; color: var(--ln-tx2); line-height: 1.5; }
   .ln-tut-list b { display: block; font-size: 1rem; font-weight: 600; color: var(--ln-tx); }
   .ln-tut-list span.t { display: block; margin-top: 0.1875rem; font-size: 0.875rem; line-height: 1.55; color: var(--ln-tx2); }
@@ -804,9 +808,9 @@
     <a href="#home"     class="nav-link nav-pill text-[0.84375rem] font-medium px-3.5 py-1.5 rounded-full no-underline"><span class="material-icons-round nav-link-icon">home</span><span class="nav-link-text">Home</span></a>
     <a href="#sat"      class="nav-link nav-pill text-[0.84375rem] font-medium px-3.5 py-1.5 rounded-full no-underline"><span class="material-icons-round nav-link-icon">calculate</span><span class="nav-link-text">Desmos tutor</span></a>
     <a href="#chat"     class="nav-link nav-pill text-[0.84375rem] font-medium px-3.5 py-1.5 rounded-full no-underline"><span class="material-icons-round nav-link-icon">assignment</span><span class="nav-link-text">Question bank</span></a>
-    <a href="#ap"       class="nav-link nav-pill text-[0.84375rem] font-medium px-3.5 py-1.5 rounded-full no-underline"><span class="material-icons-round nav-link-icon">workspace_premium</span><span class="nav-link-text">AP</span></a>
     <a href="#essays"   class="nav-link nav-pill text-[0.84375rem] font-medium px-3.5 py-1.5 rounded-full no-underline"><span class="material-icons-round nav-link-icon">edit_note</span><span class="nav-link-text">Essays</span></a>
     <a href="#tutoring" class="nav-link nav-pill text-[0.84375rem] font-medium px-3.5 py-1.5 rounded-full no-underline"><span class="material-icons-round nav-link-icon">school</span><span class="nav-link-text">Tutoring</span></a>
+    <a href="#ap"       class="nav-link nav-pill text-[0.84375rem] font-medium px-3.5 py-1.5 rounded-full no-underline"><span class="material-icons-round nav-link-icon">workspace_premium</span><span class="nav-link-text">AP</span></a>
     <a href="code/interns.html" class="nav-link text-[0.84375rem] font-medium px-3.5 py-1.5 rounded-full no-underline"><span class="material-icons-round nav-link-icon">workspace_premium</span><span class="nav-link-text">Intern work</span></a>
   </div>
 
@@ -883,7 +887,8 @@
   .phone-body {
     position: relative;
     width: min(clamp(16rem, 28vw, 21.5rem), 36vh);
-    aspect-ratio: 921 / 1850;
+    /* aspect-ratio: 921 / 1850; */
+    aspect-ratio: 921 / 1940;
     border-radius: 2.75rem;
     background: linear-gradient(145deg, #4a4a52 0%, #232329 45%, #17171c 100%);
     padding: 0.55rem;
@@ -934,7 +939,7 @@
   .phone-slide img {
     position: absolute; inset: 0;
     width: 100%; height: 100%; object-fit: cover;
-    transform: translateY(3.1%);
+    /* transform: translateY(3.1%); */
   }
   .phone-slide-ph {
     padding: 0 1.75rem; text-align: center;
@@ -1043,10 +1048,10 @@ window.addEventListener('DOMContentLoaded', function () {
           <span class="ln-rot-line">Your
             <span class="ln-rot-slot" id="rotRole">
               <span class="ln-rot is-on" style="color:var(--ln-rot-1);">Desmos tutor</span>
-              <span class="ln-rot" style="color:var(--ln-rot-2);" aria-hidden="true">study partner</span>
-              <span class="ln-rot" style="color:var(--ln-rot-3);" aria-hidden="true">essay editor</span>
-              <span class="ln-rot" style="color:var(--ln-rot-4);" aria-hidden="true">study plan</span>
-              <span class="ln-rot" style="color:var(--ln-rot-5);" aria-hidden="true">cram partner</span>
+              <span class="ln-rot" style="color:var(--ln-rot-2);" aria-hidden="true">question bank</span>
+              <span class="ln-rot" style="color:var(--ln-rot-3);" aria-hidden="true">AI tutor</span>
+              <span class="ln-rot" style="color:var(--ln-rot-4);" aria-hidden="true">study buddy</span>
+              <span class="ln-rot" style="color:var(--ln-rot-5);" aria-hidden="true">study planner</span>
               <span class="ln-rot" style="color:var(--ln-rot-6);" aria-hidden="true">Dream Score</span>
             </span>
           </span>
@@ -1055,10 +1060,10 @@ window.addEventListener('DOMContentLoaded', function () {
               <span class="ln-rot is-on">for
                 <span class="ln-rot-slot" id="rotSubject">
                   <span class="ln-rot is-on">the SAT.</span>
-                  <span class="ln-rot" aria-hidden="true">AP exams.</span>
-                  <span class="ln-rot" aria-hidden="true">college apps.</span>
+                  <span class="ln-rot" aria-hidden="true">unlimited practice.</span>
+                  <span class="ln-rot" aria-hidden="true">every question.</span>
+                  <span class="ln-rot" aria-hidden="true">every session.</span>
                   <span class="ln-rot" aria-hidden="true">test day.</span>
-                  <span class="ln-rot" aria-hidden="true">finals week.</span>
                 </span>
               </span>
               <span class="ln-rot" aria-hidden="true">starts here.</span>
@@ -1067,8 +1072,7 @@ window.addEventListener('DOMContentLoaded', function () {
         </h1>
 
         <p class="ln-lead">
-          Ask math questions and get a visualized explanation on Desmos.
-          We just released our AP prep and college essay editor too.
+          The right score on the right exam can open doors to the right places. We're giving you the key, for free.
         </p>
 
         <div class="ln-actions">
@@ -1177,31 +1181,36 @@ window.addEventListener('DOMContentLoaded', function () {
                 <!-- Replaced by the real AP prep screenshot.
                 <span class="phone-slide-ph">AP exam prep<em>logo-images/phone-ap.png</em></span>
                 -->
-                <img src="logo-images/phone-ap.png" alt="Korah AP exam prep">
+                <!-- <img src="logo-images/phone-ap.png" alt="Korah AP exam prep"> -->
+                <img src="logo-images/phone-qbank.png" alt="Korah SAT question bank">
               </div>
               <div class="phone-slide">
                 <!-- Replaced by the real college essay editor screenshot.
                 <span class="phone-slide-ph">College essay editor<em>logo-images/phone-essay.png</em></span>
                 -->
-                <img src="logo-images/phone-essay.png" alt="Korah college essay editor">
+                <!-- <img src="logo-images/phone-essay.png" alt="Korah college essay editor"> -->
+                <img src="logo-images/phone-tutor.png" alt="Korah AI tutor chat">
               </div>
               <div class="phone-slide">
                 <!-- Replaced by the real study plan screenshot.
                 <span class="phone-slide-ph">Study plan<em>logo-images/phone-plan.png</em></span>
                 -->
-                <img src="logo-images/phone-plan.png" alt="Korah personalized study plan">
+                <!-- <img src="logo-images/phone-plan.png" alt="Korah personalized study plan"> -->
+                <img src="logo-images/phone-buddy.png" alt="Korah study buddy home screen">
               </div>
               <div class="phone-slide">
                 <!-- Replaced by the real Korah chat screenshot.
                 <span class="phone-slide-ph">Finals cram<em>logo-images/phone-cram.png</em></span>
                 -->
-                <img src="logo-images/phone-cram.png" alt="Korah finals study assistant">
+                <!-- <img src="logo-images/phone-cram.png" alt="Korah finals study assistant"> -->
+                <img src="logo-images/phone-planner.png" alt="Korah study planner calendar">
               </div>
               <div class="phone-slide">
                 <!-- Replaced by the real SAT dashboard screenshot.
                 <span class="phone-slide-ph">Score report<em>logo-images/phone-score.png</em></span>
                 -->
-                <img src="logo-images/phone-score.png" alt="Korah SAT score progress dashboard">
+                <!-- <img src="logo-images/phone-score.png" alt="Korah SAT score progress dashboard"> -->
+                <img src="logo-images/phone-dream.png" alt="Korah home screen">
               </div>
 
               <div class="phone-glare"></div>
@@ -1388,14 +1397,13 @@ window.addEventListener('DOMContentLoaded', function () {
   </div>
 </section>
 
-<!-- ═══ HOW IT WORKS ═══ -->
+<!-- ═══ HOW IT WORKS ═══ (temporarily hidden)
 <section class="ln-section">
   <div class="ln-wrap reveal">
     <div style="max-width:40rem;margin-bottom:2.5rem;">
       <h2 class="ln-h2">Three steps to a better score</h2>
       <p class="ln-lead" style="margin-top:1rem;">
-        Hand Korah your last score report, get a plan built around the skills
-        costing you the most points, then work it with a tutor.
+        Hand Korah your last score report, get a study plan created around what you struggle with most, then work it with a tutor.
       </p>
     </div>
 
@@ -1463,8 +1471,8 @@ window.addEventListener('DOMContentLoaded', function () {
         </div>
         <div class="ln-step-body">
           <span class="ln-step-no">02</span>
-          <h3>Build a study plan tailored to you</h3>
-          <p>Those scores get ranked into a plan, weakest skills first, and it rebuilds itself as your accuracy changes.</p>
+          <h3>Get your personal study plan</h3>
+          <p>Korah creates a weekly study routine to improve your score fast, forcing you to learn what's holding you down the most.</p>
         </div>
       </div>
 
@@ -1492,27 +1500,28 @@ window.addEventListener('DOMContentLoaded', function () {
         <div class="ln-step-body">
           <span class="ln-step-no">03</span>
           <h3>Get tutoring from Korah and our team</h3>
-          <p>Work the plan with the Korah tutor any hour, or take a standing one-on-one slot with a 1500+ scorer on our team.</p>
+          <p>Continue your plan with Korah's Desmos visualizations, question explanations, or get mentored by a tutor who scored 750+ on either section.  </p>
         </div>
       </div>
 
     </div>
   </div>
 </section>
+-->
 
 <!-- ═══ DESMOS TUTORING ═══ -->
 <section id="sat" class="ln-section ln-alt">
   <div class="ln-wrap reveal">
 
     <div class="ln-eyebrow">
-      <span class="ln-eyebrow-chip"><span class="material-icons-round">calculate</span></span>
+      <!-- <span class="ln-eyebrow-chip"><img src="logo-images/newlogo12.png" class="ln-mascot" alt=""></span> -->
       <span>Desmos tutor</span>
     </div>
 
     <div class="ln-feature-head">
-      <h2 class="ln-h2">Learn Desmos Regressions</h2>
+      <h2 class="ln-h2">Boost your math score</h2>
       <p class="ln-lead">
-        Korah AI is the only resource that actually uses 
+        Korah AI is the only online resource that actually uses Desmos regressions to not only visualize problems for you but to explain how to solve them in the fastest way possible.
       </p>
       <a href="sat/math-chat.html" class="ln-btn ln-btn-primary">Open Desmos chat</a>
     </div>
@@ -1606,8 +1615,8 @@ window.addEventListener('DOMContentLoaded', function () {
           <source src="videos/desmos-chat-v2.mp4" type="video/mp4">
         </video>
         <div class="ln-card-cap">
-          <h3>Korah drives the graph</h3>
-          <p>You ask in the chat and the calculator updates beside it. Nothing to set up, nothing to copy across.</p>
+          <h3>Solve anything with Desmos regressions</h3>
+          <p>On the SAT, many math problems can be solved exponentially quicker by simply using Desmos. Korah will teach you that for free.</p>
         </div>
       </div>
 
@@ -1638,15 +1647,15 @@ window.addEventListener('DOMContentLoaded', function () {
             </div>
           </div>
           <div class="ln-card-cap">
-            <h3>Parameters read back to you</h3>
-            <p>Every fit comes with its coefficients and residual, so you know the answer is the right one.</p>
+            <h3>Learn the shortcuts</h3>
+            <p> All top scorers learn every shorcut for the math section, giving them more time to spend on the problems that aren't solvable using Desmos.</p>
           </div>
         </div>
 
         <div class="ln-card" style="justify-content:center;padding:1.5rem;">
           <div class="ln-card-cap" style="padding:0;">
-            <h3>Every fit on the test</h3>
-            <p style="margin-bottom:0.875rem;">The calculator methods that shortcut whole question types, not just the algebra you already know.</p>
+            <h3>Boost your accuracy</h3>
+            <p style="margin-bottom:0.875rem;">Rather than losing time and accuracy solving Algebra by hand, we teach you Desmos. </p>
           </div>
           <div class="ln-chips">
             <span class="ln-chip">Linear</span>
@@ -1668,7 +1677,7 @@ window.addEventListener('DOMContentLoaded', function () {
   <div class="ln-wrap reveal">
 
     <div class="ln-eyebrow">
-      <span class="ln-eyebrow-chip"><span class="material-icons-round">assignment</span></span>
+      <!-- <span class="ln-eyebrow-chip"><img src="logo-images/newlogo3.png" class="ln-mascot" alt=""></span> -->
       <span>Question bank</span>
     </div>
 
@@ -1676,8 +1685,7 @@ window.addEventListener('DOMContentLoaded', function () {
       <h2 class="ln-h2">3,500 problem questionbank, all tracked</h2>
       <p class="ln-lead">
         Specially sourced Math and Reading &amp; Writing, filterable by
-        domain, skill and difficulty. Every answer you give feeds the accuracy
-        numbers on your home page.
+        domain, skill and difficulty. You can check your progress on the home page.
       </p>
       <a href="sat/index.html" class="ln-btn ln-btn-primary">Open the question bank</a>
     </div>
@@ -1751,8 +1759,8 @@ window.addEventListener('DOMContentLoaded', function () {
           <source src="videos/question-bank.mp4" type="video/mp4">
         </video>
         <div class="ln-card-cap">
-          <h3>The real thing, timed</h3>
-          <p>Same layout, same tools and the same clock you get on test day, with the explanation waiting behind every answer.</p>
+          <h3>Simulate the actual test</h3>
+          <p>Our questionbank gives you unlimited access to the questions most similar to those you'll see on test day.  </p>
         </div>
       </div>
 
@@ -1780,75 +1788,25 @@ window.addEventListener('DOMContentLoaded', function () {
             </div>
           </div>
           <div class="ln-card-cap">
-            <h3>Your numbers, always current</h3>
-            <p>Accuracy, attempts and score journey update the moment you finish a question.</p>
+            <h3>Track your progress</h3>
+            <p>Get unlimited access to your accuracy, timing, strengths, and weaknesses.</p>
           </div>
         </div>
 
         <div class="ln-card" style="justify-content:center;padding:1.5rem;">
           <div class="ln-card-cap" style="padding:0;">
-            <h3>Four ways through the bank</h3>
-            <p style="margin-bottom:0.875rem;">Same questions, different pace. Pick whichever one suits the time you have.</p>
+            <h3>Study your way</h3>
+            <p style="margin-bottom:0.875rem;">We give you many different ways to practice every day.</p>
           </div>
           <div class="ln-chips">
             <span class="ln-chip">Free practice</span>
             <span class="ln-chip">Question rush</span>
-            <span class="ln-chip">Tailored sets</span>
+            <span class="ln-chip">Tailored practice</span>
             <span class="ln-chip">Mistake review</span>
           </div>
         </div>
 
       </div>
-    </div>
-  </div>
-</section>
-
-<!-- ═══ AP EXAM PREP ═══ -->
-<section id="ap" class="ln-section ln-alt">
-  <div class="ln-wrap reveal">
-
-    <div class="ln-eyebrow">
-      <span class="ln-eyebrow-chip"><span class="material-icons-round">workspace_premium</span></span>
-      <span>AP exam prep</span>
-    </div>
-
-    <div class="ln-feature-head">
-      <h2 class="ln-h2">Free response questions, graded point by point</h2>
-      <p class="ln-lead">
-        Work an FRQ under a timer, type it or photograph your handwritten
-        work, and see every rubric point marked earned or missed, with the
-        part of your answer that earned it.
-      </p>
-      <a href="ap/index.html" class="ln-btn ln-btn-primary">Open AP practice</a>
-    </div>
-
-    <div class="ln-bento" style="grid-template-columns:repeat(auto-fit,minmax(18rem,1fr));">
-
-      <div class="ln-card" style="justify-content:center;padding:1.5rem;">
-        <div class="ln-card-cap" style="padding:0;">
-          <h3>Free response</h3>
-          <p style="margin-bottom:0.875rem;">The score is the sum of the rubric points you earned, never a number guessed by the model. Anything you missed comes with what was absent.</p>
-        </div>
-        <div class="ln-chips">
-          <span class="ln-chip">Timed FRQs</span>
-          <span class="ln-chip">Photo or typed answers</span>
-          <span class="ln-chip">Point-by-point feedback</span>
-        </div>
-      </div>
-
-      <div class="ln-card" style="justify-content:center;padding:1.5rem;">
-        <div class="ln-card-cap" style="padding:0;">
-          <h3>Multiple choice</h3>
-          <p style="margin-bottom:0.875rem;">Sit a full mock exam in the real format, with the exam clock running and a review of every question once you submit.</p>
-        </div>
-        <div class="ln-chips">
-          <span class="ln-chip">Full mock exams</span>
-          <span class="ln-chip">Timed sections</span>
-          <span class="ln-chip">AP Calculus AB</span>
-          <span class="ln-chip">AP US History</span>
-        </div>
-      </div>
-
     </div>
   </div>
 </section>
@@ -1859,7 +1817,7 @@ window.addEventListener('DOMContentLoaded', function () {
   <div class="ln-wrap reveal">
 
     <div class="ln-eyebrow">
-      <span class="ln-eyebrow-chip"><span class="material-icons-round">edit_note</span></span>
+      <!-- <span class="ln-eyebrow-chip"><img src="logo-images/newlogo10.png" class="ln-mascot" alt=""></span> -->
       <span>Essay editor</span>
     </div>
 
@@ -1950,8 +1908,8 @@ window.addEventListener('DOMContentLoaded', function () {
           </div>
         </div>
         <div class="ln-card-cap">
-          <h3>Feedback where the sentence is</h3>
-          <p>Passages get highlighted in the draft and the note sits beside them, so you are never guessing which line a comment is about.</p>
+          <h3>Google Docs styled feedback</h3>
+          <p>Get line-by-line comments and annotations on your essay, resolving or rejecting them as you go. </p>
         </div>
       </div>
 
@@ -1959,8 +1917,8 @@ window.addEventListener('DOMContentLoaded', function () {
 
         <div class="ln-card" style="justify-content:center;padding:1.5rem;">
           <div class="ln-card-cap" style="padding:0;">
-            <h3>Six things it scores</h3>
-            <p style="margin-bottom:0.875rem;">Each one comes with a note on what moved it, not just a number.</p>
+            <h3>Six different scores</h3>
+            <p style="margin-bottom:0.875rem;">Get scored on six different attributes, seeing how you could improve your voice in each one</p>
           </div>
           <div class="ln-chips">
             <span class="ln-chip">Voice</span>
@@ -1974,8 +1932,8 @@ window.addEventListener('DOMContentLoaded', function () {
 
         <div class="ln-card" style="justify-content:center;padding:1.5rem;">
           <div class="ln-card-cap" style="padding:0;">
-            <h3>Statements and supplements together</h3>
-            <p>Your Common App essay and every school supplement live in one place, so you can reuse what already works.</p>
+            <h3>Theme Analysis</h3>
+            <p>See how well you are doing with sharing themes and lessons about yourself; Korah writes a comprehensive analysis on what it percieves are the themes of your essay.  </p>
           </div>
         </div>
 
@@ -1989,7 +1947,7 @@ window.addEventListener('DOMContentLoaded', function () {
   <div class="ln-wrap reveal">
 
     <div class="ln-eyebrow">
-      <span class="ln-eyebrow-chip"><span class="material-icons-round">school</span></span>
+      <!-- <span class="ln-eyebrow-chip"><img src="logo-images/newlogo11.png" class="ln-mascot" alt=""></span> -->
       <span>Free tutoring</span>
     </div>
 
@@ -2015,16 +1973,16 @@ window.addEventListener('DOMContentLoaded', function () {
         </p>
         <ul class="ln-tut-list">
           <li>
-            <span class="material-icons-round">person</span>
-            <span><b>Taught by 1500+ scorers</b><span class="t">Student tutors who sat the same test recently and know which shortcuts actually survive the clock.</span></span>
+            <!-- <img src="logo-images/newlogo11.png" class="ln-mascot" alt=""> -->
+            <span><b>Taught by 1500+ scorers</b><span class="t">We'll match you with a student tutor who got a 750+ on the section you're struggling with.</span></span>
           </li>
           <li>
-            <span class="material-icons-round">event_repeat</span>
-            <span><b>Weekly sessions</b><span class="t">A standing one-on-one slot, with a study plan that rebuilds itself as your accuracy changes between sessions.</span></span>
+            <!-- <img src="logo-images/newlogo3.png" class="ln-mascot" alt=""> -->
+            <span><b>Weekly sessions</b><span class="t">Get one-on-one advice and practice once a week, getting the support you need to succeed </span></span>
           </li>
           <li>
-            <span class="material-icons-round">savings</span>
-            <span><b>No fees, no card</b><span class="t">Nothing to pay and nothing to cancel. We ask for demonstrated interest and need, not a payment method.</span></span>
+            <!-- <img src="logo-images/newlogo2.png" class="ln-mascot" alt=""> -->
+            <span><b>100% free</b><span class="t">We ask for demonstrated interest and need instead of money. </span></span>
           </li>
         </ul>
         <a href="https://forms.gle/uaKH3mMsM48a1oVm9" target="_blank" rel="noopener" class="ln-btn ln-btn-primary">Book a session</a>
@@ -2099,17 +2057,65 @@ window.addEventListener('DOMContentLoaded', function () {
   </div>
 </section>
 
+<!-- ═══ AP EXAM PREP ═══ -->
+<section id="ap" class="ln-section ln-alt">
+  <div class="ln-wrap reveal">
+
+    <div class="ln-eyebrow">
+      <!-- <span class="ln-eyebrow-chip"><img src="logo-images/newlogo5.png" class="ln-mascot" alt=""></span> -->
+      <span>AP exam prep</span>
+    </div>
+
+    <div class="ln-feature-head">
+      <h2 class="ln-h2">Free response questions, automatically graded</h2>
+      <p class="ln-lead">
+        Work on a timed FRQ then submit your answers (handwritten or typed) to an AI scorer. Then, once scored, compare your work to the rubric. 
+      </p>
+      <a href="ap/index.html" class="ln-btn ln-btn-primary">Open AP practice</a>
+    </div>
+
+    <div class="ln-bento" style="grid-template-columns:repeat(auto-fit,minmax(18rem,1fr));">
+
+      <div class="ln-card" style="justify-content:center;padding:1.5rem;">
+        <div class="ln-card-cap" style="padding:0;">
+          <h3>Free response</h3>
+          <p style="margin-bottom:0.875rem;">Do AP MCQs on any subject, see your estimated score after, and practice the problems you got wrong. </p>
+        </div>
+        <div class="ln-chips">
+          <span class="ln-chip">Timed FRQs</span>
+          <span class="ln-chip">Photo or typed answers</span>
+          <span class="ln-chip">Point-by-point feedback</span>
+        </div>
+      </div>
+
+      <div class="ln-card" style="justify-content:center;padding:1.5rem;">
+        <div class="ln-card-cap" style="padding:0;">
+          <h3>Multiple choice</h3>
+          <p style="margin-bottom:0.875rem;">Sit a full mock exam in the real format, with the exam clock running and a review of every question once you submit.</p>
+        </div>
+        <div class="ln-chips">
+          <span class="ln-chip">Full mock exams</span>
+          <span class="ln-chip">Timed sections</span>
+          <span class="ln-chip">AP Calculus AB</span>
+          <span class="ln-chip">AP US History</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
 <!-- ═══ MISSION AND NUMBERS ═══ -->
 <section class="ln-section ln-alt">
   <div class="ln-wrap reveal">
 
     <div class="ln-eyebrow">
-      <span class="ln-eyebrow-chip"><span class="material-icons-round">volunteer_activism</span></span>
+      <!-- <span class="ln-eyebrow-chip"><img src="logo-images/newlogo12.png" class="ln-mascot" alt=""></span> -->
       <span>Our mission</span>
     </div>
 
     <div class="ln-feature-head">
-      <h2 class="ln-h2">Quality prep, free, for the students who get skipped</h2>
+      <h2 class="ln-h2">Get the most GOATED resources for 100% free</h2>
       <p class="ln-lead">
         Korah AI is a nonprofit. We exist to put quality SAT, AP, and college
         preparatory resources in the hands of underrepresented students for
