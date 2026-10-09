@@ -57,6 +57,7 @@
   };
 
   const cache = new Map(); // courseSlug -> Promise<FRQ[]>
+  const questionCache = new Map(); // courseSlug -> Promise<QuestionBank>
 
   function getCourses() {
     return COURSES.slice();
@@ -101,6 +102,34 @@
     return list.find((f) => f.id === frqId) || null;
   }
 
+  // Load the original-practice MCQ bank for a course. The complete object is
+  // returned so callers can also show alignment and provenance information.
+  async function loadQuestionBank(courseSlug) {
+    if (!getCourse(courseSlug)) return null;
+    if (questionCache.has(courseSlug)) return questionCache.get(courseSlug);
+
+    const pending = (async () => {
+      const res = await fetch(`./data/${courseSlug}/questions.json`, { cache: 'no-store' });
+      if (!res.ok) throw new Error(`loadQuestionBank: HTTP ${res.status}`);
+      const bank = await res.json();
+      if (!bank || !Array.isArray(bank.questions)) throw new Error('loadQuestionBank: invalid question bank');
+      return bank;
+    })();
+
+    questionCache.set(courseSlug, pending);
+    return pending;
+  }
+
+  async function loadQuestions(courseSlug) {
+    try {
+      const bank = await loadQuestionBank(courseSlug);
+      return bank ? bank.questions.slice() : [];
+    } catch (error) {
+      console.warn('[KorahAP] questions.json unavailable for', courseSlug, error);
+      return [];
+    }
+  }
+
   /** Stable list of rubric categories for a course, for the weakness view. */
   function categoriesFor(courseSlug) {
     if (courseSlug === 'ap-calculus-ab') {
@@ -141,6 +170,8 @@
     getCourse,
     loadFrqs,
     getFrq,
+    loadQuestionBank,
+    loadQuestions,
     categoriesFor,
     categoryLabel,
     frqLabel,
