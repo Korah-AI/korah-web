@@ -17,6 +17,7 @@ import {
   query,
   orderBy,
   writeBatch,
+  runTransaction,
 } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
 
 /** Maximum number of non-system messages stored per conversation document. */
@@ -63,6 +64,48 @@ export async function setupKorahDB(app, uid) {
   // NOTE: firestore.rules must allow read for any authed user and ideally
   // restrict writes to a Cloud Function (or `if !exists()` create-once rule).
   const satExplainRef = (id) => doc(db, `satExplanations`, id);
+  const satRemixRef = (id) => doc(db, 'satRemixes', id);
+
+  async function getSatRemix(id) {
+    const snap = await getDoc(satRemixRef(id));
+    return snap.exists() ? snap.data() : null;
+  }
+
+  // Reserve before calling the model. Transactions retry only the reservation,
+  // never the paid generation. Expired reservations recover abandoned tabs.
+  async function claimSatRemix(id, token) {
+    return runTransaction(db, async tx => {
+      const ref = satRemixRef(id);
+      const snap = await tx.get(ref);
+      const value = snap.exists() ? snap.data() : null;
+      if (value?.status === 'ready' || value?.leaseUntil > Date.now()) return false;
+      tx.set(ref, { sourceQuestionId: id, status: 'pending', owner: uid,
+        token, leaseUntil: Date.now() + 600000 });
+      return true;
+    });
+  }
+
+  async function setSatRemix(id, data, token) {
+    return runTransaction(db, async tx => {
+      const ref = satRemixRef(id);
+      const snap = await tx.get(ref);
+      const value = snap.data();
+      if (value?.status === 'ready') return value;
+      if (value?.owner !== uid || value?.token !== token) throw new Error('Remix reservation expired. Please try again.');
+      const result = { ...data, sourceQuestionId: id, status: 'ready', owner: uid,
+        token, leaseUntil: value.leaseUntil, createdAt: new Date().toISOString() };
+      tx.set(ref, result);
+      return result;
+    });
+  }
+
+  async function releaseSatRemix(id, token) {
+    return runTransaction(db, async tx => {
+      const ref = satRemixRef(id);
+      const snap = await tx.get(ref);
+      if (snap.data()?.status === 'pending' && snap.data()?.owner === uid && snap.data()?.token === token) tx.delete(ref);
+    });
+  }
 
   // ─── SAT Explanation Cache ────────────────────────────────────────────────
   // Per-question step-by-step explanation, cached globally so each question's
@@ -341,6 +384,10 @@ export async function setupKorahDB(app, uid) {
     // sat explanations
     getSatExplanation,
     setSatExplanation,
+    getSatRemix,
+    claimSatRemix,
+    setSatRemix,
+    releaseSatRemix,
     // migration
     migrateFromLocalStorage,
     // actions

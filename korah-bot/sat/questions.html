@@ -1039,6 +1039,8 @@ html[data-theme="light"] {
         <polyline points="9 18 15 12 9 6"/>
       </svg>
     </button>
+    <span id="remixStatus" role="status" aria-live="polite"></span>
+    <button id="remixBtn" class="ask-korah-trigger" type="button" data-requires-auth title="Generate a similar practice question">Remix</button>
     <button id="askKorahBtn" class="ask-korah-trigger" type="button" data-requires-auth title="Ask Korah about this question">
       <img src="../logo-images/newlogo10.png" alt="" width="28" height="28" style="margin-right: 0.5rem; object-fit: contain;"/>
       Ask Korah
@@ -1141,6 +1143,16 @@ html[data-theme="light"] {
     transition: transform .18s ease, filter .18s ease;
   }
   .ask-korah-trigger:hover { filter: brightness(1.08); transform: scale(1.03); }
+  #remixBtn:disabled { opacity: .6; cursor: wait; transform: none; }
+  #remixStatus:not(:empty) {
+    position: absolute; bottom: calc(100% + 8px); right: 12px;
+    max-width: min(360px, calc(100vw - 24px)); padding: 10px 14px;
+    background: #202020; color: #fff; border-radius: 10px; font-size: 13px;
+  }
+  @media (max-width: 600px) {
+    .sat-player-footer .sat-footer-group { flex-wrap: wrap; justify-content: center; gap: 4px; }
+    .sat-player-footer .ask-korah-trigger { padding: 6px 10px; font-size: 12px; }
+  }
 
   .ask-korah-panel {
     box-sizing: border-box;
@@ -1431,7 +1443,7 @@ html[data-theme="light"] {
     const current = window.KorahSATPlayer?.getCurrentQuestion?.() || null;
     const domNum     = document.getElementById('questionNumber')?.textContent?.trim() || '';
     const domain     = current?.domain || document.getElementById('questionDomain')?.textContent?.trim() || '';
-    const passage    = document.getElementById('questionParagraph')?.textContent?.trim() || '';
+    const passage    = current?.paragraph || document.getElementById('questionParagraph')?.textContent?.trim() || '';
     const stem       = current?.stem || document.getElementById('questionStem')?.textContent?.trim() || '';
     const options    = current?.options || [];
     const correct    = current?.correctAnswer || '';
@@ -1443,7 +1455,8 @@ html[data-theme="light"] {
     // Inline figures (geometry diagrams, charts) live as SVG inside the passage/choices.
     // Serialize them so the model sees the actual figure, not just the surrounding text.
     const svgs = collectQuestionSvgs();
-    return { id, number: domNum, domain, passage, stem, options, correct, cbExplain, type, isMath, svgs };
+    return { id, number: domNum, domain, passage, stem, options, correct, cbExplain, type, isMath, svgs,
+      skillCd: current?.skillCd || '', difficulty: current?.difficulty || '', section: current?.section || '' };
   }
 
   function collectQuestionSvgs() {
@@ -1483,6 +1496,8 @@ html[data-theme="light"] {
     }
     return lines.join('\n');
   }
+
+  window.KorahSATContext = { readCurrentQuestion, buildQuestionContextBlock, parseJSON: parseExplanationJSON };
 
   // ─── Streaming API call (matches math-chat.js callAPI) ─────────────────
   async function callAPI(userContent, onChunk, { systemPrompt, temperature = 0.2, messages: extraHistory = [] } = {}) {
@@ -1974,6 +1989,11 @@ RULES:
   }
 
   async function renderKorahExplanation(body) {
+    if (window.KorahSATPlayer?.getCurrentQuestion()?.isRemix && currentQ.cbExplain) {
+      window.KorahQuestionContent.render(body, currentQ.cbExplain);
+      explanationLoaded = true;
+      return;
+    }
     // 1. In-memory hit.
     if (cachedKorahExplanation?.steps?.length) {
       drawExplanation(body, cachedKorahExplanation, /*fromCache*/ true);
@@ -2300,6 +2320,7 @@ RULES:
 <script src="../study/js/study-api.js"></script>
 <script src="./js/sat-shared.js"></script>
 <script src="./js/sat-player.js"></script>
+<script src="./js/sat-remix.js"></script>
 
 <script>
   window.addEventListener('korahReady', () => {

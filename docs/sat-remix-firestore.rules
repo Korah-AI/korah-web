@@ -1,0 +1,43 @@
+// Merge this match block INSIDE /databases/{database}/documents in the
+// deployed rules. This is a fragment, not a replacement for existing rules.
+match /satRemixes/{sourceId} {
+  function signedIn() { return request.auth != null; }
+  function validLease() {
+    return request.resource.data.leaseUntil > request.time.toMillis()
+      && request.resource.data.leaseUntil <= request.time.toMillis() + 660000;
+  }
+  function reservation() {
+    return request.resource.data.keys().hasOnly(['sourceQuestionId', 'status', 'owner', 'token', 'leaseUntil'])
+      && request.resource.data.sourceQuestionId == sourceId
+      && request.resource.data.status == 'pending'
+      && request.resource.data.owner == request.auth.uid
+      && request.resource.data.token is string && validLease();
+  }
+  allow read: if signedIn();
+  allow create: if signedIn() && reservation();
+  allow update: if signedIn() && resource.data.status == 'pending' && (
+    (resource.data.leaseUntil <= request.time.toMillis() && reservation()) ||
+    (resource.data.owner == request.auth.uid
+      && request.resource.data.owner == resource.data.owner
+      && request.resource.data.token == resource.data.token
+      && request.resource.data.leaseUntil == resource.data.leaseUntil
+      && request.resource.data.sourceQuestionId == sourceId
+      && request.resource.data.status == 'ready'
+      && request.resource.data.keys().hasOnly(['sourceQuestionId','status','owner','token','leaseUntil',
+        'id','detailKey','domain','skillCd','difficulty','section','type','paragraph','stem','options',
+        'correctAnswer','explanation','isRemix','loaded','model','createdAt'])
+      && request.resource.data.id is string
+      && request.resource.data.detailKey == request.resource.data.id
+      && request.resource.data.isRemix == true
+      && request.resource.data.loaded == true
+      && request.resource.data.stem is string
+      && request.resource.data.paragraph is string
+      && request.resource.data.options is list
+      && request.resource.data.options.size() <= 4
+      && request.resource.data.correctAnswer is string
+      && request.resource.data.explanation is string
+      && request.resource.data.createdAt is string)
+  );
+  allow delete: if signedIn() && resource.data.status == 'pending'
+    && resource.data.owner == request.auth.uid;
+}

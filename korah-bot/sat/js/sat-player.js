@@ -1794,7 +1794,20 @@
   // END QUESTION NAVIGATOR
   // ─────────────────────────────────────────────────
 
-  window.KorahSATPlayer = { getCurrentQuestion };
+  window.KorahSATPlayer = {
+    getCurrentQuestion,
+    addRemix(question, sourceId) {
+      // Append instead of inserting: in-flight detail fetches are indexed.
+      let index = questions.findIndex(q => q.id === question.id);
+      if (index < 0) {
+        index = questions.length;
+        questions.push({ ...question, loaded: true });
+      }
+      const current = getCurrentQuestion();
+      if ((current?.detailKey || current?.id) === sourceId) goTo(index);
+      else { renderHeader(); window.qNav?.refresh(); }
+    }
+  };
 
   renderHeader();
   renderQuestion();
