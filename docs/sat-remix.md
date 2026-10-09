@@ -1,46 +1,40 @@
 # SAT question remix
 
-The footer Remix button reads the live player question through the Ask Korah
-context helpers. It supplies the original passage, stem, choices, correct answer,
-domain, skill and difficulty. Visible SVGs and image elements in the passage,
-stem and choices are rasterized to PNG image parts for `/api/gem-proxy`.
-Image loading/CORS failures stop generation instead of silently dropping figures.
-The model returns HTML/MathML, including new inline SVG diagrams when needed.
-Output is parsed, structurally validated and sanitized before saving and rendering.
-AI-generated questions still require content-quality review; structural checks
-cannot prove their mathematical correctness.
+The footer Remix button sends the actual passage, stem, choices, answer key and
+metadata to `/api/gem-proxy`. Visible SVGs and images are rasterized to PNG image
+parts. Image failures stop generation instead of silently dropping figures.
+Returned HTML/MathML and new SVG figures are validated and sanitized before the
+existing player displays and grades the remix. The generated explanation is
+reused without a second model call.
 
-Remixes are appended to the current player's question list; Previous/Next and
-the question navigator can revisit them with independent answers. They are not
-added to the College Board bank. Reloading resets the session list, but remixing
-the same source again retrieves the global saved question. Metadata is inherited.
-Each remix has a deterministic SHA-256 ID derived from its parent ID. Remixing a
-remix therefore follows an unlimited chain with fixed-length document IDs.
-The Explanation tab uses the generated solution without an additional AI call.
+## Browser-only cache
 
-## Firestore deployment prerequisite
+Remix does not read or write Firestore. No Firestore rules changes or server
+credentials are needed. Sign-in is still required by the existing player UI.
 
-Merge [sat-remix-firestore.rules](sat-remix-firestore.rules) into the existing
-Firestore rules under `/databases/{database}/documents`, preserving other rules,
-then deploy them to `korah-app`. There is no Firebase rules deployment configuration
-in this checkout. The fragment has not been deployed or emulator-verified here.
-Ensure no overlapping wildcard grants writes to completed `satRemixes` documents.
-Authenticated users can read the global cache; only the reservation owner can
-finish it, and completed documents cannot be updated or deleted by clients.
-Like the suggested create-once client cache design, this permits authenticated
-clients to submit generated content. Move generation and cache writes behind a
-trusted authenticated server if server-verified authorship is required.
+Completed questions are stored in localStorage using the versioned key
+`korah:sat-remix:v1:<sourceQuestionId>`. Remixing the same source reuses that
+browser's saved result, even after reloading. Remixing a remix creates another
+cached link in an unlimited chain. Every generated question gets a unique
+fixed-length ID, avoiding collisions between different browsers' generations.
+Domain, skill and difficulty are inherited from the parent.
 
-The first caller reserves a missing source in a transaction before generation.
-Concurrent callers are told to retry shortly and then receive the saved result.
-Completed results are never regenerated. A ten-minute lease recovers abandoned
-tabs. Failed generations can be retried. A crash between model completion and
-Firestore persistence can incur generation again after lease expiry; strict
-exactly-once billing across failures is not guaranteed by a browser-side cache.
-Cache access failures stop the operation before spending on generation.
+The cache belongs to the browser profile and site origin, not an account. It is
+not shared across devices, browsers, or development/production URLs. Clearing
+site data clears remixes. Different browsers may each incur a generation cost.
+If storage is blocked or full, results remain usable and cached for the current
+page, with a message explaining that they cannot persist across reloads.
+Invalid cache entries are regenerated. Failed model requests are not cached.
 
-Run `npm test` from `korah-bot`. For live acceptance testing after rules deployment:
-remix text, reading passage, numeric-response, inline SVG and raster-image
-questions; check grading and explanations; navigate during generation; revisit
-the parent and confirm cache reuse in another account; remix the child; and check
-guest access, image failures, concurrent clicks and narrow-screen footer layout.
+Web Locks prevent duplicate generation across same-origin tabs where supported;
+other browsers retain per-page double-click protection. Closing a tab releases
+its lock. A crash before saving can still require another generation.
+
+Remixes are appended to the current session and can be revisited through the
+question navigator. Reloading resets that list; clicking Remix on the parent
+retrieves the saved child. They are not inserted into the College Board bank.
+
+Run `npm test` from `korah-bot`. Regression coverage includes reload cache reuse,
+chains, unavailable storage, malformed entries, concurrent tabs, guests,
+image capture, metadata and answer validation. AI output still needs content
+review; structural validation cannot prove mathematical correctness.
