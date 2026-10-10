@@ -11,6 +11,8 @@
     isAnswerCorrect,
   } = window.KorahSAT;
   const query = parseOpenSatV1Query();
+  // AP's player page sets this so "Back to bank" lands on the AP hub.
+  const PLAYER_HOME = window.KORAH_PLAYER_HOME || "./index.html";
 
   const sanitizeHtml = (html, options) => window.KorahQuestionContent.html(html, options);
 
@@ -325,6 +327,7 @@
 
   // RESTORED: Helper function from old version
   function getSectionsLabel(sectionKeys) {
+    if (window.KORAH_PLAYER_TITLE) return window.KORAH_PLAYER_TITLE;
     if (!Array.isArray(sectionKeys)) return sectionKeys || "SAT";
     if (sectionKeys.length === 0) return "SAT";
     if (sectionKeys.length === 1) {
@@ -484,7 +487,7 @@
       questionStem.textContent = loadError || "Something went wrong while loading questions.";
       answerChoices.innerHTML = `
         <button class="sat-button sat-button-primary" type="button" id="retryLoadBtn">Retry</button>
-        <a class="sat-button sat-button-ghost" href="./index.html">Back to bank</a>
+        <a class="sat-button sat-button-ghost" href="${PLAYER_HOME}">Back to bank</a>
       `;
       feedbackPanel.className = "sat-feedback-panel is-hidden";
       feedbackPanel.innerHTML = "";
@@ -509,7 +512,7 @@
       }
       setPassage("");
       questionStem.textContent = "Try another domain or lower the question limit.";
-      answerChoices.innerHTML = `<a class="sat-button sat-button-primary" href="./index.html">Back to bank</a>`;
+      answerChoices.innerHTML = `<a class="sat-button sat-button-primary" href="${PLAYER_HOME}">Back to bank</a>`;
       feedbackPanel.className = "sat-feedback-panel is-hidden";
       feedbackPanel.innerHTML = "";
       if (inlineReviewBtn) { inlineReviewBtn.classList.remove("is-active"); inlineReviewBtn.disabled = true; }
@@ -1067,7 +1070,7 @@
 
   nextQuestionBtn.addEventListener("click", () => {
     if (state.currentIndex === questions.length - 1) {
-      window.KorahTransitions.go("./index.html");
+      window.KorahTransitions.go(PLAYER_HOME);
     } else if (state.currentIndex < questions.length - 1) {
       goTo(state.currentIndex + 1);
     }
