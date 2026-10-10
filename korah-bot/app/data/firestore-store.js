@@ -63,6 +63,9 @@ export async function setupKorahDB(app, uid) {
   // NOTE: firestore.rules must allow read for any authed user and ideally
   // restrict writes to a Cloud Function (or `if !exists()` create-once rule).
   const satExplainRef = (id) => doc(db, `satExplanations`, id);
+  // Global like satExplanations: one remix per source question, keyed by the
+  // source's ID. A remix's own ID keys its child, so chains are unlimited.
+  const satRemixRef = (sourceId) => doc(db, `satRemixes`, sourceId);
 
   // ─── SAT Explanation Cache ────────────────────────────────────────────────
   // Per-question step-by-step explanation, cached globally so each question's
@@ -78,6 +81,19 @@ export async function setupKorahDB(app, uid) {
   async function setSatExplanation(questionId, data) {
     if (!questionId) return;
     await setDoc(satExplainRef(questionId), { ...data, createdAt: new Date().toISOString() }, { merge: true });
+  }
+
+  // ─── SAT Remix Cache ──────────────────────────────────────────────────────
+
+  async function getSatRemix(sourceId) {
+    if (!sourceId) return null;
+    const snap = await getDoc(satRemixRef(sourceId));
+    return snap.exists() ? snap.data() : null;
+  }
+
+  async function setSatRemix(sourceId, data) {
+    if (!sourceId) return;
+    await setDoc(satRemixRef(sourceId), data);
   }
 
   // ─── Conversations ────────────────────────────────────────────────────────
@@ -341,6 +357,9 @@ export async function setupKorahDB(app, uid) {
     // sat explanations
     getSatExplanation,
     setSatExplanation,
+    // sat remixes
+    getSatRemix,
+    setSatRemix,
     // migration
     migrateFromLocalStorage,
     // actions

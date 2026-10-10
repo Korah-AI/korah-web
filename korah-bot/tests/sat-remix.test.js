@@ -8,7 +8,13 @@ const script = fs.readFileSync(new URL('../sat/js/sat-remix.js', import.meta.url
 const fixture = () => ({ paragraph: '', stem: 'What is 2 + 3?',
   options: ['4', '5', '6', '7'].map((text, i) => ({key: 'ABCD'[i], text})),
   correctAnswer: 'B', explanation: '2 + 3 = 5.' });
-function harness(db = { uid: 'student' }, storage = new Map()) {
+// Firestore stand-in: a Map keyed like satRemixes/{sourceId}.
+function firestore(store = new Map()) {
+  return { uid: 'student', store,
+    getSatRemix: async id => store.get(id) ?? null,
+    setSatRemix: async (id, value) => { store.set(id, value); } };
+}
+function harness(db = firestore()) {
   let click;
   const button = { addEventListener: (_, fn) => { click = fn; } };
   const status = {};
@@ -19,10 +25,7 @@ function harness(db = { uid: 'student' }, storage = new Map()) {
     KorahSATPlayer: { getCurrentQuestion: () => ({ loaded: true }), addRemix: (...args) => added.push(args) },
     KorahSATContext: { readCurrentQuestion: () => source, buildQuestionContextBlock: () => 'Complete source question', parseJSON: JSON.parse } },
     document: { getElementById: id => id === 'remixBtn' ? button : status, querySelectorAll: () => [] },
-    navigator: {}, localStorage: {
-      getItem: key => storage.get(key) ?? null,
-      setItem: (key, value) => storage.set(key, value)
-    }, crypto: webcrypto, TextEncoder, Blob, AbortSignal, console: { error() {} },
+    crypto: webcrypto, TextEncoder, Blob, AbortSignal, console: { error() {}, warn() {} },
     fetch: () => { throw new Error('Unexpected model call'); } };
   vm.runInNewContext(script, context);
   return { validate: context.window.KorahSATRemix.validate, click, added, status, button, source, context };
@@ -43,7 +46,6 @@ test('numeric remixes reject invalid and zero-denominator answers', () => {
   for (const answer of ['B', '1/0', '2/-0', '', 'NaN']) assert.throws(() => validate({ ...q, correctAnswer: answer }, source));
 });
 
-const key = id => 'korah:sat-remix:v1:' + id;
 function model(h, counter = { calls: 0 }) {
   h.context.fetch = async (url, request) => {
     counter.calls++;
@@ -55,80 +57,55 @@ function model(h, counter = { calls: 0 }) {
   };
   return counter;
 }
-test('generation persists locally and reload reuses cache without any Firestore methods', async () => {
-  const storage = new Map();
-  const deniedDB = new Proxy({ uid: 'student' }, { get(target, prop) {
-    if (prop !== 'uid') assert.fail('Unexpected Firestore dependency');
-    return target[prop];
-  } });
-  const h = harness(deniedDB, storage); const counter = model(h);
+test('generation saves to Firestore and later remixes reuse it without a model call', async () => {
+  const db = firestore();
+  const h = harness(db); const counter = model(h);
   Object.assign(h.source, { section:'math', domain:'Algebra', skillCd:'H.A.', difficulty:'M', type:'mc' });
   await h.click();
   assert.equal(h.added.length, 1);
-  const remix = JSON.parse(storage.get(key('source-1')));
+  const remix = db.store.get('source-1');
   assert.match(remix.id, /^remix-[a-f0-9]{64}$/);
   assert.equal(remix.skillCd, 'H.A.');
   assert.equal(remix.difficulty, 'M');
   assert.equal(remix.sourceQuestionId, 'source-1');
   await h.click(); assert.equal(counter.calls, 1);
-  const reloaded = harness(deniedDB, storage);
-  await reloaded.click();
-  assert.equal(reloaded.added[0][0].id, remix.id);
-  assert.equal(reloaded.button.disabled, false);
+  const otherStudent = harness(firestore(db.store));
+  await otherStudent.click();
+  assert.equal(otherStudent.added[0][0].id, remix.id);
+  assert.equal(otherStudent.button.disabled, false);
 });
 test('remix chains use the child as the next cache key', async () => {
-  const storage = new Map(); const h = harness(undefined, storage); const counter = model(h);
+  const db = firestore(); const h = harness(db); const counter = model(h);
   await h.click(); const child = h.added[0][0];
   h.source.id = child.id;
   await h.click(); const grandchild = h.added[1][0];
   assert.notEqual(grandchild.id, child.id);
   assert.equal(grandchild.sourceQuestionId, child.id);
-  assert.ok(storage.has(key(child.id)));
+  assert.ok(db.store.has(child.id));
   await h.click(); assert.equal(counter.calls, 2);
 });
-test('blocked or full storage retains usable questions in memory', async () => {
-  for (const denyRead of [true, false]) {
-    const h = harness(); const counter = model(h);
-    h.context.localStorage = {
-      getItem() { if (denyRead) throw Error('SecurityError'); return null; },
-      setItem() { throw Error('QuotaExceededError'); }
-    };
-    await h.click();
-    assert.equal(h.added.length, 1);
-    assert.match(h.status.textContent, /this page only/);
-    await h.click(); assert.equal(counter.calls, 1);
-  }
-});
-test('corrupt cached data is replaced by a valid generation', async () => {
-  for (const value of ['{broken', JSON.stringify({id:'bad',sourceQuestionId:'source-1'})]) {
-    const storage = new Map([[key('source-1'), value]]);
-    const h = harness(undefined, storage); const counter = model(h);
-    await h.click(); assert.equal(counter.calls, 1);
-    assert.equal(h.added.length, 1);
-    assert.equal(JSON.parse(storage.get(key('source-1'))).correctAnswer, 'B');
-  }
-});
-test('another tab holding the lock prevents duplicate model requests', async () => {
-  const h = harness();
-  h.context.navigator.locks = {request: async (_, options, fn) => {
-    assert.equal(options.ifAvailable, true); return fn(null);
-  }};
+test('Firestore read or write failures still produce a usable remix', async () => {
+  const db = firestore();
+  db.getSatRemix = async () => { throw Error('unavailable'); };
+  db.setSatRemix = async () => { throw Error('permission-denied'); };
+  const h = harness(db); const counter = model(h);
   await h.click();
-  assert.match(h.status.textContent, /another tab/);
-  assert.equal(h.added.length, 0);
-  assert.equal(h.button.disabled, false);
+  assert.equal(counter.calls, 1);
+  assert.equal(h.added.length, 1);
+});
+test('invalid saved remixes are replaced by a valid generation', async () => {
+  const db = firestore(new Map([['source-1', { id: 'bad', sourceQuestionId: 'source-1' }]]));
+  const h = harness(db); const counter = model(h);
+  await h.click(); assert.equal(counter.calls, 1);
+  assert.equal(db.store.get('source-1').correctAnswer, 'B');
 });
 test('guest access does not generate', async () => {
   const h = harness(null); await h.click(); assert.match(h.status.textContent, /Sign in/);
 });
-test('auth-ready state works without a Firestore data layer', async () => {
-  const h = harness(null); h.context.window._korahReadyFired = {uid:'student'}; model(h);
-  await h.click(); assert.equal(h.added.length, 1);
-});
 test('failed requests are retryable and never cached', async () => {
-  const storage = new Map(); const h = harness(undefined, storage);
+  const db = firestore(); const h = harness(db);
   h.context.fetch = async () => ({ok:false,status:503});
-  await h.click(); assert.equal(storage.size, 0); assert.equal(h.added.length, 0);
+  await h.click(); assert.equal(db.store.size, 0); assert.equal(h.added.length, 0);
   assert.equal(h.button.disabled, false);
   model(h); await h.click(); assert.equal(h.added.length, 1);
 });
