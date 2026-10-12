@@ -17,23 +17,74 @@ test('each separate bank has at least 100 unique, complete questions covering ev
     for (const q of bank.questions) {
       assert.ok(!allIds.has(q.id)); allIds.add(q.id);
       assert.ok(q.explanation.length > 40);
-      if (bank.course === 'ap-us-history') { assert.ok(q.stimulus?.text.length > 100); assert.match(q.stimulus.attribution, /\d{4}/); }
+      if (bank.course === 'ap-us-history') { assert.ok(q.stimulus.text?.length > 100 || q.stimulus.figure); assert.ok(q.stimulus.attribution.length > 10); }
       for (const id of q.sourceIds) assert.equal(new URL(bank.sources[id].url).protocol, 'https:');
     }
-    for (let answer = 0; answer < 4; answer++) assert.equal(bank.questions.filter(q => q.answer === answer).length, bank.questions.length / 4);
+    const counts = [0, 1, 2, 3].map(answer => bank.questions.filter(q => q.answer === answer).length);
+    assert.ok(Math.max(...counts) - Math.min(...counts) <= 2, 'answers are spread evenly across A–D');
   }
 });
 
-test('unit and calculator filters intersect; empty filters restore the entire course', async () => {
-  const { filterQuestions } = await api;
-  const calc = banks[0];
-  const subset = filterQuestions(calc, { unit: '6', calculator: 'calculator' });
+test('math is typeset as LaTeX and every unit has figure-based questions', () => {
+  const [calc, history] = banks;
+  for (const q of calc.questions) for (const text of [q.stem, q.explanation, ...q.choices]) {
+    assert.equal(text.split('\\(').length, text.split('\\)').length, q.id + ': unbalanced math delimiters');
+    assert.doesNotMatch(text, /[²³√∫→≤≥≠≈ˣ′∞π]|\^\(/, q.id + ': plain-text math');
+  }
+  assert.ok(calc.questions.every(q => (q.stem + q.choices.join('')).includes('\\(')));
+  for (let unit = 1; unit <= 8; unit++) assert.ok(calc.questions.filter(q => q.unit === unit && q.figure).length >= 2);
+  for (let unit = 1; unit <= 9; unit++) assert.equal(history.questions.filter(q => q.unit === unit && q.stimulus.figure).length, 3);
+  for (const q of [...calc.questions, ...history.questions]) {
+    const figure = q.figure || q.stimulus?.figure;
+    if (!figure) continue;
+    assert.ok(figure.alt.length > 20);
+    if (figure.svg) { assert.match(figure.svg, /^<svg[^>]+role="img"/); assert.doesNotMatch(figure.svg, /<script|\son\w+=|href=/i); }
+    else assert.ok(figure.table.rows.every(row => row.length === figure.table.headers.length));
+  }
+});
+
+test('unit, calculator and progress filters intersect; empty filters restore the entire course', async () => {
+  const { filterQuestions, unitStats } = await api;
+  const [calc, history] = banks;
+  const subset = filterQuestions(calc, { units: [6], calculator: 'calculator' });
   assert.equal(subset.length, 6);
   assert.ok(subset.every(q => q.unit === 6 && q.calculator === 'calculator'));
-  for (let unit = 1; unit <= 8; unit++) for (const calculator of ['calculator', 'non-calculator']) assert.ok(filterQuestions(calc, { unit: String(unit), calculator }).length >= 4);
-  assert.equal(filterQuestions(calc, { unit: '9' }).length, 0);
+  for (let unit = 1; unit <= 8; unit++) for (const calculator of ['calculator', 'non-calculator']) assert.ok(filterQuestions(calc, { units: [unit], calculator }).length >= 4);
+  assert.equal(filterQuestions(calc, { units: [2, 6] }).length, calc.questions.filter(q => q.unit === 2 || q.unit === 6).length);
   assert.equal(filterQuestions(calc).length, calc.questions.length);
-  assert.equal(filterQuestions(banks[1], { unit: '9', calculator: 'calculator' }).length, 12);
+  assert.equal(filterQuestions(history, { units: [9], calculator: 'calculator' }).length, 15);
+  const [right, wrong] = calc.questions, progress = { [right.id]: right.answer, [wrong.id]: (wrong.answer + 1) % 4 };
+  assert.deepEqual(filterQuestions(calc, { completed: 'completed' }, progress).map(q => q.id), [right.id, wrong.id]);
+  assert.equal(filterQuestions(calc, { completed: 'incomplete' }, progress).length, calc.questions.length - 2);
+  assert.deepEqual(filterQuestions(calc, { result: 'correct' }, progress).map(q => q.id), [right.id]);
+  assert.deepEqual(filterQuestions(calc, { result: 'incorrect' }, progress).map(q => q.id), [wrong.id]);
+  assert.deepEqual(unitStats(calc, calc.questions, progress)[0], { total: 18, attempts: 2, correct: 1 });
+});
+
+test('session URLs round-trip, ignore invalid values, and honor limit and shuffle', async () => {
+  const { playerUrl, parseSession, buildSession } = await api;
+  const url = playerUrl({ course: 'ap-calculus-ab', units: [6, 2], calculator: 'calculator', limit: 5, random: true });
+  assert.equal(url, './mcq-player.html?course=ap-calculus-ab&units=2%2C6&calculator=calculator&limit=5&random=1');
+  const session = parseSession(url.split('?')[1]);
+  assert.deepEqual(session, { course: 'ap-calculus-ab', units: [2, 6], calculator: 'calculator', completed: 'all', result: 'all', limit: 5, random: true });
+  const picked = buildSession(banks[0], session, {}, () => 0.5);
+  assert.equal(picked.length, 5);
+  assert.ok(picked.every(q => [2, 6].includes(q.unit) && q.calculator === 'calculator'));
+  assert.equal(parseSession('course=../secrets'), null);
+  assert.deepEqual(parseSession('course=ap-us-history&units=0,3,99,x&calculator=calculator&limit=-4&result=maybe'), { course: 'ap-us-history', units: [3], calculator: '', completed: 'all', result: 'all', limit: null, random: false });
+  assert.equal(buildSession(banks[1], parseSession('course=ap-us-history'), {}).length, banks[1].questions.length);
+});
+
+test('progress survives unavailable or corrupt storage', async () => {
+  const { loadProgress, saveProgress } = await api;
+  const data = new Map(), storage = { getItem: k => data.get(k) ?? null, setItem: (k, v) => data.set(k, v) };
+  saveProgress('ap-calculus-ab', { a: 1 }, storage);
+  assert.deepEqual(loadProgress('ap-calculus-ab', storage), { a: 1 });
+  assert.deepEqual(loadProgress('ap-us-history', storage), {});
+  data.set('korah_ap_mcq_progress_ap-us-history', '{not json');
+  assert.deepEqual(loadProgress('ap-us-history', storage), {});
+  assert.doesNotThrow(() => saveProgress('ap-us-history', {}, { setItem() { throw new Error('quota'); } }));
+  assert.deepEqual(loadProgress('ap-us-history', { getItem() { throw new Error('blocked'); } }), {});
 });
 
 test('mixed-course and malformed banks are rejected, and foreign questions never pass filtering', async () => {
@@ -47,6 +98,10 @@ test('mixed-course and malformed banks are rejected, and foreign questions never
   assert.throws(() => validateBank(duplicate, duplicate.course));
   const broken = structuredClone(banks[0]); broken.questions[0].answer = 4;
   assert.throws(() => validateBank(broken, broken.course));
+  const scripted = structuredClone(banks[0]); scripted.questions.find(q => q.figure?.svg).figure.svg = '<svg onload="alert(1)"></svg>';
+  assert.throws(() => validateBank(scripted, scripted.course));
+  const bare = structuredClone(banks[1]); delete bare.questions[0].stimulus.text;
+  assert.throws(() => validateBank(bare, bare.course));
 });
 
 test('loader only requests the selected course and rejects missing data or invalid slugs', async () => {
@@ -60,12 +115,20 @@ test('loader only requests the selected course and rejects missing data or inval
   await assert.rejects(loadBank('ap-us-history', async () => ({ ok: true, json: async () => banks[0] })), /Invalid course/);
 });
 
+test('the build script reproduces the committed banks', () => {
+  const before = banks.map(b => JSON.stringify(b));
+  require('node:child_process').execFileSync(process.execPath, [path.join(__dirname, 'ap-mcq-build/build.cjs')], { stdio: 'ignore' });
+  const after = ['ap-calculus-ab', 'ap-us-history'].map(slug => JSON.stringify(JSON.parse(fs.readFileSync(path.join(__dirname, '../korah-bot/ap/data', slug, 'mcqs.json'), 'utf8'))));
+  assert.deepEqual(after, before);
+});
+
 // Independently recalculate every calculator answer: midpoint quadrature,
 // Newton iteration, and centered finite differences (rather than the
 // Simpson quadrature / bisection used when authoring the answer key).
 const integral = (f, a, b) => { const n = 200000, h = (b-a)/n; let s=0; for(let i=0;i<n;i++) s+=f(a+(i+.5)*h); return s*h; };
 const derivative = (f,x) => (f(x+1e-5)-f(x-1e-5))/2e-5;
 const root = (f,x) => { for(let i=0;i<20;i++) x-=f(x)/derivative(f,x); return x; };
+const num = text => Number(text.replace(/\\[()]/g, ''));
 test('all 36 calculator answer keys agree with independent numerical calculations', () => {
   const expectations = [
     4*Math.log(2),
@@ -108,7 +171,7 @@ test('all 36 calculator answer keys agree with independent numerical calculation
   const questions=banks[0].questions.filter(q=>q.calculator==='calculator');
   assert.equal(questions.length,expectations.length);
   questions.forEach((q,i)=>{
-    assert.ok(Math.abs(Number(q.choices[q.answer].replace('−','-'))-expectations[i])<=.00051, `${q.id}: expected ${expectations[i]}, got ${q.choices[q.answer]}`);
-    q.choices.forEach((c,j)=>{if(j!==q.answer) assert.ok(Math.abs(Number(c.replace('−','-'))-expectations[i])>.001, `${q.id}: ambiguous distractor`);});
+    assert.ok(Math.abs(num(q.choices[q.answer])-expectations[i])<=.00051, `${q.id}: expected ${expectations[i]}, got ${q.choices[q.answer]}`);
+    q.choices.forEach((c,j)=>{if(j!==q.answer) assert.ok(Math.abs(num(c)-expectations[i])>.001, `${q.id}: ambiguous distractor`);});
   });
 });
