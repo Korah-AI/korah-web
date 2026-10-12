@@ -3,4 +3,5 @@
 import './collegeboard-content.test.js';
 import './assessment-content.test.js';
 import './sat-remix.test.js';
+import './sat-remix-cache.test.js';
 import './seo-desmos.test.js';
