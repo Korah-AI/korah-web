@@ -2,7 +2,7 @@
 // (sat/js/sat-player.js): a stimulus pane beside the question when there is one,
 // lettered answer rows with eliminate buttons, Check, an explanation panel, and
 // the footer question navigator. Questions come from this course's own JSON bank.
-import { getCourse, loadBank, parseSession, buildSession, loadProgress, saveProgress } from './mcq-bank.js';
+import { getCourse, unitLabel as courseUnitLabel, loadBank, parseSession, buildSession, loadProgress, saveProgress } from './mcq-bank.js';
 
 const $ = id => document.getElementById(id);
 const playerSplit = $('playerSplit'), passagePanel = $('passagePanel'), questionParagraph = $('questionParagraph');
@@ -42,7 +42,7 @@ function setDomainLabel(text) {
   questionDomain.textContent = text;
   questionDomain.dataset.domain = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 }
-const unitLabel = q => course.hasCalculator ? `Unit ${q.unit}: ${course.units[q.unit - 1]}` : course.units[q.unit - 1];
+const unitLabel = q => courseUnitLabel(course, q.unit);
 
 function showMessage(title, body, actions) {
   questionNumber.textContent = '—';

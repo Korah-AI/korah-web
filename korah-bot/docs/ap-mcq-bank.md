@@ -34,6 +34,7 @@ College Board questions, and no question-bank or textbook exercise text is repro
 | --- | ---: | --- | ---: | --- |
 | AP Calculus AB | 200 | 25 per unit | 26 | 50 calculator; 150 non-calculator |
 | AP U.S. History | 200 | 22 per period (23 in Periods 5 and 7) | 27 | Not applicable |
+| AP Physics 1 | 100 | 12 or 13 per unit | 48 | Allowed on every question |
 
 **AP U.S. History** has 63 stimulus sets, seven per period, each with three or
 four questions. Six sets per period use a verbatim excerpt from a public-domain primary source
@@ -48,6 +49,14 @@ KaTeX. Every unit has at least two questions built on a graph, slope field, or t
 of values, and at least five calculator and seventeen non-calculator questions, so no
 unit and calculator combination is empty. The OpenStax and College Board links are
 topic references only.
+
+**AP Physics 1** follows the eight units of the current course framework (kinematics
+through fluids). Each question is tagged `conceptual` (33) or `quantitative` (67), and
+the bank page offers a Question type filter in place of the Calculator filter, because a
+calculator is allowed throughout that exam. Forty-eight questions use a diagram or graph
+(inclines, pulleys, collisions, torque setups, oscillators, fluid apparatus), and several
+figures are shared by two or three questions, as on the exam. Numerical questions state
+the value of g to use. The OpenStax link is a topic reference only.
 
 Correct answers are spread evenly across A–D. Distribution is designed for unit
 practice, not a weighted full-length exam. Items have not been psychometrically
@@ -66,6 +75,9 @@ node scripts/ap-mcq-build/build.cjs
 - `history-documents.cjs` and `history-more.cjs` (second batch, plus single
   questions added to earlier sets): primary-source sets. `history-charts.cjs`:
   chart and table sets with their data.
+- `physics1.cjs`: AP Physics 1 question blocks (`c` conceptual or `q` quantitative in
+  the second field) and their figures. `diagram.cjs`: free-form SVG diagrams built
+  from lines, arrows, shapes, and labels.
 - `figures.cjs`: SVG helpers (`graph`, `chart`) and `table`. Figures use
   `currentColor` for axes and text so they follow the light and dark themes, and
   every figure needs an `alt` description.
@@ -78,8 +90,13 @@ add its independently computed value to the list in `scripts/ap-mcq.test.cjs`.
 
 ## Schema
 
+To add a course, add it to `COURSES` in `ap/js/mcq-bank.js` (`tone` picks the tile
+color, `numbered` and `noun` control unit labels, `hasCalculator` and `hasKinds` turn on
+the matching filter), add a build function, and give the tile artwork in `ap/js/mcq.js`.
+
 `schemaVersion` 2. Each question has `id`, `course`, `unit` (1-based), `calculator`
-(`calculator`, `non-calculator`, or `null` for history), `skill`, `stem`, four
+(`calculator`, `non-calculator`, or `null` for history and physics), `kind` (physics
+only), `skill`, `stem`, four
 `choices`, zero-based `answer`, `explanation`, and `sourceIds`. Optional `figure` is
 `{ svg, alt }` or `{ table: { headers, rows }, alt }`. History questions have
 `stimulus` with `title`, `attribution`, and either `text` or `figure`.

@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const banks = ['ap-calculus-ab', 'ap-us-history'].map(slug => JSON.parse(fs.readFileSync(path.join(__dirname, '../korah-bot/ap/data', slug, 'mcqs.json'), 'utf8')));
+const physics = JSON.parse(fs.readFileSync(path.join(__dirname, '../korah-bot/ap/data/ap-physics-1/mcqs.json'), 'utf8'));
 const api = import('../korah-bot/ap/js/mcq-bank.js');
 
 test('each separate bank has 200 unique, complete questions divided evenly among its units', async () => {
@@ -67,12 +68,12 @@ test('session URLs round-trip, ignore invalid values, and honor limit and shuffl
   const url = playerUrl({ course: 'ap-calculus-ab', units: [6, 2], calculator: 'calculator', limit: 5, random: true });
   assert.equal(url, './mcq-player.html?course=ap-calculus-ab&units=2%2C6&calculator=calculator&limit=5&random=1');
   const session = parseSession(url.split('?')[1]);
-  assert.deepEqual(session, { course: 'ap-calculus-ab', units: [2, 6], calculator: 'calculator', completed: 'all', result: 'all', limit: 5, random: true });
+  assert.deepEqual(session, { course: 'ap-calculus-ab', units: [2, 6], calculator: 'calculator', kind: '', completed: 'all', result: 'all', limit: 5, random: true });
   const picked = buildSession(banks[0], session, {}, () => 0.5);
   assert.equal(picked.length, 5);
   assert.ok(picked.every(q => [2, 6].includes(q.unit) && q.calculator === 'calculator'));
   assert.equal(parseSession('course=../secrets'), null);
-  assert.deepEqual(parseSession('course=ap-us-history&units=0,3,99,x&calculator=calculator&limit=-4&result=maybe'), { course: 'ap-us-history', units: [3], calculator: '', completed: 'all', result: 'all', limit: null, random: false });
+  assert.deepEqual(parseSession('course=ap-us-history&units=0,3,99,x&calculator=calculator&limit=-4&result=maybe'), { course: 'ap-us-history', units: [3], calculator: '', kind: '', completed: 'all', result: 'all', limit: null, random: false });
   assert.equal(buildSession(banks[1], parseSession('course=ap-us-history'), {}).length, banks[1].questions.length);
 });
 
@@ -117,10 +118,51 @@ test('loader only requests the selected course and rejects missing data or inval
 });
 
 test('the build script reproduces the committed banks', () => {
-  const before = banks.map(b => JSON.stringify(b));
+  const slugs = ['ap-calculus-ab', 'ap-us-history', 'ap-physics-1'], before = [...banks, physics].map(b => JSON.stringify(b));
   require('node:child_process').execFileSync(process.execPath, [path.join(__dirname, 'ap-mcq-build/build.cjs')], { stdio: 'ignore' });
-  const after = ['ap-calculus-ab', 'ap-us-history'].map(slug => JSON.stringify(JSON.parse(fs.readFileSync(path.join(__dirname, '../korah-bot/ap/data', slug, 'mcqs.json'), 'utf8'))));
+  const after = slugs.map(slug => JSON.stringify(JSON.parse(fs.readFileSync(path.join(__dirname, '../korah-bot/ap/data', slug, 'mcqs.json'), 'utf8'))));
   assert.deepEqual(after, before);
+});
+
+test('the AP Physics 1 bank has 100 balanced questions mixing conceptual and quantitative items with figures', async () => {
+  const { validateBank, COURSES, filterQuestions, playerUrl, parseSession, buildSession } = await api;
+  validateBank(physics, 'ap-physics-1');
+  const course = COURSES.find(c => c.slug === 'ap-physics-1'), qs = physics.questions;
+  assert.equal(qs.length, 100);
+  assert.equal(new Set(qs.map(q => q.stem)).size, 100);
+  assert.ok(qs.every(q => !banks.some(b => b.questions.some(o => o.id === q.id))));
+  const perUnit = course.units.map((_, i) => qs.filter(q => q.unit === i + 1).length);
+  assert.ok(Math.max(...perUnit) - Math.min(...perUnit) <= 1, 'questions are divided evenly among units: ' + perUnit);
+  const counts = [0, 1, 2, 3].map(answer => qs.filter(q => q.answer === answer).length);
+  assert.ok(Math.max(...counts) - Math.min(...counts) <= 2);
+  for (const kind of ['conceptual', 'quantitative']) {
+    assert.ok(qs.filter(q => q.kind === kind).length >= 30, 'at least 30 ' + kind + ' questions');
+    for (let unit = 1; unit <= 8; unit++) assert.ok(filterQuestions(physics, { units: [unit], kind }).length >= 3, 'unit ' + unit + ' has ' + kind + ' questions');
+  }
+  assert.ok(qs.filter(q => q.figure).length >= 40);
+  for (let unit = 1; unit <= 8; unit++) assert.ok(qs.filter(q => q.unit === unit && q.figure).length >= 4, 'unit ' + unit + ' has figure questions');
+  for (const q of qs) {
+    assert.ok(q.explanation.length > 60);
+    if (q.figure) { assert.ok(q.figure.alt.length > 20); assert.match(q.figure.svg, /^<svg[^>]+role="img"/); assert.doesNotMatch(q.figure.svg, /<script|\son\w+=|href=|NaN|undefined/i); }
+    for (const text of [q.stem, q.explanation, ...q.choices]) {
+      assert.equal(text.split('\\(').length, text.split('\\)').length, q.id + ': unbalanced math delimiters');
+      assert.doesNotMatch(text, /[²³√→≤≥≈θμωρ]|\^\(/, q.id + ': plain-text math');
+    }
+  }
+  // The type filter is physics-only, and it travels in the session URL.
+  assert.equal(filterQuestions(physics, { kind: 'conceptual' }).length + filterQuestions(physics, { kind: 'quantitative' }).length, 100);
+  assert.equal(filterQuestions(banks[0], { kind: 'conceptual' }).length, banks[0].questions.length);
+  const session = parseSession(playerUrl({ course: 'ap-physics-1', units: [5], kind: 'conceptual' }).split('?')[1]);
+  assert.equal(session.kind, 'conceptual');
+  assert.ok(buildSession(physics, session).every(q => q.unit === 5 && q.kind === 'conceptual'));
+  assert.equal(parseSession('course=ap-physics-1&kind=essay&calculator=calculator').kind, '');
+  assert.equal(parseSession('course=ap-calculus-ab&kind=conceptual').kind, '');
+  // Course separation: a bank is rejected under another course's slug or with a missing type.
+  assert.throws(() => validateBank(physics, 'ap-calculus-ab'));
+  const untyped = structuredClone(physics); delete untyped.questions[0].kind;
+  assert.throws(() => validateBank(untyped, 'ap-physics-1'));
+  const typed = structuredClone(banks[0]); typed.questions[0].kind = 'conceptual';
+  assert.throws(() => validateBank(typed, 'ap-calculus-ab'));
 });
 
 // Independently recalculate every calculator answer: midpoint quadrature,

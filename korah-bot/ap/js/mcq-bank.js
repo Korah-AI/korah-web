@@ -3,9 +3,15 @@
 // (mcq.js), the player (mcq-player.js), and scripts/ap-mcq.test.cjs.
 
 export const COURSES = [
-  { slug: 'ap-calculus-ab', name: 'AP Calculus AB', tone: 'math', hasCalculator: true, units: ['Limits and Continuity', 'Differentiation: Definition and Fundamental Properties', 'Differentiation: Composite, Implicit, and Inverse Functions', 'Contextual Applications of Differentiation', 'Analytical Applications of Differentiation', 'Integration and Accumulation of Change', 'Differential Equations', 'Applications of Integration'] },
-  { slug: 'ap-us-history', name: 'AP U.S. History', tone: 'english', hasCalculator: false, units: ['Period 1: 1491–1607', 'Period 2: 1607–1754', 'Period 3: 1754–1800', 'Period 4: 1800–1848', 'Period 5: 1844–1877', 'Period 6: 1865–1898', 'Period 7: 1890–1945', 'Period 8: 1945–1980', 'Period 9: 1980–Present'] },
+  { slug: 'ap-calculus-ab', name: 'AP Calculus AB', tone: 'math', hasCalculator: true, numbered: true, noun: 'unit', units: ['Limits and Continuity', 'Differentiation: Definition and Fundamental Properties', 'Differentiation: Composite, Implicit, and Inverse Functions', 'Contextual Applications of Differentiation', 'Analytical Applications of Differentiation', 'Integration and Accumulation of Change', 'Differential Equations', 'Applications of Integration'] },
+  { slug: 'ap-us-history', name: 'AP U.S. History', tone: 'english', hasCalculator: false, numbered: false, noun: 'period', units: ['Period 1: 1491–1607', 'Period 2: 1607–1754', 'Period 3: 1754–1800', 'Period 4: 1800–1848', 'Period 5: 1844–1877', 'Period 6: 1865–1898', 'Period 7: 1890–1945', 'Period 8: 1945–1980', 'Period 9: 1980–Present'] },
+  // A calculator is allowed on every AP Physics 1 question, so the filter is by question type instead.
+  { slug: 'ap-physics-1', name: 'AP Physics 1', tone: 'science', hasCalculator: false, hasKinds: true, numbered: true, noun: 'unit', units: ['Kinematics', 'Force and Translational Dynamics', 'Work, Energy, and Power', 'Linear Momentum', 'Torque and Rotational Dynamics', 'Energy and Momentum of Rotating Systems', 'Oscillations', 'Fluids'] },
 ];
+
+export const KINDS = ['conceptual', 'quantitative'];
+// "Unit 3: Work, Energy, and Power" for numbered courses; history periods already carry their number.
+export const unitLabel = (course, unit) => course.numbered ? `Unit ${unit}: ${course.units[unit - 1]}` : course.units[unit - 1];
 
 export const getCourse = slug => COURSES.find(c => c.slug === slug) || null;
 
@@ -29,6 +35,7 @@ export function validateBank(bank, slug) {
       && Number.isInteger(q.answer) && q.answer >= 0 && q.answer <= 3
       && q.sourceIds?.length && q.sourceIds.every(id => bank.sources?.[id])
       && (course.hasCalculator ? ['calculator', 'non-calculator'].includes(q.calculator) : q.calculator === null)
+      && (course.hasKinds ? KINDS.includes(q.kind) : q.kind === undefined)
       && (q.figure === undefined || validFigure(q.figure))
       && (q.stimulus === undefined || (isText(q.stimulus.title) && isText(q.stimulus.attribution) && (isText(q.stimulus.text) || validFigure(q.stimulus.figure))));
     if (!ok) throw new Error('Invalid question: ' + q.id);
@@ -44,16 +51,17 @@ export async function loadBank(slug, fetcher = fetch) {
   return validateBank(await response.json(), slug);
 }
 
-// filters: { units: number[], calculator: '' | 'calculator' | 'non-calculator',
+// filters: { units: number[], calculator: '' | 'calculator' | 'non-calculator', kind: '' | 'conceptual' | 'quantitative',
 //            completed: 'all' | 'completed' | 'incomplete', result: 'all' | 'correct' | 'incorrect' }
 // progress: { [questionId]: chosenIndex } for answers the student has checked.
 export function filterQuestions(bank, filters = {}, progress = {}) {
-  const { units = [], calculator = '', completed = 'all', result = 'all' } = filters;
-  const hasCalculator = !!getCourse(bank.course)?.hasCalculator;
+  const { units = [], calculator = '', kind = '', completed = 'all', result = 'all' } = filters;
+  const hasCalculator = !!getCourse(bank.course)?.hasCalculator, hasKinds = !!getCourse(bank.course)?.hasKinds;
   return bank.questions.filter(q => {
     if (q.course !== bank.course) return false;
     if (units.length && !units.includes(q.unit)) return false;
     if (hasCalculator && calculator && q.calculator !== calculator) return false;
+    if (hasKinds && kind && q.kind !== kind) return false;
     const done = Number.isInteger(progress[q.id]);
     if (completed === 'completed' && !done) return false;
     if (completed === 'incomplete' && done) return false;
@@ -85,10 +93,11 @@ export function saveProgress(slug, progress, storage = globalThis.localStorage) 
 }
 
 // ── Session URL shared by the bank page and the player ──
-export function playerUrl({ course, units = [], calculator = '', completed = 'all', result = 'all', limit = null, random = false }) {
+export function playerUrl({ course, units = [], calculator = '', kind = '', completed = 'all', result = 'all', limit = null, random = false }) {
   const p = new URLSearchParams({ course });
   if (units.length) p.set('units', [...units].sort((a, b) => a - b).join(','));
   if (calculator) p.set('calculator', calculator);
+  if (kind) p.set('kind', kind);
   if (completed !== 'all') p.set('completed', completed);
   if (result !== 'all') p.set('result', result);
   if (limit) p.set('limit', String(limit));
@@ -104,6 +113,7 @@ export function parseSession(search) {
     course: course.slug,
     units: (p.get('units') || '').split(',').map(Number).filter(n => Number.isInteger(n) && n >= 1 && n <= course.units.length),
     calculator: course.hasCalculator ? pick('calculator', ['calculator', 'non-calculator'], '') : '',
+    kind: course.hasKinds ? pick('kind', KINDS, '') : '',
     completed: pick('completed', ['completed', 'incomplete'], 'all'),
     result: pick('result', ['correct', 'incorrect'], 'all'),
     limit: Number.isInteger(limit) && limit > 0 ? limit : null,

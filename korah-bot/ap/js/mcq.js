@@ -1,7 +1,7 @@
 // AP MCQ bank page. Mirrors the SAT question bank (sat/js/sat-bank.js) and reuses
 // its markup and classes: course tiles open a unit picker with filters, and the
 // selection starts a session in mcq-player.html.
-import { COURSES, getCourse, loadBank, filterQuestions, unitStats, loadProgress, playerUrl } from './mcq-bank.js';
+import { COURSES, getCourse, unitLabel, loadBank, filterQuestions, unitStats, loadProgress, playerUrl } from './mcq-bank.js';
 
 const $ = id => document.getElementById(id);
 const entryCards = $('entryCards'), sectionModal = $('sectionModal'), sectionModalTitle = $('sectionModalTitle');
@@ -12,13 +12,14 @@ const selectionPill = $('selectionPill'), pillCountLabel = $('pillCountLabel'), 
 
 const banks = {};      // slug -> validated bank, or null when it failed to load
 const progress = {};   // slug -> { questionId: chosenIndex }
-const state = { course: null, units: [], calculator: '', completed: 'all', result: 'all', limit: null, random: false };
+const state = { course: null, units: [], calculator: '', kind: '', completed: 'all', result: 'all', limit: null, random: false };
 
 const SVG = (body, extra = '') => `<svg class="sat-ico ${extra}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
 const ICONS = {
   calculator: SVG('<rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="11" x2="8.01" y2="11"/><line x1="12" y1="11" x2="12.01" y2="11"/><line x1="16" y1="11" x2="16.01" y2="11"/><line x1="8" y1="16" x2="8.01" y2="16"/><line x1="12" y1="16" x2="12.01" y2="16"/><line x1="16" y1="16" x2="16.01" y2="16"/>'),
   completed: SVG('<circle cx="12" cy="12" r="9"/><polyline points="8 12 11 15 16 9"/>'),
   result: SVG('<circle cx="12" cy="12" r="9"/><path d="M12 3 a9 9 0 0 1 0 18 z" fill="currentColor" stroke="none"/>'),
+  kind: SVG('<path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 1 7 7c0 2.4-1.2 4.5-3 5.7V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.3C6.2 13.5 5 11.4 5 9a7 7 0 0 1 7-7z"/>'),
   caret: SVG('<polyline points="6 9 12 15 18 9"/>', 'sat-caret'),
   check: SVG('<polyline points="20 6 9 17 4 12"/>', 'sat-filter-check'),
   reset: SVG('<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>'),
@@ -32,6 +33,12 @@ const ART = {
     <path d="M14 92c22-2 34-14 44-34s22-36 46-40" stroke="#fff" stroke-opacity=".6" stroke-width="3" stroke-linecap="round"/>
     <path d="M40 96 78 30" stroke="#fff" stroke-opacity=".4" stroke-width="3" stroke-linecap="round"/><circle cx="58" cy="60" r="4.5" fill="#fff" fill-opacity=".7"/>
   </svg>`,
+  science: `<svg class="sat-entry-art" viewBox="0 0 120 120" fill="none" aria-hidden="true">
+    <path d="M12 100h96" stroke="#fff" stroke-opacity=".5" stroke-width="3" stroke-linecap="round"/>
+    <path d="M20 100 96 44v56z" fill="#fff" fill-opacity=".16" stroke="#fff" stroke-opacity=".55" stroke-width="3" stroke-linejoin="round"/>
+    <rect x="50" y="46" width="26" height="18" rx="2" transform="rotate(-36.4 63 64)" fill="#fff" fill-opacity=".3" stroke="#fff" stroke-opacity=".6" stroke-width="3"/>
+    <path d="M62 50 84 20" stroke="#fff" stroke-opacity=".7" stroke-width="3" stroke-linecap="round"/><path d="m74 21 10-1-1 10" stroke="#fff" stroke-opacity=".7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`,
   english: `<svg class="sat-entry-art" viewBox="0 0 120 120" fill="none" aria-hidden="true">
     <path d="M24 20h58l14 14v66H24z" fill="#fff" fill-opacity=".16" stroke="#fff" stroke-opacity=".55" stroke-width="3" stroke-linejoin="round"/>
     <path d="M82 20v14h14" stroke="#fff" stroke-opacity=".55" stroke-width="3" stroke-linejoin="round"/>
@@ -42,10 +49,11 @@ const ART = {
 
 const FILTERS = [
   { key: 'calculator', label: 'Calculator', calculatorOnly: true, options: [{ value: '', label: 'All questions' }, { value: 'non-calculator', label: 'No calculator' }, { value: 'calculator', label: 'Calculator' }] },
+  { key: 'kind', label: 'Question type', kindsOnly: true, options: [{ value: '', label: 'All questions' }, { value: 'conceptual', label: 'Conceptual' }, { value: 'quantitative', label: 'Calculation' }] },
   { key: 'completed', label: 'Completed', options: [{ value: 'all', label: 'All questions' }, { value: 'completed', label: 'Completed' }, { value: 'incomplete', label: 'Not completed' }] },
   { key: 'result', label: 'Result', options: [{ value: 'all', label: 'All questions' }, { value: 'correct', label: 'Correct' }, { value: 'incorrect', label: 'Incorrect' }] },
 ];
-const activeFilters = () => FILTERS.filter(f => !f.calculatorOnly || getCourse(state.course)?.hasCalculator);
+const activeFilters = () => FILTERS.filter(f => (!f.calculatorOnly || getCourse(state.course)?.hasCalculator) && (!f.kindsOnly || getCourse(state.course)?.hasKinds));
 const accClass = pct => (pct >= 60 ? 'is-good' : pct >= 35 ? 'is-mid' : 'is-low');
 const matching = (slug, units = []) => banks[slug] ? filterQuestions(banks[slug], { ...state, units }, progress[slug]) : [];
 
@@ -115,10 +123,10 @@ function renderUnits() {
   if (!course) { sectionColumns.innerHTML = ''; return; }
   const all = matching(course.slug), stats = unitStats(banks[course.slug], all, progress[course.slug]);
   const allSelected = state.units.length === course.units.length;
-  const rows = course.units.map((name, i) => {
+  const rows = course.units.map((_, i) => {
     const unit = i + 1, { total, attempts, correct } = stats[i];
     const pct = total ? Math.round(attempts / total * 100) : 0, accuracy = attempts ? Math.round(correct / attempts * 100) : null;
-    const label = course.hasCalculator ? `Unit ${unit}: ${name}` : name;
+    const label = unitLabel(course, unit);
     return `<div class="sat-topic-row${total ? '' : ' mcq-row-empty'}">
       <button class="sat-check ${state.units.includes(unit) ? 'is-active' : ''}" type="button" data-select-unit="${unit}" aria-pressed="${state.units.includes(unit)}" aria-label="Select ${label}"${total ? '' : ' disabled'}></button>
       <span class="sat-topic-heading">${label}</span>
@@ -131,12 +139,12 @@ function renderUnits() {
     <div class="sat-domain-grid"><section class="sat-domain-group">
       <div class="sat-domain-row">
         <button class="sat-check ${allSelected ? 'is-active' : ''}" type="button" data-select-all aria-pressed="${allSelected}" aria-label="Select all units"></button>
-        <button class="sat-domain-heading" type="button" data-select-all><strong class="sat-domain-name">${course.hasCalculator ? 'All units' : 'All periods'}</strong></button>
+        <button class="sat-domain-heading" type="button" data-select-all><strong class="sat-domain-name">All ${course.noun}s</strong></button>
       </div>
       <div class="sat-topic-list">${rows}</div>
     </section></div>
   </article>`;
-  const noun = course.hasCalculator ? 'unit' : 'period';
+  const noun = course.noun;
   practiceAllDesc.textContent = all.length
     ? `Start practicing all ${course.units.length} ${noun}s in ${course.name} (${all.length} question${all.length === 1 ? '' : 's'}).`
     : 'No questions match these filters. Reset the filters to see the full bank.';
@@ -145,7 +153,7 @@ function renderUnits() {
 function renderPill() {
   const course = getCourse(state.course), n = state.units.length;
   if (course && n > 0) {
-    const count = matching(course.slug, state.units).length, noun = course.hasCalculator ? 'unit' : 'period';
+    const count = matching(course.slug, state.units).length, noun = course.noun;
     selectionPill.removeAttribute('hidden');
     pillCountLabel.textContent = `${n} ${noun}${n === 1 ? '' : 's'} selected · ${count} question${count === 1 ? '' : 's'}`;
     pillStart.disabled = count === 0;
@@ -158,7 +166,7 @@ function renderAll() { updateFilterUI(); renderUnits(); renderPill(); }
 function openCourse(slug) {
   const course = getCourse(slug);
   if (!course || !banks[slug]) return;
-  Object.assign(state, { course: slug, units: [], calculator: '', completed: 'all', result: 'all' });
+  Object.assign(state, { course: slug, units: [], calculator: '', kind: '', completed: 'all', result: 'all' });
   sectionModalTitle.textContent = course.name;
   renderFilters();
   sectionModal.removeAttribute('hidden');
@@ -221,7 +229,7 @@ filtersToggle.addEventListener('click', () => {
   filtersToggle.classList.toggle('is-open', willOpen);
 });
 filterRow.addEventListener('click', e => {
-  if (e.target.closest('#resetFiltersBtn')) { Object.assign(state, { calculator: '', completed: 'all', result: 'all' }); closeMenus(); renderAll(); return; }
+  if (e.target.closest('#resetFiltersBtn')) { Object.assign(state, { calculator: '', kind: '', completed: 'all', result: 'all' }); closeMenus(); renderAll(); return; }
   const option = e.target.closest('.sat-filter-option');
   if (option) {
     state[option.dataset.filter] = option.dataset.value;
