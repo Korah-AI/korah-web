@@ -4,7 +4,7 @@
 const BLUE = '#3b82f6', PINK = '#ec4899', AMBER = '#f59e0b';
 const r = n => Math.round(n * 100) / 100;
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-const open = (w, h, alt) => `<svg class="ap-fig" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="${esc(alt)}" font-family="inherit" font-size="11" fill="none" stroke-linecap="round" stroke-linejoin="round">`;
+const open = (w, h, alt) => `<svg class="ap-fig" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="${esc(alt)}" font-family="inherit" font-size="12" fill="none" stroke-linecap="round" stroke-linejoin="round">`;
 
 // Coordinate-plane graph. curves: [{ fn, from, to } | { pts: [[x, y], ...] }], each with optional color / dash.
 // dots: [{ x, y, open }]. segments: short slope-field marks. shade: [{ top, bottom, from, to }].
@@ -14,12 +14,12 @@ function graph({ x: [xmin, xmax], y: [ymin, ymax], xstep = 1, ystep = 1, xlabel 
   const x0 = sx(Math.min(Math.max(0, xmin), xmax)), y0 = sy(Math.min(Math.max(0, ymin), ymax));
   let s = open(w, h, alt);
   for (let v = Math.ceil(xmin / xstep) * xstep; v <= xmax + 1e-9; v += xstep) {
-    s += `<line x1="${sx(v)}" y1="${sy(ymin)}" x2="${sx(v)}" y2="${sy(ymax)}" stroke="currentColor" stroke-opacity=".14"/>`;
-    if (Math.abs(v) > 1e-9) s += `<text x="${sx(v)}" y="${y0 + 13}" text-anchor="middle" fill="currentColor" fill-opacity=".8">${esc(r(v))}</text>`;
+    s += `<line x1="${sx(v)}" y1="${sy(ymin)}" x2="${sx(v)}" y2="${sy(ymax)}" stroke="currentColor" stroke-opacity=".22"/>`;
+    if (Math.abs(v) > 1e-9) s += `<text x="${sx(v)}" y="${y0 + 13}" text-anchor="middle" fill="currentColor">${esc(r(v))}</text>`;
   }
   for (let v = Math.ceil(ymin / ystep) * ystep; v <= ymax + 1e-9; v += ystep) {
-    s += `<line x1="${sx(xmin)}" y1="${sy(v)}" x2="${sx(xmax)}" y2="${sy(v)}" stroke="currentColor" stroke-opacity=".14"/>`;
-    if (Math.abs(v) > 1e-9) s += `<text x="${x0 - 5}" y="${sy(v) + 4}" text-anchor="end" fill="currentColor" fill-opacity=".8">${esc(r(v))}</text>`;
+    s += `<line x1="${sx(xmin)}" y1="${sy(v)}" x2="${sx(xmax)}" y2="${sy(v)}" stroke="currentColor" stroke-opacity=".22"/>`;
+    if (Math.abs(v) > 1e-9) s += `<text x="${x0 - 5}" y="${sy(v) + 4}" text-anchor="end" fill="currentColor">${esc(r(v))}</text>`;
   }
   for (const a of shade) {
     const n = 60, top = [], bottom = [];
@@ -48,9 +48,9 @@ function chart({ type = 'bar', title, categories, series, ymax, ystep, ylabel = 
   const sy = v => r(h - B - v / ymax * ph), band = pw / categories.length, colors = [BLUE, PINK, AMBER];
   let s = open(w, h, alt || title);
   s += `<text x="${w / 2}" y="15" text-anchor="middle" fill="currentColor" font-size="12.5" font-weight="700">${esc(title)}</text>`;
-  if (ylabel) s += `<text x="${L - 40}" y="28" fill="currentColor" fill-opacity=".8" font-size="10">${esc(ylabel)}</text>`;
-  for (let v = 0; v <= ymax + 1e-9; v += ystep) s += `<line x1="${L}" y1="${sy(v)}" x2="${w - R}" y2="${sy(v)}" stroke="currentColor" stroke-opacity="${v ? '.14' : '.9'}"/><text x="${L - 6}" y="${sy(v) + 4}" text-anchor="end" fill="currentColor" fill-opacity=".8">${esc(fmt(r(v)))}</text>`;
-  categories.forEach((c, i) => { s += `<text x="${r(L + band * (i + .5))}" y="${h - B + 14}" text-anchor="middle" fill="currentColor" fill-opacity=".85" font-size="${categories.length > 9 ? 9.5 : 11}">${esc(c)}</text>`; });
+  if (ylabel) s += `<text x="${L - 40}" y="28" fill="currentColor" font-size="10">${esc(ylabel)}</text>`;
+  for (let v = 0; v <= ymax + 1e-9; v += ystep) s += `<line x1="${L}" y1="${sy(v)}" x2="${w - R}" y2="${sy(v)}" stroke="currentColor" stroke-opacity="${v ? '.22' : '.9'}"/><text x="${L - 6}" y="${sy(v) + 4}" text-anchor="end" fill="currentColor">${esc(fmt(r(v)))}</text>`;
+  categories.forEach((c, i) => { s += `<text x="${r(L + band * (i + .5))}" y="${h - B + 14}" text-anchor="middle" fill="currentColor" font-size="${categories.length > 9 ? 9.5 : 11}">${esc(c)}</text>`; });
   series.forEach((sr, k) => {
     const color = sr.color || colors[k];
     if (type === 'bar') {

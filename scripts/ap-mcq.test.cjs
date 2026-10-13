@@ -5,15 +5,16 @@ const path = require('node:path');
 const banks = ['ap-calculus-ab', 'ap-us-history'].map(slug => JSON.parse(fs.readFileSync(path.join(__dirname, '../korah-bot/ap/data', slug, 'mcqs.json'), 'utf8')));
 const api = import('../korah-bot/ap/js/mcq-bank.js');
 
-test('each separate bank has at least 100 unique, complete questions covering every course unit', async () => {
+test('each separate bank has 200 unique, complete questions divided evenly among its units', async () => {
   const { validateBank, COURSES } = await api;
   const allIds = new Set();
   for (const bank of banks) {
     validateBank(bank, bank.course);
-    assert.ok(bank.questions.length >= 100);
+    assert.equal(bank.questions.length, 200);
     assert.equal(new Set(bank.questions.map(q => q.stem)).size, bank.questions.length);
     const course = COURSES.find(c => c.slug === bank.course);
-    for (let unit = 1; unit <= course.units.length; unit++) assert.ok(bank.questions.filter(q => q.unit === unit).length >= 10);
+    const perUnit = course.units.map((_, i) => bank.questions.filter(q => q.unit === i + 1).length);
+    assert.ok(Math.max(...perUnit) - Math.min(...perUnit) <= 1, 'questions are divided evenly among units: ' + perUnit);
     for (const q of bank.questions) {
       assert.ok(!allIds.has(q.id)); allIds.add(q.id);
       assert.ok(q.explanation.length > 40);
@@ -47,18 +48,18 @@ test('unit, calculator and progress filters intersect; empty filters restore the
   const { filterQuestions, unitStats } = await api;
   const [calc, history] = banks;
   const subset = filterQuestions(calc, { units: [6], calculator: 'calculator' });
-  assert.equal(subset.length, 6);
+  assert.equal(subset.length, 7);
   assert.ok(subset.every(q => q.unit === 6 && q.calculator === 'calculator'));
   for (let unit = 1; unit <= 8; unit++) for (const calculator of ['calculator', 'non-calculator']) assert.ok(filterQuestions(calc, { units: [unit], calculator }).length >= 4);
   assert.equal(filterQuestions(calc, { units: [2, 6] }).length, calc.questions.filter(q => q.unit === 2 || q.unit === 6).length);
   assert.equal(filterQuestions(calc).length, calc.questions.length);
-  assert.equal(filterQuestions(history, { units: [9], calculator: 'calculator' }).length, 15);
+  assert.equal(filterQuestions(history, { units: [9], calculator: 'calculator' }).length, 22);
   const [right, wrong] = calc.questions, progress = { [right.id]: right.answer, [wrong.id]: (wrong.answer + 1) % 4 };
   assert.deepEqual(filterQuestions(calc, { completed: 'completed' }, progress).map(q => q.id), [right.id, wrong.id]);
   assert.equal(filterQuestions(calc, { completed: 'incomplete' }, progress).length, calc.questions.length - 2);
   assert.deepEqual(filterQuestions(calc, { result: 'correct' }, progress).map(q => q.id), [right.id]);
   assert.deepEqual(filterQuestions(calc, { result: 'incorrect' }, progress).map(q => q.id), [wrong.id]);
-  assert.deepEqual(unitStats(calc, calc.questions, progress)[0], { total: 18, attempts: 2, correct: 1 });
+  assert.deepEqual(unitStats(calc, calc.questions, progress)[0], { total: 25, attempts: 2, correct: 1 });
 });
 
 test('session URLs round-trip, ignore invalid values, and honor limit and shuffle', async () => {
@@ -125,48 +126,62 @@ test('the build script reproduces the committed banks', () => {
 // Independently recalculate every calculator answer: midpoint quadrature,
 // Newton iteration, and centered finite differences (rather than the
 // Simpson quadrature / bisection used when authoring the answer key).
-const integral = (f, a, b) => { const n = 200000, h = (b-a)/n; let s=0; for(let i=0;i<n;i++) s+=f(a+(i+.5)*h); return s*h; };
+const integral = (f, a, b) => { const n = 20000, h = (b-a)/n; let s=0; for(let i=0;i<n;i++) s+=f(a+(i+.5)*h); return s*h; };
 const derivative = (f,x) => (f(x+1e-5)-f(x-1e-5))/2e-5;
 const root = (f,x) => { for(let i=0;i<20;i++) x-=f(x)/derivative(f,x); return x; };
 const num = text => Number(text.replace(/\\[()]/g, ''));
-test('all 36 calculator answer keys agree with independent numerical calculations', () => {
+test('all 50 calculator answer keys agree with independent numerical calculations', () => {
   const expectations = [
     4*Math.log(2),
     root(x=>Math.cos(x)-x/2,1),
     Math.exp(.3),
     2-Math.log(3),
+    Math.log(3)/Math.cos(1),
     derivative(x=>x*x*Math.sin(x),1.7),
     (Math.log(10)-Math.log(2))/2,
     (x=>Math.sqrt(x)+Math.cos(x)-x*derivative(t=>Math.sqrt(t)+Math.cos(t),x))(2),
     root(x=>derivative(t=>t**3-Math.exp(t),x)-2,1.5),
+    Math.sqrt((Math.exp(2)-1)/6),
     derivative(x=>Math.log(3+Math.sin(x*x)),1.2),
     1/derivative(y=>Math.cbrt(y+Math.cos(y)),1),
     1/derivative(x=>x**3+2*x+Math.exp(x),root(x=>x**3+2*x+Math.exp(x)-4,.7)),
     derivative(x=>Math.atan(Math.exp(x)),.5),
+    (f=>(f(1+1e-4)-2*f(1)+f(1-1e-4))/1e-8)(x=>Math.sin(Math.exp(x))),
     derivative(t=>20+30*Math.exp(-.24*t),5),
     root(t=>Math.sin(t)-.2*t,2.5),
     derivative(t=>40+4*Math.sin(t)+t**3/3,1.3),
     Math.log(1.7)**2,
+    derivative(t=>t*Math.cos(t*t/3),2),
+    derivative(t=>500/(1+4*Math.exp(-.3*t)),5),
     root(x=>Math.cos(x)-x/3,1),
     Math.sqrt(6),
     Math.log(3),
     ((x)=>x*x+Math.exp(-x))(root(x=>2*x-Math.exp(-x),.35)),
+    root(x=>Math.exp(-x)-.2*x,1.3),
+    root(x=>derivative(t=>t*Math.log(t+1),x)-Math.log(4),1.3),
     integral(x=>Math.exp(-x*x),0,2),
     12+integral(t=>4+Math.sin(t*t),0,3),
     7*Math.log(7)-2*Math.log(2)-5,
     derivative(x=>integral(t=>Math.sin(t*t),0,x*x),1.4),
     .5*[.25,.75,1.25,1.75].reduce((s,x)=>s+Math.exp(-x*x),0),
     50+80*(1-Math.exp(-.6))-18,
+    root(k=>integral(x=>Math.exp(-x*x),0,k)-.5,.5),
     100*Math.exp(-.17*8),
     root(t=>20+60*Math.exp(-.12*t)-45,7),
     Math.sqrt(4+2*Math.sin(1.2)),
     40*Math.exp(.035*18),
+    Math.log(.5)/(Math.log(.7)/6),
+    20+70*(5/7)**(12/5),
+    Math.sqrt(26/3),
+    25000*Math.exp(.5)-20000,
     integral(x=>Math.exp(-x)-x*x,0,root(x=>Math.exp(-x)-x*x,.7)),
     integral(t=>Math.abs(Math.sin(t)-.3),0,Math.PI),
     integral(x=>Math.sqrt(1+x**3),0,2)/2,
     Math.PI*integral(x=>Math.exp(-2*x*x),0,1),
     9*Math.PI/2+8,
     integral(x=>Math.abs(Math.cos(x)-.2*x),0,3),
+    integral(x=>Math.sin(x)-x*x,0,root(x=>Math.sin(x)-x*x,.9)),
+    Math.PI*integral(x=>Math.log(x)**2,1,3),
   ];
   const questions=banks[0].questions.filter(q=>q.calculator==='calculator');
   assert.equal(questions.length,expectations.length);

@@ -32,11 +32,11 @@ College Board questions, and no question-bank or textbook exercise text is repro
 
 | Bank | Total | Per unit | With figures | Calculator |
 | --- | ---: | --- | ---: | --- |
-| AP Calculus AB | 137 | 18, 18, 18, 18, 18, 19, 12, 16 | 17 | 36 calculator; 101 non-calculator |
-| AP U.S. History | 135 | 15 per period | 27 | Not applicable |
+| AP Calculus AB | 200 | 25 per unit | 26 | 50 calculator; 150 non-calculator |
+| AP U.S. History | 200 | 22 per period (23 in Periods 5 and 7) | 27 | Not applicable |
 
-**AP U.S. History** has 45 stimulus sets of three questions, five per period. Four
-sets per period use a verbatim excerpt from a public-domain primary source
+**AP U.S. History** has 63 stimulus sets, seven per period, each with three or
+four questions. Six sets per period use a verbatim excerpt from a public-domain primary source
 (pre-1929 publications and translations, or U.S. government works), quoted from The
 American Yawp Reader with original spelling. One set per period uses a chart or
 table drawn from public data, mostly the Census Bureau's *Historical Statistics of
@@ -45,7 +45,7 @@ texts (modern translations, post-1929 private speeches or books).
 
 **AP Calculus AB** math is written in LaTeX between `\(` and `\)` and rendered with
 KaTeX. Every unit has at least two questions built on a graph, slope field, or table
-of values, and at least four calculator and six non-calculator questions, so no
+of values, and at least five calculator and seventeen non-calculator questions, so no
 unit and calculator combination is empty. The OpenStax and College Board links are
 topic references only.
 
@@ -61,17 +61,19 @@ The JSON banks are generated. Edit the sources in `scripts/ap-mcq-build/` and ru
 node scripts/ap-mcq-build/build.cjs
 ```
 
-- `calculus.cjs`: question blocks (`@ unit | n or c | skill | optional figure key`,
+- `calculus.cjs` and `calculus-more.cjs` (second batch): question blocks (`@ unit | n or c | skill | optional figure key`,
   stem, `*` correct choice, three `-` distractors, `=` explanation) and the figures.
-- `history-documents.cjs`: primary-source sets. `history-charts.cjs`: chart and
-  table sets with their data.
+- `history-documents.cjs` and `history-more.cjs` (second batch, plus single
+  questions added to earlier sets): primary-source sets. `history-charts.cjs`:
+  chart and table sets with their data.
 - `figures.cjs`: SVG helpers (`graph`, `chart`) and `table`. Figures use
   `currentColor` for axes and text so they follow the light and dark themes, and
   every figure needs an `alt` description.
 
 List the correct choice first; the build reorders choices and assigns ids. Ids are
 positional, so inserting a question in the middle renumbers later ones and detaches
-their saved progress; append within a unit when possible. For a calculator question,
+their saved progress; append within a unit when possible. Keep the units
+balanced: the tests fail if one unit has two more questions than another. For a calculator question,
 add its independently computed value to the list in `scripts/ap-mcq.test.cjs`.
 
 ## Schema
@@ -91,10 +93,14 @@ scripts or event handlers) and sanitized with DOMPurify in the player.
 node --test scripts/ap-mcq.test.cjs
 ```
 
-Tests cover counts and unit coverage, unique ids and stems, even answer
+Tests cover the 200-question totals and even division among units, unique ids and stems, even answer
 distribution, LaTeX delimiters and the absence of plain-text math, figure coverage
 and safety, intersecting unit, calculator, and progress filters, session URLs,
 storage failures, mixed-course rejection, selected-course loading, and that the
-build script reproduces the committed banks. All 36 calculator keys are recomputed
+build script reproduces the committed banks. All 50 calculator keys are recomputed
 independently with midpoint quadrature, Newton iteration, finite differences, or
 closed forms.
+
+In dark mode `sat/sat.css` inverts every inline SVG inside question content. `mcq.css`
+turns that off for the AP player, because AP figures and KaTeX's radical signs already
+use the text color and would otherwise render black.
