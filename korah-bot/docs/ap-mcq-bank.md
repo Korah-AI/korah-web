@@ -34,7 +34,7 @@ College Board questions, and no question-bank or textbook exercise text is repro
 | --- | ---: | --- | ---: | --- |
 | AP Calculus AB | 200 | 25 per unit | 26 | 50 calculator; 150 non-calculator |
 | AP U.S. History | 200 | 22 per period (23 in Periods 5 and 7) | 27 | Not applicable |
-| AP Physics 1 | 100 | 12 or 13 per unit | 48 | Allowed on every question |
+| AP Physics 1 | 134 | 16 or 17 per unit | 65 | Allowed on every question |
 
 **AP U.S. History** has 63 stimulus sets, seven per period, each with three or
 four questions. Six sets per period use a verbatim excerpt from a public-domain primary source
@@ -51,9 +51,10 @@ unit and calculator combination is empty. The OpenStax and College Board links a
 topic references only.
 
 **AP Physics 1** follows the eight units of the current course framework (kinematics
-through fluids). Each question is tagged `conceptual` (33) or `quantitative` (67), and
+through fluids). Each question is tagged `conceptual` (67) or `quantitative` (67), matching the even
+split the tests enforce, and
 the bank page offers a Question type filter in place of the Calculator filter, because a
-calculator is allowed throughout that exam. Forty-eight questions use a diagram or graph
+calculator is allowed throughout that exam. Sixty-five questions use a diagram or graph
 (inclines, pulleys, collisions, torque setups, oscillators, fluid apparatus), and several
 figures are shared by two or three questions, as on the exam. Numerical questions state
 the value of g to use. The OpenStax link is a topic reference only.
@@ -75,7 +76,7 @@ node scripts/ap-mcq-build/build.cjs
 - `history-documents.cjs` and `history-more.cjs` (second batch, plus single
   questions added to earlier sets): primary-source sets. `history-charts.cjs`:
   chart and table sets with their data.
-- `physics1.cjs`: AP Physics 1 question blocks (`c` conceptual or `q` quantitative in
+- `physics1.cjs` and `physics1-more.cjs` (second batch): AP Physics 1 question blocks (`c` conceptual or `q` quantitative in
   the second field) and their figures. `diagram.cjs`: free-form SVG diagrams built
   from lines, arrows, shapes, and labels.
 - `figures.cjs`: SVG helpers (`graph`, `chart`) and `table`. Figures use
@@ -121,3 +122,7 @@ closed forms.
 In dark mode `sat/sat.css` inverts every inline SVG inside question content. `mcq.css`
 turns that off for the AP player, because AP figures and KaTeX's radical signs already
 use the text color and would otherwise render black.
+
+The bank page shows three course tiles to a row (two on tablets, one on phones); further
+courses wrap onto the next row. In the player, the unit label is filled with the course's
+tile color, set from `data-tone` on `<body>`.

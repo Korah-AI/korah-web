@@ -53,5 +53,15 @@ html[data-theme="dark"] .ap-mcq-player .ap-figure { color: #fff; }
 
 /* Third course tile. The SAT bank has two sections, so it defines only two tile colors and a two-column grid. */
 .sat-entry-card.is-science { --acc-fill: #12876a; }
-.mcq-bank-page .sat-entry-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); }
+/* Three course tiles to a row; a fourth course wraps onto the next row. */
+.mcq-bank-page .sat-entry-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 64rem) { .mcq-bank-page .sat-entry-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 40rem) { .mcq-bank-page .sat-entry-grid { grid-template-columns: 1fr; } }
 .sat-section-card.is-science .sat-progress-fill { background: linear-gradient(90deg, #2bb38f, #12876a); }
+
+/* The SAT player fills the domain label with a color per SAT domain and sets its text
+   white. AP unit names are not in that list, so without a fill the white text vanished
+   in light mode. Fill the label with the course's tile color instead. */
+body.sat-player-grey.ap-mcq-player .sat-domain-label[data-domain] { --acc-fill: #3472d9; }
+body.sat-player-grey.ap-mcq-player[data-tone="english"] .sat-domain-label[data-domain] { --acc-fill: #d03f87; }
+body.sat-player-grey.ap-mcq-player[data-tone="science"] .sat-domain-label[data-domain] { --acc-fill: #12876a; }

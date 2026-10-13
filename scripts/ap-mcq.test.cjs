@@ -124,22 +124,22 @@ test('the build script reproduces the committed banks', () => {
   assert.deepEqual(after, before);
 });
 
-test('the AP Physics 1 bank has 100 balanced questions mixing conceptual and quantitative items with figures', async () => {
+test('the AP Physics 1 bank has 134 questions, split evenly between conceptual and quantitative, with figures', async () => {
   const { validateBank, COURSES, filterQuestions, playerUrl, parseSession, buildSession } = await api;
   validateBank(physics, 'ap-physics-1');
   const course = COURSES.find(c => c.slug === 'ap-physics-1'), qs = physics.questions;
-  assert.equal(qs.length, 100);
-  assert.equal(new Set(qs.map(q => q.stem)).size, 100);
+  assert.equal(qs.length, 134);
+  assert.equal(new Set(qs.map(q => q.stem)).size, 134);
+  assert.equal(qs.filter(q => q.kind === 'conceptual').length, qs.filter(q => q.kind === 'quantitative').length, 'conceptual and quantitative counts match');
   assert.ok(qs.every(q => !banks.some(b => b.questions.some(o => o.id === q.id))));
   const perUnit = course.units.map((_, i) => qs.filter(q => q.unit === i + 1).length);
   assert.ok(Math.max(...perUnit) - Math.min(...perUnit) <= 1, 'questions are divided evenly among units: ' + perUnit);
   const counts = [0, 1, 2, 3].map(answer => qs.filter(q => q.answer === answer).length);
   assert.ok(Math.max(...counts) - Math.min(...counts) <= 2);
   for (const kind of ['conceptual', 'quantitative']) {
-    assert.ok(qs.filter(q => q.kind === kind).length >= 30, 'at least 30 ' + kind + ' questions');
-    for (let unit = 1; unit <= 8; unit++) assert.ok(filterQuestions(physics, { units: [unit], kind }).length >= 3, 'unit ' + unit + ' has ' + kind + ' questions');
+    for (let unit = 1; unit <= 8; unit++) assert.ok(filterQuestions(physics, { units: [unit], kind }).length >= 6, 'unit ' + unit + ' has ' + kind + ' questions');
   }
-  assert.ok(qs.filter(q => q.figure).length >= 40);
+  assert.ok(qs.filter(q => q.figure).length >= 60);
   for (let unit = 1; unit <= 8; unit++) assert.ok(qs.filter(q => q.unit === unit && q.figure).length >= 4, 'unit ' + unit + ' has figure questions');
   for (const q of qs) {
     assert.ok(q.explanation.length > 60);
@@ -150,7 +150,7 @@ test('the AP Physics 1 bank has 100 balanced questions mixing conceptual and qua
     }
   }
   // The type filter is physics-only, and it travels in the session URL.
-  assert.equal(filterQuestions(physics, { kind: 'conceptual' }).length + filterQuestions(physics, { kind: 'quantitative' }).length, 100);
+  assert.equal(filterQuestions(physics, { kind: 'conceptual' }).length + filterQuestions(physics, { kind: 'quantitative' }).length, 134);
   assert.equal(filterQuestions(banks[0], { kind: 'conceptual' }).length, banks[0].questions.length);
   const session = parseSession(playerUrl({ course: 'ap-physics-1', units: [5], kind: 'conceptual' }).split('?')[1]);
   assert.equal(session.kind, 'conceptual');

@@ -237,6 +237,7 @@ async function load() {
   if (!course) { loadState = 'unknown'; return render(); }
   loadState = 'loading'; render();
   document.title = `Korah AI — ${course.name} MCQ Practice`;
+  document.body.dataset.tone = course.tone; // colors the unit label to match the course tile
   try {
     bank = await loadBank(course.slug);
     progress = loadProgress(course.slug);

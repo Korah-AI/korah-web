@@ -45,7 +45,7 @@ function buildPhysics() {
     ced: { title: 'College Board — AP Physics 1 Course and Exam Description', url: 'https://apcentral.collegeboard.org/courses/ap-physics-1', note: 'Unit structure, science practices, and question style.' },
     openstax: { title: 'OpenStax — College Physics for AP Courses 2e', url: 'https://openstax.org/details/books/college-physics-ap-courses-2e', note: 'Topic reference only; questions, figures, and explanations are independently written.' },
   };
-  const questions = parseBlocks([source], figures, ['c', 'q']).map(({ unit, flag, skill, figure, stem, choices, explanation }, i) => {
+  const questions = parseBlocks([source, require('./physics1-more.cjs').source], figures, ['c', 'q']).map(({ unit, flag, skill, figure, stem, choices, explanation }, i) => {
     const q = { id: `ap-physics-1-mcq-${pad(i + 1)}`, course: 'ap-physics-1', unit, calculator: null, kind: flag === 'c' ? 'conceptual' : 'quantitative', skill };
     if (figure) q.figure = figure;
     return { ...q, stem, ...place(choices, i), explanation, sourceIds: ['ced', 'openstax'] };
