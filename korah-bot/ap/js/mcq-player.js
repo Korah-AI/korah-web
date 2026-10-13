@@ -122,7 +122,11 @@ function render() {
   counterText.textContent = `Question ${state.index + 1} of ${questions.length}`;
   typeset(questionParagraph, questionStem, answerChoices, feedbackPanel);
   nav.refresh();
+  if (q.id !== announcedId) { announcedId = q.id; window.dispatchEvent(new CustomEvent('korahAPQuestionChange')); }
 }
+// Read by mcq-ask-korah.js so Korah knows which question the student is on.
+let announcedId = null;
+window.KorahAPPlayer = { getCurrentQuestion: () => (loadState === 'ready' && questions[state.index] ? { course, unit: unitLabel(questions[state.index]), question: questions[state.index] } : null) };
 
 function goTo(index) {
   if (index < 0 || index >= questions.length) return;

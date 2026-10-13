@@ -7,6 +7,8 @@ export const COURSES = [
   { slug: 'ap-us-history', name: 'AP U.S. History', tone: 'english', hasCalculator: false, numbered: false, noun: 'period', units: ['Period 1: 1491–1607', 'Period 2: 1607–1754', 'Period 3: 1754–1800', 'Period 4: 1800–1848', 'Period 5: 1844–1877', 'Period 6: 1865–1898', 'Period 7: 1890–1945', 'Period 8: 1945–1980', 'Period 9: 1980–Present'] },
   // A calculator is allowed on every AP Physics 1 question, so the filter is by question type instead.
   { slug: 'ap-physics-1', name: 'AP Physics 1', tone: 'science', hasCalculator: false, hasKinds: true, numbered: true, noun: 'unit', units: ['Kinematics', 'Force and Translational Dynamics', 'Work, Energy, and Power', 'Linear Momentum', 'Torque and Rotational Dynamics', 'Energy and Momentum of Rotating Systems', 'Oscillations', 'Fluids'] },
+  { slug: 'ap-biology', name: 'AP Biology', tone: 'life', hasCalculator: false, numbered: true, noun: 'unit', units: ['Chemistry of Life', 'Cells', 'Cellular Energetics', 'Cell Communication and Cell Cycle', 'Heredity', 'Gene Expression and Regulation', 'Natural Selection', 'Ecology'] },
+  { slug: 'ap-physics-c-mechanics', name: 'AP Physics C: Mechanics', tone: 'mech', hasCalculator: false, hasKinds: true, numbered: true, noun: 'unit', units: ['Kinematics', 'Force and Translational Dynamics', 'Work, Energy, and Power', 'Linear Momentum', 'Torque and Rotational Dynamics', 'Energy and Momentum of Rotating Systems', 'Oscillations'] },
 ];
 
 export const KINDS = ['conceptual', 'quantitative'];

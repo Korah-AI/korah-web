@@ -35,6 +35,8 @@ College Board questions, and no question-bank or textbook exercise text is repro
 | AP Calculus AB | 200 | 25 per unit | 26 | 50 calculator; 150 non-calculator |
 | AP U.S. History | 200 | 22 per period (23 in Periods 5 and 7) | 27 | Not applicable |
 | AP Physics 1 | 134 | 16 or 17 per unit | 65 | Allowed on every question |
+| AP Biology | 100 | 12 or 13 per unit | 58 | Allowed on every question |
+| AP Physics C: Mechanics | 100 | 14 or 15 per unit | 27 | Allowed on every question |
 
 **AP U.S. History** has 63 stimulus sets, seven per period, each with three or
 four questions. Six sets per period use a verbatim excerpt from a public-domain primary source
@@ -59,6 +61,19 @@ calculator is allowed throughout that exam. Sixty-five questions use a diagram o
 figures are shared by two or three questions, as on the exam. Numerical questions state
 the value of g to use. The OpenStax link is a topic reference only.
 
+**AP Biology** follows the eight units of the course framework. Most questions are built
+on a graph, data table, or diagram (enzyme kinetics, water potential, signaling pathways,
+a pedigree, chi-square and linkage data, a gel, an operon, a phylogenetic tree, food web,
+and population curves). The data are invented for these questions and modeled on standard
+classroom investigations; they are not measurements from a published study.
+
+**AP Physics C: Mechanics** follows the seven units of the course framework and is
+calculus-based: derivatives and integrals of motion, drag as a differential equation,
+work and impulse by integration, potential energy curves, rotational inertia by
+integration, orbits, and physical pendulums. Questions are tagged `conceptual` (19) or
+`quantitative` (81), which reflects that exam's emphasis. Some figures are shared with
+AP Physics 1.
+
 Correct answers are spread evenly across A–D. Distribution is designed for unit
 practice, not a weighted full-length exam. Items have not been psychometrically
 calibrated or reviewed by an AP teacher.
@@ -79,6 +94,9 @@ node scripts/ap-mcq-build/build.cjs
 - `physics1.cjs` and `physics1-more.cjs` (second batch): AP Physics 1 question blocks (`c` conceptual or `q` quantitative in
   the second field) and their figures. `diagram.cjs`: free-form SVG diagrams built
   from lines, arrows, shapes, and labels.
+- `biology.cjs` and `physicsc.cjs`: AP Biology and AP Physics C: Mechanics question
+  blocks and figures. Both are built by `buildBlockCourse` in `build.cjs`, which is the
+  quickest route for a new course.
 - `figures.cjs`: SVG helpers (`graph`, `chart`) and `table`. Figures use
   `currentColor` for axes and text so they follow the light and dark themes, and
   every figure needs an `alt` description.
@@ -126,3 +144,26 @@ use the text color and would otherwise render black.
 The bank page shows three course tiles to a row (two on tablets, one on phones); further
 courses wrap onto the next row. In the player, the unit label is filled with the course's
 tile color, set from `data-tone` on `<body>`.
+
+## Ask Korah
+
+The player has the same Ask Korah panel as the SAT player (`ap/js/mcq-ask-korah.js`,
+`ap/ask-korah.css`, markup in `ap/mcq-player.html`). It sends the current question to the
+shared `/api/r` proxy with the header `X-Korah-Phase: ap-ask-korah`:
+
+- **Ask Korah tab:** a chat about the current question. The system prompt names the course
+  and includes the unit, skill, stimulus or figure (its description and SVG source, or
+  table rows), choices, correct answer, and the written explanation, and asks for an
+  AP-style breakdown: what is tested, the reasoning, why each wrong choice is tempting,
+  and an exam tip. Korah is told not to reveal the answer unless asked.
+- **Explanation tab:** "Korah Breakdown" requests a step-by-step breakdown as JSON and
+  renders it as numbered steps; "Answer Key" shows the bank's own explanation with no
+  request.
+
+Chats and generated breakdowns are saved in `localStorage` (`korahApChat_*`,
+`korahApExplain_*`), keyed by question id plus a hash of the stem so a rebuilt bank
+does not show a breakdown written for a different question. Nothing is written to
+Firestore. Model output is rendered through DOMPurify. The button is tagged
+`data-requires-auth`, so signed-out visitors get the sign-up prompt, as on the SAT player.
+
+`ask-korah.css` is a copy of the SAT player's inline panel styles; copy changes across by hand.

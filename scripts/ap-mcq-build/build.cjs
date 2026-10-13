@@ -53,6 +53,27 @@ function buildPhysics() {
   write('ap-physics-1', { schemaVersion: 2, course: 'ap-physics-1', title: 'AP Physics 1 MCQ practice', authorship: 'Original Korah AP-style questions and figures; not released College Board questions.', sources, questions });
 }
 
+// Courses whose questions use the block format and need no course-specific fields beyond "kind".
+function buildBlockCourse({ slug, title, file, flags, kinds, sources }) {
+  const { source, figures } = require(file);
+  const questions = parseBlocks([source], figures, flags).map(({ unit, flag, skill, figure, stem, choices, explanation }, i) => {
+    const q = { id: `${slug}-mcq-${pad(i + 1)}`, course: slug, unit, calculator: null };
+    if (kinds) q.kind = flag === 'c' ? 'conceptual' : 'quantitative';
+    q.skill = skill;
+    if (figure) q.figure = figure;
+    return { ...q, stem, ...place(choices, i), explanation, sourceIds: Object.keys(sources) };
+  });
+  write(slug, { schemaVersion: 2, course: slug, title, authorship: 'Original Korah AP-style questions and figures; not released College Board questions.', sources, questions });
+}
+const buildBiology = () => buildBlockCourse({ slug: 'ap-biology', title: 'AP Biology MCQ practice', file: './biology.cjs', flags: ['-'], kinds: false, sources: {
+  ced: { title: 'College Board — AP Biology Course and Exam Description', url: 'https://apcentral.collegeboard.org/courses/ap-biology', note: 'Unit structure, science practices, and question style.' },
+  openstax: { title: 'OpenStax — Biology for AP Courses', url: 'https://openstax.org/details/books/biology-ap-courses', note: 'Topic reference only; questions, data, and figures are independently written.' },
+} });
+const buildPhysicsC = () => buildBlockCourse({ slug: 'ap-physics-c-mechanics', title: 'AP Physics C: Mechanics MCQ practice', file: './physicsc.cjs', flags: ['c', 'q'], kinds: true, sources: {
+  ced: { title: 'College Board — AP Physics C: Mechanics Course and Exam Description', url: 'https://apcentral.collegeboard.org/courses/ap-physics-c-mechanics', note: 'Unit structure, science practices, and question style.' },
+  openstax: { title: 'OpenStax — University Physics, Volume 1', url: 'https://openstax.org/details/books/university-physics-volume-1', note: 'Topic reference only; questions, figures, and explanations are independently written.' },
+} });
+
 function buildHistory() {
   const more = require('./history-more.cjs'), charts = require('./history-charts.cjs');
   // Copy the question lists so the single added questions can be appended to their sets.
@@ -83,3 +104,5 @@ function buildHistory() {
 buildCalculus();
 buildHistory();
 buildPhysics();
+buildBiology();
+buildPhysicsC();

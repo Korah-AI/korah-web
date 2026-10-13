@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const banks = ['ap-calculus-ab', 'ap-us-history'].map(slug => JSON.parse(fs.readFileSync(path.join(__dirname, '../korah-bot/ap/data', slug, 'mcqs.json'), 'utf8')));
 const physics = JSON.parse(fs.readFileSync(path.join(__dirname, '../korah-bot/ap/data/ap-physics-1/mcqs.json'), 'utf8'));
+const [biology, physicsC] = ['ap-biology', 'ap-physics-c-mechanics'].map(slug => JSON.parse(fs.readFileSync(path.join(__dirname, '../korah-bot/ap/data', slug, 'mcqs.json'), 'utf8')));
 const api = import('../korah-bot/ap/js/mcq-bank.js');
 
 test('each separate bank has 200 unique, complete questions divided evenly among its units', async () => {
@@ -118,7 +119,7 @@ test('loader only requests the selected course and rejects missing data or inval
 });
 
 test('the build script reproduces the committed banks', () => {
-  const slugs = ['ap-calculus-ab', 'ap-us-history', 'ap-physics-1'], before = [...banks, physics].map(b => JSON.stringify(b));
+  const slugs = ['ap-calculus-ab', 'ap-us-history', 'ap-physics-1', 'ap-biology', 'ap-physics-c-mechanics'], before = [...banks, physics, biology, physicsC].map(b => JSON.stringify(b));
   require('node:child_process').execFileSync(process.execPath, [path.join(__dirname, 'ap-mcq-build/build.cjs')], { stdio: 'ignore' });
   const after = slugs.map(slug => JSON.stringify(JSON.parse(fs.readFileSync(path.join(__dirname, '../korah-bot/ap/data', slug, 'mcqs.json'), 'utf8'))));
   assert.deepEqual(after, before);
@@ -143,7 +144,7 @@ test('the AP Physics 1 bank has 134 questions, split evenly between conceptual a
   for (let unit = 1; unit <= 8; unit++) assert.ok(qs.filter(q => q.unit === unit && q.figure).length >= 4, 'unit ' + unit + ' has figure questions');
   for (const q of qs) {
     assert.ok(q.explanation.length > 60);
-    if (q.figure) { assert.ok(q.figure.alt.length > 20); assert.match(q.figure.svg, /^<svg[^>]+role="img"/); assert.doesNotMatch(q.figure.svg, /<script|\son\w+=|href=|NaN|undefined/i); }
+    if (q.figure) { assert.ok(q.figure.alt.length > 20); assert.match(q.figure.svg, /^<svg[^>]+role="img"/); assert.doesNotMatch(q.figure.svg, /<script|\son\w+=|href=/i); assert.doesNotMatch(q.figure.svg, /NaN|undefined/); }
     for (const text of [q.stem, q.explanation, ...q.choices]) {
       assert.equal(text.split('\\(').length, text.split('\\)').length, q.id + ': unbalanced math delimiters');
       assert.doesNotMatch(text, /[²³√→≤≥≈θμωρ]|\^\(/, q.id + ': plain-text math');
@@ -163,6 +164,43 @@ test('the AP Physics 1 bank has 134 questions, split evenly between conceptual a
   assert.throws(() => validateBank(untyped, 'ap-physics-1'));
   const typed = structuredClone(banks[0]); typed.questions[0].kind = 'conceptual';
   assert.throws(() => validateBank(typed, 'ap-calculus-ab'));
+});
+
+test('the AP Biology and AP Physics C: Mechanics banks each have 100 balanced, figure-rich questions', async () => {
+  const { validateBank, COURSES, filterQuestions, parseSession } = await api;
+  const seen = new Set([...banks, physics].flatMap(b => b.questions.map(q => q.id)));
+  for (const [bank, minFigures] of [[biology, 50], [physicsC, 25]]) {
+    validateBank(bank, bank.course);
+    const course = COURSES.find(c => c.slug === bank.course), qs = bank.questions;
+    assert.equal(qs.length, 100);
+    assert.equal(new Set(qs.map(q => q.stem)).size, 100);
+    for (const q of qs) { assert.ok(!seen.has(q.id)); seen.add(q.id); }
+    const perUnit = course.units.map((_, i) => qs.filter(q => q.unit === i + 1).length);
+    assert.ok(Math.max(...perUnit) - Math.min(...perUnit) <= 1, bank.course + ' units: ' + perUnit);
+    const counts = [0, 1, 2, 3].map(answer => qs.filter(q => q.answer === answer).length);
+    assert.ok(Math.max(...counts) - Math.min(...counts) <= 2);
+    assert.ok(qs.filter(q => q.figure).length >= minFigures);
+    for (let unit = 1; unit <= course.units.length; unit++) assert.ok(qs.filter(q => q.unit === unit && q.figure).length >= 2, bank.course + ' unit ' + unit + ' has figure questions');
+    for (const q of qs) {
+      assert.ok(q.explanation.length > 60);
+      if (q.figure) {
+        assert.ok(q.figure.alt.length > 20);
+        if (q.figure.svg) { assert.match(q.figure.svg, /^<svg[^>]+role="img"/); assert.doesNotMatch(q.figure.svg, /<script|\son\w+=|href=/i); assert.doesNotMatch(q.figure.svg, /NaN|undefined/); }
+        else assert.ok(q.figure.table.rows.every(row => row.length === q.figure.table.headers.length));
+      }
+      for (const text of [q.stem, q.explanation, ...q.choices]) assert.equal(text.split('\\(').length, text.split('\\)').length, q.id + ': unbalanced math delimiters');
+    }
+    for (const url of Object.values(bank.sources).map(s => s.url)) assert.equal(new URL(url).protocol, 'https:');
+  }
+  // Physics C carries the conceptual/quantitative tag; Biology does not.
+  assert.ok(biology.questions.every(q => q.kind === undefined));
+  assert.equal(filterQuestions(biology, { kind: 'conceptual' }).length, 100);
+  assert.equal(parseSession('course=ap-biology&kind=conceptual').kind, '');
+  assert.ok(filterQuestions(physicsC, { kind: 'conceptual' }).length >= 15);
+  assert.equal(filterQuestions(physicsC, { kind: 'conceptual' }).length + filterQuestions(physicsC, { kind: 'quantitative' }).length, 100);
+  for (const q of physicsC.questions) for (const text of [q.stem, q.explanation, ...q.choices]) assert.doesNotMatch(text, /[²³√→≤≥≈θμωρ∫]|\^\(/, q.id + ': plain-text math');
+  assert.throws(() => validateBank(biology, 'ap-physics-c-mechanics'));
+  assert.throws(() => validateBank(physicsC, 'ap-physics-1'));
 });
 
 // Independently recalculate every calculator answer: midpoint quadrature,

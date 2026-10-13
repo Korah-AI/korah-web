@@ -8,8 +8,10 @@ const open = (w, h, alt) => `<svg class="ap-fig" xmlns="http://www.w3.org/2000/s
 
 // Coordinate-plane graph. curves: [{ fn, from, to } | { pts: [[x, y], ...] }], each with optional color / dash.
 // dots: [{ x, y, open }]. segments: short slope-field marks. shade: [{ top, bottom, from, to }].
-function graph({ x: [xmin, xmax], y: [ymin, ymax], xstep = 1, ystep = 1, xlabel = 'x', ylabel = 'y', curves = [], dots = [], shade = [], field = null, notes = [], w = 340, h = 280, alt }) {
-  const L = 28, R = xlabel.length > 2 ? 46 : 18, T = 16, B = 24; // room for an axis label with units
+function graph({ x: [xmin, xmax], y: [ymin, ymax], xstep = 1, ystep = 1, xlabel = 'x', ylabel = 'y', xtitle = '', ytitle = '', curves = [], dots = [], shade = [], field = null, notes = [], w = 340, h = 280, alt }) {
+  // xtitle and ytitle are full axis titles for data graphs (centered below, and above the plot);
+  // xlabel and ylabel are the short italic variable names placed at the ends of the axes.
+  const L = ytitle ? 38 : 28, R = xlabel.length > 2 ? 46 : 18, T = ytitle ? 30 : 16, B = xtitle ? 42 : 24;
   const sx = v => r(L + (v - xmin) / (xmax - xmin) * (w - L - R)), sy = v => r(h - B - (v - ymin) / (ymax - ymin) * (h - T - B));
   const x0 = sx(Math.min(Math.max(0, xmin), xmax)), y0 = sy(Math.min(Math.max(0, ymin), ymax));
   let s = open(w, h, alt);
@@ -39,6 +41,8 @@ function graph({ x: [xmin, xmax], y: [ymin, ymax], xstep = 1, ystep = 1, xlabel 
   }
   for (const d of dots) s += `<circle cx="${sx(d.x)}" cy="${sy(d.y)}" r="3.6" stroke="${d.color || BLUE}" stroke-width="2" fill="${d.open ? 'var(--ap-fig-bg, #fff)' : (d.color || BLUE)}"/>`;
   for (const n of notes) s += `<text x="${sx(n.x)}" y="${sy(n.y)}" text-anchor="${n.anchor || 'start'}" fill="currentColor" font-style="italic" font-size="12">${esc(n.text)}</text>`;
+  if (xtitle) s += `<text x="${r((sx(xmin) + sx(xmax)) / 2)}" y="${h - 6}" text-anchor="middle" fill="currentColor">${esc(xtitle)}</text>`;
+  if (ytitle) s += `<text x="4" y="14" fill="currentColor">${esc(ytitle)}</text>`;
   return { svg: s + '</svg>', alt };
 }
 

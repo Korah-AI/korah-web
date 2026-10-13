@@ -39,6 +39,19 @@ const ART = {
     <rect x="50" y="46" width="26" height="18" rx="2" transform="rotate(-36.4 63 64)" fill="#fff" fill-opacity=".3" stroke="#fff" stroke-opacity=".6" stroke-width="3"/>
     <path d="M62 50 84 20" stroke="#fff" stroke-opacity=".7" stroke-width="3" stroke-linecap="round"/><path d="m74 21 10-1-1 10" stroke="#fff" stroke-opacity=".7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>`,
+  life: `<svg class="sat-entry-art" viewBox="0 0 120 120" fill="none" aria-hidden="true">
+    <path d="M38 12c0 24 44 24 44 48s-44 24-44 48" stroke="#fff" stroke-opacity=".6" stroke-width="3" stroke-linecap="round"/>
+    <path d="M82 12c0 24-44 24-44 48s44 24 44 48" stroke="#fff" stroke-opacity=".4" stroke-width="3" stroke-linecap="round"/>
+    <path d="M45 26h30M52 40h16M52 80h16M45 94h30" stroke="#fff" stroke-opacity=".5" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="60" cy="60" r="5" fill="#fff" fill-opacity=".7"/>
+  </svg>`,
+  mech: `<svg class="sat-entry-art" viewBox="0 0 120 120" fill="none" aria-hidden="true">
+    <path d="M14 14h92" stroke="#fff" stroke-opacity=".5" stroke-width="3" stroke-linecap="round"/>
+    <path d="M60 14 34 84" stroke="#fff" stroke-opacity=".6" stroke-width="3" stroke-linecap="round"/>
+    <path d="M60 14v78M60 14l26 70" stroke="#fff" stroke-opacity=".3" stroke-width="3" stroke-linecap="round" stroke-dasharray="5 6"/>
+    <circle cx="31" cy="92" r="13" fill="#fff" fill-opacity=".28" stroke="#fff" stroke-opacity=".65" stroke-width="3"/>
+    <path d="M28 106q32 14 60-8" stroke="#fff" stroke-opacity=".45" stroke-width="3" stroke-linecap="round"/>
+  </svg>`,
   english: `<svg class="sat-entry-art" viewBox="0 0 120 120" fill="none" aria-hidden="true">
     <path d="M24 20h58l14 14v66H24z" fill="#fff" fill-opacity=".16" stroke="#fff" stroke-opacity=".55" stroke-width="3" stroke-linejoin="round"/>
     <path d="M82 20v14h14" stroke="#fff" stroke-opacity=".55" stroke-width="3" stroke-linejoin="round"/>
