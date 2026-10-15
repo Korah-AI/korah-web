@@ -1,13 +1,15 @@
 # AP MCQ practice
 
-Entry: `/ap/mcqs.html`; linked from the AP sidebar and the FRQ course picker.
+Entry: the AP hub, `/ap/home.html` (sidebar AP tab and Home). Pick a course tile, or open `home.html#<course-slug>`.
 
 The feature follows the SAT question bank and reuses its styles (`sat/sat.css`):
 
-- **Bank page** (`ap/mcqs.html`, `ap/js/mcq.js`): one tile per course. A tile opens
-  the unit picker modal with a question limit, filters, "Practice all topics", a
+- **Hub** (`ap/home.html`, `ap/js/ap-home.js`): one tile per course in "My AP
+  subjects". A tile opens `home.html#<course-slug>`, the unit picker with a question limit, filters, "Practice all units", a
   Progress and Accuracy column per unit, and the bottom selection pill with
-  Randomize and Start. Filters are Calculator (Calculus only), Completed, and Result.
+  Randomize and Start. Filters are Calculator (Calculus only), Question type
+  (Physics only), Completed, and Result. `ap/mcqs.html` and `ap/js/mcq.js` are the
+  earlier standalone version of this page; nothing links to them anymore.
 - **Player** (`ap/mcq-player.html`, `ap/js/mcq-player.js`): the SAT player layout.
   History stimuli (excerpts, charts, tables) open in the left pane, as SAT Reading
   passages do; Calculus figures sit above the stem, as in SAT Math. Answer rows have

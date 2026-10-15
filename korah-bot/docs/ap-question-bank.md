@@ -4,7 +4,13 @@ How the AP question bank works and how to add a class to it. This replaces the
 original sourcing spec (still in git history at commit `e7ec34f`). The sourcing
 and licensing rules from that spec are not repeated here; see "Content rules".
 
-The flow has three stages, all under `korah-bot/ap/`:
+**Status:** the hub's course tiles and selector now use the MCQ banks (see
+`ap-mcq-bank.md`), so `home.html` no longer opens `practice.html` for a course.
+The `questions.json` banks, the selector described in section 2, and the player
+below are still in the repo. The only way in from the hub is the Practice Saved
+and Practice Errors buttons.
+
+The flow was three stages, all under `korah-bot/ap/`:
 
 ```text
 home.html (hub)  ->  home.html#{course-slug} (selector)  ->  practice.html (player)
@@ -14,7 +20,7 @@ home.html (hub)  ->  home.html#{course-slug} (selector)  ->  practice.html (play
 
 | File | Role |
 | --- | --- |
-| `ap/home.html`, `ap/js/ap-home.js` | Hub and selector. One page, two views. |
+| `ap/home.html`, `ap/js/ap-home.js` | Hub and MCQ selector. One page, two views. |
 | `ap/js/ap-bank.js` | Course list (`COURSES`) and `loadQuestionBank(slug)`. |
 | `ap/data/{slug}/questions.json` | Units, subtopics, and questions for one course. |
 | `ap/practice.html` | Player. A copy of `sat/questions.html` with AP wiring. |
@@ -30,14 +36,17 @@ both link here.
 
 - Greeting, countdown to the exam date (`EXAM_START` in `ap-home.js`), shortcut
   pills, four stat cards, and one card per course.
-- Course cards are generated from `KorahAP.getCourses()`, so they follow
-  `COURSES` in `ap-bank.js`.
+- Course cards are generated from `COURSES` in `mcq-bank.js`.
 - Stats come from `KorahAPQuestions.getSummary()` after sign-in: attempts,
   accuracy, saved questions, and recent errors. The Saved and Errors cards show
   a Practice button when their count is above 0. Guests see zeros.
-- Both course JSON files are prefetched when the page loads.
+- Every course's MCQ bank is prefetched when the page loads.
 
 ## 2. Selector (`home.html#{course-slug}`)
+
+> Superseded: `home.html#{course-slug}` now shows the MCQ unit picker (units only,
+> no subtopics or difficulty; see `ap-mcq-bank.md`). What follows describes the
+> old `questions.json` selector, which no longer renders.
 
 Same page, switched by `hashchange`. There is no separate file. A card or pill
 links to `#ap-calculus-ab` and `route()` swaps the views immediately. The unit

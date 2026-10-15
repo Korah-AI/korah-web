@@ -39,6 +39,7 @@
 <link rel="stylesheet" href="../app/korah-chat.css"/>
 <link rel="stylesheet" href="../sat/sat.css"/>
 <link rel="stylesheet" href="./ap.css"/>
+<link rel="stylesheet" href="./mcq.css"/>
 </head>
 
 <body class="sat-grey">
@@ -190,6 +191,7 @@
         </nav>
         <h1 class="ap-hub-title" id="courseTitle"></h1>
 
+        <!-- Replaced by the MCQ unit picker below (no subtopics in the MCQ banks).
         <section class="ap-hub-panel">
           <div class="sat-session-bar">
             <div class="sat-limit-dd" id="limitDropdown">
@@ -231,6 +233,50 @@
             These are original practice questions aligned to public AP course topics. Korah is not affiliated with or endorsed by College Board.
           </p>
         </section>
+        -->
+        <section class="ap-hub-panel">
+          <div class="sat-session-bar">
+            <div class="sat-limit-dd" id="limitDropdown">
+              <button id="limitToggle" class="sat-filters-toggle t-btn" type="button" aria-expanded="false" aria-label="Set question limit">
+                <svg class="sat-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                <span id="limitToggleLabel">Question Limit</span>
+                <svg class="sat-ico sat-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              <div id="limitMenu" class="sat-limit-menu">
+                <div class="sat-filter-note">Number of questions</div>
+                <input id="limitInput" type="text" class="sat-limit-input" placeholder="e.g. 20 (blank = no limit)" />
+              </div>
+            </div>
+            <button id="filtersToggle" class="sat-filters-toggle t-btn" type="button" aria-expanded="false" aria-controls="filterRow" aria-label="Toggle filters">
+              <svg class="sat-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+              <span>Filters</span>
+              <span id="filtersBadge" class="sat-filters-badge" hidden>0</span>
+              <svg class="sat-ico sat-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+          </div>
+          <!-- Filter buttons are rendered by ap-home.js from its FILTERS config -->
+          <div class="sat-filter-row" id="filterRow" hidden></div>
+
+          <div class="sat-practice-all">
+            <div class="sat-practice-all-text">
+              <h3 class="sat-practice-all-title">Practice all units</h3>
+              <p class="sat-practice-all-desc" id="practiceAllDesc"></p>
+            </div>
+            <button id="practiceAllBtn" class="sat-practice-all-btn t-btn" type="button">Start practice</button>
+          </div>
+
+          <!-- Replaced by a full-width list; the SAT section card sized itself to a grid column.
+          <section class="sat-bank-layout">
+            <div class="sat-section-column" id="unitList"></div>
+          </section>
+          -->
+          <div id="unitList"></div>
+
+          <p class="ap-qb-disclaimer">
+            Independent AP-style practice written for Korah. History questions are built on public-domain primary sources and public data; calculus, physics, and biology questions and figures are original, and the biology data are illustrative. None of these are released College Board exam questions. Korah is not affiliated with or endorsed by College Board. Progress is saved in this browser.
+          </p>
+          <details class="mcq-sources" id="mcqSources" hidden><summary>Sources</summary><div id="mcqSourceList"></div></details>
+        </section>
       </section>
 
     </div>
@@ -266,8 +312,8 @@
   }, { once: true });
 </script>
 
-<script src="./js/ap-bank.js"></script>
-<script src="./js/ap-home.js"></script>
+<!-- <script src="./js/ap-bank.js"></script> -->
+<script type="module" src="./js/ap-home.js"></script>
 
 </body>
 </html>

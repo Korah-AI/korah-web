@@ -60,9 +60,9 @@ function showMessage(title, body, actions) {
 
 function render() {
   if (loadState === 'loading') return showMessage('Loading questions…', 'Opening the question bank for this course.', '');
-  if (loadState === 'error') return showMessage('We couldn’t load this question bank', 'Check your connection and try again.', '<button class="sat-button sat-button-primary" type="button" id="retryLoadBtn">Retry</button><a class="sat-button sat-button-ghost" href="./mcqs.html">Back to bank</a>');
-  if (loadState === 'unknown') return showMessage('Unknown course', 'Choose a course from the MCQ bank to start practicing.', '<a class="sat-button sat-button-primary" href="./mcqs.html">Back to bank</a>');
-  if (!questions.length) return showMessage('No questions matched this selection', 'Try other units or reset the filters.', '<a class="sat-button sat-button-primary" href="./mcqs.html">Back to bank</a>');
+  if (loadState === 'error') return showMessage('We couldn’t load this question bank', 'Check your connection and try again.', '<button class="sat-button sat-button-primary" type="button" id="retryLoadBtn">Retry</button><a class="sat-button sat-button-ghost" href="./home.html">Back to bank</a>');
+  if (loadState === 'unknown') return showMessage('Unknown course', 'Choose a course from the MCQ bank to start practicing.', '<a class="sat-button sat-button-primary" href="./home.html">Back to bank</a>');
+  if (!questions.length) return showMessage('No questions matched this selection', 'Try other units or reset the filters.', '<a class="sat-button sat-button-primary" href="./home.html">Back to bank</a>');
 
   const q = questions[state.index], selected = state.answers[q.id], checked = !!state.checked[q.id];
   const correct = selected === q.answer, eliminated = state.eliminated[q.id] || {};
@@ -135,7 +135,7 @@ function goTo(index) {
   render();
   $('playerScroll').scrollTop = 0;
 }
-const leave = () => { if (window.KorahTransitions?.go) window.KorahTransitions.go('./mcqs.html'); else location.href = './mcqs.html'; };
+const leave = () => { const home = './home.html' + (course ? '#' + course.slug : ''); if (window.KorahTransitions?.go) window.KorahTransitions.go(home); else location.href = home; };
 
 // ── Stopwatch: time on the current question ──
 const stopwatch = (() => {
