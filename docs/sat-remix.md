@@ -1,7 +1,7 @@
 # SAT question remix
 
 The footer Remix button sends the actual passage, stem, choices, answer key and
-metadata to `/api/gem-proxy`. Visible SVGs and images are rasterized to PNG image
+metadata to `/api/r`. Visible SVGs and images are rasterized to PNG image
 parts. Image failures stop generation instead of silently dropping figures.
 Returned HTML/MathML and new SVG figures are validated and sanitized before the
 existing player displays and grades the remix. The generated explanation is

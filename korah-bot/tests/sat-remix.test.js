@@ -49,7 +49,7 @@ test('numeric remixes reject invalid and zero-denominator answers', () => {
 function model(h, counter = { calls: 0 }) {
   h.context.fetch = async (url, request) => {
     counter.calls++;
-    assert.equal(url, '/api/gem-proxy');
+    assert.equal(url, '/api/r');
     const body = JSON.parse(request.body);
     assert.equal(body.response_format.type, 'json_object');
     assert.match(body.messages[1].content[0].text, /Complete source question/);
