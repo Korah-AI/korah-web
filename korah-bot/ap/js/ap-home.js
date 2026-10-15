@@ -1,7 +1,7 @@
 // AP hub: course tiles at "#", and the MCQ unit picker for a course at
 // "#<course-slug>". Courses, banks, and progress come from mcq-bank.js (see
 // docs/ap-mcq-bank.md); the Start buttons hand the selection to mcq-player.html.
-import { COURSES, getCourse, unitLabel, loadBank, filterQuestions, unitStats, loadProgress, playerUrl } from './mcq-bank.js';
+import { COURSES, getCourse, unitLabel, loadBank, filterQuestions, unitStats, loadProgress, saveProgress, playerUrl } from './mcq-bank.js';
 
 const EXAM_START = new Date(2027, 4, 3);
 const COURSE_ICONS = { 'ap-calculus-ab': 'calculate', 'ap-us-history': 'history_edu', 'ap-physics-1': 'speed', 'ap-biology': 'biotech', 'ap-physics-c-mechanics': 'bolt' };
@@ -79,6 +79,17 @@ async function renderStats() {
     $('hubErrors').textContent = s.errors;
     $('hubSavedBtn').hidden = !s.saved;
     $('hubErrorsBtn').hidden = !s.errors;
+    // Copy the account's latest MCQ answers into each course's local progress, so
+    // the unit Progress and Accuracy columns match on every device.
+    COURSES.forEach(c => {
+      const local = loadProgress(c.slug);
+      let changed = false;
+      s.latest.forEach((o, id) => {
+        if (id.startsWith(c.slug + '-mcq-') && Number.isInteger(o.choice) && local[id] !== o.choice) { local[id] = o.choice; changed = true; }
+      });
+      if (changed) { saveProgress(c.slug, local); progress[c.slug] = local; }
+    });
+    if (state.course && banks[state.course]) renderAll();
   } catch (e) {
     console.warn('[AP] stats unavailable', e);
   }
@@ -304,6 +315,7 @@ window.addEventListener('pageshow', event => {
   if (!event.persisted) return;
   COURSES.forEach(c => { progress[c.slug] = loadProgress(c.slug); });
   if (state.course && banks[state.course]) renderAll();
+  renderStats();
 });
 window.addEventListener('hashchange', route);
 COURSES.forEach(c => ensureBank(c.slug));

@@ -7,8 +7,8 @@ and licensing rules from that spec are not repeated here; see "Content rules".
 **Status:** the hub's course tiles and selector now use the MCQ banks (see
 `ap-mcq-bank.md`), so `home.html` no longer opens `practice.html` for a course.
 The `questions.json` banks, the selector described in section 2, and the player
-below are still in the repo. The only way in from the hub is the Practice Saved
-and Practice Errors buttons.
+below are still in the repo, but nothing links to `practice.html` anymore: the
+Practice Saved and Practice Errors buttons now open `mcq-player.html?mode=saved|errors`.
 
 The flow was three stages, all under `korah-bot/ap/`:
 
@@ -102,7 +102,7 @@ loads the shared `sat/sat.css`, `sat-player-theme.css`, `question-content.js`,
 Firestore paths, under `users/{uid}/`:
 
 - `apQuestionAttempts/{auto}`: `questionId`, `unit`, `unitLabel`, `difficulty`,
-  `correct`, `timeSpent`, `ts`.
+  `correct`, `timeSpent`, `ts`. The MCQ player also sends `course` and `choice`.
 - `apQuestionBookmarks/{questionId}`: `questionId`, `unit`, `unitLabel`, `ts`.
 
 These are separate from `apAttempts`, which the FRQ and mock-exam pages use.

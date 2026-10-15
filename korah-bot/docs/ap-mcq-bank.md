@@ -23,8 +23,14 @@ The feature follows the SAT question bank and reuses its styles (`sat/sat.css`):
 inline player styles. If the SAT player's inline styles change, copy the change over.
 
 Checked answers are stored per course in `localStorage`
-(`korah_ap_mcq_progress_<course>`), so progress stays in the browser it was made in
-and is not synced to the account, FRQ progress, or mock-exam scores. Answer checking
+(`korah_ap_mcq_progress_<course>`). For signed-in users the player also writes each
+checked answer to `users/{uid}/apQuestionAttempts` (with `course` and `choice`) and
+Mark for Review to `users/{uid}/apQuestionBookmarks`, through
+`ap/js/ap-question-analytics.js`. The hub reads both for its stat cards, and copies
+the latest choice per question back into local progress so the unit columns match
+across devices. Practice Saved and Practice Errors open
+`mcq-player.html?mode=saved|errors`, which pulls those ids from every course's bank.
+MCQ progress is separate from FRQ progress and mock-exam scores. Answer checking
 is client-side practice, not a secure assessment.
 
 ## Content and provenance

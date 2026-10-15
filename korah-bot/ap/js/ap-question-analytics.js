@@ -7,7 +7,8 @@
  *
  * Separate from apAttempts (FRQ and mock-exam attempts). The method names
  * match KorahSATAnalytics, so practice.html can hand this object to the SAT
- * player unchanged. Also attached to window.KorahAPQuestions for the hub.
+ * player unchanged. Also attached to window.KorahAPQuestions for the hub and
+ * the MCQ player (mcq-player.js), which also sends course and choice.
  */
 
 import {
@@ -41,11 +42,13 @@ export async function initApQuestionAnalytics(app, uid) {
     if (!a || !ID_FORMAT.test(a.questionId || "")) return;
     await addDoc(attemptsCol, {
       questionId: a.questionId,
+      course: a.course || "",
       unit: a.skillCd || "",
       unitLabel: a.domain || "",
       difficulty: a.difficulty || "",
       correct: Boolean(a.correct),
       timeSpent: Number(a.timeSpent) || 0,
+      ...(Number.isInteger(a.choice) ? { choice: a.choice } : {}),
       ts: new Date().toISOString(),
     });
   }
@@ -78,7 +81,7 @@ export async function initApQuestionAnalytics(app, uid) {
   function latestOutcomes(attempts) {
     const map = new Map();
     attempts.forEach((a) => {
-      if (!map.has(a.questionId)) map.set(a.questionId, { correct: Boolean(a.correct), timeSpent: a.timeSpent || 0 });
+      if (!map.has(a.questionId)) map.set(a.questionId, { correct: Boolean(a.correct), timeSpent: a.timeSpent || 0, choice: a.choice });
     });
     return map;
   }
@@ -94,12 +97,14 @@ export async function initApQuestionAnalytics(app, uid) {
 
   async function getSummary() {
     const [attempts, bookmarks] = await Promise.all([readAttempts(), getBookmarks()]);
-    const errors = [...latestOutcomes(attempts)].filter(([, o]) => !o.correct).length;
+    const latest = latestOutcomes(attempts);
+    const errors = [...latest].filter(([, o]) => !o.correct).length;
     return {
       attempted: attempts.length,
       correct: attempts.filter((a) => a.correct).length,
       saved: bookmarks.length,
       errors: Math.min(errors, ERROR_LIMIT),
+      latest, // the hub copies MCQ choices from this into each course's local progress
     };
   }
 
