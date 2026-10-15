@@ -21,14 +21,22 @@
   <!-- Tab Selector -->
   <div class="sidebar-tab-selector">
     <a href="/home.html?tab=sat" class="sidebar-tab-pill tab-sat" :class="{ active: activeTab === 'sat' }">SAT</a>
-    <a href="/ap/index.html" class="sidebar-tab-pill tab-ap" :class="{ active: activeTab === 'ap' }">AP</a>
+    <a href="/ap/home.html" class="sidebar-tab-pill tab-ap" :class="{ active: activeTab === 'ap' }">AP</a>
     <a href="/college-prep/index.html" class="sidebar-tab-pill tab-college-prep" :class="{ active: activeTab === 'college-prep' }">College Prep</a>
   </div>
 
   <nav class="sidebar-nav">
     <div>
       <span class="sidebar-section-label">HOME</span>
+      <!-- Replaced by the two Home templates below, so the AP tab gets its own home.
       <a href="/home.html" data-nav="home" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">home</span> <span class="nav-text">Home</span></a>
+      -->
+      <template x-if="activeTab !== 'ap'">
+        <a href="/home.html" data-nav="home" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">home</span> <span class="nav-text">Home</span></a>
+      </template>
+      <template x-if="activeTab === 'ap'">
+        <a href="/ap/home.html" data-nav="home" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">home</span> <span class="nav-text">Home</span></a>
+      </template>
       <a href="/chat.html" data-nav="chat" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">chat</span> <span class="nav-text">Ask Korah</span></a>
       <!-- STUDY LINK TEMPORARILY REPLACED BY PROBLEM OF THE DAY - restore by uncommenting the line below -->
       <!-- <a href="/study/feed.html" data-nav="study" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">school</span> <span class="nav-text">Study</span></a> -->
@@ -68,6 +76,9 @@
         <span class="sidebar-section-label">AP Practice</span>
         <a href="/ap/index.html" data-nav="ap-practice" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">assignment</span> <span class="nav-text">FRQ Practice</span></a>
         <a href="/ap/mcqs.html" data-nav="ap-mcq" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">checklist</span> <span class="nav-text">MCQ Practice</span></a>
+        <!-- Question Bank moved into the AP hub (ap/home.html#course).
+        <a href="/ap/questions.html" data-nav="ap-question-bank" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">quiz</span> <span class="nav-text">Question Bank</span></a>
+        -->
         <a href="/ap/exams.html" data-nav="ap-exams" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">functions</span> <span class="nav-text">Mock Exams</span></a>
         <a href="/ap/progress.html" data-nav="ap-progress" class="sidebar-nav-link t-btn"><span class="material-icons-round" style="font-size: 1.25rem;">trending_up</span> <span class="nav-text">AP Progress</span></a>
       </div>
