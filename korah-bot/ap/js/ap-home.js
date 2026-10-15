@@ -40,7 +40,7 @@ const matching = (slug, units = []) => banks[slug] ? filterQuestions(banks[slug]
 function renderHub() {
   const hour = new Date().getHours();
   $('hubGreeting').textContent = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
-  $('hubName').textContent = localStorage.getItem('korah_first_name') || 'there';
+  $('hubName').textContent = localStorage.getItem('korah_first_name') || 'guest';
   $('hubExamDate').textContent = EXAM_START.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
   renderJump();
   $('hubCourses').innerHTML = COURSES.map(c => `

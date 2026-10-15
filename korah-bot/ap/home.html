@@ -86,6 +86,10 @@
       showGuestToastOnce();
       return;
     }
+    // korah_first_name is only written from the settings modal, so fall back to the account name.
+    const firstName = localStorage.getItem('korah_first_name') || user.displayName?.trim().split(/\s+/)[0];
+    const nameEl = document.getElementById('hubName');
+    if (nameEl && firstName) nameEl.textContent = firstName;
     await setupKorahDB(app, user.uid);
     await initApQuestionAnalytics(app, user.uid);
     window.dispatchEvent(new CustomEvent('korahAPQuestionsReady'));
@@ -154,7 +158,7 @@
       <section id="hubView" class="ap-hub-view">
         <div class="ap-hub-top">
           <div>
-            <h1 class="ap-hub-greet"><span id="hubGreeting">Hello</span>, <span class="name" id="hubName">there</span></h1>
+            <h1 class="ap-hub-greet"><span id="hubGreeting">Hello</span>, <span class="name" id="hubName">guest</span></h1>
             <p class="ap-hub-greet-sub">Quickly pick a subject to start practicing!</p>
             <div class="ap-hub-jump" id="hubJump"></div>
           </div>
