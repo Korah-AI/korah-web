@@ -30,6 +30,7 @@
 ## Internship Info
 
 - **code/code.html** - Landing page for "Korah CODE," the dev internship
+- **code/interns.html** - Showcase page for the work produced during the Korah CODE internship
 
 ## Landing Page
 

@@ -60,12 +60,164 @@ For multi-step tasks, state a brief plan:
 
 Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
 
+## 5. Read the Docs First
+
+**There are two documentation directories. Check both before starting work.**
+
+- `../docs/` — repo-level docs (architecture, APIs, feature designs, proposals)
+- `docs/` — `korah-bot/docs/`, feature and research notes
+
+Do this before writing code, not after:
+
+1. `ls ../docs docs` and read the filenames.
+2. Open anything whose subject overlaps your task. If nothing obviously matches,
+   grep both directories for the feature, file, or route you're about to touch.
+3. Note the doc's status. Some describe what exists; some are proposals that were
+   never implemented (`rate-limiting-upstash.md` says **"Status: Proposed, not
+   implemented"** in its header). Do not treat a proposal as a description of the
+   current code.
+4. Filenames are not reliable signposts. Several are named after their author
+   (`daniels-docs.md`, `Om-docs.md`, `bushis-docs.md`) rather than their subject —
+   `daniels-docs.md` is the full architecture map, and it is the best entry point
+   for locating a feature or tracing a request.
+
+**Verify before you rely on it.** These docs are hand-maintained and drift behind
+the code. Confirm any specific claim (a file path, a route name, a function
+signature) against the actual file before acting on it.
+
+**When you find a doc that is wrong, fix it as part of your work.** Correct the
+stale lines in place — don't rewrite the document, don't restructure it, and
+don't add new sections beyond the correction. Same rule as §3: surgical.
+
+**When your change makes a doc wrong, update it in the same commit.** If you
+rename a route, move a page, or change a data shape that a doc describes, the doc
+edit is part of the change, not a follow-up.
+
+Creating a *new* doc is a separate task. Ask first — don't add one unprompted.
+
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
 
 ---
 
+## Commit Messages
+
+**Simple label, simple description. No em dashes.**
+
+- One short label line, then a plain description of what changed and why.
+- Write straightforwardly. No em dashes, no marketing tone, no filler.
+- Describe what the change does, not how impressive it is.
+- Get as technical as the change warrants. File names, function names,
+  selectors, CSS tokens, and API routes are fine and often better than a vague
+  summary. Just keep the prose plain.
+
+Simple change:
+```
+Fix logout button race on the SAT sidebar
+
+The logout handler fired before the session cleared, so the redirect
+sometimes landed back on the dashboard. Wait for the clear first.
+```
+
+Bigger change, more technical:
+```
+Move sidebar greying into a shared stylesheet
+
+Pulled the duplicated .sidebar rules out of sat/dashboard.html,
+study/feed.html, and study/guide.html into study-grey.css. Swapped the
+purple --sf/--bd tokens for the grey resting surfaces per
+docs/WIZARD-UI-PATTERNS.md. Scrollbar width stays at 6px.
+```
+
+**Co-sign trailers (`Co-Authored-By`, `Claude-Session`):**
+- Only for bigger commits: multi-file changes, new features, refactors.
+- Small commits (typos, one-line fixes, style tweaks) don't need them.
+- When in doubt, ask before adding them.
+
+---
+
 ## Project Notes
 
-See `../README.md` for the API route map.
+See `../README.md` for the API route map and the source-control tips (there is no
+working local preview — you commit and check the deployed site).
+
+**Building a wizard or multi-step flow?** Read `../docs/WIZARD-UI-PATTERNS.md` first.
+It covers the house UI/UX conventions — grey resting surfaces (never the purple
+`--sf`/`--bd` tokens), per-option accent tones, filled-not-outlined selected states,
+no dimmed text, the step shell and transitions, custom popups instead of
+`alert()`/`confirm()` — with the reference implementations in
+`korah-bot/sat/study-plan.html`, `sat-rush.css` and `js/sat-rush.js`.
+
+### UI conventions
+
+- **Hover and selected states scale, they never translate.** Use
+  `transform: scale(1.01–1.08)` (bigger scale for smaller elements) with a
+  ~0.18s ease transition. No `translateY` lifts or `translateX` nudges — sliding
+  drags neighbouring alignment and reads as a jump. `translate` is still fine for
+  positioning (e.g. `translateY(-50%)` centering).
+
+- **Dropdowns all use the same shell and motion.** Reference implementations:
+  `.sat-filter-menu` / `.sat-filter-option` in `korah-bot/sat/sat.css` and
+  `.mood-dropdown` / `.mood-option` in `korah-bot/app/korah-chat.css`. Copy this,
+  renaming the classes and pointing `--acc` at the control's tone:
+
+  ```css
+  /* Panel: absolute under its trigger, grey surface, grows from the trigger. */
+  .x-menu {
+      position: absolute;
+      top: calc(100% + 0.4rem);
+      left: 0;
+      z-index: 40;
+      min-width: 12rem;
+      padding: 0.375rem;
+      border-radius: 0.875rem;
+      background: var(--sat-card-sf);
+      border: 0.0625rem solid var(--sat-card-bd);
+      box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.28);
+      display: none;
+      flex-direction: column;
+      gap: 0.125rem;
+      transform-origin: top left;
+  }
+  .x-dd.is-open .x-menu {
+      display: flex;
+      animation: menuIn .16s cubic-bezier(.23, 1, .32, 1) both;
+  }
+  @keyframes menuIn {
+      from { opacity: 0; transform: translateY(-0.375rem) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  /* Trigger: grows on hover, presses in on click, caret flips when open. */
+  .x-btn {
+      transition: border-color .15s ease, background .15s ease,
+                  transform .18s cubic-bezier(.23, 1, .32, 1);
+  }
+  .x-btn:hover { transform: scale(1.03); border-color: var(--acc); }
+  .x-btn:active { transform: scale(0.98); }
+  .x-btn .caret { transition: transform .2s ease; }
+  .x-dd.is-open .x-btn .caret { transform: rotate(180deg); }
+
+  /* Option: tinted row plus an accent bar that scales up from the bottom. */
+  .x-option { position: relative; transition: background .12s ease, color .12s ease; }
+  .x-option::before {
+      content: "";
+      position: absolute;
+      left: 0.125rem;
+      top: 0.3rem;
+      bottom: 0.3rem;
+      width: 0.1875rem;
+      border-radius: 0 0.125rem 0.125rem 0;
+      background: var(--acc);
+      transform: scaleY(0);
+      transform-origin: bottom;
+      transition: transform .2s ease;
+  }
+  .x-option:hover { background: var(--sat-card-sf2); }
+  .x-option:hover::before { transform: scaleY(1); }
+  ```
+
+  Open and close by toggling `.is-open` on the wrapper, never by setting
+  `style.display` from JS. Keep the open animation at 0.16–0.2s. Close on an
+  outside click, and close any sibling menu first so only one is ever open.

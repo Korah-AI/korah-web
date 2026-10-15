@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>AP Mock Exam | Korah</title>
+  <link rel="icon" href="../logo-images/newlogo0.png">
+  <script>
+    (function() {
+      const t = localStorage.getItem('korah_theme') || 'dark';
+      const isL = t === 'light' || (t === 'system' && window.matchMedia('(prefers-color-scheme: light)').matches);
+      document.documentElement.setAttribute('data-theme', isL ? 'light' : 'dark');
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <link rel="stylesheet" href="../sat/sat.css">
+  <link rel="stylesheet" href="../sat/sat-player-theme.css">
+  <link rel="stylesheet" href="./ap.css">
+  <script src="../study/js/sidebar.js"></script>
+  <script src="./js/ap-shared.js" defer></script>
+  <script src="./js/ap-core.js" defer></script>
+  <script src="./js/ap-exam.js" defer></script>
+</head>
+<body class="ap-body ap-exam-body">
+  <canvas id="bg-canvas" class="ap-background" aria-hidden="true"></canvas>
+  <main class="ap-player-shell">
+    <section id="loading-view" class="ap-center-card ap-loading-card"><span class="ap-spinner" aria-hidden="true"></span><p>Preparing your exam…</p></section>
+
+    <section id="preexam-view" class="ap-center-card" hidden>
+      <a class="ap-back-link" href="./exams.html"><i class="material-icons-round">arrow_back</i> All AP exams</a>
+      <span class="ap-course-badge" id="pre-course"></span>
+      <h1 id="pre-title"></h1>
+      <p class="ap-lead">This is a timed mock exam. You cannot pause after starting, and no answers or explanations appear until submission.</p>
+      <div id="pre-parts" class="ap-part-list"></div>
+      <div class="ap-warning"><i class="material-icons-round">warning_amber</i><span>The timer hard-stops each part. Unanswered questions remain unanswered.</span></div>
+      <button id="start-exam" class="ap-primary-button ap-large-button">Start exam <i class="material-icons-round">arrow_forward</i></button>
+    </section>
+
+    <section id="player-view" class="ap-player" hidden>
+      <header class="ap-player-topbar">
+        <div class="ap-player-identity"><span class="ap-mini-mark"><i class="material-icons-round">functions</i></span><div><p id="part-label" class="ap-eyebrow"></p><strong id="question-position"></strong></div></div>
+        <div id="timer" class="ap-timer" role="timer" aria-live="off"><i class="material-icons-round">schedule</i><span>00:00</span></div>
+        <button id="submit-part" class="ap-submit-button">Submit part</button>
+      </header>
+      <div class="ap-progress-track" aria-hidden="true"><span id="part-progress"></span></div>
+      <div class="ap-player-layout">
+        <aside class="ap-navigator" aria-label="Question navigator">
+          <div class="ap-navigator-heading"><div><p class="ap-eyebrow">Your progress</p><strong>Question map</strong></div><i class="material-icons-round">apps</i></div>
+          <div class="ap-nav-key"><span><i class="ap-dot answered"></i>Answered</span><span><i class="ap-dot marked"></i>Marked</span></div>
+          <div id="question-nav" class="ap-question-nav"></div>
+        </aside>
+        <article id="question-card" class="ap-question-card">
+          <div class="ap-question-actions"><button id="mark-review" class="ap-mark-button"><i class="material-icons-round">bookmark_border</i><span>Mark for review</span></button></div>
+          <div id="question-stem" class="ap-question-stem"></div>
+          <div id="question-assets" class="ap-question-assets"></div>
+          <fieldset id="answer-list" class="ap-answer-list"><legend class="sr-only">Answer choices</legend></fieldset>
+          <footer class="ap-question-footer">
+            <button id="previous-question" class="ap-secondary-button"><i class="material-icons-round">arrow_back</i> Previous</button>
+            <button id="next-question" class="ap-primary-button">Next <i class="material-icons-round">arrow_forward</i></button>
+          </footer>
+        </article>
+      </div>
+    </section>
+
+    <section id="complete-view" class="ap-results" hidden>
+      <header class="ap-results-hero">
+        <div class="ap-results-headline">
+          <p class="ap-eyebrow">Submission complete</p>
+          <h1 id="results-title"></h1>
+          <p class="ap-lead" id="results-lead"></p>
+          <p class="ap-save-note" id="results-save-note"></p>
+        </div>
+        <div class="ap-score-dial">
+          <span class="ap-score-dial-label">Predicted AP score</span>
+          <strong id="results-ap-score">&ndash;</strong>
+          <span id="results-raw"></span>
+        </div>
+      </header>
+
+      <div class="ap-results-grid">
+        <section class="ap-results-card">
+          <h2>Performance by unit</h2>
+          <div id="results-units" class="ap-unit-list"></div>
+        </section>
+        <section class="ap-results-card">
+          <h2>Previous attempts</h2>
+          <div id="results-attempts" class="ap-attempt-list"></div>
+        </section>
+      </div>
+
+      <section class="ap-results-card">
+        <h2>Question review</h2>
+        <ol id="results-review" class="ap-review-list"></ol>
+      </section>
+
+      <div class="ap-results-actions">
+        <a class="ap-secondary-button" href="./exams.html"><i class="material-icons-round">arrow_back</i> Back to AP exams</a>
+        <a class="ap-primary-button" href="" id="results-retake">Retake exam <i class="material-icons-round">refresh</i></a>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="submit-dialog" class="ap-dialog">
+    <form method="dialog"><h2 id="dialog-title">Submit this part?</h2><p id="dialog-copy"></p><div class="ap-dialog-actions"><button value="cancel" class="ap-secondary-button">Keep working</button><button id="confirm-submit" value="confirm" class="ap-primary-button">Submit</button></div></form>
+  </dialog>
+  <dialog id="transition-dialog" class="ap-dialog"><form method="dialog"><p class="ap-eyebrow" id="transition-eyebrow"></p><h2 id="transition-title"></h2><p id="transition-copy"></p><button id="start-next-part" value="next" class="ap-primary-button">Start next part</button></form></dialog>
+  <script>
+    window.KorahSidebar?.initBackground();
+  </script>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+    import { initApAnalytics } from "./js/ap-analytics.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
+      authDomain: "korah-app.firebaseapp.com",
+      projectId: "korah-app",
+      storageBucket: "korah-app.firebasestorage.app",
+      messagingSenderId: "226169460321",
+      appId: "1:226169460321:web:b166fc8260107c55dafc20"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // ap-exam.js awaits this before writing the attempt. It resolves to null
+    // for signed-out visitors, who still sit the exam and see full results —
+    // the exam is static JSON and needs no account. There is no sidebar here,
+    // so the page takes no guest gate.
+    window.KorahAPAnalyticsReady = new Promise((resolve, reject) => {
+      onAuthStateChanged(auth, async (user) => {
+        if (!user) {
+          resolve(null);
+          return;
+        }
+        try {
+          resolve(await initApAnalytics(app, user.uid));
+        } catch (error) {
+          reject(error);
+        }
+      });
+    });
+    // Mark the rejection handled here; persistAttempt still sees it when it awaits.
+    window.KorahAPAnalyticsReady.catch(() => {});
+  </script>
+</body>
+</html>

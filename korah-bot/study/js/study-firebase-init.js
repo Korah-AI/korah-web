@@ -12,6 +12,7 @@
 import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
 import { setupKorahDB } from "../../app/data/firestore-store.js";
+import { startGuestSession, showAuthWall } from "../../guest-gate.js";
 
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyDvabVNkVMfjKl1m3dQSlW06h-iomgcNJM",
@@ -29,8 +30,11 @@ const auth = getAuth(app);
 
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
-    // Redirect unauthenticated visitors to the login page.
-    window.KorahTransitions.go("../login.html");
+    // No redirect: the page's own handler already fired startGuestSession() and
+    // showAuthWall(). Both are idempotent, so calling them here too is safe and
+    // covers any page that loads this module without its own guard.
+    startGuestSession();
+    showAuthWall("../");
     return;
   }
 

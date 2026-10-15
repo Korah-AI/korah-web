@@ -1,0 +1,79 @@
+/* AP MCQ practice. Layout and components come from the SAT question bank and
+   player (sat/sat.css); this file only adds what the SAT pages do not have:
+   figures, the stimulus header, and the bank page's notes. */
+
+/* ── Bank page ── */
+.mcq-bank-page .sat-entry-card:disabled { cursor: default; opacity: .7; }
+.mcq-note { font-size: .8rem; line-height: 1.65; margin: 1.5rem 0 0; opacity: .85; }
+.mcq-sources { margin: 1rem 0 2rem; font-size: .8rem; line-height: 1.8; color: var(--tx); }
+.mcq-sources summary { cursor: pointer; font-weight: 700; }
+.mcq-sources h3 { font-weight: 800; margin: 1rem 0 .25rem; }
+.mcq-sources a { text-decoration: underline; text-underline-offset: 3px; }
+.sat-topic-row.mcq-row-empty { opacity: .5; }
+.sat-topic-row .sat-check:disabled { cursor: default; }
+@media (max-width: 64rem) { .mcq-bank-page { padding: 1.25rem !important; } }
+
+/* ── Figures: graphs, charts and tables ── */
+.ap-figure { margin: 0 0 1.25rem; max-width: 100%; overflow-x: auto; color: var(--tx); --ap-fig-bg: var(--pl-card, #fff); }
+.ap-figure svg { display: block; max-width: 100%; height: auto; }
+.ap-figure-table { border-collapse: collapse; font-size: .95rem; }
+.ap-figure-table th, .ap-figure-table td { border: 0.0625rem solid color-mix(in srgb, currentColor 35%, transparent); padding: .5rem .9rem; text-align: center; }
+.ap-figure-table th { font-weight: 700; background: color-mix(in srgb, currentColor 8%, transparent); }
+.ap-stimulus .ap-figure-table th, .ap-stimulus .ap-figure-table td { text-align: left; }
+
+/* ── Stimulus pane (history) ── */
+.ap-stimulus-title { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; font-size: 1rem; font-weight: 700; margin: 0 0 1rem; }
+.ap-stimulus-text { margin: 0; }
+.ap-stimulus-source { font-family: "Plus Jakarta Sans", sans-serif; font-size: .8rem; line-height: 1.6; margin: 1rem 0 0; opacity: .85; }
+.ap-feedback-sources { font-size: .8rem; margin-top: .75rem; }
+.ap-feedback-sources a { text-decoration: underline; text-underline-offset: 3px; }
+
+/* Typeset math sits slightly larger than the surrounding text so fractions stay legible. */
+.sat-question-stem .katex, .sat-answer-choice .katex, .sat-feedback-body .katex { font-size: 1.1em; }
+.sat-answer-choice .katex-display { margin: 0; }
+.sat-answer-choice:disabled { cursor: default; }
+.ap-figure svg { font-family: "Plus Jakarta Sans", sans-serif; }
+.ap-choice-text { flex: 1; min-width: 0; text-align: left; }
+
+/* Unit names are longer than SAT domain names, so the question header wraps
+   instead of widening the panel on narrow screens. */
+.ap-mcq-player .sat-question-panel > * { min-width: 0; }
+.ap-mcq-player .sat-question-head { flex-wrap: wrap !important; row-gap: .5rem; }
+.ap-mcq-player .sat-domain-label { flex-shrink: 1; min-width: 0; white-space: normal; }
+/* Header chips use regular capitalization in the app font, not the SAT caps style. */
+.ap-mcq-player .sat-domain-label, .ap-mcq-player .sat-filter-chip { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; font-size: 0.875rem; font-weight: 700; letter-spacing: normal; text-transform: none; }
+.ap-mcq-player .sat-filter-chip { white-space: normal; }
+
+/* sat.css inverts inline SVGs in dark mode so College Board's black diagrams turn
+   white. AP figures and KaTeX's radical glyphs already take the text color, so
+   here the inversion would turn them black. */
+html[data-theme="dark"] .ap-mcq-player .sat-passage-card svg,
+html[data-theme="dark"] .ap-mcq-player .sat-question-stem svg,
+html[data-theme="dark"] .ap-mcq-player .sat-feedback-panel svg,
+html[data-theme="dark"] .ap-mcq-player .sat-answer-list svg { filter: none; }
+html[data-theme="dark"] .ap-mcq-player .ap-figure { color: #fff; }
+
+/* Third course tile. The SAT bank has two sections, so it defines only two tile colors and a two-column grid. */
+.sat-entry-card.is-science { --acc-fill: #d23c3c; }
+/* Three course tiles to a row; a fourth course wraps onto the next row. */
+.mcq-bank-page .sat-entry-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 64rem) { .mcq-bank-page .sat-entry-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 40rem) { .mcq-bank-page .sat-entry-grid { grid-template-columns: 1fr; } }
+.sat-section-card.is-science .sat-progress-fill { background: linear-gradient(90deg, #ef6a6a, #d23c3c); }
+
+/* The SAT player fills the domain label with a color per SAT domain and sets its text
+   white. AP unit names are not in that list, so without a fill the white text vanished
+   in light mode. Fill the label with the course's tile color instead. */
+body.sat-player-grey.ap-mcq-player .sat-domain-label[data-domain] { --acc-fill: #3472d9; }
+body.sat-player-grey.ap-mcq-player[data-tone="english"] .sat-domain-label[data-domain] { --acc-fill: #d03f87; }
+body.sat-player-grey.ap-mcq-player[data-tone="science"] .sat-domain-label[data-domain] { --acc-fill: #d23c3c; }
+
+/* Tiles, progress bars, and unit labels for AP Biology ("life") and AP Physics C ("mech"). */
+.sat-entry-card.is-life { --acc-fill: #1ead53; }
+.sat-entry-card.is-mech { --acc-fill: #6d4bd0; }
+.sat-section-card.is-life .sat-progress-fill { background: linear-gradient(90deg, #3fcf75, #1ead53); }
+.sat-section-card.is-mech .sat-progress-fill { background: linear-gradient(90deg, #9478ea, #6d4bd0); }
+body.sat-player-grey.ap-mcq-player[data-tone="life"] .sat-domain-label[data-domain] { --acc-fill: #1ead53; }
+body.sat-player-grey.ap-mcq-player[data-tone="mech"] .sat-domain-label[data-domain] { --acc-fill: #6d4bd0; }
+/* Long course names wrap inside a tile instead of running under the artwork. */
+.mcq-bank-page .sat-entry-name { max-width: calc(100% - 4.5rem); }

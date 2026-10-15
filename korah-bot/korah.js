@@ -203,7 +203,9 @@ function initScrollNav() {
     });
     if (navIndicator && activeId) {
       const activePill = document.querySelector(`.nav-pill[href="#${activeId}"]`);
-      if (activePill) {
+      /* Skip while the pill has no layout (nav hidden at small widths) — a
+         0-width indicator would otherwise stick until the next update. */
+      if (activePill && activePill.offsetWidth) {
         navIndicator.style.opacity = '1';
         navIndicator.style.transform = `translateX(${activePill.offsetLeft}px)`;
         navIndicator.style.width = `${activePill.offsetWidth}px`;
@@ -213,6 +215,11 @@ function initScrollNav() {
   window.addEventListener('scroll', update, { passive: true });
   window.addEventListener('resize', update);
   update();
+  /* The pills contain Material Icons ligatures, so the first measurement above
+     happens against the fallback font and lands wrong. Re-measure once the
+     webfonts are in and after full load. */
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(update);
+  window.addEventListener('load', update);
 }
 
 /* ── Three.js 3D background ── FIX #8: called after defer load ── */

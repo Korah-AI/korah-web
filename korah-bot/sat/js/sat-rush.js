@@ -4,50 +4,23 @@
 (() => {
   const { OPENSAT_CATALOG } = window.KorahSAT;
 
-  // ── HTML sanitize + KaTeX render (mirrors sat-player.js) ──────────────────
-  function normalizeSvgUseHrefs(html) {
-    return String(html || "").replace(/xlink:href=/g, "href=");
-  }
-  const SVG_PURIFY_CONFIG = { ADD_TAGS: ["use"], ADD_ATTR: ["href", "xlink:href"] };
-  if (window.DOMPurify) {
-    DOMPurify.addHook("afterSanitizeAttributes", (node) => {
-      if (node.tagName && node.tagName.toLowerCase() === "use") {
-        for (const attr of ["href", "xlink:href"]) {
-          const val = node.getAttribute(attr);
-          if (val !== null && !val.startsWith("#")) node.removeAttribute(attr);
-        }
-      }
-    });
-  }
-  function sanitize(html) {
-    if (!window.DOMPurify) return String(html || "");
-    return DOMPurify.sanitize(normalizeSvgUseHrefs(html), SVG_PURIFY_CONFIG);
-  }
-  function setHtml(el, html) {
-    el.innerHTML = sanitize(html);
-    if (typeof renderMathInElement === "function") {
-      try {
-        renderMathInElement(el, {
-          delimiters: [
-            { left: "$$", right: "$$", display: true },
-            { left: "\\(", right: "\\)", display: false },
-            { left: "\\[", right: "\\]", display: true },
-            { left: "$", right: "$", display: false },
-          ],
-          throwOnError: false,
-        });
-      } catch (e) { /* non-fatal */ }
-    }
-  }
+  const sanitize = html => window.KorahQuestionContent.html(html);
+  const setHtml = (el, html) => window.KorahQuestionContent.render(el, html);
 
   // ── Static config ─────────────────────────────────────────────────────────
   const icon = (name, tint) => `<span class="material-icons-round${tint ? " rush-icon-tint-" + tint : ""}">${name}</span>`;
 
+  // Color blocking: every option in a group carries its own accent tone.
+  const TONES = ["tone-blue", "tone-pink", "tone-teal", "tone-amber", "tone-green", "tone-orange", "tone-red"];
   const SUBJECTS = [
-    { key: "math", section: "math", label: "Math", icon: "calculate", desc: "Algebra, advanced math, data analysis, geometry" },
-    { key: "english", section: "english", label: "Reading & Writing", icon: "menu_book", desc: "Reading comprehension, grammar, and expression" },
+    { key: "math", section: "math", label: "Math", icon: "calculate", tone: "tone-blue", desc: "Algebra, advanced math, data analysis, geometry" },
+    { key: "english", section: "english", label: "Reading & Writing", icon: "menu_book", tone: "tone-pink", desc: "Reading comprehension, grammar, and expression" },
   ];
-  const DIFFICULTIES = [{ v: "E", label: "Easy" }, { v: "M", label: "Medium" }, { v: "H", label: "Hard" }];
+  const DIFFICULTIES = [
+    { v: "E", label: "Easy", tone: "tone-green" },
+    { v: "M", label: "Medium", tone: "tone-amber" },
+    { v: "H", label: "Hard", tone: "tone-red" },
+  ];
   const DOMAIN_ICON = {
     H: "functions", P: "calculate", Q: "bar_chart", S: "straighten",
     INI: "lightbulb", CAS: "architecture", EOI: "edit_note", SEC: "spellcheck",
@@ -57,10 +30,6 @@
     "Fantastic!", "Awesome!", "Perfect!", "Brilliant!", "Amazing work!",
     "You nailed it!", "Superb!", "Impressive!", "You're on fire!", "Keep it up!",
   ];
-
-  function normalizeSpr(v) {
-    return String(v == null ? "" : v).trim().replace(/\s+/g, "").toLowerCase();
-  }
 
   // ── Selection state (onboarding) ──────────────────────────────────────────
   const sel = {
@@ -150,8 +119,8 @@
 
   function renderSubjects() {
     $("rushSubjectGrid").innerHTML = SUBJECTS.map((s) => `
-      <button class="rush-card ${sel.subject === s.key ? "is-selected" : ""}" data-subject="${s.key}" type="button">
-        ${icon(s.icon, "blue")}
+      <button class="rush-card ${s.tone} ${sel.subject === s.key ? "is-selected" : ""}" data-subject="${s.key}" type="button">
+        ${icon(s.icon)}
         <span class="rush-card-title">${s.label}</span>
         <span class="rush-card-desc">${s.desc}</span>
       </button>`).join("");
@@ -160,7 +129,7 @@
 
   function renderDomains() {
     const domains = currentDomains();
-    $("rushDomainGrid").innerHTML = domains.map((d) => {
+    $("rushDomainGrid").innerHTML = domains.map((d, di) => {
       const isSel = sel.domains.has(d.code);
       const skills = d.skills || [];
       const skillsHtml = isSel
@@ -170,7 +139,7 @@
             </div>`).join("")}</div>`
         : `<div class="rush-skills-preview">${skills.slice(0, 3).map((sk) => `<span>${sk.key}</span>`).join("")}${skills.length > 3 ? `<span>+${skills.length - 3} more</span>` : ""}</div>`;
       return `
-        <div class="rush-domain ${isSel ? "is-selected" : ""}" data-domain="${d.code}">
+        <div class="rush-domain ${TONES[di % TONES.length]} ${isSel ? "is-selected" : ""}" data-domain="${d.code}">
           <div class="rush-domain-head">
             <span class="rush-domain-emoji material-icons-round">${DOMAIN_ICON[d.code] || "menu_book"}</span>
             <span class="rush-domain-name">${d.key}</span>
@@ -183,7 +152,7 @@
 
   function renderDiffs() {
     $("rushDiffGrid").innerHTML = DIFFICULTIES.map((d) => `
-      <div class="rush-diff ${sel.difficulties.has(d.v) ? "is-selected" : ""}" data-diff="${d.v}">${d.label}</div>`).join("");
+      <div class="rush-diff ${d.tone} ${sel.difficulties.has(d.v) ? "is-selected" : ""}" data-diff="${d.v}">${d.label}</div>`).join("");
   }
 
   function refreshDomainNext() {
@@ -431,6 +400,7 @@
           stem: body.stem || "",
           options: Array.isArray(body.options) ? body.options : [],
           correctAnswer: body.correctAnswer || "",
+          correctAnswers: Array.isArray(body.correctAnswers) ? body.correctAnswers : [],
           explanation: body.explanation || "",
           loaded: true,
         });
@@ -559,12 +529,7 @@
         <span class="rush-choice-key">${opt.key}</span>
         <span class="rush-choice-text">${sanitize(opt.text)}</span>
       </button>`).join("");
-    // render math inside choices
-    $("rushChoices").querySelectorAll(".rush-choice-text").forEach((el) => {
-      if (typeof renderMathInElement === "function") {
-        try { renderMathInElement(el, { delimiters: [{ left: "\\(", right: "\\)", display: false }, { left: "$", right: "$", display: false }], throwOnError: false }); } catch (e) {}
-      }
-    });
+
   }
 
   // Choice selection (event delegation)
@@ -591,9 +556,7 @@
     stopTimer();
 
     const isSpr = q.type === "spr";
-    const correct = isSpr
-      ? normalizeSpr(rush.selected) === normalizeSpr(q.correctAnswer)
-      : rush.selected === q.correctAnswer;
+    const correct = window.KorahSAT.isAnswerCorrect(q, rush.selected);
 
     // Visual feedback
     if (isSpr) {
@@ -610,7 +573,10 @@
     // Explanation
     const exp = $("rushExplanation");
     exp.className = `rush-explanation ${correct ? "is-correct" : "is-wrong"}`;
-    setHtml(exp, `<strong>${correct ? "Correct." : `Correct answer: ${q.correctAnswer}`}</strong>${q.explanation || ""}`);
+    // SPR questions can have several accepted forms of the same value, and
+    // sometimes several different valid answers — show them all.
+    const answerText = window.KorahSAT.acceptedAnswersFor(q).filter(Boolean).join(" or ");
+    setHtml(exp, `<strong>${correct ? "Correct." : `Correct answer: ${answerText}`}</strong>${q.explanation || ""}`);
 
     // Stats
     rush.stats.answered++;

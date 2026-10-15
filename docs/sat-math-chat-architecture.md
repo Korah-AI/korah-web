@@ -1,6 +1,6 @@
 # SAT Math Chat — Architecture & Backend Design
 
-`korah-bot/sat/math-chat.js` is the client-side orchestration layer for the SAT Math tutoring feature. It coordinates four subsystems: a three-phase AI pipeline, the Desmos Template Library, the Desmos graphing calculator, and the KorahDB session store. No separate server is required — the browser talks directly to `/api/gem-proxy` (a Vercel serverless proxy) and persists everything locally.
+`korah-bot/sat/math-chat.js` is the client-side orchestration layer for the SAT Math tutoring feature. It coordinates four subsystems: a two-call AI pipeline, the Desmos Template Library, the Desmos graphing calculator, and the KorahDB session store. No separate server is required — the browser talks directly to `/api/r` (a Vercel serverless proxy) and persists everything locally.
 
 ---
 
@@ -11,65 +11,58 @@ Browser (math-chat.js)
 │
 ├── UI Layer            — DOM manipulation, Markdown/KaTeX rendering, typewriter animation
 ├── Session Layer       — KorahDB (Firestore-backed), conversation history
-├── AI Pipeline         — Three phases, all calling callAPI → /api/gem-proxy → Gemini 2.5 Flash
-│     ├── Phase 1       — Silent classifier: picks a Desmos template id
-│     ├── Phase 2       — Silent adapter: loads + adapts template state JSON
-│     └── Phase 3       — Streamed tutoring response grounded in loaded state
+├── AI Pipeline         — Two calls, both through callAPI → /api/r → Gemini 2.5 Flash
+│     ├── Merged call   — Silent classify + adapt: picks a template, fills it, or keeps the current graph
+│     └── Phase 3       — Streamed tutoring response grounded in the graph state
 └── Graph Layer         — Desmos GraphingCalculator, setState / validateDesmosState
          ↕
-    /api/gem-proxy (Vercel serverless)
+    /api/r (Vercel serverless)
          ↕
     Google Gemini 2.5 Flash (SSE stream)
 ```
 
 ---
 
-## Three-Phase AI Pipeline
+## AI Pipeline
 
-Every user message triggers three sequential AI calls. Phase 1 and 2 are silent (no visible output). Phase 3 streams the tutoring explanation to the chat.
+Every user message triggers two sequential AI calls. The first (classify + adapt) is silent. Phase 3 streams the tutoring explanation to the chat. There are no separate Phase 1 / Phase 2 calls; they were merged into one.
 
-### Phase 1 — Template Classification (`runPhase1Classification`)
+### Merged call — Classify + Adapt (`runMergedClassifyAdapt`)
 
-**System prompt:** `PHASE1_CLASSIFIER_PROMPT_BASE` + the full `template-index.json` appended at build time via `buildPhase1SystemPrompt()`.
+**System prompt:** `buildMergedSystemPrompt()` — the classification rules, the adaptation rules, the full `template-index.json`, and every problem-solver skeleton from `desmos-json/templates/`. The static template material comes first and the student's message last, so Gemini's implicit caching can discount the stable prefix.
 
-**Goal:** Pick the best matching template id for the student's problem, or return `null` if no template fits.
+**History:** `conversationHistory` is sent between the system prompt and the student's message, so the model sees the earlier turns.
 
-**Output (tiny JSON, not streamed to UI):**
+**Output (JSON, not streamed to UI):**
 ```json
-{ "stateId": "linear-functions", "strategy": "one-sentence rationale" }
+{ "stateId": "linear-functions", "strategy": "one-sentence rationale", "adaptedState": { }, "keepGraph": false }
 ```
 
-The classifier is biased strongly toward picking a template — almost every SAT math problem maps to one. It returns `null` only for non-mathematical inputs or categories clearly outside the library (pure 3D geometry, probability, etc.).
+- `stateId` is the chosen template id, or `null` for non-mathematical input. Any math problem that matches no specific template gets the generic `free-graph` template.
+- `adaptedState` is the filled-in Desmos state for a `problem-solver` template, and `null` for a `visualizer`, a `null` stateId, or `keepGraph`.
+- `keepGraph` is `true` when a graph is already on screen (the message ends with `[Current Desmos State: ...]`) and the message is a follow-up it already serves (a question about a step, a re-explanation, a hint, a check of the student's work). The graph is then left untouched and Phase 3 is grounded in `satMathCalculator.getState()`. It is ignored if no graph is on screen.
 
 **Parsing:** Code fences and leading junk are stripped, then `JSON.parse`. Falls back to balanced-brace extraction if parsing fails.
 
----
-
-### Phase 2 — Graph Loading (`runPhase2Adaptation` / `loadDesmosState`)
-
-Runs only when Phase 1 returned a non-null `stateId`. Shows a "Drawing graph…" indicator in the chat bubble while it runs.
-
-Two code paths based on template type (looked up in the index):
+**Graph loading** (in `sendMessage`, after the call returns). Shows a "Drawing graph…" indicator in the chat bubble while it runs.
 
 | Template type | Behavior |
 |---|---|
-| `visualizer` | Load verified example `desmos-json/<id>.json` as-is via `loadDesmosState`. No API call. |
-| `problem-solver` | Call `runPhase2Adaptation`: fetch example + template skeleton, ask the model to adapt the template to the student's specific numbers/equations. |
-
-**`runPhase2Adaptation` API call:**
-
-- **System prompt:** `buildPhase2SystemPrompt()` — instructs the model to fill `{{PLACEHOLDER}}` slots in the template using the student's problem, using the example only for syntax reference.
-- **User content:** the student's problem + the template JSON + the verified example JSON.
-- **Output:** a complete Desmos state object (raw JSON, no code fences).
-- **Verbatim-copy detection:** if the adapted expressions list is byte-for-byte identical to the example's, the result is treated as a failure.
+| `visualizer` | Load verified example `desmos-json/<id>.json` as-is via `loadDesmosState`. No adaptation. |
+| `problem-solver` | Use `adaptedState` from the merged call. Reject it if its expressions are identical to the verified example's, if any `{{PLACEHOLDER}}` is left unfilled, or if `loadDesmosState` validation fails. |
 
 **Fallback chain:**
 ```
-Phase 2 API returns adapted state
-  → validateDesmosState passes → loadDesmosState (setState) ✓
-  → validateDesmosState fails  → load verified example as fallback
-Phase 2 API returns null        → load verified example as fallback
-Phase 2 API throws              → skip graph (no state loaded)
+keepGraph (with a graph on screen)                         → leave graph as is ✓
+Visualizer template                                        → load verified example as-is ✓
+Problem-solver, adapted state passes validateDesmosState   → loadDesmosState (setState) ✓
+Problem-solver, adapted state missing / verbatim / invalid → skip graph
+Merged call fails or template lookup throws                → skip graph (no state loaded)
+
+The verified example is never the fallback for a problem-solver (it solves a
+different problem). With no graph, Phase 3 solves algebraically and ends with
+"Want me to visualize it on Desmos?". If the student says yes, the classifier
+is given the previous problem plus the follow-up.
 ```
 
 **`loadDesmosState(state)`** is the single entry point for applying any state to the calculator:
@@ -88,7 +81,7 @@ Phase 2 API throws              → skip graph (no state loaded)
 
 The prompt includes:
 - A fixed tutoring style guide (5-step structure: understand → strategy → solve → answer → SAT tip).
-- The classifier's `strategy` sentence (one line from Phase 1).
+- The `strategy` sentence (one line from the merged call).
 - The full loaded Desmos state JSON (or a "no graph loaded" notice), so the model can reference exact values that are visible on screen.
 
 **Output:** Pure Markdown + KaTeX — no JSON wrapping, no `graph` field, no `suggestions` field.
@@ -107,13 +100,13 @@ Templates live in `korah-bot/sat/`:
 |---|---|
 | `template-index.json` | Master index: `id`, `type`, `name`, `description`, `keywords` for each template |
 | `desmos-json/<id>.json` | Verified working example for the template (real problem, real values) |
-| `desmos-json/templates/<id>.json` | Skeleton with `{{PLACEHOLDER}}` slots — the structural guide for Phase 2 |
+| `desmos-json/templates/<id>.json` | Skeleton with `{{PLACEHOLDER}}` slots — the structural guide for the merged call |
 
 Templates are cached in memory after first fetch (`_exampleCache`, `_templateCache`, `_templateIndex`).
 
 **Template types:**
 
-| Type | Phase 2 behavior |
+| Type | Graph loading behavior |
 |---|---|
 | `visualizer` | Load example as-is. For conceptual questions ("show me the unit circle"). |
 | `problem-solver` | Adapt template to the student's specific problem via API call. |
@@ -146,7 +139,7 @@ This summary is used by `getGraphContext()`, which appends `[Current Desmos Stat
 | Hidden helper | `latex`, `hidden: true` | Drawn but not visible |
 | Text note | `type: "text"`, `text` | Plain text only — no LaTeX, no `color` field |
 
-> **Text node rule:** `validateDesmosState` rejects any text node that has a `color` field. The Phase 2 system prompt enforces plain English in text nodes — no backslashes, no `$...$` — because Desmos renders text nodes as raw strings, not math.
+> **Text node rule:** `validateDesmosState` rejects any text node that has a `color` field. The merged-call system prompt enforces plain English in text nodes — no backslashes, no `$...$` — because Desmos renders text nodes as raw strings, not math.
 
 **State persistence** (`captureGraphState` / `saveCurrentSession`): Full Desmos state (via `calculator.getState()`) is stored in the session object in KorahDB alongside the conversation history. On session restore, `calculator.setState(savedState)` rebuilds the graph exactly.
 
@@ -207,19 +200,20 @@ Streaming partial renders feed characters from `charBuffer` into `renderMarkdown
 
 ## `callAPI` — Shared API Caller
 
-All three phases (and auto-title) go through a single `callAPI(userContent, onChunk, options)`:
+The merged call, Phase 3, and auto-title all go through a single `callAPI(userContent, onChunk, options)`:
 
 ```js
 options = {
-  systemPrompt,   // required — each phase injects its own
-  temperature,    // default 0.2; Phase 1 uses 0.1
+  systemPrompt,   // required — each call injects its own
+  history,        // optional [{role, content}] inserted between system and user; merged call and Phase 3 pass conversationHistory
+  temperature,    // default 0.2
   _phaseTag,      // label for console logs and X-Korah-Phase header
 }
 ```
 
 **Payload size guard:** The serialized request body is checked against Vercel's ~4.4 MB limit before sending. Oversized payloads throw a user-visible error.
 
-The request sends the system prompt as a `role: "system"` message followed by the user content. SSE frames (`data: {...}`, `[DONE]` sentinel) are parsed line-by-line; each token delta is passed to `onChunk(chunk, fullReply)`.
+The request sends the system prompt as a `role: "system"` message followed by any `history` and then the user content. SSE frames (`data: {...}`, `[DONE]` sentinel) are parsed line-by-line; each token delta is passed to `onChunk(chunk, fullReply)`.
 
 ---
 
@@ -232,18 +226,16 @@ User types → sendMessage(text)
   3. Create empty assistant bubble with streaming content ID
   4. Show "Korah is thinking…" pulsing indicator
 
-  ── PHASE 1 (silent) ──
-  5. runPhase1Classification(userContent)
-       callAPI → /api/gem-proxy → Gemini (non-streaming feel)
-     → { stateId, strategy } or null
+  ── MERGED CLASSIFY + ADAPT (silent) ──
+  5. runMergedClassifyAdapt(userContent, conversationHistory)
+       callAPI → /api/r → Gemini (non-streaming feel)
+     → { stateId, strategy, adaptedState, keepGraph } or null
 
-  ── PHASE 2 (silent) ──
-  6. If stateId: show "Drawing graph…" indicator
-     Visualizer  → fetch example → loadDesmosState (setState)
-     Problem-solver → fetch example + template → runPhase2Adaptation
-                    → callAPI → Gemini → adapted state JSON
-                    → validateDesmosState → loadDesmosState (setState)
-                    → fallback to example if adaptation fails
+  6. keepGraph → leave the graph, ground Phase 3 in calculator.getState()
+     Else if stateId: show "Drawing graph…" indicator
+     Visualizer     → fetch example → loadDesmosState (setState)
+     Problem-solver → verbatim / placeholder / validateDesmosState checks
+                    → loadDesmosState (setState), or skip graph if unusable
 
   ── PHASE 3 (streamed) ──
   7. callAPI with buildPhase3SystemPrompt(loadedState, classifierStrategy)
