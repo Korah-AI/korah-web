@@ -125,12 +125,12 @@ test('the build script reproduces the committed banks', () => {
   assert.deepEqual(after, before);
 });
 
-test('the AP Physics 1 bank has 134 questions, split evenly between conceptual and quantitative, with figures', async () => {
+test('the AP Physics 1 bank has 200 questions, split evenly between conceptual and quantitative, with figures', async () => {
   const { validateBank, COURSES, filterQuestions, playerUrl, parseSession, buildSession } = await api;
   validateBank(physics, 'ap-physics-1');
   const course = COURSES.find(c => c.slug === 'ap-physics-1'), qs = physics.questions;
-  assert.equal(qs.length, 134);
-  assert.equal(new Set(qs.map(q => q.stem)).size, 134);
+  assert.equal(qs.length, 200);
+  assert.equal(new Set(qs.map(q => q.stem)).size, 200);
   assert.equal(qs.filter(q => q.kind === 'conceptual').length, qs.filter(q => q.kind === 'quantitative').length, 'conceptual and quantitative counts match');
   assert.ok(qs.every(q => !banks.some(b => b.questions.some(o => o.id === q.id))));
   const perUnit = course.units.map((_, i) => qs.filter(q => q.unit === i + 1).length);
@@ -151,7 +151,7 @@ test('the AP Physics 1 bank has 134 questions, split evenly between conceptual a
     }
   }
   // The type filter is physics-only, and it travels in the session URL.
-  assert.equal(filterQuestions(physics, { kind: 'conceptual' }).length + filterQuestions(physics, { kind: 'quantitative' }).length, 134);
+  assert.equal(filterQuestions(physics, { kind: 'conceptual' }).length + filterQuestions(physics, { kind: 'quantitative' }).length, 200);
   assert.equal(filterQuestions(banks[0], { kind: 'conceptual' }).length, banks[0].questions.length);
   const session = parseSession(playerUrl({ course: 'ap-physics-1', units: [5], kind: 'conceptual' }).split('?')[1]);
   assert.equal(session.kind, 'conceptual');
@@ -166,14 +166,14 @@ test('the AP Physics 1 bank has 134 questions, split evenly between conceptual a
   assert.throws(() => validateBank(typed, 'ap-calculus-ab'));
 });
 
-test('the AP Biology and AP Physics C: Mechanics banks each have 100 balanced, figure-rich questions', async () => {
+test('the AP Biology and AP Physics C: Mechanics banks each have 200 balanced, figure-rich questions', async () => {
   const { validateBank, COURSES, filterQuestions, parseSession } = await api;
   const seen = new Set([...banks, physics].flatMap(b => b.questions.map(q => q.id)));
-  for (const [bank, minFigures] of [[biology, 50], [physicsC, 25]]) {
+  for (const [bank, minFigures] of [[biology, 100], [physicsC, 45]]) {
     validateBank(bank, bank.course);
     const course = COURSES.find(c => c.slug === bank.course), qs = bank.questions;
-    assert.equal(qs.length, 100);
-    assert.equal(new Set(qs.map(q => q.stem)).size, 100);
+    assert.equal(qs.length, 200);
+    assert.equal(new Set(qs.map(q => q.stem)).size, 200);
     for (const q of qs) { assert.ok(!seen.has(q.id)); seen.add(q.id); }
     const perUnit = course.units.map((_, i) => qs.filter(q => q.unit === i + 1).length);
     assert.ok(Math.max(...perUnit) - Math.min(...perUnit) <= 1, bank.course + ' units: ' + perUnit);
@@ -194,10 +194,10 @@ test('the AP Biology and AP Physics C: Mechanics banks each have 100 balanced, f
   }
   // Physics C carries the conceptual/quantitative tag; Biology does not.
   assert.ok(biology.questions.every(q => q.kind === undefined));
-  assert.equal(filterQuestions(biology, { kind: 'conceptual' }).length, 100);
+  assert.equal(filterQuestions(biology, { kind: 'conceptual' }).length, 200);
   assert.equal(parseSession('course=ap-biology&kind=conceptual').kind, '');
-  assert.ok(filterQuestions(physicsC, { kind: 'conceptual' }).length >= 15);
-  assert.equal(filterQuestions(physicsC, { kind: 'conceptual' }).length + filterQuestions(physicsC, { kind: 'quantitative' }).length, 100);
+  assert.ok(filterQuestions(physicsC, { kind: 'conceptual' }).length >= 55);
+  assert.equal(filterQuestions(physicsC, { kind: 'conceptual' }).length + filterQuestions(physicsC, { kind: 'quantitative' }).length, 200);
   for (const q of physicsC.questions) for (const text of [q.stem, q.explanation, ...q.choices]) assert.doesNotMatch(text, /[²³√→≤≥≈θμωρ∫]|\^\(/, q.id + ': plain-text math');
   assert.throws(() => validateBank(biology, 'ap-physics-c-mechanics'));
   assert.throws(() => validateBank(physicsC, 'ap-physics-1'));

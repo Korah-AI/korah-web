@@ -34,9 +34,9 @@ College Board questions, and no question-bank or textbook exercise text is repro
 | --- | ---: | --- | ---: | --- |
 | AP Calculus AB | 200 | 25 per unit | 26 | 50 calculator; 150 non-calculator |
 | AP U.S. History | 200 | 22 per period (23 in Periods 5 and 7) | 27 | Not applicable |
-| AP Physics 1 | 134 | 16 or 17 per unit | 65 | Allowed on every question |
-| AP Biology | 100 | 12 or 13 per unit | 58 | Allowed on every question |
-| AP Physics C: Mechanics | 100 | 14 or 15 per unit | 27 | Allowed on every question |
+| AP Physics 1 | 200 | 25 per unit | 85 | Allowed on every question |
+| AP Biology | 200 | 25 per unit | 115 | Allowed on every question |
+| AP Physics C: Mechanics | 200 | 29 in units 1–4, 28 in units 5–7 | 51 | Allowed on every question |
 
 **AP U.S. History** has 63 stimulus sets, seven per period, each with three or
 four questions. Six sets per period use a verbatim excerpt from a public-domain primary source
@@ -53,7 +53,7 @@ unit and calculator combination is empty. The OpenStax and College Board links a
 topic references only.
 
 **AP Physics 1** follows the eight units of the current course framework (kinematics
-through fluids). Each question is tagged `conceptual` (67) or `quantitative` (67), matching the even
+through fluids). Each question is tagged `conceptual` (100) or `quantitative` (100), matching the even
 split the tests enforce, and
 the bank page offers a Question type filter in place of the Calculator filter, because a
 calculator is allowed throughout that exam. Sixty-five questions use a diagram or graph
@@ -70,8 +70,8 @@ classroom investigations; they are not measurements from a published study.
 **AP Physics C: Mechanics** follows the seven units of the course framework and is
 calculus-based: derivatives and integrals of motion, drag as a differential equation,
 work and impulse by integration, potential energy curves, rotational inertia by
-integration, orbits, and physical pendulums. Questions are tagged `conceptual` (19) or
-`quantitative` (81), which reflects that exam's emphasis. Some figures are shared with
+integration, orbits, and physical pendulums. Questions are tagged `conceptual` (61) or
+`quantitative` (139), which reflects that exam's emphasis. Some figures are shared with
 AP Physics 1.
 
 Correct answers are spread evenly across A–D. Distribution is designed for unit
@@ -91,10 +91,10 @@ node scripts/ap-mcq-build/build.cjs
 - `history-documents.cjs` and `history-more.cjs` (second batch, plus single
   questions added to earlier sets): primary-source sets. `history-charts.cjs`:
   chart and table sets with their data.
-- `physics1.cjs` and `physics1-more.cjs` (second batch): AP Physics 1 question blocks (`c` conceptual or `q` quantitative in
+- `physics1.cjs`, `physics1-more.cjs`, and `physics1-more2.cjs` (later batches): AP Physics 1 question blocks (`c` conceptual or `q` quantitative in
   the second field) and their figures. `diagram.cjs`: free-form SVG diagrams built
   from lines, arrows, shapes, and labels.
-- `biology.cjs` and `physicsc.cjs`: AP Biology and AP Physics C: Mechanics question
+- `biology.cjs` + `biology-more.cjs` and `physicsc.cjs` + `physicsc-more.cjs`: AP Biology and AP Physics C: Mechanics question
   blocks and figures. Both are built by `buildBlockCourse` in `build.cjs`, which is the
   quickest route for a new course.
 - `figures.cjs`: SVG helpers (`graph`, `chart`) and `table`. Figures use
