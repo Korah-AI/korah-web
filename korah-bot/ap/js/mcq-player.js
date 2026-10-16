@@ -1,8 +1,9 @@
 // AP MCQ player. Same layout, markup and classes as the SAT player
 // (sat/js/sat-player.js): a stimulus pane beside the question when there is one,
 // lettered answer rows with eliminate buttons, Check, an explanation panel, and
-// the footer question navigator. Questions come from this course's own JSON bank.
-import { getCourse, unitLabel as courseUnitLabel, loadBank, parseSession, buildSession, loadProgress, saveProgress } from './mcq-bank.js';
+// the footer question navigator. Questions come from this course's own JSON bank,
+// or, for ?mode=saved|errors, from every course's bank.
+import { COURSES, getCourse, unitLabel as courseUnitLabel, loadBank, parseSession, buildSession, loadProgress, saveProgress } from './mcq-bank.js';
 
 const $ = id => document.getElementById(id);
 const playerSplit = $('playerSplit'), passagePanel = $('passagePanel'), questionParagraph = $('questionParagraph');
@@ -15,7 +16,8 @@ const calculatorChip = $('calculatorChip'), calculatorChipLabel = $('calculatorC
 const KEYS = ['A', 'B', 'C', 'D'];
 const session = parseSession(location.search), course = session && getCourse(session.course);
 const state = { index: 0, answers: {}, checked: {}, flagged: {}, eliminated: {}, explain: false };
-let bank = null, questions = [], progress = {}, loadState = 'loading';
+const banks = {}; // slug -> loaded bank; saved/errors sessions span several courses
+let questions = [], loadState = 'loading';
 
 const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 function typeset(...elements) {
@@ -42,7 +44,7 @@ function setDomainLabel(text) {
   questionDomain.textContent = text;
   questionDomain.dataset.domain = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 }
-const unitLabel = q => courseUnitLabel(course, q.unit);
+const unitLabel = q => courseUnitLabel(getCourse(q.course), q.unit);
 
 function showMessage(title, body, actions) {
   questionNumber.textContent = '—';
@@ -60,12 +62,14 @@ function showMessage(title, body, actions) {
 
 function render() {
   if (loadState === 'loading') return showMessage('Loading questions…', 'Opening the question bank for this course.', '');
-  if (loadState === 'error') return showMessage('We couldn’t load this question bank', 'Check your connection and try again.', '<button class="sat-button sat-button-primary" type="button" id="retryLoadBtn">Retry</button><a class="sat-button sat-button-ghost" href="./mcqs.html">Back to bank</a>');
-  if (loadState === 'unknown') return showMessage('Unknown course', 'Choose a course from the MCQ bank to start practicing.', '<a class="sat-button sat-button-primary" href="./mcqs.html">Back to bank</a>');
-  if (!questions.length) return showMessage('No questions matched this selection', 'Try other units or reset the filters.', '<a class="sat-button sat-button-primary" href="./mcqs.html">Back to bank</a>');
+  if (loadState === 'error') return showMessage('We couldn’t load this question bank', 'Check your connection and try again.', '<button class="sat-button sat-button-primary" type="button" id="retryLoadBtn">Retry</button><a class="sat-button sat-button-ghost" href="./home.html">Back to bank</a>');
+  if (loadState === 'unknown') return showMessage('Unknown course', 'Choose a course from the MCQ bank to start practicing.', '<a class="sat-button sat-button-primary" href="./home.html">Back to bank</a>');
+  if (!questions.length && session.mode) return showMessage(session.mode === 'saved' ? 'No saved questions yet' : 'No recent errors', 'Questions you save with Mark for Review, or miss after Check, show up here when you are signed in.', '<a class="sat-button sat-button-primary" href="./home.html">Back to bank</a>');
+  if (!questions.length) return showMessage('No questions matched this selection', 'Try other units or reset the filters.', '<a class="sat-button sat-button-primary" href="./home.html">Back to bank</a>');
 
   const q = questions[state.index], selected = state.answers[q.id], checked = !!state.checked[q.id];
   const correct = selected === q.answer, eliminated = state.eliminated[q.id] || {};
+  document.body.dataset.tone = getCourse(q.course).tone; // colors the unit label to match the course tile
   questionNumber.textContent = state.index + 1;
   setDomainLabel(unitLabel(q));
   sessionFilterChips.innerHTML = `<span class="sat-filter-chip">${escape(q.skill)}</span>`;
@@ -102,7 +106,7 @@ function render() {
   checkAnswerBtn.disabled = !Number.isInteger(selected);
 
   if (checked || state.explain) {
-    const links = q.sourceIds.map(id => bank.sources[id]).filter(src => /^https:\/\//.test(src.url))
+    const links = q.sourceIds.map(id => banks[q.course].sources[id]).filter(src => /^https:\/\//.test(src.url))
       .map(src => `<a href="${escape(src.url)}" target="_blank" rel="noopener noreferrer">${escape(src.title)}</a>`).join(' · ');
     feedbackPanel.className = `sat-feedback-panel ${checked && !correct ? 'is-incorrect' : 'is-correct'}`;
     feedbackPanel.innerHTML = `<strong>${checked ? (correct ? 'Correct.' : `Correct answer: ${KEYS[q.answer]}.`) : 'Explanation preview.'}</strong>
@@ -126,7 +130,7 @@ function render() {
 }
 // Read by mcq-ask-korah.js so Korah knows which question the student is on.
 let announcedId = null;
-window.KorahAPPlayer = { getCurrentQuestion: () => (loadState === 'ready' && questions[state.index] ? { course, unit: unitLabel(questions[state.index]), question: questions[state.index] } : null) };
+window.KorahAPPlayer = { getCurrentQuestion: () => (loadState === 'ready' && questions[state.index] ? { course: getCourse(questions[state.index].course), unit: unitLabel(questions[state.index]), question: questions[state.index] } : null) };
 
 function goTo(index) {
   if (index < 0 || index >= questions.length) return;
@@ -135,7 +139,7 @@ function goTo(index) {
   render();
   $('playerScroll').scrollTop = 0;
 }
-const leave = () => { if (window.KorahTransitions?.go) window.KorahTransitions.go('./mcqs.html'); else location.href = './mcqs.html'; };
+const leave = () => { const home = './home.html' + (course ? '#' + course.slug : ''); if (window.KorahTransitions?.go) window.KorahTransitions.go(home); else location.href = home; };
 
 // ── Stopwatch: time on the current question ──
 const stopwatch = (() => {
@@ -144,7 +148,7 @@ const stopwatch = (() => {
   const paint = () => { display.textContent = `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`; };
   setInterval(() => { if (running && loadState === 'ready' && !document.hidden) { seconds++; paint(); } }, 1000);
   $('pauseStopwatchBtn').addEventListener('click', () => { running = !running; pauseIcon.classList.toggle('is-hidden', !running); playIcon.classList.toggle('is-hidden', running); });
-  return { reset() { seconds = 0; paint(); } };
+  return { reset() { seconds = 0; paint(); }, get seconds() { return seconds; } };
 })();
 
 // ── Footer question navigator ──
@@ -222,12 +226,24 @@ checkAnswerBtn.addEventListener('click', () => {
   const q = questions[state.index];
   if (!q || !Number.isInteger(state.answers[q.id]) || state.checked[q.id]) return;
   state.checked[q.id] = true;
+  const progress = loadProgress(q.course);
   progress[q.id] = state.answers[q.id];
-  saveProgress(course.slug, progress);
+  saveProgress(q.course, progress);
+  // Signed-in users also get the attempt in Firestore, which feeds the hub stats.
+  window.KorahAPQuestions?.recordAttempt({ questionId: q.id, course: q.course, skillCd: String(q.unit), domain: unitLabel(q), correct: state.answers[q.id] === q.answer, choice: state.answers[q.id], timeSpent: stopwatch.seconds })
+    .catch(e => console.warn('[AP MCQ] recordAttempt failed', e));
   render();
   feedbackPanel.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 });
-inlineReviewBtn.addEventListener('click', () => { const q = questions[state.index]; if (q) { state.flagged[q.id] = !state.flagged[q.id]; render(); } });
+// Mark for Review is also the Save button: signed-in users get it as a Firestore bookmark.
+inlineReviewBtn.addEventListener('click', () => {
+  const q = questions[state.index];
+  if (!q) return;
+  state.flagged[q.id] = !state.flagged[q.id];
+  window.KorahAPQuestions?.saveBookmark(q.id, state.flagged[q.id], { skillCd: String(q.unit), domain: unitLabel(q) })
+    .catch(e => console.warn('[AP MCQ] saveBookmark failed', e));
+  render();
+});
 showExplanationBtn.addEventListener('click', () => { if (questions[state.index]) { state.explain = !state.explain; render(); } });
 prevQuestionBtn.addEventListener('click', () => goTo(state.index - 1));
 nextQuestionBtn.addEventListener('click', () => (state.index === questions.length - 1 ? leave() : goTo(state.index + 1)));
@@ -237,15 +253,34 @@ document.addEventListener('keydown', e => {
   if (e.key === 'ArrowLeft') goTo(state.index - 1);
 });
 
+// mcq-player.html creates window.KorahAPQuestions after sign-in and fires
+// korahAPQuestionsReady either way; guests resolve to null.
+const questionsApi = new Promise(resolve => {
+  if (window.KorahAPQuestions) return resolve(window.KorahAPQuestions);
+  window.addEventListener('korahAPQuestionsReady', () => resolve(window.KorahAPQuestions || null), { once: true });
+});
+
+// Saved or missed question ids, looked up across every course's bank.
+async function loadSavedOrErrors() {
+  document.title = `Korah AI — ${session.mode === 'saved' ? 'Saved Questions' : 'Recent Errors'}`;
+  const api = await questionsApi;
+  if (!api) return [];
+  const ids = session.mode === 'saved' ? (await api.getBookmarks()).map(b => b.questionId) : await api.getErrorIds();
+  const byId = new Map();
+  await Promise.all(COURSES.map(c => loadBank(c.slug).then(b => { banks[c.slug] = b; b.questions.forEach(q => byId.set(q.id, q)); }).catch(() => {})));
+  return ids.map(id => byId.get(id)).filter(Boolean);
+}
+
 async function load() {
-  if (!course) { loadState = 'unknown'; return render(); }
+  if (!course && !session?.mode) { loadState = 'unknown'; return render(); }
   loadState = 'loading'; render();
-  document.title = `Korah AI — ${course.name} MCQ Practice`;
-  document.body.dataset.tone = course.tone; // colors the unit label to match the course tile
   try {
-    bank = await loadBank(course.slug);
-    progress = loadProgress(course.slug);
-    questions = buildSession(bank, session, progress);
+    if (session.mode) questions = await loadSavedOrErrors();
+    else {
+      document.title = `Korah AI — ${course.name} MCQ Practice`;
+      banks[course.slug] = await loadBank(course.slug);
+      questions = buildSession(banks[course.slug], session, loadProgress(course.slug));
+    }
     loadState = 'ready';
   } catch (error) {
     console.error('[AP MCQ]', error);
@@ -253,5 +288,12 @@ async function load() {
   }
   state.index = 0;
   render();
+  // Questions the user already saved open with Mark for Review on.
+  const api = await questionsApi;
+  if (!api || loadState !== 'ready') return;
+  try {
+    (await api.getBookmarks()).forEach(b => { state.flagged[b.questionId] = true; });
+    render();
+  } catch (e) { console.warn('[AP MCQ] bookmarks unavailable', e); }
 }
 load();

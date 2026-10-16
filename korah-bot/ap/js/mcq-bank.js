@@ -84,7 +84,8 @@ export function unitStats(bank, questions, progress = {}) {
   return stats;
 }
 
-// ── Progress: checked answers, kept in this browser only ──
+// ── Progress: checked answers, kept in this browser. For signed-in users the hub
+// also copies their latest Firestore answers in (see renderStats in ap-home.js). ──
 const progressKey = slug => `korah_ap_mcq_progress_${slug}`;
 export function loadProgress(slug, storage = globalThis.localStorage) {
   try { const data = JSON.parse(storage?.getItem(progressKey(slug)) || '{}'); return data && typeof data === 'object' ? data : {}; }
@@ -106,8 +107,10 @@ export function playerUrl({ course, units = [], calculator = '', kind = '', comp
   if (random) p.set('random', '1');
   return `./mcq-player.html?${p}`;
 }
+// ?mode=saved or ?mode=errors is the signed-in user's saved or missed questions across every course.
 export function parseSession(search) {
   const p = new URLSearchParams(search), course = getCourse(p.get('course'));
+  if (['saved', 'errors'].includes(p.get('mode'))) return { mode: p.get('mode') };
   if (!course) return null;
   const pick = (key, allowed, fallback) => allowed.includes(p.get(key)) ? p.get(key) : fallback;
   const limit = Number(p.get('limit'));
