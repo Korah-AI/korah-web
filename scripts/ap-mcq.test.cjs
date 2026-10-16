@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const banks = ['ap-calculus-ab', 'ap-us-history'].map(slug => JSON.parse(fs.readFileSync(path.join(__dirname, '../korah-bot/ap/data', slug, 'mcqs.json'), 'utf8')));
 const physics = JSON.parse(fs.readFileSync(path.join(__dirname, '../korah-bot/ap/data/ap-physics-1/mcqs.json'), 'utf8'));
-const [biology, physicsC] = ['ap-biology', 'ap-physics-c-mechanics'].map(slug => JSON.parse(fs.readFileSync(path.join(__dirname, '../korah-bot/ap/data', slug, 'mcqs.json'), 'utf8')));
+const [biology, physicsC, physics2, psychology, precalc] = ['ap-biology', 'ap-physics-c-mechanics', 'ap-physics-2', 'ap-psychology', 'ap-precalculus'].map(slug => JSON.parse(fs.readFileSync(path.join(__dirname, '../korah-bot/ap/data', slug, 'mcqs.json'), 'utf8')));
 const api = import('../korah-bot/ap/js/mcq-bank.js');
 
 test('each separate bank has 200 unique, complete questions divided evenly among its units', async () => {
@@ -119,7 +119,7 @@ test('loader only requests the selected course and rejects missing data or inval
 });
 
 test('the build script reproduces the committed banks', () => {
-  const slugs = ['ap-calculus-ab', 'ap-us-history', 'ap-physics-1', 'ap-biology', 'ap-physics-c-mechanics'], before = [...banks, physics, biology, physicsC].map(b => JSON.stringify(b));
+  const slugs = ['ap-calculus-ab', 'ap-us-history', 'ap-physics-1', 'ap-biology', 'ap-physics-c-mechanics', 'ap-physics-2', 'ap-psychology', 'ap-precalculus'], before = [...banks, physics, biology, physicsC, physics2, psychology, precalc].map(b => JSON.stringify(b));
   require('node:child_process').execFileSync(process.execPath, [path.join(__dirname, 'ap-mcq-build/build.cjs')], { stdio: 'ignore' });
   const after = slugs.map(slug => JSON.stringify(JSON.parse(fs.readFileSync(path.join(__dirname, '../korah-bot/ap/data', slug, 'mcqs.json'), 'utf8'))));
   assert.deepEqual(after, before);
@@ -203,6 +203,48 @@ test('the AP Biology and AP Physics C: Mechanics banks each have 200 balanced, f
   assert.throws(() => validateBank(physicsC, 'ap-physics-1'));
 });
 
+test('the AP Physics 2 and AP Psychology banks each have 200 balanced, figure-rich questions', async () => {
+  const { validateBank, COURSES, filterQuestions, parseSession, unitLabel } = await api;
+  const seen = new Set([...banks, physics, biology, physicsC].flatMap(b => b.questions.map(q => q.id)));
+  for (const [bank, minFigures] of [[physics2, 80], [psychology, 60]]) {
+    validateBank(bank, bank.course);
+    const course = COURSES.find(c => c.slug === bank.course), qs = bank.questions;
+    assert.equal(qs.length, 200);
+    assert.equal(new Set(qs.map(q => q.stem)).size, 200);
+    for (const q of qs) { assert.ok(!seen.has(q.id)); seen.add(q.id); }
+    const perUnit = course.units.map((_, i) => qs.filter(q => q.unit === i + 1).length);
+    assert.ok(Math.max(...perUnit) - Math.min(...perUnit) <= 1, bank.course + ' units: ' + perUnit);
+    const counts = [0, 1, 2, 3].map(answer => qs.filter(q => q.answer === answer).length);
+    assert.ok(Math.max(...counts) - Math.min(...counts) <= 2);
+    assert.ok(qs.filter(q => q.figure).length >= minFigures);
+    for (let unit = 1; unit <= course.units.length; unit++) assert.ok(qs.filter(q => q.unit === unit && q.figure).length >= 8, bank.course + ' unit ' + unit + ' has figure questions');
+    for (const q of qs) {
+      assert.ok(q.explanation.length > 60, q.id + ': explanation');
+      if (q.figure) {
+        assert.ok(q.figure.alt.length > 20);
+        if (q.figure.svg) { assert.match(q.figure.svg, /^<svg[^>]+role="img"/); assert.doesNotMatch(q.figure.svg, /<script|\son\w+=|href=/i); assert.doesNotMatch(q.figure.svg, /NaN|undefined/); }
+        else assert.ok(q.figure.table.rows.every(row => row.length === q.figure.table.headers.length));
+      }
+      for (const text of [q.stem, q.explanation, ...q.choices]) assert.equal(text.split('\\(').length, text.split('\\)').length, q.id + ': unbalanced math delimiters');
+    }
+    for (const url of Object.values(bank.sources).map(s => s.url)) assert.equal(new URL(url).protocol, 'https:');
+  }
+  // Physics 2 mixes conceptual and quantitative questions in every unit and typesets all math.
+  for (const kind of ['conceptual', 'quantitative']) for (let unit = 1; unit <= 7; unit++) assert.ok(filterQuestions(physics2, { units: [unit], kind }).length >= 10, 'Physics 2 unit ' + unit + ' has ' + kind + ' questions');
+  for (const q of physics2.questions) for (const text of [q.stem, q.explanation, ...q.choices]) assert.doesNotMatch(text, /[²³√→≤≥≈θμωρλΩ°∫]|\^\(/, q.id + ': plain-text math');
+  // Physics 2 keeps the College Board's unit numbers, 9–15.
+  const p2 = COURSES.find(c => c.slug === 'ap-physics-2');
+  assert.equal(unitLabel(p2, 1), 'Unit 9: Thermodynamics');
+  assert.equal(unitLabel(p2, 7), 'Unit 15: Modern Physics');
+  assert.equal(unitLabel(COURSES.find(c => c.slug === 'ap-psychology'), 5), 'Unit 5: Mental and Physical Health');
+  // Psychology has no question-type filter.
+  assert.ok(psychology.questions.every(q => q.kind === undefined));
+  assert.equal(parseSession('course=ap-psychology&kind=conceptual').kind, '');
+  assert.equal(parseSession('course=ap-physics-2&kind=quantitative').kind, 'quantitative');
+  assert.throws(() => validateBank(psychology, 'ap-physics-2'));
+  assert.throws(() => validateBank(physics2, 'ap-physics-1'));
+});
+
 // Independently recalculate every calculator answer: midpoint quadrature,
 // Newton iteration, and centered finite differences (rather than the
 // Simpson quadrature / bisection used when authoring the answer key).
@@ -268,5 +310,120 @@ test('all 50 calculator answer keys agree with independent numerical calculation
   questions.forEach((q,i)=>{
     assert.ok(Math.abs(num(q.choices[q.answer])-expectations[i])<=.00051, `${q.id}: expected ${expectations[i]}, got ${q.choices[q.answer]}`);
     q.choices.forEach((c,j)=>{if(j!==q.answer) assert.ok(Math.abs(num(c)-expectations[i])>.001, `${q.id}: ambiguous distractor`);});
+  });
+});
+
+test('the AP Precalculus bank has 200 questions over the three exam units, with calculator and no-calculator questions in each', async () => {
+  const { validateBank, COURSES, filterQuestions } = await api;
+  validateBank(precalc, 'ap-precalculus');
+  const course = COURSES.find(c => c.slug === 'ap-precalculus'), qs = precalc.questions;
+  assert.equal(course.units.length, 3);
+  assert.equal(qs.length, 200);
+  assert.equal(new Set(qs.map(q => q.stem)).size, 200);
+  const seen = new Set([...banks, physics, biology, physicsC, physics2, psychology].flatMap(b => b.questions.map(q => q.id)));
+  for (const q of qs) assert.ok(!seen.has(q.id));
+  const perUnit = [1, 2, 3].map(u => qs.filter(q => q.unit === u).length);
+  assert.ok(Math.max(...perUnit) - Math.min(...perUnit) <= 1, 'units: ' + perUnit);
+  const counts = [0, 1, 2, 3].map(answer => qs.filter(q => q.answer === answer).length);
+  assert.ok(Math.max(...counts) - Math.min(...counts) <= 2);
+  for (let unit = 1; unit <= 3; unit++) {
+    assert.ok(filterQuestions(precalc, { units: [unit], calculator: 'calculator' }).length >= 15, 'unit ' + unit + ' calculator questions');
+    assert.ok(filterQuestions(precalc, { units: [unit], calculator: 'non-calculator' }).length >= 40, 'unit ' + unit + ' no-calculator questions');
+    assert.ok(qs.filter(q => q.unit === unit && q.figure).length >= 10, 'unit ' + unit + ' figure questions');
+  }
+  assert.ok(qs.every(q => q.kind === undefined));
+  for (const q of qs) {
+    assert.ok(q.explanation.length > 60, q.id + ': explanation');
+    if (q.figure) {
+      assert.ok(q.figure.alt.length > 20);
+      if (q.figure.svg) { assert.match(q.figure.svg, /^<svg[^>]+role="img"/); assert.doesNotMatch(q.figure.svg, /<script|\son\w+=|href=/i); assert.doesNotMatch(q.figure.svg, /NaN|undefined/); }
+      else assert.ok(q.figure.table.rows.every(row => row.length === q.figure.table.headers.length));
+    }
+    for (const text of [q.stem, q.explanation, ...q.choices]) {
+      assert.equal(text.split('\\(').length, text.split('\\)').length, q.id + ': unbalanced math delimiters');
+      assert.doesNotMatch(text, /[²³√∫→≤≥≠≈ˣ′∞πθ]|\^\(/, q.id + ': plain-text math');
+    }
+  }
+  assert.throws(() => validateBank(precalc, 'ap-calculus-ab'));
+
+  // Every calculator key, recomputed independently in bank order (unit 1, then 2, then 3).
+  const fit = (xs, ys, deg) => {
+    const n = deg + 1, A = [...Array(n)].map((_, i) => [...Array(n)].map((_, j) => xs.reduce((t, x) => t + x ** (i + j), 0)));
+    const b = [...Array(n)].map((_, i) => xs.reduce((t, x, k) => t + ys[k] * x ** i, 0));
+    for (let c = 0; c < n; c++) for (let r = c + 1; r < n; r++) { const m = A[r][c] / A[c][c]; for (let k = c; k < n; k++) A[r][k] -= m * A[c][k]; b[r] -= m * b[c]; }
+    const x = Array(n).fill(0);
+    for (let r = n - 1; r >= 0; r--) x[r] = (b[r] - A[r].slice(r + 1).reduce((t, a, k) => t + a * x[r + 1 + k], 0)) / A[r][r];
+    return x;
+  };
+  const ev = (c, x) => c.reduce((t, a, i) => t + a * x ** i, 0);
+  const signChanges = (g, a, b) => { let n = 0, prev = g(a); for (let i = 1; i <= 100000; i++) { const v = g(a + (b - a) * i / 100000); if (prev * v < 0) n++; prev = v; } return n; };
+  const expFit = (xs, ys, x) => { const c = fit(xs, ys.map(Math.log), 1); return Math.exp(c[0] + c[1] * x); };
+  const expectations = [
+    root(x => x ** 3 - 2 * x - 5, 2),
+    (g => g(root(x => derivative(g, x), 0.2)))(x => 0.5 * x ** 4 - 3 * x * x + x),
+    root(x => x ** 4 - 3 * x * x - 2 * x - 1, 2),
+    ev(fit([0, 1, 2, 3, 4], [3.1, 4.9, 9.2, 15.1, 22.8], 2), 5),
+    fit([2, 4, 6, 8, 10], [5.1, 8.8, 13.2, 16.4, 20.9], 1)[1],
+    root(x => x ** 3 - 1.2 * x * x - 1.4, 1.7),
+    (Math.sqrt(28) - Math.sqrt(2)) / 2,
+    root(x => x ** 3 - 5 * x + 1, 2.1) - root(x => x ** 3 - 5 * x + 1, 0.2),
+    root(x => x * x - 3 - Math.sqrt(x + 5), 2.4),
+    2 * Math.sqrt(64 - 27) / 3,
+    root(x => x ** 3 + 2 * x - 4, 1.2),
+    (20 + 30 - Math.sqrt(20 * 20 - 20 * 30 + 30 * 30)) / 6,
+    Math.cbrt(16) + 8 / Math.cbrt(4),
+    (6 + Math.sqrt(48)) / 6,
+    ev(fit([0, 1, 2, 3, 4, 5], [2.0, 1.1, 2.9, 8.2, 17.8, 33.1], 3), 6),
+    root(x => x ** 5 - 3 * x + 1, 0.3),
+    ((2.7 ** 3 - 2.7) - (1.2 ** 3 - 1.2)) / 1.5,
+    (g => g(root(x => 4 * x ** 3 - 6 * x * x - 1, 1.6)))(x => x ** 4 - 2 * x ** 3 - x + 3),
+    signChanges(x => x ** 5 - 4 * x ** 3 + x + 1, -5, 5),
+    (3 + Math.sqrt(26)) / 2,
+    root(x => 2 ** x - x - 3, 2.4),
+    expFit([0, 1, 2, 3, 4], [12, 17, 25, 37, 54], 6),
+    Math.log(8000 / 5000) / 0.04,
+    6 * Math.log(2) / Math.log(200 / 140),
+    1 + Math.sqrt(10),
+    root(x => Math.log(x) - 3 + x, 2.2),
+    root(x => Math.exp(x / 2) - x * x, 8.6),
+    Math.log(3.5) / 0.08,
+    Math.log(2) / (12 * Math.log(1 + 0.06 / 12)),
+    1 + Math.ceil(Math.log(1000 / 8) / Math.log(1.5)),
+    (c => c[0] + c[1] * Math.log(30))(fit([1, 2, 4, 8, 16].map(Math.log), [3.0, 5.1, 7.4, 9.3, 11.6], 1)),
+    3 * Math.log(3) / 4,
+    root(x => Math.exp(x) + x - 3, 0.8),
+    Math.log(2) / Math.log(1.07),
+    Math.exp(0.35 * 4 + 1.2),
+    (Math.log(3) + 2 * Math.log(5)) / Math.log(5 / 3),
+    20 * (20 / 6),
+    root(x => Math.log(x) - x + 2, 3.1),
+    100 * (1 - Math.exp(-0.2)),
+    expFit([0, 2, 4, 6, 8], [500, 410, 330, 272, 220], 10),
+    Math.PI - Math.asin(0.3),
+    root(x => 2 * Math.cos(x) - x, 1),
+    12 - 12 * Math.acos(-0.375) / Math.PI,
+    2 + 3 * Math.cos(2),
+    Math.abs(3 * Math.sin(2.2)),
+    4 * Math.cos(2.3),
+    Math.PI + Math.atan(2.5),
+    (3 * Math.sin(2) + 2 - 3 * Math.sin(0.5) - 0.5) / 1.5,
+    4 * Math.acos(-0.4) / Math.PI,
+    Math.PI - Math.acos(0.6),
+    1 / Math.cos(1.2),
+    7 * Math.PI / 6,
+    root(x => Math.tan(x) - x, 4.49),
+    12 + 2.4 * Math.sin(2 * Math.PI * 92 / 365),
+    root(x => Math.cos(x) - Math.sin(x - 0.5), 1),
+    1 / Math.sin(0.4),
+    3 * Math.cos(1.4) * Math.cos(0.7),
+    Math.atan(3 / 4) / 2,
+    Math.PI - 2 * Math.asin(0.7),
+    (Math.asin(0.6) + Math.asin(0.2)) / 3,
+  ];
+  const calc = qs.filter(q => q.calculator === 'calculator');
+  assert.equal(calc.length, expectations.length);
+  calc.forEach((q, i) => {
+    assert.ok(Math.abs(num(q.choices[q.answer]) - expectations[i]) <= 0.00051, q.id + ': expected ' + expectations[i] + ', got ' + q.choices[q.answer]);
+    q.choices.forEach((c, j) => { if (j !== q.answer) assert.ok(Math.abs(num(c) - expectations[i]) > 0.001, q.id + ': ambiguous distractor'); });
   });
 });

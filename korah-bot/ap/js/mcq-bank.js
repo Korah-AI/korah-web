@@ -9,11 +9,16 @@ export const COURSES = [
   { slug: 'ap-physics-1', name: 'AP Physics 1', tone: 'science', hasCalculator: false, hasKinds: true, numbered: true, noun: 'unit', units: ['Kinematics', 'Force and Translational Dynamics', 'Work, Energy, and Power', 'Linear Momentum', 'Torque and Rotational Dynamics', 'Energy and Momentum of Rotating Systems', 'Oscillations', 'Fluids'] },
   { slug: 'ap-biology', name: 'AP Biology', tone: 'life', hasCalculator: false, numbered: true, noun: 'unit', units: ['Chemistry of Life', 'Cells', 'Cellular Energetics', 'Cell Communication and Cell Cycle', 'Heredity', 'Gene Expression and Regulation', 'Natural Selection', 'Ecology'] },
   { slug: 'ap-physics-c-mechanics', name: 'AP Physics C: Mechanics', tone: 'mech', hasCalculator: false, hasKinds: true, numbered: true, noun: 'unit', units: ['Kinematics', 'Force and Translational Dynamics', 'Work, Energy, and Power', 'Linear Momentum', 'Torque and Rotational Dynamics', 'Energy and Momentum of Rotating Systems', 'Oscillations'] },
+  // The College Board numbers AP Physics 2 units 9–15, continuing from AP Physics 1; questions store them as 1–7.
+  { slug: 'ap-physics-2', name: 'AP Physics 2', tone: 'wave', hasCalculator: false, hasKinds: true, numbered: true, unitOffset: 8, noun: 'unit', units: ['Thermodynamics', 'Electric Force, Field, and Potential', 'Electric Circuits', 'Magnetism and Electromagnetism', 'Geometric Optics', 'Waves, Sound, and Physical Optics', 'Modern Physics'] },
+  // Units 1–3 are the units assessed on the AP exam; unit 4 is not, so it has no questions.
+  { slug: 'ap-precalculus', name: 'AP Precalculus', tone: 'trig', hasCalculator: true, numbered: true, noun: 'unit', units: ['Polynomial and Rational Functions', 'Exponential and Logarithmic Functions', 'Trigonometric and Polar Functions'] },
+  { slug: 'ap-psychology', name: 'AP Psychology', tone: 'mind', hasCalculator: false, numbered: true, noun: 'unit', units: ['Biological Bases of Behavior', 'Cognition', 'Development and Learning', 'Social Psychology and Personality', 'Mental and Physical Health'] },
 ];
 
 export const KINDS = ['conceptual', 'quantitative'];
 // "Unit 3: Work, Energy, and Power" for numbered courses; history periods already carry their number.
-export const unitLabel = (course, unit) => course.numbered ? `Unit ${unit}: ${course.units[unit - 1]}` : course.units[unit - 1];
+export const unitLabel = (course, unit) => course.numbered ? `Unit ${unit + (course.unitOffset || 0)}: ${course.units[unit - 1]}` : course.units[unit - 1];
 
 export const getCourse = slug => COURSES.find(c => c.slug === slug) || null;
 
