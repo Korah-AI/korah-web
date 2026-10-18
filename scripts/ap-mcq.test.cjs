@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const banks = ['ap-calculus-ab', 'ap-us-history'].map(slug => JSON.parse(fs.readFileSync(path.join(__dirname, '../korah-bot/ap/data', slug, 'mcqs.json'), 'utf8')));
 const physics = JSON.parse(fs.readFileSync(path.join(__dirname, '../korah-bot/ap/data/ap-physics-1/mcqs.json'), 'utf8'));
-const [biology, physicsC, physics2, psychology, precalc] = ['ap-biology', 'ap-physics-c-mechanics', 'ap-physics-2', 'ap-psychology', 'ap-precalculus'].map(slug => JSON.parse(fs.readFileSync(path.join(__dirname, '../korah-bot/ap/data', slug, 'mcqs.json'), 'utf8')));
+const [biology, physicsC, physics2, psychology, precalc, chemistry, enviro, government] = ['ap-biology', 'ap-physics-c-mechanics', 'ap-physics-2', 'ap-psychology', 'ap-precalculus', 'ap-chemistry', 'ap-environmental-science', 'ap-us-government'].map(slug => JSON.parse(fs.readFileSync(path.join(__dirname, '../korah-bot/ap/data', slug, 'mcqs.json'), 'utf8')));
 const api = import('../korah-bot/ap/js/mcq-bank.js');
 
 test('each separate bank has 200 unique, complete questions divided evenly among its units', async () => {
@@ -119,7 +119,7 @@ test('loader only requests the selected course and rejects missing data or inval
 });
 
 test('the build script reproduces the committed banks', () => {
-  const slugs = ['ap-calculus-ab', 'ap-us-history', 'ap-physics-1', 'ap-biology', 'ap-physics-c-mechanics', 'ap-physics-2', 'ap-psychology', 'ap-precalculus'], before = [...banks, physics, biology, physicsC, physics2, psychology, precalc].map(b => JSON.stringify(b));
+  const slugs = ['ap-calculus-ab', 'ap-us-history', 'ap-physics-1', 'ap-biology', 'ap-physics-c-mechanics', 'ap-physics-2', 'ap-psychology', 'ap-precalculus', 'ap-chemistry', 'ap-environmental-science', 'ap-us-government'], before = [...banks, physics, biology, physicsC, physics2, psychology, precalc, chemistry, enviro, government].map(b => JSON.stringify(b));
   require('node:child_process').execFileSync(process.execPath, [path.join(__dirname, 'ap-mcq-build/build.cjs')], { stdio: 'ignore' });
   const after = slugs.map(slug => JSON.stringify(JSON.parse(fs.readFileSync(path.join(__dirname, '../korah-bot/ap/data', slug, 'mcqs.json'), 'utf8'))));
   assert.deepEqual(after, before);
@@ -426,4 +426,48 @@ test('the AP Precalculus bank has 200 questions over the three exam units, with 
     assert.ok(Math.abs(num(q.choices[q.answer]) - expectations[i]) <= 0.00051, q.id + ': expected ' + expectations[i] + ', got ' + q.choices[q.answer]);
     q.choices.forEach((c, j) => { if (j !== q.answer) assert.ok(Math.abs(num(c) - expectations[i]) > 0.001, q.id + ': ambiguous distractor'); });
   });
+});
+
+test('the AP Chemistry, AP Environmental Science, and AP U.S. Government banks each have 200 balanced questions', async () => {
+  const { validateBank, COURSES, filterQuestions, parseSession } = await api;
+  const seen = new Set([...banks, physics, biology, physicsC, physics2, psychology, precalc].flatMap(b => b.questions.map(q => q.id)));
+  for (const [bank, unitCount, minFigures] of [[chemistry, 9, 45], [enviro, 9, 45], [government, 5, 25]]) {
+    validateBank(bank, bank.course);
+    const course = COURSES.find(c => c.slug === bank.course), qs = bank.questions;
+    assert.equal(course.units.length, unitCount);
+    assert.equal(qs.length, 200);
+    assert.equal(new Set(qs.map(q => q.stem)).size, 200);
+    for (const q of qs) { assert.ok(!seen.has(q.id)); seen.add(q.id); }
+    const perUnit = course.units.map((_, i) => qs.filter(q => q.unit === i + 1).length);
+    assert.ok(Math.max(...perUnit) - Math.min(...perUnit) <= 1, bank.course + ' units: ' + perUnit);
+    const counts = [0, 1, 2, 3].map(answer => qs.filter(q => q.answer === answer).length);
+    assert.ok(Math.max(...counts) - Math.min(...counts) <= 2);
+    assert.ok(qs.filter(q => q.figure).length >= minFigures, bank.course + ' figures');
+    for (let unit = 1; unit <= unitCount; unit++) assert.ok(qs.filter(q => q.unit === unit && q.figure).length >= 2, bank.course + ' unit ' + unit + ' has figure questions');
+    for (const q of qs) {
+      assert.ok(q.explanation.length > 60, q.id + ': explanation');
+      if (q.figure) {
+        assert.ok(q.figure.alt.length > 20);
+        if (q.figure.svg) { assert.match(q.figure.svg, /^<svg[^>]+role="img"/); assert.doesNotMatch(q.figure.svg, /<script|\son\w+=|href=/i); assert.doesNotMatch(q.figure.svg, /NaN|undefined/); }
+        else assert.ok(q.figure.table.rows.every(row => row.length === q.figure.table.headers.length));
+      }
+      for (const text of [q.stem, q.explanation, ...q.choices]) {
+        assert.equal(text.split('\\(').length, text.split('\\)').length, q.id + ': unbalanced math delimiters');
+        // Formulas and math are typeset: no plain-text subscripts, arrows, or Greek letters, and no leftover ce{…} notation.
+        assert.doesNotMatch(text.replace(/\\\([\s\S]*?\\\)/g, ''), /[²³√→⇌≤≥≈θμλΔ°₀-₉]|\bm?ce\{/, q.id + ': plain-text math or formula');
+      }
+    }
+    for (const url of Object.values(bank.sources).map(x => x.url)) assert.equal(new URL(url).protocol, 'https:');
+  }
+  // Chemistry uses the conceptual/quantitative filter, with a substantial share of each.
+  assert.equal(filterQuestions(chemistry, { kind: 'conceptual' }).length + filterQuestions(chemistry, { kind: 'quantitative' }).length, 200);
+  assert.ok(filterQuestions(chemistry, { kind: 'quantitative' }).length >= 80);
+  for (let unit = 1; unit <= 9; unit++) assert.ok(filterQuestions(chemistry, { units: [unit], kind: 'quantitative' }).length >= 4, 'chemistry unit ' + unit + ' quantitative');
+  assert.ok([enviro, government].every(b => b.questions.every(q => q.kind === undefined)));
+  assert.equal(parseSession('course=ap-us-government&kind=conceptual').kind, '');
+  // Government covers the four foundational documents added for 2026–27.
+  const govText = government.questions.map(q => q.stem + ' ' + q.choices.join(' ') + ' ' + q.explanation).join(' ');
+  for (const doc of ['Emancipation Proclamation', 'Federalist No. 39', 'Gettysburg Address', 'Wealth of Nations']) assert.ok(govText.includes(doc), 'covers ' + doc);
+  assert.throws(() => validateBank(chemistry, 'ap-physics-2'));
+  assert.throws(() => validateBank(government, 'ap-us-history'));
 });

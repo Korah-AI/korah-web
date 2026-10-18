@@ -48,6 +48,9 @@ College Board questions, and no question-bank or textbook exercise text is repro
 | AP Physics 2 | 200 | 29 in units 9–12, 28 in units 13–15 | 94 | Allowed on every question |
 | AP Psychology | 200 | 40 per unit | 72 | Not applicable |
 | AP Precalculus | 200 | 67 in units 1–2, 66 in unit 3 | 47 | 60 calculator; 140 non-calculator |
+| AP Chemistry | 200 | 23 in units 1–2, 22 in units 3–9 | 54 | Allowed on every question |
+| AP Environmental Science | 200 | 23 in units 1–2, 22 in units 3–9 | 52 | Allowed on every question |
+| AP U.S. Government and Politics | 200 | 40 per unit | 31 | Not applicable |
 
 **AP U.S. History** has 63 stimulus sets, seven per period, each with three or
 four questions. Six sets per period use a verbatim excerpt from a public-domain primary source
@@ -117,6 +120,29 @@ logarithmic properties, equations and inequalities, semi-log plots and residuals
 modeling, inverse trigonometric functions, identities, and polar curves and their rates of
 change. Trigonometric graphs are labeled in multiples of π.
 
+**AP Chemistry** follows the nine units of the course framework and uses the Question
+type filter: questions are tagged `conceptual` or `quantitative`, with calculations in
+every unit. Figures include photoelectron and mass spectra, potential-energy curves,
+particle diagrams, vapor-pressure, Maxwell–Boltzmann, and Beer's law graphs, a
+chromatogram, rate data and integrated rate-law plots, reaction-energy profiles, a heating
+curve, an equilibrium concentration graph, titration curves computed from the charge
+balance, and a galvanic cell. Chemical formulas are written in the sources as `ce{H2SO4}`
+(or `mce{…}` inside existing math) and converted to LaTeX by `chemtext.cjs`.
+
+**AP Environmental Science** follows the nine units of the course framework, with
+data-analysis and calculation questions (energy, percent change, the rule of 70, LD50,
+productivity) throughout. Figures include a food web, an energy pyramid, survivorship,
+logistic-growth, tolerance, island-biogeography, and demographic-transition graphs, age
+structure diagrams, a soil profile, a rain shadow, smog and inversion graphs, a dissolved
+oxygen sag curve, a dose–response curve, and a Keeling-style CO₂ record.
+
+**AP U.S. Government and Politics** follows the five units of the course framework. It
+applies the required foundational documents, including the four added for 2026–27
+(the Emancipation Proclamation, Federalist No. 39, the Gettysburg Address, and core
+principles from Adam Smith's *The Wealth of Nations*), and the required Supreme Court
+cases, with charts and tables for data analysis. Roe v. Wade is presented together with
+its overruling in Dobbs v. Jackson Women's Health Organization (2022).
+
 Correct answers are spread evenly across A–D. Distribution is designed for unit
 practice, not a weighted full-length exam. Items have not been psychometrically
 calibrated or reviewed by an AP teacher.
@@ -140,7 +166,8 @@ node scripts/ap-mcq-build/build.cjs
 - `biology.cjs` + `biology-more.cjs` and `physicsc.cjs` + `physicsc-more.cjs`: AP Biology and AP Physics C: Mechanics question
   blocks and figures. `physics2-a.cjs` + `physics2-b.cjs` and `psychology-a.cjs` + `psychology-b.cjs`:
   AP Physics 2 and AP Psychology. `precalc-a.cjs` + `precalc-b.cjs`: AP Precalculus (`c` calculator or `n` no calculator,
-  as in Calculus). All five are built by `buildBlockCourse` (pass `calculator: true` for the calculator field) in `build.cjs`, which is the
+  as in Calculus). `chem-a.cjs` + `chem-b.cjs`, `apes-a.cjs` + `apes-b.cjs`, and `gov-a.cjs` + `gov-b.cjs`: AP Chemistry,
+  AP Environmental Science, and AP U.S. Government. All are built by `buildBlockCourse` (pass `calculator: true` for the calculator field) in `build.cjs`, which is the
   quickest route for a new course.
 - `figures.cjs`: SVG helpers (`graph`, `chart`) and `table`. Figures use
   `currentColor` for axes and text so they follow the light and dark themes, and

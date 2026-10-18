@@ -88,6 +88,18 @@ const buildPrecalculus = () => buildBlockCourse({ slug: 'ap-precalculus', title:
   ced: { title: 'College Board — AP Precalculus Course and Exam Description', url: 'https://apcentral.collegeboard.org/courses/ap-precalculus', note: 'Units 1–3 (the units assessed on the exam), mathematical practices, and question style.' },
   openstax: { title: 'OpenStax — Precalculus 2e', url: 'https://openstax.org/details/books/precalculus-2e', note: 'Topic reference only; questions, figures, and explanations are independently written.' },
 } });
+const buildChemistry = () => buildBlockCourse({ slug: 'ap-chemistry', title: 'AP Chemistry MCQ practice', files: ['./chem-a.cjs', './chem-b.cjs'], flags: ['c', 'q'], kinds: true, sources: {
+  ced: { title: 'College Board — AP Chemistry Course and Exam Description', url: 'https://apcentral.collegeboard.org/courses/ap-chemistry', note: 'Unit structure, science practices, and question style.' },
+  openstax: { title: 'OpenStax — Chemistry 2e', url: 'https://openstax.org/details/books/chemistry-2e', note: 'Topic reference only; questions, data, and figures are independently written.' },
+} });
+const buildEnvironmental = () => buildBlockCourse({ slug: 'ap-environmental-science', title: 'AP Environmental Science MCQ practice', files: ['./apes-a.cjs', './apes-b.cjs'], flags: ['-'], kinds: false, sources: {
+  ced: { title: 'College Board — AP Environmental Science Course and Exam Description', url: 'https://apcentral.collegeboard.org/courses/ap-environmental-science', note: 'Unit structure, science practices, and question style.' },
+  openstax: { title: 'OpenStax — Biology 2e (ecology chapters)', url: 'https://openstax.org/details/books/biology-2e', note: 'Topic reference only; scenarios, data, and figures are independently written.' },
+} });
+const buildGovernment = () => buildBlockCourse({ slug: 'ap-us-government', title: 'AP U.S. Government and Politics MCQ practice', files: ['./gov-a.cjs', './gov-b.cjs'], flags: ['-'], kinds: false, sources: {
+  ced: { title: 'College Board — AP U.S. Government and Politics Course and Exam Description', url: 'https://apcentral.collegeboard.org/courses/ap-united-states-government-and-politics', note: 'Units, required foundational documents (including those added for 2026–27), required Supreme Court cases, and question style.' },
+  openstax: { title: 'OpenStax — American Government 3e', url: 'https://openstax.org/details/books/american-government-3e', note: 'Topic reference only; scenarios and data are independently written.' },
+} });
 
 function buildHistory() {
   const more = require('./history-more.cjs'), charts = require('./history-charts.cjs');
@@ -124,3 +136,6 @@ buildPhysicsC();
 buildPhysics2();
 buildPsychology();
 buildPrecalculus();
+buildChemistry();
+buildEnvironmental();
+buildGovernment();
