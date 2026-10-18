@@ -1,5 +1,6 @@
 // Builds the FRQ banks for AP Physics 1, AP Physics 2, AP Physics C: Mechanics, AP Biology,
-// AP Precalculus, and AP Chemistry from the sources in this folder.
+// AP Precalculus, AP Chemistry, AP Environmental Science, AP U.S. Government and Politics,
+// and AP Psychology from the sources in this folder.
 // Usage: node scripts/ap-frq-build/build.cjs
 // Writes korah-bot/ap/data/<course>/frqs.json plus the canned demo transcript and grading.
 const fs = require('fs');
@@ -7,7 +8,7 @@ const path = require('path');
 const { tableText } = require('./frq-helpers.cjs');
 
 const DATA = path.join(__dirname, '../../korah-bot/ap/data');
-const SOURCES = ['./physics1.cjs', './physics2.cjs', './physicsc.cjs', './biology.cjs', './precalc.cjs', './chemistry.cjs'];
+const SOURCES = ['./physics1.cjs', './physics2.cjs', './physicsc.cjs', './biology.cjs', './precalc.cjs', './chemistry.cjs', './apes.cjs', './gov.cjs', './psych.cjs'];
 
 // Figures render on the page only, so the grader reads them through this text stimulus.
 const describe = f => (f.table ? tableText(f.caption, f.table.headers, f.table.rows) : `${f.caption}: ${f.alt}`);

@@ -9,7 +9,7 @@ const { execFileSync } = require('node:child_process');
 
 const DATA = path.join(__dirname, '../korah-bot/ap/data');
 const read = (slug, file = 'frqs.json') => JSON.parse(fs.readFileSync(path.join(DATA, slug, file), 'utf8'));
-const ALL = ['ap-calculus-ab', 'ap-us-history', 'ap-physics-1', 'ap-physics-2', 'ap-physics-c-mechanics', 'ap-biology', 'ap-precalculus', 'ap-chemistry'];
+const ALL = ['ap-calculus-ab', 'ap-us-history', 'ap-physics-1', 'ap-physics-2', 'ap-physics-c-mechanics', 'ap-biology', 'ap-precalculus', 'ap-chemistry', 'ap-environmental-science', 'ap-us-government', 'ap-psychology'];
 const BUILT = ALL.slice(2);
 const points = frq => frq.parts.reduce((n, p) => n + p.rubricPoints.length, 0);
 const CATEGORIES = {
@@ -17,8 +17,11 @@ const CATEGORIES = {
   biology: ['concept', 'experimental-design', 'data-analysis', 'graphing', 'calculation', 'argumentation'],
   precalc: ['setup', 'computation', 'notation', 'reasoning', 'transformations', 'manipulation'],
   chemistry: ['calculation', 'explanation', 'representation', 'equations', 'justification'],
+  apes: ['concept', 'data-analysis', 'experimental-design', 'solution', 'calculation'],
+  gov: ['concept', 'data-analysis', 'case-analysis', 'claim', 'evidence', 'reasoning', 'rebuttal'],
+  psych: ['research-methods', 'statistics', 'ethics', 'generalizability', 'argumentation', 'claim', 'evidence', 'application'],
 };
-const categoryKey = slug => ({ 'ap-biology': 'biology', 'ap-precalculus': 'precalc', 'ap-chemistry': 'chemistry' })[slug] || 'physics';
+const categoryKey = slug => ({ 'ap-biology': 'biology', 'ap-precalculus': 'precalc', 'ap-chemistry': 'chemistry', 'ap-environmental-science': 'apes', 'ap-us-government': 'gov', 'ap-psychology': 'psych' })[slug] || 'physics';
 
 test('every FRQ has the fields the pages and grader read, with unique ids', () => {
   const ids = new Set();
@@ -65,6 +68,21 @@ test('point totals and timing match the released question types', () => {
     const set = chemistry.filter(f => f.year === year).sort((a, b) => a.questionNumber - b.questionNumber);
     assert.deepEqual(set.map(points), [10, 10, 10, 4, 4, 4, 4], `chemistry ${year} point totals`);
     assert.deepEqual(set.map(f => f.timeAllottedMin), [23, 23, 23, 9, 9, 9, 9]);
+  }
+  // Released 2025 exams in these courses came in two sets; each set is checked separately.
+  const sets = frqs => [...new Set(frqs.map(f => `${f.year}-${f.modeledOn.set || ''}`))].map(key => frqs.filter(f => `${f.year}-${f.modeledOn.set || ''}` === key).sort((a, b) => a.questionNumber - b.questionNumber));
+  for (const [slug, total, pts, times, calc] of [
+    ['ap-environmental-science', 6, [10, 10, 10], [23, 23, 23], true],
+    ['ap-us-government', 8, [3, 4, 4, 6], [20, 20, 20, 40], false],
+    ['ap-psychology', 6, [7, 7], [25, 45], false],
+  ]) {
+    const frqs = read(slug);
+    assert.equal(frqs.length, total, slug);
+    for (const set of sets(frqs)) {
+      assert.deepEqual(set.map(points), pts, `${slug} ${set[0].modeledOn.label} point totals`);
+      assert.deepEqual(set.map(f => f.timeAllottedMin), times);
+      assert.ok(set.every(f => f.calculatorAllowed === calc), `${slug} calculator rule`);
+    }
   }
 });
 

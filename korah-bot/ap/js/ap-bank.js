@@ -103,6 +103,39 @@
       frqLabel: 'FRQs',
       frqUnit: 'FRQ',
     },
+    {
+      slug: 'ap-environmental-science',
+      name: 'AP Environmental Science',
+      shortName: 'Enviro Sci',
+      description: 'Free response on investigations, environmental problems and solutions, and calculations.',
+      tagline: 'Original practice modeled on the 2025 and 2026 released FRQs, scored with the same point structure.',
+      format: 'prose',
+      icon: 'eco',
+      frqLabel: 'FRQs',
+      frqUnit: 'FRQ',
+    },
+    {
+      slug: 'ap-us-government',
+      name: 'AP U.S. Government and Politics',
+      shortName: 'US Gov',
+      description: 'Concept application, quantitative analysis, SCOTUS comparison, and argument essay questions.',
+      tagline: 'Original practice modeled on the 2025 and 2026 released FRQs, scored with the same point structure.',
+      format: 'prose',
+      icon: 'account_balance',
+      frqLabel: 'FRQs',
+      frqUnit: 'FRQ',
+    },
+    {
+      slug: 'ap-psychology',
+      name: 'AP Psychology',
+      shortName: 'Psychology',
+      description: 'Article analysis and evidence-based questions on research methods and psychological concepts.',
+      tagline: 'Original practice modeled on the 2025 and 2026 released FRQs, scored with the same point structure.',
+      format: 'prose',
+      icon: 'psychology',
+      frqLabel: 'FRQs',
+      frqUnit: 'FRQ',
+    },
   ];
 
   // Tiny insurance sample so a page never renders empty even if the JSON fetch
@@ -246,6 +279,38 @@
         { key: 'representation', label: 'Representations' },
         { key: 'equations', label: 'Equations' },
         { key: 'justification', label: 'Justification' },
+      ];
+    }
+    if (courseSlug === 'ap-environmental-science') {
+      return [
+        { key: 'concept', label: 'Concept explanation' },
+        { key: 'data-analysis', label: 'Data analysis' },
+        { key: 'experimental-design', label: 'Experimental design' },
+        { key: 'solution', label: 'Proposing solutions' },
+        { key: 'calculation', label: 'Calculation' },
+      ];
+    }
+    if (courseSlug === 'ap-us-government') {
+      return [
+        { key: 'concept', label: 'Concept application' },
+        { key: 'data-analysis', label: 'Data analysis' },
+        { key: 'case-analysis', label: 'SCOTUS analysis' },
+        { key: 'claim', label: 'Claim or thesis' },
+        { key: 'evidence', label: 'Evidence' },
+        { key: 'reasoning', label: 'Reasoning' },
+        { key: 'rebuttal', label: 'Alternate perspectives' },
+      ];
+    }
+    if (courseSlug === 'ap-psychology') {
+      return [
+        { key: 'research-methods', label: 'Research methods' },
+        { key: 'statistics', label: 'Statistics' },
+        { key: 'ethics', label: 'Ethics' },
+        { key: 'generalizability', label: 'Generalizability' },
+        { key: 'argumentation', label: 'Argumentation' },
+        { key: 'claim', label: 'Claim' },
+        { key: 'evidence', label: 'Evidence' },
+        { key: 'application', label: 'Concept application' },
       ];
     }
     return [
