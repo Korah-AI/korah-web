@@ -9,13 +9,16 @@ const { execFileSync } = require('node:child_process');
 
 const DATA = path.join(__dirname, '../korah-bot/ap/data');
 const read = (slug, file = 'frqs.json') => JSON.parse(fs.readFileSync(path.join(DATA, slug, file), 'utf8'));
-const ALL = ['ap-calculus-ab', 'ap-us-history', 'ap-physics-1', 'ap-physics-c-mechanics', 'ap-biology'];
+const ALL = ['ap-calculus-ab', 'ap-us-history', 'ap-physics-1', 'ap-physics-2', 'ap-physics-c-mechanics', 'ap-biology', 'ap-precalculus', 'ap-chemistry'];
 const BUILT = ALL.slice(2);
 const points = frq => frq.parts.reduce((n, p) => n + p.rubricPoints.length, 0);
 const CATEGORIES = {
   physics: ['representation', 'derivation', 'calculation', 'justification', 'experimental-design', 'data-analysis'],
   biology: ['concept', 'experimental-design', 'data-analysis', 'graphing', 'calculation', 'argumentation'],
+  precalc: ['setup', 'computation', 'notation', 'reasoning', 'transformations', 'manipulation'],
+  chemistry: ['calculation', 'explanation', 'representation', 'equations', 'justification'],
 };
+const categoryKey = slug => ({ 'ap-biology': 'biology', 'ap-precalculus': 'precalc', 'ap-chemistry': 'chemistry' })[slug] || 'physics';
 
 test('every FRQ has the fields the pages and grader read, with unique ids', () => {
   const ids = new Set();
@@ -32,7 +35,7 @@ test('every FRQ has the fields the pages and grader read, with unique ids', () =
 });
 
 test('point totals and timing match the released question types', () => {
-  for (const slug of ['ap-physics-1', 'ap-physics-c-mechanics']) {
+  for (const slug of ['ap-physics-1', 'ap-physics-2', 'ap-physics-c-mechanics']) {
     const frqs = read(slug);
     assert.equal(frqs.length, 8);
     for (const year of [2025, 2026]) {
@@ -48,11 +51,26 @@ test('point totals and timing match the released question types', () => {
     assert.deepEqual(set.map(points), [9, 9, 4, 4, 4, 4], `biology ${year} point totals`);
     assert.deepEqual(set.map(f => f.timeAllottedMin), [25, 25, 10, 10, 10, 10]);
   }
+  const precalc = read('ap-precalculus');
+  assert.equal(precalc.length, 8);
+  for (const year of [2025, 2026]) {
+    const set = precalc.filter(f => f.year === year).sort((a, b) => a.questionNumber - b.questionNumber);
+    assert.deepEqual(set.map(points), [6, 6, 6, 6], `precalculus ${year} point totals`);
+    assert.deepEqual(set.map(f => f.calculatorAllowed), [true, true, false, false], 'part A uses a calculator, part B does not');
+    assert.deepEqual(set.map(f => f.timeAllottedMin), [15, 15, 15, 15]);
+  }
+  const chemistry = read('ap-chemistry');
+  assert.equal(chemistry.length, 14);
+  for (const year of [2025, 2026]) {
+    const set = chemistry.filter(f => f.year === year).sort((a, b) => a.questionNumber - b.questionNumber);
+    assert.deepEqual(set.map(points), [10, 10, 10, 4, 4, 4, 4], `chemistry ${year} point totals`);
+    assert.deepEqual(set.map(f => f.timeAllottedMin), [23, 23, 23, 9, 9, 9, 9]);
+  }
 });
 
 test('rubric categories belong to the course', () => {
   for (const slug of BUILT) {
-    const allowed = CATEGORIES[slug === 'ap-biology' ? 'biology' : 'physics'];
+    const allowed = CATEGORIES[categoryKey(slug)];
     for (const frq of read(slug)) for (const part of frq.parts) for (const p of part.rubricPoints) assert.ok(allowed.includes(p.category), `${p.id}: ${p.category}`);
   }
 });

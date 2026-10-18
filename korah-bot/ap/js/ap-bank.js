@@ -49,6 +49,17 @@
       frqUnit: 'FRQ',
     },
     {
+      slug: 'ap-physics-2',
+      name: 'AP Physics 2',
+      shortName: 'Physics 2',
+      description: 'Algebra-based free response on thermodynamics, electricity and magnetism, optics, and modern physics.',
+      tagline: 'Original practice modeled on the 2025 and 2026 released FRQs, scored with the same point structure.',
+      format: 'math',
+      icon: 'electric_bolt',
+      frqLabel: 'FRQs',
+      frqUnit: 'FRQ',
+    },
+    {
       slug: 'ap-physics-c-mechanics',
       name: 'AP Physics C: Mechanics',
       shortName: 'Physics C: Mech',
@@ -67,6 +78,28 @@
       tagline: 'Original practice modeled on the 2025 and 2026 released FRQs, scored with the same point structure.',
       format: 'prose',
       icon: 'biotech',
+      frqLabel: 'FRQs',
+      frqUnit: 'FRQ',
+    },
+    {
+      slug: 'ap-precalculus',
+      name: 'AP Precalculus',
+      shortName: 'Precalc',
+      description: 'Free response on function concepts, modeling, periodic functions, and symbolic manipulation.',
+      tagline: 'Original practice modeled on the 2025 and 2026 released FRQs, scored with the same point structure.',
+      format: 'math',
+      icon: 'functions',
+      frqLabel: 'FRQs',
+      frqUnit: 'FRQ',
+    },
+    {
+      slug: 'ap-chemistry',
+      name: 'AP Chemistry',
+      shortName: 'Chemistry',
+      description: 'Long and short free response with calculations, explanations, and representations.',
+      tagline: 'Original practice modeled on the 2025 and 2026 released FRQs, scored with the same point structure.',
+      format: 'math',
+      icon: 'science',
       frqLabel: 'FRQs',
       frqUnit: 'FRQ',
     },
@@ -176,7 +209,7 @@
         { key: 'units', label: 'Units' },
       ];
     }
-    if (courseSlug === 'ap-physics-1' || courseSlug === 'ap-physics-c-mechanics') {
+    if (courseSlug === 'ap-physics-1' || courseSlug === 'ap-physics-2' || courseSlug === 'ap-physics-c-mechanics') {
       return [
         { key: 'representation', label: 'Representations' },
         { key: 'derivation', label: 'Derivation' },
@@ -194,6 +227,25 @@
         { key: 'graphing', label: 'Graphing' },
         { key: 'calculation', label: 'Calculation' },
         { key: 'argumentation', label: 'Argumentation' },
+      ];
+    }
+    if (courseSlug === 'ap-precalculus') {
+      return [
+        { key: 'setup', label: 'Setup' },
+        { key: 'computation', label: 'Computation' },
+        { key: 'notation', label: 'Notation' },
+        { key: 'reasoning', label: 'Reasoning' },
+        { key: 'transformations', label: 'Transformations' },
+        { key: 'manipulation', label: 'Symbolic manipulation' },
+      ];
+    }
+    if (courseSlug === 'ap-chemistry') {
+      return [
+        { key: 'calculation', label: 'Calculation' },
+        { key: 'explanation', label: 'Explanation' },
+        { key: 'representation', label: 'Representations' },
+        { key: 'equations', label: 'Equations' },
+        { key: 'justification', label: 'Justification' },
       ];
     }
     return [
