@@ -37,6 +37,39 @@
       frqLabel: 'SAQs',
       frqUnit: 'SAQ',
     },
+    {
+      slug: 'ap-physics-1',
+      name: 'AP Physics 1',
+      shortName: 'Physics 1',
+      description: 'Algebra-based free response: derivations, representations, lab design, and paragraph reasoning.',
+      tagline: 'Original practice modeled on the 2025 and 2026 released FRQs, scored with the same point structure.',
+      format: 'math',
+      icon: 'speed',
+      frqLabel: 'FRQs',
+      frqUnit: 'FRQ',
+    },
+    {
+      slug: 'ap-physics-c-mechanics',
+      name: 'AP Physics C: Mechanics',
+      shortName: 'Physics C: Mech',
+      description: 'Calculus-based free response on mechanics: derivations, representations, and lab analysis.',
+      tagline: 'Original practice modeled on the 2025 and 2026 released FRQs, scored with the same point structure.',
+      format: 'math',
+      icon: 'bolt',
+      frqLabel: 'FRQs',
+      frqUnit: 'FRQ',
+    },
+    {
+      slug: 'ap-biology',
+      name: 'AP Biology',
+      shortName: 'Biology',
+      description: 'Long and short free response on experiments, models, and data, answered in prose.',
+      tagline: 'Original practice modeled on the 2025 and 2026 released FRQs, scored with the same point structure.',
+      format: 'prose',
+      icon: 'biotech',
+      frqLabel: 'FRQs',
+      frqUnit: 'FRQ',
+    },
   ];
 
   // Tiny insurance sample so a page never renders empty even if the JSON fetch
@@ -143,6 +176,26 @@
         { key: 'units', label: 'Units' },
       ];
     }
+    if (courseSlug === 'ap-physics-1' || courseSlug === 'ap-physics-c-mechanics') {
+      return [
+        { key: 'representation', label: 'Representations' },
+        { key: 'derivation', label: 'Derivation' },
+        { key: 'calculation', label: 'Calculation' },
+        { key: 'justification', label: 'Justification' },
+        { key: 'experimental-design', label: 'Experimental design' },
+        { key: 'data-analysis', label: 'Data analysis' },
+      ];
+    }
+    if (courseSlug === 'ap-biology') {
+      return [
+        { key: 'concept', label: 'Concept explanation' },
+        { key: 'experimental-design', label: 'Experimental design' },
+        { key: 'data-analysis', label: 'Data analysis' },
+        { key: 'graphing', label: 'Graphing' },
+        { key: 'calculation', label: 'Calculation' },
+        { key: 'argumentation', label: 'Argumentation' },
+      ];
+    }
     return [
       { key: 'claim', label: 'Clear claim' },
       { key: 'evidence', label: 'Specific evidence' },
@@ -158,11 +211,14 @@
     return found ? found.label : key;
   }
 
-  /** Human label for an FRQ's part + year, e.g. "2023 FRQ 1" / "2023 SAQ 2". */
+  /**
+   * Human label for an FRQ's part + year, e.g. "2023 FRQ 1" / "2023 SAQ 2".
+   * Original practice modeled on a released question reads "Modeled on 2025 FRQ 1".
+   */
   function frqLabel(frq) {
     const unit = (getCourse(frq && frq.course) || {}).frqUnit || 'FRQ';
     const q = frq.questionNumber != null ? ` ${unit} ${frq.questionNumber}` : '';
-    return `${frq.year}${q}`;
+    return `${frq.modeledOn ? 'Modeled on ' : ''}${frq.year}${q}`;
   }
 
   global.KorahAP = {
