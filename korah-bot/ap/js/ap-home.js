@@ -4,7 +4,7 @@
 import { COURSES, getCourse, unitLabel, loadBank, filterQuestions, unitStats, loadProgress, saveProgress, playerUrl } from './mcq-bank.js';
 
 const EXAM_START = new Date(2027, 4, 3);
-const COURSE_ICONS = { 'ap-calculus-ab': 'calculate', 'ap-us-history': 'history_edu', 'ap-physics-1': 'speed', 'ap-biology': 'biotech', 'ap-physics-c-mechanics': 'bolt' };
+const COURSE_ICONS = { 'ap-calculus-ab': 'calculate', 'ap-us-history': 'history_edu', 'ap-physics-1': 'speed', 'ap-biology': 'biotech', 'ap-physics-c-mechanics': 'bolt', 'ap-physics-2': 'waves', 'ap-psychology': 'psychology', 'ap-precalculus': 'functions', 'ap-chemistry': 'science', 'ap-environmental-science': 'eco', 'ap-us-government': 'account_balance' };
 
 const $ = (id) => document.getElementById(id);
 const SVG = (body, extra = '') => `<svg class="sat-ico ${extra}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;

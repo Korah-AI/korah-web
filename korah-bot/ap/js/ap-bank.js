@@ -37,6 +37,105 @@
       frqLabel: 'SAQs',
       frqUnit: 'SAQ',
     },
+    {
+      slug: 'ap-physics-1',
+      name: 'AP Physics 1',
+      shortName: 'Physics 1',
+      description: 'Algebra-based free response: derivations, representations, lab design, and paragraph reasoning.',
+      tagline: 'Original practice modeled on the 2025 and 2026 released FRQs, scored with the same point structure.',
+      format: 'math',
+      icon: 'speed',
+      frqLabel: 'FRQs',
+      frqUnit: 'FRQ',
+    },
+    {
+      slug: 'ap-physics-2',
+      name: 'AP Physics 2',
+      shortName: 'Physics 2',
+      description: 'Algebra-based free response on thermodynamics, electricity and magnetism, optics, and modern physics.',
+      tagline: 'Original practice modeled on the 2025 and 2026 released FRQs, scored with the same point structure.',
+      format: 'math',
+      icon: 'electric_bolt',
+      frqLabel: 'FRQs',
+      frqUnit: 'FRQ',
+    },
+    {
+      slug: 'ap-physics-c-mechanics',
+      name: 'AP Physics C: Mechanics',
+      shortName: 'Physics C: Mech',
+      description: 'Calculus-based free response on mechanics: derivations, representations, and lab analysis.',
+      tagline: 'Original practice modeled on the 2025 and 2026 released FRQs, scored with the same point structure.',
+      format: 'math',
+      icon: 'bolt',
+      frqLabel: 'FRQs',
+      frqUnit: 'FRQ',
+    },
+    {
+      slug: 'ap-biology',
+      name: 'AP Biology',
+      shortName: 'Biology',
+      description: 'Long and short free response on experiments, models, and data, answered in prose.',
+      tagline: 'Original practice modeled on the 2025 and 2026 released FRQs, scored with the same point structure.',
+      format: 'prose',
+      icon: 'biotech',
+      frqLabel: 'FRQs',
+      frqUnit: 'FRQ',
+    },
+    {
+      slug: 'ap-precalculus',
+      name: 'AP Precalculus',
+      shortName: 'Precalc',
+      description: 'Free response on function concepts, modeling, periodic functions, and symbolic manipulation.',
+      tagline: 'Original practice modeled on the 2025 and 2026 released FRQs, scored with the same point structure.',
+      format: 'math',
+      icon: 'functions',
+      frqLabel: 'FRQs',
+      frqUnit: 'FRQ',
+    },
+    {
+      slug: 'ap-chemistry',
+      name: 'AP Chemistry',
+      shortName: 'Chemistry',
+      description: 'Long and short free response with calculations, explanations, and representations.',
+      tagline: 'Original practice modeled on the 2025 and 2026 released FRQs, scored with the same point structure.',
+      format: 'math',
+      icon: 'science',
+      frqLabel: 'FRQs',
+      frqUnit: 'FRQ',
+    },
+    {
+      slug: 'ap-environmental-science',
+      name: 'AP Environmental Science',
+      shortName: 'Enviro Sci',
+      description: 'Free response on investigations, environmental problems and solutions, and calculations.',
+      tagline: 'Original practice modeled on the 2025 and 2026 released FRQs, scored with the same point structure.',
+      format: 'prose',
+      icon: 'eco',
+      frqLabel: 'FRQs',
+      frqUnit: 'FRQ',
+    },
+    {
+      slug: 'ap-us-government',
+      name: 'AP U.S. Government and Politics',
+      shortName: 'US Gov',
+      description: 'Concept application, quantitative analysis, SCOTUS comparison, and argument essay questions.',
+      tagline: 'Original practice modeled on the 2025 and 2026 released FRQs, scored with the same point structure.',
+      format: 'prose',
+      icon: 'account_balance',
+      frqLabel: 'FRQs',
+      frqUnit: 'FRQ',
+    },
+    {
+      slug: 'ap-psychology',
+      name: 'AP Psychology',
+      shortName: 'Psychology',
+      description: 'Article analysis and evidence-based questions on research methods and psychological concepts.',
+      tagline: 'Original practice modeled on the 2025 and 2026 released FRQs, scored with the same point structure.',
+      format: 'prose',
+      icon: 'psychology',
+      frqLabel: 'FRQs',
+      frqUnit: 'FRQ',
+    },
   ];
 
   // Tiny insurance sample so a page never renders empty even if the JSON fetch
@@ -143,6 +242,77 @@
         { key: 'units', label: 'Units' },
       ];
     }
+    if (courseSlug === 'ap-physics-1' || courseSlug === 'ap-physics-2' || courseSlug === 'ap-physics-c-mechanics') {
+      return [
+        { key: 'representation', label: 'Representations' },
+        { key: 'derivation', label: 'Derivation' },
+        { key: 'calculation', label: 'Calculation' },
+        { key: 'justification', label: 'Justification' },
+        { key: 'experimental-design', label: 'Experimental design' },
+        { key: 'data-analysis', label: 'Data analysis' },
+      ];
+    }
+    if (courseSlug === 'ap-biology') {
+      return [
+        { key: 'concept', label: 'Concept explanation' },
+        { key: 'experimental-design', label: 'Experimental design' },
+        { key: 'data-analysis', label: 'Data analysis' },
+        { key: 'graphing', label: 'Graphing' },
+        { key: 'calculation', label: 'Calculation' },
+        { key: 'argumentation', label: 'Argumentation' },
+      ];
+    }
+    if (courseSlug === 'ap-precalculus') {
+      return [
+        { key: 'setup', label: 'Setup' },
+        { key: 'computation', label: 'Computation' },
+        { key: 'notation', label: 'Notation' },
+        { key: 'reasoning', label: 'Reasoning' },
+        { key: 'transformations', label: 'Transformations' },
+        { key: 'manipulation', label: 'Symbolic manipulation' },
+      ];
+    }
+    if (courseSlug === 'ap-chemistry') {
+      return [
+        { key: 'calculation', label: 'Calculation' },
+        { key: 'explanation', label: 'Explanation' },
+        { key: 'representation', label: 'Representations' },
+        { key: 'equations', label: 'Equations' },
+        { key: 'justification', label: 'Justification' },
+      ];
+    }
+    if (courseSlug === 'ap-environmental-science') {
+      return [
+        { key: 'concept', label: 'Concept explanation' },
+        { key: 'data-analysis', label: 'Data analysis' },
+        { key: 'experimental-design', label: 'Experimental design' },
+        { key: 'solution', label: 'Proposing solutions' },
+        { key: 'calculation', label: 'Calculation' },
+      ];
+    }
+    if (courseSlug === 'ap-us-government') {
+      return [
+        { key: 'concept', label: 'Concept application' },
+        { key: 'data-analysis', label: 'Data analysis' },
+        { key: 'case-analysis', label: 'SCOTUS analysis' },
+        { key: 'claim', label: 'Claim or thesis' },
+        { key: 'evidence', label: 'Evidence' },
+        { key: 'reasoning', label: 'Reasoning' },
+        { key: 'rebuttal', label: 'Alternate perspectives' },
+      ];
+    }
+    if (courseSlug === 'ap-psychology') {
+      return [
+        { key: 'research-methods', label: 'Research methods' },
+        { key: 'statistics', label: 'Statistics' },
+        { key: 'ethics', label: 'Ethics' },
+        { key: 'generalizability', label: 'Generalizability' },
+        { key: 'argumentation', label: 'Argumentation' },
+        { key: 'claim', label: 'Claim' },
+        { key: 'evidence', label: 'Evidence' },
+        { key: 'application', label: 'Concept application' },
+      ];
+    }
     return [
       { key: 'claim', label: 'Clear claim' },
       { key: 'evidence', label: 'Specific evidence' },
@@ -158,11 +328,14 @@
     return found ? found.label : key;
   }
 
-  /** Human label for an FRQ's part + year, e.g. "2023 FRQ 1" / "2023 SAQ 2". */
+  /**
+   * Human label for an FRQ's part + year, e.g. "2023 FRQ 1" / "2023 SAQ 2".
+   * Original practice modeled on a released question reads "Modeled on 2025 FRQ 1".
+   */
   function frqLabel(frq) {
     const unit = (getCourse(frq && frq.course) || {}).frqUnit || 'FRQ';
     const q = frq.questionNumber != null ? ` ${unit} ${frq.questionNumber}` : '';
-    return `${frq.year}${q}`;
+    return `${frq.modeledOn ? 'Modeled on ' : ''}${frq.year}${q}`;
   }
 
   global.KorahAP = {

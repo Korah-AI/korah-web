@@ -116,11 +116,18 @@
 
     const body = (p) => `
       ${safeHtml(p.prompt || '')}
+      ${stimulusHtml(p)}
+      ${(p.figures || []).map(figureHtml).join('')}
       ${(p.parts || []).map((part) => `
         <div class="ap-part-block">
           <span class="ap-part-label">${esc(part.label)}</span>
           <p class="ap-part-text">${safeHtml(part.text || '')}</p>
+          ${(part.figures || []).map(figureHtml).join('')}
         </div>`).join('')}
+      ${p.modeledOn && p.modeledOn.url ? `
+        <p class="ap-frq-source">Original practice modeled on the
+          <a href="${esc(p.modeledOn.url)}" target="_blank" rel="noopener">${esc(p.modeledOn.label)}</a>
+          released by College Board.</p>` : ''}
     `;
 
     activePrompt.innerHTML = body(frq);
@@ -142,6 +149,31 @@
 
     el('pre-total-points').textContent = `${countPoints(frq)} points · official-style rubric`;
     el('pre-allotted-time').textContent = `${frq.timeAllottedMin} minute${frq.timeAllottedMin === 1 ? '' : 's'}`;
+  }
+
+  // The stimulus (source excerpts, data tables) as plain text. When its first paragraph
+  // repeats the prompt, that paragraph is dropped so the prompt is not shown twice.
+  // Stimuli marked display: false only describe figures for the grader.
+  function stimulusHtml(frq) {
+    const s = frq.stimulus;
+    if (!s || !s.content || s.display === false) return '';
+    let paras = String(s.content).split(/\n\s*\n/);
+    const lead = String(frq.prompt || '').replace(/\\\(|\\\)/g, '').slice(0, 40);
+    if (lead && paras[0].replace(/\\\(|\\\)/g, '').startsWith(lead)) paras = paras.slice(1);
+    if (!paras.length) return '';
+    return `<div class="ap-frq-stimulus">${paras.map((t) => `<p>${esc(t).replace(/\n/g, '<br/>')}</p>`).join('')}</div>`;
+  }
+
+  // A page-only figure: an SVG diagram or a data table, with its caption above.
+  function figureHtml(f) {
+    const caption = f.caption ? `<figcaption>${esc(f.caption)}</figcaption>` : '';
+    const inner = f.table
+      ? `<table class="ap-frq-table" aria-label="${esc(f.alt || f.caption)}">
+          <thead><tr>${f.table.headers.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead>
+          <tbody>${f.table.rows.map((r) => `<tr>${r.map((c) => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody>
+        </table>`
+      : safeHtml(f.svg);
+    return `<figure class="ap-frq-figure">${caption}${inner}</figure>`;
   }
 
   function countPoints(frq) {

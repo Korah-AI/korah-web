@@ -52,6 +52,38 @@ const ART = {
     <circle cx="31" cy="92" r="13" fill="#fff" fill-opacity=".28" stroke="#fff" stroke-opacity=".65" stroke-width="3"/>
     <path d="M28 106q32 14 60-8" stroke="#fff" stroke-opacity=".45" stroke-width="3" stroke-linecap="round"/>
   </svg>`,
+  wave: `<svg class="sat-entry-art" viewBox="0 0 120 120" fill="none" aria-hidden="true">
+    <path d="M8 60c10-26 20-26 30 0s20 26 30 0 20-26 30 0 10 13 14 13" stroke="#fff" stroke-opacity=".6" stroke-width="3" stroke-linecap="round"/>
+    <path d="M60 14q14 46 0 92q-14-46 0-92z" fill="#fff" fill-opacity=".2" stroke="#fff" stroke-opacity=".55" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M10 30h50l46 50" stroke="#fff" stroke-opacity=".35" stroke-width="3" stroke-linecap="round" stroke-dasharray="5 6"/>
+    <circle cx="96" cy="26" r="8" fill="#fff" fill-opacity=".5"/>
+  </svg>`,
+  chem: `<svg class="sat-entry-art" viewBox="0 0 120 120" fill="none" aria-hidden="true">
+    <path d="M46 14h28M50 14v30L24 96q-4 10 8 10h56q12 0 8-10L70 44V14" fill="#fff" fill-opacity=".16" stroke="#fff" stroke-opacity=".6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+    <path d="M34 80q13-8 26 0t26 0" stroke="#fff" stroke-opacity=".5" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="52" cy="92" r="4" fill="#fff" fill-opacity=".7"/><circle cx="68" cy="88" r="3" fill="#fff" fill-opacity=".6"/><circle cx="62" cy="62" r="3" fill="#fff" fill-opacity=".5"/>
+  </svg>`,
+  earth: `<svg class="sat-entry-art" viewBox="0 0 120 120" fill="none" aria-hidden="true">
+    <circle cx="58" cy="62" r="40" fill="#fff" fill-opacity=".14" stroke="#fff" stroke-opacity=".55" stroke-width="3"/>
+    <path d="M30 44q14 2 18 12t-6 18q-4 8 4 16M66 24q-6 10 4 16t18 4q8 4 6 16M74 84q8-6 16-2" stroke="#fff" stroke-opacity=".5" stroke-width="3" stroke-linecap="round"/>
+    <path d="M86 18q16 2 18 18-16 2-18-18zM86 18l18 18" stroke="#fff" stroke-opacity=".7" stroke-width="3" stroke-linejoin="round"/>
+  </svg>`,
+  civic: `<svg class="sat-entry-art" viewBox="0 0 120 120" fill="none" aria-hidden="true">
+    <path d="M14 46 60 18l46 28z" fill="#fff" fill-opacity=".2" stroke="#fff" stroke-opacity=".6" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M26 54v38M46 54v38M74 54v38M94 54v38" stroke="#fff" stroke-opacity=".55" stroke-width="5" stroke-linecap="round"/>
+    <path d="M14 100h92M20 108h80" stroke="#fff" stroke-opacity=".5" stroke-width="3" stroke-linecap="round"/>
+  </svg>`,
+  trig: `<svg class="sat-entry-art" viewBox="0 0 120 120" fill="none" aria-hidden="true">
+    <circle cx="44" cy="62" r="30" fill="#fff" fill-opacity=".14" stroke="#fff" stroke-opacity=".55" stroke-width="3"/>
+    <path d="M44 62 66 42" stroke="#fff" stroke-opacity=".7" stroke-width="3" stroke-linecap="round"/><circle cx="66" cy="42" r="5" fill="#fff" fill-opacity=".8"/>
+    <path d="M66 42H112M8 62h104" stroke="#fff" stroke-opacity=".35" stroke-width="3" stroke-linecap="round" stroke-dasharray="5 6"/>
+    <path d="M66 42c8 0 12 20 20 20s12 20 20 20" stroke="#fff" stroke-opacity=".6" stroke-width="3" stroke-linecap="round"/>
+  </svg>`,
+  mind: `<svg class="sat-entry-art" viewBox="0 0 120 120" fill="none" aria-hidden="true">
+    <path d="M70 108V90h12q8 0 8-8V70l10-4-10-16q0-32-34-36-32 0-38 30-4 22 14 38v26" fill="#fff" fill-opacity=".16" stroke="#fff" stroke-opacity=".55" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M44 40q8-10 18-4 10-6 16 4 8 4 4 14 2 10-8 12-6 8-14 2-10 4-14-6-8-4-2-14 0-6 0-8z" stroke="#fff" stroke-opacity=".65" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M62 36v34" stroke="#fff" stroke-opacity=".4" stroke-width="3" stroke-linecap="round"/>
+  </svg>`,
   english: `<svg class="sat-entry-art" viewBox="0 0 120 120" fill="none" aria-hidden="true">
     <path d="M24 20h58l14 14v66H24z" fill="#fff" fill-opacity=".16" stroke="#fff" stroke-opacity=".55" stroke-width="3" stroke-linejoin="round"/>
     <path d="M82 20v14h14" stroke="#fff" stroke-opacity=".55" stroke-width="3" stroke-linejoin="round"/>

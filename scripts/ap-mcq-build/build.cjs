@@ -40,12 +40,12 @@ function buildCalculus() {
 }
 
 function buildPhysics() {
-  const { source, figures } = require('./physics1.cjs');
+  const { source, figures } = require('./physics1.cjs'), more2 = require('./physics1-more2.cjs');
   const sources = {
     ced: { title: 'College Board — AP Physics 1 Course and Exam Description', url: 'https://apcentral.collegeboard.org/courses/ap-physics-1', note: 'Unit structure, science practices, and question style.' },
     openstax: { title: 'OpenStax — College Physics for AP Courses 2e', url: 'https://openstax.org/details/books/college-physics-ap-courses-2e', note: 'Topic reference only; questions, figures, and explanations are independently written.' },
   };
-  const questions = parseBlocks([source, require('./physics1-more.cjs').source], figures, ['c', 'q']).map(({ unit, flag, skill, figure, stem, choices, explanation }, i) => {
+  const questions = parseBlocks([source, require('./physics1-more.cjs').source, more2.source], { ...figures, ...more2.figures }, ['c', 'q']).map(({ unit, flag, skill, figure, stem, choices, explanation }, i) => {
     const q = { id: `ap-physics-1-mcq-${pad(i + 1)}`, course: 'ap-physics-1', unit, calculator: null, kind: flag === 'c' ? 'conceptual' : 'quantitative', skill };
     if (figure) q.figure = figure;
     return { ...q, stem, ...place(choices, i), explanation, sourceIds: ['ced', 'openstax'] };
@@ -54,10 +54,12 @@ function buildPhysics() {
 }
 
 // Courses whose questions use the block format and need no course-specific fields beyond "kind".
-function buildBlockCourse({ slug, title, file, flags, kinds, sources }) {
-  const { source, figures } = require(file);
-  const questions = parseBlocks([source], figures, flags).map(({ unit, flag, skill, figure, stem, choices, explanation }, i) => {
-    const q = { id: `${slug}-mcq-${pad(i + 1)}`, course: slug, unit, calculator: null };
+// files: question sources in order; later files add questions after earlier ones within each unit.
+function buildBlockCourse({ slug, title, files, flags, kinds, calculator, sources }) {
+  const parts = files.map(f => require(f));
+  const figures = Object.assign({}, ...parts.map(p => p.figures));
+  const questions = parseBlocks(parts.map(p => p.source), figures, flags).map(({ unit, flag, skill, figure, stem, choices, explanation }, i) => {
+    const q = { id: `${slug}-mcq-${pad(i + 1)}`, course: slug, unit, calculator: calculator ? (flag === 'c' ? 'calculator' : 'non-calculator') : null };
     if (kinds) q.kind = flag === 'c' ? 'conceptual' : 'quantitative';
     q.skill = skill;
     if (figure) q.figure = figure;
@@ -65,13 +67,38 @@ function buildBlockCourse({ slug, title, file, flags, kinds, sources }) {
   });
   write(slug, { schemaVersion: 2, course: slug, title, authorship: 'Original Korah AP-style questions and figures; not released College Board questions.', sources, questions });
 }
-const buildBiology = () => buildBlockCourse({ slug: 'ap-biology', title: 'AP Biology MCQ practice', file: './biology.cjs', flags: ['-'], kinds: false, sources: {
+const buildBiology = () => buildBlockCourse({ slug: 'ap-biology', title: 'AP Biology MCQ practice', files: ['./biology.cjs', './biology-more.cjs'], flags: ['-'], kinds: false, sources: {
   ced: { title: 'College Board — AP Biology Course and Exam Description', url: 'https://apcentral.collegeboard.org/courses/ap-biology', note: 'Unit structure, science practices, and question style.' },
   openstax: { title: 'OpenStax — Biology for AP Courses', url: 'https://openstax.org/details/books/biology-ap-courses', note: 'Topic reference only; questions, data, and figures are independently written.' },
 } });
-const buildPhysicsC = () => buildBlockCourse({ slug: 'ap-physics-c-mechanics', title: 'AP Physics C: Mechanics MCQ practice', file: './physicsc.cjs', flags: ['c', 'q'], kinds: true, sources: {
+const buildPhysicsC = () => buildBlockCourse({ slug: 'ap-physics-c-mechanics', title: 'AP Physics C: Mechanics MCQ practice', files: ['./physicsc.cjs', './physicsc-more.cjs'], flags: ['c', 'q'], kinds: true, sources: {
   ced: { title: 'College Board — AP Physics C: Mechanics Course and Exam Description', url: 'https://apcentral.collegeboard.org/courses/ap-physics-c-mechanics', note: 'Unit structure, science practices, and question style.' },
   openstax: { title: 'OpenStax — University Physics, Volume 1', url: 'https://openstax.org/details/books/university-physics-volume-1', note: 'Topic reference only; questions, figures, and explanations are independently written.' },
+} });
+const buildPhysics2 = () => buildBlockCourse({ slug: 'ap-physics-2', title: 'AP Physics 2 MCQ practice', files: ['./physics2-a.cjs', './physics2-b.cjs'], flags: ['c', 'q'], kinds: true, sources: {
+  ced: { title: 'College Board — AP Physics 2 Course and Exam Description', url: 'https://apcentral.collegeboard.org/courses/ap-physics-2', note: 'Unit structure (units 9–15), science practices, and question style.' },
+  openstax: { title: 'OpenStax — College Physics for AP Courses 2e', url: 'https://openstax.org/details/books/college-physics-ap-courses-2e', note: 'Topic reference only; questions, figures, and explanations are independently written.' },
+} });
+const buildPsychology = () => buildBlockCourse({ slug: 'ap-psychology', title: 'AP Psychology MCQ practice', files: ['./psychology-a.cjs', './psychology-b.cjs'], flags: ['-'], kinds: false, sources: {
+  ced: { title: 'College Board — AP Psychology Course and Exam Description', url: 'https://apcentral.collegeboard.org/courses/ap-psychology', note: 'Unit structure, science practices, key terms, and question style.' },
+  openstax: { title: 'OpenStax — Psychology 2e', url: 'https://openstax.org/details/books/psychology-2e', note: 'Topic reference only; scenarios, data, and figures are independently written.' },
+} });
+// AP Precalculus: "c" questions need a graphing calculator, as in part B of the exam's multiple-choice section.
+const buildPrecalculus = () => buildBlockCourse({ slug: 'ap-precalculus', title: 'AP Precalculus MCQ practice', files: ['./precalc-a.cjs', './precalc-b.cjs'], flags: ['c', 'n'], kinds: false, calculator: true, sources: {
+  ced: { title: 'College Board — AP Precalculus Course and Exam Description', url: 'https://apcentral.collegeboard.org/courses/ap-precalculus', note: 'Units 1–3 (the units assessed on the exam), mathematical practices, and question style.' },
+  openstax: { title: 'OpenStax — Precalculus 2e', url: 'https://openstax.org/details/books/precalculus-2e', note: 'Topic reference only; questions, figures, and explanations are independently written.' },
+} });
+const buildChemistry = () => buildBlockCourse({ slug: 'ap-chemistry', title: 'AP Chemistry MCQ practice', files: ['./chem-a.cjs', './chem-b.cjs'], flags: ['c', 'q'], kinds: true, sources: {
+  ced: { title: 'College Board — AP Chemistry Course and Exam Description', url: 'https://apcentral.collegeboard.org/courses/ap-chemistry', note: 'Unit structure, science practices, and question style.' },
+  openstax: { title: 'OpenStax — Chemistry 2e', url: 'https://openstax.org/details/books/chemistry-2e', note: 'Topic reference only; questions, data, and figures are independently written.' },
+} });
+const buildEnvironmental = () => buildBlockCourse({ slug: 'ap-environmental-science', title: 'AP Environmental Science MCQ practice', files: ['./apes-a.cjs', './apes-b.cjs'], flags: ['-'], kinds: false, sources: {
+  ced: { title: 'College Board — AP Environmental Science Course and Exam Description', url: 'https://apcentral.collegeboard.org/courses/ap-environmental-science', note: 'Unit structure, science practices, and question style.' },
+  openstax: { title: 'OpenStax — Biology 2e (ecology chapters)', url: 'https://openstax.org/details/books/biology-2e', note: 'Topic reference only; scenarios, data, and figures are independently written.' },
+} });
+const buildGovernment = () => buildBlockCourse({ slug: 'ap-us-government', title: 'AP U.S. Government and Politics MCQ practice', files: ['./gov-a.cjs', './gov-b.cjs'], flags: ['-'], kinds: false, sources: {
+  ced: { title: 'College Board — AP U.S. Government and Politics Course and Exam Description', url: 'https://apcentral.collegeboard.org/courses/ap-united-states-government-and-politics', note: 'Units, required foundational documents (including those added for 2026–27), required Supreme Court cases, and question style.' },
+  openstax: { title: 'OpenStax — American Government 3e', url: 'https://openstax.org/details/books/american-government-3e', note: 'Topic reference only; scenarios and data are independently written.' },
 } });
 
 function buildHistory() {
@@ -106,3 +133,9 @@ buildHistory();
 buildPhysics();
 buildBiology();
 buildPhysicsC();
+buildPhysics2();
+buildPsychology();
+buildPrecalculus();
+buildChemistry();
+buildEnvironmental();
+buildGovernment();
