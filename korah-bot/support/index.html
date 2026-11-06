@@ -22,114 +22,12 @@
 
     <link rel="stylesheet" href="../korah.css"/>
     <link rel="stylesheet" href="support.css"/>
-    <style>
-      html { scroll-behavior: smooth; }
-
-      #scroll-progress {
-        position: fixed; top: 0; left: 0;
-        height: 0.125rem; width: 0%;
-        background: linear-gradient(90deg, #7c3aed, #a855f7, #6366f1);
-        z-index: 9999;
-        transition: width 0.1s linear;
-        pointer-events: none;
-      }
-
-      .nav-indicator {
-        position: absolute;
-        inset-block: 0.375rem;
-        left: 0;
-        border-radius: 624.938rem;
-        background: rgba(139,92,246,0.15);
-        border: 1px solid rgba(139,92,246,0.3);
-        transition: transform 0.35s cubic-bezier(.23,1,.32,1),
-                    width 0.35s cubic-bezier(.23,1,.32,1),
-                    opacity 0.2s;
-        pointer-events: none;
-        opacity: 0;
-      }
-
-
-      #back-to-top {
-        position: fixed; bottom: 2rem; right: 2rem; z-index: 999;
-        width: 3rem; height: 3rem; border-radius: 624.938rem;
-        background: var(--sf); border: 1px solid var(--bd);
-        backdrop-filter: blur(1.25rem); cursor: pointer;
-        display: flex; align-items: center; justify-content: center;
-        opacity: 0; transform: translateY(1rem); pointer-events: none;
-        transition: opacity 0.3s, transform 0.3s, border-color 0.2s, background 0.2s;
-        color: var(--p4);
-      }
-      #back-to-top.show {
-        opacity: 1; transform: translateY(0); pointer-events: auto;
-      }
-      #back-to-top:hover {
-        border-color: var(--p4); background: var(--cu);
-      }
-
-      .explore-card:hover {
-        transform: translateY(-0.1875rem) !important;
-        border-color: rgba(139,92,246,0.5) !important;
-        box-shadow: 0 0.75rem 1.875rem rgba(0,0,0,0.12), 0 0 0.75rem rgba(139,92,246,0.1);
-      }
-
-      .accordion-content {
-        overflow: hidden;
-        transition: max-height 0.5s cubic-bezier(.23,1,.32,1), opacity 0.4s ease;
-      }
-      .accordion-header:hover {
-        background: var(--cu);
-      }
-      .accordion-chevron {
-        transition: transform 0.3s cubic-bezier(.23,1,.32,1);
-      }
-      .accordion-chevron.open {
-        transform: rotate(180deg);
-      }
-
-      .section-divider {
-        height: 1px;
-        background: linear-gradient(90deg, transparent, var(--bd), transparent);
-      }
-
-      .hero-glass {
-        background: var(--sf);
-        border: 1px solid var(--bd);
-        border-radius: 1rem;
-      }
-
-      .stat-divider {
-        width: 1px; height: 2.5rem;
-        background: var(--bd); flex-shrink: 0;
-      }
-
-      #constellation-canvas {
-        position: fixed; top: 0; left: 0;
-        width: 100%; height: 100%;
-        pointer-events: none; opacity: 0;
-        transition: opacity 0.5s; z-index: -1;
-      }
-
-      @keyframes purple-pulse {
-        0%, 100% { filter: drop-shadow(0 0 0.9375rem rgba(139,92,246,0.4)); transform: scale(1); }
-        50% { filter: drop-shadow(0 0 2.1875rem rgba(139,92,246,0.9)) drop-shadow(0 0 3.75rem rgba(139,92,246,0.3)); transform: scale(1.03); }
-      }
-      .pulse-purple {
-        animation: purple-pulse 3s ease-in-out infinite;
-      }
-
-      @keyframes aurora {
-        0%, 100% { background-position: 0% 50%; }
-        50%       { background-position: 100% 50%; }
-      }
-      .help-word {
-        color: #9333ea;
-      }
-    </style>
+    <!-- The page styles (landing tokens, nav, cards, accordions) live in support.css. The old inline block that held the purple progress bar, nav indicator, glow keyframes and translate hovers was removed. -->
 </head>
-<body class="bg-base tx" x-cloak style="overflow-x:hidden;">
+<body class="sp-page" x-cloak style="overflow-x:hidden;">
 <style>
-  html:not(.korah-page-ready) { background: #06040f !important; }
-  html[data-theme="light"]:not(.korah-page-ready) { background: #d2d2d2 !important; }
+  html:not(.korah-page-ready) { background: #000 !important; }
+  html[data-theme="light"]:not(.korah-page-ready) { background: #fff !important; }
   html:not(.korah-page-ready) body { opacity: 0 !important; }
 </style>
 
@@ -142,11 +40,10 @@
   })();
 </script>
 
-<!-- Stars Background -->
+<!-- Replaced by the flat landing look: the stars background and the light-mode constellation canvas.
 <div class="stars-container" id="starField" :style="theme === 'light' ? 'opacity:0;pointer-events:none' : 'opacity:1'" style="transition:opacity 0.4s"></div>
-
-<!-- Constellation Canvas (light mode) -->
 <canvas id="constellation-canvas"></canvas>
+-->
 
 <!-- Back to Top -->
 <button id="back-to-top" aria-label="Back to top">
@@ -154,34 +51,36 @@
 </button>
 
 <!-- ═══ NAVBAR ═══ -->
-<nav id="navbar" class="fixed top-0 left-0 right-0 z-[1000] px-6 md:px-[clamp(1.75rem,5.5vw,6rem)]" style="height:var(--nav-h);display:grid;grid-template-columns:1fr auto 1fr;align-items:center;">
+<nav id="navbar" class="fixed top-0 left-0 right-0 z-[1000] px-4 md:px-[clamp(1.75rem,5.5vw,6rem)]" style="height:var(--nav-h);display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:1.5rem;">
   <a href="../" class="flex items-center gap-2.5 no-underline shrink-0 z-10">
+    <!-- Replaced by the landing logo: boxed logo with glow
     <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl font-black text-white shadow-glow relative overflow-hidden t-btn hover:rotate-[-5deg] hover:scale-[1.08] hover:shadow-glow-lg">
       <img src="../logo-images/newlogo0.png" style="height:2.5rem;">
     </div>
-    <div class="flex flex-col leading-tight">
-      <span style="font-family: 'Plus Jakarta Sans', sans-serif;" class="text-[1.1875rem] font-black tx">Korah</span>
-      <span class="text-[0.5625rem] font-semibold tracking-[0.15625rem] uppercase tx-p4">Support Center</span>
+    -->
+    <img src="../logo-images/newlogo2.png" class="ln-logo" alt="">
+    <div class="leading-tight hidden sm:block">
+      <span class="ln-brand">Korah</span>
+      <span class="ln-brand-sub">Support center</span>
     </div>
   </a>
 
-  <div class="nav-links flex items-center gap-0.5 bg-sf2 border bd2 rounded-full px-3 py-2 glass-sm t-theme" style="white-space:nowrap;position:relative;">
+  <div class="ln-navpills nav-links flex items-center gap-0.5 rounded-full px-1.5 py-1.5" style="white-space:nowrap;position:relative;">
     <div class="nav-indicator" id="navIndicator"></div>
-    <a href="../" class="nav-link nav-pill text-[0.84375rem] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx hover:bg-[var(--bd)] no-underline"><span class="material-icons-round nav-link-icon">home</span><span class="nav-link-text">Home</span></a>
-    <a href="#faq"     class="nav-link nav-pill text-[0.84375rem] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx hover:bg-[var(--bd)] no-underline"><span class="material-icons-round nav-link-icon">help</span><span class="nav-link-text">FAQ</span></a>
-    <a href="#contact" class="nav-link nav-pill text-[0.84375rem] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx hover:bg-[var(--bd)] no-underline"><span class="material-icons-round nav-link-icon">mail</span><span class="nav-link-text">Contact</span></a>
-    <a href="#privacy" class="nav-link nav-pill text-[0.84375rem] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx hover:bg-[var(--bd)] no-underline"><span class="material-icons-round nav-link-icon">lock</span><span class="nav-link-text">Privacy</span></a>
-    <a href="#terms"   class="nav-link nav-pill text-[0.84375rem] font-medium tx2 px-4 py-1.5 rounded-full t-btn hover:tx hover:bg-[var(--bd)] no-underline"><span class="material-icons-round nav-link-icon">description</span><span class="nav-link-text">Terms</span></a>
+    <a href="../" class="nav-link nav-pill text-[0.84375rem] font-medium px-3.5 py-1.5 rounded-full no-underline"><span class="material-icons-round nav-link-icon">home</span><span class="nav-link-text">Home</span></a>
+    <a href="#faq"     class="nav-link nav-pill text-[0.84375rem] font-medium px-3.5 py-1.5 rounded-full no-underline"><span class="material-icons-round nav-link-icon">help</span><span class="nav-link-text">FAQ</span></a>
+    <a href="#contact" class="nav-link nav-pill text-[0.84375rem] font-medium px-3.5 py-1.5 rounded-full no-underline"><span class="material-icons-round nav-link-icon">mail</span><span class="nav-link-text">Contact</span></a>
+    <a href="#privacy" class="nav-link nav-pill text-[0.84375rem] font-medium px-3.5 py-1.5 rounded-full no-underline"><span class="material-icons-round nav-link-icon">lock</span><span class="nav-link-text">Privacy</span></a>
+    <a href="#terms"   class="nav-link nav-pill text-[0.84375rem] font-medium px-3.5 py-1.5 rounded-full no-underline"><span class="material-icons-round nav-link-icon">description</span><span class="nav-link-text">Terms</span></a>
   </div>
 
-  <div class="flex items-center gap-2.5 z-10 justify-self-end">
+  <div class="flex items-center gap-2 z-10 justify-self-end">
     <button @click="theme = theme==='dark' ? 'light' : 'dark'; localStorage.setItem('korah_theme', theme)"
-        class="flex items-center justify-center w-9 h-9 rounded-xl bg-sf2 border bd cursor-pointer t-btn hover:border-p4 hover:bg-[var(--bd2)]"
-        aria-label="Toggle theme">
-      <svg x-show="theme==='light'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" style="color:var(--p5)">
+        class="ln-theme-btn" aria-label="Toggle theme">
+      <svg x-show="theme==='light'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
         <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/>
       </svg>
-      <svg x-show="theme==='dark'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--p4)">
+      <svg x-show="theme==='dark'" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="5"/>
         <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
         <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
@@ -189,84 +88,66 @@
         <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
       </svg>
     </button>
-    <button onclick="window.KorahTransitions.go('../home.html')" class="hidden lg:block text-[0.8125rem] font-semibold px-5 py-2.5 rounded-full cursor-pointer border-none text-white bg-purple-600 shadow-glow t-btn hover:-translate-y-px hover:shadow-glow-lg">Open App</button>
+    <button onclick="window.KorahTransitions.go('../home.html')" class="ln-btn ln-btn-blue ln-btn-sm hidden lg:inline-flex">Open app</button>
   </div>
 </nav>
 
 
 
 <!-- ═══ HERO ═══ -->
-<section style="position:relative;min-height:70vh;display:flex;align-items:center;justify-content:center;overflow:hidden;padding-top:clamp(5.5rem,10vw,7rem);padding-bottom:4rem;">
+<section class="sp-hero">
+  <!-- Replaced by a flat hero: the radial glow behind it and the boxed hero-glass card
   <div style="position:absolute;top:-20%;left:50%;transform:translateX(-50%);width:min(50rem,90vw);height:min(50rem,90vw);background:radial-gradient(circle,var(--glow),transparent 70%);pointer-events:none;opacity:0.4;"></div>
+  -->
+  <div class="sp-hero-inner">
+    <h1 class="ln-h1">How can we help you?</h1>
 
-  <div style="position:relative;z-index:10;width:100%;max-width:52rem;margin:0 auto;padding:0 1.25rem;text-align:center;">
+    <p class="ln-lead">Find answers, get support, and connect with our team. We're here to help you succeed with Korah.</p>
 
-    <div class="hero-glass p-8 md:p-10 lg:p-12" style="width:100%;">
-      <h1 class="tx" style="font-family: 'Plus Jakarta Sans', sans-serif; font-size:clamp(2.5rem,7vw,4.5rem);font-weight:900;letter-spacing:-0.02em;line-height:1.08;margin-bottom:1.25rem;">
-        How can we help you?
-      </h1>
-
-      <p class="tx2" style="font-size:clamp(0.95rem,1.8vw,1.125rem);line-height:1.7;max-width:34rem;margin:0 auto 1.5rem;">
-        Find answers, get support, and connect with our team. We're here to help you succeed with Korah.
-      </p>
-
-      <!-- Stat row -->
-      <div class="flex items-center justify-center gap-4 flex-wrap mb-8">
-        <div style="text-align:center;">
-          <div style="font-size:clamp(1rem,2vw,1.25rem);font-weight:800;color:var(--p4);font-variant-numeric:tabular-nums;">24h</div>
-          <div class="text-[0.6875rem] font-semibold uppercase tracking-[0.06em] tx2">Response Time</div>
-        </div>
-        <div class="stat-divider hidden sm:block"></div>
-        <div style="text-align:center;">
-          <div style="font-size:clamp(1rem,2vw,1.25rem);font-weight:800;color:var(--p4);font-variant-numeric:tabular-nums;">Free</div>
-          <div class="text-[0.6875rem] font-semibold uppercase tracking-[0.06em] tx2">Forever</div>
-        </div>
-        <div class="stat-divider hidden sm:block"></div>
-        <div style="text-align:center;">
-          <div style="font-size:clamp(1rem,2vw,1.25rem);font-weight:800;color:var(--p4);font-variant-numeric:tabular-nums;">AI</div>
-          <div class="text-[0.6875rem] font-semibold uppercase tracking-[0.06em] tx2">Powered</div>
-        </div>
+    <!-- Stat row -->
+    <div class="sp-stats">
+      <div class="sp-stat sp-blue">
+        <b>24h</b>
+        <span>Response time</span>
       </div>
-
-      <!-- Quick nav pills -->
-      <div class="flex flex-wrap items-center justify-center gap-3">
-        <a href="#faq" class="no-underline text-[0.8125rem] font-semibold px-5 py-2 rounded-full border bd tx2 t-btn hover:border-p4 hover:tx-p4">
-          <span class="material-icons-round" style="color:var(--tx2);font-size:1rem;vertical-align:middle;margin-right:0.25rem;">assignment</span>FAQ
-        </a>
-        <a href="#contact" class="no-underline text-[0.8125rem] font-semibold px-5 py-2 rounded-full border-none text-white bg-purple-600 shadow-glow t-btn hover:-translate-y-px hover:shadow-glow-lg">
-          <span class="material-icons-round" style="color:#fff;font-size:1rem;vertical-align:middle;margin-right:0.25rem;">email</span>Contact Us
-        </a>
-        <a href="#privacy" class="no-underline text-[0.8125rem] font-semibold px-5 py-2 rounded-full border bd tx2 t-btn hover:border-p4 hover:tx-p4">
-          <span class="material-icons-round" style="color:var(--tx2);font-size:1rem;vertical-align:middle;margin-right:0.25rem;">lock</span>Privacy
-        </a>
+      <div class="stat-divider hidden sm:block"></div>
+      <div class="sp-stat sp-green">
+        <b>Free</b>
+        <span>Forever</span>
+      </div>
+      <div class="stat-divider hidden sm:block"></div>
+      <div class="sp-stat sp-pink">
+        <b>AI</b>
+        <span>Powered</span>
       </div>
     </div>
 
+    <!-- Quick nav -->
+    <div class="ln-actions">
+      <a href="#faq" class="ln-btn ln-btn-ghost"><span class="material-icons-round">assignment</span>FAQ</a>
+      <a href="#contact" class="ln-btn ln-btn-blue"><span class="material-icons-round">email</span>Contact us</a>
+      <a href="#privacy" class="ln-btn ln-btn-ghost"><span class="material-icons-round">lock</span>Privacy</a>
+    </div>
   </div>
 </section>
 
 <!-- ═══ FAQ ═══ -->
-<section id="faq" class="py-24 px-5 md:px-[clamp(1.25rem,6vw,5rem)] bg-base2 t-theme">
-  <div class="max-w-[66.25rem] mx-auto">
-    <div class="flex justify-center mb-5">
-      <div class="inline-flex items-center gap-2 bg-sf2 border bd px-4 py-1.5 rounded-full text-[0.6875rem] font-bold tracking-[0.15625rem] uppercase tx-p4">
-        <span class="w-1.5 h-1.5 rounded-full bg-p4"></span>FAQ
-      </div>
+<section id="faq" class="ln-section ln-alt">
+  <div class="ln-wrap">
+    <div class="ln-eyebrow sp-blue">
+      <div class="ln-eyebrow-chip"><span class="material-icons-round">help</span></div>
+      <span>FAQ</span>
     </div>
 
       <!-- FAQ Search -->
       <div class="max-w-md mx-auto mb-10">
         <div class="relative">
-          <span class="material-icons-round absolute left-4 top-1/2 -translate-y-1/2 text-[1.125rem] tx3 pointer-events-none">search</span>
+          <span class="material-icons-round sp-search-icon absolute left-4 top-1/2 -translate-y-1/2 text-[1.125rem] pointer-events-none">search</span>
           <input type="text" id="faqSearch" placeholder="Search FAQs..."
-            class="w-full h-11 pl-10 pr-9 text-sm bg-sf2 border bd2 rounded-full tx outline-none t-theme"
-            style="transition:border-color 0.2s,background 0.2s;"
-            onfocus="this.style.borderColor='var(--p4)';this.style.background='var(--bg3)'"
-            onblur="this.style.borderColor='';this.style.background=''">
+            class="sp-input w-full h-11 pl-10 pr-9 text-sm outline-none">
           <button id="faqClear" type="button" aria-label="Clear search"
-            class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center
-                   w-5 h-5 rounded-full text-[1rem] tx3 t-btn hover:tx hover:bg-[var(--bd2)]
-                   transition-all duration-150 hidden">
+            class="sp-clear absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center
+                   w-5 h-5 text-[1rem] hidden">
             <span class="material-icons-round" style="font-size:1rem;">close</span>
           </button>
         </div>
@@ -276,45 +157,45 @@
       <div class="faq-scroll-container" style="overflow-x: hidden; overflow-y: scroll; max-height: 42.5rem;">
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <!-- Is Korah free? -->
-        <div class="faq-card bg-card rounded-3xl p-7" style="border:0.09375rem solid rgba(139,92,246,0.25);transition:transform 0.3s cubic-bezier(.23,1,.32,1),box-shadow 0.3s,border-color 0.3s;" onmouseover="this.style.transform='translateY(-0.25rem)';this.style.boxShadow='0 1.25rem 3.125rem rgba(0,0,0,0.3),0 0 1.25rem rgba(139,92,246,0.15)';this.style.borderColor='rgba(139,92,246,0.5)'" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='rgba(139,92,246,0.25)'">
-          <div class="w-11 h-11 rounded-2xl bg-purple-600 grid place-items-center text-xl mb-4 shadow-glow"><span class="material-icons-round" style="color: #fff; font-size: 1.25rem;">smartphone</span></div>
-          <h3 class="text-[1.0625rem] font-bold tx mb-2">Is Korah free to use?</h3>
-          <p class="text-sm tx2" style="line-height:1.7;">Yes! Korah Beta is completely free for all users. We believe quality study tools should be accessible to everyone.</p>
+        <div class="faq-card sp-card sp-green">
+          <div class="sp-chip"><span class="material-icons-round" style="color: #fff; font-size: 1.25rem;">smartphone</span></div>
+          <h3 class="sp-card-title">Is Korah free to use?</h3>
+          <p class="sp-card-text">Yes! Korah Beta is completely free for all users. We believe quality study tools should be accessible to everyone.</p>
         </div>
 
         <!-- Is my data safe? -->
-        <div class="faq-card bg-card rounded-3xl p-7" style="border:0.09375rem solid rgba(139,92,246,0.25);transition:transform 0.3s cubic-bezier(.23,1,.32,1),box-shadow 0.3s,border-color 0.3s;" onmouseover="this.style.transform='translateY(-0.25rem)';this.style.boxShadow='0 1.25rem 3.125rem rgba(0,0,0,0.3),0 0 1.25rem rgba(139,92,246,0.15)';this.style.borderColor='rgba(139,92,246,0.5)'" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='rgba(139,92,246,0.25)'">
-          <div class="w-11 h-11 rounded-2xl bg-purple-600 grid place-items-center text-xl mb-4 shadow-glow"><span class="material-icons-round" style="color: #fff; font-size: 1.25rem;">lock</span></div>
-          <h3 class="text-[1.0625rem] font-bold tx mb-2">Is my data safe?</h3>
-          <p class="text-sm tx2" style="line-height:1.7;">Absolutely. Korah uses cloud-based data management developed by Google to keep your information safe. We will never sell your data to third parties.</p>
+        <div class="faq-card sp-card sp-blue">
+          <div class="sp-chip"><span class="material-icons-round" style="color: #fff; font-size: 1.25rem;">lock</span></div>
+          <h3 class="sp-card-title">Is my data safe?</h3>
+          <p class="sp-card-text">Absolutely. Korah uses cloud-based data management developed by Google to keep your information safe. We will never sell your data to third parties.</p>
         </div>
 
         <!-- What platforms? -->
-        <div class="faq-card bg-card rounded-3xl p-7" style="border:0.09375rem solid rgba(139,92,246,0.25);transition:transform 0.3s cubic-bezier(.23,1,.32,1),box-shadow 0.3s,border-color 0.3s;" onmouseover="this.style.transform='translateY(-0.25rem)';this.style.boxShadow='0 1.25rem 3.125rem rgba(0,0,0,0.3),0 0 1.25rem rgba(139,92,246,0.15)';this.style.borderColor='rgba(139,92,246,0.5)'" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='rgba(139,92,246,0.25)'">
-          <div class="w-11 h-11 rounded-2xl bg-purple-600 grid place-items-center text-xl mb-4 shadow-glow"><span class="material-icons-round" style="color: #fff; font-size: 1.25rem;">storefront</span></div>
-          <h3 class="text-[1.0625rem] font-bold tx mb-2">What platforms are supported?</h3>
-          <p class="text-sm tx2" style="line-height:1.7;">Currently available on the App Store and web browsers. Android support is coming in the future.</p>
+        <div class="faq-card sp-card sp-orange">
+          <div class="sp-chip"><span class="material-icons-round" style="color: #fff; font-size: 1.25rem;">storefront</span></div>
+          <h3 class="sp-card-title">What platforms are supported?</h3>
+          <p class="sp-card-text">Currently available on the App Store and web browsers. Android support is coming in the future.</p>
         </div>
 
         <!-- How does the AI work? -->
-        <div class="faq-card bg-card rounded-3xl p-7" style="border:0.09375rem solid rgba(139,92,246,0.25);transition:transform 0.3s cubic-bezier(.23,1,.32,1),box-shadow 0.3s,border-color 0.3s;" onmouseover="this.style.transform='translateY(-0.25rem)';this.style.boxShadow='0 1.25rem 3.125rem rgba(0,0,0,0.3),0 0 1.25rem rgba(139,92,246,0.15)';this.style.borderColor='rgba(139,92,246,0.5)'" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='rgba(139,92,246,0.25)'">
-          <div class="w-11 h-11 rounded-2xl bg-purple-600 grid place-items-center text-xl mb-4 shadow-glow"><span class="material-icons-round" style="color: #fff; font-size: 1.25rem;">smart_toy</span></div>
-          <h3 class="text-[1.0625rem] font-bold tx mb-2">How does the AI study assistant work?</h3>
-          <p class="text-sm tx2" style="line-height:1.7;">Korah AI uses advanced language models to provide personalized explanations, generate study materials, and adapt to your learning style.</p>
+        <div class="faq-card sp-card sp-pink">
+          <div class="sp-chip"><span class="material-icons-round" style="color: #fff; font-size: 1.25rem;">smart_toy</span></div>
+          <h3 class="sp-card-title">How does the AI study assistant work?</h3>
+          <p class="sp-card-text">Korah AI uses advanced language models to provide personalized explanations, generate study materials, and adapt to your learning style.</p>
         </div>
 
         <!-- Can I track progress? -->
-        <div class="faq-card bg-card rounded-3xl p-7" style="border:0.09375rem solid rgba(139,92,246,0.25);transition:transform 0.3s cubic-bezier(.23,1,.32,1),box-shadow 0.3s,border-color 0.3s;" onmouseover="this.style.transform='translateY(-0.25rem)';this.style.boxShadow='0 1.25rem 3.125rem rgba(0,0,0,0.3),0 0 1.25rem rgba(139,92,246,0.15)';this.style.borderColor='rgba(139,92,246,0.5)'" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='rgba(139,92,246,0.25)'">
-          <div class="w-11 h-11 rounded-2xl bg-purple-600 grid place-items-center text-xl mb-4 shadow-glow"><span class="material-icons-round" style="color: #fff; font-size: 1.25rem;">bar_chart</span></div>
-          <h3 class="text-[1.0625rem] font-bold tx mb-2">Can I track my study progress?</h3>
-          <p class="text-sm tx2" style="line-height:1.7;">Yes! Korah includes daily streaks, task management with priority levels, and mood-based recommendations to optimize your study sessions.</p>
+        <div class="faq-card sp-card sp-teal">
+          <div class="sp-chip"><span class="material-icons-round" style="color: #fff; font-size: 1.25rem;">bar_chart</span></div>
+          <h3 class="sp-card-title">Can I track my study progress?</h3>
+          <p class="sp-card-text">Yes! Korah includes daily streaks, task management with priority levels, and mood-based recommendations to optimize your study sessions.</p>
         </div>
 
         <!-- How often updated? -->
-        <div class="faq-card bg-card rounded-3xl p-7" style="border:0.09375rem solid rgba(139,92,246,0.25);transition:transform 0.3s cubic-bezier(.23,1,.32,1),box-shadow 0.3s,border-color 0.3s;" onmouseover="this.style.transform='translateY(-0.25rem)';this.style.boxShadow='0 1.25rem 3.125rem rgba(0,0,0,0.3),0 0 1.25rem rgba(139,92,246,0.15)';this.style.borderColor='rgba(139,92,246,0.5)'" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='rgba(139,92,246,0.25)'">
-          <div class="w-11 h-11 rounded-2xl bg-purple-600 grid place-items-center text-xl mb-4 shadow-glow"><span class="material-icons-round" style="color: #fff; font-size: 1.25rem;">sync</span></div>
-          <h3 class="text-[1.0625rem] font-bold tx mb-2">How often is Korah updated?</h3>
-          <p class="text-sm tx2" style="line-height:1.7;">We release updates regularly based on user feedback. Please reach out if you have any suggestions!</p>
+        <div class="faq-card sp-card sp-amber">
+          <div class="sp-chip"><span class="material-icons-round" style="color: #fff; font-size: 1.25rem;">sync</span></div>
+          <h3 class="sp-card-title">How often is Korah updated?</h3>
+          <p class="sp-card-text">We release updates regularly based on user feedback. Please reach out if you have any suggestions!</p>
         </div>
 
 
@@ -323,78 +204,67 @@
 
       <!-- Empty state -->
       <div id="faqEmpty" class="text-center py-16" style="display:none;">
-        <span class="material-icons-round text-4xl tx3 mb-4 block">search_off</span>
-        <p class="text-lg font-semibold tx2 mb-2">No matching questions</p>
-        <p class="text-sm tx3">Try a different keyword or <a href="#contact" class="tx-p4 no-underline t-btn hover:tx-p5">contact us</a> directly.</p>
+        <span class="material-icons-round text-4xl mb-4 block" style="color:var(--ln-tx3);">search_off</span>
+        <p class="text-lg font-semibold mb-2" style="color:var(--ln-tx2);">No matching questions</p>
+        <p class="text-sm" style="color:var(--ln-tx3);">Try a different keyword or <a href="#contact" class="sp-link">contact us</a> directly.</p>
       </div>
   </div>
 </section>
 
 <!-- ═══ CONTACT ═══ -->
-<section id="contact" class="py-24 px-5 md:px-[clamp(1.25rem,6vw,5rem)] bg-base relative overflow-hidden t-theme">
+<section id="contact" class="ln-section">
+  <!-- Replaced by the flat section surface: radial glow behind the cards
   <div class="absolute inset-0 pointer-events-none" style="background:radial-gradient(ellipse at 50% 0%,rgba(139,92,246,0.1) 0%,transparent 65%);"></div>
+  -->
 
-  <div class="relative z-10 max-w-[66.25rem] mx-auto">
-    <div class="flex justify-center mb-5 reveal rd1">
-      <div class="inline-flex items-center gap-2 bg-sf2 border bd px-4 py-1.5 rounded-full text-[0.6875rem] font-bold tracking-[0.15625rem] uppercase tx-p4">
-        <span class="w-1.5 h-1.5 rounded-full bg-p4"></span>Contact
+  <div class="ln-wrap">
+    <div class="sp-head">
+      <div class="ln-eyebrow sp-blue reveal rd1">
+        <div class="ln-eyebrow-chip"><span class="material-icons-round">mail</span></div>
+        <span>Contact</span>
       </div>
+      <h2 class="ln-h2 reveal rd2">Get in touch</h2>
+      <p class="ln-lead reveal rd3">Have a question, suggestion, or need assistance? We'd love to hear from you.</p>
     </div>
-    <h2 style="font-family: 'Plus Jakarta Sans', sans-serif;" class="text-[clamp(2rem,5vw,3.2rem)] font-bold text-center tx leading-tight mb-3 reveal rd2">Get in Touch</h2>
-    <p class="text-base tx2 text-center max-w-lg mx-auto mb-12 reveal rd3" style="line-height:1.7;">Have a question, suggestion, or need assistance? We'd love to hear from you.</p>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <!-- Email Support -->
-      <div class="bg-card border bd2 rounded-3xl p-8 text-center t-hover reveal rd1"
-           :style="'border:0.09375rem solid rgba(139,92,246,0.25)'"
-           x-data="{ tapped: false }"
-           @click="tapped = true; setTimeout(() => tapped = false, 400)"
-           :class="tapped && 'shadow-glow'">
-        <div class="w-14 h-14 rounded-2xl bg-purple-600 grid place-items-center text-2xl mb-5 shadow-glow mx-auto">
+      <div class="sp-card sp-contact sp-orange reveal rd1">
+        <div class="sp-chip">
           <span class="material-icons-round" style="color:#fff;font-size:1.5rem;">email</span>
         </div>
-        <h3 class="text-[1.125rem] font-bold tx mb-3">Email Support</h3>
-        <p class="text-sm tx2 mb-6" style="line-height:1.7;">Get help from our support team within 24 hours.</p>
+        <h3 class="sp-card-title">Email support</h3>
+        <p class="sp-card-text">Get help from our support team within 24 hours.</p>
         <a href="mailto:oscareucedaf1@gmail.com?subject=Korah%20Support%20Inquiry&body=Hi%20Korah%20Team,"
-           class="inline-block no-underline text-[0.8125rem] font-semibold px-6 py-2.5 rounded-full border bd tx t-btn hover:border-p4 hover:tx-p4 hover:bg-[var(--bd2)]">
-          Contact Support
+           class="ln-btn ln-btn-ghost ln-btn-sm">
+          Contact support
         </a>
       </div>
 
       <!-- CEO -->
-      <div class="relative bg-card border rounded-3xl p-8 text-center reveal rd2 t-hover"
-           :style="'border:0.09375rem solid rgba(139,92,246,0.5);background:rgba(139,92,246,0.1)'"
-           x-data="{ tapped: false }"
-           @click="tapped = true; setTimeout(() => tapped = false, 400)"
-           :class="tapped && 'shadow-glow-lg'">
-        <div class="absolute -top-3.5 left-1/2 -translate-x-1/2">
-          <span class="text-[0.6875rem] font-bold tracking-[0.0625rem] uppercase text-white px-4 py-1.5 rounded-full bg-purple-600 shadow-glow whitespace-nowrap">Direct Line</span>
-        </div>
-        <div class="w-14 h-14 rounded-2xl bg-purple-600 grid place-items-center text-2xl mb-5 shadow-glow mx-auto mt-2">
+      <div class="sp-card sp-contact sp-contact-hi sp-blue reveal rd2">
+        <span class="sp-badge">Direct line</span>
+        <div class="sp-chip">
           <span class="material-icons-round" style="color:#fff;font-size:1.5rem;">badge</span>
         </div>
-        <h3 class="text-[1.125rem] font-bold tx mb-3">Message the CEO</h3>
-        <p class="text-sm tx2 mb-6" style="line-height:1.7;">Have important feedback or a partnership inquiry? Reach out directly to Oscar.</p>
+        <h3 class="sp-card-title">Message the CEO</h3>
+        <p class="sp-card-text">Have important feedback or a partnership inquiry? Reach out directly to Oscar.</p>
         <a href="mailto:oscareucedaf1@gmail.com?subject=Korah%20Creator%20Inquiry&body=Hi%20Oscar,"
-           class="inline-block no-underline text-[0.8125rem] font-semibold px-6 py-2.5 rounded-full border-none text-white bg-purple-600 shadow-glow t-btn hover:-translate-y-px hover:shadow-glow-lg">
+           class="ln-btn ln-btn-blue ln-btn-sm">
           Email CEO
         </a>
       </div>
 
       <!-- Live Chat -->
-      <div class="bg-card border bd2 rounded-3xl p-8 text-center t-hover reveal rd3"
-           :style="'border:0.09375rem solid rgba(139,92,246,0.25)'"
-           x-data="{ tapped: false }"
-           @click="tapped = true; setTimeout(() => tapped = false, 400)"
-           :class="tapped && 'shadow-glow'">
-        <div class="w-14 h-14 rounded-2xl bg-purple-600 grid place-items-center text-2xl mb-5 shadow-glow mx-auto">
+      <div class="sp-card sp-contact sp-teal reveal rd3">
+        <div class="sp-chip">
           <span class="material-icons-round" style="color:#fff;font-size:1.5rem;">chat</span>
         </div>
-        <h3 class="text-[1.125rem] font-bold tx mb-3">Live Chat</h3>
-        <p class="text-sm tx2 mb-6" style="line-height:1.7;">Chat with Korah AI for instant answers to your questions.</p>
+        <h3 class="sp-card-title">Live chat</h3>
+        <p class="sp-card-text">Chat with Korah AI for instant answers to your questions.</p>
         <a href="../#chat"
-           class="inline-block no-underline text-[0.8125rem] font-semibold px-6 py-2.5 rounded-full border bd tx t-btn hover:border-p4 hover:tx-p4 hover:bg-[var(--bd2)]">
-          Start Chat
+           class="ln-btn ln-btn-ghost ln-btn-sm">
+          Start chat
         </a>
       </div>
     </div>
@@ -424,65 +294,61 @@
 </section>
 
 <!-- ═══ QUICK LINKS ═══ -->
-<section class="py-20 px-5 md:px-[clamp(1.25rem,6vw,5rem)] bg-base2 t-theme">
-  <div class="max-w-[66.25rem] mx-auto">
-    <h2 style="font-family: 'Plus Jakarta Sans', sans-serif;" class="text-[clamp(1.75rem,4vw,2.8rem)] font-bold text-center tx leading-tight mb-3 reveal">Explore Korah</h2>
-    <p class="text-sm tx2 text-center max-w-md mx-auto mb-10 reveal rd1" style="line-height:1.7;">Discover everything Korah has to offer.</p>
+<section class="ln-section ln-alt">
+  <div class="ln-wrap">
+    <div class="sp-head">
+      <h2 class="ln-h2 reveal">Explore Korah</h2>
+      <p class="ln-lead reveal rd1">Discover everything Korah has to offer.</p>
+    </div>
 
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 max-w-[56.25rem] mx-auto">
       <!-- How it Works -->
-      <a href="../#how" class="explore-card flex flex-col items-center gap-3 no-underline bg-card border bd2 rounded-2xl p-6 text-center t-hover reveal rd1"
-         :style="'border:0.09375rem solid rgba(139,92,246,0.2)'">
-        <span class="text-3xl"><span class="material-icons-round" style="color:var(--p5);font-size:1.75rem;">gps_fixed</span></span>
-        <span class="text-[0.8125rem] font-semibold tx">How it Works</span>
-        <span class="text-[0.6875rem] tx3 leading-tight">Learn the basics</span>
+      <a href="../#how" class="explore-card sp-card sp-blue flex flex-col items-center gap-3 no-underline text-center reveal rd1">
+        <span class="material-icons-round">gps_fixed</span>
+        <b>How it works</b>
+        <span class="sp-sub">Learn the basics</span>
       </a>
       <!-- Features -->
-      <a href="../#features" class="explore-card flex flex-col items-center gap-3 no-underline bg-card border bd2 rounded-2xl p-6 text-center t-hover reveal rd2"
-         :style="'border:0.09375rem solid rgba(139,92,246,0.2)'">
-        <span class="text-3xl"><span class="material-icons-round" style="color:var(--gold);font-size:1.75rem;">auto_awesome</span></span>
-        <span class="text-[0.8125rem] font-semibold tx">Features</span>
-        <span class="text-[0.6875rem] tx3 leading-tight">Explore capabilities</span>
+      <a href="../#features" class="explore-card sp-card sp-amber flex flex-col items-center gap-3 no-underline text-center reveal rd2">
+        <span class="material-icons-round">auto_awesome</span>
+        <b>Features</b>
+        <span class="sp-sub">Explore capabilities</span>
       </a>
       <!-- Study Tools -->
-      <a href="../study/feed.html" class="explore-card flex flex-col items-center gap-3 no-underline bg-card border bd2 rounded-2xl p-6 text-center t-hover reveal rd3"
-         :style="'border:0.09375rem solid rgba(139,92,246,0.2)'">
-        <span class="text-3xl"><span class="material-icons-round" style="color:var(--grn);font-size:1.75rem;">menu_book</span></span>
-        <span class="text-[0.8125rem] font-semibold tx">Study Tools</span>
-        <span class="text-[0.6875rem] tx3 leading-tight">Flashcards & guides</span>
+      <a href="../study/feed.html" class="explore-card sp-card sp-green flex flex-col items-center gap-3 no-underline text-center reveal rd3">
+        <span class="material-icons-round">menu_book</span>
+        <b>Study tools</b>
+        <span class="sp-sub">Flashcards & guides</span>
       </a>
       <!-- Korah AI -->
-      <a href="../chat.html" class="explore-card flex flex-col items-center gap-3 no-underline bg-card border bd2 rounded-2xl p-6 text-center t-hover reveal rd1"
-         :style="'border:0.09375rem solid rgba(139,92,246,0.2)'">
-        <span class="text-3xl"><span class="material-icons-round" style="color:var(--tx2);font-size:1.75rem;">smart_toy</span></span>
-        <span class="text-[0.8125rem] font-semibold tx">Korah AI</span>
-        <span class="text-[0.6875rem] tx3 leading-tight">Ask anything</span>
+      <a href="../chat.html" class="explore-card sp-card sp-pink flex flex-col items-center gap-3 no-underline text-center reveal rd1">
+        <span class="material-icons-round">smart_toy</span>
+        <b>Korah AI</b>
+        <span class="sp-sub">Ask anything</span>
       </a>
       <!-- Download -->
-      <a href="../#downloads" class="explore-card flex flex-col items-center gap-3 no-underline bg-card border bd2 rounded-2xl p-6 text-center t-hover reveal rd2"
-         :style="'border:0.09375rem solid rgba(139,92,246,0.2)'">
-        <span class="text-3xl"><span class="material-icons-round" style="color:var(--ac);font-size:1.75rem;">smartphone</span></span>
-        <span class="text-[0.8125rem] font-semibold tx">Download</span>
-        <span class="text-[0.6875rem] tx3 leading-tight">Get the app</span>
+      <a href="../#downloads" class="explore-card sp-card sp-teal flex flex-col items-center gap-3 no-underline text-center reveal rd2">
+        <span class="material-icons-round">smartphone</span>
+        <b>Download</b>
+        <span class="sp-sub">Get the app</span>
       </a>
       <!-- Contact -->
-      <a href="https://mail.google.com/mail/?view=cm&to=oscareucedaf1@gmail.com&su=Hello from Korah" class="explore-card flex flex-col items-center gap-3 no-underline bg-card border bd2 rounded-2xl p-6 text-center t-hover reveal rd3"
-         :style="'border:0.09375rem solid rgba(139,92,246,0.2)'">
-        <span class="text-3xl"><span class="material-icons-round" style="color:var(--p4);font-size:1.75rem;">email</span></span>
-        <span class="text-[0.8125rem] font-semibold tx">Contact</span>
-        <span class="text-[0.6875rem] tx3 leading-tight">Send us a message</span>
+      <a href="https://mail.google.com/mail/?view=cm&to=oscareucedaf1@gmail.com&su=Hello from Korah" class="explore-card sp-card sp-orange flex flex-col items-center gap-3 no-underline text-center reveal rd3">
+        <span class="material-icons-round">email</span>
+        <b>Contact</b>
+        <span class="sp-sub">Send us a message</span>
       </a>
     </div>
   </div>
 </section>
 
 <!-- ═══ PRIVACY POLICY ═══ -->
-<section id="privacy" class="legal py-24 px-5 md:px-[clamp(1.25rem,6vw,5rem)] bg-base t-theme">
-  <div class="max-w-[66.25rem] mx-auto">
-    <h2 style="font-family: 'Plus Jakarta Sans', sans-serif;" class="text-[clamp(2rem,5vw,3.2rem)] font-bold text-center tx leading-tight mb-2 reveal rd1">Privacy Policy</h2>
+<section id="privacy" class="legal ln-section">
+  <div class="ln-wrap">
+    <h2 class="ln-h2 sp-title reveal rd1">Privacy Policy</h2>
 
     <!-- Effective date -->
-    <p class="text-[0.8125rem] text-center mb-12 reveal rd2">Effective March 25, 2026</p>
+    <p class="sp-meta reveal rd2">Effective March 25, 2026</p>
 
     <div class="legal-card p-8 md:p-10 max-w-[50rem] mx-auto reveal rd3">
 
@@ -617,11 +483,11 @@
 </section>
 
 <!-- ═══ TERMS AND CONDITIONS ═══ -->
-<section id="terms" class="legal py-24 px-5 md:px-[clamp(1.25rem,6vw,5rem)] bg-base2 t-theme">
-  <div class="max-w-[66.25rem] mx-auto">
-    <h2 style="font-family: 'Plus Jakarta Sans', sans-serif;" class="text-[clamp(2rem,5vw,3.2rem)] font-bold text-center tx leading-tight mb-2 reveal rd1">Terms and Conditions</h2>
+<section id="terms" class="legal ln-section ln-alt">
+  <div class="ln-wrap">
+    <h2 class="ln-h2 sp-title reveal rd1">Terms and Conditions</h2>
 
-    <p class="text-[0.8125rem] text-center mb-12 reveal rd2">Effective March 25, 2026</p>
+    <p class="sp-meta reveal rd2">Effective March 25, 2026</p>
 
     <div class="legal-card p-8 md:p-10 max-w-[50rem] mx-auto reveal rd3">
 
@@ -722,41 +588,39 @@
 </section>
 
 <!-- ═══ FOOTER ═══ -->
-<footer class="relative z-10 bg-base border-t bd px-[clamp(1.25rem,6vw,5rem)] pt-[3.75rem] pb-10 t-theme">
-  <div class="max-w-[68.75rem] mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr] gap-12">
+<footer class="ln-footer">
+  <div class="ln-footer-grid">
     <div>
       <div class="flex items-center gap-2.5">
-        <div class="w-9 h-9 rounded-xl bg-purple-600 flex items-center justify-center text-base font-black text-white shadow-glow">
-          <img src="../logo-images/newlogo0.png">
-        </div>
-        <div class="flex flex-col leading-tight">
-          <span style="font-family: 'Plus Jakarta Sans', sans-serif;" class="text-base font-black tx">Korah</span>
-          <span class="text-[0.5625rem] font-semibold tracking-[0.15625rem] uppercase tx-p4">AI Study Companion</span>
+        <img src="../logo-images/newlogo0.png" class="ln-logo" alt="">
+        <div class="leading-tight">
+          <span class="ln-brand">Korah</span>
+          <span class="ln-brand-sub">AI study companion</span>
         </div>
       </div>
-      <p class="text-sm tx2 max-w-[17.5rem] mt-3.5" style="line-height:1.7;">Korah helps students ace the SAT with AI-powered tutoring, live Desmos graphing, adaptive practice, and progress tracking.</p>
+      <p class="ln-body" style="max-width:19rem;margin-top:0.875rem;">Korah helps students ace the SAT with AI-powered tutoring, live Desmos graphing, adaptive practice, and progress tracking.</p>
     </div>
     <div>
-      <h4 class="text-xs font-bold tracking-[0.125rem] uppercase tx-p5 mb-4">Product</h4>
-      <a href="../#sat"      class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Desmos Tutoring</a>
-      <a href="../#progress" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Progress</a>
-      <a href="../#chat"     class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Questionbank</a>
-      <a href="../home.html"        class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Web App</a>
+      <h4>Product</h4>
+      <a href="../#sat">Desmos tutoring</a>
+      <a href="../#progress">Progress</a>
+      <a href="../#chat">Questionbank</a>
+      <a href="../home.html">Web app</a>
     </div>
     <div>
-      <h4 class="text-xs font-bold tracking-[0.125rem] uppercase tx-p5 mb-4">Support</h4>
-      <a href="../support/index.html#contact" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Contact Us</a>
-      <a href="#faq"                        class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">FAQ</a>
+      <h4>Support</h4>
+      <a href="../support/index.html#contact">Contact us</a>
+      <a href="#faq">FAQ</a>
     </div>
     <div>
-      <h4 class="text-xs font-bold tracking-[0.125rem] uppercase tx-p5 mb-4">Company</h4>
-      <a href="../" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">About Korah</a>
-      <a href="https://www.instagram.com/korah.app/" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Social Media</a>
-      <a href="../support/index.html#privacy" class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Privacy Policy</a>
-      <a href="../support/index.html#terms"   class="block text-sm tx2 no-underline py-1 t-btn hover:tx-p4">Terms</a>
+      <h4>Company</h4>
+      <a href="../">About Korah</a>
+      <a href="https://www.instagram.com/korah.app/">Social media</a>
+      <a href="../support/index.html#privacy">Privacy policy</a>
+      <a href="../support/index.html#terms">Terms</a>
     </div>
   </div>
-  <div class="max-w-[68.75rem] mx-auto mt-10 pt-6 border-t bd2 flex flex-wrap items-center justify-between gap-3 text-[0.78125rem] tx3">
+  <div class="ln-footer-base">
     <span>© 2026 Korah AI. All rights reserved.</span>
     <span>Made for students, by students</span>
     <span>Beta v0.9.1</span>

@@ -1,11 +1,12 @@
 /* ═══════════════════════════════════════════════════════
    Korah Support Page - JavaScript
-   Shooting stars, constellation, nav tracking, FAQ search
+   Navbar scroll state, nav tracking, FAQ search, email tooltip
    ═══════════════════════════════════════════════════════ */
 
 'use strict';
 
-/* ── Shooting Stars Background ── */
+/* Removed with the star field markup (the flat landing look has no stars). Kept for reference.
+
 function initShootingStars() {
     const field = document.getElementById('starField');
     if (!field) return;
@@ -61,7 +62,6 @@ function initShootingStars() {
     }
 }
 
-/* ── Constellation (light mode only) ── */
 function initConstellation() {
     const canvas = document.getElementById('constellation-canvas');
     if (!canvas) return;
@@ -123,6 +123,17 @@ function initConstellation() {
     });
 }
 
+*/
+
+/* ── Navbar: solid background once the page scrolls ── */
+function initNavbarScroll() {
+    const nav = document.getElementById('navbar');
+    if (!nav) return;
+    const update = () => nav.classList.toggle('scrolled', window.scrollY > 10);
+    window.addEventListener('scroll', update, { passive: true });
+    update();
+}
+
 /* ── Nav Sliding Pill Indicator ── */
 function initNavActivePill() {
     initScrollNav();
@@ -168,12 +179,12 @@ function initEmailTooltips() {
         tooltip.className = 'email-tooltip';
         tooltip.style.cssText = `
             position: fixed; z-index: 9999;
-            background: var(--cb); border: 1px solid var(--bd);
+            background: var(--ln-sf); border: 1px solid var(--ln-bd);
             border-radius: 0.75rem; padding: 0.375rem;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            box-shadow: var(--ln-lift);
             opacity: 0; pointer-events: none;
-            transform: translateY(4px);
-            transition: opacity 0.2s, transform 0.2s;
+            transform: scale(0.97); transform-origin: bottom center;
+            transition: opacity 0.16s ease, transform 0.16s cubic-bezier(.23,1,.32,1);
             display: flex; flex-direction: column; gap: 0.125rem;
             min-width: 9rem;
         `;
@@ -183,12 +194,12 @@ function initEmailTooltips() {
         sendBtn.style.cssText = `
             display: flex; align-items: center; gap: 0.5rem;
             padding: 0.5rem 0.75rem; border: none; border-radius: 0.5rem;
-            background: transparent; color: var(--tx); cursor: pointer;
+            background: transparent; color: var(--ln-tx); cursor: pointer;
             font: inherit; font-size: 0.8125rem; font-weight: 600;
             transition: background 0.15s;
         `;
         sendBtn.innerHTML = '<span class="material-icons-round" style="font-size:1rem;">send</span> Send Email';
-        sendBtn.onmouseover = () => sendBtn.style.background = 'var(--cu)';
+        sendBtn.onmouseover = () => sendBtn.style.background = 'var(--ln-sf2)';
         sendBtn.onmouseout = () => sendBtn.style.background = 'transparent';
         sendBtn.onclick = (e) => {
             e.stopPropagation();
@@ -199,14 +210,14 @@ function initEmailTooltips() {
         const copyBtn = document.createElement('button');
         copyBtn.innerHTML = '<span class="material-icons-round" style="font-size:1rem;">content_copy</span> Copy Email';
         copyBtn.style.cssText = sendBtn.style.cssText;
-        copyBtn.onmouseover = () => copyBtn.style.background = 'var(--cu)';
+        copyBtn.onmouseover = () => copyBtn.style.background = 'var(--ln-sf2)';
         copyBtn.onmouseout = () => copyBtn.style.background = 'transparent';
         copyBtn.onclick = (e) => {
             e.stopPropagation();
             navigator.clipboard.writeText(email).then(() => {
                 const orig = copyBtn.innerHTML;
                 copyBtn.innerHTML = '<span class="material-icons-round" style="font-size:1rem;">check</span> Copied!';
-                copyBtn.style.color = 'var(--grn)';
+                copyBtn.style.color = 'var(--sp-green-tx)';
                 setTimeout(() => {
                     copyBtn.innerHTML = orig;
                     copyBtn.style.color = '';
@@ -226,14 +237,14 @@ function initEmailTooltips() {
             tooltip.style.top = (rect.top - tooltip.offsetHeight - 8) + 'px';
             tooltip.style.opacity = '1';
             tooltip.style.pointerEvents = 'auto';
-            tooltip.style.transform = 'translateY(0)';
+            tooltip.style.transform = 'scale(1)';
             visible = true;
         }
 
         function hide() {
             tooltip.style.opacity = '0';
             tooltip.style.pointerEvents = 'none';
-            tooltip.style.transform = 'translateY(4px)';
+            tooltip.style.transform = 'scale(0.97)';
             visible = false;
         }
 
@@ -284,9 +295,8 @@ function initBackToTop() {
 
 /* ── Initialize Everything ── */
 function init() {
-    initShootingStars();
     initScrollReveal();
-    initConstellation();
+    initNavbarScroll();
     initNavActivePill();
     initBackToTop();
     initFaqSearch();

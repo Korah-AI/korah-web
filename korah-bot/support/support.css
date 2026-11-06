@@ -1,9 +1,369 @@
-/* Support page — only custom styles korah.css can't express */
+/* Support page. Flat landing look: the --ln-* tokens below are the same ones
+   korah-bot/index.html defines, so the two pages match. korah.css still loads for
+   the layout helpers (.reveal, .nav-link, .t-btn) but its purple tokens are not
+   used on this page. See docs/UI-DESIGN-SYSTEM.md. */
 
 [x-cloak] { display: none !important; }
 
+html { scroll-behavior: smooth; }
 section[id] { scroll-margin-top: 6rem; }
 
+/* ══ TOKENS ═════════════════════════════════════════════════════════════
+   Neutrals from index.html, plus the tone pairs from the design system doc
+   (text colour per theme, fill shared). */
+:root, html[data-theme="dark"] {
+  --ln-bg:      #000;
+  --ln-bg2:     #0a0a0a;
+  --ln-sf:      #121212;
+  --ln-sf2:     #1a1a1a;
+  --ln-bd:      #242424;
+  --ln-bd2:     #3d3d3d;
+  --ln-tx:      #fff;
+  --ln-tx2:     #8b8b8b;
+  --ln-tx3:     #5c5c5c;
+  --ln-lift:    0 0.75rem 2rem rgba(0,0,0,0.6);
+  --sp-blue-tx:   #60a5fa;
+  --sp-green-tx:  #4ade80;
+  --sp-amber-tx:  #fbbf24;
+  --sp-pink-tx:   #f472b6;
+  --sp-orange-tx: #fb923c;
+  --sp-teal-tx:   #2dd4bf;
+}
+html[data-theme="light"] {
+  --ln-bg:      #fff;
+  --ln-bg2:     #fafafa;
+  --ln-sf:      #fff;
+  --ln-sf2:     #f4f4f5;
+  --ln-bd:      #e4e4e7;
+  --ln-bd2:     #c4c4ca;
+  --ln-tx:      #09090b;
+  --ln-tx2:     #6c6c76;
+  --ln-tx3:     #9b9ba3;
+  --ln-lift:    0 0.75rem 2rem rgba(0,0,0,0.12);
+  --sp-blue-tx:   #1d4ed8;
+  --sp-green-tx:  #15803d;
+  --sp-amber-tx:  #92400e;
+  --sp-pink-tx:   #be185d;
+  --sp-orange-tx: #c2410c;
+  --sp-teal-tx:   #0f766e;
+}
+
+/* A tone owns --acc (text, icons) and --acc-fill (chips, buttons). */
+.sp-blue   { --acc: var(--sp-blue-tx);   --acc-fill: #3b82f6; }
+.sp-green  { --acc: var(--sp-green-tx);  --acc-fill: #22c55e; }
+.sp-amber  { --acc: var(--sp-amber-tx);  --acc-fill: #f59e0b; }
+.sp-pink   { --acc: var(--sp-pink-tx);   --acc-fill: #ec4899; }
+.sp-orange { --acc: var(--sp-orange-tx); --acc-fill: #f97316; }
+.sp-teal   { --acc: var(--sp-teal-tx);   --acc-fill: #14b8a6; }
+
+.sp-page {
+  background: var(--ln-bg);
+  color: var(--ln-tx);
+  transition: background-color .4s, color .4s;
+}
+
+/* korah.css thumb is purple */
+::-webkit-scrollbar-thumb { background: var(--ln-bd2); }
+
+/* ══ SCROLL PROGRESS ════════════════════════════════════════════════════
+   Solid blue 2px bar. No element in the markup drives it yet. */
+#scroll-progress {
+  position: fixed; top: 0; left: 0;
+  height: 0.125rem; width: 0%;
+  background: #3b82f6;
+  z-index: 9999;
+  transition: width 0.1s linear;
+  pointer-events: none;
+}
+
+/* ══ TYPE ═══════════════════════════════════════════════════════════════ */
+.ln-h1 {
+  font-size: clamp(2.5rem, 6.4vw, 4.5rem);
+  font-weight: 700; letter-spacing: -0.035em; line-height: 1.04;
+  margin: 0; color: var(--ln-tx);
+}
+.ln-h2 {
+  font-size: clamp(1.875rem, 4vw, 3rem);
+  font-weight: 700; letter-spacing: -0.03em; line-height: 1.08;
+  margin: 0; color: var(--ln-tx);
+}
+.ln-lead {
+  font-size: clamp(1rem, 1.6vw, 1.125rem);
+  line-height: 1.65; color: var(--ln-tx2); margin: 0;
+}
+.ln-body { font-size: 0.9375rem; line-height: 1.6; color: var(--ln-tx2); margin: 0; }
+
+/* ══ BUTTONS ════════════════════════════════════════════════════════════
+   Scale on hover and press, never translate. */
+.ln-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+  height: 2.75rem; padding: 0 1.25rem;
+  border-radius: 0.5rem;
+  border: 0.0625rem solid transparent;
+  font-family: inherit; font-size: 0.875rem; font-weight: 600;
+  text-decoration: none; cursor: pointer; white-space: nowrap;
+  transition: transform .18s cubic-bezier(.23,1,.32,1), box-shadow .18s ease,
+              background .18s ease, border-color .18s ease, color .18s ease, filter .18s ease;
+}
+.ln-btn:hover  { transform: scale(1.03); box-shadow: var(--ln-lift); }
+.ln-btn:active { transform: scale(0.98); box-shadow: none; }
+.ln-btn .material-icons-round { font-size: 1.125rem; }
+.ln-btn-blue { background: #3b82f6; color: #fff; border-color: #3b82f6; }
+.ln-btn-blue:hover { filter: brightness(1.12); }
+.ln-btn-ghost { background: transparent; color: var(--ln-tx); border-color: var(--ln-bd); }
+.ln-btn-ghost:hover { background: var(--ln-sf2); border-color: var(--ln-bd2); }
+.ln-btn-sm { height: 2.25rem; padding: 0 0.875rem; font-size: 0.8125rem; }
+
+.ln-actions { display: flex; align-items: center; justify-content: center; gap: 0.75rem; flex-wrap: wrap; }
+
+/* ══ NAVBAR ═════════════════════════════════════════════════════════════
+   Solid and opaque on scroll, no purple tint, no gradient underline. */
+#navbar.scrolled {
+  background: var(--ln-bg);
+  box-shadow: 0 0.0625rem 0 var(--ln-bd);
+}
+#navbar::after { display: none; }
+
+.ln-navpills {
+  background: var(--ln-sf);
+  border: 0.0625rem solid var(--ln-bd);
+}
+.ln-navpills .nav-link {
+  position: relative; z-index: 1;
+  color: var(--ln-tx2); transition: color .15s ease;
+}
+.ln-navpills .nav-link:hover { color: var(--ln-tx); }
+.nav-indicator {
+  z-index: 0;
+  background: var(--ln-sf2);
+  border: 0.0625rem solid var(--ln-bd2);
+}
+.nav-link.active { color: var(--ln-tx) !important; }
+.nav-link.active .nav-link-icon { filter: none; }
+
+.ln-brand { font-size: 1.1875rem; font-weight: 800; letter-spacing: -0.02em; color: var(--ln-tx); }
+.ln-brand-sub { display: block; margin-top: 0.125rem; font-size: 0.6875rem; font-weight: 500; color: var(--sp-blue-tx); }
+.ln-logo {
+  height: 2.25rem; width: auto; flex-shrink: 0;
+  transition: transform .18s cubic-bezier(.23,1,.32,1);
+}
+a:hover > .ln-logo { transform: scale(1.06); }
+
+.ln-theme-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 2.25rem; height: 2.25rem; flex-shrink: 0;
+  border-radius: 0.5rem;
+  background: var(--ln-sf); border: 0.0625rem solid var(--ln-bd);
+  color: var(--ln-tx2); cursor: pointer;
+  transition: transform .18s cubic-bezier(.23,1,.32,1), box-shadow .18s ease,
+              background .18s ease, border-color .18s ease, color .18s ease;
+}
+.ln-theme-btn:hover { color: var(--ln-tx); border-color: var(--ln-bd2); transform: scale(1.05); box-shadow: var(--ln-lift); }
+.ln-theme-btn:active { transform: scale(0.97); box-shadow: none; }
+
+/* ══ BACK TO TOP ════════════════════════════════════════════════════════ */
+#back-to-top {
+  position: fixed; bottom: 2rem; right: 2rem; z-index: 999;
+  width: 2.75rem; height: 2.75rem; border-radius: 0.5rem;
+  background: var(--ln-sf); border: 0.0625rem solid var(--ln-bd);
+  color: var(--sp-blue-tx); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transform: scale(0.9); pointer-events: none;
+  transition: opacity .2s ease, transform .18s cubic-bezier(.23,1,.32,1),
+              border-color .18s ease, box-shadow .18s ease;
+}
+#back-to-top.show { opacity: 1; transform: scale(1); pointer-events: auto; }
+#back-to-top.show:hover { transform: scale(1.06); border-color: var(--ln-bd2); box-shadow: var(--ln-lift); }
+#back-to-top.show:active { transform: scale(0.97); }
+
+/* ══ SECTION SHELL ══════════════════════════════════════════════════════
+   Every section carries its own solid surface, so nothing shows through. */
+.ln-section {
+  padding: clamp(4rem, 8vw, 7rem) clamp(1rem, 5vw, 4rem);
+  background: var(--ln-bg);
+}
+.ln-wrap { max-width: 72rem; margin: 0 auto; }
+.ln-alt {
+  background: var(--ln-bg2);
+  border-top: 0.0625rem solid var(--ln-bd);
+  border-bottom: 0.0625rem solid var(--ln-bd);
+}
+
+/* Icon chip plus label, the header of each section */
+.ln-eyebrow { display: flex; align-items: center; justify-content: center; gap: 0.625rem; margin-bottom: 1.5rem; }
+.ln-eyebrow-chip {
+  width: 2.75rem; height: 2.75rem; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 0.5rem;
+  background: var(--ln-sf2); border: 0.0625rem solid var(--ln-bd);
+  color: var(--acc);
+}
+.ln-eyebrow-chip .material-icons-round { font-size: 1.125rem; }
+.ln-eyebrow span { font-size: 0.875rem; font-weight: 600; color: var(--ln-tx2); }
+
+.sp-head { text-align: center; margin-bottom: 3rem; }
+.sp-head .ln-lead { max-width: 32rem; margin: 0.75rem auto 0; }
+.sp-title { text-align: center; margin-bottom: 0.5rem; }
+.sp-meta { text-align: center; margin: 0 0 3rem; font-size: 0.8125rem; color: var(--ln-tx2); }
+
+/* ══ HERO ═══════════════════════════════════════════════════════════════ */
+.sp-hero {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 70vh;
+  padding: calc(var(--nav-h) + clamp(2rem, 6vw, 3.5rem)) clamp(1rem, 5vw, 4rem) clamp(3rem, 6vw, 5rem);
+  background: var(--ln-bg);
+}
+.sp-hero-inner { width: 100%; max-width: 52rem; text-align: center; }
+.sp-hero .ln-lead { max-width: 34rem; margin: 1.25rem auto 0; }
+
+.sp-stats {
+  display: flex; align-items: center; justify-content: center;
+  gap: 1.5rem; flex-wrap: wrap; margin: 2rem 0;
+}
+.sp-stat { text-align: center; }
+.sp-stat b {
+  display: block; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em;
+  line-height: 1; color: var(--acc); font-variant-numeric: tabular-nums;
+}
+.sp-stat span { display: block; margin-top: 0.375rem; font-size: 0.8125rem; color: var(--ln-tx2); }
+.stat-divider { width: 1px; height: 2.5rem; background: var(--ln-bd); flex-shrink: 0; }
+
+/* ══ CARDS ══════════════════════════════════════════════════════════════
+   Flat --ln-sf surface, hairline border, scale on hover. .reveal in korah.css
+   slides up and carries a delay; here it only fades so the hover scale is not
+   fighting a translate or waiting on a transition-delay. */
+.reveal { transform: none; transition: opacity .5s cubic-bezier(.23,1,.32,1); }
+.rd1, .rd2, .rd3, .rd4 { transition-delay: 0s; }
+
+.sp-card {
+  background: var(--ln-sf);
+  border: 0.0625rem solid var(--ln-bd);
+  border-radius: 1rem;
+  transition: border-color .18s ease, transform .18s cubic-bezier(.23,1,.32,1),
+              box-shadow .18s ease, opacity .5s cubic-bezier(.23,1,.32,1);
+}
+.sp-card:hover { border-color: var(--ln-bd2); transform: scale(1.01); }
+.sp-card-title { margin: 0 0 0.5rem; font-size: 1.0625rem; font-weight: 600; color: var(--ln-tx); }
+.sp-card-text { margin: 0; font-size: 0.875rem; line-height: 1.65; color: var(--ln-tx2); }
+
+.sp-chip {
+  width: 2.75rem; height: 2.75rem;
+  display: grid; place-items: center;
+  margin-bottom: 1rem;
+  border-radius: 0.5rem;
+  background: var(--acc-fill); color: #fff;
+}
+
+/* FAQ. The padding keeps the hover scale from clipping at the scroll edge. */
+.faq-scroll-container { padding: 0.25rem; }
+.faq-card { padding: 1.75rem; }
+
+.sp-input {
+  background: var(--ln-sf2);
+  border: 0.0625rem solid var(--ln-bd);
+  border-radius: 0.5rem;
+  color: var(--ln-tx);
+  transition: border-color .18s ease, box-shadow .18s ease;
+}
+.sp-input::placeholder { color: var(--ln-tx3); }
+.sp-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 0.1875rem color-mix(in srgb, #3b82f6 22%, transparent);
+}
+.sp-search-icon { color: var(--ln-tx3); }
+.sp-clear { color: var(--ln-tx3); border-radius: 0.375rem; transition: color .15s ease, background .15s ease; }
+.sp-clear:hover { color: var(--ln-tx); background: var(--ln-bd); }
+
+.sp-link { color: var(--sp-blue-tx); text-decoration: none; }
+.sp-link:hover { text-decoration: underline; }
+
+/* Contact */
+.sp-contact { position: relative; padding: 2rem; text-align: center; }
+.sp-contact .sp-chip { width: 3.25rem; height: 3.25rem; margin: 0 auto 1.25rem; }
+.sp-contact .sp-card-title { font-size: 1.125rem; margin-bottom: 0.75rem; }
+.sp-contact .sp-card-text { margin-bottom: 1.5rem; }
+.sp-contact-hi, .sp-contact-hi:hover { border-color: #3b82f6; }
+.sp-badge {
+  position: absolute; top: -0.875rem; left: 50%; transform: translateX(-50%);
+  padding: 0.3125rem 0.75rem; border-radius: 0.5rem;
+  background: #3b82f6; color: #fff;
+  font-size: 0.75rem; font-weight: 600; white-space: nowrap;
+}
+
+/* Explore grid */
+.explore-card { padding: 1.5rem; }
+.explore-card:hover { transform: scale(1.03); }
+.explore-card .material-icons-round { font-size: 1.75rem; color: var(--acc); }
+.explore-card b { font-size: 0.8125rem; font-weight: 600; color: var(--ln-tx); }
+.explore-card span.sp-sub { font-size: 0.6875rem; line-height: 1.25; color: var(--ln-tx3); }
+
+/* ══ LEGAL (privacy + terms) ════════════════════════════════════════════
+   The legal markup keeps its tx2/tx3 classes; they are pointed at the page
+   text colour here so the body copy stays readable. */
+.legal { --acc: var(--sp-blue-tx); --acc-fill: #3b82f6; }
+.legal .tx2, .legal .tx3 { color: var(--ln-tx); }
+
+.legal-card {
+  background: var(--ln-sf);
+  border: 0.0625rem solid var(--ln-bd);
+  border-radius: 1rem;
+}
+.legal-row + .legal-row { margin-top: 0.5rem; }
+.legal-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem; padding: 0.875rem 1rem;
+  background: var(--ln-sf2);
+  border: 0.0625rem solid var(--ln-bd);
+  border-radius: 0.5rem;
+  color: var(--ln-tx);
+  cursor: pointer;
+  transition: transform .18s cubic-bezier(.23,1,.32,1), background .18s ease, border-color .18s ease, color .18s ease;
+}
+.legal-head:hover:not(.is-open) { border-color: var(--ln-bd2); transform: scale(1.01); }
+.legal-head.is-open { background: var(--acc-fill); border-color: var(--acc-fill); color: #fff; }
+.legal-link { color: var(--acc); text-decoration: none; }
+.legal-link:hover { text-decoration: underline; }
+
+.accordion-content {
+  overflow: hidden;
+  transition: max-height 0.5s cubic-bezier(.23,1,.32,1), opacity 0.4s ease;
+}
+.accordion-chevron { transition: transform 0.3s cubic-bezier(.23,1,.32,1); }
+.accordion-chevron.open { transform: rotate(180deg); }
+
+/* ══ FOOTER ═════════════════════════════════════════════════════════════ */
+.ln-footer {
+  background: var(--ln-bg);
+  border-top: 0.0625rem solid var(--ln-bd);
+  padding: clamp(3rem, 6vw, 4.5rem) clamp(1rem, 5vw, 4rem) 2.5rem;
+}
+.ln-footer-grid {
+  max-width: 72rem; margin: 0 auto;
+  display: grid; grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: clamp(2rem, 4vw, 3rem);
+}
+@media (max-width: 52rem) { .ln-footer-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 26rem) { .ln-footer-grid { grid-template-columns: 1fr; } }
+.ln-footer h4 { margin: 0 0 0.875rem; font-size: 0.875rem; font-weight: 600; color: var(--ln-tx); }
+.ln-footer a { display: block; padding: 0.3125rem 0; font-size: 0.875rem; color: var(--ln-tx2); text-decoration: none; transition: color .15s ease; }
+.ln-footer a:hover { color: var(--ln-tx) !important; }
+.ln-footer-base {
+  max-width: 72rem; margin: 2.5rem auto 0; padding-top: 1.5rem;
+  border-top: 0.0625rem solid var(--ln-bd);
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: 0.75rem; font-size: 0.8125rem; color: var(--ln-tx3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .ln-btn:hover, .sp-card:hover, .explore-card:hover, .legal-head:hover,
+  .ln-theme-btn:hover, #back-to-top.show:hover { transform: none; }
+}
+
+/* ── Replaced by the flat look above: the twinkling star field and shooting
+      stars (#starField) that the support.js star functions drew. Both the
+      field and the light-mode constellation canvas are commented out in the
+      markup.
 .static-star {
     position: absolute;
     border-radius: 50%;
@@ -11,61 +371,10 @@ section[id] { scroll-margin-top: 6rem; }
     animation: twinkle var(--twinkle-dur, 3s) ease-in-out var(--twinkle-delay, 0s) infinite;
     opacity: 0;
 }
-
 @keyframes shoot {
     0% { opacity: 0; transform: rotate(var(--angle, 35deg)) translateX(0); }
     10% { opacity: 1; }
     80% { opacity: 1; }
     100% { opacity: 0; transform: rotate(var(--angle, 35deg)) translateX(37.5rem); }
 }
-
-/* Legal sections (privacy + terms): grey resting surfaces, see docs/WIZARD-UI-PATTERNS.md */
-.legal {
-    --lg-sf:  #26262e;
-    --lg-sf2: #31313c;
-    --lg-bd:  #454553;
-    --acc:      #3b82f6;
-    --acc-fill: #3472d9;
-    --tx2: var(--tx);
-    --tx3: var(--tx);
-}
-html[data-theme="light"] .legal {
-    --lg-sf: #eceef2; --lg-sf2: #e0e3ea; --lg-bd: #c3c8d2;
-}
-.legal .tx2, .legal .tx3 { color: var(--tx); }
-
-.legal-card {
-    background: var(--lg-sf);
-    border: 1px solid var(--lg-bd);
-    border-radius: 1rem;
-}
-
-.legal-row + .legal-row { margin-top: 0.5rem; }
-
-.legal-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 0.875rem 1rem;
-    background: var(--lg-sf2);
-    border: 1px solid var(--lg-bd);
-    border-radius: 0.625rem;
-    cursor: pointer;
-    transition: transform .18s ease, background .18s ease, border-color .18s ease;
-}
-.legal-head:hover:not(.is-open) {
-    border-color: var(--acc);
-    transform: scale(1.01);
-}
-.legal-head.is-open {
-    background: var(--acc-fill);
-    border-color: var(--acc-fill);
-    color: #fff;
-}
-
-.legal-link {
-    color: var(--acc);
-    text-decoration: none;
-}
-.legal-link:hover { text-decoration: underline; }
+──────────────────────────────────────────────────────────────────────── */
