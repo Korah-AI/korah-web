@@ -142,12 +142,15 @@ docs/WIZARD-UI-PATTERNS.md. Scrollbar width stays at 6px.
 See `../README.md` for the API route map and the source-control tips (there is no
 working local preview — you commit and check the deployed site).
 
-**Building a wizard or multi-step flow?** Read `../docs/WIZARD-UI-PATTERNS.md` first.
-It covers the house UI/UX conventions — grey resting surfaces (never the purple
-`--sf`/`--bd` tokens), per-option accent tones, filled-not-outlined selected states,
-no dimmed text, the step shell and transitions, custom popups instead of
-`alert()`/`confirm()` — with the reference implementations in
-`korah-bot/sat/study-plan.html`, `sat-rush.css` and `js/sat-rush.js`.
+**Building any page, card, modal or toast?** Read `../docs/UI-DESIGN-SYSTEM.md` first. It is the
+UI source of truth: the flat neutral palette and tone pairs (colour only in text, icons and
+button fills), the page shell (topbar, scroller gutter, 74rem cap, stars behind the page),
+cards, buttons, modals, `.k-toast`, motion, scrollbars, the React sidebar island, and a new
+page checklist. Reference pages are `index.html`, `home.html` and `ap/home.html`.
+
+**Building a wizard or multi-step flow?** Also read `../docs/WIZARD-UI-PATTERNS.md` (step shell,
+selected states as tone fills, memory-lights flash, popups), with the reference implementations
+in `korah-bot/sat/rush.html`, `sat-rush.css`, `js/sat-rush.js` and `sat/study-plan.html`.
 
 ### UI conventions
 
@@ -163,7 +166,7 @@ no dimmed text, the step shell and transitions, custom popups instead of
   renaming the classes and pointing `--acc` at the control's tone:
 
   ```css
-  /* Panel: absolute under its trigger, grey surface, grows from the trigger. */
+  /* Panel: absolute under its trigger, flat --sf surface, grows from the trigger. */
   .x-menu {
       position: absolute;
       top: calc(100% + 0.4rem);

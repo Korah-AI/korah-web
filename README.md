@@ -63,7 +63,9 @@ pattern is written up in `docs/WIZARD-UI-PATTERNS.md`.
 * Latest Questions page at `korah-bot/sat/latest-questions.html`, linked from the bank page
   and the sidebar. See #37, which is not closed yet.
 * Grey color blocking applied to the sidebar, home, chat, SAT dashboard, SAT math chat and
-  the SAT practice player. This is part of #30, which is still open.
+  the SAT practice player. This is part of #30, which is still open. Home, the shared tokens in
+  `app/korah-chat.css`, the sidebar and the settings modal have since moved to the flat neutral
+  style from `index.html`, and the other pages were restyled to match. See `docs/UI-DESIGN-SYSTEM.md`.
 * SAT player question layout, topbar, footer and navigator reworked.
 * Commit message conventions added to `CLAUDE.md`.
 

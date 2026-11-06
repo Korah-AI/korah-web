@@ -1,3 +1,7 @@
+> **Visual style is superseded.** The look (flat neutral palette, tones, cards, buttons, modals, toasts, motion, page shell,
+> sidebar island) is documented in `../docs/UI-DESIGN-SYSTEM.md`. This file's component catalogue below still describes the
+> old glass and purple look and class names that may no longer exist; use it only to find a class, and trust the CSS.
+
 Korah UI/UX Agent Guide
 
 Read this entire file before touching a single line of code.
@@ -110,7 +114,7 @@ html[data-theme="light"] { }
 CSS Variable Reference
 All variables are defined in korah-chat.css. Look them up there for actual values.
 The table below is a semantic map so you understand what each variable is for.
-VariableDark ValueLight ValuePurpose--bg#06040f#faf8ffPage background--bg2#0d0920#f3efffSecondary background--bg3#120c28#ebe5ffTertiary background / input fill--sfrgba(18,12,40,.7)rgba(255,255,255,.85)Surface (glass panels)--sf2rgba(30,18,60,.6)rgba(243,239,255,.9)Secondary surface--bdrgba(139,92,246,.2)rgba(109,40,217,.18)Primary border--bd2rgba(139,92,246,.1)rgba(109,40,217,.1)Subtle border--tx#f0eaff#1a0a3cPrimary text--tx2#a89dc0#5a4a7aSecondary text--tx3#6b5f88#9080aaMuted / label text--p4#8b5cf6#8b5cf6Primary purple--p5#a78bfa#7c3aedSecondary purple--ac#f0abfc#a21cafAccent / highlight--curgba(91,33,182,.25)rgba(109,40,217,.12)Active/selected tint--glowrgba(139,92,246,.35)rgba(109,40,217,.15)Shadow glow--grn#34d399#059669Success / green--gold#fbbf24#d97706Warning / gold--red#f87171#dc2626Error / danger--mg#22c55e#16a34aMood green--my#eab308#ca8a04Mood yellow--mr#ef4444#dc2626Mood red--nbrgba(6,4,15,.85)rgba(250,248,255,.9)Navbar background--cbrgba(15,9,35,.82)rgba(255,255,255,.92)Card/modal background--cargba(18,12,40,.9)rgba(243,239,255,.95)AI message background--sidebar-w18.125rem18.125remSidebar full width
+VariableDark ValueLight ValuePurpose--bg#000#fffPage background--bg2#0a0a0a#fafafaSecondary background--bg3#121212#f4f4f5Tertiary background--sf#121212#fffSurface--sf2#1a1a1a#f4f4f5Secondary surface--bd#242424#e4e4e7Primary border--bd2#1a1a1a#efeff1Subtle border--tx#fff#09090bPrimary text--tx2#8b8b8b#6c6c76Secondary text--tx3#6b6b6b#9b9ba3Muted / label text--p4#8b5cf6#8b5cf6Primary purple--p5#a78bfa#7c3aedSecondary purple--ac#f0abfc#a21cafAccent / highlight--curgba(255,255,255,.06)rgba(0,0,0,.05)Hover/selected tint--glowtransparenttransparentShadow glow (off)--grn#34d399#059669Success / green--gold#fbbf24#d97706Warning / gold--red#f87171#dc2626Error / danger--mg#22c55e#16a34aMood green--my#eab308#ca8a04Mood yellow--mr#ef4444#dc2626Mood red--nbrgba(0,0,0,.85)rgba(255,255,255,.9)Navbar background--cb#121212#fffCard/modal background--ca#121212#fafafaAI message background--sidebar-w18.125rem18.125remSidebar full width
 Player-specific variables (sat.css only):
 css--player-topbar-h: 3.5rem
 --player-footer-h: 4rem
@@ -361,7 +365,7 @@ Collapsed sidebar overflow menu:
 .collapsed-more-dropdown    upward-opening dropdown
 .collapsed-more-dropdown.more-dropdown-open
 Sidebar toggle (in topbar):
-.sidebar-toggle-btn         hamburger/arrow button
+.sidebar-toggle-btn         borderless 2.5rem button, PanelLeft icon painted by CSS
 .sidebar-overlay            dark backdrop on mobile when open
 
 6.3 · New Chat Button [ALL]
@@ -371,9 +375,9 @@ Sidebar toggle (in topbar):
 Background: rgba(195, 105, 255, 0.717) — do not change this to var(--p4), this specific purple-pink tone is intentional.
 
 6.4 · Topbar [ALL]
-.chat-topbar                fixed top bar, height: 4rem
+.chat-topbar                top bar, height: 4rem, --bg surface (matches sidebar), 1px bottom border
 .chat-title-area            flex center, overflow: hidden
-.korah-status-dot           green breathing dot (animation: breathe)
+.korah-status-dot           1px x 1.25rem divider between the toggle and the title
 .topbar-actions             right-side icon row
 .topbar-btn                 icon button, 2.125rem × 2.125rem
 .topbar-btn:hover           border-color: var(--p4), background: var(--cu)
