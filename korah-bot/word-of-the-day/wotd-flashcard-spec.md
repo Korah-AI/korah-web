@@ -2,6 +2,8 @@
 
 Spec for wiring the home page "Word of the Day" flashcard 
 
+> Superseded: `home.html` now reads 10 words per local day from `word-of-the-day/words.json` (built by `scripts/build-wotd-words.js`) instead of the weekly set of 7 below.
+
 
 ## 1 · Scope
 
