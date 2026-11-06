@@ -9,7 +9,7 @@ let editor = null;
 let rawContent = '';
 
 const DIM_COLORS = {
-  writing:      '#8b5cf6',
+  writing:      '#14b8a6',
   detail:       '#3b82f6',
   voice:        '#ec4899',
   reflection:   '#f59e0b',

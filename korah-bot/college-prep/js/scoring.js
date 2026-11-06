@@ -3,12 +3,12 @@
  */
 
 const DIMENSIONS = [
-  { key: 'writing', label: 'Writing', color: '#8b5cf6' },
+  { key: 'writing', label: 'Writing', color: '#14b8a6' },
   { key: 'detail', label: 'Detail', color: '#3b82f6' },
-  { key: 'voice', label: 'Voice', color: '#f0abfc' },
-  { key: 'reflection', label: 'Reflection', color: '#fbbf24' },
-  { key: 'curiosity', label: 'Curiosity', color: '#34d399' },
-  { key: 'contribution', label: 'Contribution', color: '#f87171' },
+  { key: 'voice', label: 'Voice', color: '#ec4899' },
+  { key: 'reflection', label: 'Reflection', color: '#f59e0b' },
+  { key: 'curiosity', label: 'Curiosity', color: '#22c55e' },
+  { key: 'contribution', label: 'Contribution', color: '#ef4444' },
 ];
 
 const activeDims = new Set(DIMENSIONS.map(d => d.key));
@@ -32,7 +32,7 @@ function resolveButton(cardId) {
 
 function getDimColor(key) {
   const dim = DIMENSIONS.find(d => d.key === key);
-  return dim ? dim.color : '#8b5cf6';
+  return dim ? dim.color : '#14b8a6';
 }
 
 function render(scores, previousScores) {
@@ -159,13 +159,13 @@ function renderFocusCards(focusAnnotations) {
     return `
       <div class="essay-rec-card focus-card" data-dim="focus" data-card-id="${cardId}" data-evidence="${evidence.replace(/"/g, '&quot;')}"
            onclick="window.toggleRecommendation(this)"
-           style="--rec-color: #fbbf24;">
+           style="--rec-color: #f59e0b;">
         <div class="rec-header">
           <span class="rec-label">Focus</span>
           <span class="rec-badge">${ann.commentType || 'socratic'}</span>
           ${resolveButton(cardId)}
         </div>
-        <div class="rec-evidence" style="border-color: #fbbf24;">
+        <div class="rec-evidence" style="border-color: #f59e0b;">
           "${evidenceShort}"
         </div>
         <div class="rec-feedback">${feedback}</div>

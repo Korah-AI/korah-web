@@ -58,7 +58,7 @@ function render(annotations) {
     list.innerHTML = `
       <div class="essay-annotation-empty">
         <span class="material-icons-round" style="font-size: 1.5rem; color: var(--tx3);">check_circle_outline</span>
-        <p style="color: var(--tx3); font-size: 0.8125rem; margin: 0;">No issues found. Great work!</p>
+        <p style="color: var(--tx3); font-size: 0.8125rem; margin: 0;">No issues found.</p>
       </div>`;
     return;
   }

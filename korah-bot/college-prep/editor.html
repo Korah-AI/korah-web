@@ -70,8 +70,8 @@
   /* Scoped to body, not the root: the <html> tag carries x-cloak too, and a
      global rule would blank the page if Alpine ever failed to boot. */
   body [x-cloak] { display: none !important; }
-  .feed-scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; position: relative; z-index: 1; }
-  .feed-page { padding: 1.75rem 2.25rem 3.75rem; max-width: 77.5rem; margin: 0 auto; }
+  .feed-scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; position: relative; z-index: 1; padding: 1.75rem clamp(1.25rem, 7vw, 7rem) 3.75rem; }
+  .feed-page { max-width: 74rem; margin: 0 auto; }
 </style>
 <script type="importmap">
 {
@@ -93,7 +93,7 @@
 </head>
 <body class="korah-grey cp-grey">
 
-<canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
+<canvas id="bg-canvas" class="fixed inset-0 -z-10 pointer-events-none"></canvas>
 <script>
   /* The starfield/shooting stars live in sidebar.js. korahReady only fires once
      the Firestore bootstrap below resolves, and never at all for a signed-out
@@ -123,7 +123,7 @@
     </button>
     <div class="chat-title-area">
       <div class="korah-status-dot"></div>
-      <span class="font-semibold tx text-sm" x-text="screen === 'setup' ? 'New Essay' : 'Essay Editor'">New Essay</span>
+      <span class="font-semibold tx text-sm" x-text="screen === 'setup' ? 'New essay' : 'Essay editor'">New essay</span>
     </div>
     <div class="topbar-actions" x-show="screen === 'editor'">
       <button class="essay-topbar-btn" onclick="window.location.href='index.html'" title="Back to essays">
@@ -137,14 +137,14 @@
   <div class="feed-scroll" x-show="screen === 'setup'">
     <div class="feed-page">
       <div class="essay-setup-card">
-        <h2 class="essay-setup-title">Start a New Essay</h2>
+        <h2 class="essay-setup-title">Start a new essay</h2>
         <p class="essay-setup-sub">Choose your essay type and provide details for tailored feedback.</p>
 
         <!-- Essay Type -->
         <div class="essay-setup-field">
-          <label class="essay-setup-label">Essay Type</label>
+          <label class="essay-setup-label">Essay type</label>
           <div class="essay-type-switch">
-            <button class="type-pill" :class="{ active: essayType === 'personal_statement' }" @click="essayType = 'personal_statement'">Personal Statement</button>
+            <button class="type-pill" :class="{ active: essayType === 'personal_statement' }" @click="essayType = 'personal_statement'">Personal statement</button>
             <button class="type-pill" :class="{ active: essayType === 'supplemental' }" @click="essayType = 'supplemental'">Supplemental</button>
           </div>
         </div>
@@ -152,7 +152,7 @@
         <!-- Supplemental-only fields -->
         <div x-show="essayType === 'supplemental'" x-cloak>
           <div class="essay-setup-field">
-            <label class="essay-setup-label">Target School</label>
+            <label class="essay-setup-label">Target school</label>
             <select class="essay-setup-select" x-model="school">
               <option value="">Select a school...</option>
               <template x-for="s in schoolList" :key="s.key">
@@ -172,7 +172,7 @@
         <!-- Personal Statement-only fields -->
         <div x-show="essayType === 'personal_statement'" x-cloak>
           <div class="essay-setup-field">
-            <label class="essay-setup-label">Application Website</label>
+            <label class="essay-setup-label">Application website</label>
             <select class="essay-setup-select" x-model="applicationWebsite" @change="applicationPrompt = ''">
               <option value="common_app">Common App</option>
               <option value="questbridge">QuestBridge</option>
@@ -212,7 +212,7 @@
 
         <!-- Word Limit -->
         <div class="essay-setup-field">
-          <label class="essay-setup-label">Word Limit</label>
+          <label class="essay-setup-label">Word limit</label>
           <template x-if="isCommonApp()">
             <div class="essay-fixed-limit"><span x-text="commonAppLimit"></span> words, set by Common App</div>
           </template>
@@ -223,7 +223,7 @@
 
         <!-- Essay Content -->
         <div class="essay-setup-field">
-          <label class="essay-setup-label">Your Essay</label>
+          <label class="essay-setup-label">Your essay</label>
           <textarea id="essay-input" class="essay-setup-textarea essay-textarea-large" placeholder="Write or paste your essay here..." rows="12"></textarea>
           <div class="essay-word-count">
             <span id="essay-word-count">0</span> / <span x-text="wordLimit">650</span> words
@@ -232,14 +232,16 @@
 
         <!-- Focus Note -->
         <div class="essay-setup-field">
-          <label class="essay-setup-label">Focus Note <span style="color: var(--tx3); font-weight: 400;">(optional)</span></label>
+          <label class="essay-setup-label">Focus note <span style="color: var(--tx3); font-weight: 400;">(optional)</span></label>
           <textarea class="essay-setup-textarea" x-model="focusNote" placeholder="Anything specific you want feedback on? e.g. 'I feel like I spend too long on X instead of Y'" rows="2"></textarea>
         </div>
 
         <!-- Analyze Button -->
         <button class="essay-analyze-btn" onclick="startAnalysis()">
-          <span class="material-icons-round" style="font-size: 1.125rem;">auto_awesome</span>
-          Analyze Essay
+          <!-- Replaced by rate_review: the auto_awesome sparkle was removed. -->
+          <!-- <span class="material-icons-round" style="font-size: 1.125rem;">auto_awesome</span> -->
+          <span class="material-icons-round" style="font-size: 1.125rem;">rate_review</span>
+          Analyze essay
         </button>
       </div>
     </div>
@@ -261,7 +263,7 @@
         </div>
         <template x-if="promptMeta()">
           <div class="essay-prompt-card">
-            <div class="essay-prompt-card-title" x-text="'Common App Prompt ' + promptMeta().n"></div>
+            <div class="essay-prompt-card-title" x-text="'Common App prompt ' + promptMeta().n"></div>
             <p class="essay-prompt-card-text" x-text="promptMeta().text"></p>
           </div>
         </template>
@@ -394,7 +396,9 @@
      the body so a re-render of the essay never takes it down mid-question. -->
 <div id="ask-pop" class="cp-ask-pop" hidden>
   <button id="ask-pop-trigger" class="cp-ask-trigger t-btn" type="button">
-    <span class="material-icons-round" style="font-size: 1rem;">auto_awesome</span>
+    <!-- Replaced by chat_bubble_outline: the auto_awesome sparkle was removed. -->
+    <!-- <span class="material-icons-round" style="font-size: 1rem;">auto_awesome</span> -->
+    <span class="material-icons-round" style="font-size: 1rem;">chat_bubble_outline</span>
     <span>Ask for feedback on this</span>
   </button>
   <form id="ask-pop-form" class="cp-ask-form" hidden>
