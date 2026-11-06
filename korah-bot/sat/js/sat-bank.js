@@ -283,8 +283,13 @@
       </svg>`,
   };
 
+  // Corner icons that replaced SECTION_ART on the tiles. SECTION_ART is kept
+  // above but no longer rendered.
+  const SECTION_ICON = { english: "menu_book", math: "calculate" };
+
   // ── Landing tiles: one per section, opening its topic modal ──
   function renderEntries() {
+    entryCards.classList.add("sat-entry-grid--tiles");
     entryCards.innerHTML = OPENSAT_CATALOG.sections
       .map((section) => {
         const total = section.domains.reduce((sum, d) => sum + countDomain(d.code), 0);
@@ -307,12 +312,12 @@
 
         return `
           <button class="sat-entry-card is-${section.key}" type="button" data-open-section="${section.key}">
-            ${SECTION_ART[section.key] || ""}
+            <span class="sat-entry-watermark material-icons-round" aria-hidden="true">${SECTION_ICON[section.key] || "quiz"}</span>
             <span class="sat-entry-name">${section.label}</span>
             <span class="sat-entry-meta">${meta}</span>
             ${track}
             <span class="sat-entry-open">
-              Open
+              Choose topics
               <svg class="sat-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
             </span>
           </button>

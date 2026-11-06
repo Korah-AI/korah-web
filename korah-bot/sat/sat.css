@@ -4707,6 +4707,65 @@ html[data-theme="light"] .sat-grey {
     pointer-events: none;
 }
 
+/* ── Section tiles, flat filled style ──
+   Scoped by .sat-entry-grid--tiles (added in sat-bank.js renderEntries) because
+   ap/mcqs.html also uses the .sat-entry-* classes above with its own styling. */
+.sat-entry-grid--tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+@media (max-width: 40rem) {
+    .sat-entry-grid--tiles { grid-template-columns: 1fr; }
+}
+.sat-entry-grid--tiles .sat-entry-card {
+    --acc-fill: #3b82f6;
+    gap: 0.5rem;
+    min-height: 9rem;
+    padding: 1.25rem;
+    border-radius: 1rem;
+    border: 0.0625rem solid var(--acc-fill);
+    background: var(--acc-fill);
+    box-shadow: none;
+    color: #fff;
+    transition: transform .18s cubic-bezier(.23, 1, .32, 1), box-shadow .18s cubic-bezier(.23, 1, .32, 1);
+}
+.sat-entry-grid--tiles .sat-entry-card.is-english { --acc-fill: #ec4899; }
+.sat-entry-grid--tiles .sat-entry-card.is-math { --acc-fill: #3b82f6; }
+.sat-entry-grid--tiles .sat-entry-card:hover {
+    transform: scale(1.02);
+    box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.45);
+}
+html[data-theme="light"] .sat-entry-grid--tiles .sat-entry-card:hover { box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.12); }
+.sat-entry-grid--tiles .sat-entry-card:active { transform: scale(0.98); }
+.sat-entry-grid--tiles .sat-entry-card:focus-visible { outline: 0.125rem solid var(--tx); outline-offset: 0.125rem; }
+.sat-entry-grid--tiles .sat-entry-card > :not(.sat-entry-watermark) { position: relative; z-index: 1; }
+.sat-entry-grid--tiles .sat-entry-watermark {
+    position: absolute;
+    right: 0.5rem;
+    bottom: 0.25rem;
+    z-index: 0;
+    font-size: 5.5rem;
+    line-height: 1;
+    color: rgba(255, 255, 255, 0.25);
+    pointer-events: none;
+}
+.sat-entry-grid--tiles .sat-entry-name {
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+.sat-entry-grid--tiles .sat-entry-meta { font-weight: 600; color: #fff; }
+.sat-entry-grid--tiles .sat-entry-open {
+    height: 2.25rem;
+    padding: 0 0.875rem;
+    border-radius: 0.5rem;
+    background: #fff;
+    color: var(--acc-fill);
+    font-size: 0.8125rem;
+    font-weight: 600;
+}
+.sat-entry-grid--tiles .sat-entry-card:hover .sat-entry-open { transform: scale(1.05); }
+
 /* ── Stats strip ── */
 .sat-stats-head {
     display: flex;
