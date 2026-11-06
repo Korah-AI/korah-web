@@ -11,12 +11,13 @@
 
 :root {
   /* resting surfaces — solid grey */
-  --v-sf:  #26262e;   /* card / input / panel fill        */
-  --v-sf2: #31313c;   /* ghost buttons, chips, hover fill */
-  --v-sf3: #3c3c48;   /* one step lighter (muted notices) */
+  /* ui-redesign: neutral set from docs/UI-DESIGN-SYSTEM.md, same as home.html */
+  --v-sf:  #121212;   /* card / input / panel fill        */ /* was #26262e */
+  --v-sf2: #1a1a1a;   /* ghost buttons, chips, hover fill */ /* was #31313c */
+  --v-sf3: #242424;   /* one step lighter (hover, muted)  */ /* was #3c3c48 */
   --v-sf4: #c3c7d2;   /* very light grey — the +/✓ buttons  */
   --v-sf4-ink: #1b1b22;
-  --v-bd:  #454553;   /* borders                          */
+  --v-bd:  #242424;   /* borders                          */ /* was #454553 */
 
   /* text — nothing dim enough to vanish against grey */
   --v-tx2: var(--tx);
@@ -37,12 +38,12 @@
 }
 
 html[data-theme="light"] {
-  --v-sf:  #eceef2;
-  --v-sf2: #e0e3ea;
-  --v-sf3: #d4d8e1;
+  --v-sf:  #ffffff; /* was #eceef2 */
+  --v-sf2: #f4f4f5; /* was #e0e3ea */
+  --v-sf3: #e4e4e7; /* was #d4d8e1 */
   --v-sf4: #f6f7fa;
   --v-sf4-ink: #1a0a3c;
-  --v-bd:  #c3c8d2;
+  --v-bd:  #e4e4e7; /* was #c3c8d2 */
   --v-tx2: var(--tx);
   --v-tx3: #5b6272;
 
@@ -226,12 +227,12 @@ html[data-theme="light"] * { scrollbar-color: rgba(28, 30, 38, 0.35) transparent
   background: var(--v-sf);
   border: 1px solid var(--v-bd);
   backface-visibility: hidden;
-  box-shadow: 0 0.35rem 0 0 var(--v-bd);
+  /* box-shadow: 0 0.35rem 0 0 var(--v-bd); was a 3D bottom edge */
 }
 .vocab-flip-back { transform: rotateY(180deg); }
 .vocab-flip.is-added .vocab-flip-face {
   border-color: var(--v-green-fill);
-  box-shadow: 0 0.35rem 0 0 var(--v-green-fill);
+  /* box-shadow: 0 0.35rem 0 0 var(--v-green-fill); was a 3D bottom edge */
 }
 .vocab-flip-word {
   font-size: clamp(2rem, 6vw, 2.9rem);
@@ -362,12 +363,12 @@ html[data-theme="light"] * { scrollbar-color: rgba(28, 30, 38, 0.35) transparent
   to   { transform: translateX(42%) rotate(9deg); opacity: 0; }
 }
 @keyframes vocabGlowRed {
-  0%   { border-color: var(--v-bd); box-shadow: 0 0.35rem 0 0 var(--v-bd); }
+  0%   { border-color: var(--v-bd); box-shadow: 0 0 0 0 transparent; } /* was 0 0.35rem 0 0 var(--v-bd) */
   35%  { border-color: var(--v-red); box-shadow: 0 0 0 0.12rem var(--v-red), 0 0 2.5rem 0.35rem rgba(239, 68, 68, 0.55); }
   100% { border-color: var(--v-red); box-shadow: 0 0 0 0.12rem var(--v-red), 0 0 1rem 0 rgba(239, 68, 68, 0); }
 }
 @keyframes vocabGlowGreen {
-  0%   { border-color: var(--v-bd); box-shadow: 0 0.35rem 0 0 var(--v-bd); }
+  0%   { border-color: var(--v-bd); box-shadow: 0 0 0 0 transparent; } /* was 0 0.35rem 0 0 var(--v-bd) */
   35%  { border-color: var(--v-green); box-shadow: 0 0 0 0.12rem var(--v-green), 0 0 2.5rem 0.35rem rgba(34, 197, 94, 0.55); }
   100% { border-color: var(--v-green); box-shadow: 0 0 0 0.12rem var(--v-green), 0 0 1rem 0 rgba(34, 197, 94, 0); }
 }
@@ -641,7 +642,7 @@ html[data-theme="light"] * { scrollbar-color: rgba(28, 30, 38, 0.35) transparent
 .vocab-progress-mnum { color: #fff; font-weight: 800; }
 /* "Not practiced" is the absence of a level, so it stays neutral grey. */
 .vocab-progress-mchip.is-muted {
-  background: var(--v-sf3);
+  background: var(--v-sf2); /* was var(--v-sf3) */
   border-color: var(--v-bd);
 }
 .vocab-progress-mchip.is-muted .vocab-progress-mdot { background: var(--v-tx3); }
@@ -675,7 +676,7 @@ html[data-theme="light"] * { scrollbar-color: rgba(28, 30, 38, 0.35) transparent
   flex: 1;
   padding: 0.6rem 0.7rem;
   border-radius: 0.7rem;
-  background: var(--v-sf3);
+  background: var(--v-sf2); /* was var(--v-sf3) */
   border: 1px solid var(--v-bd);
   text-decoration: none;
   cursor: pointer;
@@ -872,10 +873,14 @@ html[data-theme="light"] * { scrollbar-color: rgba(28, 30, 38, 0.35) transparent
   gap: 0.6rem;
 }
 .vocab-word-card:hover:not(.is-added) {
-  transform: scale(1.02);
+  transform: scale(1.01); /* was 1.02 */
   border-color: var(--acc);
   background: var(--v-sf2);
+  box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.45);
 }
+html[data-theme="light"] .vocab-word-card:hover:not(.is-added),
+html[data-theme="light"] .vocab-result-row:hover:not(.is-added),
+html[data-theme="light"] .vocab-browse-row:hover:not(.is-added) { box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.12); }
 .vocab-word-card-top {
   display: flex;
   align-items: flex-start;
@@ -1025,6 +1030,7 @@ html[data-theme="light"] * { scrollbar-color: rgba(28, 30, 38, 0.35) transparent
   transform: scale(1.01);
   border-color: var(--acc);
   background: var(--v-sf2);
+  box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.45);
 }
 .vocab-result-main { min-width: 0; }
 .vocab-result-label {
@@ -1656,7 +1662,7 @@ html[data-theme="light"] * { scrollbar-color: rgba(28, 30, 38, 0.35) transparent
   color: var(--acc);
 }
 .vocab-quiz-flip.tone-green .vocab-flip-face,
-.vocab-quiz-flip.tone-red .vocab-flip-face { border-color: var(--acc); box-shadow: 0 0.35rem 0 0 var(--acc); }
+.vocab-quiz-flip.tone-red .vocab-flip-face { border-color: var(--acc); /* box-shadow: 0 0.35rem 0 0 var(--acc); was a 3D bottom edge */ }
 .vocab-quiz-flip .vocab-flip-def { font-size: clamp(1rem, 2.4vw, 1.25rem); }
 
 /* ── Quiz nav ──────────────────────────────────────── */

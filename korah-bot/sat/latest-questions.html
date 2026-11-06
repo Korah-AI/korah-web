@@ -47,6 +47,186 @@
   html[data-theme="light"]:not(.korah-page-ready) { background: #d2d2d2 !important; }
   html:not(.korah-page-ready) body { opacity: 0 !important; }
 </style>
+<style>
+  /* ── Section modal + selection pill: flat house style ─────────────────────
+     sat.css (shared with ap/home.html, ap/mcqs.html, latest-questions.html)
+     paints these with the grey --sat-card-* set, 3D bottom edges, pills,
+     gradients and a slide-in. Overrides live here so those pages are
+     untouched. Class selectors repeat sat.css's own (.sat-grey ...) so its
+     open / active / set variants keep their precedence; IDs are used only for
+     the backdrop and the panel. Purple is gone: --acc defaults to blue. */
+  #sectionModal {
+    --acc: #3b82f6;
+    --tx-blue: #60a5fa;
+    --tx-pink: #f472b6;
+    background: rgba(0, 0, 0, .6);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  html[data-theme="light"] #sectionModal { --tx-blue: #1d4ed8; --tx-pink: #be185d; background: rgba(0, 0, 0, .6); }
+  #sectionModal .sat-modal-panel {
+    background: var(--sf);
+    border: 0.0625rem solid var(--bd);
+    border-radius: 1rem;
+    box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, .45);
+    animation: satPanelIn .18s cubic-bezier(.23, 1, .32, 1) both;
+  }
+  html[data-theme="light"] #sectionModal .sat-modal-panel { box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, .12); }
+  /* Closing must keep animating #sectionModal itself: sat-bank.js waits for its animationend. */
+  #sectionModal.is-closing .sat-modal-panel { animation: satModalPanelOut .16s ease-in both; }
+  @keyframes satPanelIn { from { opacity: 0; transform: scale(.97); } to { opacity: 1; transform: none; } }
+  @keyframes satMenuScaleIn { from { opacity: 0; transform: scale(.97); } to { opacity: 1; transform: none; } }
+  @keyframes satFadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes satPillScaleIn {
+    from { opacity: 0; transform: translateX(-50%) scale(.97); }
+    to { opacity: 1; transform: translateX(-50%); }
+  }
+
+  /* Header */
+  #sectionModal .sat-modal-back { border-radius: 0.5rem; }
+  #sectionModal .sat-modal-back:hover { transform: scale(1.03); background: var(--cu); }
+  #sectionModal .sat-modal-close {
+    border-radius: 0.5rem;
+    border: 0.0625rem solid var(--bd);
+    background: transparent;
+  }
+  #sectionModal .sat-modal-close:hover { transform: scale(1.05); background: var(--cu); }
+  #sectionModal .sat-modal-title { font-weight: 700; letter-spacing: -0.02em; }
+
+  /* Controls: flat --sf2 buttons, tone fill + white text once set */
+  .sat-grey .sat-filters-toggle,
+  .sat-grey .sat-filter-btn,
+  .sat-grey .sat-limit-input {
+    background: var(--sf2);
+    border-color: var(--bd);
+    border-radius: 0.5rem;
+    box-shadow: none;
+  }
+  .sat-grey .sat-filters-toggle:hover,
+  .sat-grey .sat-filter-btn:hover,
+  .sat-grey .sat-filters-toggle:active,
+  .sat-grey .sat-filter-btn:active {
+    box-shadow: none;
+  }
+  .sat-grey .sat-filter-btn.is-active,
+  .sat-grey .sat-filters-toggle.is-set,
+  .sat-grey .sat-filter-dd.is-open .sat-filter-btn.is-active {
+    box-shadow: none;
+  }
+  #sectionModal .sat-filters-toggle:not(.is-set) > .sat-ico:first-child,
+  #sectionModal .sat-filter-btn:not(.is-active) > .sat-ico:first-child { color: var(--acc); }
+  .sat-grey .sat-filter-dd[data-filter="questionset"] { --acc: #f97316; }
+  .sat-grey .sat-limit-input:focus {
+    border-color: var(--acc);
+    box-shadow: 0 0 0 0.1875rem color-mix(in srgb, var(--acc) 22%, transparent);
+  }
+  /* Menus: flat --sf card, scale in from .97, no slide */
+  .sat-grey .sat-filter-menu,
+  .sat-grey .sat-limit-menu {
+    background: var(--sf);
+    border-color: var(--bd);
+    border-radius: 0.75rem;
+  }
+  .sat-grey .sat-filter-dd.is-open .sat-filter-menu,
+  .sat-grey .sat-limit-dd.is-open .sat-limit-menu { animation: satMenuScaleIn .16s cubic-bezier(.23, 1, .32, 1) both; }
+  .sat-grey .sat-filter-option:hover { background: var(--cu); }
+  #sectionModal .sat-filter-note { font-size: 0.75rem; letter-spacing: normal; text-transform: none; }
+  .sat-filter-row.is-entering { animation: satFadeIn .18s ease both; }
+
+  /* Practice all */
+  #sectionModal .sat-practice-all {
+    background: var(--sf);
+    border: 0.0625rem solid var(--bd);
+    border-radius: 1rem;
+  }
+  #sectionModal .sat-practice-all-title { font-weight: 700; }
+  #sectionModal .sat-practice-all-btn {
+    --acc: #22c55e;
+    border-radius: 0.5rem;
+    box-shadow: none;
+    font-weight: 700;
+    transition: transform .18s cubic-bezier(.23, 1, .32, 1), filter .18s ease;
+  }
+  #sectionModal .sat-practice-all-btn:hover { transform: scale(1.03); filter: brightness(1.12); }
+  #sectionModal .sat-practice-all-btn:active { transform: scale(.98); box-shadow: none; }
+
+  /* Topic list */
+  #sectionModal .sat-section-card.is-english { --ck: #ec4899; --ck-tx: var(--tx-pink); --ck-fill: #ec4899; }
+  #sectionModal .sat-section-card.is-math { --ck: #3b82f6; --ck-tx: var(--tx-blue); --ck-fill: #3b82f6; }
+  #sectionModal .sat-topic-columns {
+    background: var(--sf2);
+    border-top-color: var(--bd);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: normal;
+    text-transform: none;
+  }
+  #sectionModal .sat-domain-group { border-top-color: var(--bd); }
+  #sectionModal .sat-domain-name { color: var(--ck-tx, var(--tx-blue)); font-weight: 700; }
+  #sectionModal .sat-domain-row:hover .sat-domain-heading,
+  #sectionModal .sat-topic-row:hover .sat-topic-heading { transform: none; }
+  #sectionModal .sat-progress-track { background: color-mix(in srgb, var(--tx) 14%, var(--sf)); }
+  #sectionModal .sat-progress-fill,
+  #sectionModal .sat-section-card.is-english .sat-progress-fill { background: var(--ck-fill, #3b82f6); }
+  #sectionModal .sat-acc-dot.is-good,
+  #sectionModal .sat-acc-dot.is-mid,
+  #sectionModal .sat-acc-dot.is-low { box-shadow: none; }
+  /* Checkbox: tone fill with a white tick */
+  .sat-grey .sat-check { border-color: color-mix(in srgb, var(--tx) 45%, transparent); }
+  .sat-grey .sat-check:hover {
+    border-color: var(--ck, #3b82f6);
+    background: color-mix(in srgb, var(--ck, #3b82f6) 18%, transparent);
+    box-shadow: none;
+  }
+  .sat-grey .sat-check.is-active {
+    background: var(--ck, #3b82f6);
+    border-color: var(--ck, #3b82f6);
+    box-shadow: none;
+  }
+  .sat-grey .sat-check.is-active::after { border-right-color: #fff; border-bottom-color: #fff; }
+
+  /* Bottom selection bar */
+  .sat-grey .sat-selection-pill {
+    background: var(--sf);
+    border-color: var(--bd);
+    border-radius: 1rem;
+    animation: satPillScaleIn .18s cubic-bezier(.23, 1, .32, 1) both;
+  }
+  html[data-theme="light"] .sat-grey .sat-selection-pill { box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, .12); }
+  .sat-grey .sat-pill-btn { border-radius: 0.5rem; }
+  .sat-grey .sat-pill-randomize:hover { background: var(--cu); }
+  .sat-grey .sat-pill-start { background: #3b82f6; color: #fff; }
+  .sat-grey .sat-pill-start:hover { filter: brightness(1.12); }
+
+  /* ── Neutral cards: the same black surfaces as home.html ──────────────────
+     sat.css paints cards from the grey --sat-card-* / --sat-panel-* tokens
+     (also used by the AP pages and the players), so they are repointed here
+     at the app surfaces instead of editing it. html[data-theme] raises the
+     specificity above sat.css's light-theme token block. Tone-filled cards
+     (.is-tinted stats, the section tiles) are not touched. */
+  html[data-theme] body.sat-grey {
+    --sat-card-sf: var(--sf);
+    --sat-card-sf2: var(--sf2);
+    --sat-card-bd: var(--bd);
+    --sat-panel-sf: var(--sf);
+    --sat-panel-sf2: var(--sf2);
+    --sat-panel-bd: var(--bd);
+  }
+  .sat-grey .sat-trend-panel,
+  .sat-grey .sat-panel { border-radius: 1rem; }
+  .sat-grey .sat-stat-card:not(.is-tinted) {
+    transition: transform .18s cubic-bezier(.23, 1, .32, 1), box-shadow .18s cubic-bezier(.23, 1, .32, 1), border-color .15s ease;
+  }
+  .sat-grey .sat-stat-card:not(.is-tinted):hover {
+    transform: scale(1.01);
+    border-color: var(--bd);
+    box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, .45);
+  }
+  html[data-theme="light"] .sat-grey .sat-stat-card:not(.is-tinted):hover { box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, .12); }
+  /* Tracks sit on --sf2, not the border colour */
+  .sat-grey .sat-meter-track,
+  .sat-grey .sat-progress-track { background: var(--sf2); }
+</style>
 
 <script>
   (function() {

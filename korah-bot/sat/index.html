@@ -201,6 +201,35 @@
   .sat-grey .sat-pill-randomize:hover { background: var(--cu); }
   .sat-grey .sat-pill-start { background: #3b82f6; color: #fff; }
   .sat-grey .sat-pill-start:hover { filter: brightness(1.12); }
+
+  /* ── Neutral cards: the same black surfaces as home.html ──────────────────
+     sat.css paints cards from the grey --sat-card-* / --sat-panel-* tokens
+     (also used by the AP pages and the players), so they are repointed here
+     at the app surfaces instead of editing it. html[data-theme] raises the
+     specificity above sat.css's light-theme token block. Tone-filled cards
+     (.is-tinted stats, the section tiles) are not touched. */
+  html[data-theme] body.sat-grey {
+    --sat-card-sf: var(--sf);
+    --sat-card-sf2: var(--sf2);
+    --sat-card-bd: var(--bd);
+    --sat-panel-sf: var(--sf);
+    --sat-panel-sf2: var(--sf2);
+    --sat-panel-bd: var(--bd);
+  }
+  .sat-grey .sat-trend-panel,
+  .sat-grey .sat-panel { border-radius: 1rem; }
+  .sat-grey .sat-stat-card:not(.is-tinted) {
+    transition: transform .18s cubic-bezier(.23, 1, .32, 1), box-shadow .18s cubic-bezier(.23, 1, .32, 1), border-color .15s ease;
+  }
+  .sat-grey .sat-stat-card:not(.is-tinted):hover {
+    transform: scale(1.01);
+    border-color: var(--bd);
+    box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, .45);
+  }
+  html[data-theme="light"] .sat-grey .sat-stat-card:not(.is-tinted):hover { box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, .12); }
+  /* Tracks sit on --sf2, not the border colour */
+  .sat-grey .sat-meter-track,
+  .sat-grey .sat-progress-track { background: var(--sf2); }
 </style>
 
 <script>

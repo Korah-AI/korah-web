@@ -1,9 +1,8 @@
 /* ══ Tailored Practice — grey color blocking ═══════════════════════════════
    Same system as the Study Plan wizard and the Question Bank
    (docs/WIZARD-UI-PATTERNS.md), applied to a single-page layout rather than a
-   step shell. Resting surfaces are neutral grey — the app's --sf/--sf2/--bd
-   are purple-tinted and translucent, so a card painted with them reads as
-   "the same color as the background". Color appears only to mark identity
+   step shell. Resting surfaces are the app's flat neutral --sf/--sf2/--bd
+   (the same black cards as home.html). Color appears only to mark identity
    (section) or state (difficulty), through a .tone-* class that sets --acc.
 
    Everything is scoped to .tailored-grey (set on the page's scroll container)
@@ -11,9 +10,9 @@
 
 .tailored-grey {
   /* Resting surfaces */
-  --t-sf: #26262e;   /* cards, panels, list rows */
-  --t-sf2: #31313c;  /* chips, ghost buttons, inset rows */
-  --t-bd: #454553;   /* borders */
+  --t-sf: var(--sf);   /* cards, panels, list rows */
+  --t-sf2: var(--sf2); /* chips, ghost buttons, inset rows */
+  --t-bd: var(--bd);   /* borders */
 
   /* Tones */
   --tone-red: #ef4444;
@@ -28,7 +27,7 @@
   --acc-fill: #3472d9;
 
   /* Flat neutral fill for badges that carry no state or identity. */
-  --t-fill-muted: #55555f;
+  --t-fill-muted: #52525b;
 
   /* Scrollbars: white on the dark page, a neutral grey when it is light. */
   --t-scroll: rgba(255, 255, 255, 0.6);
@@ -49,14 +48,11 @@
   --t-rank: 1.75rem;
   --t-indent: 2.5rem;
 
-  --t-radius: 0.625rem;
+  --t-radius: 1rem;
   --t-radius-sm: 0.5rem;
 }
 
 html[data-theme="light"] .tailored-grey {
-  --t-sf: #eceef2;
-  --t-sf2: #e0e3ea;
-  --t-bd: #c3c8d2;
   --t-fill-muted: #6b7180;
   --t-scroll: rgba(70, 76, 90, 0.55);
 }
@@ -214,16 +210,20 @@ html[data-theme="light"] .tailored-grey {
 .tailored-limited-row {
   padding: 1rem;
   background: var(--t-sf);
-  border: 0.125rem solid var(--acc);
+  border: 0.0625rem solid var(--t-bd);
   border-radius: var(--t-radius);
-  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+  transition: transform 0.18s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.18s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .tailored-priority-card:hover,
 .tailored-limited-row:hover {
   transform: scale(1.01);
-  border-color: var(--acc);
-  box-shadow: 0 0.35rem 1.1rem color-mix(in srgb, var(--acc) 22%, transparent);
+  box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.45);
+}
+
+html[data-theme="light"] .tailored-priority-card:hover,
+html[data-theme="light"] .tailored-limited-row:hover {
+  box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.12);
 }
 
 .tailored-card-top {
@@ -381,7 +381,7 @@ html[data-theme="light"] .tailored-grey {
   padding: 0.375rem;
   background: var(--t-sf);
   border: 0.0625rem solid var(--t-bd);
-  border-radius: var(--t-radius);
+  border-radius: 0.75rem;
   box-shadow: 0 0.75rem 1.75rem rgba(0, 0, 0, 0.4);
   opacity: 0;
   visibility: hidden;
