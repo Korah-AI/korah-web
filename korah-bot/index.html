@@ -2918,36 +2918,14 @@ window.addEventListener('load', function() {
 </script>
 
 <!-- Question bank drop toast -->
+<link rel="stylesheet" href="app/toast.css"/>
 <style>
+  /* Look comes from app/toast.css (.k-toast); only placement lives here. */
   #qb-drop-toast {
     position: fixed; left: 1.25rem; bottom: 1.25rem; z-index: 9999;
-    display: none; align-items: center; gap: 0.875rem;
-    max-width: 22.5rem; padding: 0.875rem 2.25rem 0.875rem 0.875rem;
-    border-radius: 1rem; border: 0.0625rem solid #85858a;
-    /* Solid, not glass. Shared toast grey, same surface as .fix-toast in
-       sat/questions.html; the text stays white in both themes. */
-    background: #6e6e73;
-    box-shadow: 0 0.75rem 2rem rgba(0,0,0,.28), inset 0 0.0625rem 0 rgba(255,255,255,.22);
-    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
-    color: #fff; text-decoration: none; cursor: pointer;
-    opacity: 0; transform: translateY(0.75rem);
-    transition: opacity .35s ease, transform .35s cubic-bezier(0.22, 1, 0.36, 1);
+    display: none; width: 24rem; cursor: pointer;
   }
-  #qb-drop-toast.is-visible { opacity: 1; transform: translateY(0); }
-  #qb-drop-toast img { width: 2.5rem; height: 2.5rem; object-fit: contain; flex-shrink: 0; }
-  #qb-drop-toast .qb-drop-body { display: flex; flex-direction: column; gap: 0.1875rem; }
-  #qb-drop-toast .qb-drop-header { font-size: 0.9375rem; font-weight: 800; line-height: 1.25; color: #fff; letter-spacing: -0.01em; }
-  #qb-drop-toast .qb-drop-text { font-size: 0.875rem; font-weight: 600; line-height: 1.35; }
-  #qb-drop-toast .qb-drop-link { color: #e8e8ea; font-weight: 700; text-decoration: underline; }
-  #qb-drop-toast .qb-drop-close {
-    position: absolute; top: 0.5rem; right: 0.5rem;
-    width: 1.375rem; height: 1.375rem; display: flex; align-items: center; justify-content: center;
-    border: none; background: transparent; color: rgba(255,255,255,.7);
-    font-size: 1rem; line-height: 1; cursor: pointer; border-radius: 62.4375rem;
-    font-family: inherit;
-  }
-  #qb-drop-toast .qb-drop-close:hover { color: #fff; background: rgba(255,255,255,.14); }
-  @media (max-width: 30rem) { #qb-drop-toast { left: 0.75rem; right: 0.75rem; max-width: none; } }
+  @media (max-width: 30rem) { #qb-drop-toast { left: 0.75rem; right: 0.75rem; width: auto; max-width: none; } }
 </style>
 <!--
 <a id="qb-drop-toast" href="sat/latest-questions.html">
@@ -2957,6 +2935,7 @@ window.addEventListener('load', function() {
     <span class="qb-drop-text"><span class="qb-drop-link">Click here to study them now</span></span>
   </span>
 -->
+<!-- Replaced by the .k-toast markup below (app/toast.css).
 <a id="qb-drop-toast" href="code/interns.html">
   <img src="logo-images/newlogo12.png" alt="Korah"/>
   <span class="qb-drop-body">
@@ -2964,6 +2943,15 @@ window.addEventListener('load', function() {
     <span class="qb-drop-text"><span class="qb-drop-link">Click here to apply now!</span></span>
   </span>
   <button type="button" class="qb-drop-close" aria-label="Dismiss">&times;</button>
+</a>
+-->
+<a id="qb-drop-toast" class="k-toast k-toast--info" href="code/interns.html">
+  <img class="k-toast__logo" src="logo-images/newlogo12.png" alt="Korah"/>
+  <span class="k-toast__body qb-drop-body">
+    <span class="k-toast__title qb-drop-header">Korah CODE fall cohort open</span>
+    <span class="k-toast__desc qb-drop-text"><span class="k-toast__link qb-drop-link">Click here to apply now!</span></span>
+  </span>
+  <button type="button" class="k-toast__close qb-drop-close" aria-label="Dismiss"><span class="material-icons-round">close</span></button>
 </a>
 <script>
 (function () {

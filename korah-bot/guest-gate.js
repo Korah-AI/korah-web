@@ -116,58 +116,51 @@ function blockAndPrompt(e) {
 function buildToast() {
   if (toastEl) return;
 
+  // Shared toast styles. The module URL gives the site base, so this works at
+  // any depth and any server root.
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = new URL('app/toast.css', import.meta.url).href;
+  document.head.appendChild(link);
+
   const style = document.createElement('style');
   style.textContent = `
     /* Anchored bottom-right, not bottom-centre: this banner is permanent, and
        centred it would sit on top of the chat composer on chat/math-chat. */
     #guest-toast {
-      position: fixed; right: 1.5rem; bottom: 1.5rem; transform: translateY(1rem);
-      display: none; align-items: center; gap: 0.875rem; z-index: 9999;
-      max-width: 26rem; padding: 0.875rem 1rem; border-radius: 1rem;
-      /* Shared toast grey, same surface as .fix-toast in sat/questions.html. */
-      background: #6e6e73; border: 1px solid #85858a;
-      box-shadow: 0 1.25rem 2.5rem rgba(0,0,0,0.35);
-      opacity: 0; transition: opacity .3s ease, transform .3s ease;
-      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      position: fixed; right: 1.5rem; bottom: 1.5rem; z-index: 9999;
+      display: none; width: 24rem; max-width: calc(100vw - 3rem);
     }
-    #guest-toast.is-visible { opacity: 1; transform: translateY(0); }
     @keyframes gt-nudge {
-      0%,100% { transform: translateY(0); }
-      30%     { transform: translateY(-0.375rem); }
-      60%     { transform: translateY(-0.125rem); }
+      0%,100% { transform: scale(1); }
+      40%     { transform: scale(1.03); }
     }
-    #guest-toast.is-nudging { animation: gt-nudge .5s ease; }
-    #guest-toast img { height: 2.25rem; width: auto; flex-shrink: 0; }
-    #guest-toast .gt-body { display: flex; flex-direction: column; gap: 0.125rem; }
-    #guest-toast .gt-header { font-size: 0.875rem; font-weight: 700; color: #fff; }
-    #guest-toast .gt-text { font-size: 0.8125rem; color: #fff; }
-    #guest-toast .gt-cta {
-      flex-shrink: 0; padding: 0.5rem 0.9rem; border-radius: 999px; border: none;
-      background: var(--p4, #8b5cf6); color: #fff; font-size: 0.8125rem; font-weight: 600;
-      cursor: pointer; text-decoration: none; white-space: nowrap;
-    }
+    #guest-toast.is-nudging { animation: gt-nudge .3s cubic-bezier(.23, 1, .32, 1); }
     .guest-locked { opacity: 0.55; cursor: not-allowed !important; }
-    /* On phones it sits at the top — bottom would cover the chat input. */
+    /* On phones it sits at the top, bottom would cover the chat input. */
     @media (max-width: 30rem) {
       #guest-toast {
         left: 0.75rem; right: 0.75rem; bottom: auto; top: 0.75rem;
-        transform: translateY(-1rem); max-width: none;
+        width: auto; max-width: none;
       }
-      #guest-toast.is-visible { transform: translateY(0); }
     }
+    @media (prefers-reduced-motion: reduce) { #guest-toast.is-nudging { animation: none; } }
   `;
   document.head.appendChild(style);
 
   toastEl = document.createElement('div');
   toastEl.id = 'guest-toast';
+  toastEl.className = 'k-toast k-toast--info';
   toastEl.setAttribute('role', 'status');
+  /* Replaced: <img src="${basePath}logo-images/newlogo12.png" alt="Korah"/> and the
+     .gt-body/.gt-header/.gt-text/.gt-cta wrappers, now .k-toast parts. */
   toastEl.innerHTML = `
-    <img src="${basePath}logo-images/newlogo12.png" alt="Korah"/>
-    <span class="gt-body">
-      <span class="gt-header">You're not logged in</span>
-      <span class="gt-text">Create an account to continue for free!</span>
+    <img class="k-toast__logo" src="${basePath}logo-images/newlogo12.png" alt="Korah"/>
+    <span class="k-toast__body">
+      <span class="k-toast__title">You're not logged in</span>
+      <span class="k-toast__desc">Create an account to continue for free!</span>
     </span>
-    <a class="gt-cta" href="${basePath}login.html">Sign up</a>
+    <a class="k-toast__cta" href="${basePath}login.html">Sign up</a>
   `;
   document.body.appendChild(toastEl);
 }

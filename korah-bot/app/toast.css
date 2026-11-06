@@ -1,0 +1,168 @@
+/* Shared toast. Design source: the four stacked dark cards in the toast
+   reference (hairline border, 0.75rem radius, coloured status icon, bold title
+   over a muted description, muted close X at the top right).
+
+   Markup:
+     <div class="k-toast k-toast--info" role="status">
+       <span class="k-toast__icon material-icons-round" aria-hidden="true">info</span>
+       <div class="k-toast__body">
+         <div class="k-toast__title">Title</div>
+         <div class="k-toast__desc">Description</div>
+       </div>
+       <button class="k-toast__close" aria-label="Dismiss"><span class="material-icons-round">close</span></button>
+     </div>
+   Variants: --success (check_circle), --info (info), --warning (warning),
+   --error (error). A toast is hidden until JS adds .is-visible or .show, and
+   fades and scales in. Position (fixed, offsets, z-index) is set per toast. */
+
+.k-toast {
+  /* --ln-* is the landing page's neutral set (its --sf/--bd are the purple
+     app tokens); everywhere else --sf/--bd/--tx/--tx2 are already neutral. */
+  --kt-bg: var(--ln-sf, var(--sf, #121212));
+  --kt-bd: var(--ln-bd, var(--bd, #242424));
+  --kt-tx: var(--ln-tx, var(--tx, #fff));
+  --kt-tx2: var(--ln-tx2, var(--tx2, #8b8b8b));
+  --kt-fill: var(--ln-sf2, var(--sf2, #1a1a1a));
+  --kt-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.35);
+  --kt-tone: var(--kt-tx);
+
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.875rem;
+  max-width: 24rem;
+  padding: 1rem 1.125rem;
+  background: var(--kt-bg);
+  border: 0.0625rem solid var(--kt-bd);
+  border-radius: 0.75rem;
+  box-shadow: var(--kt-shadow);
+  color: var(--kt-tx);
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  text-decoration: none;
+  opacity: 0;
+  transform: scale(0.97);
+  pointer-events: none;
+  transition: opacity .18s cubic-bezier(.23, 1, .32, 1), transform .18s cubic-bezier(.23, 1, .32, 1);
+}
+.k-toast.is-visible,
+.k-toast.show {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+}
+
+html[data-theme="light"] .k-toast {
+  --kt-fill: var(--ln-sf2, var(--sf2, #f4f4f5));
+  --kt-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.12);
+}
+
+.k-toast--success { --kt-tone: #4ade80; }
+.k-toast--info    { --kt-tone: var(--kt-tx); }
+.k-toast--warning { --kt-tone: #fbbf24; }
+.k-toast--error   { --kt-tone: #f87171; }
+html[data-theme="light"] .k-toast--success { --kt-tone: #15803d; }
+html[data-theme="light"] .k-toast--warning { --kt-tone: #b45309; }
+html[data-theme="light"] .k-toast--error   { --kt-tone: #b91c1c; }
+
+.k-toast__icon {
+  flex-shrink: 0;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: var(--kt-tone);
+}
+/* Brand logo in place of the status icon (drop toasts, guest signup, fix notice). */
+.k-toast__logo {
+  flex-shrink: 0;
+  align-self: center;
+  width: auto;
+  height: 2.25rem;
+  object-fit: contain;
+}
+.k-toast__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1875rem;
+}
+.k-toast__title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.25rem;
+  color: var(--kt-tx);
+}
+.k-toast__desc {
+  font-size: 0.8125rem;
+  font-weight: 400;
+  line-height: 1.25rem;
+  color: var(--kt-tx2);
+}
+.k-toast__link,
+.k-toast__desc a {
+  color: var(--kt-tone);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.k-toast__close {
+  flex-shrink: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin: -0.125rem -0.25rem 0 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 0.375rem;
+  background: transparent;
+  color: var(--kt-tx2);
+  font-family: inherit;
+  cursor: pointer;
+  transition: color .15s ease, background .15s ease;
+}
+.k-toast__close .material-icons-round { font-size: 1.125rem; line-height: 1; }
+.k-toast__close:hover { color: var(--kt-tx); background: var(--kt-fill); }
+
+/* Call to action inside a toast (guest signup). Solid blue fill, white text. */
+.k-toast__cta {
+  flex-shrink: 0;
+  align-self: center;
+  padding: 0.5rem 0.875rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: #3b82f6;
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform .18s cubic-bezier(.23, 1, .32, 1);
+}
+.k-toast__cta:hover { transform: scale(1.03); }
+.k-toast__cta:active { transform: scale(0.97); }
+
+/* Placement of the chat pro tip and early development toasts: centred above
+   the composer. Centred with auto margins so transform stays free for the
+   scale-in. */
+.pro-tip-toast {
+  position: fixed;
+  bottom: 10rem;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: max-content;
+  max-width: min(24rem, calc(100vw - 2rem));
+  z-index: 1000;
+}
+@media (max-width: 48rem) {
+  .pro-tip-toast { left: 1rem; right: 1rem; width: auto; max-width: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .k-toast { transform: none; transition: opacity .01s linear; }
+  .k-toast.is-visible, .k-toast.show { transform: none; }
+  .k-toast__cta { transition: none; }
+}
