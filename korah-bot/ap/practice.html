@@ -50,16 +50,16 @@
 <style>
   /* Dark mode - white text outside question container (questions.html only) */
 html[data-theme="dark"] {
-    --bg: #06040f;
-    --sf: rgba(18, 12, 40, 0.7);
-    --sf2: rgba(30, 18, 60, 0.6);
-    --bd: rgba(139, 92, 246, 0.2);
+    --bg: #000;
+    --sf: #121212;
+    --sf2: #1a1a1a;
+    --bd: #242424;
     --tx: #ffffff;
     --tx2: #ffffff;
-    --tx3: #a89dc0;
-    --p4: #8b5cf6;
-    --p5: #a78bfa;
-    --glow: rgba(139, 92, 246, 0.15);
+    --tx3: #8b8b8b;
+    --p4: #3b82f6;
+    --p5: #60a5fa;
+    --glow: transparent;
 }
 
 /* Dark mode: override tx-p5/tx-p4 utility classes to show white instead of purple */
@@ -68,16 +68,16 @@ html[data-theme="dark"] .tx-p4 { color: rgba(255, 255, 255, 0.85) !important; }
 
 /* Light mode - black text outside question container (questions.html only) */
 html[data-theme="light"] {
-    --bg: #faf8ff;
-    --sf: rgba(255, 255, 255, 0.85);
-    --sf2: rgba(243, 239, 255, 0.9);
-    --bd: rgba(109, 40, 217, 0.18);
-    --tx: #000000;
-    --tx2: #000000;
-    --tx3: #9080aa;
-    --p4: #8b5cf6;
-    --p5: #7c3aed;
-    --glow: rgba(109, 40, 217, 0.15);
+    --bg: #fff;
+    --sf: #fff;
+    --sf2: #f4f4f5;
+    --bd: #e4e4e7;
+    --tx: #09090b;
+    --tx2: #09090b;
+    --tx3: #6c6c76;
+    --p4: #3b82f6;
+    --p5: #2563eb;
+    --glow: transparent;
 }
 
 </style>
@@ -104,12 +104,14 @@ html[data-theme="light"] {
      and sat-player-theme.css are untouched. Rules that fight a rule carrying
      !important (the light theme's footer, timer and question number) repeat it. */
   body.sat-player-grey {
-    --pl-page: #1a1a20;  /* page behind the panel  */
-    --pl-sf:   #26262e;  /* panels, cards, bubbles */
-    --pl-sf2:  #31313c;  /* inner controls, chips  */
-    --pl-sf3:  #43434f;  /* raised: Korah's reply  */
-    --pl-bd:   #454553;  /* borders + 3D shadow    */
-    --tone-purple: #8b5cf6; --tone-purple-fill: #6d28d9;
+    --pl-page: #000;     /* page behind the panel  */
+    --pl-sf:   #121212;  /* panels, cards, bubbles */
+    --pl-sf2:  #1a1a1a;  /* inner controls, chips  */
+    --pl-sf3:  #242424;  /* raised: Korah's reply  */
+    --pl-bd:   #242424;  /* hairline borders       */
+    /* ui-redesign: the old purple tone is now the blue primary. The variable
+       names stay so every rule below keeps working. */
+    --tone-purple: #3b82f6; --tone-purple-fill: #3b82f6;
     --tone-pink:   #f9a8d4; --tone-pink-fill:   #f472b6;
     --tone-green:  #22c55e; --tone-green-fill:  #15803d;
     --tone-red:    #ef4444; --tone-red-fill:    #b91c1c;
@@ -118,7 +120,7 @@ html[data-theme="light"] {
     --tone-teal:   #14b8a6; --tone-teal-fill:   #0f766e;
     /* Sky marks the choice you are on. It is the only color the answer list
        carries before grading, and it is a border, never a fill. */
-    --tone-sky:    #22b8e6; --tone-sky-fill:    #0ea5e9;
+    --tone-sky:    #3b82f6; --tone-sky-fill:    #3b82f6;
     --pl-card: var(--pl-sf);    /* answer cards, panes  */
     --pl-bar:  var(--pl-sf2);   /* question header bar  */
     --pl-line: var(--pl-bd);    /* card outlines        */
@@ -128,14 +130,16 @@ html[data-theme="light"] {
     background: var(--pl-page) !important;
   }
   html[data-theme="light"] body.sat-player-grey {
-    --pl-page: #f2f3f7;
+    --pl-page: #fff;
     --pl-sf:   #ffffff;
-    --pl-sf2:  #eceef2;
-    --pl-sf3:  #ffffff;
-    --pl-bd:   #c3c8d2;
+    --pl-sf2:  #f4f4f5;
+    --pl-sf3:  #f4f4f5;
+    --pl-bd:   #e4e4e7;
     --pl-card: #ffffff;
     --pl-bar:  #f4f4f5;
-    --pl-line: #d4d4d8;
+    --pl-line: #e4e4e7;
+    /* Darker tone text for contrast on white */
+    --tone-green: #16a34a; --tone-red: #dc2626; --tone-amber: #d97706;
   }
   /* Flat page — the starfield sits behind opaque surfaces anyway */
   body.sat-player-grey #bg-canvas { display: none; }
@@ -156,6 +160,8 @@ html[data-theme="light"] {
     border: none;
     border-bottom: 0.0625rem solid var(--pl-bd);
     box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
   body.sat-player-grey #stopwatchContainer {
     background: var(--pl-sf2) !important;
@@ -316,9 +322,9 @@ html[data-theme="light"] {
     min-height: 2.875rem;
   }
   body.sat-player-grey .sat-question-number {
-    background: #e4e4e7 !important;
+    background: var(--tone-blue) !important;
     border: none !important;
-    color: #27272a !important;
+    color: #ffffff !important;
     width: 2.25rem; min-width: 2.25rem; height: 2.25rem;
     border-radius: 0.375rem;
     font-size: 1rem; font-weight: 700;
@@ -362,16 +368,18 @@ html[data-theme="light"] {
     color: var(--tx);
   }
   body.sat-player-grey .sat-domain-label[data-domain] { color: #ffffff; }
+  /* Sentence case: the light theme sheet ships uppercase tracked pills */
+  body.sat-player-grey .sat-domain-label { text-transform: none; letter-spacing: normal; }
   /* English */
   body.sat-player-grey .sat-domain-label[data-domain="information-and-ideas"]          { --acc-fill: var(--tone-blue-fill); }
   body.sat-player-grey .sat-domain-label[data-domain="craft-and-structure"]            { --acc-fill: var(--tone-teal-fill); }
-  body.sat-player-grey .sat-domain-label[data-domain="expression-of-ideas"]            { --acc-fill: var(--tone-purple-fill); }
+  body.sat-player-grey .sat-domain-label[data-domain="expression-of-ideas"]            { --acc-fill: #db2777; }
   body.sat-player-grey .sat-domain-label[data-domain="standard-english-conventions"]   { --acc-fill: var(--tone-green-fill); }
   /* Math */
   body.sat-player-grey .sat-domain-label[data-domain="algebra"]                        { --acc-fill: var(--tone-amber-fill); }
   body.sat-player-grey .sat-domain-label[data-domain="advanced-math"]                  { --acc-fill: var(--tone-red-fill); }
   body.sat-player-grey .sat-domain-label[data-domain="problem-solving-and-data-analysis"] { --acc-fill: #0369a1; }
-  body.sat-player-grey .sat-domain-label[data-domain="geometry-and-trigonometry"]      { --acc-fill: #7e22ce; }
+  body.sat-player-grey .sat-domain-label[data-domain="geometry-and-trigonometry"]      { --acc-fill: #ea580c; }
 
   /* ── Answer choices ───────────────────────────────────────────────────────
      Outlined cards, never filled: the letter sits in a ring on the left and
@@ -386,7 +394,7 @@ html[data-theme="light"] {
     background: var(--pl-card);
     border: 0.09375rem solid var(--pl-line);
     color: var(--tx);
-    border-radius: 0.75rem;
+    border-radius: 1rem;
     padding: 0.8125rem 1rem;
     min-height: 3.5rem;
     transition: border-color .18s ease, background .18s ease;
@@ -405,12 +413,12 @@ html[data-theme="light"] {
   /* Graded: the grade colour is worth a fill */
   body.sat-player-grey .sat-answer-choice.is-correct {
     --acc: var(--tone-green);
-    background: color-mix(in srgb, var(--tone-green) 14%, var(--pl-card));
+    background: color-mix(in srgb, var(--tone-green) 12%, var(--pl-card));
     border-color: var(--tone-green);
   }
   body.sat-player-grey .sat-answer-choice.is-incorrect {
     --acc: var(--tone-red);
-    background: color-mix(in srgb, var(--tone-red) 14%, var(--pl-card));
+    background: color-mix(in srgb, var(--tone-red) 12%, var(--pl-card));
     border-color: var(--tone-red);
   }
 
@@ -466,7 +474,7 @@ html[data-theme="light"] {
   body.sat-player-grey .sat-spr-input:focus {
     background: var(--pl-sf2);
     border-color: var(--tone-purple);
-    box-shadow: 0 0 0 0.1875rem color-mix(in srgb, var(--tone-purple) 25%, transparent);
+    box-shadow: 0 0 0 0.1875rem color-mix(in srgb, var(--tone-purple) 22%, transparent);
   }
   body.sat-player-grey .sat-spr-input.is-correct   { background: var(--tone-green-fill); border-color: var(--tone-green-fill); color: #fff; }
   body.sat-player-grey .sat-spr-input.is-incorrect { background: var(--tone-red-fill);   border-color: var(--tone-red-fill);   color: #fff; }
@@ -478,11 +486,11 @@ html[data-theme="light"] {
     color: var(--tx);
   }
   body.sat-player-grey .sat-feedback-panel.is-correct {
-    background: color-mix(in srgb, var(--tone-green) 22%, var(--pl-sf2));
+    background: color-mix(in srgb, var(--tone-green) 12%, var(--pl-sf2));
     border-color: var(--tone-green);
   }
   body.sat-player-grey .sat-feedback-panel.is-incorrect {
-    background: color-mix(in srgb, var(--tone-red) 22%, var(--pl-sf2));
+    background: color-mix(in srgb, var(--tone-red) 12%, var(--pl-sf2));
     border-color: var(--tone-red);
   }
 
@@ -493,6 +501,8 @@ html[data-theme="light"] {
     background: var(--pl-sf) !important;
     border-top: 0.0625rem solid var(--pl-bd) !important;
     box-shadow: none !important;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
   body.sat-player-grey .sat-player-footer .sat-button-ghost,
   body.sat-player-grey #sessionInfoBtn,
@@ -500,9 +510,9 @@ html[data-theme="light"] {
     background: var(--pl-sf2) !important;
     border: 0.0625rem solid var(--pl-bd) !important;
     color: var(--tx) !important;
-    border-radius: 0.75rem;
-    box-shadow: 0 0.25rem 0 0 var(--pl-bd) !important;
-    transition: transform .18s ease, background .18s ease, border-color .18s ease;
+    border-radius: 0.5rem;
+    box-shadow: none !important;
+    transition: transform .18s cubic-bezier(.23, 1, .32, 1), background .18s ease, border-color .18s ease;
   }
   body.sat-player-grey .sat-player-footer .sat-button-ghost:hover,
   body.sat-player-grey #sessionInfoBtn:hover,
@@ -516,29 +526,32 @@ html[data-theme="light"] {
   /* Next is the advance action, so it is filled blue; Previous stays grey. */
   body.sat-player-grey #nextQuestionBtn,
   body.sat-player-grey #nextQuestionBtn:hover {
-    background: linear-gradient(180deg, var(--tone-blue), var(--tone-blue-fill)) !important;
-    border: 0.0625rem solid var(--tone-blue-fill) !important;
+    background: var(--tone-blue) !important;
+    border: 0.0625rem solid var(--tone-blue) !important;
     color: #ffffff !important;
-    box-shadow: 0 0.25rem 0 0 color-mix(in srgb, var(--tone-blue) 55%, #000) !important;
+    box-shadow: none !important;
   }
-  body.sat-player-grey #nextQuestionBtn:hover { filter: brightness(1.08); }
-  /* Previous and the question counter are solid dark grey with white text,
-     and they do not move or shift on hover. */
+  body.sat-player-grey #nextQuestionBtn:active { transform: scale(0.98) !important; }
+  /* Previous and the question counter are flat grey surfaces, and they do not
+     move or shift on hover. */
   body.sat-player-grey #prevQuestionBtn,
   body.sat-player-grey #prevQuestionBtn:hover,
   body.sat-player-grey .q-nav-trigger,
   body.sat-player-grey .q-nav-trigger:hover,
   body.sat-player-grey .q-nav-trigger.is-open {
-    background: #3f3f46 !important;
-    border: 0.0625rem solid #3f3f46 !important;
-    color: #ffffff !important;
-    box-shadow: 0 0.25rem 0 0 #27272a !important;
+    background: var(--pl-sf2) !important;
+    border: 0.0625rem solid var(--pl-bd) !important;
+    color: var(--tx) !important;
+    box-shadow: none !important;
     opacity: 1 !important;
     filter: none !important;
     transform: none !important;
   }
+  body.sat-player-grey #prevQuestionBtn:hover,
+  body.sat-player-grey .q-nav-trigger:hover,
+  body.sat-player-grey .q-nav-trigger.is-open { background: var(--pl-bd) !important; }
   body.sat-player-grey #prevQuestionBtn svg,
-  body.sat-player-grey .q-nav-trigger svg { color: #ffffff; }
+  body.sat-player-grey .q-nav-trigger svg { color: var(--tx); }
 
   /* Check sits at the end of the answer list, right-aligned under the last
      choice, so grading reads as the end of the question rather than a footer
@@ -573,22 +586,22 @@ html[data-theme="light"] {
   }
   body.sat-player-grey #checkAnswerBtn,
   body.sat-player-grey .sat-button-primary {
-    background: linear-gradient(180deg, var(--tone-pink), var(--tone-pink-fill)) !important;
-    border: 0.0625rem solid var(--tone-pink-fill) !important;
-    color: #3b0a24 !important;
-    border-radius: 0.875rem !important;
-    box-shadow: 0 0.25rem 0 0 color-mix(in srgb, var(--tone-pink-fill) 70%, #000) !important;
-    transition: transform .18s ease, filter .18s ease;
+    background: #ec4899 !important;
+    border: 0.0625rem solid #ec4899 !important;
+    color: #ffffff !important;
+    border-radius: 0.5rem !important;
+    box-shadow: none !important;
+    transition: transform .18s cubic-bezier(.23, 1, .32, 1);
   }
   body.sat-player-grey #checkAnswerBtn { height: 2.5rem; padding: 0 1.75rem; }
   body.sat-player-grey #checkAnswerBtn:hover:not(:disabled),
   body.sat-player-grey .sat-button-primary:hover {
-    filter: brightness(1.06);
+    filter: none;
     transform: scale(1.03) !important;
   }
   body.sat-player-grey #checkAnswerBtn:disabled {
-    filter: grayscale(0.5) brightness(0.9);
-    opacity: .6;
+    filter: none;
+    opacity: .5;
     cursor: not-allowed;
     transform: none !important;
   }
@@ -599,9 +612,16 @@ html[data-theme="light"] {
     border: 0.0625rem solid var(--pl-bd);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
+    border-radius: 1rem;
     box-shadow: 0 0.75rem 2rem rgba(0,0,0,0.4);
   }
-  body.sat-player-grey .q-nav-panel::before { background: var(--tone-purple); }
+  /* Flat panel: no accent line, and it scales in instead of sliding up. The
+     phone bottom sheet in sat.css keeps its own !important slide. */
+  body.sat-player-grey .q-nav-panel::before { background: transparent; }
+  @media (min-width: 30.0625rem) {
+    body.sat-player-grey .q-nav-panel { transform: translateX(-50%) scale(0.97); transform-origin: bottom center; }
+    body.sat-player-grey .q-nav-panel.is-open { transform: translateX(-50%) scale(1); }
+  }
   body.sat-player-grey .q-nav-stats { border-bottom-color: var(--pl-bd); }
   body.sat-player-grey .q-stat-item,
   body.sat-player-grey .q-nav-section-label,
@@ -630,9 +650,9 @@ html[data-theme="light"] {
   body.sat-player-grey .q-pill:hover {
     background: var(--pl-bd); border-color: var(--pl-bd); color: var(--tx);
   }
-  body.sat-player-grey .q-pill.is-attempted { background: var(--tone-amber-fill); border-color: var(--tone-amber-fill); color: #fff; }
-  body.sat-player-grey .q-pill.is-correct   { background: var(--tone-green-fill);  border-color: var(--tone-green-fill);  color: #fff; }
-  body.sat-player-grey .q-pill.is-incorrect { background: var(--tone-red-fill);    border-color: var(--tone-red-fill);    color: #fff; }
+  body.sat-player-grey .q-pill.is-attempted { background: color-mix(in srgb, var(--tone-amber) 14%, var(--pl-sf2)); border-color: var(--tone-amber); color: var(--tone-amber); }
+  body.sat-player-grey .q-pill.is-correct   { background: color-mix(in srgb, var(--tone-green) 14%, var(--pl-sf2)); border-color: var(--tone-green); color: var(--tone-green); }
+  body.sat-player-grey .q-pill.is-incorrect { background: color-mix(in srgb, var(--tone-red) 14%, var(--pl-sf2));   border-color: var(--tone-red);   color: var(--tone-red); }
   body.sat-player-grey .q-pill.is-current {
     border-color: var(--tone-purple);
     box-shadow: 0 0 0 0.125rem var(--tone-purple);
@@ -640,11 +660,11 @@ html[data-theme="light"] {
   body.sat-player-grey .q-pill.is-current::after { background: var(--tone-purple); }
   body.sat-player-grey .q-legend-unanswered { background: var(--pl-sf2);         border-color: var(--pl-bd); }
   body.sat-player-grey .q-legend-attempted,
-  body.sat-player-grey .q-legend-icon-attempted { background: var(--tone-amber-fill); border-color: var(--tone-amber-fill); }
+  body.sat-player-grey .q-legend-icon-attempted { background: color-mix(in srgb, var(--tone-amber) 14%, var(--pl-sf2)); border-color: var(--tone-amber); }
   body.sat-player-grey .q-legend-correct,
-  body.sat-player-grey .q-legend-icon-correct   { background: var(--tone-green-fill);  border-color: var(--tone-green-fill);  color: #fff; }
+  body.sat-player-grey .q-legend-icon-correct   { background: color-mix(in srgb, var(--tone-green) 14%, var(--pl-sf2)); border-color: var(--tone-green); color: var(--tone-green); }
   body.sat-player-grey .q-legend-incorrect,
-  body.sat-player-grey .q-legend-icon-incorrect { background: var(--tone-red-fill);    border-color: var(--tone-red-fill);    color: #fff; }
+  body.sat-player-grey .q-legend-icon-incorrect { background: color-mix(in srgb, var(--tone-red) 14%, var(--pl-sf2));   border-color: var(--tone-red);   color: var(--tone-red); }
   body.sat-player-grey .q-legend-current    { background: var(--pl-sf2); border-color: var(--tone-purple); }
 
   /* ── Reference panel, modals ────────────────────────────────────────────── */
@@ -688,6 +708,20 @@ html[data-theme="light"] {
     border-color: var(--tone-red-fill) !important;
     color: #ffffff !important;
   }
+  /* Flat modals: scale-in, no blur, no spring (the shared delete-modal ships
+     all three) */
+  body.sat-player-grey .delete-modal { backdrop-filter: none; -webkit-backdrop-filter: none; }
+  body.sat-player-grey .delete-modal.show { animation: fadeIn .16s ease both; }
+  body.sat-player-grey .delete-modal-content {
+    border-radius: 1rem;
+    box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.45);
+    animation: modalIn .18s cubic-bezier(.23, 1, .32, 1) both;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    body.sat-player-grey .delete-modal.show,
+    body.sat-player-grey .delete-modal-content,
+    body.sat-player-grey .settings-modal-content { animation: none; }
+  }
   body.sat-player-grey #rename-modal-confirm {
     background: var(--tone-purple-fill) !important;
     border-color: var(--tone-purple-fill) !important;
@@ -698,7 +732,7 @@ html[data-theme="light"] {
 
   /* Scrollbars follow the greys, not the purple */
   body.sat-player-grey ::-webkit-scrollbar-thumb { background: var(--pl-bd) !important; }
-  body.sat-player-grey ::-webkit-scrollbar-thumb:hover { background: var(--tone-purple) !important; }
+  body.sat-player-grey ::-webkit-scrollbar-thumb:hover { background: var(--pl-bd) !important; }
 </style>
 <link rel="stylesheet" href="../sat/question-content.css"/>
 </head>
@@ -980,7 +1014,7 @@ html[data-theme="light"] {
 <div id="referencePanel" class="reference-panel is-hidden" style="top: 7.5rem; left: 7.5rem;">
   <div class="reference-drag-handle">
     <div style="display: flex; align-items: center; gap: 0.5rem;">
-      <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;">Reference Sheet</span>
+      <span style="font-size: 0.75rem; font-weight: 700;">Reference Sheet</span>
     </div>
     <div style="display: flex; align-items: center; gap: 0.25rem;">
       <button id="referenceCollapseBtn" class="reference-collapse-btn" onclick="toggleReferenceCollapse()" aria-label="Collapse reference sheet">
@@ -1135,14 +1169,14 @@ html[data-theme="light"] {
   /* Footer trigger — filled purple, the page's "talk to Korah" action */
   .ask-korah-trigger {
     display: inline-flex; align-items: center; justify-content: center;
-    height: 2.875rem; padding: 0 1rem; border-radius: 0.875rem;
-    background: linear-gradient(180deg, var(--tone-purple), var(--tone-purple-fill));
-    color: #ffffff; border: 0.0625rem solid var(--tone-purple-fill);
+    height: 2.875rem; padding: 0 1rem; border-radius: 0.5rem;
+    background: var(--tone-purple);
+    color: #ffffff; border: 0.0625rem solid var(--tone-purple);
     font: inherit; font-weight: 700; cursor: pointer;
-    box-shadow: 0 0.25rem 0 0 color-mix(in srgb, var(--tone-purple) 55%, #000);
-    transition: transform .18s ease, filter .18s ease;
+    transition: transform .18s cubic-bezier(.23, 1, .32, 1);
   }
-  .ask-korah-trigger:hover { filter: brightness(1.08); transform: scale(1.03); }
+  .ask-korah-trigger:hover { transform: scale(1.03); }
+  .ask-korah-trigger:active { transform: scale(0.98); }
 
   .ask-korah-panel {
     box-sizing: border-box;
@@ -1153,7 +1187,6 @@ html[data-theme="light"] {
     color: var(--tx); z-index: 1100;
     transform: translateX(100%); transition: transform .25s ease;
     display: flex; flex-direction: column;
-    box-shadow: -0.5rem 0 2rem rgba(0,0,0,0.18);
     /* No dimmed text — --tx2/--tx3 vanish against the greys */
     --tx2: var(--tx); --tx3: var(--tx);
   }
@@ -1176,8 +1209,8 @@ html[data-theme="light"] {
     transition: color .18s ease, background-color .18s ease, border-color .18s ease;
   }
   @keyframes ask-korah-content-enter {
-    from { opacity: 0; transform: translateY(.4rem); }
-    to { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
   .ask-korah-body.is-switching, .explain-body {
     animation: ask-korah-content-enter .2s ease both;
@@ -1245,18 +1278,16 @@ html[data-theme="light"] {
   .ask-korah-suggestion {
     --acc: var(--tone-purple);
     background: var(--pl-sf); color: var(--tx);
-    border: 0.0625rem solid var(--pl-bd); border-radius: 62.4375rem;
+    border: 0.0625rem solid var(--pl-bd); border-radius: 0.5rem;
     padding: 0.45rem 0.95rem; font-size: 0.825rem; font-weight: 600;
     cursor: pointer; text-decoration: none; display: inline-block;
-    box-shadow: 0 0.25rem 0 0 var(--pl-bd);
-    transition: transform .18s ease, background .18s ease, border-color .18s ease, box-shadow .18s ease;
+    transition: transform .18s cubic-bezier(.23, 1, .32, 1), background .18s ease, border-color .18s ease;
   }
   .ask-korah-suggestions .ask-korah-suggestion:nth-child(2) { --acc: var(--tone-teal); }
   .ask-korah-suggestion-math { --acc: var(--tone-blue); }
   .ask-korah-suggestion:hover {
     background: var(--pl-sf2);
     border-color: var(--acc);
-    box-shadow: 0 0.25rem 0 0 color-mix(in srgb, var(--acc) 45%, var(--pl-bd));
     transform: scale(1.03);
   }
 
@@ -1271,22 +1302,20 @@ html[data-theme="light"] {
   .ask-korah-msg.user { background: var(--pl-sf); align-self: flex-end; max-width: 85%; }
   .ask-korah-msg.korah { background: var(--pl-sf3); }
   .ask-korah-msg.korah .cached-badge {
-    display: inline-block; font-size: 0.65rem; text-transform: uppercase;
-    letter-spacing: 0.05em; color: var(--tx); opacity: .75; margin-bottom: 0.25rem;
+    display: inline-block; font-size: 0.65rem;
+    color: var(--tx); opacity: .75; margin-bottom: 0.25rem;
   }
   .ask-korah-loading { font-size: 0.85rem; color: var(--tx); font-style: italic; padding: 0.5rem 0; }
 
   .ask-korah-footer {
     margin: 0 1.25rem 0.25rem; padding: 0.5rem 0.625rem;
-    background: var(--pl-sf); border: 0.0625rem solid var(--pl-bd); border-radius: 0.875rem;
-    box-shadow: 0 0.25rem 0 0 var(--pl-bd);
+    background: var(--pl-sf); border: 0.0625rem solid var(--pl-bd); border-radius: 0.75rem;
     display: flex; align-items: flex-end; gap: 0.5rem;
     transition: border-color .18s ease, box-shadow .18s ease;
   }
   .ask-korah-footer:focus-within {
     border-color: var(--tone-purple);
-    box-shadow: 0 0.25rem 0 0 var(--pl-bd),
-                0 0 0 0.1875rem color-mix(in srgb, var(--tone-purple) 25%, transparent);
+    box-shadow: 0 0 0 0.1875rem color-mix(in srgb, var(--tone-purple) 22%, transparent);
   }
   .ask-korah-input {
     flex: 1; resize: none; background: transparent; border: none; outline: none;
@@ -1295,13 +1324,14 @@ html[data-theme="light"] {
   .ask-korah-input::placeholder { color: var(--tx); opacity: .55; }
   /* The send button is the one action in the composer, so it is the one fill */
   .ask-korah-send {
-    background: linear-gradient(180deg, var(--tone-purple), var(--tone-purple-fill));
-    color: #ffffff; border: 0.0625rem solid var(--tone-purple-fill);
+    background: var(--tone-purple);
+    color: #ffffff; border: 0.0625rem solid var(--tone-purple);
     border-radius: 62.4375rem;
     width: 2rem; height: 2rem; display: inline-flex; align-items: center; justify-content: center;
-    cursor: pointer; transition: transform .18s ease, filter .18s ease;
+    cursor: pointer; transition: transform .18s cubic-bezier(.23, 1, .32, 1);
   }
-  .ask-korah-send:hover { filter: brightness(1.08); transform: scale(1.06); }
+  .ask-korah-send:hover { transform: scale(1.06); }
+  .ask-korah-send:active { transform: scale(0.97); }
   .ask-korah-disclaimer {
     text-align: center; font-size: 0.7rem; color: var(--tx); opacity: .7;
     padding: 0.5rem 1rem 0.75rem; margin: 0;
@@ -1327,7 +1357,7 @@ html[data-theme="light"] {
 </style>
 
 <style>
-  /* Explanation pane (steps) — grey cards, purple step numbers */
+  /* Explanation pane (steps): grey cards, blue step numbers */
   .ask-korah-explanation {
     display: flex; flex-direction: column; gap: 0.75rem;
   }
@@ -1340,7 +1370,7 @@ html[data-theme="light"] {
     font-size: 0.8rem; font-weight: 700;
   }
   .ask-korah-explanation .explain-cached {
-    font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em;
+    font-size: 0.65rem;
     color: var(--tx); opacity: .75; align-self: flex-start;
   }
   .ask-korah-explanation .explain-step {
@@ -1351,7 +1381,6 @@ html[data-theme="light"] {
   .ask-korah-explanation .explain-step-head {
     display: flex; align-items: center; gap: 0.5rem;
     font-size: 0.8rem; font-weight: 700; color: var(--tx);
-    text-transform: uppercase; letter-spacing: 0.04em;
   }
   .ask-korah-explanation .explain-step-num {
     display: inline-flex; align-items: center; justify-content: center;
@@ -1713,7 +1742,7 @@ html[data-theme="light"] {
     wrap.style.cssText = 'display:flex;flex-direction:column;gap:0.5rem;';
 
     const heading = document.createElement('div');
-    heading.style.cssText = 'font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--tx3);padding:0.25rem 0;';
+    heading.style.cssText = 'font-size:0.8rem;font-weight:700;color:var(--tx3);padding:0.25rem 0;';
     heading.textContent = sessions.length ? `Saved conversations (${sessions.length})` : 'No saved conversations yet';
     wrap.appendChild(heading);
 
@@ -2140,7 +2169,7 @@ RULES:
     <input id="rename-modal-input" type="text" class="create-input" style="width:100%; margin-top:0.25rem;" placeholder="New name…"/>
     <div class="delete-modal-actions">
       <button id="rename-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
-      <button id="rename-modal-confirm" class="delete-modal-btn confirm t-btn" style="background:rgba(139,92,246,.12); color:var(--p5); border-color:rgba(139,92,246,.3);">Rename</button>
+      <button id="rename-modal-confirm" class="delete-modal-btn confirm t-btn" style="background:#3b82f6; color:#fff; border-color:#3b82f6;">Rename</button>
     </div>
   </div>
 </div>
@@ -2188,9 +2217,9 @@ RULES:
 <!-- END QUESTION NAVIGATOR PANEL -->
 
 <!-- ═══ BUG-FIX TOAST ═══ -->
+<link rel="stylesheet" href="../app/toast.css"/>
 <style>
-  /* Solid light grey, not a translucent panel: it sits over the question and
-     must stay readable against both themes. */
+  /* Look comes from ../app/toast.css (.k-toast); only placement lives here. */
   .fix-toast {
     position: fixed;
     left: 1.25rem;
@@ -2198,73 +2227,20 @@ RULES:
        clears its band and outranks it instead of sliding under it. */
     bottom: calc(var(--player-footer-h, 4rem) + 1rem);
     z-index: 1100;
-    display: flex;
-    align-items: center;
-    gap: 0.875rem;
-    max-width: 26rem;
-    padding: 0.875rem 1rem;
-    border-radius: 0.875rem;
-    background: #6e6e73;
-    border: 0.0625rem solid #85858a;
-    box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.28);
-    color: #ffffff;
-    opacity: 0;
-    transform: translateY(0.75rem);
-    transition: opacity 0.32s ease, transform 0.32s ease;
-    pointer-events: none;
+    width: 24rem;
   }
-  .fix-toast.is-visible {
-    opacity: 1;
-    transform: translateY(0);
-    pointer-events: auto;
-  }
-  .fix-toast-text {
-    flex: 1 1 auto;
-    min-width: 0;
-    font-size: 0.85rem;
-    line-height: 1.5;
-    color: #ffffff;
-  }
-  .fix-toast-text strong {
-    font-weight: 700;
-    color: #ffffff;
-  }
-  .fix-toast-logo {
-    flex-shrink: 0;
-    width: 2rem;
-    height: 2rem;
-    object-fit: contain;
-  }
-  .fix-toast-close {
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 1.375rem;
-    height: 1.375rem;
-    padding: 0;
-    border: none;
-    border-radius: 62.4375rem;
-    background: transparent;
-    color: #ffffff;
-    cursor: pointer;
-    transition: transform 0.18s ease, background 0.18s ease;
-  }
-  .fix-toast-close:hover {
-    transform: scale(1.08);
-    background: rgba(255, 255, 255, 0.16);
-  }
-
   @media (max-width: 480px) {
     .fix-toast {
       left: 0.75rem;
       right: 0.75rem;
       bottom: calc(var(--player-footer-h, 4rem) + 0.75rem);
+      width: auto;
       max-width: none;
     }
   }
 </style>
 
+<!-- Replaced by the .k-toast markup below (../app/toast.css).
 <div class="fix-toast" id="fixToast" role="status" aria-live="polite">
   <span class="fix-toast-text">
     <strong>Bug Fixes:</strong> Math problems now show all figures/graphs, accept alternate answers, and output correctly formatted explanations.
@@ -2275,6 +2251,15 @@ RULES:
       <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
     </svg>
   </button>
+</div>
+-->
+<div class="k-toast k-toast--info fix-toast" id="fixToast" role="status" aria-live="polite">
+  <img class="k-toast__logo" src="../logo-images/newlogo10.png" alt=""/>
+  <div class="k-toast__body">
+    <div class="k-toast__title">Bug fixes</div>
+    <div class="k-toast__desc">Math problems now show all figures/graphs, accept alternate answers, and output correctly formatted explanations.</div>
+  </div>
+  <button class="k-toast__close fix-toast-close" id="fixToastClose" type="button" aria-label="Dismiss"><span class="material-icons-round">close</span></button>
 </div>
 
 <script>

@@ -45,17 +45,16 @@ function renderHub() {
   renderJump();
   $('hubCourses').innerHTML = COURSES.map(c => `
     <a class="ap-hub-course tone-${c.tone}" href="#${c.slug}">
-      <span class="material-icons-round ap-hub-course-icon">${COURSE_ICONS[c.slug]}</span>
       <div class="ap-hub-course-top">
+        <span class="material-icons-round ap-hub-course-icon">${COURSE_ICONS[c.slug]}</span>
         <div class="ap-hub-course-name">${c.name}</div>
       </div>
       <span class="ap-hub-course-open">Open <span class="material-icons-round">chevron_right</span></span>
     </a>`).join('');
 }
 
-// Two shortcut pills at a time. Each fills with a tint over JUMP_MS (the CSS
-// animation uses the same 5s), fades out, then two courses that are not on
-// screen replace them. The last pair is remembered so a reload starts on others.
+// Two shortcut pills at a time. After JUMP_MS they fade out, then two courses
+// that are not on screen replace them. The last pair is remembered so a reload starts on others.
 const JUMP_MS = 5000, JUMP_OUT_MS = 350;
 let jumpPair = [];
 try { jumpPair = JSON.parse(localStorage.getItem('korah_ap_jump') || '[]'); } catch { /* start fresh */ }

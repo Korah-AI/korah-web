@@ -186,8 +186,9 @@ Example: AP Biology, slug `ap-biology`.
    (a Material Icons Round name, shown as the card's corner icon), `frqLabel`,
    `frqUnit`. This also puts the course in the FRQ picker (`ap/index.html`), and
    that page falls back to a placeholder when there is no `frqs.json`.
-3. **Card color.** Add a `.ap-hub-course.tone-bio { --acc-fill: #...; }` rule in
-   `ap/ap.css` and map the slug in `TONES` at the top of `ap/js/ap-home.js`.
+3. **Card color.** Add the tone to one of the `:is(.ap-hub-course, ...)` groups in
+   `ap/ap.css` (each sets `--acc` for the icon and `--acc-fill` for the button)
+   and map the slug in `TONES` at the top of `ap/js/ap-home.js`.
 4. **Validator.** In `scripts/validate-ap-question-bank.js`, add the file to
    `DEFAULT_FILES`, add the slug to the supported-course check in
    `validateQuestionBank`, and add the id prefix to `expectedPrefix` in

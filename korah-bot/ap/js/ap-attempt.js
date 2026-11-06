@@ -356,7 +356,7 @@
       const icon = v.earned ? 'check_circle' : 'cancel';
       const cat = state.course ? window.KorahAP.categoryLabel(courseSlug, v.category) : v.category;
       const evidence = v.earned && v.evidence
-        ? `<div class="ap-ledger-evidence"><b>Earned — your work:</b> “${esc(v.evidence)}”</div>`
+        ? `<div class="ap-ledger-evidence"><b>Earned from your work:</b> “${esc(v.evidence)}”</div>`
         : '';
       const missing = !v.earned
         ? `<div class="ap-ledger-missing"><b>Missing:</b> ${esc(v.feedback || 'No feedback provided.')}</div>`
