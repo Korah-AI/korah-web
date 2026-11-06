@@ -121,11 +121,10 @@ html[data-theme="light"] * { scrollbar-color: rgba(28, 30, 38, 0.35) transparent
 #main-content .tx2 { color: var(--v-tx2); }
 #main-content .tx3 { color: var(--v-tx3); }
 
-/* The page's own top bar joins the grey system (the app sidebar keeps the
-   shared purple chrome). */
+/* The page's own top bar matches the sidebar (shared --bg), not the grey cards. */
 .chat-topbar.bg-sf {
-  background: var(--v-sf);
-  border-bottom-color: var(--v-bd);
+  background: var(--bg);
+  border-bottom-color: var(--bd);
 }
 
 /* ── Shared type ───────────────────────────────────── */
@@ -498,7 +497,16 @@ html[data-theme="light"] * { scrollbar-color: rgba(28, 30, 38, 0.35) transparent
 .vocab-filter-clear:hover { color: #fff; background: var(--v-red-fill); border-color: var(--v-red-fill); transform: scale(1.04); }
 
 /* ═══ Progress panel + study sets (left rail) ══════════ */
+/* Replaced by the AP-hub shell below: the scroller carries the gutter and
+   .vocab-learn-cols caps the content at 74rem.
 .vocab-learn-wide { max-width: 78rem; }
+*/
+.vocab-learn.vocab-learn-wide {
+  max-width: none;
+  padding: 1.75rem clamp(1.25rem, 7vw, 7rem) 3.75rem;
+  overflow-x: hidden;
+}
+.vocab-learn-wide > .vocab-learn-cols { max-width: 74rem; margin: 0 auto; }
 .vocab-learn-cols {
   display: grid;
   grid-template-columns: 21rem minmax(0, 1fr);

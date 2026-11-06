@@ -80,12 +80,17 @@ html[data-theme="light"] * { scrollbar-color: rgba(28, 30, 38, 0.35) transparent
   --tx3: var(--cm-tx3);
   flex: 1;
   width: 100%;
+  /* Replaced by the AP-hub gutter: no max-width on the scroller; the inline
+     padding grows past the clamp so the content is capped at 74rem.
   max-width: 82rem;
   margin: 0 auto;
+  padding: 2rem clamp(1rem, 3vw, 2rem) 4rem;
+  */
   box-sizing: border-box;
   overflow-y: auto;
+  overflow-x: hidden;
   overscroll-behavior-y: contain;
-  padding: 2rem clamp(1rem, 3vw, 2rem) 4rem;
+  padding: 1.75rem max(clamp(1.25rem, 7vw, 7rem), calc((100% - 74rem) / 2)) 3.75rem;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
@@ -758,7 +763,8 @@ html[data-theme="light"] * { scrollbar-color: rgba(28, 30, 38, 0.35) transparent
   .cm-filter { flex: 1; min-width: 12rem; }
 }
 @media (max-width: 48rem) {
-  .cm-page { padding: 1.25rem 0.9rem 3rem; gap: 1.1rem; }
+  /* .cm-page { padding: 1.25rem 0.9rem 3rem; gap: 1.1rem; }  Padding now comes from the AP-hub gutter. */
+  .cm-page { gap: 1.1rem; }
   .cm-columns { grid-template-columns: 1fr; }
   .cm-skeleton-cols { grid-template-columns: 1fr; }
   .cm-filters { flex-direction: column; align-items: stretch; }
