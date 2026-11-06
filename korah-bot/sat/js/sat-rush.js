@@ -26,9 +26,8 @@
     INI: "lightbulb", CAS: "architecture", EOI: "edit_note", SEC: "spellcheck",
   };
   const CONGRATS = [
-    "Nicely done!", "Excellent work!", "Outstanding!", "Great job!", "Well done!",
-    "Fantastic!", "Awesome!", "Perfect!", "Brilliant!", "Amazing work!",
-    "You nailed it!", "Superb!", "Impressive!", "You're on fire!", "Keep it up!",
+    "Nicely done", "Excellent work", "Well done", "Good work", "Correct",
+    "Right answer", "Solid", "On target", "Clean answer", "Keep it up",
   ];
 
   // ── Selection state (onboarding) ──────────────────────────────────────────
@@ -639,7 +638,7 @@
     em.className = `rush-overlay-emoji material-icons-round ${rush.streak >= 5 ? "rush-icon-tint-amber" : "rush-icon-tint-green"}`;
     $("rushOverlayTitle").className = "rush-overlay-title is-success";
     $("rushOverlayTitle").textContent = rush.streak >= 5
-      ? `${rush.streak} in a row!`
+      ? `${rush.streak} in a row`
       : CONGRATS[Math.floor(Math.random() * CONGRATS.length)];
     $("rushOverlay").classList.add("is-open");
     fireConfetti();
@@ -649,7 +648,7 @@
 
   // ── Confetti (lightweight, dependency-free) ─────────────────────────────────
   function fireConfetti() {
-    const colors = ["#55a7eb", "#7c3aed", "#22c55e", "#f59e0b", "#ef4444"];
+    const colors = ["#3b82f6", "#ec4899", "#22c55e", "#f59e0b", "#ef4444"];
     const layer = document.createElement("div");
     layer.className = "rush-confetti";
     for (let i = 0; i < 40; i++) {
@@ -697,13 +696,13 @@
     const timeStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
 
     $("rushCelebrateSub").textContent = answered > 0
-      ? `You answered ${answered} question${answered === 1 ? "" : "s"}. Keep the streak going!`
+      ? `You answered ${answered} question${answered === 1 ? "" : "s"}. Keep the streak going.`
       : "You didn't answer any questions this time.";
 
     const stats = [
       { icon: "track_changes", tint: "blue", value: `${accuracy}%`, label: "Accuracy" },
       { icon: "check_circle", tint: "green", value: `${correct}/${answered}`, label: "Correct" },
-      { icon: "schedule", tint: "purple", value: timeStr, label: "Time" },
+      { icon: "schedule", tint: "pink", value: timeStr, label: "Time" },
       { icon: "bolt", tint: "amber", value: (xp >= 0 ? "+" : "") + xp, label: "XP earned" },
       { icon: "local_fire_department", tint: "red", value: streakMax, label: "Best streak" },
       { icon: "library_books", tint: "blue", value: answered, label: "Answered" },

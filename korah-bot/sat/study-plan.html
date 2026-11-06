@@ -119,19 +119,23 @@
     </div>
   </header>
 
+  <!-- Replaced by the AP-hub gutter below (padding on the scroller, 74rem cap on the inner wrapper):
   <div class="sat-page" style="padding: 1.5rem; max-width: 72rem; margin: 0 auto; overflow-y: auto; flex: 1; min-height: 0;">
+  -->
+  <div class="sat-page" style="padding: 1.75rem clamp(1.25rem, 7vw, 7rem) 3.75rem; max-width: none; width: 100%; box-sizing: border-box; margin: 0; overflow-y: auto; overflow-x: hidden; flex: 1; min-height: 0;">
+  <div style="max-width: 74rem; margin: 0 auto;">
 
     <!-- STATE: LOADING -->
     <template x-if="$store.studyPlan.planState === 'loading'">
       <div class="panel-card" style="text-align:center; padding:4rem;">
-        <div class="sat-spinner" style="width:2.5rem;height:2.5rem;margin:0 auto 1rem;border:3px solid var(--sp-bd,#454553);border-top-color:#06b6d4;border-radius:50%;animation:spin 1s linear infinite;"></div>
+        <div class="sat-spinner" style="width:2.5rem;height:2.5rem;margin:0 auto 1rem;border:3px solid var(--bd);border-top-color:#3b82f6;border-radius:50%;animation:spin 1s linear infinite;"></div>
         <p class="tx2">Loading your study plan…</p>
         <template x-if="$store.studyPlan.initError">
           <p class="tx3" style="margin-top:1rem;color:#ef4444;">Error: {{ $store.studyPlan.initError }}</p>
           <button class="sat-button sat-button-secondary" style="margin-top:1rem;" @click="location.reload()">Retry</button>
         </template>
         <template x-if="!$store.studyPlan.initError && $store.studyPlan.initStages.length > 0">
-          <p class="tx3" style="margin-top:1rem;color:var(--p5);">
+          <p class="tx3" style="margin-top:1rem;">
             Initializing: {{ $store.studyPlan.initStages.join(', ') }}
           </p>
         </template>
@@ -461,6 +465,7 @@
       </div>
     </template>
 
+  </div><!-- /74rem inner wrapper -->
   </div>
 </main>
 </div>
@@ -823,42 +828,33 @@
 
 <style>
   @keyframes spin { to { transform: rotate(360deg); } }
-  @keyframes riseIn { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes riseIn { from { opacity: 0; transform: scale(0.985); } to { opacity: 1; transform: scale(1); } }
+  @keyframes spPop { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } }
 
   .panel-card {
-    background: linear-gradient(135deg, rgba(255,255,255,0.02), rgba(255,255,255,0.005));
-    border: 1px solid rgba(139,92,246,.22);
-    border-radius: 1.125rem; padding: 1.25rem 1.375rem;
-    backdrop-filter: blur(1rem); -webkit-backdrop-filter: blur(1rem);
-    transition: border-color .2s, box-shadow .2s;
-    animation: riseIn 0.55s cubic-bezier(.22,1,.36,1) both;
+    background: var(--sf);
+    border: 0.0625rem solid var(--bd);
+    border-radius: 1rem; padding: 1.25rem 1.375rem;
+    animation: riseIn 0.25s cubic-bezier(.23,1,.32,1) both;
   }
-  .panel-card:hover { border-color: rgba(167,139,250,.4); box-shadow: 0 0.25rem 1.25rem rgba(139,92,246,0.08); }
-  [data-theme="light"] .panel-card {
-    background: linear-gradient(135deg, rgba(255,255,255,0.85), rgba(255,255,255,0.6));
-    box-shadow: 0 0.125rem 0.5rem rgba(0,0,0,0.06);
-  }
-  .panel-card:nth-child(2) { animation-delay: 0.08s; }
-  .panel-card:nth-child(3) { animation-delay: 0.16s; }
-  .panel-card:nth-child(4) { animation-delay: 0.24s; }
 
   /* Alpine hasn't booted yet on first paint; keep x-show elements hidden. */
   [x-cloak] { display: none !important; }
 
-  /* ── Wizard (Practice Rush UX) ──────────────────────────────────────────
-     Layout and surfaces come from sat-rush.css. Everything here is scoped to
-     .sp-wizard so the calendar view and rush.html are untouched.
-
-     Color blocking: each option in a group carries a .tone-* class that sets
-     --acc, and every accent (border, fill, glow, icon, spotlight) reads from
-     it — so a group of buttons is never one flat color. */
+  /* ── Wizard ─────────────────────────────────────────────────────────────
+     Layout comes from sat-rush.css (shared with rush.html, so it is not
+     edited there). Everything here is scoped to .sp-wizard and restyles it
+     to the flat house look: --sf cards with hairline borders, solid tone
+     fills for selected state, tone-coloured icons and labels. Each option
+     carries a .tone-* class that sets --acc. */
   .sp-wizard {
     max-width: 46rem;
     --tone-red: #ef4444;    --tone-orange: #f97316;
     --tone-amber: #f59e0b;  --tone-green: #22c55e;
-    --tone-teal: #14b8a6;   --tone-cyan: #06b6d4;
+    --tone-teal: #14b8a6;   --tone-cyan: var(--tone-teal);
     --tone-blue: #3b82f6;
     --tone-pink: #ec4899;
+    --sp-ease: cubic-bezier(.23, 1, .32, 1);
   }
   .sp-wizard .tone-red    { --acc: var(--tone-red); }
   .sp-wizard .tone-orange { --acc: var(--tone-orange); }
@@ -868,200 +864,223 @@
   .sp-wizard .tone-cyan   { --acc: var(--tone-cyan); }
   .sp-wizard .tone-blue   { --acc: var(--tone-blue); }
   .sp-wizard .tone-pink   { --acc: var(--tone-pink); }
-  .sp-wizard [class*="tone-"] { --spotlight-color: color-mix(in srgb, var(--acc) 40%, transparent); }
 
-  /* Resting state is neutral grey — never the purple app surface, which reads
-     as "same color as the background". Accent color only on hover/selected. */
   .sp-wizard.is-step1 { justify-content: center; min-height: calc(100vh - 9.5rem); }
-  .sp-wizard {
-    --sp-sf: #26262e;
-    --sp-sf2: #31313c;
-    --sp-bd: #454553;
-  }
-  html[data-theme="light"] .sp-wizard {
-    --sp-sf: #eceef2;
-    --sp-sf2: #e0e3ea;
-    --sp-bd: #c3c8d2;
-  }
+
+  /* Flat surfaces: no blur, no 3D bottom edge, no spotlight overlay. */
   .sp-wizard .rush-card,
   .sp-wizard .rush-diff,
   .sp-wizard .rush-domain,
   .sp-wizard .rush-drop,
   .sp-wizard .rush-toggle-row,
-  .sp-wizard .rush-spr-input {
-    background: var(--sp-sf);
-    border-color: var(--sp-bd);
+  .sp-wizard .rush-spr-input,
+  .sp-wizard .rush-stat,
+  .sp-wizard .rush-btn.is-ghost,
+  .sp-wizard .rush-mini-btn,
+  .sp-wizard .rush-hint,
+  .sp-wizard .rush-loading {
+    backdrop-filter: none; -webkit-backdrop-filter: none;
+    box-shadow: none;
   }
-  .sp-wizard .rush-card,
-  .sp-wizard .rush-diff { box-shadow: 0 0.25rem 0 0 var(--sp-bd); }
-  .sp-wizard .rush-btn.is-ghost {
-    background: var(--sp-sf2);
-    color: var(--tx);
-    box-shadow: 0 0.25rem 0 0 var(--sp-bd);
-  }
-  .sp-wizard .rush-btn.is-ghost:active:not(:disabled) { box-shadow: 0 0.05rem 0 0 var(--sp-bd); }
-  /* The breakdown is reported, not chosen, so it drops the affordances of a
-     pickable .rush-domain but keeps the filled selected look. */
-  .sp-wizard .rush-domain.sp-perf { cursor: default; }
-  .sp-wizard .rush-domain.sp-perf:hover { transform: none; box-shadow: none; border-color: var(--acc); }
-  .sp-perf-level {
-    font-weight: 800; font-size: 0.85rem; color: var(--tx);
-    white-space: nowrap;
-  }
-  .sp-reset-row { display: flex; justify-content: center; margin-top: 0.85rem; }
-  .sp-wizard .rush-mini-btn {
-    background: var(--sp-sf2);
-    color: var(--tx);
-    box-shadow: 0 0.15rem 0 0 var(--sp-bd);
-  }
-  .sp-wizard .rush-mini-btn:hover { background: var(--sp-bd); }
+  .sp-wizard .rush-card::before,
+  .sp-wizard .rush-domain::before,
+  .sp-wizard .rush-diff::before,
+  .sp-wizard .rush-stat::before { display: none; }
+
+  .sp-wizard .rush-hero { margin-bottom: 1.5rem; }
+  .sp-wizard .rush-hero h1 { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.03em; }
+  .sp-wizard .rush-hero p { color: var(--tx2); font-size: 0.9375rem; }
+  .sp-wizard .rush-step-title { font-size: 1.375rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 1.25rem; }
+  .sp-wizard .rush-step-sub { color: var(--tx2); text-align: center; font-size: 0.9375rem; margin: -0.75rem 0 1.5rem; }
+  .sp-wizard .rush-section-label { color: var(--tx); font-size: 0.9375rem; font-weight: 700; margin: 1.75rem 0 0.875rem; }
   .sp-wizard .rush-eyebrow, .sp-wizard .rush-chip, .sp-wizard .rush-stat-label { text-transform: none; letter-spacing: normal; }
 
-  /* Full-contrast text everywhere — no dimmed greys in the wizard. */
-  .sp-wizard,
-  .sp-wizard .rush-hero p,
-  .sp-wizard .rush-step-sub,
-  .sp-wizard .rush-card-desc,
-  .sp-wizard .rush-stat-label,
-  .sp-wizard .rush-field-label,
-  .sp-wizard .rush-toggle-text span,
-  .sp-wizard .rush-drop-empty span,
-  .sp-wizard .rush-loading p,
-  .sp-wizard .rush-hint,
-  .sp-wizard .rush-section-label,
-  .sp-wizard .tx2, .sp-wizard .tx3 { color: var(--tx); }
-  .sp-wizard .rush-spr-input::placeholder { color: var(--tx); opacity: 0.75; }
+  /* Option cards and tiles */
+  .sp-wizard .rush-card,
+  .sp-wizard .rush-diff,
+  .sp-wizard .rush-domain,
+  .sp-wizard .rush-drop,
+  .sp-wizard .rush-toggle-row {
+    background: var(--sf);
+    border: 0.0625rem solid var(--bd);
+    border-radius: 1rem;
+    color: var(--tx);
+  }
+  .sp-wizard .rush-card,
+  .sp-wizard .rush-diff {
+    transition: transform .18s var(--sp-ease), background .16s ease, border-color .16s ease, color .16s ease;
+  }
+  .sp-wizard .rush-card .material-icons-round { color: var(--acc); }
+  .sp-wizard .rush-card-title { font-size: 1.0625rem; font-weight: 700; color: var(--acc); }
+  .sp-wizard .rush-card-desc { color: var(--tx2); font-size: 0.875rem; }
+  .sp-wizard .rush-diff { font-size: 1rem; font-weight: 700; color: var(--acc); padding: 0.875rem 0.5rem; }
 
-  /* Accent-driven card states, overriding rush's single blue. */
   .sp-wizard .rush-card:hover,
-  .sp-wizard .rush-domain:hover,
-  .sp-wizard .rush-diff:hover:not(.is-selected) {
-    border-color: color-mix(in srgb, var(--acc) 70%, var(--sp-bd));
-    box-shadow: 0 0.6rem 1.6rem color-mix(in srgb, var(--acc) 30%, transparent),
-                0 0.3rem 0 0 color-mix(in srgb, var(--acc) 45%, var(--sp-bd));
-  }
-  .sp-wizard .rush-card.is-selected,
-  .sp-wizard .rush-diff.is-selected {
-    color: #fff;
+  .sp-wizard .rush-diff:hover {
+    transform: scale(1.02);
     border-color: var(--acc);
-    background: linear-gradient(180deg, var(--acc), color-mix(in srgb, var(--acc) 78%, #000));
-    box-shadow: 0 0.25rem 0 0 color-mix(in srgb, var(--acc) 55%, #000);
+    background: var(--sf2);
+    box-shadow: none;
   }
+  .sp-wizard .rush-domain:hover { transform: none; border-color: var(--bd); box-shadow: none; }
+  .sp-wizard .rush-card:active,
+  .sp-wizard .rush-diff:active { transform: scale(0.98); }
+
+  /* Selected means a solid tone fill with white text. Memory-lights flash
+     uses the same fill, just briefly. */
+  .sp-wizard .rush-card.is-selected,
+  .sp-wizard .rush-card.is-selected:hover,
+  .sp-wizard .rush-diff.is-selected,
+  .sp-wizard .rush-diff.is-selected:hover,
+  .sp-wizard .rush-card.is-flash:not(.is-selected),
+  .sp-wizard .rush-diff.is-flash:not(.is-selected) {
+    color: #fff;
+    background: var(--acc);
+    border-color: var(--acc);
+  }
+  .sp-wizard .rush-card.is-selected:active,
+  .sp-wizard .rush-diff.is-selected:active { transform: scale(0.98); }
+  .sp-wizard .rush-card.is-selected .rush-card-title,
   .sp-wizard .rush-card.is-selected .rush-card-desc,
   .sp-wizard .rush-card.is-selected .material-icons-round,
+  .sp-wizard .rush-card.is-flash .rush-card-title,
   .sp-wizard .rush-card.is-flash .rush-card-desc,
   .sp-wizard .rush-card.is-flash .material-icons-round { color: #fff; }
-  .sp-wizard .rush-card .material-icons-round { color: var(--acc); }
-  .sp-wizard .rush-domain.is-selected {
-    border-color: var(--acc);
-    background: color-mix(in srgb, var(--acc) 16%, var(--sp-sf));
-  }
-  .sp-wizard .rush-domains.is-single { grid-template-columns: 1fr; }
-  .sp-wizard .rush-diff { font-size: 1rem; }
-  /* Memory-lights flash on the unpicked date tiles: same solid fill as a
-     selected tile, just brief. */
-  .sp-wizard .rush-diff.is-flash:not(.is-selected),
-  .sp-wizard .rush-card.is-flash:not(.is-selected) {
-    color: #fff;
-    border-color: var(--acc);
-    background: linear-gradient(180deg, var(--acc), color-mix(in srgb, var(--acc) 78%, #000));
-    box-shadow: 0 0 1.5rem color-mix(in srgb, var(--acc) 60%, transparent),
-                0 0.25rem 0 0 color-mix(in srgb, var(--acc) 55%, #000);
-    transition-duration: 0.2s;
+  .sp-wizard .rush-card.is-flash:not(.is-selected),
+  .sp-wizard .rush-diff.is-flash:not(.is-selected) { transition-duration: 0.2s; }
+
+  /* The stagger entrance holds `transform: none` (fill-mode forwards), which
+     would block the hover scale. Fade in with a backwards fill instead. */
+  @keyframes spCardIn { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } }
+  .sp-wizard .rush-stagger > * {
+    opacity: 1;
+    animation-name: spCardIn;
+    animation-duration: 0.3s;
+    animation-timing-function: var(--sp-ease);
+    animation-fill-mode: backwards;
   }
 
-  .sp-wizard .rush-hint {
-    background: color-mix(in srgb, var(--tone-amber) 18%, var(--sp-sf));
-    border-color: color-mix(in srgb, var(--tone-amber) 55%, transparent);
-    font-weight: 700;
-  }
-  .sp-wizard .rush-section-label { font-size: 1rem; }
-  .sp-wizard .rush-spinner { border-top-color: var(--tone-cyan); }
-  .sp-wizard .rush-step-sub { text-align: center; font-size: 1rem; margin: -1rem 0 1.75rem; }
+  .sp-wizard .rush-domains.is-single { grid-template-columns: 1fr; }
+  .sp-wizard .rush-domain.is-selected { border-color: var(--acc); background: var(--sf); }
+  /* The breakdown is reported, not chosen, so it drops the affordances of a
+     pickable .rush-domain; the tone only colours the level label. */
+  .sp-wizard .rush-domain.sp-perf { cursor: default; }
+  .sp-perf-level { font-weight: 700; font-size: 0.875rem; color: var(--acc); white-space: nowrap; }
+  .sp-reset-row { display: flex; justify-content: center; margin-top: 0.875rem; }
 
   .sp-wizard .rush-card-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
   .sp-wizard .rush-card-grid.cols-3 .rush-card { min-height: clamp(11rem, 26vh, 15rem); justify-content: center; }
   @media (max-width: 40rem) { .sp-wizard .rush-card-grid.cols-3 { grid-template-columns: 1fr; } }
 
-  /* Rush colors dots 1-3; this wizard has four steps. */
-  .sp-wizard .rush-step-dot { background: var(--sp-bd); }
-  .rush-step-dot:nth-child(1).is-active { background: #ef4444; }
-  .rush-step-dot:nth-child(2).is-active { background: #f97316; }
-  .rush-step-dot:nth-child(3).is-active { background: #eab308; }
-  .rush-step-dot:nth-child(4).is-active { background: #22c55e; }
+  /* Buttons: solid tone fills, scale on hover and press. */
+  .sp-wizard .rush-btn {
+    padding: 0.8125rem 1.25rem; border-radius: 0.5rem;
+    font-size: 0.9375rem; font-weight: 600;
+    background: var(--tone-blue); box-shadow: none;
+    transition: transform .18s var(--sp-ease), filter .16s ease, background .16s ease, opacity .16s ease;
+  }
+  .sp-wizard .rush-btn.is-green { background: var(--tone-green); }
+  .sp-wizard .rush-btn:hover:not(:disabled) { transform: scale(1.01); filter: none; }
+  .sp-wizard .rush-btn:active:not(:disabled) { transform: scale(0.98); box-shadow: none; }
+  .sp-wizard .rush-btn.is-ghost { background: var(--sf2); color: var(--tx); border: 0.0625rem solid var(--bd); }
+  .sp-wizard .rush-mini-btn {
+    background: var(--sf2); color: var(--tx); border: 0.0625rem solid var(--bd);
+    border-radius: 0.5rem; font-weight: 600;
+    transition: transform .18s var(--sp-ease), background .16s ease;
+  }
+  .sp-wizard .rush-mini-btn:hover { background: var(--sf2); transform: scale(1.03); }
+  .sp-wizard .rush-mini-btn:active { transform: scale(0.97); }
+
+  /* Inputs */
+  .sp-wizard .rush-spr-input {
+    background: var(--sf2); border: 0.0625rem solid var(--bd); border-radius: 0.5rem; color: var(--tx);
+    transition: border-color .16s ease, box-shadow .16s ease;
+  }
+  .sp-wizard .rush-spr-input::placeholder { color: var(--tx3); }
+  .sp-wizard .rush-spr-input:focus {
+    outline: none; border-color: var(--acc, var(--tone-blue));
+    box-shadow: 0 0 0 0.1875rem color-mix(in srgb, var(--acc, var(--tone-blue)) 22%, transparent);
+  }
+  .sp-wizard .rush-toggle-text strong { color: var(--acc); }
+  .sp-wizard .rush-toggle-text span { color: var(--tx2); }
+
+  .sp-wizard .rush-hint {
+    background: var(--sf); color: var(--tx);
+    border: 0.0625rem solid color-mix(in srgb, var(--tone-amber) 55%, var(--bd));
+    border-radius: 0.5rem; font-weight: 600;
+  }
+  .sp-wizard .rush-loading p { color: var(--tx2); }
+  .sp-wizard .rush-spinner { border-color: var(--bd); border-top-color: var(--tone-blue); }
+
+  /* Progress: flat dots, the active one stretches. */
+  .sp-wizard .rush-step-dot { background: var(--bd-hi, var(--bd)); }
+  .sp-wizard .rush-step-dot.is-done { background: var(--tx3); }
+  .sp-wizard .rush-step-dot.is-active { background: var(--tone-blue); }
 
   /* Score report upload */
   .sp-wizard .rush-drop {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     min-height: 15rem; padding: 2rem; text-align: center; cursor: pointer;
-    border: 0.125rem dashed var(--sp-bd);
-    border-radius: 1.25rem; color: var(--tx);
-    backdrop-filter: blur(1.5rem); -webkit-backdrop-filter: blur(1.5rem);
-    transition: border-color 0.18s ease, background 0.18s ease;
+    border-style: dashed;
+    transition: border-color 0.16s ease, background 0.16s ease;
   }
-  .sp-wizard .rush-drop:hover { border-color: var(--acc); background: color-mix(in srgb, var(--acc) 12%, var(--sp-sf)); }
+  .sp-wizard .rush-drop:hover { border-color: var(--acc); background: var(--sf2); }
   .sp-wizard .rush-drop.has-file { border-style: solid; border-color: var(--acc); }
   .sp-wizard .rush-drop-empty { display: flex; flex-direction: column; align-items: center; gap: 0.6rem; }
-  .sp-wizard .rush-drop-empty strong { font-size: 1.05rem; font-weight: 800; }
+  .sp-wizard .rush-drop-empty strong { font-size: 1rem; font-weight: 700; }
+  .sp-wizard .rush-drop-empty span { color: var(--tx2); }
   .sp-wizard .rush-img-remove {
     position: absolute; top: 0.5rem; right: 0.5rem; z-index: 2;
     width: 2rem; height: 2rem; border-radius: 50%; padding: 0; cursor: pointer;
     display: grid; place-items: center;
-    background: rgba(0,0,0,0.6); border: 0.125rem solid var(--sp-bd); color: #fff;
+    background: rgba(0,0,0,0.6); border: 0.0625rem solid var(--bd); color: #fff;
+    transition: transform .18s var(--sp-ease), background .16s ease;
   }
-  .sp-wizard .rush-img-remove:hover { border-color: var(--tone-red); color: var(--tone-red); }
+  .sp-wizard .rush-img-remove:hover { background: var(--tone-red); border-color: var(--tone-red); transform: scale(1.08); }
 
-  /* Extracted scores */
+  /* Extracted scores: flat solid tone fills with a faint corner icon. */
   .sp-wizard .rush-stat {
-    color: #fff;
-    border-color: var(--acc);
-    background: linear-gradient(180deg, var(--acc), color-mix(in srgb, var(--acc) 78%, #000));
-    box-shadow: 0 0.25rem 0 0 color-mix(in srgb, var(--acc) 55%, #000);
+    position: relative; overflow: hidden;
+    color: #fff; background: var(--acc); border-color: var(--acc);
+    border-radius: 1rem;
   }
-  .sp-wizard .rush-stat-icon,
-  .sp-wizard .rush-stat-value,
-  .sp-wizard .rush-stat-label { color: #fff; }
-
-  /* Thin grey scrollbars instead of the app's purple ones. */
-  * { scrollbar-color: #454553 transparent; scrollbar-width: thin; }
-  ::-webkit-scrollbar { width: 0.1875rem; height: 0.1875rem; }
-  ::-webkit-scrollbar-thumb { background: #454553 !important; border-radius: 0.125rem; }
-  ::-webkit-scrollbar-thumb:hover { background: #5a5a6b !important; }
-  html[data-theme="light"] * { scrollbar-color: #c3c8d2 transparent; }
-  html[data-theme="light"] ::-webkit-scrollbar-thumb { background: #c3c8d2 !important; }
-  html[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: #a9afbc !important; }
-
-  /* Page-wide drop overlay for the score report step */
-  .sp-drag-overlay {
-    display: none; position: fixed; inset: 0; z-index: 9000;
-    align-items: center; justify-content: center;
-    background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(0.375rem); -webkit-backdrop-filter: blur(0.375rem);
+  .sp-wizard .rush-stat-icon {
+    position: absolute; right: -0.5rem; bottom: -0.75rem;
+    font-size: 5.5rem !important; line-height: 1;
+    color: rgba(255,255,255,.25); pointer-events: none;
   }
-  .sp-drag-overlay.is-active { display: flex; animation: fadeIn 0.2s ease both; }
-  .sp-drag-overlay-inner {
-    display: flex; flex-direction: column; align-items: center; gap: 0.75rem;
-    padding: 2.5rem 3rem; border-radius: 1.5rem;
-    background: var(--sp-sf); border: 0.125rem dashed var(--tone-cyan);
-    box-shadow: 0 1rem 3rem rgba(0,0,0,0.4);
-  }
-  .sp-drag-overlay-inner .material-icons-round { font-size: 4rem; color: var(--tone-cyan); }
-  .sp-drag-overlay-text { font-size: 1.25rem; font-weight: 800; color: var(--tx); }
-  .sp-drag-overlay-hint { font-size: 0.875rem; font-weight: 600; color: var(--tx); }
+  .sp-wizard .rush-stat-value, .sp-wizard .rush-stat-label { position: relative; color: #fff; }
+  .sp-wizard .rush-stat-value { font-weight: 700; letter-spacing: -0.02em; }
+  .sp-wizard .rush-stat-label { font-weight: 600; font-size: 0.875rem; }
 
   /* Manual score entry */
   .sp-wizard .rush-field-row { display: flex; gap: 0.75rem; flex-wrap: wrap; }
   .sp-wizard .rush-field { flex: 1; min-width: 9rem; display: flex; flex-direction: column; gap: 0.4rem; }
-  .sp-wizard .rush-field-label { font-size: 0.78rem; font-weight: 800; }
-  .sp-wizard .rush-field .rush-spr-input { border-color: var(--sp-bd); }
-  .sp-wizard .rush-spr-input:focus { border-color: var(--acc); }
+  .sp-wizard .rush-field-label { font-size: 0.8125rem; font-weight: 700; color: var(--acc); }
 
   .sp-wizard .rush-date-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); gap: 0.75rem; }
 
   /* Schedule */
   .sp-wizard .rush-week-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.5rem; }
   @media (max-width: 30rem) { .sp-wizard .rush-week-grid { grid-template-columns: repeat(4, 1fr); } }
-  .sp-wizard .rush-toggle-row { border-color: var(--sp-bd); }
   .sp-wizard .rush-hours-input { width: 5.5rem; flex-shrink: 0; text-align: center; }
+
+  /* Page-wide drop overlay for the score report step */
+  .sp-drag-overlay {
+    display: none; position: fixed; inset: 0; z-index: 9000;
+    align-items: center; justify-content: center;
+    background: rgba(0, 0, 0, 0.6);
+  }
+  .sp-drag-overlay.is-active { display: flex; animation: fadeIn 0.2s ease both; }
+  .sp-drag-overlay-inner {
+    display: flex; flex-direction: column; align-items: center; gap: 0.75rem;
+    padding: 2.5rem 3rem; border-radius: 1rem;
+    background: var(--sf); border: 0.0625rem dashed var(--tone-teal);
+    animation: spPop 0.2s cubic-bezier(.23,1,.32,1) both;
+  }
+  .sp-drag-overlay-inner .material-icons-round { font-size: 4rem; color: var(--tone-teal); }
+  .sp-drag-overlay-text { font-size: 1.125rem; font-weight: 700; color: var(--tx); }
+  .sp-drag-overlay-hint { font-size: 0.875rem; font-weight: 500; color: var(--tx2); }
 
   input[type="date"]::-webkit-datetime-edit-year-field { max-width: 4ch; }
   input[type="date"]::-webkit-datetime-edit { display: inline-flex; gap: 0; }
@@ -1073,25 +1092,14 @@
   input[type="number"] { -moz-appearance: textfield; }
 
   /* ── Calendar (post-wizard) ────────────────────────────────────────────
-     Same rules as .sp-wizard: neutral grey resting surfaces, per-item accent
-     tones via --acc, filled-not-outlined for state, no dimmed text. Scoped to
-     .sp-calendar so nothing else on the page changes. */
+     Same flat rules as .sp-wizard: --sf surfaces, hairline borders, per-item
+     tones via --acc, solid fills for state. Scoped to .sp-calendar. */
   .sp-calendar {
     --tone-red: #ef4444;    --tone-orange: #f97316;
     --tone-amber: #f59e0b;  --tone-green: #22c55e;
-    --tone-teal: #14b8a6;   --tone-cyan: #06b6d4;
+    --tone-teal: #14b8a6;   --tone-cyan: var(--tone-teal);
     --tone-blue: #3b82f6;   --tone-pink: #ec4899;
-    --sp-sf: #26262e;
-    --sp-sf2: #31313c;
-    --sp-bd: #454553;
     --acc: var(--tone-blue);
-    --tx2: var(--tx);
-    --tx3: var(--tx);
-  }
-  html[data-theme="light"] .sp-calendar {
-    --sp-sf: #eceef2;
-    --sp-sf2: #e0e3ea;
-    --sp-bd: #c3c8d2;
   }
   .sp-calendar .tone-red    { --acc: var(--tone-red); }
   .sp-calendar .tone-orange { --acc: var(--tone-orange); }
@@ -1106,101 +1114,101 @@
   .spc-header {
     display: flex; align-items: center; gap: 0.85rem; flex-wrap: wrap;
     margin: 0 0 1.25rem; padding: 1rem 1.25rem;
-    border-radius: 1.25rem;
-    background: var(--sp-sf); border: 0.0625rem solid var(--sp-bd);
-    box-shadow: 0 0.25rem 0 0 var(--sp-bd);
+    border-radius: 1rem;
+    background: var(--sf); border: 0.0625rem solid var(--bd);
   }
   .spc-header-icon { color: var(--tone-teal); font-size: 1.6rem; }
   .spc-header-text { min-width: 0; }
-  .spc-header-text p { margin: 0.2rem 0 0; font-size: 0.9rem; color: var(--tx); font-weight: 600; }
-  .spc-eyebrow {
-    font-size: 0.8rem; font-weight: 800; color: var(--tone-teal);
-  }
+  .spc-header-text p { margin: 0.2rem 0 0; font-size: 0.875rem; color: var(--tx2); font-weight: 500; }
+  .spc-eyebrow { font-size: 0.875rem; font-weight: 700; color: var(--tone-teal); }
   .spc-view-btn {
     margin-left: auto; display: inline-flex; align-items: center; gap: 0.4rem;
-    padding: 0.5rem 0.9rem; border-radius: 0.75rem; cursor: pointer;
-    font-size: 0.8rem; font-weight: 800;
-    color: #fff; border: 0.0625rem solid var(--acc);
-    background: linear-gradient(180deg, var(--acc), color-mix(in srgb, var(--acc) 78%, #000));
-    box-shadow: 0 0.25rem 0 0 color-mix(in srgb, var(--acc) 55%, #000);
-    transition: transform 0.12s ease, box-shadow 0.12s ease;
+    padding: 0.5rem 0.9rem; border-radius: 0.5rem; cursor: pointer;
+    font-size: 0.8125rem; font-weight: 600;
+    color: #fff; border: none; background: var(--acc);
+    transition: transform .18s cubic-bezier(.23, 1, .32, 1), background .16s ease;
   }
   .spc-view-btn .material-icons-round { font-size: 1rem; }
-  .spc-view-btn:active { transform: translateY(0.15rem); box-shadow: 0 0.1rem 0 0 color-mix(in srgb, var(--acc) 55%, #000); }
+  .spc-view-btn:hover { transform: scale(1.03); }
+  .spc-view-btn:active { transform: scale(0.97); }
 
-  /* Feedback banner — grey surface, the tone only on the rule and the icon. */
+  /* Feedback banner: flat surface, the tone only on the icon. */
   .spc-feedback {
     display: flex; gap: 0.75rem; align-items: flex-start;
     margin-bottom: 1.25rem; padding: 1rem 1.15rem;
-    border-radius: 1rem; line-height: 1.6; color: var(--tx); font-weight: 600;
-    background: var(--sp-sf);
-    border: 0.125rem solid var(--acc);
+    border-radius: 1rem; line-height: 1.6; color: var(--tx); font-weight: 500;
+    background: var(--sf);
+    border: 0.0625rem solid var(--bd);
   }
   .spc-feedback .material-icons-round { color: var(--acc); font-size: 1.5rem; }
 
   /* Week / month cards */
   .sp-calendar .spc-card {
     margin-bottom: 1rem; padding: 1.15rem 1.25rem;
-    border-radius: 1.125rem;
-    background: var(--sp-sf); border: 0.125rem solid var(--acc);
-    animation: riseIn 0.55s cubic-bezier(.22,1,.36,1) both;
+    border-radius: 1rem;
+    background: var(--sf); border: 0.0625rem solid var(--bd);
+    animation: riseIn 0.25s cubic-bezier(.23,1,.32,1) both;
   }
-  .spc-card-title { margin: 0 0 1rem; font-size: 1rem; font-weight: 800; color: var(--acc); }
+  .spc-card-title { margin: 0 0 0.875rem; font-size: 0.875rem; font-weight: 700; color: var(--acc); }
 
-  /* Session rows: grey at rest with the subject tone on the edge, solid fill
-     when done — a border alone reads as unfinished. */
+  /* Session rows: flat with the subject tone on the left edge, solid green
+     fill when done. */
   .spc-session {
     display: flex; align-items: center; gap: 1rem;
     padding: 0.85rem 1rem; margin-bottom: 0.5rem;
-    border-radius: 1rem; color: var(--tx);
-    background: var(--sp-sf2);
-    border: 0.125rem solid var(--acc);
-    transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+    border-radius: 0.75rem; color: var(--tx);
+    background: var(--sf2);
+    border: 0.0625rem solid var(--bd);
+    border-left: 0.1875rem solid var(--acc);
+    transition: border-color 0.16s ease, background 0.16s ease;
   }
   .spc-session.is-done {
     color: #fff;
     border-color: var(--tone-green);
-    background: linear-gradient(180deg, var(--tone-green), color-mix(in srgb, var(--tone-green) 78%, #000));
+    background: var(--tone-green);
   }
   .spc-session.is-done .spc-session-body strong { text-decoration: line-through; }
   .spc-session-body { flex: 1; min-width: 0; }
   .spc-session-head { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
-  .spc-session-head strong { font-weight: 800; }
-  .spc-session-activity { font-size: 0.8rem; font-weight: 600; }
-  .spc-session-meta { font-size: 0.8125rem; font-weight: 600; margin-top: 0.3rem; display: flex; gap: 1rem; flex-wrap: wrap; }
+  .spc-session-head strong { font-weight: 600; }
+  .spc-session-activity { font-size: 0.8125rem; font-weight: 500; color: var(--tx2); }
+  .spc-session-meta { font-size: 0.8125rem; font-weight: 500; color: var(--tx2); margin-top: 0.3rem; display: flex; gap: 1rem; flex-wrap: wrap; }
+  .spc-session.is-done .spc-session-activity,
+  .spc-session.is-done .spc-session-meta { color: rgba(255,255,255,.85); }
   /* Subject chip is pure identity, so it is always filled. */
   .spc-subject-chip {
-    font-size: 0.72rem; font-weight: 800;
-    padding: 0.15rem 0.55rem; border-radius: 62.4375rem;
+    font-size: 0.75rem; font-weight: 600;
+    padding: 0.15rem 0.55rem; border-radius: 0.5rem;
     color: #fff; background: var(--acc);
   }
   .spc-session.is-done .spc-subject-chip { background: rgba(0,0,0,0.28); }
   .spc-check {
     flex-shrink: 0; width: 1.6rem; height: 1.6rem; padding: 0; cursor: pointer;
     display: grid; place-items: center; border-radius: 0.5rem;
-    background: transparent; border: 0.125rem solid var(--tx); color: transparent;
-    transition: background 0.15s ease, border-color 0.15s ease;
+    background: transparent; border: 0.125rem solid var(--tx3); color: transparent;
+    transition: transform .18s cubic-bezier(.23, 1, .32, 1), background 0.15s ease, border-color 0.15s ease;
   }
   .spc-check .material-icons-round { font-size: 1.05rem; }
-  .spc-check:hover { background: color-mix(in srgb, var(--tx) 20%, transparent); }
+  .spc-check:hover { background: color-mix(in srgb, var(--tx) 12%, transparent); transform: scale(1.08); }
+  .spc-check:active { transform: scale(0.95); }
   .spc-check.is-done { background: #fff; border-color: #fff; color: var(--tone-green); }
 
   .spc-reset-row { display: flex; justify-content: center; margin-top: 1.25rem; }
   .spc-delete-btn {
     display: inline-flex; align-items: center; gap: 0.4rem;
-    padding: 0.5rem 0.9rem; border-radius: 0.75rem; cursor: pointer;
-    font-size: 0.8rem; font-weight: 800; color: var(--tx);
-    background: var(--sp-sf2); border: 0.0625rem solid var(--sp-bd);
-    box-shadow: 0 0.15rem 0 0 var(--sp-bd);
-    transition: transform 0.18s ease, background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+    padding: 0.5rem 0.9rem; border-radius: 0.5rem; cursor: pointer;
+    font-size: 0.8125rem; font-weight: 600; color: var(--tx);
+    background: var(--sf2); border: 0.0625rem solid var(--bd);
+    transition: transform 0.18s cubic-bezier(.23, 1, .32, 1), background 0.16s ease, color 0.16s ease, border-color 0.16s ease;
   }
   .spc-delete-btn .material-icons-round { font-size: 1rem; }
   .spc-delete-btn:hover { transform: scale(1.03); background: var(--tone-red); border-color: var(--tone-red); color: #fff; }
+  .spc-delete-btn:active { transform: scale(0.97); }
 
   /* Month grid */
   .spc-month-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.375rem; }
   .spc-dow {
-    text-align: center; font-size: 0.6875rem; font-weight: 800;
+    text-align: center; font-size: 0.6875rem; font-weight: 700;
     padding: 0.4rem 0.25rem;
     border-radius: 0.5rem 0.5rem 0 0;
     color: #fff; background: var(--acc);
@@ -1209,39 +1217,55 @@
     min-height: 5.5rem; padding: 0.375rem 0.3rem;
     border-radius: 0 0 0.5rem 0.5rem;
     display: flex; flex-direction: column; gap: 0.2rem;
-    background: var(--sp-sf2);
-    border: 0.0625rem solid var(--sp-bd); border-top: none;
-    transition: border-color 0.18s ease, background 0.18s ease;
+    background: var(--sf2);
+    border: 0.0625rem solid var(--bd); border-top: none;
   }
   .spc-day.is-other-month { opacity: 0.45; }
-  .spc-day.has-sessions { border-color: color-mix(in srgb, var(--acc) 55%, var(--sp-bd)); }
-  .spc-day-num { font-weight: 700; font-size: 0.8125rem; text-align: right; padding-right: 0.15rem; color: var(--tx); }
-  .spc-day-empty { flex: 1; display: grid; place-items: center; font-size: 0.75rem; color: var(--tx); opacity: 0.5; }
+  .spc-day.has-sessions { border-color: color-mix(in srgb, var(--acc) 55%, var(--bd)); }
+  .spc-day-num { font-weight: 600; font-size: 0.8125rem; text-align: right; padding-right: 0.15rem; color: var(--tx); }
+  .spc-day-empty { flex: 1; display: grid; place-items: center; font-size: 0.75rem; color: var(--tx3); }
   .spc-day-session {
-    font-size: 0.65rem; font-weight: 700; line-height: 1.25;
-    padding: 0.2rem 0.35rem; border-radius: 0.35rem; cursor: pointer;
+    font-size: 0.65rem; font-weight: 600; line-height: 1.25;
+    padding: 0.2rem 0.35rem; border-radius: 0.375rem; cursor: pointer;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     color: #fff; background: var(--acc);
-    transition: filter 0.15s ease;
+    transition: transform .18s cubic-bezier(.23, 1, .32, 1);
   }
-  .spc-day-session:hover { filter: brightness(1.12); }
+  .spc-day-session:hover { transform: scale(1.03); }
+  .spc-day-session:active { transform: scale(0.97); }
   .spc-day-session.is-done { background: var(--tone-green); text-decoration: line-through; }
 
   @media (max-width: 40rem) {
     .spc-day { min-height: 4rem; }
     .spc-day-session { font-size: 0.55rem; }
   }
-  /* Error / confirm popup: grey surfaces instead of the app's purple-tinted tokens. */
-  #plan-modal { --sp-sf: #26262e; --sp-sf2: #31313c; --sp-bd: #454553; --tx2: var(--tx); }
-  html[data-theme="light"] #plan-modal { --sp-sf: #eceef2; --sp-sf2: #e0e3ea; --sp-bd: #c3c8d2; }
-  #plan-modal .delete-modal-content { background: var(--sp-sf); border-color: var(--sp-bd); }
-  #plan-modal .delete-modal-btn { transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease; }
+
+  /* Error / confirm popup: flat card, scale-in, plain dark backdrop. */
+  #plan-modal { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(0, 0, 0, 0.6); }
+  #plan-modal .delete-modal-content {
+    background: var(--sf); border: 0.0625rem solid var(--bd); border-radius: 1rem;
+    box-shadow: none;
+    animation: spPop 0.2s cubic-bezier(.23, 1, .32, 1) both;
+  }
+  #plan-modal .delete-modal-desc { color: var(--tx2); }
+  #plan-modal .delete-modal-btn {
+    border-radius: 0.5rem; font-weight: 600;
+    transition: transform 0.18s cubic-bezier(.23, 1, .32, 1), background 0.16s ease, border-color 0.16s ease;
+  }
   #plan-modal .delete-modal-btn:hover { transform: scale(1.03); }
-  #plan-modal .delete-modal-btn.cancel { background: var(--sp-sf2); color: var(--tx); border-color: var(--sp-bd); box-shadow: 0 0.15rem 0 0 var(--sp-bd); }
-  #plan-modal .delete-modal-btn.cancel:hover { background: var(--sp-bd); border-color: var(--sp-bd); }
-  #plan-modal .delete-modal-btn.confirm { background: #d23c3c; color: #fff; border-color: #d23c3c; box-shadow: 0 0.15rem 0 0 #8f2626; }
+  #plan-modal .delete-modal-btn:active { transform: scale(0.97); }
+  #plan-modal .delete-modal-btn.cancel { background: var(--sf2); color: var(--tx); border-color: var(--bd); }
+  #plan-modal .delete-modal-btn.cancel:hover { background: var(--sf2); border-color: var(--tx3); }
+  #plan-modal .delete-modal-btn.confirm { background: #ef4444; color: #fff; border-color: #ef4444; }
   #plan-modal .delete-modal-btn.confirm:hover { background: #ef4444; border-color: #ef4444; }
   .sat-spinner { width:1.15rem;height:1.15rem;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .panel-card, .sp-calendar .spc-card, .sp-wizard .rush-stagger > *, .sp-drag-overlay-inner,
+    #plan-modal .delete-modal-content { animation: none; }
+    .sp-wizard .rush-card, .sp-wizard .rush-diff, .sp-wizard .rush-btn, .spc-view-btn,
+    .spc-delete-btn, .spc-check, .spc-day-session { transition: none; }
+  }
 </style>
 
 <script>
@@ -1417,9 +1441,8 @@
   })();
 </script>
 
-<!-- Spotlight glow + cursor tilt for the wizard cards (same behavior as
-     Practice Rush). Driven through CSS vars consumed by the ::before overlay
-     defined in sat-rush.css. -->
+<!-- Replaced by the flat house style: the spotlight glow + cursor tilt script for the wizard cards was removed
+     (no glows, no tilt). The original handler is kept below, commented out.
 <script>
   (function () {
     var SPOTLIGHT_SELECTOR = ".rush-card, .rush-domain, .rush-diff, .rush-stat";
@@ -1457,6 +1480,7 @@
     }, { passive: true });
   })();
 </script>
+-->
 
 </body>
 </html>

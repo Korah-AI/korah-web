@@ -42,49 +42,74 @@
 <link rel="stylesheet" href="./sat.css"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css"/>
 <style>
+  /* Replaced by the AP-hub shell below (same as home.html): the scroller carries the gutter, .home-page caps the content at 74rem.
   .home-scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; position: relative; z-index: 1; }
   .home-page { padding: 1.75rem 2.25rem 3.75rem; max-width: 77.5rem; margin: 0 auto; }
+  */
+  .home-scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; position: relative; z-index: 1; padding: 1.75rem clamp(1.25rem, 7vw, 7rem) 3.75rem; }
+  .home-page { max-width: 74rem; margin: 0 auto; }
 
-  .home-topbar {
-    display: flex; align-items: center; gap: 0.75rem;
-    padding: 0.875rem 1.75rem;
-    border-bottom: 1px solid var(--bd, rgba(139,92,246,.18));
-    background: var(--sf); backdrop-filter: blur(0.875rem); -webkit-backdrop-filter: blur(0.875rem);
-  }
-  .home-search {
-    flex: 1; max-width: 26.25rem; margin-left: auto;
-    display: flex; align-items: center; gap: 0.625rem;
-    background: var(--bg, rgba(255,255,255,.04));
-    border: 1px solid rgba(139,92,246,.22);
-    border-radius: 62.4375rem; padding: 0.625rem 1rem;
-    color: var(--tx2);
-    transition: border-color .2s, box-shadow .2s;
-  }
-  .home-search:focus-within { border-color: rgba(167,139,250,.55); box-shadow: 0 0 0 0.25rem rgba(167,139,250,.12); }
-  .home-search input {
-    background: transparent; border: none; outline: none;
-    color: var(--tx); font-size: 0.8125rem; width: 100%; font-family: inherit;
-  }
-  .home-search input::placeholder { color: var(--tx2); }
+  /* Dashboard follows home.html: flat --sf cards, hairline --bd borders, no
+     gradients, glows, blur, spotlight or tilt. Colour lives in text, icons and
+     button fills (the --acc / --acc-fill pair on each card). The headline cards
+     (countdown, focus banner, stat row, section scores) are flat solid tone fills
+     with white text. Hover and press scale, they never translate. */
 
-  .home-pill {
-    display: inline-flex; align-items: center; gap: 0.375rem;
-    background: var(--bg, rgba(255,255,255,.04));
-    border: 1px solid rgba(139,92,246,.22);
-    border-radius: 62.4375rem; padding: 0.5rem 0.875rem;
-    font-size: 0.8125rem; font-weight: 700; color: var(--tx);
-    font-variant-numeric: tabular-nums;
-    transition: all .2s;
-  }
-  .home-pill .pill-icon { font-size: 0.9375rem; line-height: 1; }
-  .home-pill.streak { background: rgba(251,146,60,.1); border-color: rgba(251,146,60,.3); color: #fb923c; }
-  .home-pill.streak .pill-icon { filter: drop-shadow(0 0 0.375rem rgba(251,146,60,.6)); }
-  .home-pill.gems { background: rgba(56,189,248,.1); border-color: rgba(56,189,248,.3); color: #38bdf8; }
-  .home-pill.gems   .pill-icon { filter: drop-shadow(0 0 0.375rem rgba(56,189,248,.6)); }
+  /* Transparent so the stars sit on the body colour behind the content, not over it. */
+  #bg-canvas { background: transparent; }
 
+  /* ── Tones (same pairs as home.html) ──
+     --acc is the bright tone for text and icons, --acc-fill the deeper shade
+     under white button text. Light theme swaps --tone-* to deep shades. */
+  .korah-grey {
+    --tone-red: #f87171;    --fill-red: #ef4444;
+    --tone-orange: #fb923c; --fill-orange: #f97316;
+    --tone-amber: #fbbf24;  --fill-amber: #f59e0b;
+    --tone-green: #4ade80;  --fill-green: #22c55e;
+    --tone-teal: #2dd4bf;   --fill-teal: #14b8a6;
+    --tone-blue: #60a5fa;   --fill-blue: #3b82f6;
+    --tone-pink: #f472b6;   --fill-pink: #ec4899;
+    --acc: var(--tone-blue); --acc-fill: var(--fill-blue);
+    --lift: 0 0.75rem 2rem rgba(0, 0, 0, 0.45);
+    --bd-hi: color-mix(in srgb, var(--tx) 24%, var(--bd));
+  }
+  html[data-theme="light"] .korah-grey {
+    --tone-red: #b91c1c;    --tone-orange: #c2410c;
+    --tone-amber: #92400e;  --tone-green: #15803d;
+    --tone-teal: #0f766e;   --tone-blue: #1d4ed8;
+    --tone-pink: #be185d;
+    --lift: 0 0.75rem 2rem rgba(0, 0, 0, 0.12);
+  }
+
+  /* One tone per card. Reading & Writing is blue and Math is green everywhere. */
+  .korah-grey .countdown-card,
+  .korah-grey .pacing-panel               { --acc: var(--tone-amber); --acc-fill: var(--fill-amber); }
+  .korah-grey .score-banner,
+  .korah-grey .stat-card:nth-child(1),
+  .korah-grey .section-card.reading,
+  .korah-grey .trend-panel,
+  .korah-grey .suggestions-panel,
+  .korah-grey .reading-skills-panel       { --acc: var(--tone-blue); --acc-fill: var(--fill-blue); }
+  .korah-grey .stat-card:nth-child(2),
+  .korah-grey .section-card.math,
+  .korah-grey .pace-panel,
+  .korah-grey .domain-panel,
+  .korah-grey .math-skills-panel,
+  .korah-grey .heatmap-panel              { --acc: var(--tone-green); --acc-fill: var(--fill-green); }
+  .korah-grey .stat-card:nth-child(3),
+  .korah-grey .retry-panel                { --acc: var(--tone-pink); --acc-fill: var(--fill-pink); }
+  .korah-grey .stat-card:nth-child(4),
+  .korah-grey .time-panel,
+  .korah-grey .recent-panel               { --acc: var(--tone-orange); --acc-fill: var(--fill-orange); }
+  .korah-grey .progress-card,
+  .korah-grey .momentum-panel,
+  .korah-grey .saved-panel                { --acc: var(--tone-teal); --acc-fill: var(--fill-teal); }
+  .korah-grey .neglected-panel            { --acc: var(--tone-red); --acc-fill: var(--fill-red); }
+
+  /* ── Hero ── */
   .home-hero {
     display: grid; grid-template-columns: 1fr minmax(17.5rem, 22.5rem); gap: 1.5rem;
-    align-items: start; margin-bottom: 1.375rem;
+    align-items: center; margin-bottom: 1.5rem;
   }
   @media (max-width: 55rem) { .home-hero { grid-template-columns: 1fr; } }
 
@@ -96,65 +121,73 @@
   .greeting-title .name { color: var(--tx2); font-weight: 700; }
   .greeting-sub { color: var(--tx2); font-size: 0.9375rem; margin: 0.625rem 0 1.375rem; }
 
-  .cta-primary {
-    display: inline-flex; align-items: center; gap: 0.5rem;
-    background: linear-gradient(135deg, #38bdf8, #22d3ee);
-    color: #fff; font-weight: 700; font-size: 0.875rem;
-    padding: 0.75rem 1.375rem; border-radius: 62.4375rem; border: none;
-    cursor: pointer; text-decoration: none;
-    box-shadow: 0 0.375rem 1.375rem rgba(56,189,248,.32);
-    transition: transform .15s, box-shadow .2s;
+  /* ── Cards: one flat surface ── */
+  .countdown-card, .score-banner, .stat-card, .section-card, .progress-card, .panel-card {
+    background: var(--sf);
+    border: 0.0625rem solid var(--bd);
+    border-radius: 1rem;
+    color: var(--tx);
   }
-  .cta-primary:hover { transform: translateY(-1px); box-shadow: 0 0.625rem 1.75rem rgba(56,189,248,.4); }
-  .cta-ghost {
-    display: inline-flex; align-items: center; gap: 0.5rem;
-    background: var(--bg, rgba(255,255,255,.04));
-    border: 1px solid rgba(139,92,246,.28);
-    color: var(--tx); font-weight: 700; font-size: 0.875rem;
-    padding: 0.75rem 1.25rem; border-radius: 62.4375rem;
-    cursor: pointer; text-decoration: none;
-    margin-left: 0.625rem;
-    transition: border-color .2s;
+  .countdown-card, .stat-card, .section-card {
+    transition: border-color .18s ease, transform .18s cubic-bezier(.23, 1, .32, 1), box-shadow .18s ease;
   }
-  .cta-ghost:hover { border-color: rgba(167,139,250,.6); }
+  .countdown-card:hover, .stat-card:hover, .section-card:hover {
+    border-color: var(--bd-hi); transform: scale(1.01); box-shadow: var(--lift);
+  }
+  .stat-card:hover { transform: scale(1.02); }
+  .progress-card, .panel-card { transition: border-color .18s ease; }
+  .progress-card:hover, .panel-card:hover { border-color: var(--bd-hi); }
 
-  .countdown-card {
-    background: linear-gradient(135deg, rgba(139,92,246,0.1), rgba(139,92,246,0.03));
-    border: 1px solid rgba(139,92,246,.32);
-    border-radius: 1.125rem; padding: 1.375rem 1.5rem;
-    backdrop-filter: blur(0.875rem); -webkit-backdrop-filter: blur(0.875rem);
+  /* ── Buttons: solid tone fill, white text ── */
+  .cta-primary, .banner-cta, .practice-btn, .sec-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.375rem;
+    border: 0.0625rem solid transparent; border-radius: 0.5rem;
+    background: var(--acc-fill); color: #fff;
+    font-family: inherit; font-weight: 600; text-decoration: none; white-space: nowrap; cursor: pointer;
+    transition: transform .18s cubic-bezier(.23, 1, .32, 1), filter .18s ease,
+                background .18s ease, border-color .18s ease;
   }
-  .countdown-card .label { font-size: 0.8125rem; color: var(--tx2); margin-bottom: 0.875rem; }
-  .countdown-grid { display: flex; gap: 0.625rem; align-items: baseline; justify-content: flex-start; }
-  .countdown-num { font-size: 1.75rem; font-weight: 800; color: var(--tx); line-height: 1; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+  .cta-primary:hover, .banner-cta:hover, .practice-btn:hover, .sec-btn:hover { transform: scale(1.03); filter: brightness(1.12); }
+  .cta-primary:active, .banner-cta:active, .practice-btn:active, .sec-btn:active { transform: scale(0.98); }
+  .cta-primary { height: 2.5rem; padding: 0 1.25rem; font-size: 0.875rem; }
+  .banner-cta { height: 2.25rem; padding: 0 1rem; font-size: 0.8125rem; }
+  .practice-btn { padding: 0.3125rem 0.75rem; font-size: 0.75rem; }
+  .sec-btn { padding: 0.375rem 0.75rem; font-size: 0.75rem; }
+
+  .cta-ghost {
+    display: inline-flex; align-items: center; justify-content: center;
+    height: 2.5rem; padding: 0 1.25rem; margin-left: 0.625rem;
+    border-radius: 0.5rem; background: var(--sf2); border: 0.0625rem solid var(--bd);
+    color: var(--tx); font-family: inherit; font-weight: 600; font-size: 0.875rem;
+    cursor: pointer; text-decoration: none;
+    transition: transform .18s cubic-bezier(.23, 1, .32, 1), border-color .18s ease;
+  }
+  .cta-ghost:hover { transform: scale(1.03); border-color: var(--bd-hi); }
+  .cta-ghost:active { transform: scale(0.98); }
+
+  /* ── Countdown ── */
+  .countdown-card {
+    padding: 1.375rem 1.5rem 2rem; border-radius: 1.125rem;
+    display: flex; flex-direction: column; justify-content: space-between; min-height: 10.75rem;
+  }
+  .countdown-card .label { font-size: 0.8125rem; font-weight: 600; color: var(--acc); margin-bottom: 0.875rem; }
+  .countdown-grid { display: flex; gap: 0.75rem; align-items: baseline; justify-content: flex-start; }
+  .countdown-num { font-size: 1.75rem; font-weight: 800; color: var(--tx); line-height: 1; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
   .countdown-unit { font-size: 0.6875rem; color: var(--tx2); margin-left: 0.125rem; font-weight: 600; }
   .countdown-date { margin-top: 1rem; color: var(--tx2); font-size: 0.875rem; }
 
+  /* ── Focus banner ── */
   .score-banner {
     display: flex; align-items: center; gap: 0.875rem; flex-wrap: wrap;
-    background: var(--sf);
-    border: 1px solid rgba(56,189,248,.32);
-    border-radius: 1rem; padding: 0.875rem 1.125rem;
-    margin-bottom: 2.25rem;
-    backdrop-filter: blur(1rem); -webkit-backdrop-filter: blur(1rem);
+    padding: 0.875rem 1.125rem; margin-bottom: 2.25rem;
   }
   .score-banner .banner-icon {
-    width: 2.25rem; height: 2.25rem; flex-shrink: 0;
-    border-radius: 0.625rem;
-    background: linear-gradient(135deg, rgba(56,189,248,.18), rgba(34,211,238,.12));
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1.125rem;
+    width: 2.25rem; height: 2.25rem; flex-shrink: 0; border-radius: 0.5rem;
+    background: var(--sf2); border: 0.0625rem solid var(--bd);
+    display: flex; align-items: center; justify-content: center; font-size: 1.125rem;
   }
   .score-banner .banner-text { flex: 1; min-width: 15rem; font-size: 0.875rem; color: var(--tx); }
-  .score-banner .banner-text strong { font-weight: 700; }
-  .banner-cta {
-    background: rgba(56,189,248,.16);
-    color: #38bdf8; font-weight: 700; font-size: 0.8125rem;
-    padding: 0.625rem 1.125rem; border-radius: 62.4375rem; border: none;
-    cursor: pointer; text-decoration: none;
-    transition: background .2s;
-  }
-  .banner-cta:hover { background: rgba(56,189,248,.28); }
+  .score-banner .banner-text strong { font-weight: 700; color: var(--acc); }
 
   .home-section-head {
     display: flex; align-items: center; gap: 0.5rem;
@@ -163,13 +196,15 @@
   }
   .home-section-head .material-icons-round { font-size: 1.125rem; color: var(--tx2); }
   .home-section-head .head-cta {
-    margin-left: auto; font-size: 0.75rem; font-weight: 700;
-    color: var(--tx2); text-decoration: none;
-    padding: 0.375rem 0.75rem; border-radius: 62.4375rem;
-    border: 1px solid rgba(139,92,246,.22);
+    margin-left: auto; font-size: 0.75rem; font-weight: 600;
+    color: var(--tx); text-decoration: none;
+    padding: 0.375rem 0.75rem; border-radius: 0.5rem;
+    background: var(--sf2); border: 0.0625rem solid var(--bd);
+    transition: transform .18s cubic-bezier(.23, 1, .32, 1), border-color .18s ease;
   }
-  .home-section-head .head-cta:hover { color: var(--tx); border-color: rgba(167,139,250,.5); }
+  .home-section-head .head-cta:hover { transform: scale(1.03); border-color: var(--bd-hi); }
 
+  /* ── Stats ── */
   .stats-grid {
     display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;
     margin-bottom: 2.5rem;
@@ -177,30 +212,12 @@
   @media (max-width: 61.25rem) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
   @media (max-width: 32.5rem) { .stats-grid { grid-template-columns: 1fr; } }
 
-  .stat-card {
-    position: relative; overflow: hidden;
-    background: var(--sf);
-    border: 1px solid rgba(139,92,246,.22);
-    border-radius: 1rem; padding: 1.125rem 1.25rem;
-    min-height: 7.375rem;
-    backdrop-filter: blur(1rem); -webkit-backdrop-filter: blur(1rem);
-    transition: all .2s;
-  }
-  .stat-card:nth-child(1) { background: linear-gradient(135deg, rgba(56,189,248,.14), rgba(56,189,248,.04)); border-color: rgba(56,189,248,.3); }
-  .stat-card:nth-child(2) { background: linear-gradient(135deg, rgba(16,185,129,.14), rgba(16,185,129,.04)); border-color: rgba(16,185,129,.3); }
-  .stat-card:nth-child(3) { background: linear-gradient(135deg, rgba(167,139,250,.14), rgba(167,139,250,.04)); border-color: rgba(167,139,250,.3); }
-  .stat-card:nth-child(4) { background: linear-gradient(135deg, rgba(251,146,60,.14), rgba(251,146,60,.04)); border-color: rgba(251,146,60,.3); }
-
-  .stat-card:hover { border-color: rgba(167,139,250,.45); box-shadow: 0 0.375rem 1.375rem rgba(139,92,246,.12); transform: translateY(-0.125rem); }
-  .stat-card .stat-label { font-size: 0.8125rem; color: var(--tx2); font-weight: 600; }
+  .stat-card { padding: 1.125rem 1.25rem; min-height: 7.375rem; }
+  .stat-card .stat-label { font-size: 1rem; font-weight: 600; color: var(--acc); }
   .stat-card .stat-value { font-size: 2.25rem; font-weight: 800; color: var(--tx); margin-top: 0.375rem; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
   .stat-card .stat-sub { font-size: 0.75rem; color: var(--tx2); margin-top: 0.25rem; }
-  .stat-card .stat-watermark {
-    position: absolute; right: 0.75rem; bottom: 0.5rem;
-    color: rgba(139,92,246,.18); font-size: 3.75rem;
-  }
 
-  /* Score Progress (Current → Goal) */
+  /* ── Score progress (current to goal) ── */
   .score-progress-grid {
     display: grid; grid-template-columns: 2fr 1fr; gap: 1.25rem;
     align-items: stretch; margin-bottom: 2.5rem;
@@ -208,311 +225,107 @@
   @media (max-width: 55rem) { .score-progress-grid { grid-template-columns: 1fr; } }
 
   .progress-card {
-    background: var(--sf);
-    border: 1px solid rgba(167,139,250,.22);
-    border-radius: 1rem; padding: 1.5rem 1.625rem;
+    padding: 1.5rem 1.625rem;
     display: flex; flex-direction: column; gap: 1.125rem;
-    backdrop-filter: blur(1rem); -webkit-backdrop-filter: blur(1rem);
   }
-  .progress-card-main {
-    display: flex; align-items: center; gap: 1.125rem;
-  }
+  .progress-card-main { display: flex; align-items: center; gap: 1.125rem; }
   .progress-circle {
-    width: 4.75rem; height: 4.75rem; flex-shrink: 0;
-    border-radius: 0.875rem;
-    /* background: linear-gradient(135deg, rgba(167,139,250,.12), rgba(139,92,246,.06));
-    border: 1px solid rgba(167,139,250,.3); */
-    display: flex; align-items: center; justify-content: center;
-    overflow: hidden; transition: all .3s;
+    width: 4.75rem; height: 4.75rem; flex-shrink: 0; border-radius: 0.875rem;
+    display: flex; align-items: center; justify-content: center; overflow: hidden;
   }
   .progress-circle img { width: 2.5rem; height: 2.5rem; object-fit: contain; }
-  .progress-circle.reached {
-    background: linear-gradient(135deg, rgba(34,197,94,.18), rgba(16,185,129,.1));
-    border-color: rgba(34,197,94,.4);
-  }
+  .progress-circle.reached { background: color-mix(in srgb, var(--fill-green) 18%, var(--sf2)); }
   .progress-text-block { flex: 1; min-width: 0; }
-  .progress-pct {
-    font-size: 1.75rem; font-weight: 800; letter-spacing: -0.02em;
-    color: var(--tx); font-variant-numeric: tabular-nums; line-height: 1;
-  }
-  .progress-label {
-    font-size: 1.25rem; font-weight: 700; color: var(--tx2); margin-top: 0.375rem;
-    font-variant-numeric: tabular-nums; letter-spacing: -0.01em;
-  }
-  .score-bar { height: 1.25rem; background: rgba(139,92,246,.12); border-radius: 0.625rem;
-    overflow: hidden; position: relative; }
-  .score-bar-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #7c3aed, #a78bfa, #c084fc);
-    box-shadow: 0 0 0.75rem rgba(139,92,246,.5);
-    transition: width .5s ease; border-radius: 0.625rem;
-    position: relative; overflow: hidden;
-  }
-  .score-bar-fill::after {
-    content: '';
-    position: absolute; top: 0; left: -60%; width: 50%; height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent);
-    animation: bar-shimmer 1.8s ease-in-out infinite;
-    border-radius: 0.625rem;
-  }
-  @keyframes bar-shimmer {
-    0%   { left: -60%; }
-    100% { left: 110%; }
-  }
+  .progress-pct { font-size: 1.75rem; font-weight: 800; letter-spacing: -0.02em; color: var(--tx); font-variant-numeric: tabular-nums; line-height: 1; }
+  .progress-label { font-size: 1.25rem; font-weight: 700; color: var(--tx2); margin-top: 0.375rem; font-variant-numeric: tabular-nums; }
+  .score-bar { height: 1.25rem; background: var(--sf2); border-radius: 0.5rem; overflow: hidden; position: relative; }
+  .score-bar-fill { height: 100%; background: var(--acc-fill); transition: width .5s ease; border-radius: 0.5rem; }
 
   .section-stack { display: flex; flex-direction: column; gap: 0.875rem; }
   .section-card {
-    background: var(--sf); border: 1px solid rgba(139,92,246,.22);
-    border-radius: 1rem; padding: 1rem 1.125rem;
+    padding: 1rem 1.125rem;
     display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
-    backdrop-filter: blur(1rem); -webkit-backdrop-filter: blur(1rem);
-    transition: all .2s;
   }
-  .section-card:hover { transform: translateY(-0.125rem); }
-  .section-card.reading { background: linear-gradient(135deg, rgba(56,189,248,.14), rgba(56,189,248,.04)); border-color: rgba(56,189,248,.3); }
-  .section-card.math    { background: linear-gradient(135deg, rgba(16,185,129,.14), rgba(16,185,129,.04)); border-color: rgba(16,185,129,.3); }
-  .section-card .sec-label { font-size: 0.75rem; font-weight: 700; color: var(--tx2); text-transform: uppercase; letter-spacing: 0.0625rem; }
+  .section-card .sec-label { font-size: 0.8125rem; font-weight: 600; color: var(--acc); }
   .section-card .sec-value { font-size: 1.5rem; font-weight: 800; color: var(--tx); margin-top: 0.125rem; font-variant-numeric: tabular-nums; }
   .section-card .sec-sub   { font-size: 0.6875rem; color: var(--tx2); margin-top: 0.125rem; }
-  .section-card .sec-btn {
-    font-size: 0.6875rem; font-weight: 700; padding: 0.375rem 0.75rem;
-    border-radius: 62.4375rem; text-decoration: none;
-    background: rgba(139,92,246,.16); color: #c4b5fd;
-    border: 1px solid rgba(167,139,250,.35);
-  }
-  .section-card .sec-btn:hover { background: rgba(167,139,250,.28); }
 
-  /* Suggestions / focus list */
+  /* ── Panels ── */
   .focus-grid {
     display: grid; grid-template-columns: 2fr 1fr; gap: 1.25rem;
     margin-bottom: 2.5rem; align-items: start;
   }
   @media (max-width: 55rem) { .focus-grid { grid-template-columns: 1fr !important; } }
 
-  .panel-card {
-    background: linear-gradient(135deg, rgba(255,255,255,0.02), rgba(255,255,255,0.005));
-    border: 1px solid rgba(139,92,246,.22);
-    border-radius: 1.125rem; padding: 1.25rem 1.375rem;
-    backdrop-filter: blur(1rem); -webkit-backdrop-filter: blur(1rem);
-    transition: border-color .2s, box-shadow .2s;
-  }
-  .panel-card:hover { border-color: rgba(167,139,250,.4); box-shadow: 0 0.25rem 1.25rem rgba(139,92,246,0.08); }
-  /* Colored focus-grid panels */
-  .suggestions-panel {
-    background: linear-gradient(135deg, rgba(56,189,248,.08), rgba(34,211,238,.04)) !important;
-    border-color: rgba(56,189,248,.25) !important;
-  }
-  .domain-panel {
-    background: linear-gradient(135deg, rgba(16,185,129,.08), rgba(52,212,153,.04)) !important;
-    border-color: rgba(16,185,129,.25) !important;
-  }
-  .reading-skills-panel {
-    background: linear-gradient(135deg, rgba(59,130,246,.08), rgba(96,165,250,.04)) !important;
-    border-color: rgba(59,130,246,.25) !important;
-  }
-  .math-skills-panel {
-    background: linear-gradient(135deg, rgba(34,197,94,.08), rgba(74,222,128,.04)) !important;
-    border-color: rgba(34,197,94,.25) !important;
-  }
+  .panel-card { padding: 1.25rem 1.375rem; }
   .panel-card h3 {
-    font-size: 0.6875rem; font-weight: 800; text-transform: uppercase;
-    letter-spacing: 0.1rem; margin: 0 0 0.875rem;
-    background: linear-gradient(90deg, #c4b5fd, #e879f9);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-  [data-theme="light"] .panel-card h3 {
-    background: linear-gradient(90deg, #7c3aed, #a21caf);
-    -webkit-background-clip: text; background-clip: text;
+    font-size: 0.9375rem; font-weight: 700; color: var(--acc);
+    margin: 0 0 0.875rem;
   }
 
   .skill-row {
     display: flex; align-items: center; gap: 0.625rem; padding: 0.75rem 0;
-    border-bottom: 1px solid rgba(139,92,246,.1);
-    transition: all .2s;
+    border-bottom: 0.0625rem solid var(--bd);
     border-radius: 0.5rem;
+    transition: background .18s ease;
   }
-  .skill-row:hover { background: rgba(139,92,246,0.04); padding-left: 0.5rem; padding-right: 0.5rem; }
+  .skill-row:hover { background: var(--sf2); }
   .skill-row:last-child { border-bottom: none; }
   .skill-row .rank {
-    width: 1.5rem; height: 1.5rem; border-radius: 50%;
-    background: linear-gradient(135deg, rgba(167,139,250,.22), rgba(232,121,249,.12));
-    color: #c4b5fd; font-size: 0.6875rem; font-weight: 800;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
+    width: 1.5rem; height: 1.5rem; border-radius: 0.5rem;
+    background: var(--acc-fill); color: #fff; font-size: 0.6875rem; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   }
   .skill-meta { flex: 1; min-width: 0; }
-  .skill-name { font-size: 0.8125rem; font-weight: 600; color: var(--tx);
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .skill-name { font-size: 0.8125rem; font-weight: 600; color: var(--tx); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .skill-sub { font-size: 0.6875rem; color: var(--tx2); margin-top: 0.125rem; }
-  .skill-acc { font-size: 0.75rem; font-weight: 700; color: var(--tx2);
-    font-variant-numeric: tabular-nums; }
-  .practice-btn {
-    display: inline-flex; align-items: center; gap: 0.3125rem;
-    font-size: 0.6875rem; font-weight: 700; padding: 0.3125rem 0.6875rem;
-    border-radius: 1.25rem;
-    background: linear-gradient(135deg, rgba(124,58,237,.2), rgba(167,139,250,.12));
-    color: #c4b5fd; border: 1px solid rgba(167,139,250,.4);
-    text-decoration: none; cursor: pointer; letter-spacing: .0.1875rem;
-    transition: all .2s;
-  }
-  .practice-btn:hover {
-    background: linear-gradient(135deg, rgba(124,58,237,.35), rgba(167,139,250,.22));
-    border-color: rgba(196,181,253,.65);
-    color: #ddd6fe;
-  }
+  .skill-acc { font-size: 0.75rem; font-weight: 700; color: var(--tx2); font-variant-numeric: tabular-nums; }
 
   .domain-bar-row { margin-bottom: 0.875rem; }
   .domain-bar-row:last-child { margin-bottom: 0; }
-  .domain-bar-label { display: flex; justify-content: space-between;
-    font-size: 0.75rem; font-weight: 600; color: var(--tx2); margin-bottom: 0.375rem; }
-  .domain-bar { height: 0.375rem; background: rgba(139,92,246,.12); border-radius: 0.375rem; overflow: hidden; }
-  .domain-bar-fill { height: 100%;
-    background: linear-gradient(90deg, #7c3aed, #a78bfa, #c084fc);
-    box-shadow: 0 0 0.5rem rgba(139,92,246,.3);
-    transition: width .4s ease; }
+  .domain-bar-label { display: flex; justify-content: space-between; font-size: 0.75rem; font-weight: 600; color: var(--tx2); margin-bottom: 0.375rem; }
+  .domain-bar { height: 0.375rem; background: var(--sf2); border-radius: 0.375rem; overflow: hidden; }
+  .domain-bar-fill { height: 100%; background: var(--acc-fill); transition: width .4s ease; }
 
   .empty-hint { color: var(--tx2); font-size: 0.8125rem; text-align: center; padding: 1.5rem 0; }
 
-  /* Activity rings row */
-  .activity-grid {
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;
-    margin-bottom: 2.5rem;
-  }
-  @media (max-width: 45rem) { .activity-grid { grid-template-columns: 1fr; } }
-
-  .activity-card {
-    background: linear-gradient(135deg, rgba(255,255,255,0.02), rgba(255,255,255,0.005));
-    border: 1px solid rgba(139,92,246,.22);
-    border-radius: 1rem; padding: 1.125rem 1.25rem;
-    display: flex; align-items: center; gap: 1rem;
-    backdrop-filter: blur(1rem); -webkit-backdrop-filter: blur(1rem);
-    transition: all .2s;
-  }
-  .activity-card:hover { transform: translateY(-0.125rem); border-color: rgba(167,139,250,.4); }
-  .activity-ring {
-    width: 4.5rem; height: 4.5rem; flex-shrink: 0;
-    border-radius: 50%;
-    background:
-      conic-gradient(#a78bfa var(--p, 0%), rgba(139,92,246,.12) 0);
-    display: flex; align-items: center; justify-content: center;
-    position: relative;
-  }
-  .activity-ring::after {
-    content: ''; position: absolute; inset: 0.375rem; border-radius: 50%;
-    background: var(--sf);
-  }
-  .activity-ring .ring-val {
-    position: relative; z-index: 1;
-    font-size: 1rem; font-weight: 800; color: var(--tx);
-    font-variant-numeric: tabular-nums;
-  }
-  .activity-meta .a-label { font-size: 0.75rem; font-weight: 600; color: var(--tx2); }
-  .activity-meta .a-value { font-size: 1.375rem; font-weight: 800; color: var(--tx); margin-top: 0.125rem; font-variant-numeric: tabular-nums; }
-  .activity-meta .a-sub   { font-size: 0.6875rem; color: var(--tx2); margin-top: 0.125rem; }
-
   .recent-list .recent-row {
     display: flex; align-items: center; gap: 0.625rem;
-    padding: 0.625rem 0; border-bottom: 1px solid rgba(139,92,246,.1);
-    transition: all .2s;
+    padding: 0.625rem 0; border-bottom: 0.0625rem solid var(--bd);
     border-radius: 0.5rem;
+    transition: background .18s ease;
   }
-  .recent-list .recent-row:hover { background: rgba(139,92,246,0.04); padding-left: 0.5rem; padding-right: 0.5rem; }
+  .recent-list .recent-row:hover { background: var(--sf2); }
   .recent-list .recent-row:last-child { border-bottom: none; }
   .recent-icon { font-size: 1rem; flex-shrink: 0; }
 
-  /* Colored containers for activity sections */
-  .saved-panel {
-    background: linear-gradient(135deg, rgba(167,139,250,.08), rgba(232,121,249,.04)) !important;
-    border-color: rgba(167,139,250,.25) !important;
-  }
-  .recent-panel {
-    background: linear-gradient(135deg, rgba(251,146,60,.08), rgba(249,115,22,.04)) !important;
-    border-color: rgba(251,146,60,.25) !important;
-  }
-
-  /* ── Spotlight glow + cursor tilt (see ui-components/SPOTLIGHT-TILT-CARDS.md) ── */
-  .countdown-card, .stat-card, .section-card, .progress-card, .panel-card { position: relative; }
-  .countdown-card::before, .stat-card::before, .section-card::before,
-  .progress-card::before, .panel-card::before {
-    content: ""; position: absolute; inset: 0;
-    border-radius: inherit;      /* rounds the glow without clipping child shadows */
-    pointer-events: none; z-index: 0;
-    opacity: var(--spotlight-opacity, 0);
-    transition: opacity .5s ease-in-out;
-    background: radial-gradient(
-      circle at var(--spotlight-x, 50%) var(--spotlight-y, 50%),
-      var(--spotlight-color, rgba(139, 92, 246, .3)), transparent 80%);
-  }
-  /* Glow inherits each card's own accent color */
-  .countdown-card { --spotlight-color: rgba(139, 92, 246, .32); }
-  .progress-card  { --spotlight-color: rgba(167, 139, 250, .32); }
-  .section-card         { --spotlight-color: rgba(139, 92, 246, .3); }
-  .section-card.reading { --spotlight-color: rgba(56, 189, 248, .32); }
-  .section-card.math    { --spotlight-color: rgba(16, 185, 129, .32); }
-  .panel-card           { --spotlight-color: rgba(139, 92, 246, .28); }
-  .suggestions-panel    { --spotlight-color: rgba(56, 189, 248, .3); }
-  .domain-panel         { --spotlight-color: rgba(16, 185, 129, .3); }
-  .reading-skills-panel { --spotlight-color: rgba(59, 130, 246, .3); }
-  .math-skills-panel    { --spotlight-color: rgba(34, 197, 94, .3); }
-  .saved-panel          { --spotlight-color: rgba(167, 139, 250, .3); }
-  .recent-panel         { --spotlight-color: rgba(251, 146, 60, .3); }
-  .stat-card:nth-child(1) { --spotlight-color: rgba(56, 189, 248, .32); }
-  .stat-card:nth-child(2) { --spotlight-color: rgba(16, 185, 129, .32); }
-  .stat-card:nth-child(3) { --spotlight-color: rgba(167, 139, 250, .32); }
-  .stat-card:nth-child(4) { --spotlight-color: rgba(251, 146, 60, .32); }
-  /* Tilt is set instantly per frame from JS (no transform transition) so it tracks
-     the cursor 1:1 — a transition here makes it chase/lag behind fast movement.
-     JS eases only the reset-to-flat. will-change keeps the card composited/smooth. */
-  .countdown-card, .stat-card, .section-card, .progress-card { will-change: transform; }
-
-  /* ── Progress Report (mirrors the mobile Analytics tab) ── */
+  /* ── Progress report ── */
   .range-chips { margin-left: auto; display: inline-flex; gap: 0.375rem; }
   .range-chips button {
-    font-size: 0.75rem; font-weight: 700; color: var(--tx2); font-family: inherit;
-    background: var(--bg, rgba(255,255,255,.04));
-    border: 1px solid rgba(139,92,246,.22); border-radius: 62.4375rem;
-    padding: 0.375rem 0.75rem; cursor: pointer; transition: all .2s;
+    font-size: 0.75rem; font-weight: 600; color: var(--tx); font-family: inherit;
+    background: var(--sf2); border: 0.0625rem solid var(--bd); border-radius: 0.5rem;
+    padding: 0.375rem 0.75rem; cursor: pointer;
+    transition: transform .18s cubic-bezier(.23, 1, .32, 1), background .18s ease, border-color .18s ease;
   }
-  .range-chips button:hover { border-color: rgba(167,139,250,.5); color: var(--tx); }
-  .range-chips button.active { background: rgba(139,92,246,.16); color: #c4b5fd; border-color: rgba(167,139,250,.45); }
+  .range-chips button:hover { transform: scale(1.03); border-color: var(--bd-hi); }
+  .range-chips button:active { transform: scale(0.98); }
+  .range-chips button.active { background: var(--acc-fill); border-color: var(--acc-fill); color: #fff; }
 
   .report-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 2.5rem; align-items: stretch; }
   @media (max-width: 55rem) { .report-grid { grid-template-columns: 1fr; } }
   .report-span2 { grid-column: 1 / -1; }
   .report-hint { font-size: 0.6875rem; color: var(--tx2); margin-top: 0.75rem; }
 
-  .trend-panel    { --spotlight-color: rgba(56,189,248,.3);
-    background: linear-gradient(135deg, rgba(56,189,248,.06), rgba(34,211,238,.02)) !important;
-    border-color: rgba(56,189,248,.22) !important; }
-  .pace-panel     { --spotlight-color: rgba(34,197,94,.3);
-    background: linear-gradient(135deg, rgba(34,197,94,.08), rgba(74,222,128,.03)) !important;
-    border-color: rgba(34,197,94,.25) !important; }
-  .momentum-panel { --spotlight-color: rgba(45,212,191,.3);
-    background: linear-gradient(135deg, rgba(45,212,191,.08), rgba(94,234,212,.03)) !important;
-    border-color: rgba(45,212,191,.25) !important; }
-  .time-panel     { --spotlight-color: rgba(251,146,60,.3);
-    background: linear-gradient(135deg, rgba(251,146,60,.08), rgba(249,115,22,.03)) !important;
-    border-color: rgba(251,146,60,.25) !important; }
-  .pacing-panel   { --spotlight-color: rgba(99,102,241,.3);
-    background: linear-gradient(135deg, rgba(99,102,241,.08), rgba(129,140,248,.03)) !important;
-    border-color: rgba(99,102,241,.25) !important; }
-  .neglected-panel{ --spotlight-color: rgba(139,92,246,.3); }
-  .retry-panel    { --spotlight-color: rgba(232,121,249,.3);
-    background: linear-gradient(135deg, rgba(232,121,249,.08), rgba(240,171,252,.03)) !important;
-    border-color: rgba(232,121,249,.25) !important; }
-  .heatmap-panel  { --spotlight-color: rgba(34,197,94,.3); }
-
   .trend-legend { display: flex; gap: 0.625rem; margin-bottom: 0.875rem; }
   .trend-chip {
     display: inline-flex; align-items: center; gap: 0.375rem;
-    font-size: 0.75rem; font-weight: 700; padding: 0.375rem 0.75rem; border-radius: 62.4375rem;
-    font-variant-numeric: tabular-nums;
+    font-size: 0.75rem; font-weight: 600; padding: 0.375rem 0.75rem; border-radius: 0.5rem;
+    font-variant-numeric: tabular-nums; color: #fff;
   }
-  .trend-chip.good { background: #22c55e; color: #fff; }
-  .trend-chip.bad  { background: #ef4444; color: #fff; }
+  .trend-chip.good { background: var(--fill-green); }
+  .trend-chip.bad  { background: var(--fill-red); }
 
-  .trend-ycap { font-size: 0.6875rem; font-weight: 700; color: var(--tx2); margin-bottom: 0.25rem; }
+  .trend-ycap { font-size: 0.6875rem; font-weight: 600; color: var(--tx2); margin-bottom: 0.25rem; }
   .trend-plot { display: flex; gap: 0.5rem; }
   .trend-yaxis { position: relative; flex: none; width: 1.75rem; height: 10rem; }
   .trend-yaxis span {
@@ -536,22 +349,22 @@
   .mini-grid.three { grid-template-columns: 1fr 1fr 1fr; }
   .mini-stat {
     border-radius: 0.75rem; padding: 0.75rem 0.875rem;
-    background: rgba(255,255,255,.03); border: 1px solid rgba(139,92,246,.16);
+    background: var(--sf2); border: 0.0625rem solid var(--bd);
   }
-  .mini-stat.hl { background: rgba(45,212,191,.1); border-color: rgba(45,212,191,.3); }
-  .mini-stat .m-label { font-size: 0.6875rem; font-weight: 700; color: var(--tx2); text-transform: uppercase; letter-spacing: .0.4375rem; }
+  .mini-stat.hl { border-color: var(--acc); }
+  .mini-stat .m-label { font-size: 0.75rem; font-weight: 600; color: var(--tx2); }
   .mini-stat .m-value { font-size: 1.375rem; font-weight: 800; color: var(--tx); margin-top: 0.25rem; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
   .mini-stat .m-sub { font-size: 0.6875rem; color: var(--tx2); margin-top: 0.125rem; }
-  .pace-target { font-size: 0.9375rem; font-weight: 800; color: #22c55e; margin-top: 0.875rem; }
+  .pace-target { font-size: 0.9375rem; font-weight: 700; color: var(--acc); margin-top: 0.875rem; }
   .delta-row { display: flex; gap: 0.875rem; margin-top: 0.75rem; flex-wrap: wrap; }
   .delta-chip { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.75rem; font-weight: 600; }
   .delta-chip .material-icons-round { font-size: 0.875rem; }
-  .delta-chip.up { color: #22c55e; } .delta-chip.down { color: #ef4444; } .delta-chip.flat { color: var(--tx2); }
+  .delta-chip.up { color: var(--tone-green); } .delta-chip.down { color: var(--tone-red); } .delta-chip.flat { color: var(--tx2); }
 
   .donut-wrap { display: flex; align-items: center; gap: 1.125rem; }
   .report-donut {
     width: 7.375rem; height: 7.375rem; flex-shrink: 0; border-radius: 50%;
-    background: rgba(139,92,246,.12); position: relative;
+    background: var(--sf2); position: relative;
     display: flex; align-items: center; justify-content: center;
   }
   .report-donut::after { content: ''; position: absolute; inset: 0.9375rem; border-radius: 50%; background: var(--sf); }
@@ -564,249 +377,94 @@
   .donut-legend .l-val { margin-left: auto; font-weight: 700; color: var(--tx); font-variant-numeric: tabular-nums; }
 
   .difficulty-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1.125rem; }
-  .difficulty-cols .d-col-head { font-size: 0.6875rem; font-weight: 800; text-transform: uppercase; letter-spacing: .0.5rem; margin-bottom: 0.625rem; }
+  .difficulty-cols .d-col-head { font-size: 0.8125rem; font-weight: 700; margin-bottom: 0.625rem; }
   .difficulty-cols .d-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; color: var(--tx2); padding: 0.375rem 0; }
   .difficulty-cols .d-row .material-icons-round { font-size: 0.9375rem; }
   .difficulty-cols .d-row .d-val { margin-left: auto; font-weight: 700; color: var(--tx); font-variant-numeric: tabular-nums; }
 
   .quad-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
-  .quad-tile { border-radius: 0.75rem; padding: 0.75rem 0.875rem; border: 1px solid; }
-  .quad-tile .q-label { display: flex; align-items: center; gap: 0.3125rem; font-size: 0.6875rem; font-weight: 700; }
+  .quad-tile { border-radius: 0.75rem; padding: 0.75rem 0.875rem; background: var(--sf2); border: 0.0625rem solid var(--bd); }
+  .quad-tile .q-label { display: flex; align-items: center; gap: 0.3125rem; font-size: 0.75rem; font-weight: 600; }
   .quad-tile .q-label .material-icons-round { font-size: 0.875rem; }
   .quad-tile .q-value { font-size: 1.25rem; font-weight: 800; color: var(--tx); margin-top: 0.25rem; font-variant-numeric: tabular-nums; }
   .quad-tile .q-sub { font-size: 0.625rem; color: var(--tx2); margin-top: 0.125rem; }
 
   .heat-grid { display: flex; gap: 0.25rem; }
   .heat-week { flex: 1; display: flex; flex-direction: column; gap: 0.25rem; }
-  .heat-cell { width: 100%; aspect-ratio: 1; border-radius: 0.1875rem; background: rgba(139,92,246,.1); }
+  .heat-cell { width: 100%; aspect-ratio: 1; border-radius: 0.1875rem; background: var(--sf2); }
   .heat-scale { display: flex; align-items: center; gap: 0.3125rem; justify-content: flex-end; margin-top: 0.625rem; font-size: 0.625rem; color: var(--tx2); }
   .heat-scale .heat-cell { width: 0.625rem; flex: none; }
 
-  /* ══ Color blocking ═══════════════════════════════════════════════════════
-     Same system as the Study Plan wizard — see docs/WIZARD-UI-PATTERNS.md.
-
-     Cards rest on a solid neutral grey, never on the app's --sf/--bd (those
-     are translucent and purple-tinted, so a panel wearing them reads as "the
-     same color as the background"). Every fill here is an opaque hex: nothing
-     on this page is a translucent wash.
-
-     Colour is spent where it says something, not on every surface:
-       · filled — the hero (countdown, score banner), the stat row and the two
-         section cards. Those are the readouts at the top of the page, and a
-         filled tile is the strongest read available.
-       · the progress card and every report/focus panel are grey. They are
-         containers for charts and lists; a saturated fill fought the
-         colour-coded data drawn on top of them, which is what made the page
-         look busy. They carry their tone on the heading, the meters, the rank
-         badges, the buttons and the hover glow instead.
-
-     The fill and shadow are written out at each rule rather than held in a
-     shared custom property: a custom property's var() is substituted where the
-     property is *declared*, so a --kg-fill on <body> would freeze --acc at the
-     body's tone and every tile would come out the same colour.
-
-     Scoped to .korah-grey on <body> so the shared sidebar chrome and the other
-     pages loading korah-chat.css are untouched. */
-  .korah-grey {
-    --kg-sf:  #26262e;   /* card and panel fill   */
-    --kg-sf2: #31313c;   /* inputs, chips, meters */
-    --kg-bd:  #454553;   /* borders + 3D shadow   */
-    --tone-red: #ef4444;    --tone-orange: #f97316;
-    --tone-amber: #f59e0b;  --tone-green: #22c55e;
-    --tone-teal: #14b8a6;   --tone-blue: #3b82f6;
-    --tone-pink: #ec4899;
-    --acc: var(--tone-blue);
+  /* ── Filled tone cards ──
+     The countdown, focus banner, stat row and section scores carry their tone as
+     a flat solid fill with white text. --acc flips to white so every label that
+     reads var(--acc) turns white, and buttons invert to white with fill-coloured
+     text. .korah-grey twice: the per-card tone rules set --acc at the same
+     specificity as a single .korah-grey and would leave those labels tinted. */
+  .korah-grey.korah-grey .countdown-card, .korah-grey.korah-grey .score-banner,
+  .korah-grey.korah-grey .stat-card, .korah-grey.korah-grey .section-card {
+    --acc: #fff; --tx: #fff; --tx2: #fff;
+    background: var(--acc-fill); border-color: var(--acc-fill); color: #fff;
   }
-  html[data-theme="light"] .korah-grey {
-    --kg-sf: #eceef2; --kg-sf2: #e0e3ea; --kg-bd: #c3c8d2;
+  .korah-grey .score-banner .banner-icon { background: rgba(255, 255, 255, .2); border-color: rgba(255, 255, 255, .3); }
+  .korah-grey .score-banner .banner-cta, .korah-grey .section-card .sec-btn, .korah-grey .stat-card .practice-btn {
+    background: #fff; color: color-mix(in srgb, var(--acc-fill) 72%, #000);
   }
 
-  /* No dimmed text — --tx2/--tx3 vanish against grey */
-  .korah-grey .home-page,
-  .korah-grey .home-topbar { --tx2: var(--tx); --tx3: var(--tx); }
+  /* Large faint icon in the corner of a filled card, behind its content */
+  .korah-grey .countdown-card, .korah-grey .stat-card { position: relative; overflow: hidden; }
+  .korah-grey .card-watermark {
+    position: absolute; right: 0.5rem; bottom: 0.25rem; z-index: 0;
+    font-size: 5.5rem; line-height: 1; color: rgba(255, 255, 255, .25); pointer-events: none;
+  }
+  .korah-grey :is(.countdown-card, .stat-card) > :not(.card-watermark) { position: relative; z-index: 1; }
 
-  /* One tone per card. Nothing lands on indigo or violet — next to blue they
-     read as the purple this is getting away from. */
-  .korah-grey .countdown-card,
-  .korah-grey .pacing-panel               { --acc: var(--tone-amber); }
-  .korah-grey .score-banner,
-  .korah-grey .stat-card:nth-child(1),
-  .korah-grey .section-card.math,
-  .korah-grey .trend-panel,
-  .korah-grey .suggestions-panel,
-  .korah-grey .math-skills-panel          { --acc: var(--tone-blue); }
-  .korah-grey .stat-card:nth-child(2),
-  .korah-grey .pace-panel,
-  .korah-grey .domain-panel,
-  .korah-grey .heatmap-panel              { --acc: var(--tone-green); }
-  .korah-grey .stat-card:nth-child(3),
-  .korah-grey .section-card.reading,
-  .korah-grey .retry-panel,
-  .korah-grey .reading-skills-panel       { --acc: var(--tone-pink); }
-  .korah-grey .stat-card:nth-child(4),
-  .korah-grey .time-panel,
-  .korah-grey .recent-panel               { --acc: var(--tone-orange); }
-  .korah-grey .progress-card,
-  .korah-grey .momentum-panel,
-  .korah-grey .saved-panel                { --acc: var(--tone-teal); }
-  .korah-grey .neglected-panel            { --acc: var(--tone-red); }
-  .korah-grey .activity-card:nth-child(1) { --acc: var(--tone-blue); }
-  .korah-grey .activity-card:nth-child(2) { --acc: var(--tone-pink); }
-  .korah-grey .activity-card:nth-child(3) { --acc: var(--tone-orange); }
-
-  /* Grey cards and panels — solid fill, grey border, 3D shadow.
-     !important matches the per-panel tint rules above, which use it too. */
-  .korah-grey .home-topbar,
-  .korah-grey .progress-card,
-  .korah-grey .panel-card,
-  .korah-grey .activity-card {
-    background: var(--kg-sf) !important;
-    border: 1px solid var(--kg-bd) !important;
-    color: var(--tx);
-  }
-  .korah-grey .progress-card,
-  .korah-grey .panel-card,
-  .korah-grey .activity-card { box-shadow: 0 0.25rem 0 0 var(--kg-bd); }
-  .korah-grey .progress-card:hover,
-  .korah-grey .panel-card:hover,
-  .korah-grey .activity-card:hover {
-    border-color: color-mix(in srgb, var(--acc) 70%, var(--kg-bd)) !important;
-    box-shadow: 0 0.6rem 1.6rem color-mix(in srgb, var(--acc) 30%, transparent),
-                0 0.3rem 0 0 color-mix(in srgb, var(--acc) 45%, var(--kg-bd));
-  }
-
-  /* Filled: the hero readouts, the stat row and the two section cards */
-  .korah-grey .countdown-card,
-  .korah-grey .score-banner,
-  .korah-grey .stat-card,
-  .korah-grey .section-card {
-    --tx: #fff; --tx2: #fff; --tx3: #fff;
-    color: #fff;
-    background: linear-gradient(180deg, var(--acc), color-mix(in srgb, var(--acc) 78%, #000)) !important;
-    border: 1px solid var(--acc) !important;
-    box-shadow: 0 0.25rem 0 0 color-mix(in srgb, var(--acc) 55%, #000);
-  }
-  .korah-grey .countdown-card:hover,
-  .korah-grey .stat-card:hover,
-  .korah-grey .section-card:hover {
-    border-color: color-mix(in srgb, var(--acc) 40%, #fff) !important;
-    box-shadow: 0 0.6rem 1.6rem color-mix(in srgb, var(--acc) 40%, transparent),
-                0 0.3rem 0 0 color-mix(in srgb, var(--acc) 55%, #000);
-  }
-  .korah-grey .stat-card .stat-label,
-  .korah-grey .stat-card .stat-value,
-  .korah-grey .stat-card .stat-sub,
-  .korah-grey .section-card .sec-label,
-  .korah-grey .section-card .sec-value,
-  .korah-grey .section-card .sec-sub,
-  .korah-grey .countdown-card .label,
-  .korah-grey .countdown-num,
-  .korah-grey .countdown-unit,
-  .korah-grey .countdown-date,
-  .korah-grey .score-banner .banner-text,
-  .korah-grey .score-banner .banner-text a { color: #fff; }
-  .korah-grey .stat-card .stat-watermark { color: rgba(255,255,255,.26); }
-  /* A button on a filled tile inverts to white so it reads on any tone */
-  .korah-grey .section-card .sec-btn,
-  .korah-grey .score-banner .banner-cta {
-    background: #fff; color: color-mix(in srgb, var(--acc) 78%, #000);
-    border: 1px solid #fff; font-weight: 700;
-  }
-  .korah-grey .section-card .sec-btn:hover,
-  .korah-grey .score-banner .banner-cta:hover { background: rgba(255,255,255,.86); }
-  .korah-grey .score-banner .banner-icon { background: rgba(255,255,255,.22); border-color: rgba(255,255,255,.3); }
-
-  /* On the grey panels the tone shows on the heading, meters and badges */
-  .korah-grey .panel-card h3,
-  html[data-theme="light"] .korah-grey .panel-card h3 {
-    background: none;
-    -webkit-text-fill-color: var(--acc);
-    color: var(--acc);
-  }
-  .korah-grey .difficulty-cols .d-col-head,
-  .korah-grey .pace-target { color: var(--acc); }
-  .korah-grey .skill-row .rank { background: var(--acc); color: #fff; }
-  .korah-grey .score-bar,
-  .korah-grey .domain-bar,
-  .korah-grey .mini-stat,
-  .korah-grey .banner-icon,
-  .korah-grey .home-search,
-  .korah-grey .report-donut,
-  .korah-grey .heat-cell {
-    background: var(--kg-sf2);
-    border-color: var(--kg-bd);
-  }
-  .korah-grey .mini-stat.hl {
-    background: color-mix(in srgb, var(--acc) 18%, var(--kg-sf2));
-    border-color: var(--acc);
-  }
-  .korah-grey .score-bar-fill,
-  .korah-grey .domain-bar-fill {
-    background: linear-gradient(90deg, var(--acc), color-mix(in srgb, var(--acc) 65%, #fff));
-    box-shadow: none;
-  }
-  .korah-grey .activity-ring { background: conic-gradient(var(--acc) var(--p, 0%), var(--kg-sf2) 0); }
-  .korah-grey .activity-ring::after,
-  .korah-grey .report-donut::after { background: var(--kg-sf); }
-  .korah-grey .skill-row,
-  .korah-grey .recent-list .recent-row,
-  .korah-grey .test-pool-header { border-bottom-color: var(--kg-bd); }
-  .korah-grey .skill-row:hover,
-  .korah-grey .recent-list .recent-row:hover { background: var(--kg-sf2); }
-  .korah-grey .trend-chip.good { background: var(--tone-green); border-color: var(--tone-green); color: #fff; }
-  .korah-grey .trend-chip.bad  { background: var(--tone-red);   border-color: var(--tone-red);   color: #fff; }
-
-  /* Buttons on a grey panel are filled in that panel's tone */
-  .korah-grey .banner-cta,
-  .korah-grey .practice-btn,
-  .korah-grey .cta-primary,
-  .korah-grey .range-chips button.active {
-    color: #fff;
-    border: 1px solid var(--acc);
-    background: linear-gradient(180deg, var(--acc), color-mix(in srgb, var(--acc) 78%, #000));
-    box-shadow: none;
-    font-weight: 700;
-  }
-  .korah-grey .banner-cta:hover,
-  .korah-grey .practice-btn:hover,
-  .korah-grey .cta-primary:hover { filter: brightness(1.08); color: #fff; }
-  /* Secondary and page-level controls stay grey */
-  .korah-grey .cta-ghost,
-  .korah-grey .home-section-head .head-cta,
-  .korah-grey .range-chips button {
-    background: var(--kg-sf2); border: 1px solid var(--kg-bd); color: var(--tx);
-  }
-  .korah-grey .cta-ghost:hover,
-  .korah-grey .home-section-head .head-cta:hover,
-  .korah-grey .range-chips button:hover { background: var(--kg-bd); border-color: var(--kg-bd); color: var(--tx); }
-  /* The header pills are data, so they stay filled in their own tone */
-  .korah-grey .home-pill { background: var(--kg-sf2); border-color: var(--kg-bd); color: var(--tx); }
-  .korah-grey .home-pill.streak { --acc: var(--tone-orange); }
-  .korah-grey .home-pill.gems   { --acc: var(--tone-blue); }
-  .korah-grey .home-pill.streak,
-  .korah-grey .home-pill.gems {
-    color: #fff; border-color: var(--acc);
-    background: linear-gradient(180deg, var(--acc), color-mix(in srgb, var(--acc) 78%, #000));
-  }
-  .korah-grey .home-pill .pill-icon { filter: none; }
   .korah-grey input, .korah-grey textarea, .korah-grey select, .korah-grey button {
     font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   }
 
-  /* Spotlight glow follows each card's own tone */
-  .korah-grey .progress-card, .korah-grey .panel-card {
-    --spotlight-color: color-mix(in srgb, var(--acc) 34%, transparent);
+  /* ── Modals (Edit goal, Rename, Delete) ──
+     Page-scoped over the shared .delete-modal / .goal-modal rules in korah-chat.css:
+     no blur backdrop, fade + scale from .97 with no overshoot, flat surface, solid
+     tone buttons. */
+  @keyframes dashModalIn { from { opacity: 0; transform: scale(.97); } to { opacity: 1; transform: scale(1); } }
+  .goal-modal, .delete-modal { backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .delete-modal-content {
+    background: var(--sf); border-radius: 1rem; box-shadow: none;
+    animation: dashModalIn .18s cubic-bezier(.23, 1, .32, 1) both;
   }
-  .korah-grey .countdown-card, .korah-grey .stat-card, .korah-grey .section-card {
-    --spotlight-color: rgba(255,255,255,.2);
+  .delete-modal-title { font-weight: 700; letter-spacing: -0.02em; }
+  .delete-modal-btn {
+    border-radius: 0.5rem; font-weight: 600;
+    transition: transform .18s cubic-bezier(.23, 1, .32, 1), filter .18s ease, border-color .18s ease;
+  }
+  .delete-modal-btn:hover { transform: scale(1.03); }
+  .delete-modal-btn:active { transform: scale(0.98); }
+  .delete-modal-btn.cancel { background: var(--sf2); color: var(--tx); }
+  .delete-modal-btn.cancel:hover { background: var(--sf2); border-color: var(--bd-hi); color: var(--tx); }
+  .delete-modal-btn.confirm { background: var(--fill-red); border-color: var(--fill-red); color: #fff; }
+  .goal-modal .delete-modal-btn.confirm,
+  #rename-modal .delete-modal-btn.confirm { background: var(--fill-blue); border-color: var(--fill-blue); }
+  .delete-modal-btn.confirm:hover,
+  .goal-modal .delete-modal-btn.confirm:hover { filter: brightness(1.12); }
+  .create-input:focus {
+    border-color: var(--fill-blue);
+    box-shadow: 0 0 0 0.1875rem color-mix(in srgb, var(--fill-blue) 22%, transparent);
+  }
+  .goal-field { display: flex; flex-direction: column; gap: 0.375rem; font-size: 0.75rem; font-weight: 600; }
+  .goal-field.blue  { color: var(--tone-blue); }
+  .goal-field.green { color: var(--tone-green); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .korah-grey * , .delete-modal-content { transition: none !important; animation: none !important; }
   }
 </style>
 </head>
 
 <body class="korah-grey">
 <style>
-  html:not(.korah-page-ready) { background: #06040f !important; }
-  html[data-theme="light"]:not(.korah-page-ready) { background: #d2d2d2 !important; }
+  html:not(.korah-page-ready) { background: #000 !important; }
+  html[data-theme="light"]:not(.korah-page-ready) { background: #fff !important; }
   html:not(.korah-page-ready) body { opacity: 0 !important; }
 </style>
 
@@ -874,7 +532,7 @@
   });
 </script>
 
-<canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
+<canvas id="bg-canvas" class="fixed inset-0 -z-10 pointer-events-none"></canvas>
 <div id="sidebar-root"></div>
 
 <!-- Settings Modal -->
@@ -975,9 +633,9 @@
       <div>
         <h1 class="greeting-title">Your SAT progress, <span class="name" id="greeting-name">friend</span></h1>
         <p class="greeting-sub">Track your strengths, target your weaknesses, and stay on pace for your goal.</p>
-        <a href="./index.html" class="cta-primary">Practice Questions</a>
-        <a href="./tailored.html" class="cta-ghost">Tailored Practice</a>
-        <button id="editGoalBtn" type="button" class="cta-ghost">Edit Goal</button>
+        <a href="./index.html" class="cta-primary">Practice questions</a>
+        <a href="./tailored.html" class="cta-ghost">Tailored practice</a>
+        <button id="editGoalBtn" type="button" class="cta-ghost">Edit goal</button>
       </div>
 
       <div class="countdown-card">
@@ -989,6 +647,7 @@
           <div><span class="countdown-num" id="cd-secs">—</span><span class="countdown-unit">sec</span></div>
         </div>
         <div class="countdown-date" id="cd-date">Set an exam date</div>
+        <span class="card-watermark material-icons-round">schedule</span>
       </div>
     </section>
 
@@ -1019,21 +678,21 @@
         <!-- Reading & Writing bar -->
         <div>
           <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:0.375rem;">
-            <span style="font-size:0.6875rem; font-weight:700; color:rgba(56,189,248,.9); text-transform:uppercase; letter-spacing:.0.5rem;">Reading &amp; Writing</span>
+            <span style="font-size:0.75rem; font-weight:600; color:var(--tone-blue);">Reading &amp; Writing</span>
             <span style="font-size:0.75rem; font-weight:700; color:var(--tx); font-variant-numeric:tabular-nums;" id="dash-english-label">— / —</span>
           </div>
           <div class="score-bar">
-            <div class="score-bar-fill" id="dash-english-bar" style="width:0%; background:linear-gradient(90deg,#0ea5e9,#38bdf8,#7dd3fc); box-shadow:0 0 0.75rem rgba(56,189,248,.5);"></div>
+            <div class="score-bar-fill" id="dash-english-bar" style="width:0%; background:var(--fill-blue);"></div>
           </div>
         </div>
         <!-- Math bar -->
         <div>
           <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:0.375rem;">
-            <span style="font-size:0.6875rem; font-weight:700; color:rgba(16,185,129,.9); text-transform:uppercase; letter-spacing:.0.5rem;">Math</span>
+            <span style="font-size:0.75rem; font-weight:600; color:var(--tone-green);">Math</span>
             <span style="font-size:0.75rem; font-weight:700; color:var(--tx); font-variant-numeric:tabular-nums;" id="dash-math-label">— / —</span>
           </div>
           <div class="score-bar">
-            <div class="score-bar-fill" id="dash-math-bar" style="width:0%; background:linear-gradient(90deg,#10b981,#34d399,#6ee7b7); box-shadow:0 0 0.75rem rgba(16,185,129,.5);"></div>
+            <div class="score-bar-fill" id="dash-math-bar" style="width:0%; background:var(--fill-green);"></div>
           </div>
         </div>
       </div>
@@ -1064,28 +723,32 @@
     </h2>
     <section class="stats-grid">
       <div class="stat-card">
-        <div class="stat-label">Questions Answered</div>
+        <div class="stat-label">Questions answered</div>
         <div class="stat-value" id="stat-answered">0</div>
         <div class="stat-sub" id="stat-answered-sub">Start practicing</div>
-        <span class="stat-watermark material-icons-round">check_circle</span>
+        <!-- Replaced by .card-watermark (home.html style): <span class="stat-watermark material-icons-round">check_circle</span> -->
+        <span class="card-watermark material-icons-round">check_circle</span>
       </div>
       <div class="stat-card">
-        <div class="stat-label">Overall Accuracy</div>
+        <div class="stat-label">Overall accuracy</div>
         <div class="stat-value" id="stat-accuracy">—</div>
         <div class="stat-sub" id="stat-accuracy-sub">No data yet</div>
-        <span class="stat-watermark material-icons-round">bar_chart</span>
+        <!-- Replaced by .card-watermark (home.html style): <span class="stat-watermark material-icons-round">bar_chart</span> -->
+        <span class="card-watermark material-icons-round">bar_chart</span>
       </div>
       <div class="stat-card">
         <div class="stat-label">Total XP</div>
         <div class="stat-value" id="stat-xp">0</div>
         <div class="stat-sub" id="stat-xp-sub">Level 0</div>
-        <span class="stat-watermark material-icons-round">bolt</span>
+        <!-- Replaced by .card-watermark (home.html style): <span class="stat-watermark material-icons-round">bolt</span> -->
+        <span class="card-watermark material-icons-round">bolt</span>
       </div>
       <div class="stat-card">
-        <div class="stat-label">Practice Time</div>
+        <div class="stat-label">Practice time</div>
         <div class="stat-value" id="stat-time">0<span style="font-size:1.125rem; color:var(--tx2); margin-left:0.25rem;">min</span></div>
         <div class="stat-sub" id="stat-time-sub">All-time</div>
-        <span class="stat-watermark material-icons-round">timer</span>
+        <!-- Replaced by .card-watermark (home.html style): <span class="stat-watermark material-icons-round">timer</span> -->
+        <span class="card-watermark material-icons-round">timer</span>
       </div>
     </section>
 
@@ -1100,7 +763,7 @@
     </h2>
     <section class="report-grid" id="reportGrid">
       <div class="panel-card trend-panel report-span2">
-        <h3>Activity Trend</h3>
+        <h3>Activity trend</h3>
         <div class="trend-legend" id="trendLegend"></div>
         <div class="trend-ycap">Questions</div>
         <div class="trend-plot">
@@ -1111,7 +774,7 @@
       </div>
 
       <div class="panel-card pace-panel">
-        <h3>Goal Pace</h3>
+        <h3>Goal pace</h3>
         <div id="paceBody"><div class="empty-hint">Set your scores to see your pace.</div></div>
       </div>
 
@@ -1122,7 +785,7 @@
       </div>
 
       <div class="panel-card time-panel">
-        <h3>Study Time by Section</h3>
+        <h3>Study time by section</h3>
         <div class="donut-wrap">
           <div class="report-donut" id="sectionDonut"><div class="donut-center" id="sectionDonutCenter"></div></div>
           <div class="donut-legend" id="sectionDonutLegend"></div>
@@ -1131,7 +794,7 @@
       </div>
 
       <div class="panel-card time-panel">
-        <h3>Study Time by Activity</h3>
+        <h3>Study time by activity</h3>
         <div class="donut-wrap">
           <div class="report-donut" id="activityDonut"><div class="donut-center" id="activityDonutCenter"></div></div>
           <div class="donut-legend" id="activityDonutLegend"></div>
@@ -1140,7 +803,7 @@
       </div>
 
       <div class="panel-card time-panel">
-        <h3>Time per Difficulty</h3>
+        <h3>Time per difficulty</h3>
         <div class="difficulty-cols" id="difficultyTimes"></div>
         <div class="report-hint">Average time per question.</div>
       </div>
@@ -1152,12 +815,12 @@
       </div>
 
       <div class="panel-card neglected-panel">
-        <h3>Going Stale</h3>
+        <h3>Going stale</h3>
         <div id="neglectedList"><div class="empty-hint">Nothing is going stale. Nice.</div></div>
       </div>
 
       <div class="panel-card retry-panel">
-        <h3>First Try vs Retry</h3>
+        <h3>First try vs retry</h3>
         <div id="retryBody"><div class="empty-hint">Retry missed questions to see if reviews stick.</div></div>
       </div>
 
@@ -1172,18 +835,18 @@
     <!-- What to study next + Domain breakdown -->
     <h2 class="home-section-head">
       <span class="material-icons-round">flag</span> Study These Next
-      <a href="./index.html" class="head-cta">Open Question Bank</a>
+      <a href="./index.html" class="head-cta">Open question bank</a>
     </h2>
     <section class="focus-grid">
       <div class="panel-card suggestions-panel">
-        <h3>Top Suggestions</h3>
+        <h3>Top suggestions</h3>
         <div id="suggestionList">
           <div class="empty-hint">Loading suggestions…</div>
         </div>
       </div>
 
       <div class="panel-card domain-panel">
-        <h3>Accuracy by Domain</h3>
+        <h3>Accuracy by domain</h3>
         <div id="domainList">
           <div class="empty-hint">No data yet.</div>
         </div>
@@ -1212,8 +875,8 @@
     <!-- Saved Questions -->
     <h2 class="home-section-head">
       <span class="material-icons-round">bookmark</span> Saved Questions
-      <span id="savedCountBadge" style="display:none; margin-left:0.25rem; font-size:0.75rem; font-weight:700; background:rgba(139,92,246,.14); color:var(--p5); padding:0.125rem 0.5rem; border-radius:62.4375rem; border:1px solid rgba(139,92,246,.25);"></span>
-      <a id="practiceAllSavedLink" href="#" class="head-cta" style="display:none;">Practice All Saved</a>
+      <span id="savedCountBadge" style="display:none; margin-left:0.25rem; font-size:0.75rem; font-weight:700; background:var(--sf2); color:var(--tone-teal); padding:0.125rem 0.5rem; border-radius:0.5rem; border:1px solid var(--bd);"></span>
+      <a id="practiceAllSavedLink" href="#" class="head-cta" style="display:none;">Practice all saved</a>
     </h2>
     <section style="margin-bottom: 2.5rem;">
       <div class="panel-card saved-panel">
@@ -1243,24 +906,24 @@
 <!-- Edit Goal Modal -->
 <div id="sat-onboarding-modal" class="goal-modal">
   <div class="delete-modal-content" style="max-width: 30rem;">
-    <div class="delete-modal-icon"><span class="material-icons-round" style="color: #EF5350; font-size: 1.25rem;" aria-label="target">gps_fixed</span></div>
+    <div class="delete-modal-icon"><span class="material-icons-round" style="color: var(--tone-red); font-size: 1.25rem;" aria-label="target">gps_fixed</span></div>
     <h3 class="delete-modal-title">Update your SAT goals</h3>
     <p class="delete-modal-desc">Set current and goal scores per section.</p>
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-top:0.75rem; text-align:left;">
-      <label style="display:flex; flex-direction:column; gap:0.375rem; font-size:0.75rem; font-weight:700; color:rgba(56,189,248,.9); text-transform:uppercase; letter-spacing:.0.4375rem;">
-        R&amp;W — Current
+      <label class="goal-field blue">
+        R&amp;W current
         <input id="sat-ob-english-cur" type="number" min="200" max="800" step="10" class="create-input" style="width:100%;"/>
       </label>
-      <label style="display:flex; flex-direction:column; gap:0.375rem; font-size:0.75rem; font-weight:700; color:rgba(56,189,248,.9); text-transform:uppercase; letter-spacing:.0.4375rem;">
-        R&amp;W — Goal
+      <label class="goal-field blue">
+        R&amp;W goal
         <input id="sat-ob-english-goal" type="number" min="200" max="800" step="10" class="create-input" style="width:100%;"/>
       </label>
-      <label style="display:flex; flex-direction:column; gap:0.375rem; font-size:0.75rem; font-weight:700; color:rgba(16,185,129,.9); text-transform:uppercase; letter-spacing:.0.4375rem;">
-        Math — Current
+      <label class="goal-field green">
+        Math current
         <input id="sat-ob-math-cur" type="number" min="200" max="800" step="10" class="create-input" style="width:100%;"/>
       </label>
-      <label style="display:flex; flex-direction:column; gap:0.375rem; font-size:0.75rem; font-weight:700; color:rgba(16,185,129,.9); text-transform:uppercase; letter-spacing:.0.4375rem;">
-        Math — Goal
+      <label class="goal-field green">
+        Math goal
         <input id="sat-ob-math-goal" type="number" min="200" max="800" step="10" class="create-input" style="width:100%;"/>
       </label>
     </div>
@@ -1472,13 +1135,13 @@
     if (enGoal && maGoal && cur && goal) {
       const reached = totalRemaining <= 0;
       if (reached) circleEl.classList.add("reached");
-      pctEl.textContent = reached ? "Goals Reached!" : `${totalRemaining} Points To Go!`;
+      pctEl.textContent = reached ? "Goals reached" : `${totalRemaining} points to go`;
       subEl.textContent = `${cur} → ${goal}`;
     } else if (goal) {
-      pctEl.textContent = "Goal Set!";
+      pctEl.textContent = "Goal set";
       subEl.textContent = `— → ${goal}`;
     } else {
-      pctEl.textContent = "No Goal Yet";
+      pctEl.textContent = "No goal yet";
       subEl.textContent = "";
     }
 
@@ -1512,7 +1175,7 @@
         const params = new URLSearchParams();
         params.set("questionIds", allMissedIds.slice(0, 20).join(","));
         reviewLink.href = `./questions.html?${params.toString()}`;
-        reviewLink.textContent = `Review ${allMissedIds.length} Errors`;
+        reviewLink.textContent = `Review ${allMissedIds.length} errors`;
       }
     } else {
       answeredSub.textContent = "Start practicing";
@@ -1566,14 +1229,14 @@
     const maMissed = missedBySection?.math    || [];
     if (enMissed.length > 0) {
       readingBtn.href = `./questions.html?questionIds=${enMissed.map(encodeURIComponent).join(",")}`;
-      readingBtn.textContent = `Review ${enMissed.length} Missed`;
+      readingBtn.textContent = `Review ${enMissed.length} missed`;
     } else {
       readingBtn.href = "./questions.html?sections=english";
       readingBtn.textContent = "Practice";
     }
     if (maMissed.length > 0) {
       mathBtn.href = `./questions.html?questionIds=${maMissed.map(encodeURIComponent).join(",")}`;
-      mathBtn.textContent = `Review ${maMissed.length} Missed`;
+      mathBtn.textContent = `Review ${maMissed.length} missed`;
     } else {
       mathBtn.href = "./questions.html?sections=math";
       mathBtn.textContent = "Practice";
@@ -1598,7 +1261,7 @@
       // If there are missed IDs for this specific skill, use them
       const skillMissed = missedAttempts.filter(m => m.skillCd === top.skillCd).map(m => m.questionId);
       bannerLink.href = practiceHrefForSkill(top.skillCd, top.domain, skillMissed);
-      bannerLink.textContent = skillMissed.length > 0 ? "Review Mistakes" : "Start practice";
+      bannerLink.textContent = skillMissed.length > 0 ? "Review mistakes" : "Start practice";
     } else {
       bannerSkill.textContent = "Practice a few questions and we'll pinpoint where to focus.";
       bannerLink.href = "./index.html";
@@ -1695,7 +1358,7 @@
         const sectionLabel = SECTION_LABEL[b.section] || b.section || "—";
         return `
           <div class="recent-row">
-            <div class="recent-icon"><span class="material-icons-round" style="color: var(--p5); font-size: 1rem;" aria-label="bookmark">bookmark</span></div>
+            <div class="recent-icon"><span class="material-icons-round" style="color: var(--tone-teal); font-size: 1rem;" aria-label="bookmark">bookmark</span></div>
             <div class="skill-meta">
               <div class="skill-name">${escHtml(b.domain) || "—"}</div>
               <div class="skill-sub">${escHtml(sectionLabel)} · Saved ${escHtml(timeStr)}</div>
@@ -1713,7 +1376,7 @@
       recEl.innerHTML = recent.map((r) => {
         const when = new Date(r.ts);
         const timeStr = when.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
-        const icon = r.correct ? '<span class="material-icons-round" style="color: var(--grn); font-size: 1rem;" aria-label="correct">check_circle</span>' : '<span class="material-icons-round" style="color: var(--red); font-size: 1rem;" aria-label="incorrect">cancel</span>';
+        const icon = r.correct ? '<span class="material-icons-round" style="color: var(--tone-green); font-size: 1rem;" aria-label="correct">check_circle</span>' : '<span class="material-icons-round" style="color: var(--tone-red); font-size: 1rem;" aria-label="incorrect">cancel</span>';
         return `
           <div class="recent-row">
             <div class="recent-icon">${icon}</div>
@@ -1721,7 +1384,7 @@
               <div class="skill-name">${escHtml(r.domain) || "—"}</div>
               <div class="skill-sub">${escHtml(DIFFICULTY_LABEL[r.difficulty] || r.difficulty)} · ${escHtml(timeStr)}</div>
             </div>
-            <div class="skill-acc" style="color: ${r.correct ? "#22c55e" : "#ef4444"};">${r.correct ? "+" : ""}${r.xp} XP</div>
+            <div class="skill-acc" style="color: ${r.correct ? "var(--tone-green)" : "var(--tone-red)"};">${r.correct ? "+" : ""}${r.xp} XP</div>
           </div>`;
       }).join("");
     }
@@ -1877,7 +1540,7 @@
         target = `<div class="pace-target">Aim for ~${suggested} questions a day</div>
           <div class="report-hint">A rough pace from your score gap and calendar, not a promise. Consistency beats volume.</div>`;
       } else {
-        target = `<div class="pace-target">Goal reached! Keep your edge sharp.</div>`;
+        target = `<div class="pace-target">Goal reached. Keep your edge sharp.</div>`;
       }
       paceEl.innerHTML = `<div class="mini-grid three">${cells}</div>${target}`;
     }
@@ -1918,7 +1581,7 @@
         });
         donutEl.style.background = `conic-gradient(${stops.join(", ")})`;
       } else {
-        donutEl.style.background = "rgba(139,92,246,.12)";
+        donutEl.style.background = "var(--sf2)";
       }
       document.getElementById(centerId).innerHTML =
         `<div class="d-value">${fmtDur(total)}</div><div class="d-label">${centerLabel}</div>`;
@@ -1927,16 +1590,16 @@
     };
     const secSum = (pred) => filtered.filter(pred).reduce((s, r) => s + timeOf(r), 0);
     donut("sectionDonut", "sectionDonutCenter", "sectionDonutLegend", [
-      { label: "English", v: secSum((r) => r.section === "english"), color: "#38bdf8" },
-      { label: "Math", v: secSum((r) => r.section === "math"), color: "#10b981" },
+      { label: "English", v: secSum((r) => r.section === "english"), color: "#3b82f6" },
+      { label: "Math", v: secSum((r) => r.section === "math"), color: "#22c55e" },
     ], "question time");
     donut("activityDonut", "activityDonutCenter", "activityDonutLegend", [
-      { label: "Questions", v: secSum((r) => r.mode !== "rush"), color: "#fb923c" },
-      { label: "Rush", v: secSum((r) => r.mode === "rush"), color: "#e879f9" },
+      { label: "Questions", v: secSum((r) => r.mode !== "rush"), color: "#f97316" },
+      { label: "Rush", v: secSum((r) => r.mode === "rush"), color: "#ec4899" },
     ], "total");
 
     // ── Time per difficulty ──
-    const DIFF_META = { E: ["eco", "#22c55e", "Easy"], M: ["local_fire_department", "#f59e0b", "Medium"], H: ["bolt", "#ef4444", "Hard"] };
+    const DIFF_META = { E: ["eco", "var(--tone-green)", "Easy"], M: ["local_fire_department", "var(--tone-amber)", "Medium"], H: ["bolt", "var(--tone-red)", "Hard"] };
     const diffCol = (label, color, section) => {
       const rows = ["E", "M", "H"].map((d) => {
         const subset = filtered.filter((r) => r.section === section && diffOf(r) === d && timeOf(r) > 0);
@@ -1948,7 +1611,7 @@
       return `<div><div class="d-col-head" style="color:${color};">${label}</div>${rows}</div>`;
     };
     document.getElementById("difficultyTimes").innerHTML =
-      diffCol("Reading & Writing", "rgba(56,189,248,.9)", "english") + diffCol("Math", "rgba(16,185,129,.9)", "math");
+      diffCol("Reading & Writing", "var(--tone-blue)", "english") + diffCol("Math", "var(--tone-green)", "math");
 
     // ── Pacing quadrant (fast/slow vs your own median per difficulty) ──
     const timed = filtered.filter((r) => timeOf(r) > 0);
@@ -1974,17 +1637,17 @@
         else q.slowWrong++;
       }
       const total = q.fastRight + q.fastWrong + q.slowRight + q.slowWrong;
-      const tile = (label, icon, n, rgb) => `
-        <div class="quad-tile" style="background:rgba(${rgb},.1); border-color:rgba(${rgb},.3);">
-          <div class="q-label" style="color:rgb(${rgb});"><span class="material-icons-round">${icon}</span>${label}</div>
+      const tile = (label, icon, n, color) => `
+        <div class="quad-tile">
+          <div class="q-label" style="color:${color};"><span class="material-icons-round">${icon}</span>${label}</div>
           <div class="q-value">${total ? Math.round(n / total * 100) : 0}%</div>
           <div class="q-sub">${n} question${n === 1 ? "" : "s"}</div>
         </div>`;
       quadEl.innerHTML =
-        tile("Quick + right", "bolt", q.fastRight, "34,197,94") +
-        tile("Quick + wrong", "error_outline", q.fastWrong, "239,68,68") +
-        tile("Slow + right", "schedule", q.slowRight, "45,212,191") +
-        tile("Slow + wrong", "hourglass_bottom", q.slowWrong, "245,158,11");
+        tile("Quick + right", "bolt", q.fastRight, "var(--tone-green)") +
+        tile("Quick + wrong", "error_outline", q.fastWrong, "var(--tone-red)") +
+        tile("Slow + right", "schedule", q.slowRight, "var(--tone-teal)") +
+        tile("Slow + wrong", "hourglass_bottom", q.slowWrong, "var(--tone-amber)");
       const problems = [[q.fastWrong, "You miss most when you answer fast. Slow down and re-read."],
                         [q.slowWrong, "Long, wrong answers are your biggest leak. Flag and move on."],
                         [q.slowRight, "Accuracy is there. Now work on speed."]];
@@ -2011,7 +1674,7 @@
     const neglected = stale.concat(untouched).slice(0, 3);
     document.getElementById("neglectedList").innerHTML = neglected.length ? neglected.map((sk) => `
       <div class="skill-row">
-        <div class="recent-icon"><span class="material-icons-round" style="color:#a78bfa; font-size:1rem;">bedtime</span></div>
+        <div class="recent-icon"><span class="material-icons-round" style="color:var(--tone-red); font-size:1rem;">bedtime</span></div>
         <div class="skill-meta">
           <div class="skill-name">${escHtml(sk.skillName)}</div>
           <div class="skill-sub">${escHtml(sk.domain)} · ${sk.days != null ? `${sk.days} days ago` : "never attempted"}</div>
@@ -2114,13 +1777,13 @@
 <!-- Rename Modal -->
 <div id="rename-modal" class="delete-modal">
   <div class="delete-modal-content">
-    <div class="delete-modal-icon"><span class="material-icons-round" style="color: #FFA726; font-size: 1.25rem;" aria-label="rename">edit</span></div>
+    <div class="delete-modal-icon"><span class="material-icons-round" style="color: var(--tone-amber); font-size: 1.25rem;" aria-label="rename">edit</span></div>
     <h3 class="delete-modal-title">Rename</h3>
     <p class="delete-modal-desc" id="rename-modal-desc">Enter a new name</p>
     <input id="rename-modal-input" type="text" class="create-input" style="width:100%; margin-top:0.25rem;" placeholder="New name&hellip;"/>
     <div class="delete-modal-actions">
       <button id="rename-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
-      <button id="rename-modal-confirm" class="delete-modal-btn confirm t-btn" style="background:rgba(139,92,246,.12); color:var(--p5); border-color:rgba(139,92,246,.3);">Rename</button>
+      <button id="rename-modal-confirm" class="delete-modal-btn confirm t-btn">Rename</button>
     </div>
   </div>
 </div>
@@ -2128,7 +1791,7 @@
 <!-- Delete Confirm Modal -->
 <div id="delete-modal" class="delete-modal">
   <div class="delete-modal-content">
-    <div class="delete-modal-icon"><span class="material-icons-round" style="color: var(--red); font-size: 1.25rem;" aria-label="delete">delete</span></div>
+    <div class="delete-modal-icon"><span class="material-icons-round" style="color: var(--tone-red); font-size: 1.25rem;" aria-label="delete">delete</span></div>
     <h3 class="delete-modal-title">Delete?</h3>
     <p class="delete-modal-desc">This will permanently delete <span id="delete-modal-name"></span>. This cannot be undone.</p>
     <div class="delete-modal-actions">
@@ -2138,9 +1801,7 @@
   </div>
 </div>
 
-<!-- Spotlight glow + cursor tilt (see ui-components/SPOTLIGHT-TILT-CARDS.md).
-     One delegated handler drives the glow (CSS vars on the ::before) and the tilt.
-     Tilt is limited to the compact cards; large content panels get glow only. -->
+<!-- Replaced: spotlight glow and cursor tilt removed, the cards are flat (see home.html). Old handler kept below for reference.
 <script>
   (function () {
     var SPOTLIGHT_SELECTOR = ".countdown-card, .stat-card, .section-card, .progress-card, .panel-card";
@@ -2184,5 +1845,6 @@
     }, { passive: true });
   })();
 </script>
+-->
 </body>
 </html>
