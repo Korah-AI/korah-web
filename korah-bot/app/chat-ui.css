@@ -1,0 +1,501 @@
+/* ══ Chat surface, flat neutral style ══════════════════════════════════════
+   Shared by korah-bot/chat.html and korah-bot/sat/math-chat.html. Load it LAST
+   on both pages; it replaces app/korah-chat-grey.css (the old colour-blocking
+   layer, left on disk but no longer linked).
+
+   Same rules as home.html and index.html: flat --sf/--sf2 surfaces, hairline
+   --bd borders, no gradients, glows, blur or purple. Colour lives in text,
+   icons and the one filled action (the blue send button). Hover and press
+   scale, they never translate. Everything is scoped to body.korah-grey, which
+   both pages set.
+
+   The thinking indicator (.thinking-indicator, .thinking-shimmer-text,
+   .thinking-toggle, .thinking-summary) already lives in app/korah-chat.css, so
+   both pages share it; only the light-theme shimmer is fixed here. */
+
+/* ── Tokens ──
+   --kg-* keep the names sat/sat-math.css's feature-intro block already reads,
+   now pointing at the flat tokens instead of the old greys. */
+body.korah-grey {
+  --tone-red: #f87171;    --fill-red: #ef4444;
+  --tone-orange: #fb923c; --fill-orange: #f97316;
+  --tone-amber: #fbbf24;  --fill-amber: #f59e0b;
+  --tone-green: #4ade80;  --fill-green: #22c55e;
+  --tone-teal: #2dd4bf;   --fill-teal: #14b8a6;
+  --tone-blue: #60a5fa;   --fill-blue: #3b82f6;
+  --tone-pink: #f472b6;   --fill-pink: #ec4899;
+  --acc: var(--tone-blue); --acc-fill: var(--fill-blue);
+  --kg-sf: var(--sf); --kg-sf2: var(--sf2); --kg-sf3: var(--sf2); --kg-bd: var(--bd);
+  --lift: 0 0.75rem 2rem rgba(0, 0, 0, 0.45);
+  --ring: color-mix(in srgb, var(--fill-blue) 24%, transparent);
+  --ease: cubic-bezier(.23, 1, .32, 1);
+}
+html[data-theme="light"] body.korah-grey {
+  --tone-red: #b91c1c;    --tone-orange: #c2410c;
+  --tone-amber: #92400e;  --tone-green: #15803d;
+  --tone-teal: #0f766e;   --tone-blue: #1d4ed8;
+  --tone-pink: #be185d;
+  --lift: 0 0.75rem 2rem rgba(0, 0, 0, 0.12);
+}
+
+/* ── Stars sit behind the page ──
+   The canvas is -z-10 and transparent; nothing between it and the content may
+   paint an opaque background. The sidebar and topbar stay opaque --bg. */
+#bg-canvas { background: transparent; }
+body.korah-grey .main-area-wrapper,
+body.korah-grey .main-content,
+body.korah-grey .chat-body,
+body.korah-grey #messages-container,
+body.korah-grey #messages-list,
+body.korah-grey .welcome-screen,
+body.korah-grey .chat-input-area,
+body.korah-grey .sat-math-split,
+body.korah-grey .sat-chat-panel { background: transparent; }
+
+/* ── Message column ── about 48rem on chat.html; math chat fills its panel */
+body.korah-grey #messages-container,
+body.korah-grey .welcome-screen,
+body.korah-grey .typing-bar,
+body.korah-grey .input-wrapper { max-width: 48rem; }
+body.korah-grey .welcome-input-container { max-width: 48rem; }
+body.korah-grey .sat-chat-panel #messages-container,
+body.korah-grey .sat-chat-panel .welcome-screen,
+body.korah-grey .sat-chat-panel .typing-bar,
+body.korah-grey .sat-chat-panel .input-wrapper { max-width: none; }
+body.korah-grey .sat-chat-panel .chat-input-area { border-top: none; }
+
+/* ── Messages ── */
+body.korah-grey .msg-bubble.user {
+  background: var(--sf2);
+  border: 0.0625rem solid var(--bd);
+  border-radius: 1rem;
+  padding: 0.625rem 1rem;
+  color: var(--tx);
+  box-shadow: none;
+}
+/* Korah's reply is flat text under the logo and name header, no card */
+body.korah-grey .msg-bubble.korah {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0;
+  width: 100%;
+  max-width: 100%;
+  color: var(--tx);
+}
+body.korah-grey .msg-bubble.error {
+  background: color-mix(in srgb, var(--fill-red) 12%, transparent);
+  border: 0.0625rem solid color-mix(in srgb, var(--fill-red) 40%, transparent);
+  color: var(--tone-red);
+}
+body.korah-grey .msg-header-name { color: var(--tx); }
+body.korah-grey .msg-avatar.korah-av,
+body.korah-grey.korah-home-chat .msg-avatar.korah-av {
+  background: var(--sf2);
+  border: 0.0625rem solid var(--bd);
+  color: var(--tx);
+  box-shadow: none;
+}
+body.korah-grey .msg-avatar.user-av {
+  background: var(--sf2);
+  border: 0.0625rem solid var(--bd);
+  color: var(--tx);
+}
+/* Action icons under a reply */
+body.korah-grey .msg-action-btn {
+  color: var(--tx2);
+  transition: background .18s ease, color .18s ease, transform .18s var(--ease);
+}
+body.korah-grey .msg-action-btn:hover { background: var(--sf2); color: var(--tx); transform: scale(1.08); }
+body.korah-grey .msg-action-btn.active { color: var(--tone-blue); }
+body.korah-grey .msg-action-btn.copied { color: var(--tone-green); }
+
+/* Markdown inside a reply */
+body.korah-grey .msg-bubble.korah strong { color: var(--tx); font-weight: 700; }
+body.korah-grey .msg-bubble.korah em { color: var(--tx); font-style: italic; }
+body.korah-grey .msg-bubble.korah a { color: var(--tone-blue); text-decoration: underline; text-underline-offset: 0.1875rem; }
+body.korah-grey .msg-bubble.korah code {
+  background: var(--sf2);
+  border: 0.0625rem solid var(--bd);
+  color: var(--tx);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8125rem;
+  padding: 0.0625rem 0.375rem;
+  border-radius: 0.375rem;
+}
+body.korah-grey .msg-bubble.korah pre {
+  background: var(--sf);
+  border: 0.0625rem solid var(--bd);
+  border-radius: 0.75rem;
+  padding: 0.875rem 1rem;
+  margin: 0.625rem 0;
+  overflow-x: auto;
+}
+body.korah-grey .msg-bubble.korah pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+body.korah-grey .msg-bubble.korah table {
+  border-collapse: collapse;
+  margin: 0.625rem 0;
+  font-size: 0.875rem;
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+}
+body.korah-grey .msg-bubble.korah th,
+body.korah-grey .msg-bubble.korah td {
+  border: 0.0625rem solid var(--bd);
+  padding: 0.4375rem 0.75rem;
+  text-align: left;
+}
+body.korah-grey .msg-bubble.korah th { background: var(--sf2); font-weight: 600; }
+body.korah-grey .msg-bubble.korah blockquote {
+  margin: 0.625rem 0;
+  padding: 0.125rem 0 0.125rem 0.875rem;
+  border-left: 0.1875rem solid var(--bd);
+  color: var(--tx2);
+}
+body.korah-grey .msg-bubble.korah .fc-item {
+  background: var(--sf2);
+  border-color: var(--bd);
+}
+body.korah-grey .msg-bubble.korah .fc-q { color: var(--tone-blue); }
+body.korah-grey .msg-bubble.korah .fc-a { color: var(--tx2); }
+
+/* Suggestions and attachment chips */
+body.korah-grey .inline-suggestions { border-top-color: var(--bd); }
+body.korah-grey .inline-suggestion-btn {
+  background: var(--sf);
+  border: 0.0625rem solid var(--bd);
+  color: var(--tx);
+  transition: background .18s ease, border-color .18s ease, transform .18s var(--ease);
+}
+body.korah-grey .inline-suggestion-btn:hover {
+  background: var(--sf2);
+  border-color: var(--tx3);
+  color: var(--tx);
+  transform: scale(1.01);
+}
+body.korah-grey .inline-suggestion-btn::before { color: var(--tone-blue); }
+body.korah-grey .suggestion-chip,
+body.korah-grey .welcome-mode-badge,
+body.korah-grey .input-file-card {
+  background: var(--sf2);
+  border: 0.0625rem solid var(--bd);
+  color: var(--tx);
+  box-shadow: none;
+}
+body.korah-grey .welcome-mode-dot { background: var(--tone-blue); box-shadow: none; }
+body.korah-grey .welcome-mode-text { color: var(--tx2); }
+
+/* ── Typing bar and thinking indicator ── */
+body.korah-grey .typing-bubble {
+  background: var(--sf);
+  border: 0.0625rem solid var(--bd);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  color: var(--tx2);
+}
+body.korah-grey .typing-bubble .tx-p4 { color: var(--tx2); }
+body.korah-grey .typing-dot { background: var(--tx2); }
+/* The shimmer sweeps white across grey; on a white page it needs the dark pair */
+html[data-theme="light"] .thinking-shimmer-text {
+  background: linear-gradient(90deg,
+    rgba(108, 108, 118, 0.85) 0%, rgba(108, 108, 118, 0.85) 30%,
+    rgba(9, 9, 11, 1) 50%,
+    rgba(108, 108, 118, 0.85) 70%, rgba(108, 108, 118, 0.85) 100%);
+  background-size: 250% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+html[data-theme="light"] .thinking-toggle,
+html[data-theme="light"] .thinking-summary { color: var(--tx2); }
+
+/* ── Composer ── */
+body.korah-grey .welcome-input-container,
+body.korah-grey .input-wrapper {
+  background: var(--sf);
+  border: 0.0625rem solid var(--bd);
+  border-radius: 1rem;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  transform: none;
+  color: var(--tx);
+  transition: border-color .18s ease, box-shadow .18s ease;
+}
+body.korah-grey .welcome-input-container:focus-within,
+body.korah-grey .input-wrapper:focus-within {
+  background: var(--sf);
+  border-color: var(--fill-blue);
+  box-shadow: 0 0 0 0.1875rem var(--ring);
+  transform: none;
+}
+body.korah-grey .chat-textarea,
+body.korah-grey .welcome-textarea { background: transparent; color: var(--tx); }
+body.korah-grey .chat-textarea::placeholder,
+body.korah-grey .welcome-textarea::placeholder { color: var(--tx3); opacity: 1; }
+body.korah-grey .welcome-tool-btn,
+body.korah-grey .input-action-btn {
+  background: transparent;
+  border: none;
+  color: var(--tx2);
+  transition: background .18s ease, color .18s ease, transform .18s var(--ease);
+}
+body.korah-grey .welcome-tool-btn:hover,
+body.korah-grey .input-action-btn:hover { background: var(--sf2); color: var(--tx); transform: scale(1.06); }
+body.korah-grey .welcome-project-btn { background: transparent; border-color: var(--bd); color: var(--tx2); }
+body.korah-grey .input-files-bar { background: transparent; border: none; }
+/* The send button is the one filled control: blue tone, white icon */
+body.korah-grey .welcome-send-btn,
+body.korah-grey .send-btn-circle,
+body.korah-grey.korah-home-chat .welcome-send-btn,
+body.korah-grey.korah-home-chat .send-btn-circle {
+  background: var(--fill-blue);
+  border: none;
+  color: #fff;
+  box-shadow: none;
+  transition: transform .18s var(--ease), filter .18s ease;
+}
+body.korah-grey .welcome-send-btn:hover,
+body.korah-grey .send-btn-circle:hover { filter: brightness(1.12); transform: scale(1.08); }
+body.korah-grey .welcome-send-btn:active,
+body.korah-grey .send-btn-circle:active { transform: scale(0.95); }
+body.korah-grey .drag-overlay-inner {
+  background: var(--sf);
+  border: 0.125rem dashed var(--fill-blue);
+  color: var(--tx);
+}
+body.korah-grey .drag-overlay-hint { color: var(--tx2); }
+
+/* ── Welcome screen ── */
+body.korah-grey .welcome-title {
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  color: var(--tx);
+  background: none;
+  -webkit-text-fill-color: currentColor;
+}
+/* Tutoring toggle: a solid grey pill instead of the translucent purple wash. */
+body.korah-grey .tutoring-toggle-wrapper {
+  background: var(--sf2);
+  border: 0.0625rem solid var(--bd);
+}
+body.korah-grey .tutoring-toggle-label { color: var(--tx); }
+body.korah-grey .tutoring-slider { background-color: color-mix(in srgb, var(--tx) 22%, var(--sf2)); }
+body.korah-grey .tutoring-mode-btn.active {
+  background: var(--sf2);
+  border-color: var(--fill-blue);
+  color: var(--tx);
+}
+body.korah-grey .tutoring-switch input:checked + .tutoring-slider { background-color: var(--fill-blue); }
+body.korah-grey .sat-welcome-logo { filter: none; }
+body.korah-grey .sat-welcome-tagline { color: var(--tx2); }
+
+/* Prompt rows: plain text rows, a quiet fill and a blue accent on hover.
+   Shared by the math welcome screen and chat.html's replacement for the
+   mode pills (same class names on both). */
+body.korah-grey .sat-prompt-list { width: 100%; max-width: 36rem; margin: 0 auto; }
+body.korah-grey .sat-prompt-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  background: transparent;
+  border: none;
+  border-radius: 0.5rem;
+  box-shadow: none;
+  color: var(--tx);
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: 1.4;
+  text-align: left;
+  cursor: pointer;
+  transition: background .18s ease, transform .18s var(--ease);
+}
+body.korah-grey .sat-prompt-row:hover { background: var(--sf2); transform: scale(1.01); }
+body.korah-grey .sat-prompt-row:active { transform: scale(0.99); }
+body.korah-grey .sat-prompt-text { flex: 1; color: var(--tx2); }
+body.korah-grey .sat-prompt-bold { font-weight: 700; color: var(--tx); transition: color .18s ease; }
+body.korah-grey .sat-prompt-row:hover .sat-prompt-bold { color: var(--tone-blue); }
+body.korah-grey .sat-prompt-chevron { flex-shrink: 0; color: var(--tx3); transition: color .18s ease; }
+body.korah-grey .sat-prompt-row:hover .sat-prompt-chevron { color: var(--tone-blue); transform: none; }
+
+/* ── Topbar: mode selector and action buttons ── */
+body.korah-grey .mode-selector-btn {
+  background: var(--sf);
+  border: 0.0625rem solid var(--bd);
+  border-radius: 0.5rem;
+  color: var(--tx);
+  box-shadow: none;
+  transition: background .18s ease, border-color .18s ease, transform .18s var(--ease);
+}
+body.korah-grey .mode-selector-btn:hover { background: var(--cu); border-color: var(--tx3); color: var(--tx); filter: none; transform: scale(1.03); }
+body.korah-grey .mode-selector-btn .mode-name { color: var(--tx); }
+/* mode icons keep their coloured ic-* classes */
+body.korah-grey .topbar-btn {
+  background: transparent;
+  border: 0.0625rem solid var(--bd);
+  border-radius: 0.5rem;
+  color: var(--btn-tone, var(--tx2));
+  box-shadow: none;
+  transition: background .18s ease, border-color .18s ease, transform .18s var(--ease);
+}
+body.korah-grey .topbar-btn:hover {
+  background: var(--cu);
+  border-color: var(--tx3);
+  color: var(--btn-tone, var(--tx));
+  filter: none;
+  transform: scale(1.06);
+}
+body.korah-grey .topbar-btn:active { transform: scale(0.96); }
+body.korah-grey #new-chat-btn,
+body.korah-grey #new-chat-topbar-btn { --btn-tone: var(--tone-green); }
+body.korah-grey #sat-graph-clear { --btn-tone: var(--tone-amber); }
+body.korah-grey #clear-chat-btn { --btn-tone: var(--tone-red); }
+
+/* Mode dropdown: house dropdown shell, accent bar scales up on hover */
+body.korah-grey .mode-dropdown {
+  background: var(--sf);
+  border: 0.0625rem solid var(--bd);
+  border-radius: 0.75rem;
+  box-shadow: var(--lift);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  transform-origin: top right;
+}
+body.korah-grey .mode-dropdown.show { animation: chatMenuIn .16s var(--ease) both; }
+@keyframes chatMenuIn {
+  from { opacity: 0; transform: translateY(-0.375rem) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+body.korah-grey .mode-option { position: relative; border-left: none; transition: background .12s ease; }
+body.korah-grey .mode-option::before {
+  content: "";
+  position: absolute;
+  left: 0.125rem; top: 0.3rem; bottom: 0.3rem;
+  width: 0.1875rem;
+  border-radius: 0 0.125rem 0.125rem 0;
+  background: var(--acc);
+  transform: scaleY(0);
+  transform-origin: bottom;
+  transition: transform .2s ease;
+}
+body.korah-grey .mode-option:hover { background: var(--sf2); transform: none; }
+body.korah-grey .mode-option:hover::before { transform: scaleY(1); }
+body.korah-grey .mode-option[data-mode="general"]    { --acc: var(--fill-amber); }
+body.korah-grey .mode-option[data-mode="math"]       { --acc: var(--fill-blue); }
+body.korah-grey .mode-option[data-mode="science"]    { --acc: var(--fill-teal); }
+body.korah-grey .mode-option[data-mode="history"]    { --acc: var(--fill-orange); }
+body.korah-grey .mode-option[data-mode="literature"] { --acc: var(--fill-pink); }
+body.korah-grey .mode-option-desc { color: var(--tx2); }
+
+/* Replaced by app/toast.css (.k-toast). Old flat pro tip rules:
+body.korah-grey .pro-tip-toast {
+  background: var(--sf);
+  border: 0.0625rem solid var(--bd);
+  border-radius: 0.75rem;
+  color: var(--tx);
+  box-shadow: var(--lift);
+  transition: opacity .18s ease, transform .18s var(--ease);
+  --acc: var(--tone-amber);
+}
+body.korah-grey #early-dev-toast { --acc: var(--tone-red); }
+body.korah-grey .pro-tip-toast-icon { filter: none; animation: none; }
+body.korah-grey .pro-tip-toast-icon .m-icon,
+body.korah-grey .pro-tip-toast-icon .material-icons-round,
+body.korah-grey .pro-tip-toast-label { color: var(--acc) !important; }
+body.korah-grey .pro-tip-toast-text { color: var(--tx2); }
+body.korah-grey .pro-tip-toast-close { color: var(--tx2); }
+body.korah-grey .pro-tip-toast-close:hover { background: var(--sf2); color: var(--tx); }
+*/
+
+/* ── Modals: rename, delete, generic confirm ── */
+body.korah-grey .delete-modal { background: rgba(0, 0, 0, 0.6); backdrop-filter: none; -webkit-backdrop-filter: none; }
+body.korah-grey .delete-modal-content {
+  background: var(--sf);
+  border: 0.0625rem solid var(--bd);
+  border-radius: 0.875rem;
+  box-shadow: var(--lift);
+  animation: chatModalIn .18s var(--ease) both;
+}
+@keyframes chatModalIn {
+  from { opacity: 0; transform: scale(0.97); }
+  to   { opacity: 1; transform: scale(1); }
+}
+/* The icons are blue accent text; delete stays red. !important beats the
+   inline colours the markup carries. */
+body.korah-grey .delete-modal-icon .m-icon,
+body.korah-grey .delete-modal-icon .material-icons-round { color: var(--tone-blue) !important; }
+body.korah-grey #delete-modal .delete-modal-icon .m-icon,
+body.korah-grey #delete-modal .delete-modal-icon .material-icons-round { color: var(--tone-red) !important; }
+body.korah-grey .delete-modal-desc { color: var(--tx2); }
+body.korah-grey .delete-modal-btn {
+  height: 2.5rem;
+  padding: 0 1rem;
+  border-radius: 0.5rem;
+  transition: background .18s ease, border-color .18s ease, filter .18s ease, transform .18s var(--ease);
+}
+body.korah-grey .delete-modal-btn:hover { transform: scale(1.03); }
+body.korah-grey .delete-modal-btn:active { transform: scale(0.98); }
+body.korah-grey .delete-modal-btn.cancel {
+  background: transparent;
+  border: 0.0625rem solid var(--bd);
+  color: var(--tx);
+}
+body.korah-grey .delete-modal-btn.cancel:hover { background: var(--sf2); border-color: var(--tx3); }
+body.korah-grey .delete-modal-btn.confirm {
+  background: var(--fill-red);
+  border: 0.0625rem solid var(--fill-red);
+  color: #fff;
+}
+body.korah-grey .delete-modal-btn.confirm:hover { filter: brightness(1.1); }
+body.korah-grey #rename-modal-confirm {
+  background: var(--fill-blue) !important;
+  border-color: var(--fill-blue) !important;
+  color: #fff !important;
+}
+body.korah-grey .create-input {
+  background: var(--bg);
+  border: 0.0625rem solid var(--bd);
+  border-radius: 0.5rem;
+  color: var(--tx);
+  transition: border-color .18s ease, box-shadow .18s ease;
+}
+body.korah-grey .create-input:hover { border-color: var(--tx3); }
+body.korah-grey .create-input:focus { border-color: var(--fill-blue); box-shadow: 0 0 0 0.1875rem var(--ring); }
+body.korah-grey .create-input::placeholder { color: var(--tx3); }
+
+/* ── Math chat: graph panel and early-dev surface ── */
+body.korah-grey .sat-graph-panel {
+  background: var(--bg);
+  border: 0.0625rem solid var(--bd);
+  border-radius: 0.75rem;
+}
+body.korah-grey .sat-graph-header { background: var(--sf); border-bottom-color: var(--bd); }
+body.korah-grey .sat-graph-btn { border-color: var(--bd); color: var(--tx2); }
+body.korah-grey .sat-graph-btn:hover { background: var(--sf2); color: var(--tx); }
+
+/* ── Feature intro carousel (math chat): primary and badge are tone fills ── */
+body.korah-grey .feature-intro-btn.primary {
+  background: var(--fill-blue);
+  border-color: var(--fill-blue);
+  color: #fff;
+  box-shadow: none;
+}
+body.korah-grey .feature-intro-badge-new { background: var(--fill-pink); color: #fff; }
+body.korah-grey .feature-intro-dot.active { background: var(--fill-blue); }
+
+body.korah-grey input,
+body.korah-grey textarea,
+body.korah-grey select,
+body.korah-grey button { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }

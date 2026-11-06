@@ -370,6 +370,13 @@ function _logoPath() {
       });
     }
 
+    // Prompt rows on the welcome screen (same buttons as sat/math-chat.html).
+    document.querySelectorAll(".quick-prompt-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const prompt = btn.dataset.prompt;
+        if (prompt) sendMessage(prompt);
+      });
+    });
   }
 
   function setTyping(show) {
@@ -1703,9 +1710,7 @@ ${FORMAT_INSTRUCTIONS}`.trim();
   }
 
   function renderModePills() {
-    const container = document.getElementById("mode-pills-container");
-    if (!container) return;
-
+    /* Mode pills replaced by the .sat-prompt-list rows in chat.html.
     const satTopics = [
       { label: "Heart of Algebra", icon: "functions",      colorClass: "ic-math", prompt: "Help me practice Heart of Algebra for the SAT" },
       { label: "Reading",          icon: "auto_stories",   colorClass: "ic-lit",  prompt: "Help me improve my SAT Reading comprehension" },
@@ -1733,6 +1738,7 @@ ${FORMAT_INSTRUCTIONS}`.trim();
 
       container.appendChild(pill);
     });
+    */
 
     // Update the large mode text in welcome screen
     const modeNameLarge = document.getElementById("welcome-mode-name");
@@ -2167,6 +2173,37 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     return { type, topic, practiceConfig };
   }
 
+  const THINKING_PHRASES = [
+    'Cooking up',
+    'Combobulating',
+    'Thinking super duper hard',
+    'Brainstorming',
+    'Crunching numbers',
+    'Connecting the dots',
+    'On it',
+    'Doing the math',
+    'Figuring it out',
+  ];
+
+  // Animates the dots on .thinking-shimmer-text and swaps the phrase every 5s.
+  // Returns a function that stops both timers.
+  function startThinkingCycle(el) {
+    const span = el.querySelector('.thinking-shimmer-text');
+    let dots = 0;
+    let labelIdx = 0;
+    const dotTimer = setInterval(() => {
+      dots = (dots % 3) + 1;
+      if (span) span.textContent = THINKING_PHRASES[labelIdx] + '.'.repeat(dots);
+    }, 700);
+    const phraseTimer = setInterval(() => {
+      const others = THINKING_PHRASES.map((_, i) => i).filter((i) => i !== labelIdx);
+      labelIdx = others[Math.floor(Math.random() * others.length)];
+      dots = 0;
+      if (span) span.textContent = THINKING_PHRASES[labelIdx] + '.';
+    }, 5000);
+    return () => { clearInterval(dotTimer); clearInterval(phraseTimer); };
+  }
+
   async function sendMessage(prefillText) {
     if (isSending) return;
     const raw = typeof prefillText === "string" ? prefillText : input.value;
@@ -2215,18 +2252,24 @@ ${FORMAT_INSTRUCTIONS}`.trim();
     const contentElement = document.getElementById(streamingContentId);
     setTyping(false);
 
-    // Show pulsing "Thinking" indicator while waiting for first content
+    // Shimmer "Cooking up..." indicator while waiting for first content. Same markup and
+    // phrase cycle as sat/math-chat.js; stopThinkingCycle clears its timers.
     let thinkingIndicator = null;
+    let stopThinkingCycle = () => {};
     if (contentElement) {
       thinkingIndicator = document.createElement("div");
       thinkingIndicator.className = "thinking-indicator";
-      thinkingIndicator.innerHTML = `
+      thinkingIndicator.innerHTML = `<span class="thinking-shimmer-text">Cooking up.</span>`;
+      contentElement.appendChild(thinkingIndicator);
+      stopThinkingCycle = startThinkingCycle(thinkingIndicator);
+    }
+    /* Replaced by the shimmer indicator above.
+    thinkingIndicator.innerHTML = `
         <div class="thinking-dot"></div>
         <div class="thinking-dot"></div>
         <div class="thinking-dot"></div>
       `;
-      contentElement.appendChild(thinkingIndicator);
-    }
+    */
 
     // Add placeholder to history BEFORE streaming starts (for persistence)
     history.push({ role: "assistant", content: "" });
@@ -2270,6 +2313,7 @@ ${FORMAT_INSTRUCTIONS}`.trim();
       reply = await callChatApi(apiMessages, (chunk, fullText) => {
         // Remove thinking indicator when first chunk arrives
         if (thinkingIndicator && fullText.length > 0) {
+          stopThinkingCycle();
           thinkingIndicator.remove();
           thinkingIndicator = null;
         }
@@ -2333,6 +2377,7 @@ ${FORMAT_INSTRUCTIONS}`.trim();
       }
     } catch (error) {
       console.error("Chat request failed:", error);
+      stopThinkingCycle();
 
         // Remove streaming message and show error
         if (streamingRow) {
@@ -2345,6 +2390,7 @@ ${FORMAT_INSTRUCTIONS}`.trim();
           true
         );
     } finally {
+      stopThinkingCycle();
       setSendingState(false);
       input.focus();
     }

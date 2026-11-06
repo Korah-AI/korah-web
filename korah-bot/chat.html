@@ -92,7 +92,11 @@
   .opp-feature-intro-btn.secondary:hover { background: var(--sf2); color: var(--tx); }
 */
 </style>
+<!-- Replaced by app/chat-ui.css, the flat neutral chat surface shared with sat/math-chat.html.
 <link rel="stylesheet" href="app/korah-chat-grey.css"/>
+-->
+<link rel="stylesheet" href="app/chat-ui.css"/>
+<link rel="stylesheet" href="app/toast.css"/>
 </head>
 
 <body class="bg-base tx korah-home-chat korah-grey">
@@ -159,7 +163,8 @@
   });
 </script>
 
-<canvas id="bg-canvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
+<!-- -z-10 puts the stars behind the page like a body background (chat-ui.css makes the canvas transparent). -->
+<canvas id="bg-canvas" class="fixed inset-0 -z-10 pointer-events-none"></canvas>
 
 <div id="sidebar-root"></div>
 
@@ -284,8 +289,32 @@
           </div>
         </div>
 
+        <!-- Replaced by the prompt rows below (mode pills were rendered into this container by korah-chat.js).
         <div class="mode-pills mb-8" id="mode-pills-container">
-          <!-- Populated by JS -->
+          Populated by JS
+        </div>
+        -->
+        <div class="sat-prompt-list mb-8">
+          <button class="sat-prompt-row quick-prompt-btn" data-requires-auth data-prompt="Summarize a topic for me. Ask me which one, then give me the key ideas in a short, clear overview.">
+            <span class="sat-prompt-text"><strong class="sat-prompt-bold">Summarize</strong> a topic for me</span>
+            <svg class="sat-prompt-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <button class="sat-prompt-row quick-prompt-btn" data-requires-auth data-prompt="Quiz me on what I'm studying. Ask me the subject, then give me one question at a time and tell me how I did.">
+            <span class="sat-prompt-text"><strong class="sat-prompt-bold">Quiz me</strong> on what I'm studying</span>
+            <svg class="sat-prompt-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <button class="sat-prompt-row quick-prompt-btn" data-requires-auth data-prompt="Explain a hard concept to me in simple terms with an example. Ask me which concept first.">
+            <span class="sat-prompt-text"><strong class="sat-prompt-bold">Explain</strong> a hard concept simply</span>
+            <svg class="sat-prompt-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <button class="sat-prompt-row quick-prompt-btn" data-requires-auth data-prompt="Help me plan my study time this week. Ask me what I need to cover and how many hours I have.">
+            <span class="sat-prompt-text"><strong class="sat-prompt-bold">Help me plan</strong> my study time</span>
+            <svg class="sat-prompt-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <button class="sat-prompt-row quick-prompt-btn" data-requires-auth data-prompt="Make flashcards for my next test. Ask me the topic, then give me a set of term and definition cards.">
+            <span class="sat-prompt-text"><strong class="sat-prompt-bold">Make flashcards</strong> for my next test</span>
+            <svg class="sat-prompt-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
         </div>
 
       </div>
@@ -298,9 +327,12 @@
   <!-- Typing indicator (hidden by default) -->
   <div id="typing-indicator" class="typing-bar hidden">
     <div class="typing-bubble bg-card border bd t-theme">
+      <!-- Replaced: purple uppercase label with a pulsing purple dot.
       <div class="flex items-center gap-1.5 text-[0.6875rem] font-bold tracking-[0.0625rem] tx-p4 uppercase mb-1.5">
         <span class="w-1.5 h-1.5 rounded-full bg-p4 animate-pulse"></span>Korah AI
       </div>
+      -->
+      <div class="flex items-center gap-1.5 text-xs font-semibold tx2 mb-1.5">Korah AI</div>
       <div class="typing-dots">
         <span class="typing-dot"></span>
         <span class="typing-dot" style="animation-delay:.2s"></span>
@@ -329,7 +361,7 @@
             </svg>
           </button>
         </div>
-        <button id="send-btn" data-requires-auth class="send-btn-circle grad-bg t-btn" aria-label="Send message">
+        <button id="send-btn" data-requires-auth class="send-btn-circle t-btn" aria-label="Send message">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="18 15 12 9 6 15"></polyline>
           </svg>
@@ -445,7 +477,7 @@
     <input id="rename-modal-input" type="text" class="create-input" style="width:100%; margin-top:0.25rem;" placeholder="New name…"/>
     <div class="delete-modal-actions">
       <button id="rename-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
-      <button id="rename-modal-confirm" class="delete-modal-btn confirm t-btn" style="background:rgba(139,92,246,.12); color:var(--p5); border-color:rgba(139,92,246,.3);">Rename</button>
+      <button id="rename-modal-confirm" class="delete-modal-btn confirm t-btn">Rename</button>
     </div>
   </div>
 </div>
@@ -489,6 +521,7 @@
 
 
 <!-- Pro Tip Toast Notification -->
+<!-- Replaced by the .k-toast markup below (app/toast.css).
 <div id="pro-tip-toast" class="pro-tip-toast">
   <span class="pro-tip-toast-icon"><span class="m-icon ic-gen">lightbulb</span></span>
   <div class="pro-tip-toast-content">
@@ -496,6 +529,15 @@
     <div class="pro-tip-toast-text" id="pro-tip-text"></div>
   </div>
   <button class="pro-tip-toast-close" id="pro-tip-close" title="Dismiss">×</button>
+</div>
+-->
+<div id="pro-tip-toast" class="k-toast k-toast--info pro-tip-toast" role="status">
+  <span class="k-toast__icon material-icons-round" aria-hidden="true">info</span>
+  <div class="k-toast__body">
+    <div class="k-toast__title">Pro tip</div>
+    <div class="k-toast__desc" id="pro-tip-text"></div>
+  </div>
+  <button class="k-toast__close" id="pro-tip-close" type="button" aria-label="Dismiss"><span class="material-icons-round">close</span></button>
 </div>
 
 <script src="https://www.desmos.com/api/v1.12/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6"></script>
