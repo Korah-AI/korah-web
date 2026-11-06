@@ -8,7 +8,7 @@
 - **productivity.html** - Productivity/focus tools page (timers, mood-based recommendations)
 - **korah.js** - Shared Tailwind config (fonts, colors, animations) used across pages
 - **auth-guard.js** - Polls Firebase auth state and redirects unauthenticated users
-- **sidebar.html / sidebar-loader.js** - Shared sidebar markup and a loader script that fetches/injects it into any page
+- **sidebar-loader.js / sidebar-react/** - The sidebar is a React island: source in `sidebar-react/src`, built with `npm run build:sidebar` to `app/sidebar-react.js` and `app/sidebar-react.css` (both committed). The loader links those into any page with a `#sidebar-root`. To add or move a nav link, edit `sidebar-react/src/KorahSidebar.tsx` and rebuild. `sidebar.html` is the old markup, no longer loaded
 
 ## API (Vercel serverless backend)
 

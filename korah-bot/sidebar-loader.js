@@ -1,3 +1,33 @@
+// The sidebar is a React island (sidebar-react/, built to app/sidebar-react.js and
+// app/sidebar-react.css). This loader only resolves the site base, links the
+// stylesheet and starts the bundle; the bundle renders into #sidebar-root and
+// dispatches 'korahSidebarReady' once it has.
+(function () {
+  const root = document.getElementById('sidebar-root');
+  if (!root) return;
+
+  // Resolve base from this script's URL — works at any server root
+  const scriptEl = document.querySelector('script[src*="sidebar-loader.js"]');
+  const base = scriptEl ? scriptEl.src.replace(/\/sidebar-loader\.js.*$/, '') : '';
+  window.__korahSidebarBase = base;
+
+  // Scrollbars hide until the container scrolls; every shell page loads the sidebar, so load it here.
+  const fadeScript = document.createElement('script');
+  fadeScript.src = base + '/app/scroll-fade.js';
+  document.head.appendChild(fadeScript);
+
+  const css = document.createElement('link');
+  css.rel = 'stylesheet';
+  css.href = `${base}/app/sidebar-react.css`;
+  document.head.appendChild(css);
+
+  const js = document.createElement('script');
+  js.src = `${base}/app/sidebar-react.js`;
+  document.head.appendChild(js);
+})();
+
+/* Replaced by the React sidebar above: fetched sidebar.html into #sidebar-root,
+   prefixed its links and let Alpine initialise it.
 (async function () {
   const root = document.getElementById('sidebar-root');
   if (!root) return;
@@ -54,6 +84,7 @@
   // on this when a page's bootstrap beats the fetch above.
   window.dispatchEvent(new CustomEvent('korahSidebarReady'));
 })();
+*/
 
 function initElectricBorder(root) {
   const wrapper = root.querySelector('.electric-border-wrapper');

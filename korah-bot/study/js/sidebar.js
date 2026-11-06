@@ -43,12 +43,13 @@ function injectActionModals() {
     document.body.insertAdjacentHTML('beforeend', clearDataHTML);
   }
 
+  // Logout icon color moved to CSS (#logout-modal in korah-chat.css); was var(--p5) inline.
   if (!document.getElementById("logout-modal")) {
     const logoutHTML = `
       <div id="logout-modal" class="delete-modal">
         <div class="delete-modal-content">
           <div class="delete-modal-icon">
-            <span class="material-icons-round" style="font-size: 2.5rem; color: var(--p5);">logout</span>
+            <span class="material-icons-round" style="font-size: 2.5rem;">logout</span>
           </div>
           <h3 class="delete-modal-title">Log Out?</h3>
           <p class="delete-modal-desc">Are you sure you want to log out of your session? You'll need to sign in again to access your chats and study tools.</p>
