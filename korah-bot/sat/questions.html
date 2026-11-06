@@ -109,8 +109,11 @@ html[data-theme="light"] {
     --pl-sf2:  #31313c;  /* inner controls, chips  */
     --pl-sf3:  #43434f;  /* raised: Korah's reply  */
     --pl-bd:   #454553;  /* borders + 3D shadow    */
-    --tone-purple: #8b5cf6; --tone-purple-fill: #6d28d9;
-    --tone-pink:   #f9a8d4; --tone-pink-fill:   #f472b6;
+    /* Purple retired: the Korah accent is now blue. --blue-tx is the blue for
+       text, borders and icons; --tone-blue is the solid button fill.
+    --tone-purple: #8b5cf6; --tone-purple-fill: #6d28d9; */
+    --blue-tx: #60a5fa;
+    --tone-pink:  #f9a8d4; --tone-pink-fill:   #f472b6;
     --tone-green:  #22c55e; --tone-green-fill:  #15803d;
     --tone-red:    #ef4444; --tone-red-fill:    #b91c1c;
     --tone-amber:  #f59e0b; --tone-amber-fill:  #b45309;
@@ -133,6 +136,7 @@ html[data-theme="light"] {
     --pl-sf2:  #eceef2;
     --pl-sf3:  #ffffff;
     --pl-bd:   #c3c8d2;
+    --blue-tx: #1d4ed8;
     --pl-card: #ffffff;
     --pl-bar:  #f4f4f5;
     --pl-line: #d4d4d8;
@@ -164,8 +168,8 @@ html[data-theme="light"] {
   }
   body.sat-player-grey .sat-timer-display { color: var(--tx) !important; }
   body.sat-player-grey .sat-stopwatch-btn { color: var(--tx); }
-  body.sat-player-grey .sat-stopwatch-btn:hover { color: var(--tone-purple); }
-  body.sat-player-grey #clockIcon { color: var(--tone-purple) !important; }
+  body.sat-player-grey .sat-stopwatch-btn:hover { color: var(--blue-tx); }
+  body.sat-player-grey #clockIcon { color: var(--blue-tx) !important; }
 
   /* Toolbar controls carry no button chrome at all — no fill, no border, no
      rounded box. They are icon + label, and hover reads as the pair growing
@@ -175,7 +179,7 @@ html[data-theme="light"] {
   body.sat-player-grey .sat-player-topbar .sat-button,
   body.sat-player-grey .sat-player-topbar .nav-labeled-btn,
   body.sat-player-grey .sat-topbar-left .sat-button {
-    --acc: var(--tone-purple);
+    --acc: var(--blue-tx);
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
@@ -195,6 +199,8 @@ html[data-theme="light"] {
     color: var(--acc) !important;
     transform: scale(1.08) !important;
   }
+  body.sat-player-grey .sat-player-topbar .sat-button:active,
+  body.sat-player-grey .sat-player-topbar .nav-labeled-btn:active { transform: scale(.97) !important; }
   /* Back to Bank is navigation, not a tool, so it grows on hover but never
      takes an accent — and being an <a>, it needs the link states pinned too. */
   body.sat-player-grey .sat-topbar-left .sat-button,
@@ -225,13 +231,18 @@ html[data-theme="light"] {
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
     box-shadow: 0 0.75rem 2rem rgba(0,0,0,0.35);
+    /* Fade + scale from .97, no slide (sat.css ships translateY(-.5rem) scale(.96)) */
+    transform: scale(0.97);
+    transition: opacity .16s cubic-bezier(.23,1,.32,1), transform .16s cubic-bezier(.23,1,.32,1), visibility .16s;
   }
+  body.sat-player-grey .more-dropdown-menu.more-dropdown-open { transform: scale(1); }
+  body.sat-player-grey .more-dropdown-item:hover .material-icons-round { transform: none; }
   body.sat-player-grey .more-dropdown-item { color: var(--tx); }
   body.sat-player-grey .more-dropdown-item .material-icons-round { color: var(--tx); }
   body.sat-player-grey .more-dropdown-item:hover { background: var(--pl-sf2); }
-  body.sat-player-grey .more-dropdown-item:hover .material-icons-round { color: var(--tone-purple); }
-  body.sat-player-grey .more-dropdown-item::before { background: var(--tone-purple); }
-  body.sat-player-grey .more-dropdown-check { color: var(--tone-purple); }
+  body.sat-player-grey .more-dropdown-item:hover .material-icons-round { color: var(--blue-tx); }
+  body.sat-player-grey .more-dropdown-item::before { background: var(--blue-tx); }
+  body.sat-player-grey .more-dropdown-check { color: var(--blue-tx); }
 
   /* ── Question panel ─────────────────────────────────────────────────────── */
   /* ── Question pane ────────────────────────────────────────────────────────
@@ -365,13 +376,13 @@ html[data-theme="light"] {
   /* English */
   body.sat-player-grey .sat-domain-label[data-domain="information-and-ideas"]          { --acc-fill: var(--tone-blue-fill); }
   body.sat-player-grey .sat-domain-label[data-domain="craft-and-structure"]            { --acc-fill: var(--tone-teal-fill); }
-  body.sat-player-grey .sat-domain-label[data-domain="expression-of-ideas"]            { --acc-fill: var(--tone-purple-fill); }
+  body.sat-player-grey .sat-domain-label[data-domain="expression-of-ideas"]            { --acc-fill: #ec4899; }
   body.sat-player-grey .sat-domain-label[data-domain="standard-english-conventions"]   { --acc-fill: var(--tone-green-fill); }
   /* Math */
   body.sat-player-grey .sat-domain-label[data-domain="algebra"]                        { --acc-fill: var(--tone-amber-fill); }
   body.sat-player-grey .sat-domain-label[data-domain="advanced-math"]                  { --acc-fill: var(--tone-red-fill); }
   body.sat-player-grey .sat-domain-label[data-domain="problem-solving-and-data-analysis"] { --acc-fill: #0369a1; }
-  body.sat-player-grey .sat-domain-label[data-domain="geometry-and-trigonometry"]      { --acc-fill: #7e22ce; }
+  body.sat-player-grey .sat-domain-label[data-domain="geometry-and-trigonometry"]      { --acc-fill: #ea580c; }
 
   /* ── Answer choices ───────────────────────────────────────────────────────
      Outlined cards, never filled: the letter sits in a ring on the left and
@@ -465,8 +476,8 @@ html[data-theme="light"] {
   }
   body.sat-player-grey .sat-spr-input:focus {
     background: var(--pl-sf2);
-    border-color: var(--tone-purple);
-    box-shadow: 0 0 0 0.1875rem color-mix(in srgb, var(--tone-purple) 25%, transparent);
+    border-color: var(--blue-tx);
+    box-shadow: 0 0 0 0.1875rem color-mix(in srgb, var(--blue-tx) 25%, transparent);
   }
   body.sat-player-grey .sat-spr-input.is-correct   { background: var(--tone-green-fill); border-color: var(--tone-green-fill); color: #fff; }
   body.sat-player-grey .sat-spr-input.is-incorrect { background: var(--tone-red-fill);   border-color: var(--tone-red-fill);   color: #fff; }
@@ -500,9 +511,9 @@ html[data-theme="light"] {
     background: var(--pl-sf2) !important;
     border: 0.0625rem solid var(--pl-bd) !important;
     color: var(--tx) !important;
-    border-radius: 0.75rem;
-    box-shadow: 0 0.25rem 0 0 var(--pl-bd) !important;
-    transition: transform .18s ease, background .18s ease, border-color .18s ease;
+    border-radius: 0.5rem;
+    box-shadow: none !important;
+    transition: transform .18s cubic-bezier(.23,1,.32,1), background .18s ease, border-color .18s ease;
   }
   body.sat-player-grey .sat-player-footer .sat-button-ghost:hover,
   body.sat-player-grey #sessionInfoBtn:hover,
@@ -516,12 +527,13 @@ html[data-theme="light"] {
   /* Next is the advance action, so it is filled blue; Previous stays grey. */
   body.sat-player-grey #nextQuestionBtn,
   body.sat-player-grey #nextQuestionBtn:hover {
-    background: linear-gradient(180deg, var(--tone-blue), var(--tone-blue-fill)) !important;
-    border: 0.0625rem solid var(--tone-blue-fill) !important;
+    background: var(--tone-blue) !important;
+    border: 0.0625rem solid var(--tone-blue) !important;
     color: #ffffff !important;
-    box-shadow: 0 0.25rem 0 0 color-mix(in srgb, var(--tone-blue) 55%, #000) !important;
+    box-shadow: none !important;
   }
-  body.sat-player-grey #nextQuestionBtn:hover { filter: brightness(1.08); }
+  body.sat-player-grey #nextQuestionBtn:hover { filter: brightness(1.12); transform: scale(1.03) !important; }
+  body.sat-player-grey #nextQuestionBtn:active { transform: scale(.98) !important; }
   /* Previous and the question counter are solid dark grey with white text,
      and they do not move or shift on hover. */
   body.sat-player-grey #prevQuestionBtn,
@@ -532,7 +544,7 @@ html[data-theme="light"] {
     background: #3f3f46 !important;
     border: 0.0625rem solid #3f3f46 !important;
     color: #ffffff !important;
-    box-shadow: 0 0.25rem 0 0 #27272a !important;
+    box-shadow: none !important;
     opacity: 1 !important;
     filter: none !important;
     transform: none !important;
@@ -573,19 +585,20 @@ html[data-theme="light"] {
   }
   body.sat-player-grey #checkAnswerBtn,
   body.sat-player-grey .sat-button-primary {
-    background: linear-gradient(180deg, var(--tone-pink), var(--tone-pink-fill)) !important;
-    border: 0.0625rem solid var(--tone-pink-fill) !important;
-    color: #3b0a24 !important;
-    border-radius: 0.875rem !important;
-    box-shadow: 0 0.25rem 0 0 color-mix(in srgb, var(--tone-pink-fill) 70%, #000) !important;
-    transition: transform .18s ease, filter .18s ease;
+    background: #ec4899 !important;
+    border: 0.0625rem solid #ec4899 !important;
+    color: #ffffff !important;
+    border-radius: 0.5rem !important;
+    box-shadow: none !important;
+    transition: transform .18s cubic-bezier(.23,1,.32,1), filter .18s ease;
   }
   body.sat-player-grey #checkAnswerBtn { height: 2.5rem; padding: 0 1.75rem; }
   body.sat-player-grey #checkAnswerBtn:hover:not(:disabled),
   body.sat-player-grey .sat-button-primary:hover {
-    filter: brightness(1.06);
+    filter: brightness(1.12);
     transform: scale(1.03) !important;
   }
+  body.sat-player-grey #checkAnswerBtn:active:not(:disabled):not(.is-inline) { transform: scale(.98) !important; }
   body.sat-player-grey #checkAnswerBtn:disabled {
     filter: grayscale(0.5) brightness(0.9);
     opacity: .6;
@@ -601,7 +614,7 @@ html[data-theme="light"] {
     -webkit-backdrop-filter: none;
     box-shadow: 0 0.75rem 2rem rgba(0,0,0,0.4);
   }
-  body.sat-player-grey .q-nav-panel::before { background: var(--tone-purple); }
+  body.sat-player-grey .q-nav-panel::before { background: var(--blue-tx); }
   body.sat-player-grey .q-nav-stats { border-bottom-color: var(--pl-bd); }
   body.sat-player-grey .q-stat-item,
   body.sat-player-grey .q-nav-section-label,
@@ -634,10 +647,10 @@ html[data-theme="light"] {
   body.sat-player-grey .q-pill.is-correct   { background: var(--tone-green-fill);  border-color: var(--tone-green-fill);  color: #fff; }
   body.sat-player-grey .q-pill.is-incorrect { background: var(--tone-red-fill);    border-color: var(--tone-red-fill);    color: #fff; }
   body.sat-player-grey .q-pill.is-current {
-    border-color: var(--tone-purple);
-    box-shadow: 0 0 0 0.125rem var(--tone-purple);
+    border-color: var(--blue-tx);
+    box-shadow: 0 0 0 0.125rem var(--blue-tx);
   }
-  body.sat-player-grey .q-pill.is-current::after { background: var(--tone-purple); }
+  body.sat-player-grey .q-pill.is-current::after { background: var(--blue-tx); }
   body.sat-player-grey .q-legend-unanswered { background: var(--pl-sf2);         border-color: var(--pl-bd); }
   body.sat-player-grey .q-legend-attempted,
   body.sat-player-grey .q-legend-icon-attempted { background: var(--tone-amber-fill); border-color: var(--tone-amber-fill); }
@@ -645,7 +658,7 @@ html[data-theme="light"] {
   body.sat-player-grey .q-legend-icon-correct   { background: var(--tone-green-fill);  border-color: var(--tone-green-fill);  color: #fff; }
   body.sat-player-grey .q-legend-incorrect,
   body.sat-player-grey .q-legend-icon-incorrect { background: var(--tone-red-fill);    border-color: var(--tone-red-fill);    color: #fff; }
-  body.sat-player-grey .q-legend-current    { background: var(--pl-sf2); border-color: var(--tone-purple); }
+  body.sat-player-grey .q-legend-current    { background: var(--pl-sf2); border-color: var(--blue-tx); }
 
   /* ── Reference panel, modals ────────────────────────────────────────────── */
   body.sat-player-grey .reference-panel {
@@ -689,16 +702,66 @@ html[data-theme="light"] {
     color: #ffffff !important;
   }
   body.sat-player-grey #rename-modal-confirm {
-    background: var(--tone-purple-fill) !important;
-    border-color: var(--tone-purple-fill) !important;
+    background: var(--tone-blue) !important;
+    border-color: var(--tone-blue) !important;
     color: #ffffff !important;
   }
   /* The modal readouts are hard-coded to the purple utility class */
   body.sat-player-grey .settings-item-control.tx-p5 { color: var(--tx) !important; }
 
+  /* Flat popups: .delete-modal ships with a blur backdrop, a spring entrance
+     (toolsMenuIn) and a 1.25rem radius; the light theme adds purple shadows.
+     Match .settings-modal: plain .6 backdrop, fade + scale from .97. */
+  body.sat-player-grey .delete-modal {
+    background: rgba(0,0,0,.6);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  body.sat-player-grey .delete-modal-content {
+    border-radius: 0.875rem;
+    animation: modalIn .18s cubic-bezier(.23, 1, .32, 1) both;
+  }
+  body.sat-player-grey .settings-modal-content,
+  body.sat-player-grey .delete-modal-content { box-shadow: 0 0.75rem 2rem rgba(0,0,0,.45); }
+  html[data-theme="light"] body.sat-player-grey .settings-modal-content,
+  html[data-theme="light"] body.sat-player-grey .delete-modal-content { box-shadow: 0 0.75rem 2rem rgba(0,0,0,.12); }
+  body.sat-player-grey .delete-modal-btn {
+    border-radius: 0.5rem;
+    transition: transform .18s cubic-bezier(.23,1,.32,1), background .18s ease, filter .18s ease;
+  }
+  body.sat-player-grey .delete-modal-btn:hover { transform: scale(1.03); }
+  body.sat-player-grey .delete-modal-btn:active { transform: scale(.98); }
+  body.sat-player-grey .delete-modal-btn.cancel:hover { border-color: var(--pl-bd); }
+  body.sat-player-grey .delete-modal-btn.confirm:hover,
+  body.sat-player-grey #rename-modal-confirm:hover { filter: brightness(1.12); }
+  body.sat-player-grey .create-input:focus {
+    border-color: var(--tone-blue);
+    box-shadow: 0 0 0 0.1875rem color-mix(in srgb, var(--tone-blue) 22%, transparent);
+    outline: none;
+  }
+  /* Reference sheet popup: sat.css gives it purple rings, a purple hover
+     border and a slide-in (refPanelFadeIn translateY). */
+  body.sat-player-grey .reference-panel,
+  body.sat-player-grey .reference-panel:hover {
+    border-color: var(--pl-bd);
+    box-shadow: 0 0.75rem 2rem rgba(0,0,0,.45);
+    animation: modalIn .18s cubic-bezier(.23, 1, .32, 1) both;
+  }
+  html[data-theme="light"] body.sat-player-grey .reference-panel,
+  html[data-theme="light"] body.sat-player-grey .reference-panel:hover { box-shadow: 0 0.75rem 2rem rgba(0,0,0,.12); }
+  body.sat-player-grey .reference-drag-handle,
+  body.sat-player-grey .reference-drag-handle:hover,
+  html[data-theme="light"] body.sat-player-grey .reference-drag-handle,
+  html[data-theme="light"] body.sat-player-grey .reference-drag-handle:hover {
+    background: var(--tone-teal-fill);
+    border-bottom-color: var(--tone-teal-fill);
+  }
+  body.sat-player-grey .reference-collapse-btn:hover { background: rgba(255,255,255,.2); }
+  body.sat-player-grey .reference-drag-handle span { text-transform: none; letter-spacing: normal; font-weight: 700; }
+
   /* Scrollbars follow the greys, not the purple */
   body.sat-player-grey ::-webkit-scrollbar-thumb { background: var(--pl-bd) !important; }
-  body.sat-player-grey ::-webkit-scrollbar-thumb:hover { background: var(--tone-purple) !important; }
+  body.sat-player-grey ::-webkit-scrollbar-thumb:hover { background: var(--blue-tx) !important; }
 </style>
 <link rel="stylesheet" href="./question-content.css"/>
 </head>
@@ -978,7 +1041,7 @@ html[data-theme="light"] {
 <div id="referencePanel" class="reference-panel is-hidden" style="top: 7.5rem; left: 7.5rem;">
   <div class="reference-drag-handle">
     <div style="display: flex; align-items: center; gap: 0.5rem;">
-      <span style="font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;">Reference Sheet</span>
+      <span style="font-size: 0.75rem; font-weight: 700;">Reference sheet</span>
     </div>
     <div style="display: flex; align-items: center; gap: 0.25rem;">
       <button id="referenceCollapseBtn" class="reference-collapse-btn" onclick="toggleReferenceCollapse()" aria-label="Collapse reference sheet">
@@ -1135,14 +1198,14 @@ html[data-theme="light"] {
   /* Footer trigger — filled purple, the page's "talk to Korah" action */
   .ask-korah-trigger {
     display: inline-flex; align-items: center; justify-content: center;
-    height: 2.875rem; padding: 0 1rem; border-radius: 0.875rem;
-    background: linear-gradient(180deg, var(--tone-purple), var(--tone-purple-fill));
-    color: #ffffff; border: 0.0625rem solid var(--tone-purple-fill);
+    height: 2.875rem; padding: 0 1rem; border-radius: 0.5rem;
+    background: var(--tone-blue);
+    color: #ffffff; border: 0.0625rem solid var(--tone-blue);
     font: inherit; font-weight: 700; cursor: pointer;
-    box-shadow: 0 0.25rem 0 0 color-mix(in srgb, var(--tone-purple) 55%, #000);
-    transition: transform .18s ease, filter .18s ease;
+    transition: transform .18s cubic-bezier(.23,1,.32,1), filter .18s ease;
   }
-  .ask-korah-trigger:hover { filter: brightness(1.08); transform: scale(1.03); }
+  .ask-korah-trigger:hover { filter: brightness(1.12); transform: scale(1.03); }
+  .ask-korah-trigger:active { transform: scale(.98); }
   #remixBtn:disabled { opacity: .6; cursor: wait; transform: none; }
   #remixStatus:not(:empty) {
     position: absolute; bottom: calc(100% + 8px); right: 12px;
@@ -1163,7 +1226,7 @@ html[data-theme="light"] {
     color: var(--tx); z-index: 1100;
     transform: translateX(100%); transition: transform .25s ease;
     display: flex; flex-direction: column;
-    box-shadow: -0.5rem 0 2rem rgba(0,0,0,0.18);
+    box-shadow: none;
     /* No dimmed text — --tx2/--tx3 vanish against the greys */
     --tx2: var(--tx); --tx3: var(--tx);
   }
@@ -1186,8 +1249,8 @@ html[data-theme="light"] {
     transition: color .18s ease, background-color .18s ease, border-color .18s ease;
   }
   @keyframes ask-korah-content-enter {
-    from { opacity: 0; transform: translateY(.4rem); }
-    to { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
   .ask-korah-body.is-switching, .explain-body {
     animation: ask-korah-content-enter .2s ease both;
@@ -1221,7 +1284,7 @@ html[data-theme="light"] {
     font-size: 0.9rem; font-weight: 600; cursor: pointer;
     border-bottom: 0.125rem solid transparent; margin-bottom: -0.0625rem;
   }
-  .ask-korah-tab.active { color: var(--tone-purple); border-bottom-color: var(--tone-purple); }
+  .ask-korah-tab.active { color: var(--blue-tx); border-bottom-color: var(--blue-tx); }
 
   .ask-korah-subrow {
     display: flex; justify-content: space-between; align-items: center;
@@ -1253,22 +1316,19 @@ html[data-theme="light"] {
   /* Grey at rest, filled in the accent when picked up — same as chat.html's
      suggestion chips. One accent per chip so the stack is a set of colors. */
   .ask-korah-suggestion {
-    --acc: var(--tone-purple);
-    background: var(--pl-sf); color: var(--tx);
-    border: 0.0625rem solid var(--pl-bd); border-radius: 62.4375rem;
+    --acc: var(--blue-tx);
+    background: var(--pl-sf); color: var(--acc);
+    border: 0.0625rem solid var(--pl-bd); border-radius: 0.5rem;
     padding: 0.45rem 0.95rem; font-size: 0.825rem; font-weight: 600;
     cursor: pointer; text-decoration: none; display: inline-block;
-    box-shadow: 0 0.25rem 0 0 var(--pl-bd);
-    transition: transform .18s ease, background .18s ease, border-color .18s ease, box-shadow .18s ease;
+    transition: transform .18s cubic-bezier(.23,1,.32,1), background .18s ease, border-color .18s ease;
   }
-  .ask-korah-suggestions .ask-korah-suggestion:nth-child(2) { --acc: var(--tone-teal); }
-  .ask-korah-suggestion-math { --acc: var(--tone-blue); }
   .ask-korah-suggestion:hover {
     background: var(--pl-sf2);
     border-color: var(--acc);
-    box-shadow: 0 0.25rem 0 0 color-mix(in srgb, var(--acc) 45%, var(--pl-bd));
     transform: scale(1.03);
   }
+  .ask-korah-suggestion:active { transform: scale(.98); }
 
   .ask-korah-messages { display: flex; flex-direction: column; gap: 0.75rem; }
   /* The two sides of a transcript separate by weight, not hue: the user's
@@ -1281,22 +1341,20 @@ html[data-theme="light"] {
   .ask-korah-msg.user { background: var(--pl-sf); align-self: flex-end; max-width: 85%; }
   .ask-korah-msg.korah { background: var(--pl-sf3); }
   .ask-korah-msg.korah .cached-badge {
-    display: inline-block; font-size: 0.65rem; text-transform: uppercase;
-    letter-spacing: 0.05em; color: var(--tx); opacity: .75; margin-bottom: 0.25rem;
+    display: inline-block; font-size: 0.7rem;
+    color: var(--tx); opacity: .75; margin-bottom: 0.25rem;
   }
   .ask-korah-loading { font-size: 0.85rem; color: var(--tx); font-style: italic; padding: 0.5rem 0; }
 
   .ask-korah-footer {
     margin: 0 1.25rem 0.25rem; padding: 0.5rem 0.625rem;
     background: var(--pl-sf); border: 0.0625rem solid var(--pl-bd); border-radius: 0.875rem;
-    box-shadow: 0 0.25rem 0 0 var(--pl-bd);
     display: flex; align-items: flex-end; gap: 0.5rem;
     transition: border-color .18s ease, box-shadow .18s ease;
   }
   .ask-korah-footer:focus-within {
-    border-color: var(--tone-purple);
-    box-shadow: 0 0.25rem 0 0 var(--pl-bd),
-                0 0 0 0.1875rem color-mix(in srgb, var(--tone-purple) 25%, transparent);
+    border-color: var(--tone-blue);
+    box-shadow: 0 0 0 0.1875rem color-mix(in srgb, var(--tone-blue) 22%, transparent);
   }
   .ask-korah-input {
     flex: 1; resize: none; background: transparent; border: none; outline: none;
@@ -1305,13 +1363,14 @@ html[data-theme="light"] {
   .ask-korah-input::placeholder { color: var(--tx); opacity: .55; }
   /* The send button is the one action in the composer, so it is the one fill */
   .ask-korah-send {
-    background: linear-gradient(180deg, var(--tone-purple), var(--tone-purple-fill));
-    color: #ffffff; border: 0.0625rem solid var(--tone-purple-fill);
+    background: var(--tone-blue);
+    color: #ffffff; border: 0.0625rem solid var(--tone-blue);
     border-radius: 62.4375rem;
     width: 2rem; height: 2rem; display: inline-flex; align-items: center; justify-content: center;
-    cursor: pointer; transition: transform .18s ease, filter .18s ease;
+    cursor: pointer; transition: transform .18s cubic-bezier(.23,1,.32,1), filter .18s ease;
   }
-  .ask-korah-send:hover { filter: brightness(1.08); transform: scale(1.06); }
+  .ask-korah-send:hover { filter: brightness(1.12); transform: scale(1.06); }
+  .ask-korah-send:active { transform: scale(.97); }
   .ask-korah-disclaimer {
     text-align: center; font-size: 0.7rem; color: var(--tx); opacity: .7;
     padding: 0.5rem 1rem 0.75rem; margin: 0;
@@ -1350,7 +1409,7 @@ html[data-theme="light"] {
     font-size: 0.8rem; font-weight: 700;
   }
   .ask-korah-explanation .explain-cached {
-    font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em;
+    font-size: 0.7rem;
     color: var(--tx); opacity: .75; align-self: flex-start;
   }
   .ask-korah-explanation .explain-step {
@@ -1361,12 +1420,11 @@ html[data-theme="light"] {
   .ask-korah-explanation .explain-step-head {
     display: flex; align-items: center; gap: 0.5rem;
     font-size: 0.8rem; font-weight: 700; color: var(--tx);
-    text-transform: uppercase; letter-spacing: 0.04em;
   }
   .ask-korah-explanation .explain-step-num {
     display: inline-flex; align-items: center; justify-content: center;
     width: 1.375rem; height: 1.375rem; border-radius: 62.4375rem;
-    background: var(--tone-purple-fill); color: #fff; font-size: 0.75rem; font-weight: 800;
+    background: var(--tone-blue); color: #fff; font-size: 0.75rem; font-weight: 800;
   }
   .ask-korah-explanation .explain-step-body {
     font-size: 0.875rem; line-height: 1.55; color: var(--tx);
@@ -1389,7 +1447,7 @@ html[data-theme="light"] {
     transition: background .15s ease, color .15s ease;
   }
   .explain-source-toggle button.active {
-    background: var(--tone-purple-fill); color: #fff;
+    background: var(--tone-blue); color: #fff;
   }
   .explain-source-toggle button:not(.active):hover { background: var(--pl-sf2); }
 
@@ -1726,14 +1784,14 @@ html[data-theme="light"] {
     wrap.style.cssText = 'display:flex;flex-direction:column;gap:0.5rem;';
 
     const heading = document.createElement('div');
-    heading.style.cssText = 'font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--tx3);padding:0.25rem 0;';
+    heading.style.cssText = 'font-size:0.8rem;font-weight:700;color:var(--tx3);padding:0.25rem 0;';
     heading.textContent = sessions.length ? `Saved conversations (${sessions.length})` : 'No saved conversations yet';
     wrap.appendChild(heading);
 
     sessions.forEach((session, idx) => {
       const item = document.createElement('button');
       item.type = 'button';
-      item.style.cssText = 'background:var(--sf2);border:1px solid var(--bd);border-radius:0.5rem;padding:0.625rem 0.75rem;text-align:left;cursor:pointer;color:var(--tx);font-size:0.85rem;';
+      item.style.cssText = 'background:var(--pl-sf2);border:1px solid var(--pl-bd);border-radius:0.5rem;padding:0.625rem 0.75rem;text-align:left;cursor:pointer;color:var(--tx);font-size:0.85rem;';
       const preview = session.messages.find(m => m.role === 'user')?.content || '';
       const date = new Date(session.ts).toLocaleString([], { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
       item.innerHTML = `<div style="font-weight:600;color:var(--tx3);font-size:0.72rem;">${escapeHtml(date)}</div><div style="margin-top:0.25rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(preview.slice(0, 90))}</div>`;
@@ -2152,13 +2210,17 @@ RULES:
 <!-- Rename Modal -->
 <div id="rename-modal" class="delete-modal">
   <div class="delete-modal-content">
-    <div class="delete-modal-icon"><span class="material-icons-round" style="color: #FFA726; font-size: 1.25rem;" aria-label="rename">edit</span></div>
+    <!-- Replaced: icon was #FFA726 -->
+    <!-- <div class="delete-modal-icon"><span class="material-icons-round" style="color: #FFA726; font-size: 1.25rem;" aria-label="rename">edit</span></div> -->
+    <div class="delete-modal-icon"><span class="material-icons-round" style="color: var(--blue-tx); font-size: 1.25rem;" aria-label="rename">edit</span></div>
     <h3 class="delete-modal-title">Rename</h3>
     <p class="delete-modal-desc" id="rename-modal-desc">Enter a new name</p>
     <input id="rename-modal-input" type="text" class="create-input" style="width:100%; margin-top:0.25rem;" placeholder="New name…"/>
     <div class="delete-modal-actions">
       <button id="rename-modal-cancel" class="delete-modal-btn cancel t-btn">Cancel</button>
-      <button id="rename-modal-confirm" class="delete-modal-btn confirm t-btn" style="background:rgba(139,92,246,.12); color:var(--p5); border-color:rgba(139,92,246,.3);">Rename</button>
+      <!-- Replaced: inline purple style; the blue fill now comes from body.sat-player-grey #rename-modal-confirm
+      <button id="rename-modal-confirm" class="delete-modal-btn confirm t-btn" style="background:rgba(139,92,246,.12); color:var(--p5); border-color:rgba(139,92,246,.3);">Rename</button> -->
+      <button id="rename-modal-confirm" class="delete-modal-btn confirm t-btn">Rename</button>
     </div>
   </div>
 </div>
@@ -2217,6 +2279,20 @@ RULES:
     bottom: calc(var(--player-footer-h, 4rem) + 1rem);
     z-index: 1100;
     width: 24rem;
+    /* This page redefines --sf, --bd and --tx2 as purple-tinted translucent values,
+       so the toast takes the player greys instead. */
+    --kt-bg: var(--pl-sf);
+    --kt-bd: var(--pl-bd);
+    --kt-fill: var(--pl-sf2);
+    --kt-tx: #fff;
+    --kt-tx2: #c3c3cf;
+  }
+  html[data-theme="light"] .fix-toast {
+    --kt-bg: #fff;
+    --kt-bd: #e4e4e7;
+    --kt-fill: #f4f4f5;
+    --kt-tx: #09090b;
+    --kt-tx2: #6c6c76;
   }
   @media (max-width: 480px) {
     .fix-toast {
